@@ -3,20 +3,29 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Whispr API — anonymous video recommendation platform
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: whisps
+    description: Whisp management
+  - name: video
+    description: Video metadata
+  - name: public
+    description: Public recipient endpoints
+  - name: user
+    description: User profile
+  - name: credits
+    description: Credit & plan management
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +33,333 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /whisps:
+    get:
+      operationId: listWhisps
+      tags: [whisps]
+      summary: List all whisps sent by the current user
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+          required: false
+      responses:
+        "200":
+          description: List of whisps
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Whisp"
+    post:
+      operationId: createWhisp
+      tags: [whisps]
+      summary: Send a new whisp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WhispInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Whisp"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /whisps/stats:
+    get:
+      operationId: getWhispStats
+      tags: [whisps]
+      summary: Dashboard stats for the current user
+      responses:
+        "200":
+          description: Aggregated stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhispStats"
+
+  /whisps/{id}:
+    get:
+      operationId: getWhisp
+      tags: [whisps]
+      summary: Get a single whisp with tracking timeline
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Whisp detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhispDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      operationId: deleteWhisp
+      tags: [whisps]
+      summary: Delete a whisp
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  /whisps/{id}/replies:
+    get:
+      operationId: listWhispReplies
+      tags: [whisps]
+      summary: Get anonymous replies for a whisp
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Replies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WhispReply"
+    post:
+      operationId: createWhispReply
+      tags: [whisps]
+      summary: Send an anonymous reply (from recipient or sender follow-up)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WhispReplyInput"
+      responses:
+        "201":
+          description: Reply created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhispReply"
+
+  /whisps/{id}/reveal:
+    post:
+      operationId: requestReveal
+      tags: [whisps]
+      summary: Sender requests to reveal identity
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Reveal requested
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Whisp"
+    patch:
+      operationId: respondReveal
+      tags: [whisps]
+      summary: Recipient responds to reveal request
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevealResponse"
+      responses:
+        "200":
+          description: Reveal response recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Whisp"
+
+  /video/meta:
+    post:
+      operationId: scrapeVideoMeta
+      tags: [video]
+      summary: Scrape video metadata from a URL (YouTube, TikTok, Instagram, etc.)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VideoMetaRequest"
+      responses:
+        "200":
+          description: Video metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoMeta"
+        "400":
+          description: Could not scrape URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/w/{token}:
+    get:
+      operationId: getPublicWhisp
+      tags: [public]
+      summary: Public recipient landing page data (no auth required)
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Public whisp data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicWhisp"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/w/{token}/track:
+    post:
+      operationId: trackWhispEvent
+      tags: [public]
+      summary: Record a tracking event (opened, clicked, watched)
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrackingEventInput"
+      responses:
+        "200":
+          description: Tracked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrackingResult"
+
+  /public/w/{token}/reply:
+    post:
+      operationId: publicReply
+      tags: [public]
+      summary: Recipient sends an anonymous reply from the landing page
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublicReplyInput"
+      responses:
+        "201":
+          description: Reply sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhispReply"
+
+  /user/profile:
+    get:
+      operationId: getUserProfile
+      tags: [user]
+      summary: Get current user profile
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+    patch:
+      operationId: updateUserProfile
+      tags: [user]
+      summary: Update user profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserProfileUpdate"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+
+  /credits/transactions:
+    get:
+      operationId: listCreditTransactions
+      tags: [credits]
+      summary: List credit transactions for current user
+      responses:
+        "200":
+          description: Transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CreditTransaction"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +370,332 @@ components:
       required:
         - status
 
+    ApiError:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    Whisp:
+      type: object
+      properties:
+        id:
+          type: string
+        senderId:
+          type: string
+        videoUrl:
+          type: string
+        videoTitle:
+          type: ["string", "null"]
+        videoThumbnail:
+          type: ["string", "null"]
+        videoPlatform:
+          type: ["string", "null"]
+        deliveryMethod:
+          type: string
+        recipientEmail:
+          type: ["string", "null"]
+        recipientPhone:
+          type: ["string", "null"]
+        anonymousNote:
+          type: ["string", "null"]
+        senderAlias:
+          type: ["string", "null"]
+        moodTag:
+          type: ["string", "null"]
+        status:
+          type: string
+        scheduledAt:
+          type: ["string", "null"]
+        deliveredAt:
+          type: ["string", "null"]
+        openedAt:
+          type: ["string", "null"]
+        watchedAt:
+          type: ["string", "null"]
+        revealRequested:
+          type: boolean
+        revealAccepted:
+          type: ["boolean", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - senderId
+        - videoUrl
+        - deliveryMethod
+        - status
+        - revealRequested
+        - createdAt
+
+    WhispInput:
+      type: object
+      properties:
+        videoUrl:
+          type: string
+        videoTitle:
+          type: ["string", "null"]
+        videoThumbnail:
+          type: ["string", "null"]
+        videoPlatform:
+          type: ["string", "null"]
+        deliveryMethod:
+          type: string
+        recipientEmail:
+          type: ["string", "null"]
+        recipientPhone:
+          type: ["string", "null"]
+        anonymousNote:
+          type: ["string", "null"]
+        senderAlias:
+          type: ["string", "null"]
+        moodTag:
+          type: ["string", "null"]
+        scheduledAt:
+          type: ["string", "null"]
+      required:
+        - videoUrl
+        - deliveryMethod
+
+    WhispDetail:
+      type: object
+      properties:
+        whisp:
+          $ref: "#/components/schemas/Whisp"
+        trackingEvents:
+          type: array
+          items:
+            $ref: "#/components/schemas/TrackingEvent"
+        replies:
+          type: array
+          items:
+            $ref: "#/components/schemas/WhispReply"
+      required:
+        - whisp
+        - trackingEvents
+        - replies
+
+    WhispStats:
+      type: object
+      properties:
+        totalSent:
+          type: integer
+        totalOpened:
+          type: integer
+        totalWatched:
+          type: integer
+        totalReplied:
+          type: integer
+        deliveryRate:
+          type: number
+        openRate:
+          type: number
+        boostCredits:
+          type: integer
+        plan:
+          type: string
+        recentWhisps:
+          type: array
+          items:
+            $ref: "#/components/schemas/Whisp"
+      required:
+        - totalSent
+        - totalOpened
+        - totalWatched
+        - totalReplied
+        - deliveryRate
+        - openRate
+        - boostCredits
+        - plan
+        - recentWhisps
+
+    WhispReply:
+      type: object
+      properties:
+        id:
+          type: string
+        whispId:
+          type: string
+        replyText:
+          type: string
+        fromRecipient:
+          type: boolean
+        createdAt:
+          type: string
+      required:
+        - id
+        - whispId
+        - replyText
+        - fromRecipient
+        - createdAt
+
+    WhispReplyInput:
+      type: object
+      properties:
+        replyText:
+          type: string
+        fromRecipient:
+          type: boolean
+      required:
+        - replyText
+
+    RevealResponse:
+      type: object
+      properties:
+        accepted:
+          type: boolean
+      required:
+        - accepted
+
+    VideoMetaRequest:
+      type: object
+      properties:
+        url:
+          type: string
+      required:
+        - url
+
+    VideoMeta:
+      type: object
+      properties:
+        title:
+          type: ["string", "null"]
+        thumbnail:
+          type: ["string", "null"]
+        platform:
+          type: string
+        embedUrl:
+          type: ["string", "null"]
+        authorName:
+          type: ["string", "null"]
+      required:
+        - platform
+
+    PublicWhisp:
+      type: object
+      properties:
+        id:
+          type: string
+        videoUrl:
+          type: string
+        videoTitle:
+          type: ["string", "null"]
+        videoThumbnail:
+          type: ["string", "null"]
+        videoPlatform:
+          type: ["string", "null"]
+        anonymousNote:
+          type: ["string", "null"]
+        senderAlias:
+          type: ["string", "null"]
+        moodTag:
+          type: ["string", "null"]
+        revealRequested:
+          type: boolean
+      required:
+        - id
+        - videoUrl
+        - revealRequested
+
+    TrackingEvent:
+      type: object
+      properties:
+        id:
+          type: string
+        whispId:
+          type: string
+        eventType:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - whispId
+        - eventType
+        - createdAt
+
+    TrackingEventInput:
+      type: object
+      properties:
+        eventType:
+          type: string
+      required:
+        - eventType
+
+    TrackingResult:
+      type: object
+      properties:
+        ok:
+          type: boolean
+      required:
+        - ok
+
+    PublicReplyInput:
+      type: object
+      properties:
+        replyText:
+          type: string
+      required:
+        - replyText
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+        clerkId:
+          type: string
+        email:
+          type: string
+        fullName:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        plan:
+          type: string
+        boostCredits:
+          type: integer
+        whisperLinksUsed:
+          type: integer
+        createdAt:
+          type: string
+      required:
+        - id
+        - clerkId
+        - email
+        - plan
+        - boostCredits
+        - whisperLinksUsed
+        - createdAt
+
+    UserProfileUpdate:
+      type: object
+      properties:
+        fullName:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+
+    CreditTransaction:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        type:
+          type: string
+        amount:
+          type: integer
+        whispId:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - userId
+        - type
+        - amount
+        - createdAt

@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Whispr"
+version = "1.0.0"
+id = "artifacts/whispr"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22964
+
+[services.development]
+run = "pnpm --filter @workspace/whispr run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/whispr", "run", "build" ]
+publicDir = "artifacts/whispr/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22964"
+BASE_PATH = "/"

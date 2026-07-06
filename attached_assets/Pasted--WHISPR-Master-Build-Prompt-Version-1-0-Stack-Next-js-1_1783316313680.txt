@@ -1,0 +1,582 @@
+# WHISPR — Master Build Prompt
+**Version:** 1.0 | **Stack:** Next.js 14 + Supabase + Tailwind CSS + Stripe
+**Platform:** Replit | **Author:** TIBLOGICS / TIWE
+**Tagline:** *"Send what they need to hear. Without making it weird."*
+
+---
+
+## 🧠 PRODUCT VISION
+
+Whispr is an anonymous video recommendation platform. A user finds a video on YouTube, Instagram, TikTok, Facebook, or any public URL — and sends it to someone they care about, anonymously. The recipient receives it via:
+- **Whisper Link** — an anonymous SMS or email with a beautiful landing page
+- **Ghost Boost** — a micro-targeted Meta/TikTok ad that places the video in their social feed
+
+The sender can track when the recipient opened or watched the content. They can optionally reveal themselves. The recipient can respond anonymously. Emotion drives the use case — couples, parents, children, friends, coworkers.
+
+---
+
+## 🏗️ TECH STACK
+
+```
+Frontend:     Next.js 14 (App Router) + Tailwind CSS + shadcn/ui
+Backend:      Next.js API Routes + Supabase Edge Functions
+Database:     Supabase PostgreSQL
+Auth:         Supabase Auth (email + Google OAuth)
+Payments:     Stripe (subscriptions + one-time credit purchases)
+SMS:          Twilio
+Email:        Resend
+Video Meta:   oEmbed API (YouTube, Vimeo) + Open Graph scraping
+Ads API:      Meta Marketing API (Ghost Boost feature)
+Hosting:      Replit (dev) → Vercel (prod)
+Storage:      Supabase Storage (thumbnails, avatars)
+```
+
+---
+
+## 🗄️ DATABASE SCHEMA (Supabase PostgreSQL)
+
+```sql
+-- USERS
+create table users (
+  id uuid primary key default gen_random_uuid(),
+  email text unique not null,
+  full_name text,
+  avatar_url text,
+  plan text default 'free', -- 'free' | 'spark' | 'ember'
+  boost_credits integer default 0,
+  whisper_links_used integer default 0,
+  whisper_links_reset_at timestamp,
+  stripe_customer_id text,
+  stripe_subscription_id text,
+  created_at timestamp default now()
+);
+
+-- WHISPS (core send unit)
+create table whisps (
+  id uuid primary key default gen_random_uuid(),
+  sender_id uuid references users(id),
+  video_url text not null,
+  video_title text,
+  video_thumbnail text,
+  video_platform text, -- 'youtube' | 'tiktok' | 'instagram' | 'facebook' | 'other'
+  delivery_method text not null, -- 'whisper_link' | 'ghost_boost'
+  recipient_email text,
+  recipient_phone text,
+  recipient_meta_audience_id text,
+  anonymous_note text, -- max 200 chars
+  sender_alias text, -- 'Someone who cares' | 'A friend' | custom
+  status text default 'pending', -- 'pending' | 'delivered' | 'opened' | 'watched' | 'replied'
+  scheduled_at timestamp,
+  delivered_at timestamp,
+  opened_at timestamp,
+  watched_at timestamp,
+  reveal_requested boolean default false,
+  reveal_accepted boolean default false,
+  boost_spend_usd numeric(6,2),
+  created_at timestamp default now()
+);
+
+-- ANONYMOUS REPLIES
+create table whisp_replies (
+  id uuid primary key default gen_random_uuid(),
+  whisp_id uuid references whisps(id),
+  reply_text text not null, -- max 300 chars
+  from_recipient boolean default true,
+  created_at timestamp default now()
+);
+
+-- CREDIT TRANSACTIONS
+create table credit_transactions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references users(id),
+  type text, -- 'purchase' | 'spend' | 'refund' | 'plan_grant'
+  amount integer,
+  whisp_id uuid references whisps(id),
+  stripe_payment_intent_id text,
+  created_at timestamp default now()
+);
+
+-- TRACKING EVENTS (pixel + link click)
+create table tracking_events (
+  id uuid primary key default gen_random_uuid(),
+  whisp_id uuid references whisps(id),
+  event_type text, -- 'opened' | 'clicked' | 'watched_10s' | 'watched_50pct' | 'watched_complete'
+  user_agent text,
+  ip_hash text,
+  created_at timestamp default now()
+);
+
+-- MOOD TAGS (value-added feature)
+create table mood_tags (
+  id uuid primary key default gen_random_uuid(),
+  label text not null, -- 'Heal Together' | 'I See You' | 'Think About This' | 'I Love You' | 'For Your Growth'
+  emoji text,
+  color_hex text
+);
+
+-- ROW LEVEL SECURITY
+alter table whisps enable row level security;
+alter table users enable row level security;
+alter table whisp_replies enable row level security;
+
+create policy "Users see own whisps" on whisps
+  for select using (auth.uid() = sender_id);
+
+create policy "Users update own profile" on users
+  for update using (auth.uid() = id);
+```
+
+---
+
+## 📁 FILE STRUCTURE
+
+```
+whispr/
+├── app/
+│   ├── (auth)/
+│   │   ├── login/page.tsx
+│   │   └── signup/page.tsx
+│   ├── (dashboard)/
+│   │   ├── layout.tsx
+│   │   ├── dashboard/page.tsx          ← Stats board home
+│   │   ├── send/page.tsx               ← Send a Whisp
+│   │   ├── whisps/page.tsx             ← All sent whisps + status
+│   │   ├── replies/page.tsx            ← Anonymous replies inbox
+│   │   ├── credits/page.tsx            ← Buy credits / manage plan
+│   │   └── settings/page.tsx
+│   ├── w/[id]/page.tsx                 ← Public whisper link landing page
+│   ├── track/[id]/route.ts             ← Tracking pixel endpoint
+│   └── api/
+│       ├── whisp/create/route.ts
+│       ├── whisp/deliver/route.ts
+│       ├── whisp/reply/route.ts
+│       ├── whisp/reveal/route.ts
+│       ├── boost/create/route.ts       ← Meta Ads API
+│       ├── video/meta/route.ts         ← oEmbed scraper
+│       ├── stripe/webhook/route.ts
+│       └── stripe/checkout/route.ts
+├── components/
+│   ├── ui/                             ← shadcn components
+│   ├── WhispCard.tsx
+│   ├── WhispComposer.tsx               ← Main send flow
+│   ├── VideoPreview.tsx
+│   ├── MoodTagPicker.tsx
+│   ├── DeliveryMethodSelector.tsx
+│   ├── StatsBoard.tsx
+│   ├── TrackingTimeline.tsx
+│   ├── RevealModal.tsx
+│   ├── AnonymousReplyBox.tsx
+│   └── CreditMeter.tsx
+├── lib/
+│   ├── supabase/
+│   │   ├── client.ts
+│   │   └── server.ts
+│   ├── stripe.ts
+│   ├── twilio.ts
+│   ├── resend.ts
+│   ├── meta-ads.ts
+│   ├── video-meta.ts                   ← oEmbed + OG scraper
+│   └── tracking.ts
+└── public/
+    └── track.gif                       ← 1x1 tracking pixel
+```
+
+---
+
+## 🖥️ SCREENS & FEATURES
+
+### 1. DASHBOARD (Stats Board)
+```
+┌─────────────────────────────────────────────────┐
+│  👋 Hey TIWE — here's your impact this month    │
+├──────────┬──────────┬──────────┬────────────────┤
+│ 12       │ 8        │ 5        │ 2              │
+│ Sent     │ Opened   │ Watched  │ Replied Back   │
+├──────────┴──────────┴──────────┴────────────────┤
+│  📊 Delivery Rate: 100%  |  👁 Open Rate: 67%   │
+│  🔥 Boost Credits: 3 remaining                  │
+├─────────────────────────────────────────────────┤
+│  RECENT WHISPS                                  │
+│  ○ "The 5 Love Languages..." → [Wife] OPENED ✓ │
+│  ○ "Forgiving Your Parents" → [Mom]  SENT  →   │
+│  ○ "Teen Anxiety Explained" → [Son]  WATCHED ✓ │
+└─────────────────────────────────────────────────┘
+```
+
+### 2. SEND A WHISP (Composer)
+
+**Step 1 — Paste Video**
+- Input: any URL (YouTube, TikTok, Instagram Reel, Facebook Video)
+- Auto-fetches: thumbnail, title, platform icon
+- Shows beautiful video preview card
+
+**Step 2 — Choose Your Mood Tag** *(Ember tier)*
+```
+[ 💛 I See You ] [ 🌱 Think About This ] [ ❤️ I Love You ]
+[ 🕊️ Heal Together ] [ 💪 For Your Growth ] [ 🙏 Just Because ]
+```
+
+**Step 3 — Add Anonymous Note** *(optional, 200 chars)*
+- Placeholder: *"Write something kind, honest, or brave..."*
+- Character counter
+- Sender alias selector: "Someone who cares" / "A friend" / "Someone who loves you" / Custom
+
+**Step 4 — Choose Delivery Method**
+```
+┌─────────────────────┐  ┌─────────────────────┐
+│  📨 Whisper Link    │  │  👻 Ghost Boost      │
+│  Send via SMS/Email │  │  Place in their feed │
+│  FREE (3/mo)        │  │  1 Credit ($6.99)    │
+│  ✓ Instant          │  │  ✓ Feels organic     │
+│  ✓ Direct           │  │  ✓ Anonymous         │
+└─────────────────────┘  └─────────────────────┘
+```
+
+**Step 5 — Recipient Info**
+- Whisper Link: enter email or phone
+- Ghost Boost: enter email or phone (used to build Meta custom audience — never stored in plaintext, hashed immediately)
+
+**Step 6 — Schedule or Send Now**
+- Send Now button
+- Schedule picker (date + time) *(Spark + Ember)*
+
+**Step 7 — Confirmation**
+- Beautiful animated confirmation screen
+- "Your whisp is on its way 🕊️"
+- Tracking link: "We'll notify you when it's seen"
+
+---
+
+### 3. WHISP TRACKING PAGE (per whisp)
+
+```
+┌─────────────────────────────────────────┐
+│  [Video Thumbnail]                      │
+│  "The 5 Love Languages Explained"       │
+│  Sent to: ••••@gmail.com               │
+│  Via: Whisper Link                      │
+├─────────────────────────────────────────┤
+│  DELIVERY TIMELINE                      │
+│  ✅ Sent          June 29, 10:02 AM     │
+│  ✅ Delivered     June 29, 10:02 AM     │
+│  ✅ Opened        June 29, 2:17 PM      │
+│  ✅ Clicked Video June 29, 2:18 PM      │
+│  ⏳ Replied       —                     │
+├─────────────────────────────────────────┤
+│  [ 💌 They replied anonymously! ]       │
+│  "I watched it. Thank you."             │
+├─────────────────────────────────────────┤
+│  [ Reveal Yourself ]  [ Send Follow-up ]│
+└─────────────────────────────────────────┘
+```
+
+---
+
+### 4. PUBLIC WHISPER LANDING PAGE (`/w/[id]`)
+
+This is what the recipient sees. Must be beautiful and emotionally safe.
+
+```
+┌─────────────────────────────────────────┐
+│          🕊️  whispr                     │
+│                                         │
+│   Someone sent you something to see.   │
+│                                         │
+│   [Video Thumbnail — full width]        │
+│   ▶ Watch: "The 5 Love Languages"      │
+│                                         │
+│   💛 "I See You"                        │
+│   ───────────────────────────────────  │
+│   "Sometimes words are hard. This      │
+│    video says what I couldn't."        │
+│                                         │
+│   [ ▶ Watch Now ]                       │
+│                                         │
+│   ─────────────────────────────────── │
+│   Want to reply anonymously?           │
+│   [ Type your reply... ] [ Send ]      │
+│                                         │
+│   Powered by Whispr — send what        │
+│   matters, without the awkward part.   │
+└─────────────────────────────────────────┘
+```
+
+---
+
+### 5. REVEAL FLOW
+
+**Sender initiates reveal:**
+- Clicks "Reveal Yourself" on their whisp detail page
+- App sends recipient an anonymous notification: *"The person who sent you this video wants to reveal themselves. Do you want to know who it was?"*
+- If recipient accepts → both see each other's identity
+- If recipient declines → sender is notified, identity stays hidden
+- *(Ember tier only)*
+
+---
+
+### 6. ANONYMOUS REPLY INBOX
+
+- Threaded anonymous conversation per whisp
+- Recipient replies from the landing page
+- Sender receives push/email notification: *"Someone replied to your whisp"*
+- Both sides stay anonymous unless reveal is triggered
+- *(Spark + Ember)*
+
+---
+
+## 💳 STRIPE INTEGRATION
+
+### Subscription Plans
+```javascript
+// Spark Plan — $9.99/month
+const sparkPlan = {
+  priceId: 'price_spark_monthly',
+  amount: 999,
+  interval: 'month',
+  features: ['unlimited_whisper_links', 'scheduling', 'reply_inbox', 'boost_credits_2']
+}
+
+// Ember Plan — $19.99/month  
+const emberPlan = {
+  priceId: 'price_ember_monthly',
+  amount: 1999,
+  interval: 'month',
+  features: ['everything_spark', 'mood_tags', 'reveal_flow', 'deep_analytics', 'boost_credits_5', 'family_circle', 'impact_digest']
+}
+```
+
+### Credit Packs (one-time)
+```javascript
+const creditPacks = [
+  { id: 'single', boosts: 1, price: 699, label: 'Single Boost' },
+  { id: 'triple', boosts: 3, price: 1799, label: '3-Pack' },
+  { id: 'ten', boosts: 10, price: 4999, label: '10-Pack' },
+  { id: 'twentyfive', boosts: 25, price: 9999, label: '25-Pack' }
+]
+```
+
+---
+
+## 🔔 NOTIFICATION SYSTEM
+
+```
+Trigger                    → Channel        → Template
+─────────────────────────────────────────────────────
+Whisp delivered            → Email/SMS      → "Your whisp was delivered"
+Recipient opened link      → Push + Email   → "They saw it 👀"
+Recipient clicked video    → Push + Email   → "They watched it ▶"
+Anonymous reply received   → Push + Email   → "They replied 💬"
+Reveal request received    → Email          → "Someone wants to know if you know who sent this"
+Reveal accepted            → Both parties   → "The moment of truth 🕊️"
+Credits running low        → Email          → "You have 1 Ghost Boost left"
+Weekly Impact Digest       → Email          → "Your Whispr week in review" (Ember)
+```
+
+---
+
+## 🎨 DESIGN SYSTEM
+
+```
+Brand Identity: Whispr
+Personality: Warm, intimate, trustworthy, slightly mysterious
+
+Color Palette:
+  Midnight:    #0D0D1A   (primary dark background)
+  Whispr Glow: #7C5CFC   (primary purple — the brand color)
+  Ember:       #FF6B6B   (accent — emotion, warmth)
+  Mist:        #F0EEF8   (light backgrounds)
+  Sage:        #2D2A45   (card backgrounds)
+  Pure White:  #FFFFFF
+
+Typography:
+  Display:  'Playfair Display' — emotional, editorial weight
+  Body:     'Inter' — clean, readable, trustworthy
+  Mono:     'JetBrains Mono' — for tracking timestamps
+
+Signature Element:
+  The "whisp" animation — a soft particle drift effect on
+  the send confirmation screen. Small glowing orbs that 
+  float upward and fade, representing the message traveling.
+  CSS: keyframe animation, 8 particles, 2s staggered delay.
+
+Border Radius: 16px cards, 999px pills
+Shadows: soft purple glow on active cards (box-shadow: 0 0 24px rgba(124,92,252,0.15))
+```
+
+---
+
+## 🔌 KEY API INTEGRATIONS
+
+### Video Meta Scraper (`/api/video/meta`)
+```typescript
+// Supports: YouTube, TikTok, Instagram, Facebook, Vimeo, Twitter/X
+export async function scrapeVideoMeta(url: string) {
+  // 1. Try oEmbed endpoint first (YouTube, Vimeo)
+  // 2. Fall back to Open Graph meta tag scraping
+  // 3. Return: { title, thumbnail, platform, embedUrl, duration }
+}
+```
+
+### Tracking Pixel (`/track/[id]`)
+```typescript
+// 1x1 transparent GIF served from Edge Function
+// On request: log tracking_event, update whisp.status
+// Update: opened_at timestamp on first hit
+// Fire webhook to sender's notification preferences
+```
+
+### Ghost Boost (`/api/boost/create`)
+```typescript
+// Meta Marketing API flow:
+// 1. Hash recipient email/phone with SHA-256
+// 2. Create Custom Audience (1 person)
+// 3. Upload hashed identifier
+// 4. Create Campaign (awareness objective)
+// 5. Create Ad Set (targeting: custom audience)
+// 6. Create Ad Creative (video URL as link ad)
+// 7. Set budget: $3.00, duration: 3 days
+// 8. Submit for review + activate
+// 9. Store campaign_id on whisp record
+// 10. Poll status every 6hrs, update whisp.status
+```
+
+---
+
+## 🚀 REPLIT SETUP INSTRUCTIONS
+
+### Environment Variables
+```env
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+
+# Stripe
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
+
+# Twilio (SMS)
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+TWILIO_PHONE_NUMBER=
+
+# Resend (Email)
+RESEND_API_KEY=
+FROM_EMAIL=whisp@whispr.app
+
+# Meta Ads API
+META_APP_ID=
+META_APP_SECRET=
+META_ACCESS_TOKEN=
+META_AD_ACCOUNT_ID=
+
+# App
+NEXT_PUBLIC_APP_URL=https://whispr.replit.app
+TRACKING_PIXEL_SECRET=
+```
+
+### Replit Configuration (`.replit`)
+```toml
+run = "npm run dev"
+entrypoint = "app/page.tsx"
+
+[nix]
+channel = "stable-23_11"
+
+[deployment]
+run = ["sh", "-c", "npm run build && npm run start"]
+deploymentTarget = "cloudrun"
+```
+
+### Build Order
+```
+Phase 1 — Foundation (Week 1)
+  □ Supabase project + schema setup
+  □ Next.js 14 app scaffold + Tailwind + shadcn
+  □ Auth flow (signup, login, Google OAuth)
+  □ Basic dashboard shell
+
+Phase 2 — Core Send Flow (Week 2)
+  □ Video URL scraper (oEmbed + OG)
+  □ Whisp composer (all 6 steps)
+  □ Whisper Link delivery (email via Resend)
+  □ Public landing page (/w/[id])
+  □ Tracking pixel
+
+Phase 3 — Monetization (Week 3)
+  □ Stripe integration (subscriptions + credits)
+  □ Plan enforcement (free limits, credit deduction)
+  □ Credit purchase flow
+  □ Upgrade prompts
+
+Phase 4 — Premium Features (Week 4)
+  □ SMS delivery (Twilio)
+  □ Anonymous reply inbox
+  □ Scheduling
+  □ Mood tags
+  □ Reveal flow
+  □ Stats board + analytics
+  □ Ghost Boost (Meta Ads API)
+
+Phase 5 — Polish + Launch (Week 5)
+  □ Whisp particle animation
+  □ Mobile responsiveness audit
+  □ Email templates (beautiful HTML)
+  □ Onboarding flow (3-step)
+  □ Landing page (marketing)
+  □ Beta launch
+```
+
+---
+
+## 🌟 PREMIUM FEATURES (Ember Tier Exclusives)
+
+### 1. Mood Tags
+Pre-built emotional context tags the sender chooses before sending. Changes the visual theme of the recipient's landing page.
+- 💛 "I See You" → warm gold theme
+- 🕊️ "Heal Together" → soft blue theme
+- ❤️ "I Love You" → rose theme
+- 🌱 "Think About This" → green theme
+- 💪 "For Your Growth" → deep purple theme
+- 🙏 "Just Because" → neutral cream theme
+
+### 2. Reveal Flow
+Full two-way identity reveal system with consent on both sides. Notification chain, acceptance UI, reveal moment screen.
+
+### 3. Family Circle
+Group of up to 5 people (family members, close friends) stored in account. Send whisps to Circle members with one click. Shared history visible. Circle members can see non-anonymous replies within the circle.
+
+### 4. Weekly Impact Digest
+Automated beautiful email every Monday summarizing: videos sent, open rates, replies received, most impactful whisp of the week (most engagement). Designed to feel like a "relationship health report."
+
+### 5. Deep Analytics per Whisp
+- Watch percentage (via YouTube embed events)
+- Time from delivery to open
+- Reply sentiment (AI-powered: positive/neutral/reflective)
+- Engagement score (0–100)
+
+---
+
+## 📋 LAUNCH CHECKLIST
+
+```
+□ Custom domain: whispr.app (or whisprapp.com)
+□ SSL certificate active
+□ Stripe live keys + webhook configured
+□ Twilio number verified for SMS
+□ Meta App approved for Marketing API
+□ Email domain authenticated (SPF/DKIM via Resend)
+□ Privacy Policy page (/privacy)
+□ Terms of Service page (/terms)
+□ Cookie consent banner
+□ GDPR: hashed phone/email, data deletion flow
+□ Rate limiting on /api routes (max 10 sends/hour free)
+□ Error monitoring (Sentry)
+□ Analytics (Vercel Analytics or Posthog)
+```
+
+---
+
+*Built by TIBLOGICS | TIWE Bassole | ai@tiblogics.com*
+*Master Prompt v1.0 — Ready for Replit + Claude Code*
