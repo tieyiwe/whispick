@@ -1,10 +1,11 @@
-import { useGetUserProfile, useListCreditTransactions } from "@workspace/api-client-react";
+import { useGetUserProfile, useListCreditTransactions, useCreateCheckoutSession } from "@workspace/api-client-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Check, Ghost, Zap, Flame, CreditCard, ArrowUpRight } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Check, Ghost, Zap, Flame, CreditCard, ArrowUpRight, Loader2 } from "lucide-react";
 
 const PLANS = [
   {
@@ -55,6 +56,30 @@ const CREDIT_PACKS = [
 export function CreditsPage() {
   const { data: profile, isLoading: profileLoading } = useGetUserProfile();
   const { data: transactions, isLoading: txLoading } = useListCreditTransactions();
+  const { toast } = useToast();
+  const checkout = useCreateCheckoutSession();
+
+  function startCheckout(kind: "credit_pack" | "plan", id: string) {
+    checkout.mutate(
+      { data: { kind, id } },
+      {
+        onSuccess: (res) => {
+          if (res.url) {
+            window.location.href = res.url;
+          } else {
+            toast({ title: "Checkout is not available right now", variant: "destructive" });
+          }
+        },
+        onError: () => {
+          toast({
+            title: "Billing isn't set up yet",
+            description: "Ask an admin to configure Stripe to enable payments.",
+            variant: "destructive",
+          });
+        },
+      }
+    );
+  }
 
   if (profileLoading) {
     return (
@@ -153,11 +178,20 @@ export function CreditsPage() {
                           ? "shadow-[0_0_15px_rgba(124,92,252,0.3)]"
                           : ""
                       }`}
-                      disabled={isCurrent}
+                      disabled={isCurrent || checkout.isPending}
+                      onClick={() => startCheckout("plan", plan.key)}
                       data-testid={`button-upgrade-${plan.key}`}
                     >
-                      {isCurrent ? "Current Plan" : `Upgrade to ${plan.name}`}
-                      {!isCurrent && <ArrowUpRight className="w-4 h-4 ml-1" />}
+                      {checkout.isPending ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : isCurrent ? (
+                        "Current Plan"
+                      ) : (
+                        <>
+                          Upgrade to {plan.name}
+                          <ArrowUpRight className="w-4 h-4 ml-1" />
+                        </>
+                      )}
                     </Button>
                   </CardContent>
                 </Card>
@@ -188,16 +222,20 @@ export function CreditsPage() {
                   <p className="text-2xl font-bold text-foreground">{pack.boosts}</p>
                   <p className="text-xs text-muted-foreground mb-3">{pack.boosts === 1 ? "Boost" : "Boosts"}</p>
                   <p className="text-lg font-semibold text-foreground mb-3">{pack.price}</p>
-                  <Button size="sm" variant="outline" className="w-full rounded-full text-xs border-primary/30 hover:bg-primary/10 hover:text-primary">
-                    Buy
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full rounded-full text-xs border-primary/30 hover:bg-primary/10 hover:text-primary"
+                    disabled={checkout.isPending}
+                    onClick={() => startCheckout("credit_pack", pack.id)}
+                    data-testid={`button-buy-${pack.id}`}
+                  >
+                    {checkout.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "Buy"}
                   </Button>
                 </CardContent>
               </Card>
             ))}
           </div>
-          <p className="text-xs text-muted-foreground mt-2 text-center">
-            Stripe integration required to process payments. Contact support to enable.
-          </p>
         </div>
 
         {/* Transaction history */}

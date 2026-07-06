@@ -409,3 +409,40 @@ export const ListCreditTransactionsResponseItem = zod.object({
 export const ListCreditTransactionsResponse = zod.array(ListCreditTransactionsResponseItem)
 
 
+/**
+ * @summary Community discovery feed of Circle Drop whisps (no auth required)
+ */
+export const ListCircleFeedQueryParams = zod.object({
+  "cursor": zod.coerce.string().optional()
+})
+
+export const ListCircleFeedResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "videoUrl": zod.string(),
+  "videoTitle": zod.string().nullish(),
+  "videoThumbnail": zod.string().nullish(),
+  "videoPlatform": zod.string().nullish(),
+  "anonymousNote": zod.string().nullish(),
+  "senderAlias": zod.string().nullish(),
+  "moodTag": zod.string().nullish(),
+  "publicToken": zod.string(),
+  "createdAt": zod.string()
+})),
+  "nextCursor": zod.string().nullable()
+})
+
+
+/**
+ * @summary Create a Stripe Checkout session for a credit pack or plan upgrade
+ */
+export const CreateCheckoutSessionBody = zod.object({
+  "kind": zod.enum(['credit_pack', 'plan']),
+  "id": zod.string()
+})
+
+export const CreateCheckoutSessionResponse = zod.object({
+  "url": zod.string().nullable()
+})
+
+

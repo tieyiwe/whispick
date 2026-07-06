@@ -4,11 +4,12 @@ import {
   whispsTable,
   whispRepliesTable,
   trackingEventsTable,
+  usersTable,
 } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
-import { sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { z } from "zod";
+import { sendEmail, replyNotificationEmailHtml } from "../lib/email";
 
 const router = Router();
 
@@ -109,6 +110,11 @@ router.post("/w/:token/reply", async (req, res): Promise<void> => {
 
   // Update whisp status to replied
   await db.update(whispsTable).set({ status: "replied" }).where(eq(whispsTable.id, whisp.id));
+
+  const sender = await db.select().from(usersTable).where(eq(usersTable.id, whisp.senderId)).then(r => r[0]);
+  if (sender?.email) {
+    void sendEmail(sender.email, "Someone replied to your whisp", replyNotificationEmailHtml(whisp.videoTitle));
+  }
 
   const reply = await db.select().from(whispRepliesTable).where(eq(whispRepliesTable.id, id)).then(r => r[0]);
   res.status(201).json(reply);

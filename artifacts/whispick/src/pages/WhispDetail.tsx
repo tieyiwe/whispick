@@ -30,6 +30,7 @@ import {
   Trash2,
   UserCircle2,
 } from "lucide-react";
+import { DELIVERY_METHOD_LABELS } from "@/lib/deliveryMethod";
 
 function TimelineStep({
   label,
@@ -191,10 +192,10 @@ export function WhispDetail() {
               <div>
                 <h2 className="font-serif font-semibold text-lg text-foreground">{whisp.videoTitle || "Video"}</h2>
                 <p className="text-sm text-muted-foreground">
-                  Sent to {whisp.recipientEmail || whisp.recipientPhone || "Ghost Boost recipient"}
+                  Sent to {whisp.recipientEmail || whisp.recipientPhone || (whisp.deliveryMethod === "circle_drop" ? "Circle feed" : "Ghost Boost audience")}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Via {whisp.deliveryMethod === "whisper_link" ? "Whisper Link" : "Ghost Boost"} · {new Date(whisp.createdAt).toLocaleDateString()}
+                  Via {DELIVERY_METHOD_LABELS[whisp.deliveryMethod] ?? whisp.deliveryMethod} · {new Date(whisp.createdAt).toLocaleDateString()}
                 </p>
               </div>
               <StatusBadge status={whisp.status} />

@@ -6,39 +6,21 @@ import {
   whispRepliesTable,
   trackingEventsTable,
   usersTable,
+  creditTransactionsTable,
 } from "@workspace/db";
-import { eq, and, count, sql } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { z } from "zod";
+import { requireAuth } from "../lib/auth";
+import { ensureUser } from "../lib/ensureUser";
+import { getPublicAppUrl } from "../lib/publicUrl";
+import { sendEmail, whisperLinkEmailHtml, replyNotificationEmailHtml } from "../lib/email";
+import { whisperLinkLimitFor, GHOST_BOOST_COST_USD } from "../lib/plans";
+import { logger } from "../lib/logger";
 
 const router = Router();
 
-function requireAuth(req: any, res: any, next: any) {
-  const { userId } = getAuth(req);
-  if (!userId) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-  next();
-}
-
-async function ensureUser(clerkId: string, req: any) {
-  let user = await db.select().from(usersTable).where(eq(usersTable.clerkId, clerkId)).then(r => r[0]);
-  if (!user) {
-    const id = randomUUID();
-    const email = req.auth?.sessionClaims?.email as string ?? `${clerkId}@whispick.app`;
-    await db.insert(usersTable).values({
-      id,
-      clerkId,
-      email,
-      plan: "free",
-      boostCredits: 0,
-      whisperLinksUsed: 0,
-    });
-    user = await db.select().from(usersTable).where(eq(usersTable.clerkId, clerkId)).then(r => r[0]);
-  }
-  return user!;
-}
+const DELIVERY_METHODS = ["whisper_link", "ghost_boost", "circle_drop"] as const;
 
 // GET /api/whisps
 router.get("/", requireAuth, async (req, res): Promise<void> => {
@@ -46,7 +28,6 @@ router.get("/", requireAuth, async (req, res): Promise<void> => {
   const user = await ensureUser(userId!, req);
 
   const statusFilter = req.query.status as string | undefined;
-  let query = db.select().from(whispsTable).where(eq(whispsTable.senderId, user.id));
 
   const whisps = await db
     .select()
@@ -71,7 +52,7 @@ router.post("/", requireAuth, async (req, res): Promise<void> => {
     videoTitle: z.string().nullable().optional(),
     videoThumbnail: z.string().nullable().optional(),
     videoPlatform: z.string().nullable().optional(),
-    deliveryMethod: z.string().min(1),
+    deliveryMethod: z.enum(DELIVERY_METHODS),
     recipientEmail: z.string().nullable().optional(),
     recipientPhone: z.string().nullable().optional(),
     anonymousNote: z.string().nullable().optional(),
@@ -87,8 +68,54 @@ router.post("/", requireAuth, async (req, res): Promise<void> => {
   }
 
   const data = parsed.data;
+
+  if (data.deliveryMethod === "whisper_link" && !data.recipientEmail && !data.recipientPhone) {
+    res.status(400).json({ error: "Whisper Link requires a recipient email or phone number" });
+    return;
+  }
+
+  // Free-plan Whisper Link monthly limit, reset on a rolling 30-day window
+  if (data.deliveryMethod === "whisper_link") {
+    const limit = whisperLinkLimitFor(user.plan);
+    const now = new Date();
+    const resetDue = !user.whisperLinksResetAt || user.whisperLinksResetAt <= now;
+    const usedThisPeriod = resetDue ? 0 : user.whisperLinksUsed;
+
+    if (limit !== null && usedThisPeriod >= limit) {
+      res.status(402).json({ error: `Whisper Link limit reached for the ${user.plan} plan. Upgrade to send more.` });
+      return;
+    }
+
+    if (resetDue) {
+      const nextReset = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      await db
+        .update(usersTable)
+        .set({ whisperLinksUsed: 1, whisperLinksResetAt: nextReset })
+        .where(eq(usersTable.id, user.id));
+    } else {
+      await db
+        .update(usersTable)
+        .set({ whisperLinksUsed: sql`${usersTable.whisperLinksUsed} + 1` })
+        .where(eq(usersTable.id, user.id));
+    }
+  }
+
+  // Ghost Boost spends a credit up front; there's no live ad-platform
+  // integration, so the whisp is queued rather than marked delivered.
+  if (data.deliveryMethod === "ghost_boost") {
+    if (user.boostCredits < 1) {
+      res.status(402).json({ error: "Insufficient Ghost Boost credits. Purchase more from Credits & Plan." });
+      return;
+    }
+    await db
+      .update(usersTable)
+      .set({ boostCredits: sql`${usersTable.boostCredits} - 1` })
+      .where(eq(usersTable.id, user.id));
+  }
+
   const id = randomUUID();
   const publicToken = randomUUID().replace(/-/g, "");
+  const isGhostBoost = data.deliveryMethod === "ghost_boost";
 
   await db.insert(whispsTable).values({
     id,
@@ -103,18 +130,26 @@ router.post("/", requireAuth, async (req, res): Promise<void> => {
     anonymousNote: data.anonymousNote ?? null,
     senderAlias: data.senderAlias ?? null,
     moodTag: data.moodTag ?? null,
-    status: "delivered",
+    status: isGhostBoost ? "pending" : "delivered",
     publicToken,
     scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : null,
-    deliveredAt: new Date(),
+    deliveredAt: isGhostBoost ? null : new Date(),
+    boostSpendUsd: isGhostBoost ? String(GHOST_BOOST_COST_USD) : null,
   });
 
-  // Increment whisper links used
-  if (data.deliveryMethod === "whisper_link") {
-    await db
-      .update(usersTable)
-      .set({ whisperLinksUsed: sql`${usersTable.whisperLinksUsed} + 1` })
-      .where(eq(usersTable.id, user.id));
+  if (isGhostBoost) {
+    await db.insert(creditTransactionsTable).values({
+      id: randomUUID(),
+      userId: user.id,
+      type: "spend",
+      amount: -1,
+      whispId: id,
+    });
+  }
+
+  if (data.deliveryMethod === "whisper_link" && data.recipientEmail) {
+    const publicUrl = `${getPublicAppUrl(req)}/w/${publicToken}`;
+    void sendEmail(data.recipientEmail, "Someone thought you should see this", whisperLinkEmailHtml(publicUrl));
   }
 
   const whisp = await db.select().from(whispsTable).where(eq(whispsTable.id, id)).then(r => r[0]);

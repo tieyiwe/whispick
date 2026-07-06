@@ -4,6 +4,7 @@ import {
   useGetPublicWhisp,
   useTrackWhispEvent,
   usePublicReply,
+  useRespondReveal,
   getGetPublicWhispQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -31,6 +32,7 @@ export function PublicWhispPage() {
   const [replied, setReplied] = useState(false);
   const [replyText, setReplyText] = useState("");
   const [hasTrackedOpen, setHasTrackedOpen] = useState(false);
+  const [revealResponse, setRevealResponse] = useState<"accepted" | "declined" | null>(null);
 
   const { data: whisp, isLoading } = useGetPublicWhisp(token!, {
     query: {
@@ -41,6 +43,18 @@ export function PublicWhispPage() {
 
   const trackEvent = useTrackWhispEvent();
   const publicReply = usePublicReply();
+  const respondReveal = useRespondReveal();
+
+  function handleRevealResponse(accepted: boolean) {
+    if (!whisp?.id) return;
+    respondReveal.mutate(
+      { id: whisp.id, data: { accepted } },
+      {
+        onSuccess: () => setRevealResponse(accepted ? "accepted" : "declined"),
+        onError: () => toast({ title: "Something went wrong", variant: "destructive" }),
+      }
+    );
+  }
 
   // Track "opened" on page load
   if (whisp && !hasTrackedOpen) {
@@ -71,13 +85,16 @@ export function PublicWhispPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-[100dvh] bg-background flex flex-col">
       {/* Header */}
-      <header className="p-5 flex items-center justify-between border-b border-border/30">
+      <header
+        className="px-5 pb-5 flex items-center justify-between border-b border-border/30"
+        style={{ paddingTop: "calc(env(safe-area-inset-top) + 1.25rem)" }}
+      >
         <WhispickLogoMark />
         <a
           href="/sign-up"
-          className="text-xs text-muted-foreground hover:text-primary transition-colors"
+          className="text-xs text-muted-foreground hover:text-primary transition-colors py-2"
         >
           Create your own whisp
         </a>
@@ -99,7 +116,7 @@ export function PublicWhispPage() {
           <>
             {/* Lead text */}
             <p className="text-center text-lg text-muted-foreground font-serif">
-              Someone sent you something to see.
+              Someone who cares about you thought you should see this 👀
             </p>
 
             {/* Video card */}
@@ -207,16 +224,43 @@ export function PublicWhispPage() {
             {/* Reveal section */}
             {whisp.revealRequested && (
               <div className="bg-card border border-primary/20 rounded-2xl p-4 text-center space-y-2">
-                <p className="text-sm font-medium text-foreground">
-                  The person who sent this wants to reveal themselves.
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Do you want to know who sent this to you?
-                </p>
-                <div className="flex gap-2 justify-center pt-1">
-                  <Button size="sm" className="rounded-full" data-testid="button-accept-reveal">Accept</Button>
-                  <Button size="sm" variant="outline" className="rounded-full" data-testid="button-decline-reveal">Decline</Button>
-                </div>
+                {revealResponse ? (
+                  <p className="text-sm text-muted-foreground">
+                    {revealResponse === "accepted"
+                      ? "You've let them know it's okay to reveal themselves."
+                      : "You've chosen to keep this anonymous."}
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-sm font-medium text-foreground">
+                      The person who sent this wants to reveal themselves.
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Do you want to know who sent this to you?
+                    </p>
+                    <div className="flex gap-2 justify-center pt-1">
+                      <Button
+                        size="sm"
+                        className="rounded-full"
+                        onClick={() => handleRevealResponse(true)}
+                        disabled={respondReveal.isPending}
+                        data-testid="button-accept-reveal"
+                      >
+                        Accept
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="rounded-full"
+                        onClick={() => handleRevealResponse(false)}
+                        disabled={respondReveal.isPending}
+                        data-testid="button-decline-reveal"
+                      >
+                        Decline
+                      </Button>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </>
@@ -224,7 +268,10 @@ export function PublicWhispPage() {
       </main>
 
       {/* Footer */}
-      <footer className="p-5 text-center border-t border-border/30">
+      <footer
+        className="p-5 text-center border-t border-border/30"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1.25rem)" }}
+      >
         <p className="text-xs text-muted-foreground">
           Powered by{" "}
           <a href="/" className="text-primary hover:underline">Whispick</a>

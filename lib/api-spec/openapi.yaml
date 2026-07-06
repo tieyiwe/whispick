@@ -20,6 +20,8 @@ tags:
     description: User profile
   - name: credits
     description: Credit & plan management
+  - name: billing
+    description: Stripe checkout
 paths:
   /healthz:
     get:
@@ -360,6 +362,62 @@ paths:
                 items:
                   $ref: "#/components/schemas/CreditTransaction"
 
+  /public/circle:
+    get:
+      operationId: listCircleFeed
+      tags: [public]
+      summary: Community discovery feed of Circle Drop whisps (no auth required)
+      parameters:
+        - in: query
+          name: cursor
+          schema:
+            type: string
+          required: false
+      responses:
+        "200":
+          description: Circle feed page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CircleFeedResponse"
+
+  /billing/checkout:
+    post:
+      operationId: createCheckoutSession
+      tags: [billing]
+      summary: Create a Stripe Checkout session for a credit pack or plan upgrade
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckoutRequest"
+      responses:
+        "200":
+          description: Checkout session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "402":
+          description: Payment required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "503":
+          description: Billing not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
 components:
   schemas:
     HealthStatus:
@@ -699,3 +757,65 @@ components:
         - type
         - amount
         - createdAt
+
+    CircleFeedItem:
+      type: object
+      properties:
+        id:
+          type: string
+        videoUrl:
+          type: string
+        videoTitle:
+          type: ["string", "null"]
+        videoThumbnail:
+          type: ["string", "null"]
+        videoPlatform:
+          type: ["string", "null"]
+        anonymousNote:
+          type: ["string", "null"]
+        senderAlias:
+          type: ["string", "null"]
+        moodTag:
+          type: ["string", "null"]
+        publicToken:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - videoUrl
+        - publicToken
+        - createdAt
+
+    CircleFeedResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CircleFeedItem"
+        nextCursor:
+          type: ["string", "null"]
+      required:
+        - items
+        - nextCursor
+
+    CheckoutRequest:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum: [credit_pack, plan]
+        id:
+          type: string
+      required:
+        - kind
+        - id
+
+    CheckoutResponse:
+      type: object
+      properties:
+        url:
+          type: ["string", "null"]
+      required:
+        - url

@@ -21,8 +21,12 @@ import type {
 
 import type {
   ApiError,
+  CheckoutRequest,
+  CheckoutResponse,
+  CircleFeedResponse,
   CreditTransaction,
   HealthStatus,
+  ListCircleFeedParams,
   ListWhispsParams,
   PublicReplyInput,
   PublicWhisp,
@@ -1324,4 +1328,158 @@ export function useListCreditTransactions<TData = Awaited<ReturnType<typeof list
 
 
 
+
+export const getListCircleFeedUrl = (params?: ListCircleFeedParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/public/circle?${stringifiedParams}` : `/api/public/circle`
+}
+
+/**
+ * @summary Community discovery feed of Circle Drop whisps (no auth required)
+ */
+export const listCircleFeed = async (params?: ListCircleFeedParams, options?: RequestInit): Promise<CircleFeedResponse> => {
+
+  return customFetch<CircleFeedResponse>(getListCircleFeedUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCircleFeedQueryKey = (params?: ListCircleFeedParams,) => {
+    return [
+    `/api/public/circle`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListCircleFeedQueryOptions = <TData = Awaited<ReturnType<typeof listCircleFeed>>, TError = ErrorType<unknown>>(params?: ListCircleFeedParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCircleFeed>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCircleFeedQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCircleFeed>>> = ({ signal }) => listCircleFeed(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCircleFeed>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCircleFeedQueryResult = NonNullable<Awaited<ReturnType<typeof listCircleFeed>>>
+export type ListCircleFeedQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Community discovery feed of Circle Drop whisps (no auth required)
+ */
+
+export function useListCircleFeed<TData = Awaited<ReturnType<typeof listCircleFeed>>, TError = ErrorType<unknown>>(
+ params?: ListCircleFeedParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCircleFeed>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCircleFeedQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateCheckoutSessionUrl = () => {
+
+
+
+
+  return `/api/billing/checkout`
+}
+
+/**
+ * @summary Create a Stripe Checkout session for a credit pack or plan upgrade
+ */
+export const createCheckoutSession = async (checkoutRequest: CheckoutRequest, options?: RequestInit): Promise<CheckoutResponse> => {
+
+  return customFetch<CheckoutResponse>(getCreateCheckoutSessionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(checkoutRequest)
+  }
+);}
+
+
+
+
+export const getCreateCheckoutSessionMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCheckoutSession>>, TError,{data: BodyType<CheckoutRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCheckoutSession>>, TError,{data: BodyType<CheckoutRequest>}, TContext> => {
+
+const mutationKey = ['createCheckoutSession'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCheckoutSession>>, {data: BodyType<CheckoutRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCheckoutSession(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCheckoutSessionMutationResult = NonNullable<Awaited<ReturnType<typeof createCheckoutSession>>>
+    export type CreateCheckoutSessionMutationBody = BodyType<CheckoutRequest>
+    export type CreateCheckoutSessionMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Create a Stripe Checkout session for a credit pack or plan upgrade
+ */
+export const useCreateCheckoutSession = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCheckoutSession>>, TError,{data: BodyType<CheckoutRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCheckoutSession>>,
+        TError,
+        {data: BodyType<CheckoutRequest>},
+        TContext
+      > => {
+      return useMutation(getCreateCheckoutSessionMutationOptions(options));
+    }
 

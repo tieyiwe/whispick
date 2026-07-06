@@ -9,6 +9,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { LandingPage } from "@/pages/LandingPage";
 import { Dashboard } from "@/pages/Dashboard";
 import { WhispsList } from "@/pages/WhispsList";
+import { CircleFeed } from "@/pages/CircleFeed";
 import { SendWhisp } from "@/pages/SendWhisp";
 import { WhispDetail } from "@/pages/WhispDetail";
 import { RepliesInbox } from "@/pages/RepliesInbox";
@@ -134,6 +135,7 @@ function ClerkProviderWithRoutes() {
           <Route path="/send" component={() => <ProtectedRoute component={SendWhisp} />} />
           <Route path="/whisps/:id" component={() => <ProtectedRoute component={WhispDetail} />} />
           <Route path="/whisps" component={() => <ProtectedRoute component={WhispsList} />} />
+          <Route path="/circle" component={() => <ProtectedRoute component={CircleFeed} />} />
           <Route path="/replies" component={() => <ProtectedRoute component={RepliesInbox} />} />
           <Route path="/credits" component={() => <ProtectedRoute component={CreditsPage} />} />
           <Route path="/settings" component={() => <ProtectedRoute component={SettingsPage} />} />

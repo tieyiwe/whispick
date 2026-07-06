@@ -11,6 +11,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, User, Mail, Shield } from "lucide-react";
 
+const WHISPER_LINK_LIMITS: Record<string, number | null> = {
+  free: 3,
+  spark: null,
+  ember: null,
+};
+
 export function SettingsPage() {
   const { data: profile, isLoading } = useGetUserProfile();
   const queryClient = useQueryClient();
@@ -121,7 +127,10 @@ export function SettingsPage() {
             </div>
             <div className="flex items-center justify-between py-2">
               <span className="text-sm text-muted-foreground">Whisper Links Used</span>
-              <span className="text-sm text-foreground">{profile?.whisperLinksUsed} / 3 this month</span>
+              <span className="text-sm text-foreground">
+                {profile?.whisperLinksUsed}
+                {profile?.plan && WHISPER_LINK_LIMITS[profile.plan] != null ? ` / ${WHISPER_LINK_LIMITS[profile.plan]} this month` : " (unlimited)"}
+              </span>
             </div>
             <div className="flex items-center justify-between py-2">
               <span className="text-sm text-muted-foreground">Ghost Boost Credits</span>

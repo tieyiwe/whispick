@@ -10,6 +10,7 @@ import { PlayCircle, Search, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { DELIVERY_METHOD_LABELS } from "@/lib/deliveryMethod";
 
 export function WhispsList() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -88,11 +89,13 @@ export function WhispsList() {
                         <StatusBadge status={whisp.status} />
                       </div>
                       <div className="flex items-center text-sm text-muted-foreground mb-4">
-                        <span className="truncate">To: {whisp.recipientEmail || whisp.recipientPhone || "Ghost Boost"}</span>
+                        <span className="truncate">
+                          To: {whisp.recipientEmail || whisp.recipientPhone || (whisp.deliveryMethod === "circle_drop" ? "Circle feed" : "Ghost Boost audience")}
+                        </span>
                         <span className="mx-2">•</span>
                         <span>{new Date(whisp.createdAt).toLocaleDateString()}</span>
                         <span className="mx-2">•</span>
-                        <span>via {whisp.deliveryMethod === 'ghost_boost' ? 'Ghost Boost' : 'Whisper Link'}</span>
+                        <span>via {DELIVERY_METHOD_LABELS[whisp.deliveryMethod] ?? whisp.deliveryMethod}</span>
                       </div>
                       <div className="mt-auto">
                         {whisp.moodTag && <MoodTag mood={whisp.moodTag} className="scale-90 origin-left" />}

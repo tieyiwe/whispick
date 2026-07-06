@@ -1,0 +1,51 @@
+import { logger } from "./logger";
+
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const EMAIL_FROM = process.env.EMAIL_FROM ?? "Whispick <whispers@whispick.app>";
+
+export async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
+  if (!RESEND_API_KEY) {
+    logger.warn({ to }, "RESEND_API_KEY not set; skipping email send");
+    return false;
+  }
+
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ from: EMAIL_FROM, to, subject, html }),
+    });
+
+    if (!res.ok) {
+      logger.error({ to, status: res.status, body: await res.text() }, "Failed to send email");
+      return false;
+    }
+
+    return true;
+  } catch (err) {
+    logger.error({ to, err }, "Error sending email");
+    return false;
+  }
+}
+
+export function whisperLinkEmailHtml(publicUrl: string): string {
+  return `<div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a2e;">
+    <p style="font-size: 16px;">Someone who cares about you thought you should see this 👀</p>
+    <p>
+      <a href="${publicUrl}" style="display:inline-block; padding: 12px 24px; background:#7C5CFC; color:#fff; border-radius: 999px; text-decoration:none; font-weight: 600;">
+        View it
+      </a>
+    </p>
+    <p style="color:#888; font-size: 12px;">Sent anonymously via Whispick. No sender identity is included unless they choose to reveal it.</p>
+  </div>`;
+}
+
+export function replyNotificationEmailHtml(videoTitle: string | null): string {
+  const subject = videoTitle ? `your whisp "${videoTitle}"` : "your whisp";
+  return `<div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a2e;">
+    <p>Someone replied anonymously to ${subject}. Log in to Whispick to read it.</p>
+  </div>`;
+}

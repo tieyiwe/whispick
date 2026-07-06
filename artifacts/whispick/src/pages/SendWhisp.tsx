@@ -26,6 +26,7 @@ import {
   Mail,
   Phone,
   Ghost,
+  Users,
   Send,
   Check,
 } from "lucide-react";
@@ -104,7 +105,7 @@ export function SendWhisp() {
   const [anonymousNote, setAnonymousNote] = useState("");
   const [senderAlias, setSenderAlias] = useState(SENDER_ALIASES[0]);
   const [customAlias, setCustomAlias] = useState("");
-  const [deliveryMethod, setDeliveryMethod] = useState<"whisper_link" | "ghost_boost">("whisper_link");
+  const [deliveryMethod, setDeliveryMethod] = useState<"whisper_link" | "ghost_boost" | "circle_drop">("whisper_link");
   const [recipientEmail, setRecipientEmail] = useState("");
   const [recipientPhone, setRecipientPhone] = useState("");
   const [sent, setSent] = useState(false);
@@ -430,8 +431,29 @@ export function SendWhisp() {
                       </div>
                       <div>
                         <p className="font-semibold text-foreground">Ghost Boost</p>
-                        <p className="text-sm text-muted-foreground mt-0.5">Place it in their social feed — feels completely organic</p>
+                        <p className="text-sm text-muted-foreground mt-0.5">Feed injection — queued for placement in their social feed, feels completely organic</p>
                         <p className="text-xs text-secondary mt-1 font-medium">1 Credit ($6.99)</p>
+                      </div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeliveryMethod("circle_drop")}
+                    data-testid="delivery-circle-drop"
+                    className={`p-4 rounded-xl border text-left transition-all ${
+                      deliveryMethod === "circle_drop"
+                        ? "border-primary bg-primary/10"
+                        : "border-border/50 hover:border-border"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`p-2 rounded-xl ${deliveryMethod === "circle_drop" ? "bg-primary/20" : "bg-muted/40"}`}>
+                        <Users className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-foreground">Circle Drop</p>
+                        <p className="text-sm text-muted-foreground mt-0.5">Post it to the community feed — no specific recipient, organic discovery</p>
+                        <p className="text-xs text-primary mt-1 font-medium">Free</p>
                       </div>
                     </div>
                   </button>
@@ -440,15 +462,19 @@ export function SendWhisp() {
                   <Button variant="ghost" onClick={() => setStep(3)} className="rounded-xl text-muted-foreground">
                     <ArrowLeft className="w-4 h-4 mr-1" /> Back
                   </Button>
-                  <Button onClick={() => setStep(5)} className="rounded-xl" data-testid="button-next-step4">
-                    Next <ArrowRight className="w-4 h-4 ml-1" />
+                  <Button
+                    onClick={() => setStep(deliveryMethod === "circle_drop" ? 6 : 5)}
+                    className="rounded-xl"
+                    data-testid="button-next-step4"
+                  >
+                    {deliveryMethod === "circle_drop" ? "Review" : "Next"} <ArrowRight className="w-4 h-4 ml-1" />
                   </Button>
                 </div>
               </div>
             )}
 
-            {/* Step 5: Recipient Info */}
-            {step === 5 && (
+            {/* Step 5: Recipient Info (skipped for Circle Drop) */}
+            {step === 5 && deliveryMethod !== "circle_drop" && (
               <div className="space-y-4">
                 <h2 className="text-xl font-serif font-semibold">Who should receive it?</h2>
                 <p className="text-sm text-muted-foreground">
@@ -530,7 +556,9 @@ export function SendWhisp() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">To</span>
-                      <span className="text-foreground">{recipientEmail || recipientPhone}</span>
+                      <span className="text-foreground">
+                        {deliveryMethod === "circle_drop" ? "Anyone in the Circle feed" : recipientEmail || recipientPhone}
+                      </span>
                     </div>
                     {anonymousNote && (
                       <div className="border-t border-border/50 pt-2">
@@ -541,7 +569,11 @@ export function SendWhisp() {
                   </div>
                 </div>
                 <div className="flex justify-between pt-2">
-                  <Button variant="ghost" onClick={() => setStep(5)} className="rounded-xl text-muted-foreground">
+                  <Button
+                    variant="ghost"
+                    onClick={() => setStep(deliveryMethod === "circle_drop" ? 4 : 5)}
+                    className="rounded-xl text-muted-foreground"
+                  >
                     <ArrowLeft className="w-4 h-4 mr-1" /> Back
                   </Button>
                   <Button

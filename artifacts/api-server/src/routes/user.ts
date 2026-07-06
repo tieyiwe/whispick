@@ -1,42 +1,13 @@
 import { Router } from "express";
 import { getAuth } from "@clerk/express";
 import { db } from "@workspace/db";
-import { usersTable, creditTransactionsTable } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
-import { randomUUID } from "crypto";
+import { usersTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { requireAuth } from "../lib/auth";
+import { ensureUser } from "../lib/ensureUser";
 
 const router = Router();
-
-function requireAuth(req: any, res: any, next: any) {
-  const { userId } = getAuth(req);
-  if (!userId) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-  next();
-}
-
-async function ensureUser(clerkId: string, req: any) {
-  let user = await db.select().from(usersTable).where(eq(usersTable.clerkId, clerkId)).then(r => r[0]);
-  if (!user) {
-    const id = randomUUID();
-    const sessionClaims = (req as any).auth?.sessionClaims as Record<string, unknown> ?? {};
-    const email = (sessionClaims?.email as string) ?? `${clerkId}@whispick.app`;
-    const fullName = (sessionClaims?.name as string) ?? null;
-    await db.insert(usersTable).values({
-      id,
-      clerkId,
-      email,
-      fullName: fullName ?? null,
-      plan: "free",
-      boostCredits: 0,
-      whisperLinksUsed: 0,
-    });
-    user = await db.select().from(usersTable).where(eq(usersTable.clerkId, clerkId)).then(r => r[0]);
-  }
-  return user!;
-}
 
 // GET /api/user/profile
 router.get("/profile", requireAuth, async (req, res): Promise<void> => {

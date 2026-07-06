@@ -27,7 +27,7 @@ export function Dashboard() {
 
   const statCards = [
     { title: "Sent Whisps", value: stats?.totalSent || 0, icon: Send, color: "text-primary", bg: "bg-primary/10" },
-    { title: "Open Rate", value: `${Math.round((stats?.openRate || 0) * 100)}%`, icon: Eye, color: "text-blue-400", bg: "bg-blue-500/10" },
+    { title: "Open Rate", value: `${Math.round(stats?.openRate || 0)}%`, icon: Eye, color: "text-blue-400", bg: "bg-blue-500/10" },
     { title: "Videos Watched", value: stats?.totalWatched || 0, icon: PlayCircle, color: "text-secondary", bg: "bg-secondary/10" },
     { title: "Replies Received", value: stats?.totalReplied || 0, icon: MessageSquareHeart, color: "text-amber-400", bg: "bg-amber-500/10" },
   ];
@@ -97,7 +97,9 @@ export function Dashboard() {
                             <StatusBadge status={whisp.status} />
                           </div>
                           <div className="flex items-center text-sm text-muted-foreground mb-3">
-                            <span className="truncate">Sent to {whisp.recipientEmail || whisp.recipientPhone || "Ghost Boost"}</span>
+                            <span className="truncate">
+                              Sent to {whisp.recipientEmail || whisp.recipientPhone || (whisp.deliveryMethod === "circle_drop" ? "Circle feed" : "Ghost Boost audience")}
+                            </span>
                             <span className="mx-2">•</span>
                             <span>{new Date(whisp.createdAt).toLocaleDateString()}</span>
                           </div>

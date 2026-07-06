@@ -191,7 +191,54 @@ export interface CreditTransaction {
   createdAt: string;
 }
 
+export interface CircleFeedItem {
+  id: string;
+  videoUrl: string;
+  /** @nullable */
+  videoTitle?: string | null;
+  /** @nullable */
+  videoThumbnail?: string | null;
+  /** @nullable */
+  videoPlatform?: string | null;
+  /** @nullable */
+  anonymousNote?: string | null;
+  /** @nullable */
+  senderAlias?: string | null;
+  /** @nullable */
+  moodTag?: string | null;
+  publicToken: string;
+  createdAt: string;
+}
+
+export interface CircleFeedResponse {
+  items: CircleFeedItem[];
+  /** @nullable */
+  nextCursor: string | null;
+}
+
+export type CheckoutRequestKind = typeof CheckoutRequestKind[keyof typeof CheckoutRequestKind];
+
+
+export const CheckoutRequestKind = {
+  credit_pack: 'credit_pack',
+  plan: 'plan',
+} as const;
+
+export interface CheckoutRequest {
+  kind: CheckoutRequestKind;
+  id: string;
+}
+
+export interface CheckoutResponse {
+  /** @nullable */
+  url: string | null;
+}
+
 export type ListWhispsParams = {
 status?: string;
+};
+
+export type ListCircleFeedParams = {
+cursor?: string;
 };
 

@@ -12,6 +12,10 @@ An anonymous video recommendation platform — paste a video URL, add a mood tag
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - Required env: `DATABASE_URL` — Postgres connection string
 - Required env: `CLERK_SECRET_KEY`, `VITE_CLERK_PUBLISHABLE_KEY` — Clerk auth
+- Optional env: `RESEND_API_KEY`, `EMAIL_FROM` — Whisper Link delivery + reply notification emails (skipped with a log warning if unset)
+- Optional env: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` — Credits & Plan checkout (returns 503 if unset)
+- Optional env: `PUBLIC_APP_URL` — overrides the auto-detected frontend origin used in email links and Stripe redirect URLs
+- `pnpm --filter @workspace/api-server run test` — run the API server's Vitest suite (needs a reachable `DATABASE_URL`)
 
 ## Stack
 
@@ -37,7 +41,9 @@ An anonymous video recommendation platform — paste a video URL, add a mood tag
 - Dark mode only — no light mode variants needed
 - Zod schemas in routes must import from `"zod"` not `"zod/v4"` (catalog pin is ^3.25.76)
 - Public whisp pages (`/w/:token`) are unauthenticated; everything else requires Clerk
-- Ghost Boost and Stripe are UI-only stubs — no payment processor wired yet
+- Three delivery methods: `whisper_link` (real email via Resend, status goes straight to `delivered`), `ghost_boost` (internal credit-spend only — no live ad-platform API integration; status `pending` until a real integration exists), `circle_drop` (no recipient, visible in the public `/api/public/circle` community feed, status `delivered`)
+- Stripe Checkout (redirect-based, no client-side Stripe.js) wired for credit packs (one-time) and plan upgrades (subscription); webhook at `/api/billing/webhook` grants credits/plan on `checkout.session.completed`
+- Free plan is capped at 3 Whisper Links per rolling 30-day window (`lib/plans.ts`); Spark/Ember are unlimited
 
 ## Product
 
@@ -46,9 +52,11 @@ An anonymous video recommendation platform — paste a video URL, add a mood tag
 - **My Whisps**: filterable list with status badges, thumbnails, mood tags
 - **Whisp Detail**: delivery timeline, anonymous reply thread, follow-up send, reveal flow
 - **Replies Inbox**: all whisps that received an anonymous reply
-- **Credits & Plan**: subscription tiers (Spark/Ember), Ghost Boost credit packs
+- **Circle**: community discovery feed of Circle Drop whisps — no recipient, organic browsing
+- **Credits & Plan**: subscription tiers (Spark/Ember), Ghost Boost credit packs — real Stripe Checkout
 - **Settings**: profile edit, account info, privacy policy
-- **Public `/w/:token`**: recipient landing page — watch video, see mood/note, reply anonymously, accept/decline reveal
+- **Public `/w/:token`**: recipient landing page — watch video, see mood/note, reply anonymously, accept/decline reveal (wired to the reveal-response API)
+- Mobile: native-style bottom tab bar with a raised Send action, safe-area-aware header/footer padding throughout
 
 ## User preferences
 

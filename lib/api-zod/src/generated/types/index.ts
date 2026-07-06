@@ -7,8 +7,14 @@
  */
 
 export * from './apiError';
+export * from './checkoutRequest';
+export * from './checkoutRequestKind';
+export * from './checkoutResponse';
+export * from './circleFeedItem';
+export * from './circleFeedResponse';
 export * from './creditTransaction';
 export * from './healthStatus';
+export * from './listCircleFeedParams';
 export * from './listWhispsParams';
 export * from './publicReplyInput';
 export * from './publicWhisp';
