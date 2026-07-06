@@ -15,11 +15,11 @@ import { useToast } from "@/hooks/use-toast";
 import { PlayCircle, Send, Check, Loader2 } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 
-function WhisprLogoMark() {
+function WhispickLogoMark() {
   return (
     <div className="flex items-center gap-2">
       <Logo className="w-6 h-6 text-primary" />
-      <span className="font-serif text-xl font-bold text-foreground tracking-tight">whispr</span>
+      <span className="font-serif text-xl font-bold text-foreground tracking-tight">whispick</span>
     </div>
   );
 }
@@ -74,7 +74,7 @@ export function PublicWhispPage() {
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <header className="p-5 flex items-center justify-between border-b border-border/30">
-        <WhisprLogoMark />
+        <WhispickLogoMark />
         <a
           href="/sign-up"
           className="text-xs text-muted-foreground hover:text-primary transition-colors"
@@ -227,7 +227,7 @@ export function PublicWhispPage() {
       <footer className="p-5 text-center border-t border-border/30">
         <p className="text-xs text-muted-foreground">
           Powered by{" "}
-          <a href="/" className="text-primary hover:underline">Whispr</a>
+          <a href="/" className="text-primary hover:underline">Whispick</a>
           {" "}— send what matters, without the awkward part.
         </p>
       </footer>

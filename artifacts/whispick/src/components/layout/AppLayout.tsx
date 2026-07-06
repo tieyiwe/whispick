@@ -35,7 +35,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
         <div className="p-6">
           <Link href="/dashboard" className="flex items-center gap-3 text-primary hover:opacity-80 transition-opacity">
             <Logo className="w-8 h-8 text-primary" />
-            <span className="font-serif text-2xl font-bold tracking-tight text-foreground">Whispr</span>
+            <span className="font-serif text-2xl font-bold tracking-tight text-foreground">Whispick</span>
           </Link>
         </div>
 
@@ -88,7 +88,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       <header className="md:hidden border-b border-border bg-card/80 backdrop-blur p-4 flex items-center justify-between sticky top-0 z-50">
         <Link href="/dashboard" className="flex items-center gap-2">
           <Logo className="w-6 h-6 text-primary" />
-          <span className="font-serif text-xl font-bold">Whispr</span>
+          <span className="font-serif text-xl font-bold">Whispick</span>
         </Link>
         <Link href="/send">
           <Button size="sm" className="rounded-full shadow-[0_0_15px_rgba(124,92,252,0.3)]">

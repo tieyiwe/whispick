@@ -26,7 +26,7 @@ async function ensureUser(clerkId: string, req: any) {
   let user = await db.select().from(usersTable).where(eq(usersTable.clerkId, clerkId)).then(r => r[0]);
   if (!user) {
     const id = randomUUID();
-    const email = req.auth?.sessionClaims?.email as string ?? `${clerkId}@whispr.app`;
+    const email = req.auth?.sessionClaims?.email as string ?? `${clerkId}@whispick.app`;
     await db.insert(usersTable).values({
       id,
       clerkId,

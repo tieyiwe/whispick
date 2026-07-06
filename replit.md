@@ -1,11 +1,11 @@
-# Whispr
+# Whispick
 
 An anonymous video recommendation platform — paste a video URL, add a mood tag and optional note, then send it via Whisper Link (SMS/email) or Ghost Boost (social ads) without revealing your identity.
 
 ## Run & Operate
 
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080)
-- `pnpm --filter @workspace/whispr run dev` — run the frontend (port 22964)
+- `pnpm --filter @workspace/whispick run dev` — run the frontend (port 22964)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
@@ -27,7 +27,7 @@ An anonymous video recommendation platform — paste a video URL, add a mood tag
 
 - `lib/api-spec/openapi.yaml` — source of truth for all API contracts
 - `lib/db/src/schema/` — Drizzle schema files (users, whisps, whisp_replies, tracking_events, credit_transactions)
-- `artifacts/whispr/src/index.css` — design tokens (Midnight bg, Whispr Glow primary, Ember accent)
+- `artifacts/whispick/src/index.css` — design tokens (Midnight bg, Whispick Glow primary, Ember accent)
 - `artifacts/api-server/src/routes/` — Express route handlers
 - `lib/api-client-react/src/generated/api.ts` — generated React Query hooks (do not edit)
 
@@ -52,7 +52,7 @@ An anonymous video recommendation platform — paste a video URL, add a mood tag
 
 ## User preferences
 
-- Design: dark only, Midnight #0D0D1A bg, Whispr Glow #7C5CFC primary, Ember #FF6B6B accent
+- Design: dark only, Midnight #0D0D1A bg, Whispick Glow #7C5CFC primary, Ember #FF6B6B accent
 - Fonts: Playfair Display (headings/serif), Inter (body/sans)
 - All buttons use `rounded-full` pill shape
 - Glow effect on key CTAs: `shadow-[0_0_15px_rgba(124,92,252,0.3)]`
@@ -61,7 +61,7 @@ An anonymous video recommendation platform — paste a video URL, add a mood tag
 
 - Always import `zod` not `zod/v4` in server route files
 - CSS: Google Fonts `@import url(...)` must be the FIRST line in `index.css` (before tailwindcss import)
-- `@clerk/themes` is a separate devDependency in `@workspace/whispr` — not bundled with `@clerk/react`
+- `@clerk/themes` is a separate devDependency in `@workspace/whispick` — not bundled with `@clerk/react`
 - API server runs on port 8080, proxied at `/api` via artifact.toml
 - Run `pnpm --filter @workspace/api-spec run codegen` after any change to `openapi.yaml`
 

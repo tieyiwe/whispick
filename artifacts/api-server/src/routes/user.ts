@@ -22,7 +22,7 @@ async function ensureUser(clerkId: string, req: any) {
   if (!user) {
     const id = randomUUID();
     const sessionClaims = (req as any).auth?.sessionClaims as Record<string, unknown> ?? {};
-    const email = (sessionClaims?.email as string) ?? `${clerkId}@whispr.app`;
+    const email = (sessionClaims?.email as string) ?? `${clerkId}@whispick.app`;
     const fullName = (sessionClaims?.name as string) ?? null;
     await db.insert(usersTable).values({
       id,

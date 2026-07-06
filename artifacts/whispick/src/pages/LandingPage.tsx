@@ -13,7 +13,7 @@ export function LandingPage() {
       <header className="absolute top-0 w-full p-6 flex justify-between items-center z-10">
         <div className="flex items-center gap-3">
           <Logo className="w-8 h-8 text-primary" />
-          <span className="font-serif text-2xl font-bold tracking-tight">Whispr</span>
+          <span className="font-serif text-2xl font-bold tracking-tight">Whispick</span>
         </div>
         <div className="flex items-center gap-4">
           <Link href="/sign-in">

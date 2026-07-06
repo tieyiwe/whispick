@@ -411,7 +411,7 @@ importers:
         specifier: 'catalog:'
         version: 3.25.76
 
-  artifacts/whispr:
+  artifacts/whispick:
     dependencies:
       '@clerk/react':
         specifier: ^6.11.3

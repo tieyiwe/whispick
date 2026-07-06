@@ -41,7 +41,7 @@ async function scrapeOpenGraph(url: string): Promise<{ title?: string; thumbnail
   try {
     const res = await fetch(url, {
       signal: AbortSignal.timeout(8000),
-      headers: { "User-Agent": "WhisprBot/1.0" },
+      headers: { "User-Agent": "WhispickBot/1.0" },
     });
     if (!res.ok) return null;
     const html = await res.text();

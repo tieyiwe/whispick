@@ -1,8 +1,8 @@
 kind = "web"
 previewPath = "/"
-title = "Whispr"
+title = "Whispick"
 version = "1.0.0"
-id = "artifacts/whispr"
+id = "artifacts/whispick"
 router = "path"
 
 [[integratedSkills]]
@@ -15,11 +15,11 @@ paths = [ "/" ]
 localPort = 22964
 
 [services.development]
-run = "pnpm --filter @workspace/whispr run dev"
+run = "pnpm --filter @workspace/whispick run dev"
 
 [services.production]
-build = [ "pnpm", "--filter", "@workspace/whispr", "run", "build" ]
-publicDir = "artifacts/whispr/dist/public"
+build = [ "pnpm", "--filter", "@workspace/whispick", "run", "build" ]
+publicDir = "artifacts/whispick/dist/public"
 serve = "static"
 
 [[services.production.rewrites]]
