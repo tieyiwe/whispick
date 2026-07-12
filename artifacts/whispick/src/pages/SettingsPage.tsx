@@ -152,7 +152,7 @@ export function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-muted-foreground">
             <p>All whisps are sent anonymously by default. Recipient contact information (email/phone) is used solely for delivery and is never shared with third parties.</p>
-            <p>For Ghost Boosts, contact info is hashed with SHA-256 before being used to build a custom audience — it is never stored in plaintext.</p>
+            <p>Ghost Boost doesn't collect recipient contact info — it's a queued, boosted-reach send with no specific recipient, not a targeted ad.</p>
             <p>You can request a full data export or account deletion by contacting support.</p>
           </CardContent>
         </Card>

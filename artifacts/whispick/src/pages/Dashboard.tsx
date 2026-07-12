@@ -138,7 +138,7 @@ export function Dashboard() {
                 <p className="text-muted-foreground text-sm mb-6">Boost Credits Available</p>
                 
                 <p className="text-xs text-muted-foreground mb-6">
-                  Ghost Boosts deliver your whisps organically via social media ads instead of direct messages.
+                  Ghost Boost queues a whisp for boosted, wider-reach delivery instead of a direct message — it doesn't guarantee it reaches one specific person the way Whisper Link does.
                 </p>
                 
                 <Link href="/credits">

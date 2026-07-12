@@ -14,6 +14,8 @@ export interface PublicWhisp {
   /** @nullable */
   videoThumbnail?: string | null;
   /** @nullable */
+  videoEmbedUrl?: string | null;
+  /** @nullable */
   videoPlatform?: string | null;
   /** @nullable */
   anonymousNote?: string | null;

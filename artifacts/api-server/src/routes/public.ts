@@ -32,6 +32,7 @@ router.get("/w/:token", async (req, res): Promise<void> => {
     videoUrl: whisp.videoUrl,
     videoTitle: whisp.videoTitle,
     videoThumbnail: whisp.videoThumbnail,
+    videoEmbedUrl: whisp.videoEmbedUrl,
     videoPlatform: whisp.videoPlatform,
     anonymousNote: whisp.anonymousNote,
     senderAlias: whisp.senderAlias,

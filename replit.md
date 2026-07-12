@@ -1,6 +1,6 @@
 # Whispick
 
-An anonymous video recommendation platform — paste a video URL, add a mood tag and optional note, then send it via Whisper Link (SMS/email) or Ghost Boost (social ads) without revealing your identity.
+An anonymous video recommendation platform — paste a video URL, add a mood tag and optional note, then send it to a known person via Whisper Link (guaranteed anonymous delivery), post it to Circle for organic community discovery, or queue it as a Ghost Boost for wider, best-effort reach — without revealing your identity.
 
 ## Run & Operate
 
@@ -41,16 +41,18 @@ An anonymous video recommendation platform — paste a video URL, add a mood tag
 - Dark mode only — no light mode variants needed
 - Zod schemas in routes must import from `"zod"` not `"zod/v4"` (catalog pin is ^3.25.76)
 - Public whisp pages (`/w/:token`) are unauthenticated; everything else requires Clerk
-- Three delivery methods: `whisper_link` (real email via Resend, status goes straight to `delivered`), `ghost_boost` (internal credit-spend only — no live ad-platform API integration; status `pending` until a real integration exists), `circle_drop` (no recipient, visible in the public `/api/public/circle` community feed, status `delivered`)
+- Three delivery methods: `whisper_link` (real email via Resend, requires a known recipient email/phone, status goes straight to `delivered` — this is the only method that guarantees delivery to one specific person), `ghost_boost` (internal credit-spend/queue only, no recipient collected — no live ad-platform API integration; status `pending` until a real integration exists), `circle_drop` (no recipient, visible in the public `/api/public/circle` community feed, status `delivered`)
+- **Ghost Boost is deliberately not a real Meta/TikTok ad integration.** Those platforms enforce a minimum matched-audience size before a Custom Audience can be used for targeting, so there's no way to guarantee an ad reaches one specific identified person — and building a "target this one known person" ad system runs directly into their anti-harassment ad policies. Whisper Link is the mechanism that actually satisfies "reach a known person anonymously"; don't reintroduce Ghost Boost as a literal ad-placement feature without solving that mismatch first.
+- Watch tracking: YouTube/Vimeo videos are embedded in the public whisp page (`videoEmbedUrl`, computed in `video.ts`'s `buildEmbedUrl`) and report real `watched_10s`/`watched_50pct`/`watched_complete` events via each platform's JS Player API (`VideoPlayer.tsx`). Every other platform (TikTok/Instagram/Facebook/etc.) has no embeddable player with progress events, so only `opened`/`clicked` are tracked and the recipient is redirected out.
 - Stripe Checkout (redirect-based, no client-side Stripe.js) wired for credit packs (one-time) and plan upgrades (subscription); webhook at `/api/billing/webhook` grants credits/plan on `checkout.session.completed`
 - Free plan is capped at 3 Whisper Links per rolling 30-day window (`lib/plans.ts`); Spark/Ember are unlimited
 
 ## Product
 
-- **Send Whisp**: 6-step composer — paste URL → mood tag → anonymous note → delivery method → recipient → confirm
+- **Send Whisp**: composer — paste URL → mood tag → anonymous note → delivery method → recipient (Whisper Link only) → confirm
 - **Dashboard**: stat cards (sent, open rate, watched, replies) + recent whisps + boost credit counter
 - **My Whisps**: filterable list with status badges, thumbnails, mood tags
-- **Whisp Detail**: delivery timeline, anonymous reply thread, follow-up send, reveal flow
+- **Whisp Detail**: delivery timeline (sent/delivered/opened/clicked/watched/replied) driven by real tracking events, anonymous reply thread, follow-up send, reveal flow
 - **Replies Inbox**: all whisps that received an anonymous reply
 - **Circle**: community discovery feed of Circle Drop whisps — no recipient, organic browsing
 - **Credits & Plan**: subscription tiers (Spark/Ember), Ghost Boost credit packs — real Stripe Checkout

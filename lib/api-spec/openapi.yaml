@@ -449,6 +449,8 @@ components:
           type: ["string", "null"]
         videoThumbnail:
           type: ["string", "null"]
+        videoEmbedUrl:
+          type: ["string", "null"]
         videoPlatform:
           type: ["string", "null"]
         deliveryMethod:
@@ -496,6 +498,8 @@ components:
         videoTitle:
           type: ["string", "null"]
         videoThumbnail:
+          type: ["string", "null"]
+        videoEmbedUrl:
           type: ["string", "null"]
         videoPlatform:
           type: ["string", "null"]
@@ -641,6 +645,8 @@ components:
         videoTitle:
           type: ["string", "null"]
         videoThumbnail:
+          type: ["string", "null"]
+        videoEmbedUrl:
           type: ["string", "null"]
         videoPlatform:
           type: ["string", "null"]

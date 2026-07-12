@@ -98,6 +98,7 @@ export function SendWhisp() {
   const [videoMeta, setVideoMeta] = useState<{
     title?: string | null;
     thumbnail?: string | null;
+    embedUrl?: string | null;
     platform?: string;
     authorName?: string | null;
   } | null>(null);
@@ -147,10 +148,11 @@ export function SendWhisp() {
           videoUrl,
           videoTitle: videoMeta?.title ?? null,
           videoThumbnail: videoMeta?.thumbnail ?? null,
+          videoEmbedUrl: videoMeta?.embedUrl ?? null,
           videoPlatform: videoMeta?.platform ?? null,
           deliveryMethod,
-          recipientEmail: recipientEmail || null,
-          recipientPhone: recipientPhone || null,
+          recipientEmail: deliveryMethod === "whisper_link" ? recipientEmail || null : null,
+          recipientPhone: deliveryMethod === "whisper_link" ? recipientPhone || null : null,
           anonymousNote: anonymousNote || null,
           senderAlias: alias,
           moodTag: moodTag,
@@ -431,7 +433,7 @@ export function SendWhisp() {
                       </div>
                       <div>
                         <p className="font-semibold text-foreground">Ghost Boost</p>
-                        <p className="text-sm text-muted-foreground mt-0.5">Feed injection — queued for placement in their social feed, feels completely organic</p>
+                        <p className="text-sm text-muted-foreground mt-0.5">Boosted, wider-reach delivery (beta) — no specific recipient, no guaranteed 1:1 delivery like Whisper Link</p>
                         <p className="text-xs text-secondary mt-1 font-medium">1 Credit ($6.99)</p>
                       </div>
                     </div>
@@ -463,25 +465,21 @@ export function SendWhisp() {
                     <ArrowLeft className="w-4 h-4 mr-1" /> Back
                   </Button>
                   <Button
-                    onClick={() => setStep(deliveryMethod === "circle_drop" ? 6 : 5)}
+                    onClick={() => setStep(deliveryMethod === "whisper_link" ? 5 : 6)}
                     className="rounded-xl"
                     data-testid="button-next-step4"
                   >
-                    {deliveryMethod === "circle_drop" ? "Review" : "Next"} <ArrowRight className="w-4 h-4 ml-1" />
+                    {deliveryMethod === "whisper_link" ? "Next" : "Review"} <ArrowRight className="w-4 h-4 ml-1" />
                   </Button>
                 </div>
               </div>
             )}
 
-            {/* Step 5: Recipient Info (skipped for Circle Drop) */}
-            {step === 5 && deliveryMethod !== "circle_drop" && (
+            {/* Step 5: Recipient Info (only Whisper Link has a specific recipient) */}
+            {step === 5 && deliveryMethod === "whisper_link" && (
               <div className="space-y-4">
                 <h2 className="text-xl font-serif font-semibold">Who should receive it?</h2>
-                <p className="text-sm text-muted-foreground">
-                  {deliveryMethod === "whisper_link"
-                    ? "Enter their email or phone number."
-                    : "Enter their contact info to build a targeted audience. It's hashed and never stored in plaintext."}
-                </p>
+                <p className="text-sm text-muted-foreground">Enter their email or phone number.</p>
                 <div className="space-y-3">
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -557,7 +555,11 @@ export function SendWhisp() {
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">To</span>
                       <span className="text-foreground">
-                        {deliveryMethod === "circle_drop" ? "Anyone in the Circle feed" : recipientEmail || recipientPhone}
+                        {deliveryMethod === "circle_drop"
+                          ? "Anyone in the Circle feed"
+                          : deliveryMethod === "ghost_boost"
+                          ? "No specific recipient (boosted reach)"
+                          : recipientEmail || recipientPhone}
                       </span>
                     </div>
                     {anonymousNote && (
@@ -571,7 +573,7 @@ export function SendWhisp() {
                 <div className="flex justify-between pt-2">
                   <Button
                     variant="ghost"
-                    onClick={() => setStep(deliveryMethod === "circle_drop" ? 4 : 5)}
+                    onClick={() => setStep(deliveryMethod === "whisper_link" ? 5 : 4)}
                     className="rounded-xl text-muted-foreground"
                   >
                     <ArrowLeft className="w-4 h-4 mr-1" /> Back

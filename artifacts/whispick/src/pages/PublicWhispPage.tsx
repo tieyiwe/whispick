@@ -13,8 +13,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MoodTag } from "@/components/shared/MoodTag";
 import { useToast } from "@/hooks/use-toast";
-import { PlayCircle, Send, Check, Loader2 } from "lucide-react";
+import { Send, Check, Loader2 } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
+import { VideoPlayer } from "@/components/shared/VideoPlayer";
 
 function WhispickLogoMark() {
   return (
@@ -62,11 +63,8 @@ export function PublicWhispPage() {
     trackEvent.mutate({ token: token!, data: { eventType: "opened" } });
   }
 
-  function handleWatchClick() {
-    trackEvent.mutate({ token: token!, data: { eventType: "clicked" } });
-    if (whisp?.videoUrl) {
-      window.open(whisp.videoUrl, "_blank", "noopener,noreferrer");
-    }
+  function handleWatchEvent(eventType: "clicked" | "watched_10s" | "watched_50pct" | "watched_complete") {
+    trackEvent.mutate({ token: token!, data: { eventType } });
   }
 
   function handleReply() {
@@ -121,33 +119,14 @@ export function PublicWhispPage() {
 
             {/* Video card */}
             <div className="rounded-2xl overflow-hidden bg-card border border-border/50 glow-card">
-              {whisp.videoThumbnail ? (
-                <div className="relative">
-                  <img
-                    src={whisp.videoThumbnail}
-                    alt={whisp.videoTitle ?? "Video"}
-                    className="w-full object-cover max-h-64"
-                  />
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                    <button
-                      onClick={handleWatchClick}
-                      className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 active:scale-95 transition-all"
-                      data-testid="button-watch-video"
-                    >
-                      <PlayCircle className="w-9 h-9 text-white" />
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  onClick={handleWatchClick}
-                  className="w-full h-36 bg-muted flex flex-col items-center justify-center gap-2 hover:bg-muted/80 transition-colors"
-                  data-testid="button-watch-video-no-thumb"
-                >
-                  <PlayCircle className="w-10 h-10 text-primary" />
-                  <span className="text-sm text-muted-foreground">Watch the video</span>
-                </button>
-              )}
+              <VideoPlayer
+                platform={whisp.videoPlatform}
+                embedUrl={whisp.videoEmbedUrl}
+                videoUrl={whisp.videoUrl}
+                thumbnail={whisp.videoThumbnail}
+                title={whisp.videoTitle}
+                onWatchEvent={handleWatchEvent}
+              />
 
               <div className="p-5 space-y-3">
                 {whisp.videoTitle && (
@@ -164,14 +143,6 @@ export function PublicWhispPage() {
                     )}
                   </div>
                 )}
-
-                <Button
-                  onClick={handleWatchClick}
-                  className="w-full rounded-full shadow-[0_0_15px_rgba(124,92,252,0.3)]"
-                  data-testid="button-watch-now"
-                >
-                  <PlayCircle className="w-4 h-4 mr-2" /> Watch Now
-                </Button>
               </div>
             </div>
 

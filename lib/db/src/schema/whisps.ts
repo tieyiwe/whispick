@@ -8,11 +8,11 @@ export const whispsTable = pgTable("whisps", {
   videoUrl: text("video_url").notNull(),
   videoTitle: text("video_title"),
   videoThumbnail: text("video_thumbnail"),
-  videoPlatform: text("video_platform"), // 'youtube' | 'tiktok' | 'instagram' | 'facebook' | 'other'
-  deliveryMethod: text("delivery_method").notNull(), // 'whisper_link' | 'ghost_boost'
+  videoEmbedUrl: text("video_embed_url"), // set for platforms with an embeddable player (YouTube, Vimeo) — powers real watch tracking
+  videoPlatform: text("video_platform"), // 'youtube' | 'tiktok' | 'instagram' | 'facebook' | 'vimeo' | 'other'
+  deliveryMethod: text("delivery_method").notNull(), // 'whisper_link' | 'ghost_boost' | 'circle_drop'
   recipientEmail: text("recipient_email"),
   recipientPhone: text("recipient_phone"),
-  recipientMetaAudienceId: text("recipient_meta_audience_id"),
   anonymousNote: text("anonymous_note"),
   senderAlias: text("sender_alias"),
   moodTag: text("mood_tag"),

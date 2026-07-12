@@ -13,6 +13,21 @@ function detectPlatform(url: string): string {
   return "other";
 }
 
+// Only YouTube and Vimeo expose an embeddable player with a JS API we can use
+// to detect real watch progress — every other platform requires opening the
+// original link, where we have no visibility into playback.
+function buildEmbedUrl(url: string, platform: string): string | null {
+  if (platform === "youtube") {
+    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\/))([\w-]{11})/);
+    return match ? `https://www.youtube.com/embed/${match[1]}?enablejsapi=1` : null;
+  }
+  if (platform === "vimeo") {
+    const match = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+    return match ? `https://player.vimeo.com/video/${match[1]}` : null;
+  }
+  return null;
+}
+
 async function scrapeOEmbed(url: string): Promise<{ title?: string; thumbnail?: string; authorName?: string; embedUrl?: string } | null> {
   const endpoints: Record<string, string> = {
     youtube: `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`,
@@ -84,7 +99,7 @@ router.post("/meta", async (req, res): Promise<void> => {
     title: meta?.title ?? null,
     thumbnail: meta?.thumbnail ?? null,
     platform,
-    embedUrl: null,
+    embedUrl: buildEmbedUrl(url, platform),
     authorName: (oembed as any)?.authorName ?? null,
   });
 });

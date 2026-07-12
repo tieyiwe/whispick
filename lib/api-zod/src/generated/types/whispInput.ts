@@ -13,6 +13,8 @@ export interface WhispInput {
   /** @nullable */
   videoThumbnail?: string | null;
   /** @nullable */
+  videoEmbedUrl?: string | null;
+  /** @nullable */
   videoPlatform?: string | null;
   deliveryMethod: string;
   /** @nullable */
