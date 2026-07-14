@@ -127,11 +127,27 @@ export async function handleStripeWebhook(req: express.Request, res: express.Res
   }
 
   if (event.type === "checkout.session.completed") {
-    const session = event.data.object as { metadata?: Record<string, string>; customer?: string; subscription?: string };
+    const session = event.data.object as {
+      id: string;
+      metadata?: Record<string, string>;
+      customer?: string;
+      subscription?: string;
+    };
     const metadata = session.metadata ?? {};
     const userId = metadata.userId;
 
-    if (userId) {
+    // Stripe retries webhook deliveries (e.g. after a timeout on our end),
+    // which would otherwise double-grant credits/plan access for the same
+    // checkout. The session id is unique per checkout, so use it as an
+    // idempotency key: if we've already recorded a transaction for it,
+    // this is a retry of an event we already processed.
+    const alreadyProcessed = await db
+      .select({ id: creditTransactionsTable.id })
+      .from(creditTransactionsTable)
+      .where(eq(creditTransactionsTable.stripePaymentIntentId, session.id))
+      .then((r) => r.length > 0);
+
+    if (userId && !alreadyProcessed) {
       if (metadata.kind === "credit_pack") {
         const pack = CREDIT_PACKS[metadata.packId as CreditPackId];
         if (pack) {
@@ -144,7 +160,7 @@ export async function handleStripeWebhook(req: express.Request, res: express.Res
             userId,
             type: "purchase",
             amount: pack.boosts,
-            stripePaymentIntentId: typeof session.customer === "string" ? session.customer : null,
+            stripePaymentIntentId: session.id,
           });
         }
       } else if (metadata.kind === "plan") {
@@ -164,6 +180,7 @@ export async function handleStripeWebhook(req: express.Request, res: express.Res
             userId,
             type: "plan_grant",
             amount: grant,
+            stripePaymentIntentId: session.id,
           });
         }
       }

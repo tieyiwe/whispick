@@ -60,4 +60,18 @@ describe("POST /api/public/w/:token/reply", () => {
     expect(detail.body.whisp.status).toBe("replied");
     expect(detail.body.replies).toHaveLength(1);
   });
+
+  it("keeps status as replied even if watched_complete fires afterwards", async () => {
+    const whisp = await createWhisp();
+
+    await request(app).post(`/api/public/w/${whisp.publicToken}/reply`).send({ replyText: "thanks!" });
+    const watched = await request(app)
+      .post(`/api/public/w/${whisp.publicToken}/track`)
+      .send({ eventType: "watched_complete" });
+    expect(watched.status).toBe(200);
+
+    const detail = await request(app).get(`/api/whisps/${whisp.id}`).set(TEST_USER_HEADER, USER_A);
+    expect(detail.body.whisp.status).toBe("replied");
+    expect(detail.body.whisp.watchedAt).not.toBeNull();
+  });
 });

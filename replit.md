@@ -49,8 +49,9 @@ An anonymous video recommendation platform — paste a video URL, add a mood tag
 - The recipient-facing hook line ("Someone who cares about you thought you needed to see this 👀") is defined once in `lib/copy.ts` (`HOOK_LINE`) and reused in the email, SMS, WhatsApp template variable, and OG description — keep `PublicWhispPage.tsx`'s lead text in sync by hand, since frontend and backend don't share a constants module.
 - **Ghost Boost is deliberately not a real Meta/TikTok ad integration.** Those platforms enforce a minimum matched-audience size before a Custom Audience can be used for targeting, so there's no way to guarantee an ad reaches one specific identified person — and building a "target this one known person" ad system runs directly into their anti-harassment ad policies. Whisper Link is the mechanism that actually satisfies "reach a known person anonymously"; don't reintroduce Ghost Boost as a literal ad-placement feature without solving that mismatch first.
 - Watch tracking: YouTube/Vimeo videos are embedded in the public whisp page (`videoEmbedUrl`, computed in `video.ts`'s `buildEmbedUrl`) and report real `watched_10s`/`watched_50pct`/`watched_complete` events via each platform's JS Player API (`VideoPlayer.tsx`). Every other platform (TikTok/Instagram/Facebook/etc.) has no embeddable player with progress events, so only `opened`/`clicked` are tracked and the recipient is redirected out.
-- Stripe Checkout (redirect-based, no client-side Stripe.js) wired for credit packs (one-time) and plan upgrades (subscription); webhook at `/api/billing/webhook` grants credits/plan on `checkout.session.completed`
+- Stripe Checkout (redirect-based, no client-side Stripe.js) wired for credit packs (one-time) and plan upgrades (subscription); webhook at `/api/billing/webhook` grants credits/plan on `checkout.session.completed`, keyed by the Stripe checkout session id (`stripePaymentIntentId` on `credit_transactions`) so a retried webhook delivery can't double-credit
 - Free plan is capped at 3 Whisper Links per rolling 30-day window (`lib/plans.ts`); Spark/Ember are unlimited
+- Security posture (see `lib/rateLimit.ts`, `app.ts`, `routes/video.ts`): CORS only allows the app's own origin (same Host as the request, or an explicit `PUBLIC_APP_URL`/dev-port allowlist) — never reflects arbitrary origins, since Clerk auth is cookie-based. `/api/video/meta` only fetches URLs on an allowlisted set of video-platform hostnames (checked via `new URL().hostname`, not substring matching) to prevent SSRF against internal services. The unauthenticated public endpoints (`/api/public/*`, `/api/l/:token`) are rate-limited per IP since each triggers a real side effect (DB write, and for `/reply` an email to the sender). `PATCH /whisps/:id/reveal` (called by the unauthenticated recipient) only ever returns `{id, revealRequested, revealAccepted}` — never the full whisp row — and requires `revealRequested` to already be true.
 
 ## Product
 
@@ -62,8 +63,8 @@ An anonymous video recommendation platform — paste a video URL, add a mood tag
 - **Circle**: community discovery feed of Circle Drop whisps — no recipient, organic browsing
 - **Credits & Plan**: subscription tiers (Spark/Ember), Ghost Boost credit packs — real Stripe Checkout
 - **Settings**: profile edit, account info, privacy policy
-- **Public `/w/:token`**: recipient landing page — watch video, see mood/note, reply anonymously, accept/decline reveal (wired to the reveal-response API)
-- Mobile: native-style bottom tab bar with a raised Send action, safe-area-aware header/footer padding throughout
+- **Public `/w/:token`**: recipient landing page — watch video, see mood/note, reply anonymously (quick-reply chips or free text), accept/decline reveal (wired to the reveal-response API); a confetti burst fires from the tap point right before playback starts (`VideoPlayer.tsx`)
+- Mobile: native-style bottom tab bar with a raised Send action, safe-area-aware header/footer padding throughout, no browser-native `confirm()`/`alert()` dialogs (destructive actions use the in-app `AlertDialog`), tap-highlight and overscroll bounce disabled globally
 
 ## User preferences
 

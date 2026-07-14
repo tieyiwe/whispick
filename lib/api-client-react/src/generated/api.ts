@@ -31,6 +31,7 @@ import type {
   PublicReplyInput,
   PublicWhisp,
   RevealResponse,
+  RevealResult,
   TrackingEventInput,
   TrackingResult,
   UserProfile,
@@ -757,9 +758,9 @@ export const getRespondRevealUrl = (id: string,) => {
  * @summary Recipient responds to reveal request
  */
 export const respondReveal = async (id: string,
-    revealResponse: RevealResponse, options?: RequestInit): Promise<Whisp> => {
+    revealResponse: RevealResponse, options?: RequestInit): Promise<RevealResult> => {
 
-  return customFetch<Whisp>(getRespondRevealUrl(id),
+  return customFetch<RevealResult>(getRespondRevealUrl(id),
   {
     ...options,
     method: 'PATCH',
@@ -771,7 +772,7 @@ export const respondReveal = async (id: string,
 
 
 
-export const getRespondRevealMutationOptions = <TError = ErrorType<unknown>,
+export const getRespondRevealMutationOptions = <TError = ErrorType<ApiError>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof respondReveal>>, TError,{id: string;data: BodyType<RevealResponse>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof respondReveal>>, TError,{id: string;data: BodyType<RevealResponse>}, TContext> => {
 
@@ -800,12 +801,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type RespondRevealMutationResult = NonNullable<Awaited<ReturnType<typeof respondReveal>>>
     export type RespondRevealMutationBody = BodyType<RevealResponse>
-    export type RespondRevealMutationError = ErrorType<unknown>
+    export type RespondRevealMutationError = ErrorType<ApiError>
 
     /**
  * @summary Recipient responds to reveal request
  */
-export const useRespondReveal = <TError = ErrorType<unknown>,
+export const useRespondReveal = <TError = ErrorType<ApiError>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof respondReveal>>, TError,{id: string;data: BodyType<RevealResponse>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof respondReveal>>,

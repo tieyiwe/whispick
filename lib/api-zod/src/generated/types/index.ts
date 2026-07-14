@@ -19,6 +19,7 @@ export * from './listWhispsParams';
 export * from './publicReplyInput';
 export * from './publicWhisp';
 export * from './revealResponse';
+export * from './revealResult';
 export * from './trackingEvent';
 export * from './trackingEventInput';
 export * from './trackingResult';

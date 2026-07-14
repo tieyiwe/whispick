@@ -70,12 +70,20 @@ router.post("/w/:token/track", async (req, res): Promise<void> => {
     ipHash: null,
   });
 
-  // Update whisp status based on event
+  // Update whisp status based on event. "replied" is a more meaningful
+  // terminal state than "watched" — e.g. a recipient can reply mid-video and
+  // then keep watching, firing watched_complete afterwards — so a later
+  // watched_complete must not silently regress the status back from
+  // "replied", which would make the whisp vanish from the Replies Inbox and
+  // undercount the Dashboard's reply stat despite the reply still existing.
   const eventType = parsed.data.eventType;
   if (eventType === "opened" && !whisp.openedAt) {
     await db.update(whispsTable).set({ status: "opened", openedAt: new Date() }).where(eq(whispsTable.id, whisp.id));
   } else if (eventType === "watched_complete" && !whisp.watchedAt) {
-    await db.update(whispsTable).set({ status: "watched", watchedAt: new Date() }).where(eq(whispsTable.id, whisp.id));
+    await db
+      .update(whispsTable)
+      .set({ watchedAt: new Date(), ...(whisp.status === "replied" ? {} : { status: "watched" }) })
+      .where(eq(whispsTable.id, whisp.id));
   }
 
   res.json({ ok: true });

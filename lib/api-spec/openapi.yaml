@@ -215,7 +215,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Whisp"
+                $ref: "#/components/schemas/RevealResult"
+        "400":
+          description: No reveal was requested for this whisp
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
 
   /video/meta:
     post:
@@ -614,6 +620,20 @@ components:
           type: boolean
       required:
         - accepted
+
+    RevealResult:
+      type: object
+      properties:
+        id:
+          type: string
+        revealRequested:
+          type: boolean
+        revealAccepted:
+          type: boolean
+      required:
+        - id
+        - revealRequested
+        - revealAccepted
 
     VideoMetaRequest:
       type: object

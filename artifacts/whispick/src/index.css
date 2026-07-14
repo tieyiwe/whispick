@@ -110,8 +110,18 @@
     @apply border-border;
   }
 
+  html {
+    /* Prevents the page-level rubber-band/pull-to-refresh gesture from
+       fighting with the app's own fixed header/bottom-nav on mobile. */
+    overscroll-behavior-y: contain;
+  }
+
   body {
     @apply font-sans antialiased bg-background text-foreground;
+    /* Removes the gray tap-highlight flash Android/iOS browsers show on
+       every tap — native apps don't have this, and its absence is one of
+       the more noticeable "this feels like a website" tells. */
+    -webkit-tap-highlight-color: transparent;
   }
 
   h1, h2, h3, h4, h5, h6 {

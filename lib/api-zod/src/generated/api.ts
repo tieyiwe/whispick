@@ -276,27 +276,8 @@ export const RespondRevealBody = zod.object({
 
 export const RespondRevealResponse = zod.object({
   "id": zod.string(),
-  "senderId": zod.string(),
-  "videoUrl": zod.string(),
-  "videoTitle": zod.string().nullish(),
-  "videoThumbnail": zod.string().nullish(),
-  "videoEmbedUrl": zod.string().nullish(),
-  "videoPlatform": zod.string().nullish(),
-  "deliveryMethod": zod.string(),
-  "whisperChannel": zod.string().nullish(),
-  "recipientEmail": zod.string().nullish(),
-  "recipientPhone": zod.string().nullish(),
-  "anonymousNote": zod.string().nullish(),
-  "senderAlias": zod.string().nullish(),
-  "moodTag": zod.string().nullish(),
-  "status": zod.string(),
-  "scheduledAt": zod.string().nullish(),
-  "deliveredAt": zod.string().nullish(),
-  "openedAt": zod.string().nullish(),
-  "watchedAt": zod.string().nullish(),
   "revealRequested": zod.boolean(),
-  "revealAccepted": zod.boolean().nullish(),
-  "createdAt": zod.string()
+  "revealAccepted": zod.boolean()
 })
 
 

@@ -122,6 +122,12 @@ export interface RevealResponse {
   accepted: boolean;
 }
 
+export interface RevealResult {
+  id: string;
+  revealRequested: boolean;
+  revealAccepted: boolean;
+}
+
 export interface VideoMetaRequest {
   url: string;
 }

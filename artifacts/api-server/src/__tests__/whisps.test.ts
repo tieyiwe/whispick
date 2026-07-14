@@ -184,6 +184,37 @@ describe("Reveal flow", () => {
     expect(responded.status).toBe(200);
     expect(responded.body.revealAccepted).toBe(true);
   });
+
+  it("rejects a reveal response when no reveal was requested", async () => {
+    const created = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_A))
+      .send({ videoUrl: "https://youtu.be/a", deliveryMethod: "circle_drop" });
+
+    const responded = await request(app).patch(`/api/whisps/${created.body.id}/reveal`).send({ accepted: true });
+    expect(responded.status).toBe(400);
+  });
+
+  it("never exposes sender/recipient PII from the unauthenticated reveal-response endpoint", async () => {
+    const created = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_A))
+      .send({
+        videoUrl: "https://youtu.be/a",
+        deliveryMethod: "whisper_link",
+        whisperChannel: "email",
+        recipientEmail: "recipient@example.com",
+      });
+    const whispId = created.body.id;
+
+    await request(app).post(`/api/whisps/${whispId}/reveal`).set(asUser(USER_A));
+    const responded = await request(app).patch(`/api/whisps/${whispId}/reveal`).send({ accepted: true });
+
+    expect(responded.status).toBe(200);
+    expect(responded.body).not.toHaveProperty("senderId");
+    expect(responded.body).not.toHaveProperty("recipientEmail");
+    expect(responded.body).not.toHaveProperty("recipientPhone");
+  });
 });
 
 describe("GET /api/public/circle", () => {

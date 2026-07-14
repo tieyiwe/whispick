@@ -18,6 +18,7 @@ import { sendEmail, whisperLinkEmailHtml, replyNotificationEmailHtml } from "../
 import { sendSms, sendWhatsApp, whisperLinkSmsBody } from "../lib/sms";
 import { whisperLinkLimitFor, GHOST_BOOST_COST_USD } from "../lib/plans";
 import { HOOK_LINE } from "../lib/copy";
+import { createWhispLimiter } from "../lib/rateLimit";
 import { logger } from "../lib/logger";
 
 const router = Router();
@@ -46,7 +47,7 @@ router.get("/", requireAuth, async (req, res): Promise<void> => {
 });
 
 // POST /api/whisps
-router.post("/", requireAuth, async (req, res): Promise<void> => {
+router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void> => {
   const { userId } = getAuth(req);
   const user = await ensureUser(userId!, req);
 
@@ -357,7 +358,11 @@ router.post("/:id/reveal", requireAuth, async (req, res): Promise<void> => {
   res.json(updated);
 });
 
-// PATCH /api/whisps/:id/reveal
+// PATCH /api/whisps/:id/reveal — called by the (unauthenticated) recipient,
+// so the response must stay limited to what the public whisp page already
+// shows. It must never return the full row: that would hand out senderId,
+// recipientEmail/Phone, and everything else to anyone who has (or later
+// obtains — a forwarded link, a leaked referrer, etc.) this whisp id.
 router.patch("/:id/reveal", async (req, res): Promise<void> => {
   const schema = z.object({ accepted: z.boolean() });
   const parsed = schema.safeParse(req.body);
@@ -377,13 +382,17 @@ router.patch("/:id/reveal", async (req, res): Promise<void> => {
     return;
   }
 
+  if (!whisp.revealRequested) {
+    res.status(400).json({ error: "No reveal has been requested for this whisp" });
+    return;
+  }
+
   await db
     .update(whispsTable)
     .set({ revealAccepted: parsed.data.accepted })
     .where(eq(whispsTable.id, whisp.id));
 
-  const updated = await db.select().from(whispsTable).where(eq(whispsTable.id, whisp.id)).then(r => r[0]);
-  res.json(updated);
+  res.json({ id: whisp.id, revealRequested: true, revealAccepted: parsed.data.accepted });
 });
 
 export default router;

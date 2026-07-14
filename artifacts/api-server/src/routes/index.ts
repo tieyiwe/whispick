@@ -8,17 +8,18 @@ import userRouter from "./user";
 import creditsRouter from "./credits";
 import billingRouter from "./billing";
 import linkRouter from "./link";
+import { publicEndpointLimiter } from "../lib/rateLimit";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use("/whisps", whispsRouter);
 router.use("/video", videoRouter);
-router.use("/public", publicRouter);
-router.use("/public", circleRouter);
+router.use("/public", publicEndpointLimiter, publicRouter);
+router.use("/public", publicEndpointLimiter, circleRouter);
 router.use("/user", userRouter);
 router.use("/credits", creditsRouter);
 router.use("/billing", billingRouter);
-router.use("/l", linkRouter);
+router.use("/l", publicEndpointLimiter, linkRouter);
 
 export default router;

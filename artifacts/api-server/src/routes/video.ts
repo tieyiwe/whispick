@@ -3,14 +3,41 @@ import { z } from "zod";
 
 const router = Router();
 
-function detectPlatform(url: string): string {
-  if (url.includes("youtube.com") || url.includes("youtu.be")) return "youtube";
-  if (url.includes("tiktok.com")) return "tiktok";
-  if (url.includes("instagram.com")) return "instagram";
-  if (url.includes("facebook.com") || url.includes("fb.com") || url.includes("fb.watch")) return "facebook";
-  if (url.includes("vimeo.com")) return "vimeo";
-  if (url.includes("twitter.com") || url.includes("x.com")) return "twitter";
-  return "other";
+// Hostname allowlist, checked against the parsed URL's actual host (not a
+// substring match on the raw string) — otherwise "https://evil.com/?u=youtube.com"
+// would pass a naive .includes() check. Anything outside this list is
+// rejected before we ever make a server-side request to it, since this
+// endpoint would otherwise be a straightforward SSRF: it lets an
+// authenticated user make our server fetch an arbitrary URL (internal
+// services, cloud metadata endpoints, etc.) and reflects part of the
+// response back to them.
+const ALLOWED_HOSTS: Record<string, string> = {
+  "youtube.com": "youtube",
+  "www.youtube.com": "youtube",
+  "m.youtube.com": "youtube",
+  "youtu.be": "youtube",
+  "tiktok.com": "tiktok",
+  "www.tiktok.com": "tiktok",
+  "instagram.com": "instagram",
+  "www.instagram.com": "instagram",
+  "facebook.com": "facebook",
+  "www.facebook.com": "facebook",
+  "fb.watch": "facebook",
+  "vimeo.com": "vimeo",
+  "www.vimeo.com": "vimeo",
+  "player.vimeo.com": "vimeo",
+  "twitter.com": "twitter",
+  "www.twitter.com": "twitter",
+  "x.com": "twitter",
+};
+
+function detectPlatform(url: string): string | null {
+  try {
+    const hostname = new URL(url).hostname.toLowerCase();
+    return ALLOWED_HOSTS[hostname] ?? null;
+  } catch {
+    return null;
+  }
 }
 
 // Only YouTube and Vimeo expose an embeddable player with a JS API we can use
@@ -35,7 +62,7 @@ async function scrapeOEmbed(url: string): Promise<{ title?: string; thumbnail?: 
   };
 
   const platform = detectPlatform(url);
-  const endpoint = endpoints[platform];
+  const endpoint = platform ? endpoints[platform] : undefined;
   if (!endpoint) return null;
 
   try {
@@ -87,7 +114,17 @@ router.post("/meta", async (req, res): Promise<void> => {
   }
 
   const { url } = parsed.data;
+  const parsedUrl = new URL(url);
+  if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+    res.status(400).json({ error: "Only http/https URLs are supported" });
+    return;
+  }
+
   const platform = detectPlatform(url);
+  if (!platform) {
+    res.status(400).json({ error: "Unsupported video URL. Only YouTube, TikTok, Instagram, Facebook, Vimeo, and X/Twitter links are supported." });
+    return;
+  }
 
   // Try oEmbed first, then OG scraping
   const oembed = await scrapeOEmbed(url);

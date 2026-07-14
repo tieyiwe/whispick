@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { PlayCircle } from "lucide-react";
+import confetti from "canvas-confetti";
 
 type Props = {
   platform?: string | null;
@@ -137,7 +138,20 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, on
     );
   }
 
-  function handlePlayClick() {
+  function handlePlayClick(e: React.MouseEvent<HTMLButtonElement>) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    confetti({
+      particleCount: 80,
+      spread: 70,
+      startVelocity: 35,
+      origin: {
+        x: (rect.left + rect.width / 2) / window.innerWidth,
+        y: (rect.top + rect.height / 2) / window.innerHeight,
+      },
+      colors: ["#7C5CFC", "#FF6B6B", "#a78bfa", "#F5F0E8"],
+      disableForReducedMotion: true,
+    });
+
     onWatchEvent("clicked");
     if (isEmbeddable) {
       setPlaying(true);
