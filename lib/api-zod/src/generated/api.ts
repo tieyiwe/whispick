@@ -30,9 +30,11 @@ export const ListWhispsResponseItem = zod.object({
   "videoTitle": zod.string().nullish(),
   "videoThumbnail": zod.string().nullish(),
   "videoEmbedUrl": zod.string().nullish(),
+  "videoStartSeconds": zod.number().nullish(),
   "videoPlatform": zod.string().nullish(),
   "deliveryMethod": zod.string(),
   "whisperChannel": zod.string().nullish(),
+  "circleId": zod.string().nullish(),
   "recipientEmail": zod.string().nullish(),
   "recipientPhone": zod.string().nullish(),
   "anonymousNote": zod.string().nullish(),
@@ -58,9 +60,11 @@ export const CreateWhispBody = zod.object({
   "videoTitle": zod.string().nullish(),
   "videoThumbnail": zod.string().nullish(),
   "videoEmbedUrl": zod.string().nullish(),
+  "videoStartSeconds": zod.number().nullish(),
   "videoPlatform": zod.string().nullish(),
   "deliveryMethod": zod.string(),
   "whisperChannel": zod.string().nullish(),
+  "circleId": zod.string().nullish(),
   "recipientEmail": zod.string().nullish(),
   "recipientPhone": zod.string().nullish(),
   "anonymousNote": zod.string().nullish(),
@@ -76,9 +80,11 @@ export const CreateWhispResponse = zod.object({
   "videoTitle": zod.string().nullish(),
   "videoThumbnail": zod.string().nullish(),
   "videoEmbedUrl": zod.string().nullish(),
+  "videoStartSeconds": zod.number().nullish(),
   "videoPlatform": zod.string().nullish(),
   "deliveryMethod": zod.string(),
   "whisperChannel": zod.string().nullish(),
+  "circleId": zod.string().nullish(),
   "recipientEmail": zod.string().nullish(),
   "recipientPhone": zod.string().nullish(),
   "anonymousNote": zod.string().nullish(),
@@ -114,9 +120,11 @@ export const GetWhispStatsResponse = zod.object({
   "videoTitle": zod.string().nullish(),
   "videoThumbnail": zod.string().nullish(),
   "videoEmbedUrl": zod.string().nullish(),
+  "videoStartSeconds": zod.number().nullish(),
   "videoPlatform": zod.string().nullish(),
   "deliveryMethod": zod.string(),
   "whisperChannel": zod.string().nullish(),
+  "circleId": zod.string().nullish(),
   "recipientEmail": zod.string().nullish(),
   "recipientPhone": zod.string().nullish(),
   "anonymousNote": zod.string().nullish(),
@@ -149,9 +157,11 @@ export const GetWhispResponse = zod.object({
   "videoTitle": zod.string().nullish(),
   "videoThumbnail": zod.string().nullish(),
   "videoEmbedUrl": zod.string().nullish(),
+  "videoStartSeconds": zod.number().nullish(),
   "videoPlatform": zod.string().nullish(),
   "deliveryMethod": zod.string(),
   "whisperChannel": zod.string().nullish(),
+  "circleId": zod.string().nullish(),
   "recipientEmail": zod.string().nullish(),
   "recipientPhone": zod.string().nullish(),
   "anonymousNote": zod.string().nullish(),
@@ -177,6 +187,12 @@ export const GetWhispResponse = zod.object({
   "whispId": zod.string(),
   "replyText": zod.string(),
   "fromRecipient": zod.boolean(),
+  "videoUrl": zod.string().nullish(),
+  "videoTitle": zod.string().nullish(),
+  "videoThumbnail": zod.string().nullish(),
+  "videoEmbedUrl": zod.string().nullish(),
+  "videoPlatform": zod.string().nullish(),
+  "moodTag": zod.string().nullish(),
   "createdAt": zod.string()
 }))
 })
@@ -204,6 +220,12 @@ export const ListWhispRepliesResponseItem = zod.object({
   "whispId": zod.string(),
   "replyText": zod.string(),
   "fromRecipient": zod.boolean(),
+  "videoUrl": zod.string().nullish(),
+  "videoTitle": zod.string().nullish(),
+  "videoThumbnail": zod.string().nullish(),
+  "videoEmbedUrl": zod.string().nullish(),
+  "videoPlatform": zod.string().nullish(),
+  "moodTag": zod.string().nullish(),
   "createdAt": zod.string()
 })
 export const ListWhispRepliesResponse = zod.array(ListWhispRepliesResponseItem)
@@ -226,6 +248,12 @@ export const CreateWhispReplyResponse = zod.object({
   "whispId": zod.string(),
   "replyText": zod.string(),
   "fromRecipient": zod.boolean(),
+  "videoUrl": zod.string().nullish(),
+  "videoTitle": zod.string().nullish(),
+  "videoThumbnail": zod.string().nullish(),
+  "videoEmbedUrl": zod.string().nullish(),
+  "videoPlatform": zod.string().nullish(),
+  "moodTag": zod.string().nullish(),
   "createdAt": zod.string()
 })
 
@@ -244,9 +272,11 @@ export const RequestRevealResponse = zod.object({
   "videoTitle": zod.string().nullish(),
   "videoThumbnail": zod.string().nullish(),
   "videoEmbedUrl": zod.string().nullish(),
+  "videoStartSeconds": zod.number().nullish(),
   "videoPlatform": zod.string().nullish(),
   "deliveryMethod": zod.string(),
   "whisperChannel": zod.string().nullish(),
+  "circleId": zod.string().nullish(),
   "recipientEmail": zod.string().nullish(),
   "recipientPhone": zod.string().nullish(),
   "anonymousNote": zod.string().nullish(),
@@ -310,6 +340,7 @@ export const GetPublicWhispResponse = zod.object({
   "videoTitle": zod.string().nullish(),
   "videoThumbnail": zod.string().nullish(),
   "videoEmbedUrl": zod.string().nullish(),
+  "videoStartSeconds": zod.number().nullish(),
   "videoPlatform": zod.string().nullish(),
   "anonymousNote": zod.string().nullish(),
   "senderAlias": zod.string().nullish(),
@@ -342,7 +373,13 @@ export const PublicReplyParams = zod.object({
 })
 
 export const PublicReplyBody = zod.object({
-  "replyText": zod.string()
+  "replyText": zod.string().nullish(),
+  "videoUrl": zod.string().nullish(),
+  "videoTitle": zod.string().nullish(),
+  "videoThumbnail": zod.string().nullish(),
+  "videoEmbedUrl": zod.string().nullish(),
+  "videoPlatform": zod.string().nullish(),
+  "moodTag": zod.string().nullish()
 })
 
 export const PublicReplyResponse = zod.object({
@@ -350,6 +387,12 @@ export const PublicReplyResponse = zod.object({
   "whispId": zod.string(),
   "replyText": zod.string(),
   "fromRecipient": zod.boolean(),
+  "videoUrl": zod.string().nullish(),
+  "videoTitle": zod.string().nullish(),
+  "videoThumbnail": zod.string().nullish(),
+  "videoEmbedUrl": zod.string().nullish(),
+  "videoPlatform": zod.string().nullish(),
+  "moodTag": zod.string().nullish(),
   "createdAt": zod.string()
 })
 
@@ -392,6 +435,40 @@ export const UpdateUserProfileResponse = zod.object({
 
 
 /**
+ * @summary Get the VAPID public key used to subscribe to push notifications
+ */
+export const GetPushPublicKeyResponse = zod.object({
+  "publicKey": zod.string()
+})
+
+
+/**
+ * @summary Register a browser push subscription
+ */
+export const CreatePushSubscriptionBody = zod.object({
+  "endpoint": zod.string(),
+  "keys": zod.object({
+  "p256dh": zod.string(),
+  "auth": zod.string()
+})
+})
+
+export const CreatePushSubscriptionResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+
+/**
+ * @summary Remove a browser push subscription
+ */
+export const DeletePushSubscriptionBody = zod.object({
+  "endpoint": zod.string()
+})
+
+export const DeletePushSubscriptionResponse = zod.void()
+
+
+/**
  * @summary List credit transactions for current user
  */
 export const ListCreditTransactionsResponseItem = zod.object({
@@ -403,6 +480,75 @@ export const ListCreditTransactionsResponseItem = zod.object({
   "createdAt": zod.string()
 })
 export const ListCreditTransactionsResponse = zod.array(ListCreditTransactionsResponseItem)
+
+
+/**
+ * @summary List private circles the current user belongs to
+ */
+export const ListMyCirclesResponseItem = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "ownerId": zod.string(),
+  "inviteCode": zod.string(),
+  "createdAt": zod.string()
+})
+export const ListMyCirclesResponse = zod.array(ListMyCirclesResponseItem)
+
+
+/**
+ * @summary Create a new private circle (creator becomes the first member)
+ */
+export const CreateCircleBody = zod.object({
+  "name": zod.string()
+})
+
+export const CreateCircleResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "ownerId": zod.string(),
+  "inviteCode": zod.string(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Join a private circle using its invite code
+ */
+export const JoinCircleBody = zod.object({
+  "inviteCode": zod.string()
+})
+
+export const JoinCircleResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "ownerId": zod.string(),
+  "inviteCode": zod.string(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Feed of whisps dropped into this circle (members only)
+ */
+export const GetCircleWhispsParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetCircleWhispsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "videoUrl": zod.string(),
+  "videoTitle": zod.string().nullish(),
+  "videoThumbnail": zod.string().nullish(),
+  "videoPlatform": zod.string().nullish(),
+  "anonymousNote": zod.string().nullish(),
+  "senderAlias": zod.string().nullish(),
+  "moodTag": zod.string().nullish(),
+  "publicToken": zod.string(),
+  "createdAt": zod.string()
+})),
+  "nextCursor": zod.string().nullable()
+})
 
 
 /**

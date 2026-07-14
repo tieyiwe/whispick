@@ -7,6 +7,7 @@ import {
   trackingEventsTable,
   usersTable,
   creditTransactionsTable,
+  circleMembersTable,
 } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
@@ -14,12 +15,9 @@ import { z } from "zod";
 import { requireAuth } from "../lib/auth";
 import { ensureUser } from "../lib/ensureUser";
 import { getPublicAppUrl } from "../lib/publicUrl";
-import { sendEmail, whisperLinkEmailHtml, replyNotificationEmailHtml } from "../lib/email";
-import { sendSms, sendWhatsApp, whisperLinkSmsBody } from "../lib/sms";
+import { deliverWhisperLink } from "../lib/deliver";
 import { whisperLinkLimitFor, GHOST_BOOST_COST_USD } from "../lib/plans";
-import { HOOK_LINE } from "../lib/copy";
 import { createWhispLimiter } from "../lib/rateLimit";
-import { logger } from "../lib/logger";
 
 const router = Router();
 
@@ -56,9 +54,11 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
     videoTitle: z.string().nullable().optional(),
     videoThumbnail: z.string().nullable().optional(),
     videoEmbedUrl: z.string().nullable().optional(),
+    videoStartSeconds: z.number().int().min(0).nullable().optional(),
     videoPlatform: z.string().nullable().optional(),
     deliveryMethod: z.enum(DELIVERY_METHODS),
     whisperChannel: z.enum(WHISPER_CHANNELS).nullable().optional(),
+    circleId: z.string().nullable().optional(),
     recipientEmail: z.string().nullable().optional(),
     recipientPhone: z.string().nullable().optional(),
     anonymousNote: z.string().nullable().optional(),
@@ -129,9 +129,25 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
       .where(eq(usersTable.id, user.id));
   }
 
+  if (data.deliveryMethod === "circle_drop" && data.circleId) {
+    const membership = await db
+      .select()
+      .from(circleMembersTable)
+      .where(and(eq(circleMembersTable.circleId, data.circleId), eq(circleMembersTable.userId, user.id)))
+      .then(r => r[0]);
+    if (!membership) {
+      res.status(403).json({ error: "You're not a member of that circle" });
+      return;
+    }
+  }
+
   const id = randomUUID();
   const publicToken = randomUUID().replace(/-/g, "");
   const isGhostBoost = data.deliveryMethod === "ghost_boost";
+  const scheduledDate = data.scheduledAt ? new Date(data.scheduledAt) : null;
+  // Ghost Boost's own "pending" status already means "queued, no live ad
+  // integration" — scheduling isn't layered on top of that.
+  const isScheduled = !isGhostBoost && scheduledDate !== null && scheduledDate.getTime() > Date.now();
 
   await db.insert(whispsTable).values({
     id,
@@ -140,18 +156,20 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
     videoTitle: data.videoTitle ?? null,
     videoThumbnail: data.videoThumbnail ?? null,
     videoEmbedUrl: data.videoEmbedUrl ?? null,
+    videoStartSeconds: data.videoStartSeconds ?? null,
     videoPlatform: data.videoPlatform ?? null,
     deliveryMethod: data.deliveryMethod,
     whisperChannel: data.deliveryMethod === "whisper_link" ? data.whisperChannel ?? null : null,
+    circleId: data.deliveryMethod === "circle_drop" ? data.circleId ?? null : null,
     recipientEmail: data.recipientEmail ?? null,
     recipientPhone: data.recipientPhone ?? null,
     anonymousNote: data.anonymousNote ?? null,
     senderAlias: data.senderAlias ?? null,
     moodTag: data.moodTag ?? null,
-    status: isGhostBoost ? "pending" : "delivered",
+    status: isGhostBoost ? "pending" : isScheduled ? "scheduled" : "delivered",
     publicToken,
-    scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : null,
-    deliveredAt: isGhostBoost ? null : new Date(),
+    scheduledAt: scheduledDate,
+    deliveredAt: isGhostBoost || isScheduled ? null : new Date(),
     boostSpendUsd: isGhostBoost ? String(GHOST_BOOST_COST_USD) : null,
   });
 
@@ -165,19 +183,16 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
     });
   }
 
-  if (data.deliveryMethod === "whisper_link") {
-    // The shared link goes through /l/:token (server-rendered) rather than
-    // straight to /w/:token (the SPA) so link-preview crawlers in
-    // email/SMS/WhatsApp clients see a real per-video Open Graph card
-    // instead of the app's generic static shell.
-    const sharedUrl = `${getPublicAppUrl(req)}/api/l/${publicToken}`;
-    if (data.whisperChannel === "email" && data.recipientEmail) {
-      void sendEmail(data.recipientEmail, HOOK_LINE, whisperLinkEmailHtml(sharedUrl));
-    } else if (data.whisperChannel === "sms" && data.recipientPhone) {
-      void sendSms(data.recipientPhone, whisperLinkSmsBody(sharedUrl));
-    } else if (data.whisperChannel === "whatsapp" && data.recipientPhone) {
-      void sendWhatsApp(data.recipientPhone, sharedUrl);
-    }
+  // The shared link goes through /l/:token (server-rendered) rather than
+  // straight to /w/:token (the SPA) so link-preview crawlers in
+  // email/SMS/WhatsApp clients see a real per-video Open Graph card instead
+  // of the app's generic static shell. Scheduled whisps are dispatched later
+  // by lib/scheduler.ts when their scheduledAt comes due.
+  if (data.deliveryMethod === "whisper_link" && !isScheduled) {
+    deliverWhisperLink(
+      { publicToken, whisperChannel: data.whisperChannel ?? null, recipientEmail: data.recipientEmail ?? null, recipientPhone: data.recipientPhone ?? null },
+      getPublicAppUrl(req),
+    );
   }
 
   const whisp = await db.select().from(whispsTable).where(eq(whispsTable.id, id)).then(r => r[0]);

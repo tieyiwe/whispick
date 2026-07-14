@@ -23,13 +23,19 @@ import type {
   ApiError,
   CheckoutRequest,
   CheckoutResponse,
+  Circle,
   CircleFeedResponse,
+  CreateCircleInput,
   CreditTransaction,
   HealthStatus,
+  JoinCircleInput,
   ListCircleFeedParams,
   ListWhispsParams,
   PublicReplyInput,
   PublicWhisp,
+  PushPublicKeyResponse,
+  PushSubscriptionDeleteInput,
+  PushSubscriptionInput,
   RevealResponse,
   RevealResult,
   TrackingEventInput,
@@ -1253,6 +1259,223 @@ export const useUpdateUserProfile = <TError = ErrorType<unknown>,
       return useMutation(getUpdateUserProfileMutationOptions(options));
     }
 
+export const getGetPushPublicKeyUrl = () => {
+
+
+
+
+  return `/api/user/push-public-key`
+}
+
+/**
+ * @summary Get the VAPID public key used to subscribe to push notifications
+ */
+export const getPushPublicKey = async ( options?: RequestInit): Promise<PushPublicKeyResponse> => {
+
+  return customFetch<PushPublicKeyResponse>(getGetPushPublicKeyUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPushPublicKeyQueryKey = () => {
+    return [
+    `/api/user/push-public-key`
+    ] as const;
+    }
+
+
+export const getGetPushPublicKeyQueryOptions = <TData = Awaited<ReturnType<typeof getPushPublicKey>>, TError = ErrorType<ApiError>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPushPublicKey>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPushPublicKeyQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPushPublicKey>>> = ({ signal }) => getPushPublicKey({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPushPublicKey>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPushPublicKeyQueryResult = NonNullable<Awaited<ReturnType<typeof getPushPublicKey>>>
+export type GetPushPublicKeyQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Get the VAPID public key used to subscribe to push notifications
+ */
+
+export function useGetPushPublicKey<TData = Awaited<ReturnType<typeof getPushPublicKey>>, TError = ErrorType<ApiError>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPushPublicKey>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPushPublicKeyQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreatePushSubscriptionUrl = () => {
+
+
+
+
+  return `/api/user/push-subscription`
+}
+
+/**
+ * @summary Register a browser push subscription
+ */
+export const createPushSubscription = async (pushSubscriptionInput: PushSubscriptionInput, options?: RequestInit): Promise<TrackingResult> => {
+
+  return customFetch<TrackingResult>(getCreatePushSubscriptionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(pushSubscriptionInput)
+  }
+);}
+
+
+
+
+export const getCreatePushSubscriptionMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPushSubscription>>, TError,{data: BodyType<PushSubscriptionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createPushSubscription>>, TError,{data: BodyType<PushSubscriptionInput>}, TContext> => {
+
+const mutationKey = ['createPushSubscription'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPushSubscription>>, {data: BodyType<PushSubscriptionInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createPushSubscription(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreatePushSubscriptionMutationResult = NonNullable<Awaited<ReturnType<typeof createPushSubscription>>>
+    export type CreatePushSubscriptionMutationBody = BodyType<PushSubscriptionInput>
+    export type CreatePushSubscriptionMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Register a browser push subscription
+ */
+export const useCreatePushSubscription = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPushSubscription>>, TError,{data: BodyType<PushSubscriptionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createPushSubscription>>,
+        TError,
+        {data: BodyType<PushSubscriptionInput>},
+        TContext
+      > => {
+      return useMutation(getCreatePushSubscriptionMutationOptions(options));
+    }
+
+export const getDeletePushSubscriptionUrl = () => {
+
+
+
+
+  return `/api/user/push-subscription`
+}
+
+/**
+ * @summary Remove a browser push subscription
+ */
+export const deletePushSubscription = async (pushSubscriptionDeleteInput: PushSubscriptionDeleteInput, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeletePushSubscriptionUrl(),
+  {
+    ...options,
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(pushSubscriptionDeleteInput)
+  }
+);}
+
+
+
+
+export const getDeletePushSubscriptionMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePushSubscription>>, TError,{data: BodyType<PushSubscriptionDeleteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deletePushSubscription>>, TError,{data: BodyType<PushSubscriptionDeleteInput>}, TContext> => {
+
+const mutationKey = ['deletePushSubscription'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deletePushSubscription>>, {data: BodyType<PushSubscriptionDeleteInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  deletePushSubscription(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeletePushSubscriptionMutationResult = NonNullable<Awaited<ReturnType<typeof deletePushSubscription>>>
+    export type DeletePushSubscriptionMutationBody = BodyType<PushSubscriptionDeleteInput>
+    export type DeletePushSubscriptionMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Remove a browser push subscription
+ */
+export const useDeletePushSubscription = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePushSubscription>>, TError,{data: BodyType<PushSubscriptionDeleteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deletePushSubscription>>,
+        TError,
+        {data: BodyType<PushSubscriptionDeleteInput>},
+        TContext
+      > => {
+      return useMutation(getDeletePushSubscriptionMutationOptions(options));
+    }
+
 export const getListCreditTransactionsUrl = () => {
 
 
@@ -1318,6 +1541,300 @@ export function useListCreditTransactions<TData = Awaited<ReturnType<typeof list
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListCreditTransactionsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListMyCirclesUrl = () => {
+
+
+
+
+  return `/api/circles`
+}
+
+/**
+ * @summary List private circles the current user belongs to
+ */
+export const listMyCircles = async ( options?: RequestInit): Promise<Circle[]> => {
+
+  return customFetch<Circle[]>(getListMyCirclesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMyCirclesQueryKey = () => {
+    return [
+    `/api/circles`
+    ] as const;
+    }
+
+
+export const getListMyCirclesQueryOptions = <TData = Awaited<ReturnType<typeof listMyCircles>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyCircles>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMyCirclesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyCircles>>> = ({ signal }) => listMyCircles({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMyCircles>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMyCirclesQueryResult = NonNullable<Awaited<ReturnType<typeof listMyCircles>>>
+export type ListMyCirclesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List private circles the current user belongs to
+ */
+
+export function useListMyCircles<TData = Awaited<ReturnType<typeof listMyCircles>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyCircles>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMyCirclesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateCircleUrl = () => {
+
+
+
+
+  return `/api/circles`
+}
+
+/**
+ * @summary Create a new private circle (creator becomes the first member)
+ */
+export const createCircle = async (createCircleInput: CreateCircleInput, options?: RequestInit): Promise<Circle> => {
+
+  return customFetch<Circle>(getCreateCircleUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createCircleInput)
+  }
+);}
+
+
+
+
+export const getCreateCircleMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCircle>>, TError,{data: BodyType<CreateCircleInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCircle>>, TError,{data: BodyType<CreateCircleInput>}, TContext> => {
+
+const mutationKey = ['createCircle'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCircle>>, {data: BodyType<CreateCircleInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCircle(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCircleMutationResult = NonNullable<Awaited<ReturnType<typeof createCircle>>>
+    export type CreateCircleMutationBody = BodyType<CreateCircleInput>
+    export type CreateCircleMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a new private circle (creator becomes the first member)
+ */
+export const useCreateCircle = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCircle>>, TError,{data: BodyType<CreateCircleInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCircle>>,
+        TError,
+        {data: BodyType<CreateCircleInput>},
+        TContext
+      > => {
+      return useMutation(getCreateCircleMutationOptions(options));
+    }
+
+export const getJoinCircleUrl = () => {
+
+
+
+
+  return `/api/circles/join`
+}
+
+/**
+ * @summary Join a private circle using its invite code
+ */
+export const joinCircle = async (joinCircleInput: JoinCircleInput, options?: RequestInit): Promise<Circle> => {
+
+  return customFetch<Circle>(getJoinCircleUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(joinCircleInput)
+  }
+);}
+
+
+
+
+export const getJoinCircleMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof joinCircle>>, TError,{data: BodyType<JoinCircleInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof joinCircle>>, TError,{data: BodyType<JoinCircleInput>}, TContext> => {
+
+const mutationKey = ['joinCircle'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof joinCircle>>, {data: BodyType<JoinCircleInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  joinCircle(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type JoinCircleMutationResult = NonNullable<Awaited<ReturnType<typeof joinCircle>>>
+    export type JoinCircleMutationBody = BodyType<JoinCircleInput>
+    export type JoinCircleMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Join a private circle using its invite code
+ */
+export const useJoinCircle = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof joinCircle>>, TError,{data: BodyType<JoinCircleInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof joinCircle>>,
+        TError,
+        {data: BodyType<JoinCircleInput>},
+        TContext
+      > => {
+      return useMutation(getJoinCircleMutationOptions(options));
+    }
+
+export const getGetCircleWhispsUrl = (id: string,) => {
+
+
+
+
+  return `/api/circles/${id}/feed`
+}
+
+/**
+ * @summary Feed of whisps dropped into this circle (members only)
+ */
+export const getCircleWhisps = async (id: string, options?: RequestInit): Promise<CircleFeedResponse> => {
+
+  return customFetch<CircleFeedResponse>(getGetCircleWhispsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCircleWhispsQueryKey = (id: string,) => {
+    return [
+    `/api/circles/${id}/feed`
+    ] as const;
+    }
+
+
+export const getGetCircleWhispsQueryOptions = <TData = Awaited<ReturnType<typeof getCircleWhisps>>, TError = ErrorType<ApiError>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCircleWhisps>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCircleWhispsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCircleWhisps>>> = ({ signal }) => getCircleWhisps(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCircleWhisps>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCircleWhispsQueryResult = NonNullable<Awaited<ReturnType<typeof getCircleWhisps>>>
+export type GetCircleWhispsQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Feed of whisps dropped into this circle (members only)
+ */
+
+export function useGetCircleWhisps<TData = Awaited<ReturnType<typeof getCircleWhisps>>, TError = ErrorType<ApiError>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCircleWhisps>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCircleWhispsQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

@@ -7,5 +7,18 @@
  */
 
 export interface PublicReplyInput {
-  replyText: string;
+  /** @nullable */
+  replyText?: string | null;
+  /** @nullable */
+  videoUrl?: string | null;
+  /** @nullable */
+  videoTitle?: string | null;
+  /** @nullable */
+  videoThumbnail?: string | null;
+  /** @nullable */
+  videoEmbedUrl?: string | null;
+  /** @nullable */
+  videoPlatform?: string | null;
+  /** @nullable */
+  moodTag?: string | null;
 }

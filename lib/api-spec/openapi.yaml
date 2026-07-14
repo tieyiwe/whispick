@@ -22,6 +22,8 @@ tags:
     description: Credit & plan management
   - name: billing
     description: Stripe checkout
+  - name: circles
+    description: Private invite-only circles
 paths:
   /healthz:
     get:
@@ -353,6 +355,57 @@ paths:
               schema:
                 $ref: "#/components/schemas/UserProfile"
 
+  /user/push-public-key:
+    get:
+      operationId: getPushPublicKey
+      tags: [user]
+      summary: Get the VAPID public key used to subscribe to push notifications
+      responses:
+        "200":
+          description: Public key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PushPublicKeyResponse"
+        "503":
+          description: Push notifications are not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /user/push-subscription:
+    post:
+      operationId: createPushSubscription
+      tags: [user]
+      summary: Register a browser push subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PushSubscriptionInput"
+      responses:
+        "201":
+          description: Subscribed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrackingResult"
+    delete:
+      operationId: deletePushSubscription
+      tags: [user]
+      summary: Remove a browser push subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PushSubscriptionDeleteInput"
+      responses:
+        "204":
+          description: Unsubscribed
+
   /credits/transactions:
     get:
       operationId: listCreditTransactions
@@ -367,6 +420,88 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/CreditTransaction"
+
+  /circles:
+    get:
+      operationId: listMyCircles
+      tags: [circles]
+      summary: List private circles the current user belongs to
+      responses:
+        "200":
+          description: Circles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Circle"
+    post:
+      operationId: createCircle
+      tags: [circles]
+      summary: Create a new private circle (creator becomes the first member)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCircleInput"
+      responses:
+        "201":
+          description: Circle created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Circle"
+
+  /circles/join:
+    post:
+      operationId: joinCircle
+      tags: [circles]
+      summary: Join a private circle using its invite code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JoinCircleInput"
+      responses:
+        "200":
+          description: Joined
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Circle"
+        "404":
+          description: Invalid invite code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /circles/{id}/feed:
+    get:
+      operationId: getCircleWhisps
+      tags: [circles]
+      summary: Feed of whisps dropped into this circle (members only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Circle feed page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CircleFeedResponse"
+        "403":
+          description: Not a member of this circle
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
 
   /public/circle:
     get:
@@ -457,11 +592,15 @@ components:
           type: ["string", "null"]
         videoEmbedUrl:
           type: ["string", "null"]
+        videoStartSeconds:
+          type: ["integer", "null"]
         videoPlatform:
           type: ["string", "null"]
         deliveryMethod:
           type: string
         whisperChannel:
+          type: ["string", "null"]
+        circleId:
           type: ["string", "null"]
         recipientEmail:
           type: ["string", "null"]
@@ -509,11 +648,15 @@ components:
           type: ["string", "null"]
         videoEmbedUrl:
           type: ["string", "null"]
+        videoStartSeconds:
+          type: ["integer", "null"]
         videoPlatform:
           type: ["string", "null"]
         deliveryMethod:
           type: string
         whisperChannel:
+          type: ["string", "null"]
+        circleId:
           type: ["string", "null"]
         recipientEmail:
           type: ["string", "null"]
@@ -594,6 +737,18 @@ components:
           type: string
         fromRecipient:
           type: boolean
+        videoUrl:
+          type: ["string", "null"]
+        videoTitle:
+          type: ["string", "null"]
+        videoThumbnail:
+          type: ["string", "null"]
+        videoEmbedUrl:
+          type: ["string", "null"]
+        videoPlatform:
+          type: ["string", "null"]
+        moodTag:
+          type: ["string", "null"]
         createdAt:
           type: string
       required:
@@ -672,6 +827,8 @@ components:
           type: ["string", "null"]
         videoEmbedUrl:
           type: ["string", "null"]
+        videoStartSeconds:
+          type: ["integer", "null"]
         videoPlatform:
           type: ["string", "null"]
         anonymousNote:
@@ -724,9 +881,19 @@ components:
       type: object
       properties:
         replyText:
-          type: string
-      required:
-        - replyText
+          type: ["string", "null"]
+        videoUrl:
+          type: ["string", "null"]
+        videoTitle:
+          type: ["string", "null"]
+        videoThumbnail:
+          type: ["string", "null"]
+        videoEmbedUrl:
+          type: ["string", "null"]
+        videoPlatform:
+          type: ["string", "null"]
+        moodTag:
+          type: ["string", "null"]
 
     UserProfile:
       type: object
@@ -829,6 +996,80 @@ components:
       required:
         - items
         - nextCursor
+
+    Circle:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        ownerId:
+          type: string
+        inviteCode:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - ownerId
+        - inviteCode
+        - createdAt
+
+    CreateCircleInput:
+      type: object
+      properties:
+        name:
+          type: string
+      required:
+        - name
+
+    JoinCircleInput:
+      type: object
+      properties:
+        inviteCode:
+          type: string
+      required:
+        - inviteCode
+
+    PushPublicKeyResponse:
+      type: object
+      properties:
+        publicKey:
+          type: string
+      required:
+        - publicKey
+
+    PushSubscriptionKeys:
+      type: object
+      properties:
+        p256dh:
+          type: string
+        auth:
+          type: string
+      required:
+        - p256dh
+        - auth
+
+    PushSubscriptionInput:
+      type: object
+      properties:
+        endpoint:
+          type: string
+        keys:
+          $ref: "#/components/schemas/PushSubscriptionKeys"
+      required:
+        - endpoint
+        - keys
+
+    PushSubscriptionDeleteInput:
+      type: object
+      properties:
+        endpoint:
+          type: string
+      required:
+        - endpoint
 
     CheckoutRequest:
       type: object

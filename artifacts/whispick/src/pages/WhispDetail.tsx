@@ -231,6 +231,11 @@ export function WhispDetail() {
               </div>
               <StatusBadge status={whisp.status} />
             </div>
+            {whisp.status === "scheduled" && whisp.scheduledAt && (
+              <p className="text-xs text-violet-400 mb-2">
+                Scheduled to send {new Date(whisp.scheduledAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
+              </p>
+            )}
             {whisp.moodTag && <MoodTag mood={whisp.moodTag} className="mb-2" />}
             {whisp.anonymousNote && (
               <p className="text-sm text-muted-foreground italic border-l-2 border-primary/40 pl-3">
@@ -301,7 +306,25 @@ export function WhispDetail() {
                       {reply.fromRecipient ? "Recipient" : "You"} · {new Date(reply.createdAt).toLocaleString()}
                     </span>
                   </div>
-                  <p className="text-foreground">{reply.replyText}</p>
+                  {reply.replyText && <p className="text-foreground">{reply.replyText}</p>}
+                  {reply.videoUrl && (
+                    <a
+                      href={reply.videoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      data-testid={`reply-video-${reply.id}`}
+                      className={`flex gap-2 items-center bg-card rounded-lg p-2 hover:bg-card/70 transition-colors ${reply.replyText ? "mt-2" : ""}`}
+                    >
+                      {reply.videoThumbnail ? (
+                        <img src={reply.videoThumbnail} className="w-16 h-12 object-cover rounded" alt="Video reply thumbnail" />
+                      ) : (
+                        <div className="w-16 h-12 bg-muted rounded flex items-center justify-center shrink-0">
+                          <PlayCircle className="w-5 h-5 text-muted-foreground" />
+                        </div>
+                      )}
+                      <span className="text-xs text-foreground truncate">{reply.videoTitle || "Whisped a video back"}</span>
+                    </a>
+                  )}
                 </div>
               ))}
             </CardContent>

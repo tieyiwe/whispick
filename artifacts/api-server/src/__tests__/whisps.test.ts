@@ -150,6 +150,72 @@ describe("POST /api/whisps", () => {
   });
 });
 
+describe("Scheduled sending", () => {
+  it("queues a future-dated whisper_link as scheduled instead of delivering immediately", async () => {
+    const futureDate = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    const res = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_A))
+      .send({
+        videoUrl: "https://youtu.be/x",
+        deliveryMethod: "whisper_link",
+        whisperChannel: "email",
+        recipientEmail: "friend@example.com",
+        scheduledAt: futureDate,
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.status).toBe("scheduled");
+    expect(res.body.deliveredAt).toBeNull();
+    expect(res.body.scheduledAt).not.toBeNull();
+  });
+
+  it("delivers immediately when scheduledAt is in the past", async () => {
+    const pastDate = new Date(Date.now() - 60 * 1000).toISOString();
+    const res = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_A))
+      .send({
+        videoUrl: "https://youtu.be/x",
+        deliveryMethod: "whisper_link",
+        whisperChannel: "email",
+        recipientEmail: "friend@example.com",
+        scheduledAt: pastDate,
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.status).toBe("delivered");
+    expect(res.body.deliveredAt).not.toBeNull();
+  });
+
+  it("ignores scheduledAt for Ghost Boost, which is always queued as pending", async () => {
+    await request(app).get("/api/user/profile").set(asUser(USER_A));
+    const user = await getUser(USER_A);
+    await db.update(usersTable).set({ boostCredits: 1 }).where(eq(usersTable.id, user.id));
+
+    const futureDate = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    const res = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_A))
+      .send({ videoUrl: "https://youtu.be/x", deliveryMethod: "ghost_boost", scheduledAt: futureDate });
+
+    expect(res.status).toBe(201);
+    expect(res.body.status).toBe("pending");
+  });
+});
+
+describe("Timestamp bookmarking", () => {
+  it("stores and returns videoStartSeconds", async () => {
+    const res = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_A))
+      .send({ videoUrl: "https://youtu.be/x", deliveryMethod: "circle_drop", videoStartSeconds: 84 });
+
+    expect(res.status).toBe(201);
+    expect(res.body.videoStartSeconds).toBe(84);
+  });
+});
+
 describe("GET /api/whisps", () => {
   it("only returns whisps belonging to the authenticated user", async () => {
     await request(app)

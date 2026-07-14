@@ -74,4 +74,27 @@ describe("POST /api/public/w/:token/reply", () => {
     expect(detail.body.whisp.status).toBe("replied");
     expect(detail.body.whisp.watchedAt).not.toBeNull();
   });
+
+  it("accepts a whisp-back video reply with no text", async () => {
+    const whisp = await createWhisp();
+
+    const res = await request(app).post(`/api/public/w/${whisp.publicToken}/reply`).send({
+      videoUrl: "https://youtu.be/reply",
+      videoTitle: "A video back",
+      videoPlatform: "youtube",
+    });
+    expect(res.status).toBe(201);
+    expect(res.body.videoUrl).toBe("https://youtu.be/reply");
+    expect(res.body.replyText).toBe("");
+
+    const detail = await request(app).get(`/api/whisps/${whisp.id}`).set(TEST_USER_HEADER, USER_A);
+    expect(detail.body.replies[0].videoUrl).toBe("https://youtu.be/reply");
+  });
+
+  it("rejects a reply with neither text nor a video", async () => {
+    const whisp = await createWhisp();
+
+    const res = await request(app).post(`/api/public/w/${whisp.publicToken}/reply`).send({});
+    expect(res.status).toBe(400);
+  });
 });

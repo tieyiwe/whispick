@@ -15,10 +15,14 @@ export interface WhispInput {
   /** @nullable */
   videoEmbedUrl?: string | null;
   /** @nullable */
+  videoStartSeconds?: number | null;
+  /** @nullable */
   videoPlatform?: string | null;
   deliveryMethod: string;
   /** @nullable */
   whisperChannel?: string | null;
+  /** @nullable */
+  circleId?: string | null;
   /** @nullable */
   recipientEmail?: string | null;
   /** @nullable */

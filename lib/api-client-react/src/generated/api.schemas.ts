@@ -24,10 +24,14 @@ export interface Whisp {
   /** @nullable */
   videoEmbedUrl?: string | null;
   /** @nullable */
+  videoStartSeconds?: number | null;
+  /** @nullable */
   videoPlatform?: string | null;
   deliveryMethod: string;
   /** @nullable */
   whisperChannel?: string | null;
+  /** @nullable */
+  circleId?: string | null;
   /** @nullable */
   recipientEmail?: string | null;
   /** @nullable */
@@ -62,10 +66,14 @@ export interface WhispInput {
   /** @nullable */
   videoEmbedUrl?: string | null;
   /** @nullable */
+  videoStartSeconds?: number | null;
+  /** @nullable */
   videoPlatform?: string | null;
   deliveryMethod: string;
   /** @nullable */
   whisperChannel?: string | null;
+  /** @nullable */
+  circleId?: string | null;
   /** @nullable */
   recipientEmail?: string | null;
   /** @nullable */
@@ -92,6 +100,18 @@ export interface WhispReply {
   whispId: string;
   replyText: string;
   fromRecipient: boolean;
+  /** @nullable */
+  videoUrl?: string | null;
+  /** @nullable */
+  videoTitle?: string | null;
+  /** @nullable */
+  videoThumbnail?: string | null;
+  /** @nullable */
+  videoEmbedUrl?: string | null;
+  /** @nullable */
+  videoPlatform?: string | null;
+  /** @nullable */
+  moodTag?: string | null;
   createdAt: string;
 }
 
@@ -154,6 +174,8 @@ export interface PublicWhisp {
   /** @nullable */
   videoEmbedUrl?: string | null;
   /** @nullable */
+  videoStartSeconds?: number | null;
+  /** @nullable */
   videoPlatform?: string | null;
   /** @nullable */
   anonymousNote?: string | null;
@@ -173,7 +195,20 @@ export interface TrackingResult {
 }
 
 export interface PublicReplyInput {
-  replyText: string;
+  /** @nullable */
+  replyText?: string | null;
+  /** @nullable */
+  videoUrl?: string | null;
+  /** @nullable */
+  videoTitle?: string | null;
+  /** @nullable */
+  videoThumbnail?: string | null;
+  /** @nullable */
+  videoEmbedUrl?: string | null;
+  /** @nullable */
+  videoPlatform?: string | null;
+  /** @nullable */
+  moodTag?: string | null;
 }
 
 export interface UserProfile {
@@ -230,6 +265,40 @@ export interface CircleFeedResponse {
   items: CircleFeedItem[];
   /** @nullable */
   nextCursor: string | null;
+}
+
+export interface Circle {
+  id: string;
+  name: string;
+  ownerId: string;
+  inviteCode: string;
+  createdAt: string;
+}
+
+export interface CreateCircleInput {
+  name: string;
+}
+
+export interface JoinCircleInput {
+  inviteCode: string;
+}
+
+export interface PushPublicKeyResponse {
+  publicKey: string;
+}
+
+export interface PushSubscriptionKeys {
+  p256dh: string;
+  auth: string;
+}
+
+export interface PushSubscriptionInput {
+  endpoint: string;
+  keys: PushSubscriptionKeys;
+}
+
+export interface PushSubscriptionDeleteInput {
+  endpoint: string;
 }
 
 export type CheckoutRequestKind = typeof CheckoutRequestKind[keyof typeof CheckoutRequestKind];

@@ -8,6 +8,7 @@ type Props = {
   videoUrl: string;
   thumbnail?: string | null;
   title?: string | null;
+  startSeconds?: number | null;
   onWatchEvent: (eventType: "clicked" | "watched_10s" | "watched_50pct" | "watched_complete") => void;
 };
 
@@ -44,7 +45,7 @@ function loadYouTubeApi(): Promise<void> {
  * player with progress events, so we fall back to opening the original link
  * and can only ever know it was clicked, not watched.
  */
-export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, onWatchEvent }: Props) {
+export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, startSeconds, onWatchEvent }: Props) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const firedRef = useRef({ tenSec: false, halfway: false, complete: false });
   const [playing, setPlaying] = useState(false);
@@ -103,6 +104,9 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, on
     import("@vimeo/player").then(({ default: Player }) => {
       if (cancelled || !iframeRef.current) return;
       player = new Player(iframeRef.current);
+      if (startSeconds) {
+        player.setCurrentTime(startSeconds).catch(() => {});
+      }
       player.on("timeupdate", ({ seconds, duration }: { seconds: number; duration: number }) => {
         checkProgress(seconds, duration);
       });
@@ -124,11 +128,12 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, on
   const isEmbeddable = !!embedUrl && (platform === "youtube" || platform === "vimeo");
 
   if (isEmbeddable && playing) {
+    const startParam = startSeconds ? (platform === "youtube" ? `&start=${startSeconds}` : "") : "";
     return (
       <div className="relative aspect-video w-full bg-black">
         <iframe
           ref={iframeRef}
-          src={`${embedUrl}${embedUrl!.includes("?") ? "&" : "?"}autoplay=1`}
+          src={`${embedUrl}${embedUrl!.includes("?") ? "&" : "?"}autoplay=1${startParam}`}
           title={title ?? "Video"}
           className="absolute inset-0 w-full h-full"
           allow="autoplay; encrypted-media; picture-in-picture"

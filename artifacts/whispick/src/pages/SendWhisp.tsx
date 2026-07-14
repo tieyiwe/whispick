@@ -6,6 +6,8 @@ import { z } from "zod";
 import {
   useScrapeVideoMeta,
   useCreateWhisp,
+  useListMyCircles,
+  getListMyCirclesQueryKey,
   getGetWhispStatsQueryKey,
   getListWhispsQueryKey,
 } from "@workspace/api-client-react";
@@ -29,6 +31,9 @@ import {
   Users,
   Send,
   Check,
+  Clock,
+  CalendarClock,
+  Globe,
 } from "lucide-react";
 import {
   SiYoutube,
@@ -90,6 +95,15 @@ function ParticleAnimation() {
   );
 }
 
+function parseTimestampToSeconds(value: string): number | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (/^\d+$/.test(trimmed)) return parseInt(trimmed, 10);
+  const match = trimmed.match(/^(\d+):([0-5]?\d)$/);
+  if (!match) return null;
+  return parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
+}
+
 const step1Schema = z.object({ videoUrl: z.string().url("Please enter a valid URL") });
 const step5Schema = z.object({
   recipientEmail: z.string().email().optional().or(z.literal("")),
@@ -114,6 +128,10 @@ export function SendWhisp() {
   const [whisperChannel, setWhisperChannel] = useState<"email" | "sms" | "whatsapp">("email");
   const [recipientEmail, setRecipientEmail] = useState("");
   const [recipientPhone, setRecipientPhone] = useState("");
+  const [startTimestamp, setStartTimestamp] = useState("");
+  const [scheduleEnabled, setScheduleEnabled] = useState(false);
+  const [scheduledAtValue, setScheduledAtValue] = useState("");
+  const [circleId, setCircleId] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
   const [sentWhispId, setSentWhispId] = useState<string | null>(null);
 
@@ -123,6 +141,9 @@ export function SendWhisp() {
 
   const scrapeMeta = useScrapeVideoMeta();
   const createWhisp = useCreateWhisp();
+  const { data: myCircles } = useListMyCircles({
+    query: { enabled: deliveryMethod === "circle_drop", queryKey: getListMyCirclesQueryKey() },
+  });
 
   const urlForm = useForm({ resolver: zodResolver(step1Schema), defaultValues: { videoUrl: "" } });
 
@@ -147,6 +168,7 @@ export function SendWhisp() {
 
   async function handleSend() {
     const alias = customAlias.trim() || senderAlias;
+    const isScheduling = scheduleEnabled && deliveryMethod !== "ghost_boost" && !!scheduledAtValue;
     createWhisp.mutate(
       {
         data: {
@@ -155,14 +177,16 @@ export function SendWhisp() {
           videoThumbnail: videoMeta?.thumbnail ?? null,
           videoEmbedUrl: videoMeta?.embedUrl ?? null,
           videoPlatform: videoMeta?.platform ?? null,
+          videoStartSeconds: parseTimestampToSeconds(startTimestamp),
           deliveryMethod,
           whisperChannel: deliveryMethod === "whisper_link" ? whisperChannel : null,
           recipientEmail: deliveryMethod === "whisper_link" && whisperChannel === "email" ? recipientEmail || null : null,
           recipientPhone: deliveryMethod === "whisper_link" && whisperChannel !== "email" ? recipientPhone || null : null,
+          circleId: deliveryMethod === "circle_drop" ? circleId : null,
           anonymousNote: anonymousNote || null,
           senderAlias: alias,
           moodTag: moodTag,
-          scheduledAt: null,
+          scheduledAt: isScheduling ? new Date(scheduledAtValue).toISOString() : null,
         },
       },
       {
@@ -217,6 +241,10 @@ export function SendWhisp() {
                 setWhisperChannel("email");
                 setRecipientEmail("");
                 setRecipientPhone("");
+                setStartTimestamp("");
+                setScheduleEnabled(false);
+                setScheduledAtValue("");
+                setCircleId(null);
                 setSentWhispId(null);
                 urlForm.reset();
               }}
@@ -312,6 +340,20 @@ export function SendWhisp() {
                     </div>
                   </div>
                 )}
+
+                <div className="space-y-1.5">
+                  <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-muted-foreground" /> Start the video at (optional)
+                  </p>
+                  <Input
+                    className="bg-input/50 border-border/50 rounded-xl w-32"
+                    placeholder="mm:ss"
+                    value={startTimestamp}
+                    onChange={(e) => setStartTimestamp(e.target.value)}
+                    data-testid="input-start-timestamp"
+                  />
+                  <p className="text-xs text-muted-foreground">Jump straight to the good part, e.g. 1:24</p>
+                </div>
 
                 <h2 className="text-xl font-serif font-semibold">Choose a mood tag</h2>
                 <p className="text-sm text-muted-foreground">Optional — sets the emotional tone for the recipient.</p>
@@ -491,13 +533,85 @@ export function SendWhisp() {
                       </div>
                     </div>
                   </button>
+
+                  {deliveryMethod === "circle_drop" && (
+                    <div className="pl-2 pr-1 -mt-1 space-y-2">
+                      <p className="text-xs font-medium text-muted-foreground">Which circle?</p>
+                      <div className="grid grid-cols-1 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setCircleId(null)}
+                          data-testid="circle-option-public"
+                          className={`flex items-center gap-2 p-2.5 rounded-xl border text-sm font-medium transition-all ${
+                            circleId === null
+                              ? "border-primary bg-primary/10 text-foreground"
+                              : "border-border/50 text-muted-foreground hover:border-border"
+                          }`}
+                        >
+                          <Globe className="w-4 h-4" /> Public Circle feed
+                        </button>
+                        {(myCircles ?? []).map((c) => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => setCircleId(c.id)}
+                            data-testid={`circle-option-${c.id}`}
+                            className={`flex items-center gap-2 p-2.5 rounded-xl border text-sm font-medium transition-all ${
+                              circleId === c.id
+                                ? "border-primary bg-primary/10 text-foreground"
+                                : "border-border/50 text-muted-foreground hover:border-border"
+                            }`}
+                          >
+                            <Users className="w-4 h-4" /> {c.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
+
+                {deliveryMethod !== "ghost_boost" && (
+                  <div className="space-y-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setScheduleEnabled(!scheduleEnabled)}
+                      data-testid="button-toggle-schedule"
+                      className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
+                        scheduleEnabled ? "border-primary bg-primary/10" : "border-border/50 hover:border-border"
+                      }`}
+                    >
+                      <CalendarClock className="w-5 h-5 text-primary" />
+                      <div className="flex-1">
+                        <p className="font-medium text-foreground text-sm">Schedule for later</p>
+                        <p className="text-xs text-muted-foreground">Send now, or pick a future date and time</p>
+                      </div>
+                      <div className={`w-9 h-5 rounded-full transition-colors relative ${scheduleEnabled ? "bg-primary" : "bg-muted"}`}>
+                        <div
+                          className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
+                            scheduleEnabled ? "translate-x-4" : "translate-x-0.5"
+                          }`}
+                        />
+                      </div>
+                    </button>
+                    {scheduleEnabled && (
+                      <Input
+                        type="datetime-local"
+                        className="bg-input/50 border-border/50 rounded-xl"
+                        value={scheduledAtValue}
+                        onChange={(e) => setScheduledAtValue(e.target.value)}
+                        data-testid="input-scheduled-at"
+                      />
+                    )}
+                  </div>
+                )}
+
                 <div className="flex justify-between pt-2">
                   <Button variant="ghost" onClick={() => setStep(3)} className="rounded-xl text-muted-foreground">
                     <ArrowLeft className="w-4 h-4 mr-1" /> Back
                   </Button>
                   <Button
                     onClick={() => setStep(deliveryMethod === "whisper_link" ? 5 : 6)}
+                    disabled={scheduleEnabled && deliveryMethod !== "ghost_boost" && !scheduledAtValue}
                     className="rounded-xl"
                     data-testid="button-next-step4"
                   >
@@ -596,12 +710,31 @@ export function SendWhisp() {
                       <span className="text-muted-foreground">To</span>
                       <span className="text-foreground">
                         {deliveryMethod === "circle_drop"
-                          ? "Anyone in the Circle feed"
+                          ? circleId
+                            ? myCircles?.find((c) => c.id === circleId)?.name ?? "Private circle"
+                            : "Anyone in the Circle feed"
                           : deliveryMethod === "ghost_boost"
                           ? "No specific recipient (boosted reach)"
                           : whisperChannel === "email"
                           ? recipientEmail
                           : recipientPhone}
+                      </span>
+                    </div>
+                    {startTimestamp && parseTimestampToSeconds(startTimestamp) !== null && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Starts at</span>
+                        <span className="text-foreground">{startTimestamp}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">When</span>
+                      <span className="text-foreground">
+                        {scheduleEnabled && deliveryMethod !== "ghost_boost" && scheduledAtValue
+                          ? new Date(scheduledAtValue).toLocaleString(undefined, {
+                              dateStyle: "medium",
+                              timeStyle: "short",
+                            })
+                          : "Right now"}
                       </span>
                     </div>
                     {anonymousNote && (

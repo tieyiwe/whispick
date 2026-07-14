@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, numeric } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, numeric, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -9,15 +9,17 @@ export const whispsTable = pgTable("whisps", {
   videoTitle: text("video_title"),
   videoThumbnail: text("video_thumbnail"),
   videoEmbedUrl: text("video_embed_url"), // set for platforms with an embeddable player (YouTube, Vimeo) — powers real watch tracking
+  videoStartSeconds: integer("video_start_seconds"), // optional timestamp bookmark — playback starts here instead of 0
   videoPlatform: text("video_platform"), // 'youtube' | 'tiktok' | 'instagram' | 'facebook' | 'vimeo' | 'other'
   deliveryMethod: text("delivery_method").notNull(), // 'whisper_link' | 'ghost_boost' | 'circle_drop'
   whisperChannel: text("whisper_channel"), // 'email' | 'sms' | 'whatsapp' — only set when deliveryMethod is 'whisper_link'
+  circleId: text("circle_id"), // set for circle_drop whisps posted to a private Circle instead of the public feed
   recipientEmail: text("recipient_email"),
   recipientPhone: text("recipient_phone"),
   anonymousNote: text("anonymous_note"),
   senderAlias: text("sender_alias"),
   moodTag: text("mood_tag"),
-  status: text("status").notNull().default("pending"),
+  status: text("status").notNull().default("pending"), // ... | 'scheduled' (scheduledAt is in the future; a background dispatcher delivers it when due)
   publicToken: text("public_token").unique().notNull(),
   scheduledAt: timestamp("scheduled_at", { withTimezone: true }),
   deliveredAt: timestamp("delivered_at", { withTimezone: true }),

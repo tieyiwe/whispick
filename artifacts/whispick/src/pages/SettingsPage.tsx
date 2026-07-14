@@ -1,5 +1,13 @@
-import { useState } from "react";
-import { useGetUserProfile, useUpdateUserProfile, getGetUserProfileQueryKey } from "@workspace/api-client-react";
+import { useEffect, useState } from "react";
+import {
+  useGetUserProfile,
+  useUpdateUserProfile,
+  useGetPushPublicKey,
+  useCreatePushSubscription,
+  useDeletePushSubscription,
+  getGetUserProfileQueryKey,
+  getGetPushPublicKeyQueryKey,
+} from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +17,8 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, User, Mail, Shield } from "lucide-react";
+import { Loader2, User, Mail, Shield, Bell } from "lucide-react";
+import { isPushSupported, getExistingPushSubscription, subscribeToPush, pushSubscriptionToJson } from "@/lib/push";
 
 const WHISPER_LINK_LIMITS: Record<string, number | null> = {
   free: 3,
@@ -30,6 +39,70 @@ export function SettingsPage() {
   }
 
   const updateProfile = useUpdateUserProfile();
+
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushLoading, setPushLoading] = useState(false);
+  const [pushCheckDone, setPushCheckDone] = useState(false);
+  const getPushPublicKey = useGetPushPublicKey({ query: { enabled: false, queryKey: getGetPushPublicKeyQueryKey() } });
+  const createPushSubscription = useCreatePushSubscription();
+  const deletePushSubscription = useDeletePushSubscription();
+
+  useEffect(() => {
+    if (!isPushSupported()) {
+      setPushCheckDone(true);
+      return;
+    }
+    getExistingPushSubscription()
+      .then((sub) => setPushEnabled(!!sub))
+      .finally(() => setPushCheckDone(true));
+  }, []);
+
+  async function handleEnablePush() {
+    setPushLoading(true);
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") {
+        toast({ title: "Notification permission denied", variant: "destructive" });
+        return;
+      }
+      const { publicKey } = await getPushPublicKey.refetch().then((r) => {
+        if (!r.data) throw new Error("Missing VAPID key");
+        return r.data;
+      });
+      const subscription = await subscribeToPush(publicKey);
+      const { endpoint, keys } = pushSubscriptionToJson(subscription);
+      await new Promise<void>((resolve, reject) => {
+        createPushSubscription.mutate(
+          { data: { endpoint, keys } },
+          { onSuccess: () => resolve(), onError: () => reject() }
+        );
+      });
+      setPushEnabled(true);
+      toast({ title: "Push notifications enabled" });
+    } catch {
+      toast({ title: "Couldn't enable push notifications", variant: "destructive" });
+    } finally {
+      setPushLoading(false);
+    }
+  }
+
+  async function handleDisablePush() {
+    setPushLoading(true);
+    try {
+      const subscription = await getExistingPushSubscription();
+      if (subscription) {
+        const { endpoint } = pushSubscriptionToJson(subscription);
+        await new Promise<void>((resolve) => {
+          deletePushSubscription.mutate({ data: { endpoint } }, { onSettled: () => resolve() });
+        });
+        await subscription.unsubscribe();
+      }
+      setPushEnabled(false);
+      toast({ title: "Push notifications disabled" });
+    } finally {
+      setPushLoading(false);
+    }
+  }
 
   function handleSave() {
     updateProfile.mutate(
@@ -142,6 +215,38 @@ export function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Push notifications */}
+        {isPushSupported() && (
+          <Card className="bg-card border-border/50">
+            <CardHeader>
+              <CardTitle className="text-base font-serif flex items-center gap-2">
+                <Bell className="w-4 h-4 text-primary" /> Notifications
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Push notifications</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Get notified the moment a whisp is opened, watched, or replied to.
+                  </p>
+                </div>
+                <Button
+                  variant={pushEnabled ? "outline" : "default"}
+                  size="sm"
+                  className="rounded-full shrink-0"
+                  disabled={!pushCheckDone || pushLoading}
+                  onClick={pushEnabled ? handleDisablePush : handleEnablePush}
+                  data-testid="button-toggle-push"
+                >
+                  {pushLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : null}
+                  {pushEnabled ? "Disable" : "Enable"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Privacy */}
         <Card className="bg-card border-border/50">

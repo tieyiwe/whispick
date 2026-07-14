@@ -5,15 +5,17 @@ import {
   useTrackWhispEvent,
   usePublicReply,
   useRespondReveal,
+  useScrapeVideoMeta,
   getGetPublicWhispQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MoodTag, MOOD_CONFIG } from "@/components/shared/MoodTag";
 import { useToast } from "@/hooks/use-toast";
-import { Send, Check, Loader2 } from "lucide-react";
+import { Send, Check, Loader2, Video, X, Link2 } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { VideoPlayer } from "@/components/shared/VideoPlayer";
 import { QUICK_REPLIES } from "@/lib/quickReplies";
@@ -35,6 +37,14 @@ export function PublicWhispPage() {
   const [replyText, setReplyText] = useState("");
   const [hasTrackedOpen, setHasTrackedOpen] = useState(false);
   const [revealResponse, setRevealResponse] = useState<"accepted" | "declined" | null>(null);
+  const [showVideoReply, setShowVideoReply] = useState(false);
+  const [replyVideoUrl, setReplyVideoUrl] = useState("");
+  const [replyVideoMeta, setReplyVideoMeta] = useState<{
+    title?: string | null;
+    thumbnail?: string | null;
+    embedUrl?: string | null;
+    platform?: string;
+  } | null>(null);
 
   const { data: whisp, isLoading } = useGetPublicWhisp(token!, {
     query: {
@@ -46,6 +56,7 @@ export function PublicWhispPage() {
   const trackEvent = useTrackWhispEvent();
   const publicReply = usePublicReply();
   const respondReveal = useRespondReveal();
+  const scrapeReplyVideo = useScrapeVideoMeta();
 
   function handleRevealResponse(accepted: boolean) {
     if (!whisp?.id) return;
@@ -68,9 +79,19 @@ export function PublicWhispPage() {
     trackEvent.mutate({ token: token!, data: { eventType } });
   }
 
-  function submitReply(text: string) {
+  function submitReply(text: string, video?: { url: string; meta: typeof replyVideoMeta }) {
     publicReply.mutate(
-      { token: token!, data: { replyText: text } },
+      {
+        token: token!,
+        data: {
+          replyText: text || null,
+          videoUrl: video?.url ?? null,
+          videoTitle: video?.meta?.title ?? null,
+          videoThumbnail: video?.meta?.thumbnail ?? null,
+          videoEmbedUrl: video?.meta?.embedUrl ?? null,
+          videoPlatform: video?.meta?.platform ?? null,
+        },
+      },
       {
         onSuccess: () => {
           setReplied(true);
@@ -82,9 +103,22 @@ export function PublicWhispPage() {
     );
   }
 
+  function handleFetchReplyVideo() {
+    const url = replyVideoUrl.trim();
+    if (!url) return;
+    scrapeReplyVideo.mutate(
+      { data: { url } },
+      {
+        onSuccess: (meta) => setReplyVideoMeta(meta),
+        onError: () => setReplyVideoMeta({ platform: "other" }),
+      }
+    );
+  }
+
   function handleReply() {
-    if (!replyText.trim()) return;
-    submitReply(replyText.trim());
+    const video = replyVideoUrl.trim();
+    if (!replyText.trim() && !video) return;
+    submitReply(replyText.trim(), video ? { url: video, meta: replyVideoMeta } : undefined);
   }
 
   const moodColor = (whisp?.moodTag && MOOD_CONFIG[whisp.moodTag]?.color) || "#7C5CFC";
@@ -142,6 +176,7 @@ export function PublicWhispPage() {
                 videoUrl={whisp.videoUrl}
                 thumbnail={whisp.videoThumbnail}
                 title={whisp.videoTitle}
+                startSeconds={whisp.videoStartSeconds}
                 onWatchEvent={handleWatchEvent}
               />
 
@@ -207,11 +242,75 @@ export function PublicWhispPage() {
                     onChange={(e) => setReplyText(e.target.value)}
                     data-testid="textarea-public-reply"
                   />
+
+                  {!showVideoReply ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowVideoReply(true)}
+                      data-testid="button-show-video-reply"
+                      className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      <Video className="w-3.5 h-3.5" /> Whisp a video back too
+                    </button>
+                  ) : (
+                    <div className="space-y-2 p-3 rounded-xl border border-border/50 bg-muted/20">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                          <Video className="w-3.5 h-3.5" /> Whisp a video back
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowVideoReply(false);
+                            setReplyVideoUrl("");
+                            setReplyVideoMeta(null);
+                          }}
+                          data-testid="button-remove-video-reply"
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      {replyVideoMeta ? (
+                        <div className="flex gap-2 p-2 bg-card rounded-lg items-center">
+                          {replyVideoMeta.thumbnail && (
+                            <img src={replyVideoMeta.thumbnail} className="w-14 h-10 object-cover rounded" alt="thumbnail" />
+                          )}
+                          <p className="text-xs text-foreground truncate flex-1">{replyVideoMeta.title || replyVideoUrl}</p>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2">
+                          <div className="relative flex-1">
+                            <Link2 className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                            <Input
+                              className="pl-8 h-9 text-xs bg-card border-border/50 rounded-lg"
+                              placeholder="Paste a video link..."
+                              value={replyVideoUrl}
+                              onChange={(e) => setReplyVideoUrl(e.target.value)}
+                              data-testid="input-reply-video-url"
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="rounded-lg h-9"
+                            onClick={handleFetchReplyVideo}
+                            disabled={!replyVideoUrl.trim() || scrapeReplyVideo.isPending}
+                            data-testid="button-fetch-reply-video"
+                          >
+                            {scrapeReplyVideo.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Add"}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">{replyText.length}/300</span>
                     <Button
                       onClick={handleReply}
-                      disabled={!replyText.trim() || publicReply.isPending}
+                      disabled={(!replyText.trim() && !replyVideoUrl.trim()) || publicReply.isPending}
                       size="sm"
                       className="rounded-full"
                       data-testid="button-send-reply"

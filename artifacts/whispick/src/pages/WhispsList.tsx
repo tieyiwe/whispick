@@ -53,6 +53,7 @@ export function WhispsList() {
             <SelectContent>
               <SelectItem value="all">All Statuses</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="scheduled">Scheduled</SelectItem>
               <SelectItem value="delivered">Delivered</SelectItem>
               <SelectItem value="opened">Opened</SelectItem>
               <SelectItem value="watched">Watched</SelectItem>
