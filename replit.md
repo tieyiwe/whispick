@@ -12,9 +12,11 @@ An anonymous video recommendation platform — paste a video URL, add a mood tag
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - Required env: `DATABASE_URL` — Postgres connection string
 - Required env: `CLERK_SECRET_KEY`, `VITE_CLERK_PUBLISHABLE_KEY` — Clerk auth
-- Optional env: `RESEND_API_KEY`, `EMAIL_FROM` — Whisper Link delivery + reply notification emails (skipped with a log warning if unset)
+- Optional env: `RESEND_API_KEY`, `EMAIL_FROM` — Whisper Link email channel + reply notification emails (skipped with a log warning if unset)
+- Optional env: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` — Whisper Link SMS channel (skipped with a log warning if unset)
+- Optional env: `TWILIO_WHATSAPP_FROM`, `TWILIO_WHATSAPP_CONTENT_SID` — Whisper Link WhatsApp channel. Requires a Twilio-enabled WhatsApp sender AND a Meta-approved Content Template with a single `{{1}}` variable for the link (build it in the Twilio Console's Content Template Builder) — WhatsApp business-initiated messages can't use free-form text for a first contact. Skipped with a log warning if unset.
 - Optional env: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` — Credits & Plan checkout (returns 503 if unset)
-- Optional env: `PUBLIC_APP_URL` — overrides the auto-detected frontend origin used in email links and Stripe redirect URLs
+- Optional env: `PUBLIC_APP_URL` — overrides the auto-detected frontend origin used in shared links and Stripe redirect URLs
 - `pnpm --filter @workspace/api-server run test` — run the API server's Vitest suite (needs a reachable `DATABASE_URL`)
 
 ## Stack
@@ -41,7 +43,10 @@ An anonymous video recommendation platform — paste a video URL, add a mood tag
 - Dark mode only — no light mode variants needed
 - Zod schemas in routes must import from `"zod"` not `"zod/v4"` (catalog pin is ^3.25.76)
 - Public whisp pages (`/w/:token`) are unauthenticated; everything else requires Clerk
-- Three delivery methods: `whisper_link` (real email via Resend, requires a known recipient email/phone, status goes straight to `delivered` — this is the only method that guarantees delivery to one specific person), `ghost_boost` (internal credit-spend/queue only, no recipient collected — no live ad-platform API integration; status `pending` until a real integration exists), `circle_drop` (no recipient, visible in the public `/api/public/circle` community feed, status `delivered`)
+- Three delivery methods: `whisper_link` (requires a known recipient, status goes straight to `delivered` — this is the only method that guarantees delivery to one specific person), `ghost_boost` (internal credit-spend/queue only, no recipient collected — no live ad-platform API integration; status `pending` until a real integration exists), `circle_drop` (no recipient, visible in the public `/api/public/circle` community feed, status `delivered`)
+- Whisper Link has three channels (`whisperChannel` on the whisp: `email` | `sms` | `whatsapp`), chosen by the sender in the composer. Email uses Resend, SMS/WhatsApp use Twilio (`lib/sms.ts`) — all three are optional-config-gated the same way (log a warning and no-op if unset, the whisp still gets created).
+- Shared links go through `/api/l/:token` (`routes/link.ts`), not straight to `/w/:token`. In production the frontend is served as static files with an SPA rewrite (`artifact.toml`: `/* → /index.html`), so it can never return different Open Graph tags per whisp to a link-preview crawler — `/api/l/:token` is a real server route that detects known crawler user agents (WhatsApp, iMessage-adjacent bots, Slack, Twitter, etc.) and serves a per-video OG card (title/thumbnail/hook line), then redirects everyone else straight to the real `/w/:token` SPA page.
+- The recipient-facing hook line ("Someone who cares about you thought you needed to see this 👀") is defined once in `lib/copy.ts` (`HOOK_LINE`) and reused in the email, SMS, WhatsApp template variable, and OG description — keep `PublicWhispPage.tsx`'s lead text in sync by hand, since frontend and backend don't share a constants module.
 - **Ghost Boost is deliberately not a real Meta/TikTok ad integration.** Those platforms enforce a minimum matched-audience size before a Custom Audience can be used for targeting, so there's no way to guarantee an ad reaches one specific identified person — and building a "target this one known person" ad system runs directly into their anti-harassment ad policies. Whisper Link is the mechanism that actually satisfies "reach a known person anonymously"; don't reintroduce Ghost Boost as a literal ad-placement feature without solving that mismatch first.
 - Watch tracking: YouTube/Vimeo videos are embedded in the public whisp page (`videoEmbedUrl`, computed in `video.ts`'s `buildEmbedUrl`) and report real `watched_10s`/`watched_50pct`/`watched_complete` events via each platform's JS Player API (`VideoPlayer.tsx`). Every other platform (TikTok/Instagram/Facebook/etc.) has no embeddable player with progress events, so only `opened`/`clicked` are tracked and the recipient is redirected out.
 - Stripe Checkout (redirect-based, no client-side Stripe.js) wired for credit packs (one-time) and plan upgrades (subscription); webhook at `/api/billing/webhook` grants credits/plan on `checkout.session.completed`
@@ -49,7 +54,7 @@ An anonymous video recommendation platform — paste a video URL, add a mood tag
 
 ## Product
 
-- **Send Whisp**: composer — paste URL → mood tag → anonymous note → delivery method → recipient (Whisper Link only) → confirm
+- **Send Whisp**: composer — paste URL → mood tag → anonymous note → delivery method (+ channel picker for Whisper Link: email/SMS/WhatsApp) → recipient (Whisper Link only) → confirm
 - **Dashboard**: stat cards (sent, open rate, watched, replies) + recent whisps + boost credit counter
 - **My Whisps**: filterable list with status badges, thumbnails, mood tags
 - **Whisp Detail**: delivery timeline (sent/delivered/opened/clicked/watched/replied) driven by real tracking events, anonymous reply thread, follow-up send, reveal flow

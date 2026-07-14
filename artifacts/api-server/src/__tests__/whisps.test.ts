@@ -22,7 +22,7 @@ describe("POST /api/whisps", () => {
     expect(res.status).toBe(401);
   });
 
-  it("requires a recipient for whisper_link", async () => {
+  it("requires a delivery channel for whisper_link", async () => {
     const res = await request(app)
       .post("/api/whisps")
       .set(asUser(USER_A))
@@ -30,18 +30,56 @@ describe("POST /api/whisps", () => {
     expect(res.status).toBe(400);
   });
 
-  it("sends a whisper_link whisp and increments the sender's usage counter", async () => {
+  it("requires a recipient email when the channel is email", async () => {
     const res = await request(app)
       .post("/api/whisps")
       .set(asUser(USER_A))
-      .send({ videoUrl: "https://youtu.be/x", deliveryMethod: "whisper_link", recipientEmail: "friend@example.com" });
+      .send({ videoUrl: "https://youtu.be/x", deliveryMethod: "whisper_link", whisperChannel: "email" });
+    expect(res.status).toBe(400);
+  });
+
+  it("requires a recipient phone when the channel is sms or whatsapp", async () => {
+    const res = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_A))
+      .send({ videoUrl: "https://youtu.be/x", deliveryMethod: "whisper_link", whisperChannel: "whatsapp" });
+    expect(res.status).toBe(400);
+  });
+
+  it("sends a whisper_link whisp via email and increments the sender's usage counter", async () => {
+    const res = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_A))
+      .send({
+        videoUrl: "https://youtu.be/x",
+        deliveryMethod: "whisper_link",
+        whisperChannel: "email",
+        recipientEmail: "friend@example.com",
+      });
 
     expect(res.status).toBe(201);
     expect(res.body.status).toBe("delivered");
     expect(res.body.deliveredAt).not.toBeNull();
+    expect(res.body.whisperChannel).toBe("email");
 
     const user = await getUser(USER_A);
     expect(user.whisperLinksUsed).toBe(1);
+  });
+
+  it("sends a whisper_link whisp via SMS using the recipient phone number", async () => {
+    const res = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_A))
+      .send({
+        videoUrl: "https://youtu.be/x",
+        deliveryMethod: "whisper_link",
+        whisperChannel: "sms",
+        recipientPhone: "+15551234567",
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.whisperChannel).toBe("sms");
+    expect(res.body.recipientPhone).toBe("+15551234567");
   });
 
   it("enforces the free plan's monthly Whisper Link limit", async () => {
@@ -49,14 +87,24 @@ describe("POST /api/whisps", () => {
       const res = await request(app)
         .post("/api/whisps")
         .set(asUser(USER_A))
-        .send({ videoUrl: "https://youtu.be/x", deliveryMethod: "whisper_link", recipientEmail: "friend@example.com" });
+        .send({
+          videoUrl: "https://youtu.be/x",
+          deliveryMethod: "whisper_link",
+          whisperChannel: "email",
+          recipientEmail: "friend@example.com",
+        });
       expect(res.status).toBe(201);
     }
 
     const blocked = await request(app)
       .post("/api/whisps")
       .set(asUser(USER_A))
-      .send({ videoUrl: "https://youtu.be/x", deliveryMethod: "whisper_link", recipientEmail: "friend@example.com" });
+      .send({
+        videoUrl: "https://youtu.be/x",
+        deliveryMethod: "whisper_link",
+        whisperChannel: "email",
+        recipientEmail: "friend@example.com",
+      });
 
     expect(blocked.status).toBe(402);
   });
@@ -147,7 +195,12 @@ describe("GET /api/public/circle", () => {
     await request(app)
       .post("/api/whisps")
       .set(asUser(USER_A))
-      .send({ videoUrl: "https://youtu.be/b", deliveryMethod: "whisper_link", recipientEmail: "x@example.com" });
+      .send({
+        videoUrl: "https://youtu.be/b",
+        deliveryMethod: "whisper_link",
+        whisperChannel: "email",
+        recipientEmail: "x@example.com",
+      });
 
     const res = await request(app).get("/api/public/circle");
     expect(res.status).toBe(200);

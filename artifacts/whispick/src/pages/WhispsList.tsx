@@ -10,7 +10,7 @@ import { PlayCircle, Search, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { DELIVERY_METHOD_LABELS } from "@/lib/deliveryMethod";
+import { deliveryLabel } from "@/lib/deliveryMethod";
 
 export function WhispsList() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -95,7 +95,7 @@ export function WhispsList() {
                         <span className="mx-2">•</span>
                         <span>{new Date(whisp.createdAt).toLocaleDateString()}</span>
                         <span className="mx-2">•</span>
-                        <span>via {DELIVERY_METHOD_LABELS[whisp.deliveryMethod] ?? whisp.deliveryMethod}</span>
+                        <span>via {deliveryLabel(whisp.deliveryMethod, whisp.whisperChannel)}</span>
                       </div>
                       <div className="mt-auto">
                         {whisp.moodTag && <MoodTag mood={whisp.moodTag} className="scale-90 origin-left" />}

@@ -1,4 +1,5 @@
 import { logger } from "./logger";
+import { HOOK_LINE } from "./copy";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const EMAIL_FROM = process.env.EMAIL_FROM ?? "Whispick <whispers@whispick.app>";
@@ -33,7 +34,7 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
 
 export function whisperLinkEmailHtml(publicUrl: string): string {
   return `<div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a2e;">
-    <p style="font-size: 16px;">Someone who cares about you thought you should see this 👀</p>
+    <p style="font-size: 16px;">${HOOK_LINE}</p>
     <p>
       <a href="${publicUrl}" style="display:inline-block; padding: 12px 24px; background:#7C5CFC; color:#fff; border-radius: 999px; text-decoration:none; font-weight: 600;">
         View it

@@ -129,9 +129,9 @@ export function PublicWhispPage() {
           </div>
         ) : (
           <>
-            {/* Lead text */}
+            {/* Lead text — keep in sync with api-server's lib/copy.ts HOOK_LINE */}
             <p className="text-center text-xl font-serif text-foreground leading-snug">
-              Someone who cares about you thought you should see this 👀
+              Someone who cares about you thought you needed to see this 👀
             </p>
 
             {/* Video card */}

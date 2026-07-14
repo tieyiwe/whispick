@@ -7,6 +7,7 @@ import circleRouter from "./circle";
 import userRouter from "./user";
 import creditsRouter from "./credits";
 import billingRouter from "./billing";
+import linkRouter from "./link";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use("/public", circleRouter);
 router.use("/user", userRouter);
 router.use("/credits", creditsRouter);
 router.use("/billing", billingRouter);
+router.use("/l", linkRouter);
 
 export default router;

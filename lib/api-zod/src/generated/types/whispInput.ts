@@ -18,6 +18,8 @@ export interface WhispInput {
   videoPlatform?: string | null;
   deliveryMethod: string;
   /** @nullable */
+  whisperChannel?: string | null;
+  /** @nullable */
   recipientEmail?: string | null;
   /** @nullable */
   recipientPhone?: string | null;

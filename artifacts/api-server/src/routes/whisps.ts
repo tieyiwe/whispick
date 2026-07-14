@@ -15,12 +15,15 @@ import { requireAuth } from "../lib/auth";
 import { ensureUser } from "../lib/ensureUser";
 import { getPublicAppUrl } from "../lib/publicUrl";
 import { sendEmail, whisperLinkEmailHtml, replyNotificationEmailHtml } from "../lib/email";
+import { sendSms, sendWhatsApp, whisperLinkSmsBody } from "../lib/sms";
 import { whisperLinkLimitFor, GHOST_BOOST_COST_USD } from "../lib/plans";
+import { HOOK_LINE } from "../lib/copy";
 import { logger } from "../lib/logger";
 
 const router = Router();
 
 const DELIVERY_METHODS = ["whisper_link", "ghost_boost", "circle_drop"] as const;
+const WHISPER_CHANNELS = ["email", "sms", "whatsapp"] as const;
 
 // GET /api/whisps
 router.get("/", requireAuth, async (req, res): Promise<void> => {
@@ -54,6 +57,7 @@ router.post("/", requireAuth, async (req, res): Promise<void> => {
     videoEmbedUrl: z.string().nullable().optional(),
     videoPlatform: z.string().nullable().optional(),
     deliveryMethod: z.enum(DELIVERY_METHODS),
+    whisperChannel: z.enum(WHISPER_CHANNELS).nullable().optional(),
     recipientEmail: z.string().nullable().optional(),
     recipientPhone: z.string().nullable().optional(),
     anonymousNote: z.string().nullable().optional(),
@@ -70,9 +74,19 @@ router.post("/", requireAuth, async (req, res): Promise<void> => {
 
   const data = parsed.data;
 
-  if (data.deliveryMethod === "whisper_link" && !data.recipientEmail && !data.recipientPhone) {
-    res.status(400).json({ error: "Whisper Link requires a recipient email or phone number" });
-    return;
+  if (data.deliveryMethod === "whisper_link") {
+    if (!data.whisperChannel) {
+      res.status(400).json({ error: "Whisper Link requires a delivery channel (email, sms, or whatsapp)" });
+      return;
+    }
+    if (data.whisperChannel === "email" && !data.recipientEmail) {
+      res.status(400).json({ error: "Email delivery requires a recipient email address" });
+      return;
+    }
+    if ((data.whisperChannel === "sms" || data.whisperChannel === "whatsapp") && !data.recipientPhone) {
+      res.status(400).json({ error: "Text/WhatsApp delivery requires a recipient phone number" });
+      return;
+    }
   }
 
   // Free-plan Whisper Link monthly limit, reset on a rolling 30-day window
@@ -127,6 +141,7 @@ router.post("/", requireAuth, async (req, res): Promise<void> => {
     videoEmbedUrl: data.videoEmbedUrl ?? null,
     videoPlatform: data.videoPlatform ?? null,
     deliveryMethod: data.deliveryMethod,
+    whisperChannel: data.deliveryMethod === "whisper_link" ? data.whisperChannel ?? null : null,
     recipientEmail: data.recipientEmail ?? null,
     recipientPhone: data.recipientPhone ?? null,
     anonymousNote: data.anonymousNote ?? null,
@@ -149,9 +164,19 @@ router.post("/", requireAuth, async (req, res): Promise<void> => {
     });
   }
 
-  if (data.deliveryMethod === "whisper_link" && data.recipientEmail) {
-    const publicUrl = `${getPublicAppUrl(req)}/w/${publicToken}`;
-    void sendEmail(data.recipientEmail, "Someone thought you should see this", whisperLinkEmailHtml(publicUrl));
+  if (data.deliveryMethod === "whisper_link") {
+    // The shared link goes through /l/:token (server-rendered) rather than
+    // straight to /w/:token (the SPA) so link-preview crawlers in
+    // email/SMS/WhatsApp clients see a real per-video Open Graph card
+    // instead of the app's generic static shell.
+    const sharedUrl = `${getPublicAppUrl(req)}/api/l/${publicToken}`;
+    if (data.whisperChannel === "email" && data.recipientEmail) {
+      void sendEmail(data.recipientEmail, HOOK_LINE, whisperLinkEmailHtml(sharedUrl));
+    } else if (data.whisperChannel === "sms" && data.recipientPhone) {
+      void sendSms(data.recipientPhone, whisperLinkSmsBody(sharedUrl));
+    } else if (data.whisperChannel === "whatsapp" && data.recipientPhone) {
+      void sendWhatsApp(data.recipientPhone, sharedUrl);
+    }
   }
 
   const whisp = await db.select().from(whispsTable).where(eq(whispsTable.id, id)).then(r => r[0]);

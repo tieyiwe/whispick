@@ -35,7 +35,14 @@ import {
   SiTiktok,
   SiInstagram,
   SiFacebook,
+  SiWhatsapp,
 } from "react-icons/si";
+
+const WHISPER_CHANNELS = [
+  { key: "email", label: "Email", icon: Mail },
+  { key: "sms", label: "Text", icon: Phone },
+  { key: "whatsapp", label: "WhatsApp", icon: SiWhatsapp },
+] as const;
 
 const MOOD_TAGS = Object.entries(MOOD_CONFIG).map(([key, config]) => ({
   key,
@@ -104,6 +111,7 @@ export function SendWhisp() {
   const [senderAlias, setSenderAlias] = useState(SENDER_ALIASES[0]);
   const [customAlias, setCustomAlias] = useState("");
   const [deliveryMethod, setDeliveryMethod] = useState<"whisper_link" | "ghost_boost" | "circle_drop">("whisper_link");
+  const [whisperChannel, setWhisperChannel] = useState<"email" | "sms" | "whatsapp">("email");
   const [recipientEmail, setRecipientEmail] = useState("");
   const [recipientPhone, setRecipientPhone] = useState("");
   const [sent, setSent] = useState(false);
@@ -148,8 +156,9 @@ export function SendWhisp() {
           videoEmbedUrl: videoMeta?.embedUrl ?? null,
           videoPlatform: videoMeta?.platform ?? null,
           deliveryMethod,
-          recipientEmail: deliveryMethod === "whisper_link" ? recipientEmail || null : null,
-          recipientPhone: deliveryMethod === "whisper_link" ? recipientPhone || null : null,
+          whisperChannel: deliveryMethod === "whisper_link" ? whisperChannel : null,
+          recipientEmail: deliveryMethod === "whisper_link" && whisperChannel === "email" ? recipientEmail || null : null,
+          recipientPhone: deliveryMethod === "whisper_link" && whisperChannel !== "email" ? recipientPhone || null : null,
           anonymousNote: anonymousNote || null,
           senderAlias: alias,
           moodTag: moodTag,
@@ -205,6 +214,7 @@ export function SendWhisp() {
                 setSenderAlias(SENDER_ALIASES[0]);
                 setCustomAlias("");
                 setDeliveryMethod("whisper_link");
+                setWhisperChannel("email");
                 setRecipientEmail("");
                 setRecipientPhone("");
                 setSentWhispId(null);
@@ -409,11 +419,36 @@ export function SendWhisp() {
                       </div>
                       <div>
                         <p className="font-semibold text-foreground">Whisper Link</p>
-                        <p className="text-sm text-muted-foreground mt-0.5">Send via SMS or email — direct, instant delivery</p>
+                        <p className="text-sm text-muted-foreground mt-0.5">Send straight to them — direct, instant, guaranteed delivery</p>
                         <p className="text-xs text-primary mt-1 font-medium">Free (3/month)</p>
                       </div>
                     </div>
                   </button>
+
+                  {deliveryMethod === "whisper_link" && (
+                    <div className="pl-2 pr-1 -mt-1 grid grid-cols-3 gap-2">
+                      {WHISPER_CHANNELS.map((ch) => {
+                        const Icon = ch.icon;
+                        return (
+                          <button
+                            key={ch.key}
+                            type="button"
+                            onClick={() => setWhisperChannel(ch.key)}
+                            data-testid={`whisper-channel-${ch.key}`}
+                            className={`flex flex-col items-center gap-1 py-2.5 rounded-xl border text-xs font-medium transition-all ${
+                              whisperChannel === ch.key
+                                ? "border-primary bg-primary/10 text-foreground"
+                                : "border-border/50 text-muted-foreground hover:border-border"
+                            }`}
+                          >
+                            <Icon className="w-4 h-4" />
+                            {ch.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
                   <button
                     type="button"
                     onClick={() => setDeliveryMethod("ghost_boost")}
@@ -476,35 +511,39 @@ export function SendWhisp() {
             {step === 5 && deliveryMethod === "whisper_link" && (
               <div className="space-y-4">
                 <h2 className="text-xl font-serif font-semibold">Who should receive it?</h2>
-                <p className="text-sm text-muted-foreground">Enter their email or phone number.</p>
+                <p className="text-sm text-muted-foreground">
+                  {whisperChannel === "email"
+                    ? "Enter their email address."
+                    : whisperChannel === "sms"
+                    ? "Enter their phone number, in international format (e.g. +1 555 123 4567)."
+                    : "Enter their WhatsApp number, in international format (e.g. +1 555 123 4567)."}
+                </p>
                 <div className="space-y-3">
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      className="pl-9 bg-input/50 border-border/50 rounded-xl"
-                      placeholder="Email address"
-                      type="email"
-                      value={recipientEmail}
-                      onChange={(e) => setRecipientEmail(e.target.value)}
-                      data-testid="input-recipient-email"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 h-px bg-border/50" />
-                    <span className="text-xs text-muted-foreground">or</span>
-                    <div className="flex-1 h-px bg-border/50" />
-                  </div>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      className="pl-9 bg-input/50 border-border/50 rounded-xl"
-                      placeholder="Phone number"
-                      type="tel"
-                      value={recipientPhone}
-                      onChange={(e) => setRecipientPhone(e.target.value)}
-                      data-testid="input-recipient-phone"
-                    />
-                  </div>
+                  {whisperChannel === "email" ? (
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        className="pl-9 bg-input/50 border-border/50 rounded-xl"
+                        placeholder="Email address"
+                        type="email"
+                        value={recipientEmail}
+                        onChange={(e) => setRecipientEmail(e.target.value)}
+                        data-testid="input-recipient-email"
+                      />
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        className="pl-9 bg-input/50 border-border/50 rounded-xl"
+                        placeholder="+1 555 123 4567"
+                        type="tel"
+                        value={recipientPhone}
+                        onChange={(e) => setRecipientPhone(e.target.value)}
+                        data-testid="input-recipient-phone"
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className="flex justify-between pt-2">
                   <Button variant="ghost" onClick={() => setStep(4)} className="rounded-xl text-muted-foreground">
@@ -512,7 +551,7 @@ export function SendWhisp() {
                   </Button>
                   <Button
                     onClick={() => setStep(6)}
-                    disabled={!recipientEmail && !recipientPhone}
+                    disabled={whisperChannel === "email" ? !recipientEmail : !recipientPhone}
                     className="rounded-xl"
                     data-testid="button-next-step5"
                   >
@@ -547,7 +586,11 @@ export function SendWhisp() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Delivery</span>
-                      <span className="text-foreground capitalize">{deliveryMethod.replace("_", " ")}</span>
+                      <span className="text-foreground capitalize">
+                        {deliveryMethod === "whisper_link"
+                          ? `Whisper Link (${WHISPER_CHANNELS.find((c) => c.key === whisperChannel)?.label})`
+                          : deliveryMethod.replace("_", " ")}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">To</span>
@@ -556,7 +599,9 @@ export function SendWhisp() {
                           ? "Anyone in the Circle feed"
                           : deliveryMethod === "ghost_boost"
                           ? "No specific recipient (boosted reach)"
-                          : recipientEmail || recipientPhone}
+                          : whisperChannel === "email"
+                          ? recipientEmail
+                          : recipientPhone}
                       </span>
                     </div>
                     {anonymousNote && (

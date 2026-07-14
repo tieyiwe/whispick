@@ -11,6 +11,7 @@ export const whispsTable = pgTable("whisps", {
   videoEmbedUrl: text("video_embed_url"), // set for platforms with an embeddable player (YouTube, Vimeo) — powers real watch tracking
   videoPlatform: text("video_platform"), // 'youtube' | 'tiktok' | 'instagram' | 'facebook' | 'vimeo' | 'other'
   deliveryMethod: text("delivery_method").notNull(), // 'whisper_link' | 'ghost_boost' | 'circle_drop'
+  whisperChannel: text("whisper_channel"), // 'email' | 'sms' | 'whatsapp' — only set when deliveryMethod is 'whisper_link'
   recipientEmail: text("recipient_email"),
   recipientPhone: text("recipient_phone"),
   anonymousNote: text("anonymous_note"),
