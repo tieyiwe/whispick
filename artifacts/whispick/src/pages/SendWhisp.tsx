@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { MoodTag } from "@/components/shared/MoodTag";
+import { MoodTag, MOOD_CONFIG } from "@/components/shared/MoodTag";
 import {
   ArrowLeft,
   ArrowRight,
@@ -37,14 +37,11 @@ import {
   SiFacebook,
 } from "react-icons/si";
 
-const MOOD_TAGS = [
-  { key: "i-see-you", label: "I See You", color: "#F59E0B" },
-  { key: "heal-together", label: "Heal Together", color: "#3B82F6" },
-  { key: "i-love-you", label: "I Love You", color: "#EC4899" },
-  { key: "think-about-this", label: "Think About This", color: "#10B981" },
-  { key: "for-your-growth", label: "For Your Growth", color: "#8B5CF6" },
-  { key: "just-because", label: "Just Because", color: "#D4B896" },
-];
+const MOOD_TAGS = Object.entries(MOOD_CONFIG).map(([key, config]) => ({
+  key,
+  label: config.label,
+  color: config.color,
+}));
 
 const SENDER_ALIASES = [
   "Someone who cares",

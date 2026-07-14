@@ -11,11 +11,12 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MoodTag } from "@/components/shared/MoodTag";
+import { MoodTag, MOOD_CONFIG } from "@/components/shared/MoodTag";
 import { useToast } from "@/hooks/use-toast";
 import { Send, Check, Loader2 } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { VideoPlayer } from "@/components/shared/VideoPlayer";
+import { QUICK_REPLIES } from "@/lib/quickReplies";
 
 function WhispickLogoMark() {
   return (
@@ -67,10 +68,9 @@ export function PublicWhispPage() {
     trackEvent.mutate({ token: token!, data: { eventType } });
   }
 
-  function handleReply() {
-    if (!replyText.trim()) return;
+  function submitReply(text: string) {
     publicReply.mutate(
-      { token: token!, data: { replyText: replyText.trim() } },
+      { token: token!, data: { replyText: text } },
       {
         onSuccess: () => {
           setReplied(true);
@@ -82,11 +82,28 @@ export function PublicWhispPage() {
     );
   }
 
+  function handleReply() {
+    if (!replyText.trim()) return;
+    submitReply(replyText.trim());
+  }
+
+  const moodColor = (whisp?.moodTag && MOOD_CONFIG[whisp.moodTag]?.color) || "#7C5CFC";
+
   return (
-    <div className="min-h-[100dvh] bg-background flex flex-col">
+    <div className="min-h-[100dvh] bg-background flex flex-col relative overflow-hidden">
+      {/* Ambient background, tinted by the whisp's mood */}
+      <div
+        className="absolute top-[-15%] left-[-15%] w-[70%] h-[45%] rounded-full blur-[110px] pointer-events-none transition-colors duration-700"
+        style={{ backgroundColor: moodColor, opacity: 0.16 }}
+      />
+      <div
+        className="absolute bottom-[-10%] right-[-15%] w-[55%] h-[35%] rounded-full blur-[100px] pointer-events-none transition-colors duration-700"
+        style={{ backgroundColor: moodColor, opacity: 0.1 }}
+      />
+
       {/* Header */}
       <header
-        className="px-5 pb-5 flex items-center justify-between border-b border-border/30"
+        className="px-5 pb-5 flex items-center justify-between border-b border-border/30 relative z-10"
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 1.25rem)" }}
       >
         <WhispickLogoMark />
@@ -99,7 +116,7 @@ export function PublicWhispPage() {
       </header>
 
       {/* Content */}
-      <main className="flex-1 max-w-lg mx-auto w-full px-5 py-10 space-y-7">
+      <main className="flex-1 max-w-lg mx-auto w-full px-5 py-10 space-y-7 relative z-10">
         {isLoading ? (
           <div className="space-y-4">
             <Skeleton className="h-6 w-48 mx-auto" />
@@ -113,7 +130,7 @@ export function PublicWhispPage() {
         ) : (
           <>
             {/* Lead text */}
-            <p className="text-center text-lg text-muted-foreground font-serif">
+            <p className="text-center text-xl font-serif text-foreground leading-snug">
               Someone who cares about you thought you should see this 👀
             </p>
 
@@ -162,7 +179,26 @@ export function PublicWhispPage() {
                   <p className="text-sm text-muted-foreground">Your reply was sent anonymously.</p>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-3">
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {QUICK_REPLIES.map((qr) => (
+                      <button
+                        key={qr.key}
+                        type="button"
+                        onClick={() => submitReply(qr.text)}
+                        disabled={publicReply.isPending}
+                        data-testid={`quick-reply-${qr.key}`}
+                        className="px-4 py-2.5 min-h-11 rounded-full border border-border/50 bg-card text-sm text-foreground hover:border-primary/50 hover:bg-primary/10 active:scale-95 transition-all disabled:opacity-50"
+                      >
+                        {qr.text}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-px bg-border/40" />
+                    <span className="text-xs text-muted-foreground">or write your own</span>
+                    <div className="flex-1 h-px bg-border/40" />
+                  </div>
                   <Textarea
                     className="bg-card border-border/50 rounded-xl resize-none min-h-[80px]"
                     placeholder="Type your reply... (anonymous)"
@@ -240,7 +276,7 @@ export function PublicWhispPage() {
 
       {/* Footer */}
       <footer
-        className="p-5 text-center border-t border-border/30"
+        className="p-5 text-center border-t border-border/30 relative z-10"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1.25rem)" }}
       >
         <p className="text-xs text-muted-foreground">
