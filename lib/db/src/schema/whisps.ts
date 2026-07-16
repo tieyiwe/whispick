@@ -11,6 +11,10 @@ export const whispsTable = pgTable("whisps", {
   videoEmbedUrl: text("video_embed_url"), // set for platforms with an embeddable player (YouTube, Vimeo) — powers real watch tracking
   videoStartSeconds: integer("video_start_seconds"), // optional timestamp bookmark — playback starts here instead of 0
   videoPlatform: text("video_platform"), // 'youtube' | 'tiktok' | 'instagram' | 'facebook' | 'vimeo' | 'other'
+  // Best-effort captions text, fetched after send to confirm/refine the video's
+  // category tags (see lib/categorize.ts). Only ever populated for platforms
+  // we can scrape captions from (currently YouTube); null otherwise.
+  videoTranscript: text("video_transcript"),
   deliveryMethod: text("delivery_method").notNull(), // 'whisper_link' | 'ghost_boost' | 'circle_drop'
   whisperChannel: text("whisper_channel"), // 'email' | 'sms' | 'whatsapp' — only set when deliveryMethod is 'whisper_link'
   circleId: text("circle_id"), // set for circle_drop whisps posted to a private Circle instead of the public feed

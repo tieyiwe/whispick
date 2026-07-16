@@ -18,6 +18,13 @@ import { RepliesInbox } from "@/pages/RepliesInbox";
 import { CreditsPage } from "@/pages/CreditsPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { PublicWhispPage } from "@/pages/PublicWhispPage";
+import { AdminRoute } from "@/components/layout/AdminRoute";
+import { AdminDashboard } from "@/pages/admin/AdminDashboard";
+import { AdminUsers } from "@/pages/admin/AdminUsers";
+import { AdminUserDetail } from "@/pages/admin/AdminUserDetail";
+import { AdminWhisps } from "@/pages/admin/AdminWhisps";
+import { AdminWhispDetail } from "@/pages/admin/AdminWhispDetail";
+import { AdminAnalytics } from "@/pages/admin/AdminAnalytics";
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
@@ -143,6 +150,13 @@ function ClerkProviderWithRoutes() {
           <Route path="/replies" component={() => <ProtectedRoute component={RepliesInbox} />} />
           <Route path="/credits" component={() => <ProtectedRoute component={CreditsPage} />} />
           <Route path="/settings" component={() => <ProtectedRoute component={SettingsPage} />} />
+
+          <Route path="/admin/users/:id" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminUserDetail} />} />} />
+          <Route path="/admin/users" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminUsers} />} />} />
+          <Route path="/admin/whisps/:id" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminWhispDetail} />} />} />
+          <Route path="/admin/whisps" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminWhisps} />} />} />
+          <Route path="/admin/analytics" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminAnalytics} />} />} />
+          <Route path="/admin" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminDashboard} />} />} />
 
           <Route path="/w/:token" component={PublicWhispPage} />
 

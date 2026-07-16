@@ -16,6 +16,7 @@ import { requireAuth } from "../lib/auth";
 import { ensureUser } from "../lib/ensureUser";
 import { getPublicAppUrl } from "../lib/publicUrl";
 import { deliverWhisperLink } from "../lib/deliver";
+import { categorizeWhispAsync } from "../lib/categorizeWhisp";
 import { whisperLinkLimitFor, GHOST_BOOST_COST_USD } from "../lib/plans";
 import { createWhispLimiter } from "../lib/rateLimit";
 
@@ -194,6 +195,15 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
       getPublicAppUrl(req),
     );
   }
+
+  // Video content categorization (admin analytics only) runs independently
+  // of delivery — it's about what the video is, not whether/when it's sent.
+  void categorizeWhispAsync({
+    id,
+    videoUrl: data.videoUrl,
+    videoTitle: data.videoTitle ?? null,
+    videoPlatform: data.videoPlatform ?? null,
+  });
 
   const whisp = await db.select().from(whispsTable).where(eq(whispsTable.id, id)).then(r => r[0]);
   res.status(201).json(whisp);

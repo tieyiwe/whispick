@@ -6,7 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface UserProfile {
+export interface AdminUser {
   id: string;
   clerkId: string;
   email: string;
@@ -17,6 +17,21 @@ export interface UserProfile {
   plan: string;
   boostCredits: number;
   whisperLinksUsed: number;
+  /** @nullable */
+  whisperLinksResetAt?: string | null;
+  /** @nullable */
+  stripeCustomerId?: string | null;
+  /** @nullable */
+  stripeSubscriptionId?: string | null;
   role: string;
+  banned: boolean;
+  /** @nullable */
+  country?: string | null;
+  /** @nullable */
+  region?: string | null;
+  /** @nullable */
+  city?: string | null;
+  /** @nullable */
+  lastSeenAt?: string | null;
   createdAt: string;
 }

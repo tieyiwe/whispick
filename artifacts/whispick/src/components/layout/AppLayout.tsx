@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { Logo } from "@/components/ui/logo";
 import { useUser, useClerk } from "@clerk/react";
+import { useGetUserProfile } from "@workspace/api-client-react";
 import {
   LayoutDashboard,
   Send,
@@ -11,6 +12,7 @@ import {
   MessageSquareHeart,
   CreditCard,
   Settings,
+  ShieldCheck,
   LogOut
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -56,6 +58,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   const { user } = useUser();
   const { signOut } = useClerk();
+  const { data: profile } = useGetUserProfile();
+  const isAdmin = profile?.role === "admin";
+
+  const navItems = isAdmin
+    ? [...NAV_ITEMS, { href: "/admin", label: "Admin", icon: ShieldCheck }]
+    : NAV_ITEMS;
 
   return (
     <div className="min-h-[100dvh] bg-background flex flex-col md:flex-row">
@@ -68,7 +76,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
         </div>
 
         <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const isActive = location === item.href || location.startsWith(item.href + "/");
             const Icon = item.icon;
 

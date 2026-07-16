@@ -20,6 +20,18 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AdminCategoryStatsResponse,
+  AdminDeliveryMethodStatsResponse,
+  AdminListUsersParams,
+  AdminListWhispsParams,
+  AdminLocationStatsResponse,
+  AdminOpportunitiesResponse,
+  AdminOverviewStats,
+  AdminUser,
+  AdminUserDetail,
+  AdminUserListResponse,
+  AdminWhispDetail,
+  AdminWhispListResponse,
   ApiError,
   CheckoutRequest,
   CheckoutResponse,
@@ -40,6 +52,7 @@ import type {
   RevealResult,
   TrackingEventInput,
   TrackingResult,
+  UpdateAdminUserInput,
   UserProfile,
   UserProfileUpdate,
   VideoMeta,
@@ -2000,4 +2013,922 @@ export const useCreateCheckoutSession = <TError = ErrorType<ApiError>,
       > => {
       return useMutation(getCreateCheckoutSessionMutationOptions(options));
     }
+
+export const getAdminListUsersUrl = (params?: AdminListUsersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/users?${stringifiedParams}` : `/api/admin/users`
+}
+
+/**
+ * @summary List users (admin only)
+ */
+export const adminListUsers = async (params?: AdminListUsersParams, options?: RequestInit): Promise<AdminUserListResponse> => {
+
+  return customFetch<AdminUserListResponse>(getAdminListUsersUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListUsersQueryKey = (params?: AdminListUsersParams,) => {
+    return [
+    `/api/admin/users`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getAdminListUsersQueryOptions = <TData = Awaited<ReturnType<typeof adminListUsers>>, TError = ErrorType<ApiError>>(params?: AdminListUsersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListUsers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListUsersQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListUsers>>> = ({ signal }) => adminListUsers(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListUsers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListUsersQueryResult = NonNullable<Awaited<ReturnType<typeof adminListUsers>>>
+export type AdminListUsersQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary List users (admin only)
+ */
+
+export function useAdminListUsers<TData = Awaited<ReturnType<typeof adminListUsers>>, TError = ErrorType<ApiError>>(
+ params?: AdminListUsersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListUsers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListUsersQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminGetUserUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/users/${id}`
+}
+
+/**
+ * @summary Get a user's full profile and recent activity (admin only)
+ */
+export const adminGetUser = async (id: string, options?: RequestInit): Promise<AdminUserDetail> => {
+
+  return customFetch<AdminUserDetail>(getAdminGetUserUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetUserQueryKey = (id: string,) => {
+    return [
+    `/api/admin/users/${id}`
+    ] as const;
+    }
+
+
+export const getAdminGetUserQueryOptions = <TData = Awaited<ReturnType<typeof adminGetUser>>, TError = ErrorType<ApiError>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetUser>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetUserQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetUser>>> = ({ signal }) => adminGetUser(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetUser>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetUserQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetUser>>>
+export type AdminGetUserQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Get a user's full profile and recent activity (admin only)
+ */
+
+export function useAdminGetUser<TData = Awaited<ReturnType<typeof adminGetUser>>, TError = ErrorType<ApiError>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetUser>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetUserQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminUpdateUserUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/users/${id}`
+}
+
+/**
+ * @summary Update a user's role, plan, credits, or banned status (admin only)
+ */
+export const adminUpdateUser = async (id: string,
+    updateAdminUserInput: UpdateAdminUserInput, options?: RequestInit): Promise<AdminUser> => {
+
+  return customFetch<AdminUser>(getAdminUpdateUserUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateAdminUserInput)
+  }
+);}
+
+
+
+
+export const getAdminUpdateUserMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateUser>>, TError,{id: string;data: BodyType<UpdateAdminUserInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminUpdateUser>>, TError,{id: string;data: BodyType<UpdateAdminUserInput>}, TContext> => {
+
+const mutationKey = ['adminUpdateUser'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminUpdateUser>>, {id: string;data: BodyType<UpdateAdminUserInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  adminUpdateUser(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminUpdateUserMutationResult = NonNullable<Awaited<ReturnType<typeof adminUpdateUser>>>
+    export type AdminUpdateUserMutationBody = BodyType<UpdateAdminUserInput>
+    export type AdminUpdateUserMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Update a user's role, plan, credits, or banned status (admin only)
+ */
+export const useAdminUpdateUser = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateUser>>, TError,{id: string;data: BodyType<UpdateAdminUserInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminUpdateUser>>,
+        TError,
+        {id: string;data: BodyType<UpdateAdminUserInput>},
+        TContext
+      > => {
+      return useMutation(getAdminUpdateUserMutationOptions(options));
+    }
+
+export const getAdminDeleteUserUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/users/${id}`
+}
+
+/**
+ * @summary Delete a user and all of their data (admin only)
+ */
+export const adminDeleteUser = async (id: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getAdminDeleteUserUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getAdminDeleteUserMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteUser>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminDeleteUser>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['adminDeleteUser'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminDeleteUser>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adminDeleteUser(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminDeleteUserMutationResult = NonNullable<Awaited<ReturnType<typeof adminDeleteUser>>>
+
+    export type AdminDeleteUserMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Delete a user and all of their data (admin only)
+ */
+export const useAdminDeleteUser = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteUser>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminDeleteUser>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getAdminDeleteUserMutationOptions(options));
+    }
+
+export const getAdminListWhispsUrl = (params?: AdminListWhispsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/whisps?${stringifiedParams}` : `/api/admin/whisps`
+}
+
+/**
+ * @summary List all whisps across all users (admin only)
+ */
+export const adminListWhisps = async (params?: AdminListWhispsParams, options?: RequestInit): Promise<AdminWhispListResponse> => {
+
+  return customFetch<AdminWhispListResponse>(getAdminListWhispsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListWhispsQueryKey = (params?: AdminListWhispsParams,) => {
+    return [
+    `/api/admin/whisps`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getAdminListWhispsQueryOptions = <TData = Awaited<ReturnType<typeof adminListWhisps>>, TError = ErrorType<unknown>>(params?: AdminListWhispsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListWhisps>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListWhispsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListWhisps>>> = ({ signal }) => adminListWhisps(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListWhisps>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListWhispsQueryResult = NonNullable<Awaited<ReturnType<typeof adminListWhisps>>>
+export type AdminListWhispsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all whisps across all users (admin only)
+ */
+
+export function useAdminListWhisps<TData = Awaited<ReturnType<typeof adminListWhisps>>, TError = ErrorType<unknown>>(
+ params?: AdminListWhispsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListWhisps>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListWhispsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminGetWhispUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/whisps/${id}`
+}
+
+/**
+ * @summary Get full detail on any whisp (admin only)
+ */
+export const adminGetWhisp = async (id: string, options?: RequestInit): Promise<AdminWhispDetail> => {
+
+  return customFetch<AdminWhispDetail>(getAdminGetWhispUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetWhispQueryKey = (id: string,) => {
+    return [
+    `/api/admin/whisps/${id}`
+    ] as const;
+    }
+
+
+export const getAdminGetWhispQueryOptions = <TData = Awaited<ReturnType<typeof adminGetWhisp>>, TError = ErrorType<ApiError>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetWhisp>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetWhispQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetWhisp>>> = ({ signal }) => adminGetWhisp(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetWhisp>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetWhispQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetWhisp>>>
+export type AdminGetWhispQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Get full detail on any whisp (admin only)
+ */
+
+export function useAdminGetWhisp<TData = Awaited<ReturnType<typeof adminGetWhisp>>, TError = ErrorType<ApiError>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetWhisp>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetWhispQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminDeleteWhispUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/whisps/${id}`
+}
+
+/**
+ * @summary Remove a whisp (moderation) (admin only)
+ */
+export const adminDeleteWhisp = async (id: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getAdminDeleteWhispUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getAdminDeleteWhispMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteWhisp>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminDeleteWhisp>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['adminDeleteWhisp'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminDeleteWhisp>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adminDeleteWhisp(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminDeleteWhispMutationResult = NonNullable<Awaited<ReturnType<typeof adminDeleteWhisp>>>
+
+    export type AdminDeleteWhispMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Remove a whisp (moderation) (admin only)
+ */
+export const useAdminDeleteWhisp = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteWhisp>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminDeleteWhisp>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getAdminDeleteWhispMutationOptions(options));
+    }
+
+export const getAdminGetOverviewStatsUrl = () => {
+
+
+
+
+  return `/api/admin/stats/overview`
+}
+
+/**
+ * @summary App-wide overview stats (admin only)
+ */
+export const adminGetOverviewStats = async ( options?: RequestInit): Promise<AdminOverviewStats> => {
+
+  return customFetch<AdminOverviewStats>(getAdminGetOverviewStatsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetOverviewStatsQueryKey = () => {
+    return [
+    `/api/admin/stats/overview`
+    ] as const;
+    }
+
+
+export const getAdminGetOverviewStatsQueryOptions = <TData = Awaited<ReturnType<typeof adminGetOverviewStats>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetOverviewStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetOverviewStatsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetOverviewStats>>> = ({ signal }) => adminGetOverviewStats({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetOverviewStats>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetOverviewStatsQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetOverviewStats>>>
+export type AdminGetOverviewStatsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary App-wide overview stats (admin only)
+ */
+
+export function useAdminGetOverviewStats<TData = Awaited<ReturnType<typeof adminGetOverviewStats>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetOverviewStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetOverviewStatsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminGetCategoryStatsUrl = () => {
+
+
+
+
+  return `/api/admin/stats/categories`
+}
+
+/**
+ * @summary Video category rankings across all sent whisps (admin only)
+ */
+export const adminGetCategoryStats = async ( options?: RequestInit): Promise<AdminCategoryStatsResponse> => {
+
+  return customFetch<AdminCategoryStatsResponse>(getAdminGetCategoryStatsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetCategoryStatsQueryKey = () => {
+    return [
+    `/api/admin/stats/categories`
+    ] as const;
+    }
+
+
+export const getAdminGetCategoryStatsQueryOptions = <TData = Awaited<ReturnType<typeof adminGetCategoryStats>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetCategoryStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetCategoryStatsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetCategoryStats>>> = ({ signal }) => adminGetCategoryStats({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetCategoryStats>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetCategoryStatsQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetCategoryStats>>>
+export type AdminGetCategoryStatsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Video category rankings across all sent whisps (admin only)
+ */
+
+export function useAdminGetCategoryStats<TData = Awaited<ReturnType<typeof adminGetCategoryStats>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetCategoryStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetCategoryStatsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminGetDeliveryMethodStatsUrl = () => {
+
+
+
+
+  return `/api/admin/stats/delivery-methods`
+}
+
+/**
+ * @summary Delivery method usage breakdown (admin only)
+ */
+export const adminGetDeliveryMethodStats = async ( options?: RequestInit): Promise<AdminDeliveryMethodStatsResponse> => {
+
+  return customFetch<AdminDeliveryMethodStatsResponse>(getAdminGetDeliveryMethodStatsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetDeliveryMethodStatsQueryKey = () => {
+    return [
+    `/api/admin/stats/delivery-methods`
+    ] as const;
+    }
+
+
+export const getAdminGetDeliveryMethodStatsQueryOptions = <TData = Awaited<ReturnType<typeof adminGetDeliveryMethodStats>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetDeliveryMethodStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetDeliveryMethodStatsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetDeliveryMethodStats>>> = ({ signal }) => adminGetDeliveryMethodStats({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetDeliveryMethodStats>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetDeliveryMethodStatsQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetDeliveryMethodStats>>>
+export type AdminGetDeliveryMethodStatsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Delivery method usage breakdown (admin only)
+ */
+
+export function useAdminGetDeliveryMethodStats<TData = Awaited<ReturnType<typeof adminGetDeliveryMethodStats>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetDeliveryMethodStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetDeliveryMethodStatsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminGetLocationStatsUrl = () => {
+
+
+
+
+  return `/api/admin/stats/locations`
+}
+
+/**
+ * @summary User geography breakdown (admin only)
+ */
+export const adminGetLocationStats = async ( options?: RequestInit): Promise<AdminLocationStatsResponse> => {
+
+  return customFetch<AdminLocationStatsResponse>(getAdminGetLocationStatsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetLocationStatsQueryKey = () => {
+    return [
+    `/api/admin/stats/locations`
+    ] as const;
+    }
+
+
+export const getAdminGetLocationStatsQueryOptions = <TData = Awaited<ReturnType<typeof adminGetLocationStats>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetLocationStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetLocationStatsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetLocationStats>>> = ({ signal }) => adminGetLocationStats({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetLocationStats>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetLocationStatsQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetLocationStats>>>
+export type AdminGetLocationStatsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary User geography breakdown (admin only)
+ */
+
+export function useAdminGetLocationStats<TData = Awaited<ReturnType<typeof adminGetLocationStats>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetLocationStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetLocationStatsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminGetOpportunitiesUrl = () => {
+
+
+
+
+  return `/api/admin/stats/opportunities`
+}
+
+/**
+ * @summary Smart analytics — computed growth/quality opportunities (admin only)
+ */
+export const adminGetOpportunities = async ( options?: RequestInit): Promise<AdminOpportunitiesResponse> => {
+
+  return customFetch<AdminOpportunitiesResponse>(getAdminGetOpportunitiesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetOpportunitiesQueryKey = () => {
+    return [
+    `/api/admin/stats/opportunities`
+    ] as const;
+    }
+
+
+export const getAdminGetOpportunitiesQueryOptions = <TData = Awaited<ReturnType<typeof adminGetOpportunities>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetOpportunities>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetOpportunitiesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetOpportunities>>> = ({ signal }) => adminGetOpportunities({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetOpportunities>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetOpportunitiesQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetOpportunities>>>
+export type AdminGetOpportunitiesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Smart analytics — computed growth/quality opportunities (admin only)
+ */
+
+export function useAdminGetOpportunities<TData = Awaited<ReturnType<typeof adminGetOpportunities>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetOpportunities>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetOpportunitiesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 

@@ -9,6 +9,7 @@ import userRouter from "./user";
 import creditsRouter from "./credits";
 import billingRouter from "./billing";
 import linkRouter from "./link";
+import adminRouter from "./admin";
 import { publicEndpointLimiter } from "../lib/rateLimit";
 
 const router: IRouter = Router();
@@ -23,5 +24,6 @@ router.use("/user", userRouter);
 router.use("/credits", creditsRouter);
 router.use("/billing", billingRouter);
 router.use("/l", publicEndpointLimiter, linkRouter);
+router.use("/admin", adminRouter);
 
 export default router;

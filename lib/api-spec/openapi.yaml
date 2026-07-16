@@ -24,6 +24,8 @@ tags:
     description: Stripe checkout
   - name: circles
     description: Private invite-only circles
+  - name: admin
+    description: App-owner admin panel — user/content management and analytics
 paths:
   /healthz:
     get:
@@ -559,6 +561,294 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
 
+  /admin/users:
+    get:
+      operationId: adminListUsers
+      tags: [admin]
+      summary: List users (admin only)
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: plan
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: role
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: banned
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: page
+          schema:
+            type: integer
+          required: false
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+          required: false
+      responses:
+        "200":
+          description: Users page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserListResponse"
+        "403":
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/users/{id}:
+    get:
+      operationId: adminGetUser
+      tags: [admin]
+      summary: Get a user's full profile and recent activity (admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    patch:
+      operationId: adminUpdateUser
+      tags: [admin]
+      summary: Update a user's role, plan, credits, or banned status (admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAdminUserInput"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      operationId: adminDeleteUser
+      tags: [admin]
+      summary: Delete a user and all of their data (admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/whisps:
+    get:
+      operationId: adminListWhisps
+      tags: [admin]
+      summary: List all whisps across all users (admin only)
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: status
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: deliveryMethod
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: category
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: page
+          schema:
+            type: integer
+          required: false
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+          required: false
+      responses:
+        "200":
+          description: Whisps page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminWhispListResponse"
+
+  /admin/whisps/{id}:
+    get:
+      operationId: adminGetWhisp
+      tags: [admin]
+      summary: Get full detail on any whisp (admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Whisp detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminWhispDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      operationId: adminDeleteWhisp
+      tags: [admin]
+      summary: Remove a whisp (moderation) (admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/stats/overview:
+    get:
+      operationId: adminGetOverviewStats
+      tags: [admin]
+      summary: App-wide overview stats (admin only)
+      responses:
+        "200":
+          description: Overview stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOverviewStats"
+
+  /admin/stats/categories:
+    get:
+      operationId: adminGetCategoryStats
+      tags: [admin]
+      summary: Video category rankings across all sent whisps (admin only)
+      responses:
+        "200":
+          description: Category stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminCategoryStatsResponse"
+
+  /admin/stats/delivery-methods:
+    get:
+      operationId: adminGetDeliveryMethodStats
+      tags: [admin]
+      summary: Delivery method usage breakdown (admin only)
+      responses:
+        "200":
+          description: Delivery method stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDeliveryMethodStatsResponse"
+
+  /admin/stats/locations:
+    get:
+      operationId: adminGetLocationStats
+      tags: [admin]
+      summary: User geography breakdown (admin only)
+      responses:
+        "200":
+          description: Location stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminLocationStatsResponse"
+
+  /admin/stats/opportunities:
+    get:
+      operationId: adminGetOpportunities
+      tags: [admin]
+      summary: Smart analytics — computed growth/quality opportunities (admin only)
+      responses:
+        "200":
+          description: Opportunities
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOpportunitiesResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -595,6 +885,8 @@ components:
         videoStartSeconds:
           type: ["integer", "null"]
         videoPlatform:
+          type: ["string", "null"]
+        videoTranscript:
           type: ["string", "null"]
         deliveryMethod:
           type: string
@@ -914,6 +1206,8 @@ components:
           type: integer
         whisperLinksUsed:
           type: integer
+        role:
+          type: string
         createdAt:
           type: string
       required:
@@ -923,6 +1217,7 @@ components:
         - plan
         - boostCredits
         - whisperLinksUsed
+        - role
         - createdAt
 
     UserProfileUpdate:
@@ -1090,3 +1385,433 @@ components:
           type: ["string", "null"]
       required:
         - url
+
+    AdminUser:
+      type: object
+      properties:
+        id:
+          type: string
+        clerkId:
+          type: string
+        email:
+          type: string
+        fullName:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        plan:
+          type: string
+        boostCredits:
+          type: integer
+        whisperLinksUsed:
+          type: integer
+        whisperLinksResetAt:
+          type: ["string", "null"]
+        stripeCustomerId:
+          type: ["string", "null"]
+        stripeSubscriptionId:
+          type: ["string", "null"]
+        role:
+          type: string
+        banned:
+          type: boolean
+        country:
+          type: ["string", "null"]
+        region:
+          type: ["string", "null"]
+        city:
+          type: ["string", "null"]
+        lastSeenAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - clerkId
+        - email
+        - plan
+        - boostCredits
+        - whisperLinksUsed
+        - role
+        - banned
+        - createdAt
+
+    AdminUserListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminUser"
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+      required:
+        - items
+        - total
+        - page
+        - pageSize
+
+    AdminUserDetail:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/AdminUser"
+        recentWhisps:
+          type: array
+          items:
+            $ref: "#/components/schemas/Whisp"
+        totalWhisps:
+          type: integer
+        creditTransactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/CreditTransaction"
+      required:
+        - user
+        - recentWhisps
+        - totalWhisps
+        - creditTransactions
+
+    UpdateAdminUserInput:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [user, admin]
+        plan:
+          type: string
+          enum: [free, spark, ember]
+        boostCredits:
+          type: integer
+        banned:
+          type: boolean
+
+    WhispCategory:
+      type: object
+      properties:
+        id:
+          type: string
+        whispId:
+          type: string
+        category:
+          type: string
+        rank:
+          type: integer
+        score:
+          type: integer
+        createdAt:
+          type: string
+      required:
+        - id
+        - whispId
+        - category
+        - rank
+        - score
+        - createdAt
+
+    AdminWhispListItem:
+      type: object
+      properties:
+        id:
+          type: string
+        senderId:
+          type: string
+        senderEmail:
+          type: ["string", "null"]
+        videoUrl:
+          type: string
+        videoTitle:
+          type: ["string", "null"]
+        videoThumbnail:
+          type: ["string", "null"]
+        videoPlatform:
+          type: ["string", "null"]
+        deliveryMethod:
+          type: string
+        whisperChannel:
+          type: ["string", "null"]
+        circleId:
+          type: ["string", "null"]
+        status:
+          type: string
+        scheduledAt:
+          type: ["string", "null"]
+        deliveredAt:
+          type: ["string", "null"]
+        openedAt:
+          type: ["string", "null"]
+        watchedAt:
+          type: ["string", "null"]
+        moodTag:
+          type: ["string", "null"]
+        boostSpendUsd:
+          type: ["string", "null"]
+        categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/WhispCategory"
+        createdAt:
+          type: string
+      required:
+        - id
+        - senderId
+        - videoUrl
+        - deliveryMethod
+        - status
+        - categories
+        - createdAt
+
+    AdminWhispListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminWhispListItem"
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+      required:
+        - items
+        - total
+        - page
+        - pageSize
+
+    AdminWhispDetail:
+      type: object
+      properties:
+        whisp:
+          $ref: "#/components/schemas/Whisp"
+        senderId:
+          type: ["string", "null"]
+        senderEmail:
+          type: ["string", "null"]
+        senderFullName:
+          type: ["string", "null"]
+        trackingEvents:
+          type: array
+          items:
+            $ref: "#/components/schemas/TrackingEvent"
+        replies:
+          type: array
+          items:
+            $ref: "#/components/schemas/WhispReply"
+        categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/WhispCategory"
+      required:
+        - whisp
+        - trackingEvents
+        - replies
+        - categories
+
+    AdminTrendPoint:
+      type: object
+      properties:
+        day:
+          type: string
+        count:
+          type: integer
+      required:
+        - day
+        - count
+
+    AdminOverviewStats:
+      type: object
+      properties:
+        totalUsers:
+          type: integer
+        totalWhisps:
+          type: integer
+        bannedUsers:
+          type: integer
+        activeUsersLast7Days:
+          type: integer
+        newUsersLast30Days:
+          type: integer
+        creditPackPurchases:
+          type: integer
+        planGrants:
+          type: integer
+        usersByPlan:
+          type: object
+          additionalProperties:
+            type: integer
+        signupTrend:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminTrendPoint"
+        whispTrend:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminTrendPoint"
+      required:
+        - totalUsers
+        - totalWhisps
+        - bannedUsers
+        - activeUsersLast7Days
+        - newUsersLast30Days
+        - creditPackPurchases
+        - planGrants
+        - usersByPlan
+        - signupTrend
+        - whispTrend
+
+    AdminCategoryStat:
+      type: object
+      properties:
+        category:
+          type: string
+        label:
+          type: string
+        totalTags:
+          type: integer
+        primaryCount:
+          type: integer
+        secondaryCount:
+          type: integer
+        tertiaryCount:
+          type: integer
+        weightedScore:
+          type: integer
+      required:
+        - category
+        - label
+        - totalTags
+        - primaryCount
+        - secondaryCount
+        - tertiaryCount
+        - weightedScore
+
+    AdminCategoryStatsResponse:
+      type: object
+      properties:
+        categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminCategoryStat"
+      required:
+        - categories
+
+    AdminDeliveryMethodStat:
+      type: object
+      properties:
+        method:
+          type: string
+        count:
+          type: integer
+        percentage:
+          type: number
+      required:
+        - method
+        - count
+        - percentage
+
+    AdminChannelStat:
+      type: object
+      properties:
+        channel:
+          type: ["string", "null"]
+        count:
+          type: integer
+      required:
+        - channel
+        - count
+
+    AdminDeliveryMethodStatsResponse:
+      type: object
+      properties:
+        methods:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminDeliveryMethodStat"
+        whisperLinkChannels:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminChannelStat"
+      required:
+        - methods
+        - whisperLinkChannels
+
+    AdminCountryStat:
+      type: object
+      properties:
+        country:
+          type: ["string", "null"]
+        count:
+          type: integer
+      required:
+        - country
+        - count
+
+    AdminCityStat:
+      type: object
+      properties:
+        city:
+          type: ["string", "null"]
+        country:
+          type: ["string", "null"]
+        count:
+          type: integer
+      required:
+        - city
+        - count
+
+    AdminLocationStatsResponse:
+      type: object
+      properties:
+        byCountry:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminCountryStat"
+        byCity:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminCityStat"
+        unknownLocationUsers:
+          type: integer
+        totalUsers:
+          type: integer
+      required:
+        - byCountry
+        - byCity
+        - unknownLocationUsers
+        - totalUsers
+
+    AdminOpportunity:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        severity:
+          type: string
+          enum: [opportunity, warning, info]
+        metric:
+          type: ["string", "null"]
+      required:
+        - id
+        - title
+        - description
+        - severity
+
+    AdminOpportunitiesResponse:
+      type: object
+      properties:
+        insights:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminOpportunity"
+      required:
+        - insights

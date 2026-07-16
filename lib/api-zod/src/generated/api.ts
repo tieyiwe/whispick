@@ -32,6 +32,7 @@ export const ListWhispsResponseItem = zod.object({
   "videoEmbedUrl": zod.string().nullish(),
   "videoStartSeconds": zod.number().nullish(),
   "videoPlatform": zod.string().nullish(),
+  "videoTranscript": zod.string().nullish(),
   "deliveryMethod": zod.string(),
   "whisperChannel": zod.string().nullish(),
   "circleId": zod.string().nullish(),
@@ -82,6 +83,7 @@ export const CreateWhispResponse = zod.object({
   "videoEmbedUrl": zod.string().nullish(),
   "videoStartSeconds": zod.number().nullish(),
   "videoPlatform": zod.string().nullish(),
+  "videoTranscript": zod.string().nullish(),
   "deliveryMethod": zod.string(),
   "whisperChannel": zod.string().nullish(),
   "circleId": zod.string().nullish(),
@@ -122,6 +124,7 @@ export const GetWhispStatsResponse = zod.object({
   "videoEmbedUrl": zod.string().nullish(),
   "videoStartSeconds": zod.number().nullish(),
   "videoPlatform": zod.string().nullish(),
+  "videoTranscript": zod.string().nullish(),
   "deliveryMethod": zod.string(),
   "whisperChannel": zod.string().nullish(),
   "circleId": zod.string().nullish(),
@@ -159,6 +162,7 @@ export const GetWhispResponse = zod.object({
   "videoEmbedUrl": zod.string().nullish(),
   "videoStartSeconds": zod.number().nullish(),
   "videoPlatform": zod.string().nullish(),
+  "videoTranscript": zod.string().nullish(),
   "deliveryMethod": zod.string(),
   "whisperChannel": zod.string().nullish(),
   "circleId": zod.string().nullish(),
@@ -274,6 +278,7 @@ export const RequestRevealResponse = zod.object({
   "videoEmbedUrl": zod.string().nullish(),
   "videoStartSeconds": zod.number().nullish(),
   "videoPlatform": zod.string().nullish(),
+  "videoTranscript": zod.string().nullish(),
   "deliveryMethod": zod.string(),
   "whisperChannel": zod.string().nullish(),
   "circleId": zod.string().nullish(),
@@ -409,6 +414,7 @@ export const GetUserProfileResponse = zod.object({
   "plan": zod.string(),
   "boostCredits": zod.number(),
   "whisperLinksUsed": zod.number(),
+  "role": zod.string(),
   "createdAt": zod.string()
 })
 
@@ -430,6 +436,7 @@ export const UpdateUserProfileResponse = zod.object({
   "plan": zod.string(),
   "boostCredits": zod.number(),
   "whisperLinksUsed": zod.number(),
+  "role": zod.string(),
   "createdAt": zod.string()
 })
 
@@ -585,6 +592,370 @@ export const CreateCheckoutSessionBody = zod.object({
 
 export const CreateCheckoutSessionResponse = zod.object({
   "url": zod.string().nullable()
+})
+
+
+/**
+ * @summary List users (admin only)
+ */
+export const AdminListUsersQueryParams = zod.object({
+  "search": zod.coerce.string().optional(),
+  "plan": zod.coerce.string().optional(),
+  "role": zod.coerce.string().optional(),
+  "banned": zod.coerce.string().optional(),
+  "page": zod.coerce.number().optional(),
+  "pageSize": zod.coerce.number().optional()
+})
+
+export const AdminListUsersResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "clerkId": zod.string(),
+  "email": zod.string(),
+  "fullName": zod.string().nullish(),
+  "avatarUrl": zod.string().nullish(),
+  "plan": zod.string(),
+  "boostCredits": zod.number(),
+  "whisperLinksUsed": zod.number(),
+  "whisperLinksResetAt": zod.string().nullish(),
+  "stripeCustomerId": zod.string().nullish(),
+  "stripeSubscriptionId": zod.string().nullish(),
+  "role": zod.string(),
+  "banned": zod.boolean(),
+  "country": zod.string().nullish(),
+  "region": zod.string().nullish(),
+  "city": zod.string().nullish(),
+  "lastSeenAt": zod.string().nullish(),
+  "createdAt": zod.string()
+})),
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number()
+})
+
+
+/**
+ * @summary Get a user's full profile and recent activity (admin only)
+ */
+export const AdminGetUserParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const AdminGetUserResponse = zod.object({
+  "user": zod.object({
+  "id": zod.string(),
+  "clerkId": zod.string(),
+  "email": zod.string(),
+  "fullName": zod.string().nullish(),
+  "avatarUrl": zod.string().nullish(),
+  "plan": zod.string(),
+  "boostCredits": zod.number(),
+  "whisperLinksUsed": zod.number(),
+  "whisperLinksResetAt": zod.string().nullish(),
+  "stripeCustomerId": zod.string().nullish(),
+  "stripeSubscriptionId": zod.string().nullish(),
+  "role": zod.string(),
+  "banned": zod.boolean(),
+  "country": zod.string().nullish(),
+  "region": zod.string().nullish(),
+  "city": zod.string().nullish(),
+  "lastSeenAt": zod.string().nullish(),
+  "createdAt": zod.string()
+}),
+  "recentWhisps": zod.array(zod.object({
+  "id": zod.string(),
+  "senderId": zod.string(),
+  "videoUrl": zod.string(),
+  "videoTitle": zod.string().nullish(),
+  "videoThumbnail": zod.string().nullish(),
+  "videoEmbedUrl": zod.string().nullish(),
+  "videoStartSeconds": zod.number().nullish(),
+  "videoPlatform": zod.string().nullish(),
+  "videoTranscript": zod.string().nullish(),
+  "deliveryMethod": zod.string(),
+  "whisperChannel": zod.string().nullish(),
+  "circleId": zod.string().nullish(),
+  "recipientEmail": zod.string().nullish(),
+  "recipientPhone": zod.string().nullish(),
+  "anonymousNote": zod.string().nullish(),
+  "senderAlias": zod.string().nullish(),
+  "moodTag": zod.string().nullish(),
+  "status": zod.string(),
+  "scheduledAt": zod.string().nullish(),
+  "deliveredAt": zod.string().nullish(),
+  "openedAt": zod.string().nullish(),
+  "watchedAt": zod.string().nullish(),
+  "revealRequested": zod.boolean(),
+  "revealAccepted": zod.boolean().nullish(),
+  "createdAt": zod.string()
+})),
+  "totalWhisps": zod.number(),
+  "creditTransactions": zod.array(zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "type": zod.string(),
+  "amount": zod.number(),
+  "whispId": zod.string().nullish(),
+  "createdAt": zod.string()
+}))
+})
+
+
+/**
+ * @summary Update a user's role, plan, credits, or banned status (admin only)
+ */
+export const AdminUpdateUserParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const AdminUpdateUserBody = zod.object({
+  "role": zod.enum(['user', 'admin']).optional(),
+  "plan": zod.enum(['free', 'spark', 'ember']).optional(),
+  "boostCredits": zod.number().optional(),
+  "banned": zod.boolean().optional()
+})
+
+export const AdminUpdateUserResponse = zod.object({
+  "id": zod.string(),
+  "clerkId": zod.string(),
+  "email": zod.string(),
+  "fullName": zod.string().nullish(),
+  "avatarUrl": zod.string().nullish(),
+  "plan": zod.string(),
+  "boostCredits": zod.number(),
+  "whisperLinksUsed": zod.number(),
+  "whisperLinksResetAt": zod.string().nullish(),
+  "stripeCustomerId": zod.string().nullish(),
+  "stripeSubscriptionId": zod.string().nullish(),
+  "role": zod.string(),
+  "banned": zod.boolean(),
+  "country": zod.string().nullish(),
+  "region": zod.string().nullish(),
+  "city": zod.string().nullish(),
+  "lastSeenAt": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Delete a user and all of their data (admin only)
+ */
+export const AdminDeleteUserParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const AdminDeleteUserResponse = zod.void()
+
+
+/**
+ * @summary List all whisps across all users (admin only)
+ */
+export const AdminListWhispsQueryParams = zod.object({
+  "search": zod.coerce.string().optional(),
+  "status": zod.coerce.string().optional(),
+  "deliveryMethod": zod.coerce.string().optional(),
+  "category": zod.coerce.string().optional(),
+  "page": zod.coerce.number().optional(),
+  "pageSize": zod.coerce.number().optional()
+})
+
+export const AdminListWhispsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "senderId": zod.string(),
+  "senderEmail": zod.string().nullish(),
+  "videoUrl": zod.string(),
+  "videoTitle": zod.string().nullish(),
+  "videoThumbnail": zod.string().nullish(),
+  "videoPlatform": zod.string().nullish(),
+  "deliveryMethod": zod.string(),
+  "whisperChannel": zod.string().nullish(),
+  "circleId": zod.string().nullish(),
+  "status": zod.string(),
+  "scheduledAt": zod.string().nullish(),
+  "deliveredAt": zod.string().nullish(),
+  "openedAt": zod.string().nullish(),
+  "watchedAt": zod.string().nullish(),
+  "moodTag": zod.string().nullish(),
+  "boostSpendUsd": zod.string().nullish(),
+  "categories": zod.array(zod.object({
+  "id": zod.string(),
+  "whispId": zod.string(),
+  "category": zod.string(),
+  "rank": zod.number(),
+  "score": zod.number(),
+  "createdAt": zod.string()
+})),
+  "createdAt": zod.string()
+})),
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number()
+})
+
+
+/**
+ * @summary Get full detail on any whisp (admin only)
+ */
+export const AdminGetWhispParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const AdminGetWhispResponse = zod.object({
+  "whisp": zod.object({
+  "id": zod.string(),
+  "senderId": zod.string(),
+  "videoUrl": zod.string(),
+  "videoTitle": zod.string().nullish(),
+  "videoThumbnail": zod.string().nullish(),
+  "videoEmbedUrl": zod.string().nullish(),
+  "videoStartSeconds": zod.number().nullish(),
+  "videoPlatform": zod.string().nullish(),
+  "videoTranscript": zod.string().nullish(),
+  "deliveryMethod": zod.string(),
+  "whisperChannel": zod.string().nullish(),
+  "circleId": zod.string().nullish(),
+  "recipientEmail": zod.string().nullish(),
+  "recipientPhone": zod.string().nullish(),
+  "anonymousNote": zod.string().nullish(),
+  "senderAlias": zod.string().nullish(),
+  "moodTag": zod.string().nullish(),
+  "status": zod.string(),
+  "scheduledAt": zod.string().nullish(),
+  "deliveredAt": zod.string().nullish(),
+  "openedAt": zod.string().nullish(),
+  "watchedAt": zod.string().nullish(),
+  "revealRequested": zod.boolean(),
+  "revealAccepted": zod.boolean().nullish(),
+  "createdAt": zod.string()
+}),
+  "senderId": zod.string().nullish(),
+  "senderEmail": zod.string().nullish(),
+  "senderFullName": zod.string().nullish(),
+  "trackingEvents": zod.array(zod.object({
+  "id": zod.string(),
+  "whispId": zod.string(),
+  "eventType": zod.string(),
+  "createdAt": zod.string()
+})),
+  "replies": zod.array(zod.object({
+  "id": zod.string(),
+  "whispId": zod.string(),
+  "replyText": zod.string(),
+  "fromRecipient": zod.boolean(),
+  "videoUrl": zod.string().nullish(),
+  "videoTitle": zod.string().nullish(),
+  "videoThumbnail": zod.string().nullish(),
+  "videoEmbedUrl": zod.string().nullish(),
+  "videoPlatform": zod.string().nullish(),
+  "moodTag": zod.string().nullish(),
+  "createdAt": zod.string()
+})),
+  "categories": zod.array(zod.object({
+  "id": zod.string(),
+  "whispId": zod.string(),
+  "category": zod.string(),
+  "rank": zod.number(),
+  "score": zod.number(),
+  "createdAt": zod.string()
+}))
+})
+
+
+/**
+ * @summary Remove a whisp (moderation) (admin only)
+ */
+export const AdminDeleteWhispParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const AdminDeleteWhispResponse = zod.void()
+
+
+/**
+ * @summary App-wide overview stats (admin only)
+ */
+export const AdminGetOverviewStatsResponse = zod.object({
+  "totalUsers": zod.number(),
+  "totalWhisps": zod.number(),
+  "bannedUsers": zod.number(),
+  "activeUsersLast7Days": zod.number(),
+  "newUsersLast30Days": zod.number(),
+  "creditPackPurchases": zod.number(),
+  "planGrants": zod.number(),
+  "usersByPlan": zod.record(zod.string(), zod.number()),
+  "signupTrend": zod.array(zod.object({
+  "day": zod.string(),
+  "count": zod.number()
+})),
+  "whispTrend": zod.array(zod.object({
+  "day": zod.string(),
+  "count": zod.number()
+}))
+})
+
+
+/**
+ * @summary Video category rankings across all sent whisps (admin only)
+ */
+export const AdminGetCategoryStatsResponse = zod.object({
+  "categories": zod.array(zod.object({
+  "category": zod.string(),
+  "label": zod.string(),
+  "totalTags": zod.number(),
+  "primaryCount": zod.number(),
+  "secondaryCount": zod.number(),
+  "tertiaryCount": zod.number(),
+  "weightedScore": zod.number()
+}))
+})
+
+
+/**
+ * @summary Delivery method usage breakdown (admin only)
+ */
+export const AdminGetDeliveryMethodStatsResponse = zod.object({
+  "methods": zod.array(zod.object({
+  "method": zod.string(),
+  "count": zod.number(),
+  "percentage": zod.number()
+})),
+  "whisperLinkChannels": zod.array(zod.object({
+  "channel": zod.string().nullable(),
+  "count": zod.number()
+}))
+})
+
+
+/**
+ * @summary User geography breakdown (admin only)
+ */
+export const AdminGetLocationStatsResponse = zod.object({
+  "byCountry": zod.array(zod.object({
+  "country": zod.string().nullable(),
+  "count": zod.number()
+})),
+  "byCity": zod.array(zod.object({
+  "city": zod.string().nullable(),
+  "country": zod.string().nullish(),
+  "count": zod.number()
+})),
+  "unknownLocationUsers": zod.number(),
+  "totalUsers": zod.number()
+})
+
+
+/**
+ * @summary Smart analytics — computed growth/quality opportunities (admin only)
+ */
+export const AdminGetOpportunitiesResponse = zod.object({
+  "insights": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "severity": zod.enum(['opportunity', 'warning', 'info']),
+  "metric": zod.string().nullish()
+}))
 })
 
 

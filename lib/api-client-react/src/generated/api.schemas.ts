@@ -27,6 +27,8 @@ export interface Whisp {
   videoStartSeconds?: number | null;
   /** @nullable */
   videoPlatform?: string | null;
+  /** @nullable */
+  videoTranscript?: string | null;
   deliveryMethod: string;
   /** @nullable */
   whisperChannel?: string | null;
@@ -222,6 +224,7 @@ export interface UserProfile {
   plan: string;
   boostCredits: number;
   whisperLinksUsed: number;
+  role: string;
   createdAt: string;
 }
 
@@ -319,11 +322,254 @@ export interface CheckoutResponse {
   url: string | null;
 }
 
+export interface AdminUser {
+  id: string;
+  clerkId: string;
+  email: string;
+  /** @nullable */
+  fullName?: string | null;
+  /** @nullable */
+  avatarUrl?: string | null;
+  plan: string;
+  boostCredits: number;
+  whisperLinksUsed: number;
+  /** @nullable */
+  whisperLinksResetAt?: string | null;
+  /** @nullable */
+  stripeCustomerId?: string | null;
+  /** @nullable */
+  stripeSubscriptionId?: string | null;
+  role: string;
+  banned: boolean;
+  /** @nullable */
+  country?: string | null;
+  /** @nullable */
+  region?: string | null;
+  /** @nullable */
+  city?: string | null;
+  /** @nullable */
+  lastSeenAt?: string | null;
+  createdAt: string;
+}
+
+export interface AdminUserListResponse {
+  items: AdminUser[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface AdminUserDetail {
+  user: AdminUser;
+  recentWhisps: Whisp[];
+  totalWhisps: number;
+  creditTransactions: CreditTransaction[];
+}
+
+export type UpdateAdminUserInputRole = typeof UpdateAdminUserInputRole[keyof typeof UpdateAdminUserInputRole];
+
+
+export const UpdateAdminUserInputRole = {
+  user: 'user',
+  admin: 'admin',
+} as const;
+
+export type UpdateAdminUserInputPlan = typeof UpdateAdminUserInputPlan[keyof typeof UpdateAdminUserInputPlan];
+
+
+export const UpdateAdminUserInputPlan = {
+  free: 'free',
+  spark: 'spark',
+  ember: 'ember',
+} as const;
+
+export interface UpdateAdminUserInput {
+  role?: UpdateAdminUserInputRole;
+  plan?: UpdateAdminUserInputPlan;
+  boostCredits?: number;
+  banned?: boolean;
+}
+
+export interface WhispCategory {
+  id: string;
+  whispId: string;
+  category: string;
+  rank: number;
+  score: number;
+  createdAt: string;
+}
+
+export interface AdminWhispListItem {
+  id: string;
+  senderId: string;
+  /** @nullable */
+  senderEmail?: string | null;
+  videoUrl: string;
+  /** @nullable */
+  videoTitle?: string | null;
+  /** @nullable */
+  videoThumbnail?: string | null;
+  /** @nullable */
+  videoPlatform?: string | null;
+  deliveryMethod: string;
+  /** @nullable */
+  whisperChannel?: string | null;
+  /** @nullable */
+  circleId?: string | null;
+  status: string;
+  /** @nullable */
+  scheduledAt?: string | null;
+  /** @nullable */
+  deliveredAt?: string | null;
+  /** @nullable */
+  openedAt?: string | null;
+  /** @nullable */
+  watchedAt?: string | null;
+  /** @nullable */
+  moodTag?: string | null;
+  /** @nullable */
+  boostSpendUsd?: string | null;
+  categories: WhispCategory[];
+  createdAt: string;
+}
+
+export interface AdminWhispListResponse {
+  items: AdminWhispListItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface AdminWhispDetail {
+  whisp: Whisp;
+  /** @nullable */
+  senderId?: string | null;
+  /** @nullable */
+  senderEmail?: string | null;
+  /** @nullable */
+  senderFullName?: string | null;
+  trackingEvents: TrackingEvent[];
+  replies: WhispReply[];
+  categories: WhispCategory[];
+}
+
+export interface AdminTrendPoint {
+  day: string;
+  count: number;
+}
+
+export type AdminOverviewStatsUsersByPlan = {[key: string]: number};
+
+export interface AdminOverviewStats {
+  totalUsers: number;
+  totalWhisps: number;
+  bannedUsers: number;
+  activeUsersLast7Days: number;
+  newUsersLast30Days: number;
+  creditPackPurchases: number;
+  planGrants: number;
+  usersByPlan: AdminOverviewStatsUsersByPlan;
+  signupTrend: AdminTrendPoint[];
+  whispTrend: AdminTrendPoint[];
+}
+
+export interface AdminCategoryStat {
+  category: string;
+  label: string;
+  totalTags: number;
+  primaryCount: number;
+  secondaryCount: number;
+  tertiaryCount: number;
+  weightedScore: number;
+}
+
+export interface AdminCategoryStatsResponse {
+  categories: AdminCategoryStat[];
+}
+
+export interface AdminDeliveryMethodStat {
+  method: string;
+  count: number;
+  percentage: number;
+}
+
+export interface AdminChannelStat {
+  /** @nullable */
+  channel: string | null;
+  count: number;
+}
+
+export interface AdminDeliveryMethodStatsResponse {
+  methods: AdminDeliveryMethodStat[];
+  whisperLinkChannels: AdminChannelStat[];
+}
+
+export interface AdminCountryStat {
+  /** @nullable */
+  country: string | null;
+  count: number;
+}
+
+export interface AdminCityStat {
+  /** @nullable */
+  city: string | null;
+  /** @nullable */
+  country?: string | null;
+  count: number;
+}
+
+export interface AdminLocationStatsResponse {
+  byCountry: AdminCountryStat[];
+  byCity: AdminCityStat[];
+  unknownLocationUsers: number;
+  totalUsers: number;
+}
+
+export type AdminOpportunitySeverity = typeof AdminOpportunitySeverity[keyof typeof AdminOpportunitySeverity];
+
+
+export const AdminOpportunitySeverity = {
+  opportunity: 'opportunity',
+  warning: 'warning',
+  info: 'info',
+} as const;
+
+export interface AdminOpportunity {
+  id: string;
+  title: string;
+  description: string;
+  severity: AdminOpportunitySeverity;
+  /** @nullable */
+  metric?: string | null;
+}
+
+export interface AdminOpportunitiesResponse {
+  insights: AdminOpportunity[];
+}
+
 export type ListWhispsParams = {
 status?: string;
 };
 
 export type ListCircleFeedParams = {
 cursor?: string;
+};
+
+export type AdminListUsersParams = {
+search?: string;
+plan?: string;
+role?: string;
+banned?: string;
+page?: number;
+pageSize?: number;
+};
+
+export type AdminListWhispsParams = {
+search?: string;
+status?: string;
+deliveryMethod?: string;
+category?: string;
+page?: number;
+pageSize?: number;
 };
 

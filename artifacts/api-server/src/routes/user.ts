@@ -24,6 +24,7 @@ router.get("/profile", requireAuth, async (req, res): Promise<void> => {
     plan: user.plan,
     boostCredits: user.boostCredits,
     whisperLinksUsed: user.whisperLinksUsed,
+    role: user.role,
     createdAt: user.createdAt,
   });
 });

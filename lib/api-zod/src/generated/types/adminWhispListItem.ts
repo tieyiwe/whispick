@@ -5,38 +5,25 @@
  * Whispick API — anonymous video recommendation platform
  * OpenAPI spec version: 0.1.0
  */
+import type { WhispCategory } from './whispCategory';
 
-export interface Whisp {
+export interface AdminWhispListItem {
   id: string;
   senderId: string;
+  /** @nullable */
+  senderEmail?: string | null;
   videoUrl: string;
   /** @nullable */
   videoTitle?: string | null;
   /** @nullable */
   videoThumbnail?: string | null;
   /** @nullable */
-  videoEmbedUrl?: string | null;
-  /** @nullable */
-  videoStartSeconds?: number | null;
-  /** @nullable */
   videoPlatform?: string | null;
-  /** @nullable */
-  videoTranscript?: string | null;
   deliveryMethod: string;
   /** @nullable */
   whisperChannel?: string | null;
   /** @nullable */
   circleId?: string | null;
-  /** @nullable */
-  recipientEmail?: string | null;
-  /** @nullable */
-  recipientPhone?: string | null;
-  /** @nullable */
-  anonymousNote?: string | null;
-  /** @nullable */
-  senderAlias?: string | null;
-  /** @nullable */
-  moodTag?: string | null;
   status: string;
   /** @nullable */
   scheduledAt?: string | null;
@@ -46,8 +33,10 @@ export interface Whisp {
   openedAt?: string | null;
   /** @nullable */
   watchedAt?: string | null;
-  revealRequested: boolean;
   /** @nullable */
-  revealAccepted?: boolean | null;
+  moodTag?: string | null;
+  /** @nullable */
+  boostSpendUsd?: string | null;
+  categories: WhispCategory[];
   createdAt: string;
 }
