@@ -114,6 +114,11 @@
     /* Prevents the page-level rubber-band/pull-to-refresh gesture from
        fighting with the app's own fixed header/bottom-nav on mobile. */
     overscroll-behavior-y: contain;
+    /* Belt-and-suspenders: any single element that overflows its container
+       (a long unbreakable string, a mis-sized flex child) should clip
+       locally, not force the whole page wider than the viewport and give
+       mobile browsers a horizontal scrollbar. */
+    overflow-x: hidden;
   }
 
   body {
@@ -122,6 +127,8 @@
        every tap — native apps don't have this, and its absence is one of
        the more noticeable "this feels like a website" tells. */
     -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
+    max-width: 100vw;
   }
 
   h1, h2, h3, h4, h5, h6 {
