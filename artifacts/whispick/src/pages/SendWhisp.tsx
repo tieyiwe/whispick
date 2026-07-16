@@ -34,6 +34,7 @@ import {
   Clock,
   CalendarClock,
   Globe,
+  Contact,
 } from "lucide-react";
 import {
   SiYoutube,
@@ -42,6 +43,7 @@ import {
   SiFacebook,
   SiWhatsapp,
 } from "react-icons/si";
+import { isContactPickerSupported, pickContact } from "@/lib/contactPicker";
 
 const WHISPER_CHANNELS = [
   { key: "email", label: "Email", icon: Mail },
@@ -201,6 +203,25 @@ export function SendWhisp() {
         },
       }
     );
+  }
+
+  async function handlePickContact() {
+    const contact = await pickContact();
+    if (!contact) return;
+
+    if (whisperChannel === "email") {
+      if (!contact.email) {
+        toast({ title: "That contact has no email address on file", variant: "destructive" });
+        return;
+      }
+      setRecipientEmail(contact.email);
+    } else {
+      if (!contact.tel) {
+        toast({ title: "That contact has no phone number on file", variant: "destructive" });
+        return;
+      }
+      setRecipientPhone(contact.tel);
+    }
   }
 
   const steps = ["Video", "Mood", "Note", "Delivery", "Recipient", "Send"];
@@ -657,6 +678,24 @@ export function SendWhisp() {
                         data-testid="input-recipient-phone"
                       />
                     </div>
+                  )}
+                  {isContactPickerSupported() && (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-px bg-border/40" />
+                        <span className="text-xs text-muted-foreground">or</span>
+                        <div className="flex-1 h-px bg-border/40" />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full rounded-xl border-border/50"
+                        onClick={handlePickContact}
+                        data-testid="button-pick-contact"
+                      >
+                        <Contact className="w-4 h-4 mr-2" /> Choose from Contacts
+                      </Button>
+                    </>
                   )}
                 </div>
                 <div className="flex justify-between pt-2">
