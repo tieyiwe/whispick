@@ -149,12 +149,12 @@ export function AdminUserDetail() {
 
         <Card className="bg-card border-border/50">
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-xl font-serif">{user.fullName || user.email}</CardTitle>
-                <p className="text-sm text-muted-foreground">{user.email}</p>
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <CardTitle className="text-xl font-serif truncate">{user.fullName || user.email}</CardTitle>
+                <p className="text-sm text-muted-foreground truncate">{user.email}</p>
               </div>
-              {user.banned && <Badge variant="destructive">Banned</Badge>}
+              {user.banned && <Badge variant="destructive" className="shrink-0">Banned</Badge>}
             </div>
           </CardHeader>
           <CardContent className="space-y-5">

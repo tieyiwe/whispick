@@ -146,15 +146,15 @@ export function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="flex items-center gap-4">
-              <Avatar className="w-16 h-16 border-2 border-primary/30">
+              <Avatar className="w-16 h-16 border-2 border-primary/30 shrink-0">
                 <AvatarImage src={profile?.avatarUrl ?? ""} />
                 <AvatarFallback className="bg-primary/10 text-primary text-xl font-serif">
                   {profile?.fullName?.charAt(0) ?? profile?.email?.charAt(0) ?? "W"}
                 </AvatarFallback>
               </Avatar>
-              <div>
-                <p className="font-medium text-foreground">{profile?.fullName || "No name set"}</p>
-                <p className="text-sm text-muted-foreground">{profile?.email}</p>
+              <div className="min-w-0 flex-1">
+                <p className="font-medium text-foreground truncate">{profile?.fullName || "No name set"}</p>
+                <p className="text-sm text-muted-foreground truncate">{profile?.email}</p>
               </div>
             </div>
 
@@ -190,28 +190,28 @@ export function SettingsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="flex items-center justify-between py-2">
-              <span className="text-sm text-muted-foreground">Email</span>
-              <span className="text-sm text-foreground">{profile?.email}</span>
+            <div className="flex items-center justify-between gap-3 py-2">
+              <span className="text-sm text-muted-foreground shrink-0">Email</span>
+              <span className="text-sm text-foreground truncate min-w-0 text-right">{profile?.email}</span>
             </div>
-            <div className="flex items-center justify-between py-2">
-              <span className="text-sm text-muted-foreground">Plan</span>
-              <span className="text-sm text-foreground capitalize">{profile?.plan}</span>
+            <div className="flex items-center justify-between gap-3 py-2">
+              <span className="text-sm text-muted-foreground shrink-0">Plan</span>
+              <span className="text-sm text-foreground capitalize truncate min-w-0 text-right">{profile?.plan}</span>
             </div>
-            <div className="flex items-center justify-between py-2">
-              <span className="text-sm text-muted-foreground">Whisper Links Used</span>
-              <span className="text-sm text-foreground">
+            <div className="flex items-center justify-between gap-3 py-2">
+              <span className="text-sm text-muted-foreground shrink-0">Whisper Links Used</span>
+              <span className="text-sm text-foreground truncate min-w-0 text-right">
                 {profile?.whisperLinksUsed}
                 {profile?.plan && WHISPER_LINK_LIMITS[profile.plan] != null ? ` / ${WHISPER_LINK_LIMITS[profile.plan]} this month` : " (unlimited)"}
               </span>
             </div>
-            <div className="flex items-center justify-between py-2">
-              <span className="text-sm text-muted-foreground">Ghost Boost Credits</span>
-              <span className="text-sm text-foreground">{profile?.boostCredits}</span>
+            <div className="flex items-center justify-between gap-3 py-2">
+              <span className="text-sm text-muted-foreground shrink-0">Ghost Boost Credits</span>
+              <span className="text-sm text-foreground truncate min-w-0 text-right">{profile?.boostCredits}</span>
             </div>
-            <div className="flex items-center justify-between py-2">
-              <span className="text-sm text-muted-foreground">Member since</span>
-              <span className="text-sm text-foreground">{profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : "—"}</span>
+            <div className="flex items-center justify-between gap-3 py-2">
+              <span className="text-sm text-muted-foreground shrink-0">Member since</span>
+              <span className="text-sm text-foreground truncate min-w-0 text-right">{profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : "—"}</span>
             </div>
           </CardContent>
         </Card>
