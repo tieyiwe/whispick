@@ -10,6 +10,13 @@ export const whispsTable = pgTable("whisps", {
   videoThumbnail: text("video_thumbnail"),
   videoEmbedUrl: text("video_embed_url"), // set for platforms with an embeddable player (YouTube, Vimeo) — powers real watch tracking
   videoStartSeconds: integer("video_start_seconds"), // optional timestamp bookmark — playback starts here instead of 0
+  // Optional trim point — playback is paused (and treated as complete) once
+  // reached, instead of implying "watch the whole thing." Enforced in JS by
+  // VideoPlayer.tsx, not a platform embed param, so it behaves identically
+  // across YouTube/Vimeo/native-upload playback. Only meaningful alongside
+  // videoStartSeconds/on embeddable platforms — a no-op everywhere else,
+  // same as the start bookmark.
+  videoEndSeconds: integer("video_end_seconds"),
   videoPlatform: text("video_platform"), // 'youtube' | 'tiktok' | 'instagram' | 'facebook' | 'vimeo' | 'upload' | 'other'
   // Set when the video came from the sender's own Media Library (an
   // upload) instead of a pasted URL — see uploaded_videos.ts. videoUrl is

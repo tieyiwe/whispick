@@ -18,6 +18,8 @@ export interface PublicWhisp {
   /** @nullable */
   videoStartSeconds?: number | null;
   /** @nullable */
+  videoEndSeconds?: number | null;
+  /** @nullable */
   videoPlatform?: string | null;
   /** @nullable */
   anonymousNote?: string | null;

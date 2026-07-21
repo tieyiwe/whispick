@@ -1,6 +1,7 @@
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { useUser } from "@clerk/react";
 import {
   useGetPublicWhisp,
   useTrackWhispEvent,
@@ -24,6 +25,7 @@ import { Logo } from "@/components/ui/logo";
 import { VideoPlayer } from "@/components/shared/VideoPlayer";
 import { QUICK_REPLIES } from "@/lib/quickReplies";
 import { REMINDER_PRESETS, MAX_REMINDERS } from "@/lib/reminderPresets";
+import { savePendingForward } from "@/lib/forwardVideo";
 
 function WhispickLogoMark() {
   return (
@@ -71,6 +73,8 @@ export function PublicWhispPage() {
   const { token } = useParams<{ token: string }>();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
+  const { isSignedIn } = useUser();
   const [replied, setReplied] = useState(false);
   const [replyText, setReplyText] = useState("");
   const [hasTrackedOpen, setHasTrackedOpen] = useState(false);
@@ -133,6 +137,19 @@ export function PublicWhispPage() {
         onError: () => toast({ title: "Something went wrong", variant: "destructive" }),
       }
     );
+  }
+
+  function handlePassItForward() {
+    if (!whisp || whisp.videoPlatform === "upload") return;
+    savePendingForward({
+      videoUrl: whisp.videoUrl,
+      videoTitle: whisp.videoTitle,
+      videoThumbnail: whisp.videoThumbnail,
+      videoEmbedUrl: whisp.videoEmbedUrl,
+      videoPlatform: whisp.videoPlatform,
+      videoStartSeconds: whisp.videoStartSeconds,
+    });
+    setLocation(isSignedIn ? "/send" : "/sign-up");
   }
 
   function handleRevealResponse(accepted: boolean) {
@@ -291,6 +308,7 @@ export function PublicWhispPage() {
                 uploadSrc={whisp.videoPlatform === "upload" ? `/api/public/w/${token}/media` : null}
                 title={whisp.videoTitle}
                 startSeconds={whisp.videoStartSeconds}
+                endSeconds={whisp.videoEndSeconds}
                 onWatchEvent={handleWatchEvent}
               />
 
@@ -317,10 +335,26 @@ export function PublicWhispPage() {
             {/* Appreciation prompt */}
             <div className="bg-card border border-border/50 rounded-2xl p-4 text-center space-y-2">
               {appreciationResponse ? (
-                <p className="text-sm text-muted-foreground flex items-center justify-center gap-1.5">
-                  <HeartHandshake className="w-4 h-4 text-primary" />
-                  {appreciationResponse === "yes" ? "Glad this reached you." : "Thanks for letting them know."}
-                </p>
+                <>
+                  <p className="text-sm text-muted-foreground flex items-center justify-center gap-1.5">
+                    <HeartHandshake className="w-4 h-4 text-primary" />
+                    {appreciationResponse === "yes" ? "Glad this reached you." : "Thanks for letting them know."}
+                  </p>
+                  {appreciationResponse === "yes" && whisp.videoPlatform !== "upload" && (
+                    <div className="pt-1 space-y-1.5">
+                      <p className="text-xs text-muted-foreground">Know someone who needs this too?</p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="rounded-full"
+                        onClick={handlePassItForward}
+                        data-testid="button-pass-it-forward"
+                      >
+                        <Send className="w-3.5 h-3.5 mr-1.5" /> Pass it forward
+                      </Button>
+                    </div>
+                  )}
+                </>
               ) : (
                 <>
                   <p className="text-sm font-medium text-foreground">Was this something you needed to hear?</p>

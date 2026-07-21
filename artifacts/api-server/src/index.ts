@@ -4,6 +4,7 @@ import { startScheduledWhispDispatcher } from "./lib/scheduler";
 import { startReminderDispatcher } from "./lib/reminderScheduler";
 import { startMediaRetentionScheduler } from "./lib/mediaRetentionScheduler";
 import { startTakeawayScheduler } from "./lib/takeawayScheduler";
+import { startMatchScheduler } from "./lib/matchScheduler";
 
 const rawPort = process.env["PORT"];
 
@@ -32,3 +33,4 @@ startScheduledWhispDispatcher();
 startReminderDispatcher();
 startMediaRetentionScheduler();
 startTakeawayScheduler();
+startMatchScheduler();

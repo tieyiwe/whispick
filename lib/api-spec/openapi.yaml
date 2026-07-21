@@ -1268,6 +1268,8 @@ components:
           type: ["string", "null"]
         videoStartSeconds:
           type: ["integer", "null"]
+        videoEndSeconds:
+          type: ["integer", "null"]
         videoPlatform:
           type: ["string", "null"]
         videoTranscript:
@@ -1338,6 +1340,8 @@ components:
         videoEmbedUrl:
           type: ["string", "null"]
         videoStartSeconds:
+          type: ["integer", "null"]
+        videoEndSeconds:
           type: ["integer", "null"]
         videoPlatform:
           type: ["string", "null"]
@@ -1519,6 +1523,8 @@ components:
         videoEmbedUrl:
           type: ["string", "null"]
         videoStartSeconds:
+          type: ["integer", "null"]
+        videoEndSeconds:
           type: ["integer", "null"]
         videoPlatform:
           type: ["string", "null"]
@@ -2353,6 +2359,8 @@ components:
         videoEmbedUrl:
           type: ["string", "null"]
         videoStartSeconds:
+          type: ["integer", "null"]
+        videoEndSeconds:
           type: ["integer", "null"]
         videoPlatform:
           type: ["string", "null"]

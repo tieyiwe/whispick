@@ -1,15 +1,26 @@
+import { useEffect } from "react";
 import { useGetWhispStats } from "@workspace/api-client-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Send, Eye, PlayCircle, MessageSquareHeart, TrendingUp, Ghost } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { MoodTag } from "@/components/shared/MoodTag";
 import { Button } from "@/components/ui/button";
+import { hasPendingForward } from "@/lib/forwardVideo";
 
 export function Dashboard() {
   const { data: stats, isLoading } = useGetWhispStats();
+  const [, setLocation] = useLocation();
+
+  // A brand-new account created via "Pass it forward" from the public whisp
+  // page always lands here first (Clerk's sign-up redirect is fixed at
+  // /dashboard) — bounce straight to Send Whisp, which consumes (and
+  // clears) the pending video itself.
+  useEffect(() => {
+    if (hasPendingForward()) setLocation("/send");
+  }, [setLocation]);
 
   if (isLoading) {
     return (

@@ -19,6 +19,8 @@ export interface SendGroupWhispInput {
   /** @nullable */
   videoStartSeconds?: number | null;
   /** @nullable */
+  videoEndSeconds?: number | null;
+  /** @nullable */
   videoPlatform?: string | null;
   /**
      * An id from the sender's Media Library — an alternative to videoUrl. One of the two is required.

@@ -22,3 +22,12 @@ export function reminderHookLine(isFinal: boolean, expiresAt: Date): string {
   }
   return "Don't forget — you have an anonymous whisp waiting for you 👀";
 }
+
+// Ghost Boost match delivery — deliberately doesn't say "a stranger sent
+// this" (true, but a colder framing than the rest of the app's copy) or
+// imply the sender picked THEM specifically (they didn't — a subscriber
+// opted in to a topic, and this matched it). Keep in sync with
+// PublicWhispPage.tsx the same way as HOOK_LINE.
+export function matchHookLine(): string {
+  return "This matched something you said you wanted to hear about — sent anonymously 👀";
+}

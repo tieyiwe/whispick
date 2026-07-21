@@ -9,6 +9,12 @@ type Props = {
   thumbnail?: string | null;
   title?: string | null;
   startSeconds?: number | null;
+  // Trim point — playback is paused and treated as "watched to completion"
+  // once reached, instead of implying the recipient should watch to the
+  // video's own natural end. Enforced in JS (below) rather than relying
+  // solely on a platform embed param, so it behaves identically across
+  // YouTube/Vimeo/native-upload playback.
+  endSeconds?: number | null;
   // For platform === "upload": the actual streamable bytes URL and poster
   // image. videoUrl itself is a non-navigable "upload:<id>" marker in that
   // case (see routes/whisps.ts), so the caller resolves the real src — it's
@@ -51,7 +57,7 @@ function loadYouTubeApi(): Promise<void> {
  * player with progress events, so we fall back to opening the original link
  * and can only ever know it was clicked, not watched.
  */
-export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, startSeconds, uploadSrc, onWatchEvent }: Props) {
+export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, startSeconds, endSeconds, uploadSrc, onWatchEvent }: Props) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const firedRef = useRef({ tenSec: false, halfway: false, complete: false });
@@ -71,6 +77,10 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
     if (!fired.halfway && duration > 0 && currentTime / duration >= 0.5) {
       fired.halfway = true;
       onWatchEvent("watched_50pct");
+    }
+    if (endSeconds && !fired.complete && currentTime >= endSeconds) {
+      fired.complete = true;
+      onWatchEvent("watched_complete");
     }
   }
 
@@ -95,7 +105,11 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
       });
       interval = setInterval(() => {
         if (typeof player.getCurrentTime === "function") {
-          checkProgress(player.getCurrentTime(), player.getDuration());
+          const time = player.getCurrentTime();
+          checkProgress(time, player.getDuration());
+          if (endSeconds && time >= endSeconds && typeof player.pauseVideo === "function") {
+            player.pauseVideo();
+          }
         }
       }, 2000);
     });
@@ -121,6 +135,9 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
       }
       player.on("timeupdate", ({ seconds, duration }: { seconds: number; duration: number }) => {
         checkProgress(seconds, duration);
+        if (endSeconds && seconds >= endSeconds) {
+          player?.pause().catch(() => {});
+        }
       });
       player.on("ended", () => {
         if (!firedRef.current.complete) {
@@ -153,7 +170,10 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
         onLoadedMetadata={(e) => {
           if (startSeconds) e.currentTarget.currentTime = startSeconds;
         }}
-        onTimeUpdate={(e) => checkProgress(e.currentTarget.currentTime, e.currentTarget.duration)}
+        onTimeUpdate={(e) => {
+          checkProgress(e.currentTarget.currentTime, e.currentTarget.duration);
+          if (endSeconds && e.currentTarget.currentTime >= endSeconds) e.currentTarget.pause();
+        }}
         onEnded={() => {
           if (!firedRef.current.complete) {
             firedRef.current.complete = true;
@@ -166,11 +186,16 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
 
   if (isEmbeddable && playing) {
     const startParam = startSeconds ? (platform === "youtube" ? `&start=${startSeconds}` : "") : "";
+    // YouTube's own `end` param gives a precise, native stop — the JS-level
+    // checkProgress/pauseVideo above still runs as a fallback (and to
+    // reliably fire watched_complete) since not every platform supports a
+    // native trim param the same way.
+    const endParam = endSeconds && platform === "youtube" ? `&end=${endSeconds}` : "";
     return (
       <div className="relative aspect-video w-full bg-black">
         <iframe
           ref={iframeRef}
-          src={`${embedUrl}${embedUrl!.includes("?") ? "&" : "?"}autoplay=1${startParam}`}
+          src={`${embedUrl}${embedUrl!.includes("?") ? "&" : "?"}autoplay=1${startParam}${endParam}`}
           title={title ?? "Video"}
           className="absolute inset-0 w-full h-full"
           allow="autoplay; encrypted-media; picture-in-picture"

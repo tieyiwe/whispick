@@ -56,6 +56,7 @@ import {
 import { isContactPickerSupported, pickContact } from "@/lib/contactPicker";
 import { uploadMedia, UploadValidationError } from "@/lib/uploadMedia";
 import { Thumbnail } from "@/components/shared/Thumbnail";
+import { takePendingForward } from "@/lib/forwardVideo";
 
 const WHISPER_CHANNELS = [
   { key: "email", label: "Email", icon: Mail },
@@ -119,6 +120,12 @@ function parseTimestampToSeconds(value: string): number | null {
   return parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
 }
 
+function formatSecondsAsTimestamp(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${String(secs).padStart(2, "0")}`;
+}
+
 const step1Schema = z.object({ videoUrl: z.string().url("Please enter a valid URL") });
 const step5Schema = z.object({
   recipientEmail: z.string().email().optional().or(z.literal("")),
@@ -139,6 +146,7 @@ export function SendWhisp() {
   const [uploadedVideoId, setUploadedVideoId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isForwarded, setIsForwarded] = useState(false);
   const [moodTag, setMoodTag] = useState<string | null>(null);
   const [anonymousNote, setAnonymousNote] = useState("");
   const [senderAlias, setSenderAlias] = useState(SENDER_ALIASES[0]);
@@ -148,6 +156,7 @@ export function SendWhisp() {
   const [recipientEmail, setRecipientEmail] = useState("");
   const [recipientPhone, setRecipientPhone] = useState("");
   const [startTimestamp, setStartTimestamp] = useState("");
+  const [endTimestamp, setEndTimestamp] = useState("");
   const [scheduleEnabled, setScheduleEnabled] = useState(false);
   const [scheduledAtValue, setScheduledAtValue] = useState("");
   const [circleId, setCircleId] = useState<string | null>(null);
@@ -182,6 +191,26 @@ export function SendWhisp() {
       setDeliveryMethod("group_whisper");
       setWhisperGroupId(groupParam);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // "Pass it forward" from the public whisp page — a video someone just
+  // appreciated, waiting in sessionStorage. Consumed (and cleared) once, so
+  // pre-fill straight to the mood step rather than making them re-paste a
+  // URL they didn't choose.
+  useEffect(() => {
+    const forward = takePendingForward();
+    if (!forward) return;
+    setVideoUrl(forward.videoUrl);
+    setVideoMeta({
+      title: forward.videoTitle,
+      thumbnail: forward.videoThumbnail,
+      embedUrl: forward.videoEmbedUrl,
+      platform: forward.videoPlatform ?? undefined,
+    });
+    if (forward.videoStartSeconds) setStartTimestamp(formatSecondsAsTimestamp(forward.videoStartSeconds));
+    setIsForwarded(true);
+    setStep(2);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -258,6 +287,7 @@ export function SendWhisp() {
             videoPlatform: videoMeta?.platform ?? null,
             uploadedVideoId,
             videoStartSeconds: parseTimestampToSeconds(startTimestamp),
+            videoEndSeconds: parseTimestampToSeconds(endTimestamp),
             whisperChannel,
             anonymousNote: anonymousNote || null,
             senderAlias: alias,
@@ -296,6 +326,7 @@ export function SendWhisp() {
           videoPlatform: videoMeta?.platform ?? null,
           uploadedVideoId,
           videoStartSeconds: parseTimestampToSeconds(startTimestamp),
+          videoEndSeconds: parseTimestampToSeconds(endTimestamp),
           deliveryMethod,
           whisperChannel: deliveryMethod === "whisper_link" ? whisperChannel : null,
           recipientEmail: deliveryMethod === "whisper_link" && whisperChannel === "email" ? recipientEmail || null : null,
@@ -399,6 +430,16 @@ export function SendWhisp() {
       </AppLayout>
     );
   }
+
+  const parsedStartSeconds = parseTimestampToSeconds(startTimestamp);
+  const parsedEndSeconds = parseTimestampToSeconds(endTimestamp);
+  const trimError = !endTimestamp
+    ? null
+    : parsedEndSeconds === null
+      ? "Invalid time format"
+      : parsedStartSeconds !== null && parsedEndSeconds <= parsedStartSeconds
+        ? "End time must be after the start time"
+        : null;
 
   return (
     <AppLayout>
@@ -553,6 +594,11 @@ export function SendWhisp() {
             {/* Step 2: Mood Tag */}
             {step === 2 && (
               <div className="space-y-4">
+                {isForwarded && (
+                  <div className="flex items-center gap-1.5 text-xs text-primary bg-primary/10 rounded-full px-3 py-1.5 w-fit" data-testid="badge-passing-forward">
+                    <Send className="w-3 h-3" /> Passing this one forward
+                  </div>
+                )}
                 {/* Video preview */}
                 {(videoMeta?.thumbnail || videoMeta?.title) && (
                   <div className="flex gap-3 p-3 bg-muted/30 rounded-xl items-center">
@@ -575,16 +621,32 @@ export function SendWhisp() {
 
                 <div className="space-y-1.5">
                   <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-muted-foreground" /> Start the video at (optional)
+                    <Clock className="w-3.5 h-3.5 text-muted-foreground" /> Trim the clip (optional)
                   </p>
-                  <Input
-                    className="bg-input/50 border-border/50 rounded-xl w-32"
-                    placeholder="mm:ss"
-                    value={startTimestamp}
-                    onChange={(e) => setStartTimestamp(e.target.value)}
-                    data-testid="input-start-timestamp"
-                  />
-                  <p className="text-xs text-muted-foreground">Jump straight to the good part, e.g. 1:24</p>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      className="bg-input/50 border-border/50 rounded-xl w-28"
+                      placeholder="Start mm:ss"
+                      value={startTimestamp}
+                      onChange={(e) => setStartTimestamp(e.target.value)}
+                      data-testid="input-start-timestamp"
+                    />
+                    <span className="text-muted-foreground text-sm">to</span>
+                    <Input
+                      className="bg-input/50 border-border/50 rounded-xl w-28"
+                      placeholder="End mm:ss"
+                      value={endTimestamp}
+                      onChange={(e) => setEndTimestamp(e.target.value)}
+                      data-testid="input-end-timestamp"
+                    />
+                  </div>
+                  {trimError ? (
+                    <p className="text-xs text-destructive">{trimError}</p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Jump straight to the good part, e.g. 1:24, and stop there instead of implying they watch the whole thing.
+                    </p>
+                  )}
                 </div>
 
                 <h2 className="text-xl font-serif font-semibold">Choose a mood tag</h2>
@@ -611,7 +673,7 @@ export function SendWhisp() {
                   <Button variant="ghost" onClick={() => setStep(1)} className="rounded-xl text-muted-foreground">
                     <ArrowLeft className="w-4 h-4 mr-1" /> Back
                   </Button>
-                  <Button onClick={() => setStep(3)} className="rounded-xl" data-testid="button-next-step2">
+                  <Button onClick={() => setStep(3)} disabled={!!trimError} className="rounded-xl" data-testid="button-next-step2">
                     Next <ArrowRight className="w-4 h-4 ml-1" />
                   </Button>
                 </div>
@@ -1035,10 +1097,16 @@ export function SendWhisp() {
                           : recipientPhone}
                       </span>
                     </div>
-                    {startTimestamp && parseTimestampToSeconds(startTimestamp) !== null && (
+                    {startTimestamp && parsedStartSeconds !== null && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Starts at</span>
                         <span className="text-foreground">{startTimestamp}</span>
+                      </div>
+                    )}
+                    {endTimestamp && parsedEndSeconds !== null && !trimError && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Ends at</span>
+                        <span className="text-foreground">{endTimestamp}</span>
                       </div>
                     )}
                     <div className="flex justify-between">

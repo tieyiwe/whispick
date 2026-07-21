@@ -12,6 +12,7 @@ import linkRouter from "./link";
 import adminRouter from "./admin";
 import whisperGroupsRouter from "./whisperGroups";
 import mediaRouter from "./media";
+import subscribeRouter from "./subscribe";
 import { publicEndpointLimiter } from "../lib/rateLimit";
 
 const router: IRouter = Router();
@@ -21,6 +22,7 @@ router.use("/whisps", whispsRouter);
 router.use("/video", videoRouter);
 router.use("/public", publicEndpointLimiter, publicRouter);
 router.use("/public", publicEndpointLimiter, circleRouter);
+router.use("/public", publicEndpointLimiter, subscribeRouter);
 router.use("/circles", circlesRouter);
 router.use("/user", userRouter);
 router.use("/credits", creditsRouter);

@@ -19,6 +19,8 @@ export interface Whisp {
   /** @nullable */
   videoStartSeconds?: number | null;
   /** @nullable */
+  videoEndSeconds?: number | null;
+  /** @nullable */
   videoPlatform?: string | null;
   /** @nullable */
   videoTranscript?: string | null;

@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Clock, Eye, PlayCircle, MessageSquareHeart, CalendarClock } from "lucide-react";
+import { CheckCircle2, Clock, Eye, PlayCircle, MessageSquareHeart, CalendarClock, AlertCircle } from "lucide-react";
 
-type StatusType = "pending" | "scheduled" | "delivered" | "opened" | "watched" | "replied";
+type StatusType = "pending" | "scheduled" | "delivered" | "opened" | "watched" | "replied" | "failed";
 
 const STATUS_CONFIG: Record<StatusType, { label: string; icon: any; className: string }> = {
   pending: {
@@ -33,6 +33,11 @@ const STATUS_CONFIG: Record<StatusType, { label: string; icon: any; className: s
     label: "Replied",
     icon: MessageSquareHeart,
     className: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+  },
+  failed: {
+    label: "Couldn't send",
+    icon: AlertCircle,
+    className: "bg-destructive/10 text-destructive border-destructive/20",
   },
 };
 

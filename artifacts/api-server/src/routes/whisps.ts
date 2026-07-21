@@ -10,7 +10,7 @@ import {
   circleMembersTable,
   uploadedVideosTable,
 } from "@workspace/db";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, isNull, or } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { z } from "zod";
 import { requireAuth } from "../lib/auth";
@@ -22,11 +22,23 @@ import { computeExpiresAt, MAX_SCHEDULE_DAYS } from "../lib/expiration";
 import { MAX_SCHEDULE_DAYS_WITH_UPLOAD } from "../lib/uploads";
 import { whisperLinkLimitFor, GHOST_BOOST_COST_USD } from "../lib/plans";
 import { createWhispLimiter } from "../lib/rateLimit";
+import { getGhostBoostMatchStats } from "../lib/matching";
 
 const router = Router();
 
 const DELIVERY_METHODS = ["whisper_link", "ghost_boost", "circle_drop"] as const;
 const WHISPER_CHANNELS = ["email", "sms", "whatsapp"] as const;
+
+// A Ghost Boost match fans out to one whisp row per matched subscriber
+// (see lib/matching.ts), sharing the sender's own senderId — unlike Group
+// Whisper's identical-looking fan-out, these rows carry a *stranger's*
+// contact info the sender was never meant to see (anonymity here is
+// deliberately two-way; Group Whisper's isn't, since the sender picked
+// those contacts themselves). Excluded from every sender-facing whisp
+// list/lookup; aggregate-only visibility lives at GET /:id/matches.
+function excludeMatchDeliveries() {
+  return or(sql`${whispsTable.deliveryMethod} != 'ghost_boost'`, isNull(whispsTable.groupSendId));
+}
 
 // GET /api/whisps
 router.get("/", requireAuth, async (req, res): Promise<void> => {
@@ -40,8 +52,8 @@ router.get("/", requireAuth, async (req, res): Promise<void> => {
     .from(whispsTable)
     .where(
       statusFilter
-        ? and(eq(whispsTable.senderId, user.id), eq(whispsTable.status, statusFilter))
-        : eq(whispsTable.senderId, user.id),
+        ? and(eq(whispsTable.senderId, user.id), eq(whispsTable.status, statusFilter), excludeMatchDeliveries())
+        : and(eq(whispsTable.senderId, user.id), excludeMatchDeliveries()),
     )
     .orderBy(sql`${whispsTable.createdAt} DESC`);
 
@@ -60,6 +72,7 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
       videoThumbnail: z.string().nullable().optional(),
       videoEmbedUrl: z.string().nullable().optional(),
       videoStartSeconds: z.number().int().min(0).nullable().optional(),
+      videoEndSeconds: z.number().int().min(0).nullable().optional(),
       videoPlatform: z.string().nullable().optional(),
       // A video from the sender's own Media Library instead of a pasted URL
       // — mutually exclusive with videoUrl (see the refine below).
@@ -76,6 +89,9 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
     })
     .refine((data) => !!data.videoUrl || !!data.uploadedVideoId, {
       message: "A video URL or an uploaded video is required",
+    })
+    .refine((data) => !data.videoEndSeconds || !data.videoStartSeconds || data.videoEndSeconds > data.videoStartSeconds, {
+      message: "The end time must be after the start time",
     });
 
   const parsed = schema.safeParse(req.body);
@@ -215,6 +231,7 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
     videoThumbnail: effectiveVideoThumbnail,
     videoEmbedUrl: uploadedVideo ? null : data.videoEmbedUrl ?? null,
     videoStartSeconds: data.videoStartSeconds ?? null,
+    videoEndSeconds: data.videoEndSeconds ?? null,
     videoPlatform: effectiveVideoPlatform,
     uploadedVideoId: uploadedVideo?.id ?? null,
     deliveryMethod: data.deliveryMethod,
@@ -276,7 +293,7 @@ router.get("/stats", requireAuth, async (req, res): Promise<void> => {
   const allWhisps = await db
     .select()
     .from(whispsTable)
-    .where(eq(whispsTable.senderId, user.id))
+    .where(and(eq(whispsTable.senderId, user.id), excludeMatchDeliveries()))
     .orderBy(sql`${whispsTable.createdAt} DESC`);
 
   const totalSent = allWhisps.length;
@@ -307,7 +324,7 @@ router.get("/:id", requireAuth, async (req, res): Promise<void> => {
   const whisp = await db
     .select()
     .from(whispsTable)
-    .where(and(eq(whispsTable.id, req.params.id), eq(whispsTable.senderId, user.id)))
+    .where(and(eq(whispsTable.id, req.params.id), eq(whispsTable.senderId, user.id), excludeMatchDeliveries()))
     .then(r => r[0]);
 
   if (!whisp) {
@@ -328,6 +345,29 @@ router.get("/:id", requireAuth, async (req, res): Promise<void> => {
     .orderBy(sql`${whispRepliesTable.createdAt} ASC`);
 
   res.json({ whisp, trackingEvents, replies });
+});
+
+// GET /api/whisps/:id/matches — aggregate-only Ghost Boost reach stats.
+// Deliberately never a per-subscriber breakdown (unlike Group Whisper's
+// sends detail) — the whole point of the matching queue is that the sender
+// never learns who specifically it reached.
+router.get("/:id/matches", requireAuth, async (req, res): Promise<void> => {
+  const { userId } = getAuth(req);
+  const user = await ensureUser(userId!, req);
+
+  const whisp = await db
+    .select()
+    .from(whispsTable)
+    .where(and(eq(whispsTable.id, req.params.id), eq(whispsTable.senderId, user.id), eq(whispsTable.deliveryMethod, "ghost_boost")))
+    .then((r) => r[0]);
+
+  if (!whisp) {
+    res.status(404).json({ error: "Whisp not found" });
+    return;
+  }
+
+  const stats = await getGhostBoostMatchStats(whisp.id);
+  res.json(stats);
 });
 
 // DELETE /api/whisps/:id

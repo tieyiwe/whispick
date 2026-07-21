@@ -249,6 +249,53 @@ describe("Timestamp bookmarking", () => {
   });
 });
 
+describe("Video trimming", () => {
+  it("stores and returns videoEndSeconds alongside a start bookmark", async () => {
+    const res = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_A))
+      .send({ videoUrl: "https://youtu.be/x", deliveryMethod: "circle_drop", videoStartSeconds: 30, videoEndSeconds: 90 });
+
+    expect(res.status).toBe(201);
+    expect(res.body.videoStartSeconds).toBe(30);
+    expect(res.body.videoEndSeconds).toBe(90);
+  });
+
+  it("allows an end time with no start time", async () => {
+    const res = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_A))
+      .send({ videoUrl: "https://youtu.be/x", deliveryMethod: "circle_drop", videoEndSeconds: 60 });
+
+    expect(res.status).toBe(201);
+    expect(res.body.videoEndSeconds).toBe(60);
+  });
+
+  it("rejects an end time at or before the start time", async () => {
+    const atStart = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_A))
+      .send({ videoUrl: "https://youtu.be/x", deliveryMethod: "circle_drop", videoStartSeconds: 60, videoEndSeconds: 60 });
+    expect(atStart.status).toBe(400);
+
+    const beforeStart = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_A))
+      .send({ videoUrl: "https://youtu.be/x", deliveryMethod: "circle_drop", videoStartSeconds: 60, videoEndSeconds: 30 });
+    expect(beforeStart.status).toBe(400);
+  });
+
+  it("exposes videoEndSeconds on the public whisp page", async () => {
+    const created = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_A))
+      .send({ videoUrl: "https://youtu.be/x", deliveryMethod: "circle_drop", videoEndSeconds: 45 });
+
+    const publicView = await request(app).get(`/api/public/w/${created.body.publicToken}`);
+    expect(publicView.body.videoEndSeconds).toBe(45);
+  });
+});
+
 describe("GET /api/whisps", () => {
   it("only returns whisps belonging to the authenticated user", async () => {
     await request(app)

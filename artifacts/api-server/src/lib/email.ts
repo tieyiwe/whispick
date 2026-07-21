@@ -65,3 +65,22 @@ export function mediaExpiringEmailHtml(filename: string, expiresAt: Date): strin
     <p style="font-size: 13px; color: #6b7280;">Whisps that already used it aren't affected as long as the recipient opened them in time.</p>
   </div>`;
 }
+
+export function subscriptionVerificationEmailHtml(verifyUrl: string): string {
+  return `<div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a2e;">
+    <p style="font-size: 16px;">Confirm you'd like to receive anonymous whisps on the topics you picked.</p>
+    <p>
+      <a href="${verifyUrl}" style="display:inline-block; padding: 12px 24px; background:#7C5CFC; color:#fff; border-radius: 999px; text-decoration:none; font-weight: 600;">
+        Confirm subscription
+      </a>
+    </p>
+    <p style="font-size: 13px; color: #6b7280;">If you didn't request this, you can ignore this email — you won't be subscribed unless you confirm.</p>
+  </div>`;
+}
+
+export function subscriptionMatchedEmailFooter(unsubscribeUrl: string): string {
+  return `<p style="font-size: 12px; color: #9ca3af; margin-top: 24px;">
+    You're getting this because you subscribed to anonymous whisps on a topic you chose.
+    <a href="${unsubscribeUrl}" style="color: #9ca3af;">Unsubscribe</a>
+  </p>`;
+}
