@@ -10,6 +10,7 @@ import {
   useListWhisperGroups,
   useSendGroupWhisp,
   useListMedia,
+  useGetNoteSuggestions,
   getListMyCirclesQueryKey,
   getListWhisperGroupsQueryKey,
   getGetWhispStatsQueryKey,
@@ -45,6 +46,8 @@ import {
   Upload,
   FolderOpen,
   Video,
+  Sparkles,
+  RefreshCw,
 } from "lucide-react";
 import {
   SiYoutube,
@@ -149,6 +152,7 @@ export function SendWhisp() {
   const [isForwarded, setIsForwarded] = useState(false);
   const [moodTag, setMoodTag] = useState<string | null>(null);
   const [anonymousNote, setAnonymousNote] = useState("");
+  const [noteSuggestions, setNoteSuggestions] = useState<string[]>([]);
   const [senderAlias, setSenderAlias] = useState(SENDER_ALIASES[0]);
   const [customAlias, setCustomAlias] = useState("");
   const [deliveryMethod, setDeliveryMethod] = useState<"whisper_link" | "ghost_boost" | "circle_drop" | "group_whisper">("whisper_link");
@@ -172,6 +176,7 @@ export function SendWhisp() {
   const scrapeMeta = useScrapeVideoMeta();
   const createWhisp = useCreateWhisp();
   const sendGroupWhisp = useSendGroupWhisp();
+  const noteSuggestionsMutation = useGetNoteSuggestions();
   const { data: myCircles } = useListMyCircles({
     query: { enabled: deliveryMethod === "circle_drop", queryKey: getListMyCirclesQueryKey() },
   });
@@ -268,6 +273,22 @@ export function SendWhisp() {
     setVideoUrl("");
     setVideoMeta({ title: item.originalFilename, thumbnail: `/api/media/${item.id}/thumbnail`, platform: "upload" });
     setStep(2);
+  }
+
+  function handleSuggestNotes() {
+    noteSuggestionsMutation.mutate(
+      { data: { videoTitle: videoMeta?.title ?? null, moodTag } },
+      {
+        onSuccess: (result) => {
+          if (result.suggestions.length === 0) {
+            toast({ title: "Couldn't come up with suggestions right now", variant: "destructive" });
+            return;
+          }
+          setNoteSuggestions(result.suggestions);
+        },
+        onError: () => toast({ title: "Couldn't come up with suggestions right now", variant: "destructive" }),
+      }
+    );
   }
 
   async function handleSend() {
@@ -696,6 +717,48 @@ export function SendWhisp() {
                   />
                   <span className="absolute bottom-2 right-3 text-xs text-muted-foreground">{anonymousNote.length}/200</span>
                 </div>
+
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={handleSuggestNotes}
+                    disabled={noteSuggestionsMutation.isPending}
+                    data-testid="button-suggest-notes"
+                    className="flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
+                  >
+                    {noteSuggestionsMutation.isPending ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-3.5 h-3.5" />
+                    )}
+                    {noteSuggestions.length > 0 ? "Suggest more" : "Help me find the words"}
+                  </button>
+
+                  {noteSuggestions.length > 0 && (
+                    <div className="space-y-1.5" data-testid="note-suggestions">
+                      {noteSuggestions.map((suggestion, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => setAnonymousNote(suggestion.slice(0, 200))}
+                          data-testid={`note-suggestion-${i}`}
+                          className="w-full text-left text-sm p-2.5 rounded-xl border border-border/50 bg-card hover:border-primary/40 transition-colors text-foreground"
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={handleSuggestNotes}
+                        disabled={noteSuggestionsMutation.isPending}
+                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                      >
+                        <RefreshCw className="w-3 h-3" /> Regenerate
+                      </button>
+                    </div>
+                  )}
+                </div>
+
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-muted-foreground">Sign as:</p>
                   <div className="grid grid-cols-2 gap-2">

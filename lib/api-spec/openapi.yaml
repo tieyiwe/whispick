@@ -1316,6 +1316,31 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
 
+  /whisps/note-suggestions:
+    post:
+      operationId: getNoteSuggestions
+      tags: [whisps]
+      summary: AI-suggested anonymous note options for the composer's "help me find the words" button
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NoteSuggestionsInput"
+      responses:
+        "200":
+          description: Suggested note options (may be empty if generation is unavailable)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NoteSuggestionsResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /whisps/{id}/matches:
     get:
       operationId: getGhostBoostMatches
@@ -2749,3 +2774,22 @@ components:
         - watchedCount
         - repliedCount
         - appreciatedCount
+
+    NoteSuggestionsInput:
+      type: object
+      properties:
+        videoTitle:
+          type: ["string", "null"]
+        moodTag:
+          type: ["string", "null"]
+
+    NoteSuggestionsResult:
+      type: object
+      properties:
+        suggestions:
+          type: array
+          items:
+            type: string
+          description: 0-3 suggested note options — may be empty if generation is unavailable
+      required:
+        - suggestions

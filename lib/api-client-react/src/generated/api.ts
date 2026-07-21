@@ -50,6 +50,8 @@ import type {
   ListCircleFeedParams,
   ListWhispsParams,
   MatchStats,
+  NoteSuggestionsInput,
+  NoteSuggestionsResult,
   PublicReplyInput,
   PublicWhisp,
   PushPublicKeyResponse,
@@ -4214,6 +4216,76 @@ export function useUnsubscribeFromMatching<TData = Awaited<ReturnType<typeof uns
 
 
 
+
+export const getGetNoteSuggestionsUrl = () => {
+
+
+
+
+  return `/api/whisps/note-suggestions`
+}
+
+/**
+ * @summary AI-suggested anonymous note options for the composer's "help me find the words" button
+ */
+export const getNoteSuggestions = async (noteSuggestionsInput: NoteSuggestionsInput, options?: RequestInit): Promise<NoteSuggestionsResult> => {
+
+  return customFetch<NoteSuggestionsResult>(getGetNoteSuggestionsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(noteSuggestionsInput)
+  }
+);}
+
+
+
+
+export const getGetNoteSuggestionsMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getNoteSuggestions>>, TError,{data: BodyType<NoteSuggestionsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof getNoteSuggestions>>, TError,{data: BodyType<NoteSuggestionsInput>}, TContext> => {
+
+const mutationKey = ['getNoteSuggestions'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getNoteSuggestions>>, {data: BodyType<NoteSuggestionsInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  getNoteSuggestions(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetNoteSuggestionsMutationResult = NonNullable<Awaited<ReturnType<typeof getNoteSuggestions>>>
+    export type GetNoteSuggestionsMutationBody = BodyType<NoteSuggestionsInput>
+    export type GetNoteSuggestionsMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary AI-suggested anonymous note options for the composer's "help me find the words" button
+ */
+export const useGetNoteSuggestions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getNoteSuggestions>>, TError,{data: BodyType<NoteSuggestionsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof getNoteSuggestions>>,
+        TError,
+        {data: BodyType<NoteSuggestionsInput>},
+        TContext
+      > => {
+      return useMutation(getGetNoteSuggestionsMutationOptions(options));
+    }
 
 export const getGetGhostBoostMatchesUrl = (id: string,) => {
 

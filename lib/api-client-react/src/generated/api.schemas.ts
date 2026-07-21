@@ -808,6 +808,18 @@ export interface MatchStats {
   appreciatedCount: number;
 }
 
+export interface NoteSuggestionsInput {
+  /** @nullable */
+  videoTitle?: string | null;
+  /** @nullable */
+  moodTag?: string | null;
+}
+
+export interface NoteSuggestionsResult {
+  /** 0-3 suggested note options — may be empty if generation is unavailable */
+  suggestions: string[];
+}
+
 export type ListWhispsParams = {
 status?: string;
 };

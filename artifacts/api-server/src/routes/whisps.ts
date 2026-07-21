@@ -21,8 +21,9 @@ import { categorizeWhispAsync } from "../lib/categorizeWhisp";
 import { computeExpiresAt, MAX_SCHEDULE_DAYS } from "../lib/expiration";
 import { MAX_SCHEDULE_DAYS_WITH_UPLOAD } from "../lib/uploads";
 import { whisperLinkLimitFor, GHOST_BOOST_COST_USD } from "../lib/plans";
-import { createWhispLimiter } from "../lib/rateLimit";
+import { createWhispLimiter, noteSuggestionLimiter } from "../lib/rateLimit";
 import { getGhostBoostMatchStats } from "../lib/matching";
+import { generateNoteSuggestions } from "../lib/noteSuggestions";
 
 const router = Router();
 
@@ -39,6 +40,27 @@ const WHISPER_CHANNELS = ["email", "sms", "whatsapp"] as const;
 function excludeMatchDeliveries() {
   return or(sql`${whispsTable.deliveryMethod} != 'ghost_boost'`, isNull(whispsTable.groupSendId));
 }
+
+const noteSuggestionsSchema = z.object({
+  videoTitle: z.string().max(300).nullable().optional(),
+  moodTag: z.string().max(50).nullable().optional(),
+});
+
+// POST /api/whisps/note-suggestions — "help me find the words" in the
+// composer's anonymous-note step. Runs before a whisp exists (no whispId to
+// key off of), so it's a plain request/response rather than the
+// fire-and-forget pattern lib/aiTakeaway.ts uses. Rate-limited per user since
+// every call spends a real (small) Claude API request.
+router.post("/note-suggestions", requireAuth, noteSuggestionLimiter, async (req, res): Promise<void> => {
+  const parsed = noteSuggestionsSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const suggestions = await generateNoteSuggestions(parsed.data.videoTitle ?? null, parsed.data.moodTag ?? null);
+  res.json({ suggestions });
+});
 
 // GET /api/whisps
 router.get("/", requireAuth, async (req, res): Promise<void> => {

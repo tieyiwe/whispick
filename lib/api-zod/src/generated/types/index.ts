@@ -51,6 +51,8 @@ export * from './joinCircleInput';
 export * from './listCircleFeedParams';
 export * from './listWhispsParams';
 export * from './matchStats';
+export * from './noteSuggestionsInput';
+export * from './noteSuggestionsResult';
 export * from './publicReplyInput';
 export * from './publicWhisp';
 export * from './pushPublicKeyResponse';

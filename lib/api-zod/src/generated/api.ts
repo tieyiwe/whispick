@@ -1341,6 +1341,19 @@ export const UnsubscribeFromMatchingResponse = zod.object({
 
 
 /**
+ * @summary AI-suggested anonymous note options for the composer's "help me find the words" button
+ */
+export const GetNoteSuggestionsBody = zod.object({
+  "videoTitle": zod.string().nullish(),
+  "moodTag": zod.string().nullish()
+})
+
+export const GetNoteSuggestionsResponse = zod.object({
+  "suggestions": zod.array(zod.string()).describe('0-3 suggested note options — may be empty if generation is unavailable')
+})
+
+
+/**
  * @summary Aggregate-only reach stats for a Ghost Boost whisp (never a per-subscriber breakdown)
  */
 export const GetGhostBoostMatchesParams = zod.object({

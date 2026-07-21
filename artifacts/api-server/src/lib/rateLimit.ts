@@ -46,3 +46,14 @@ export const uploadLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: authKeyGenerator,
 });
+
+// Each call spends a real (small) Claude API request — bound how many times
+// one account can hit "help me find the words" regardless of how many drafts
+// they're composing, so a single user can't run up token spend unbounded.
+export const noteSuggestionLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: authKeyGenerator,
+});
