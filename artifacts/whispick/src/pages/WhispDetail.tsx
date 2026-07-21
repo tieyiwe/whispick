@@ -4,6 +4,8 @@ import {
   useCreateWhispReply,
   useRequestReveal,
   useDeleteWhisp,
+  useGetGhostBoostMatches,
+  getGetGhostBoostMatchesQueryKey,
   getGetWhispQueryKey,
   getListWhispsQueryKey,
   getGetWhispStatsQueryKey,
@@ -42,6 +44,7 @@ import {
   UserCircle2,
   HeartHandshake,
   Sparkles,
+  Users,
 } from "lucide-react";
 import { deliveryLabel } from "@/lib/deliveryMethod";
 
@@ -87,6 +90,11 @@ export function WhispDetail() {
 
   const { data, isLoading } = useGetWhisp(id!, {
     query: { enabled: !!id, queryKey: getGetWhispQueryKey(id!) },
+  });
+
+  const isGhostBoost = data?.whisp.deliveryMethod === "ghost_boost";
+  const { data: matchStats } = useGetGhostBoostMatches(id!, {
+    query: { enabled: !!id && isGhostBoost, queryKey: getGetGhostBoostMatchesQueryKey(id!) },
   });
 
   const createReply = useCreateWhispReply();
@@ -229,7 +237,13 @@ export function WhispDetail() {
               <div>
                 <h2 className="font-serif font-semibold text-lg text-foreground">{whisp.videoTitle || "Video"}</h2>
                 <p className="text-sm text-muted-foreground">
-                  Sent to {whisp.recipientEmail || whisp.recipientPhone || (whisp.deliveryMethod === "circle_drop" ? "Circle feed" : "Ghost Boost audience")}
+                  {isGhostBoost
+                    ? matchStats && matchStats.matchedCount > 0
+                      ? `Matched to ${matchStats.matchedCount} subscriber${matchStats.matchedCount === 1 ? "" : "s"}`
+                      : whisp.status === "failed"
+                      ? "No matching subscribers were found in time"
+                      : "Looking for a match among subscribers..."
+                    : `Sent to ${whisp.recipientEmail || whisp.recipientPhone || (whisp.deliveryMethod === "circle_drop" ? "Circle feed" : "recipient")}`}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   Via {deliveryLabel(whisp.deliveryMethod, whisp.whisperChannel)} · {new Date(whisp.createdAt).toLocaleDateString()}
@@ -241,6 +255,17 @@ export function WhispDetail() {
               <p className="text-xs text-violet-400 mb-2">
                 Scheduled to send {new Date(whisp.scheduledAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
               </p>
+            )}
+            {isGhostBoost && matchStats && matchStats.matchedCount > 0 && (
+              <div className="flex items-center gap-4 text-sm text-muted-foreground pt-1 pb-2 flex-wrap" data-testid="ghost-boost-match-stats">
+                <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" /> {matchStats.matchedCount} matched</span>
+                <span className="flex items-center gap-1"><Eye className="w-3.5 h-3.5" /> {matchStats.openedCount} opened</span>
+                <span className="flex items-center gap-1"><PlayCircle className="w-3.5 h-3.5" /> {matchStats.watchedCount} watched</span>
+                <span className="flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5" /> {matchStats.repliedCount} replied</span>
+                {matchStats.appreciatedCount > 0 && (
+                  <span className="flex items-center gap-1 text-primary"><HeartHandshake className="w-3.5 h-3.5" /> {matchStats.appreciatedCount} appreciated</span>
+                )}
+              </div>
             )}
             {whisp.moodTag && <MoodTag mood={whisp.moodTag} className="mb-2" />}
             {whisp.anonymousNote && (
@@ -265,7 +290,9 @@ export function WhispDetail() {
           </CardContent>
         </Card>
 
-        {/* Delivery timeline */}
+        {/* Delivery timeline — a single-recipient concept, not meaningful for a
+            Ghost Boost campaign that fans out to many anonymous subscribers */}
+        {!isGhostBoost && (
         <Card className="bg-card border-border/50">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-serif">Delivery Timeline</CardTitle>
@@ -299,9 +326,10 @@ export function WhispDetail() {
             />
           </CardContent>
         </Card>
+        )}
 
         {/* Replies */}
-        {replies.length > 0 && (
+        {!isGhostBoost && replies.length > 0 && (
           <Card className="bg-card border-border/50">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-serif flex items-center gap-2">
@@ -351,7 +379,9 @@ export function WhispDetail() {
           </Card>
         )}
 
-        {/* Send follow-up */}
+        {/* Send follow-up — needs a single known recipient, so it doesn't apply
+            to a Ghost Boost campaign fanned out to many anonymous subscribers */}
+        {!isGhostBoost && (
         <Card className="bg-card border-border/50">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-serif">Send a follow-up</CardTitle>
@@ -380,9 +410,10 @@ export function WhispDetail() {
             </div>
           </CardContent>
         </Card>
+        )}
 
         {/* Reveal flow */}
-        {!whisp.revealRequested && (
+        {!isGhostBoost && !whisp.revealRequested && (
           <Button
             variant="outline"
             className="w-full rounded-full border-primary/30 hover:bg-primary/10 hover:text-primary"
@@ -394,7 +425,7 @@ export function WhispDetail() {
             Reveal Yourself
           </Button>
         )}
-        {whisp.revealRequested && (
+        {!isGhostBoost && whisp.revealRequested && (
           <Card className="bg-primary/10 border-primary/20">
             <CardContent className="p-4 text-center">
               <Eye className="w-6 h-6 text-primary mx-auto mb-2" />

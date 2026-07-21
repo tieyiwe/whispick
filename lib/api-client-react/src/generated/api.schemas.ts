@@ -789,6 +789,25 @@ export interface UploadedVideo {
   usageCount: number;
 }
 
+export interface SubscribeInput {
+  email: string;
+  /** Category keys from the taxonomy (see VIDEO_CATEGORY_LABELS on the frontend) */
+  categories: string[];
+}
+
+export interface SubscribeResult {
+  ok: boolean;
+  alreadyVerified: boolean;
+}
+
+export interface MatchStats {
+  matchedCount: number;
+  openedCount: number;
+  watchedCount: number;
+  repliedCount: number;
+  appreciatedCount: number;
+}
+
 export type ListWhispsParams = {
 status?: string;
 };
@@ -816,6 +835,22 @@ pageSize?: number;
 };
 
 export type DeleteMedia200 = {
+  ok: boolean;
+};
+
+export type VerifySubscriptionParams = {
+token: string;
+};
+
+export type VerifySubscription200 = {
+  ok: boolean;
+};
+
+export type UnsubscribeFromMatchingParams = {
+token: string;
+};
+
+export type UnsubscribeFromMatching200 = {
   ok: boolean;
 };
 

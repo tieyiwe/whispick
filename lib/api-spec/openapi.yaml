@@ -1231,6 +1231,116 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
 
+  /public/subscribe:
+    post:
+      operationId: subscribeToMatching
+      tags: [matching]
+      summary: Opt in to receive anonymous Ghost Boost whisps on chosen topics (no account needed)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubscribeInput"
+      responses:
+        "200":
+          description: Subscribed — a verification email was sent unless already verified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscribeResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/subscribe/verify:
+    get:
+      operationId: verifySubscription
+      tags: [matching]
+      summary: Confirm a subscription via the emailed verification link
+      parameters:
+        - in: query
+          name: token
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Verified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/subscribe/unsubscribe:
+    get:
+      operationId: unsubscribeFromMatching
+      tags: [matching]
+      summary: One-click unsubscribe via the emailed link
+      parameters:
+        - in: query
+          name: token
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Unsubscribed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /whisps/{id}/matches:
+    get:
+      operationId: getGhostBoostMatches
+      tags: [whisps]
+      summary: Aggregate-only reach stats for a Ghost Boost whisp (never a per-subscriber breakdown)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Match stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchStats"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
 components:
   schemas:
     HealthStatus:
@@ -2594,3 +2704,48 @@ components:
         - expiresAt
         - createdAt
         - usageCount
+
+    SubscribeInput:
+      type: object
+      properties:
+        email:
+          type: string
+        categories:
+          type: array
+          items:
+            type: string
+          description: Category keys from the taxonomy (see VIDEO_CATEGORY_LABELS on the frontend)
+      required:
+        - email
+        - categories
+
+    SubscribeResult:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        alreadyVerified:
+          type: boolean
+      required:
+        - ok
+        - alreadyVerified
+
+    MatchStats:
+      type: object
+      properties:
+        matchedCount:
+          type: integer
+        openedCount:
+          type: integer
+        watchedCount:
+          type: integer
+        repliedCount:
+          type: integer
+        appreciatedCount:
+          type: integer
+      required:
+        - matchedCount
+        - openedCount
+        - watchedCount
+        - repliedCount
+        - appreciatedCount

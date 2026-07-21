@@ -62,7 +62,11 @@ export async function matchGhostBoostWhisp(
     .select({ category: whispCategoriesTable.category })
     .from(whispCategoriesTable)
     .where(eq(whispCategoriesTable.whispId, whisp.id));
-  const categories = categoryRows.map((r) => r.category);
+  // categorizeVideo() always inserts at least a fallback "uncategorized" row
+  // when nothing matched — that's not a real topic anyone can subscribe to
+  // (excluded from subscribe.ts's VALID_CATEGORY_KEYS), so treat it the same
+  // as "no categories yet" rather than letting it block matching forever.
+  const categories = categoryRows.map((r) => r.category).filter((c) => c !== "uncategorized");
 
   const isOldEnoughForBroadFallback = Date.now() - new Date(whisp.createdAt).getTime() > CATEGORIZATION_GRACE_MINUTES * 60 * 1000;
   if (categories.length === 0 && !isOldEnoughForBroadFallback) {
@@ -70,11 +74,16 @@ export async function matchGhostBoostWhisp(
   }
 
   const cooldownCutoff = new Date(Date.now() - MATCH_COOLDOWN_HOURS * 60 * 60 * 1000);
+  // A bare `${categories}` interpolation expands a JS array into a
+  // parenthesized placeholder list (e.g. `($1, $2)`, meant for IN (...)),
+  // not a Postgres array literal — build an explicit ARRAY[...] instead so
+  // the array-overlap operator gets a real text[] to compare against.
+  const categoriesArray = sql`ARRAY[${sql.join(categories.map((c) => sql`${c}`), sql.raw(","))}]::text[]`;
   const eligibility = and(
     sql`${matchSubscribersTable.verifiedAt} is not null`,
     isNull(matchSubscribersTable.unsubscribedAt),
     or(isNull(matchSubscribersTable.lastMatchedAt), lte(matchSubscribersTable.lastMatchedAt, cooldownCutoff)),
-    categories.length > 0 ? sql`${matchSubscribersTable.categories} && ${categories}` : sql`true`,
+    categories.length > 0 ? sql`${matchSubscribersTable.categories} && ${categoriesArray}` : sql`true`,
   );
 
   // Over-fetch a bit since some candidates will be filtered out below for
@@ -150,13 +159,19 @@ export async function matchGhostBoostWhisp(
 // per-subscriber breakdown, since the whole point is that the sender never
 // learns who specifically it reached.
 export async function getGhostBoostMatchStats(whispId: string) {
+  // count(*) is a Postgres bigint, which node-postgres returns as a string
+  // to avoid silently truncating values beyond Number's safe range — fine
+  // for drizzle's own count() helper (it calls .mapWith(Number) internally)
+  // but these hand-written filtered counts need the same treatment,
+  // otherwise MatchStats ships strings where the OpenAPI contract says
+  // integer.
   const [row] = await db
     .select({
       matchedCount: count(),
-      openedCount: sql<number>`count(*) filter (where ${whispsTable.openedAt} is not null)`,
-      watchedCount: sql<number>`count(*) filter (where ${whispsTable.watchedAt} is not null)`,
-      repliedCount: sql<number>`count(*) filter (where ${whispsTable.status} = 'replied')`,
-      appreciatedCount: sql<number>`count(*) filter (where ${whispsTable.appreciationResponse} = 'yes')`,
+      openedCount: sql<number>`count(*) filter (where ${whispsTable.openedAt} is not null)`.mapWith(Number),
+      watchedCount: sql<number>`count(*) filter (where ${whispsTable.watchedAt} is not null)`.mapWith(Number),
+      repliedCount: sql<number>`count(*) filter (where ${whispsTable.status} = 'replied')`.mapWith(Number),
+      appreciatedCount: sql<number>`count(*) filter (where ${whispsTable.appreciationResponse} = 'yes')`.mapWith(Number),
     })
     .from(whispsTable)
     .where(eq(whispsTable.groupSendId, whispId));

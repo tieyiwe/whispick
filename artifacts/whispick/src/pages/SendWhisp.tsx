@@ -858,7 +858,7 @@ export function SendWhisp() {
                       </div>
                       <div>
                         <p className="font-semibold text-foreground">Ghost Boost</p>
-                        <p className="text-sm text-muted-foreground mt-0.5">Boosted, wider-reach delivery (beta) — no specific recipient, no guaranteed 1:1 delivery like Whisper Link</p>
+                        <p className="text-sm text-muted-foreground mt-0.5">Matched to strangers who opted in to hear about topics like this one — anonymous both ways. Reach isn't guaranteed; it depends on how many people are subscribed right now.</p>
                         <p className="text-xs text-secondary mt-1 font-medium">1 Credit ($6.99)</p>
                       </div>
                     </div>
@@ -1086,7 +1086,7 @@ export function SendWhisp() {
                             ? myCircles?.find((c) => c.id === circleId)?.name ?? "Private circle"
                             : "Anyone in the Circle feed"
                           : deliveryMethod === "ghost_boost"
-                          ? "No specific recipient (boosted reach)"
+                          ? "Matched subscribers interested in this topic"
                           : deliveryMethod === "group_whisper"
                           ? (() => {
                               const g = myWhisperGroups?.find((g) => g.id === whisperGroupId);

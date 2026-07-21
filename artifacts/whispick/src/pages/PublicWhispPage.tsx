@@ -608,6 +608,21 @@ export function PublicWhispPage() {
               </div>
               <Sparkles className="w-5 h-5 text-primary shrink-0" />
             </a>
+
+            {/* Ghost Boost matching CTA — a recipient who just felt what an
+                anonymous whisp can do is a natural fit for the subscriber list. */}
+            <a
+              href="/subscribe"
+              className="flex items-center justify-between gap-3 rounded-2xl border border-border/50 bg-card hover:bg-card/70 transition-colors p-4"
+            >
+              <div>
+                <p className="text-sm font-medium text-foreground">Want more, matched to you?</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Get anonymous whisps like this sent to your inbox when they match topics you pick.
+                </p>
+              </div>
+              <BellRing className="w-5 h-5 text-muted-foreground shrink-0" />
+            </a>
           </>
         )}
       </main>

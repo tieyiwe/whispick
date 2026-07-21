@@ -1302,3 +1302,57 @@ export const DeleteMediaResponse = zod.object({
 })
 
 
+/**
+ * @summary Opt in to receive anonymous Ghost Boost whisps on chosen topics (no account needed)
+ */
+export const SubscribeToMatchingBody = zod.object({
+  "email": zod.string(),
+  "categories": zod.array(zod.string()).describe('Category keys from the taxonomy (see VIDEO_CATEGORY_LABELS on the frontend)')
+})
+
+export const SubscribeToMatchingResponse = zod.object({
+  "ok": zod.boolean(),
+  "alreadyVerified": zod.boolean()
+})
+
+
+/**
+ * @summary Confirm a subscription via the emailed verification link
+ */
+export const VerifySubscriptionQueryParams = zod.object({
+  "token": zod.coerce.string()
+})
+
+export const VerifySubscriptionResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+
+/**
+ * @summary One-click unsubscribe via the emailed link
+ */
+export const UnsubscribeFromMatchingQueryParams = zod.object({
+  "token": zod.coerce.string()
+})
+
+export const UnsubscribeFromMatchingResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+
+/**
+ * @summary Aggregate-only reach stats for a Ghost Boost whisp (never a per-subscriber breakdown)
+ */
+export const GetGhostBoostMatchesParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetGhostBoostMatchesResponse = zod.object({
+  "matchedCount": zod.number(),
+  "openedCount": zod.number(),
+  "watchedCount": zod.number(),
+  "repliedCount": zod.number(),
+  "appreciatedCount": zod.number()
+})
+
+

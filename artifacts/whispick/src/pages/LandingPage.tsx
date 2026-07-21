@@ -82,6 +82,15 @@ export function LandingPage() {
             </div>
           ))}
         </div>
+
+        <div className="relative z-10 pb-16 text-center">
+          <p className="text-sm text-muted-foreground">
+            Not ready to send one?{" "}
+            <Link href="/subscribe" className="text-primary hover:underline font-medium">
+              Get matched with anonymous whisps on topics you pick
+            </Link>
+          </p>
+        </div>
       </main>
     </div>
   );

@@ -22,6 +22,9 @@ import { RepliesInbox } from "@/pages/RepliesInbox";
 import { CreditsPage } from "@/pages/CreditsPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { PublicWhispPage } from "@/pages/PublicWhispPage";
+import { SubscribePage } from "@/pages/SubscribePage";
+import { VerifySubscriptionPage } from "@/pages/VerifySubscriptionPage";
+import { UnsubscribeFromMatchingPage } from "@/pages/UnsubscribeFromMatchingPage";
 import { AdminRoute } from "@/components/layout/AdminRoute";
 import { AdminDashboard } from "@/pages/admin/AdminDashboard";
 import { AdminUsers } from "@/pages/admin/AdminUsers";
@@ -167,6 +170,9 @@ function ClerkProviderWithRoutes() {
           <Route path="/admin" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminDashboard} />} />} />
 
           <Route path="/w/:token" component={PublicWhispPage} />
+          <Route path="/subscribe" component={SubscribePage} />
+          <Route path="/verify-subscription" component={VerifySubscriptionPage} />
+          <Route path="/unsubscribe" component={UnsubscribeFromMatchingPage} />
 
           <Route>
             <div className="min-h-screen bg-background text-foreground flex items-center justify-center">

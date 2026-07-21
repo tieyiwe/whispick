@@ -49,6 +49,7 @@ import type {
   JoinCircleInput,
   ListCircleFeedParams,
   ListWhispsParams,
+  MatchStats,
   PublicReplyInput,
   PublicWhisp,
   PushPublicKeyResponse,
@@ -60,12 +61,18 @@ import type {
   RevealResult,
   SendGroupWhispInput,
   SendGroupWhispResult,
+  SubscribeInput,
+  SubscribeResult,
   TrackingEventInput,
   TrackingResult,
+  UnsubscribeFromMatching200,
+  UnsubscribeFromMatchingParams,
   UpdateAdminUserInput,
   UploadedVideo,
   UserProfile,
   UserProfileUpdate,
+  VerifySubscription200,
+  VerifySubscriptionParams,
   VideoMeta,
   VideoMetaRequest,
   Whisp,
@@ -3969,4 +3976,319 @@ export const useDeleteMedia = <TError = ErrorType<ApiError>,
       > => {
       return useMutation(getDeleteMediaMutationOptions(options));
     }
+
+export const getSubscribeToMatchingUrl = () => {
+
+
+
+
+  return `/api/public/subscribe`
+}
+
+/**
+ * @summary Opt in to receive anonymous Ghost Boost whisps on chosen topics (no account needed)
+ */
+export const subscribeToMatching = async (subscribeInput: SubscribeInput, options?: RequestInit): Promise<SubscribeResult> => {
+
+  return customFetch<SubscribeResult>(getSubscribeToMatchingUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(subscribeInput)
+  }
+);}
+
+
+
+
+export const getSubscribeToMatchingMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof subscribeToMatching>>, TError,{data: BodyType<SubscribeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof subscribeToMatching>>, TError,{data: BodyType<SubscribeInput>}, TContext> => {
+
+const mutationKey = ['subscribeToMatching'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof subscribeToMatching>>, {data: BodyType<SubscribeInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  subscribeToMatching(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubscribeToMatchingMutationResult = NonNullable<Awaited<ReturnType<typeof subscribeToMatching>>>
+    export type SubscribeToMatchingMutationBody = BodyType<SubscribeInput>
+    export type SubscribeToMatchingMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Opt in to receive anonymous Ghost Boost whisps on chosen topics (no account needed)
+ */
+export const useSubscribeToMatching = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof subscribeToMatching>>, TError,{data: BodyType<SubscribeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof subscribeToMatching>>,
+        TError,
+        {data: BodyType<SubscribeInput>},
+        TContext
+      > => {
+      return useMutation(getSubscribeToMatchingMutationOptions(options));
+    }
+
+export const getVerifySubscriptionUrl = (params: VerifySubscriptionParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/public/subscribe/verify?${stringifiedParams}` : `/api/public/subscribe/verify`
+}
+
+/**
+ * @summary Confirm a subscription via the emailed verification link
+ */
+export const verifySubscription = async (params: VerifySubscriptionParams, options?: RequestInit): Promise<VerifySubscription200> => {
+
+  return customFetch<VerifySubscription200>(getVerifySubscriptionUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getVerifySubscriptionQueryKey = (params?: VerifySubscriptionParams,) => {
+    return [
+    `/api/public/subscribe/verify`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getVerifySubscriptionQueryOptions = <TData = Awaited<ReturnType<typeof verifySubscription>>, TError = ErrorType<ApiError>>(params: VerifySubscriptionParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof verifySubscription>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getVerifySubscriptionQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof verifySubscription>>> = ({ signal }) => verifySubscription(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof verifySubscription>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type VerifySubscriptionQueryResult = NonNullable<Awaited<ReturnType<typeof verifySubscription>>>
+export type VerifySubscriptionQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Confirm a subscription via the emailed verification link
+ */
+
+export function useVerifySubscription<TData = Awaited<ReturnType<typeof verifySubscription>>, TError = ErrorType<ApiError>>(
+ params: VerifySubscriptionParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof verifySubscription>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getVerifySubscriptionQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUnsubscribeFromMatchingUrl = (params: UnsubscribeFromMatchingParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/public/subscribe/unsubscribe?${stringifiedParams}` : `/api/public/subscribe/unsubscribe`
+}
+
+/**
+ * @summary One-click unsubscribe via the emailed link
+ */
+export const unsubscribeFromMatching = async (params: UnsubscribeFromMatchingParams, options?: RequestInit): Promise<UnsubscribeFromMatching200> => {
+
+  return customFetch<UnsubscribeFromMatching200>(getUnsubscribeFromMatchingUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getUnsubscribeFromMatchingQueryKey = (params?: UnsubscribeFromMatchingParams,) => {
+    return [
+    `/api/public/subscribe/unsubscribe`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getUnsubscribeFromMatchingQueryOptions = <TData = Awaited<ReturnType<typeof unsubscribeFromMatching>>, TError = ErrorType<ApiError>>(params: UnsubscribeFromMatchingParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof unsubscribeFromMatching>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getUnsubscribeFromMatchingQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof unsubscribeFromMatching>>> = ({ signal }) => unsubscribeFromMatching(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof unsubscribeFromMatching>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type UnsubscribeFromMatchingQueryResult = NonNullable<Awaited<ReturnType<typeof unsubscribeFromMatching>>>
+export type UnsubscribeFromMatchingQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary One-click unsubscribe via the emailed link
+ */
+
+export function useUnsubscribeFromMatching<TData = Awaited<ReturnType<typeof unsubscribeFromMatching>>, TError = ErrorType<ApiError>>(
+ params: UnsubscribeFromMatchingParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof unsubscribeFromMatching>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getUnsubscribeFromMatchingQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetGhostBoostMatchesUrl = (id: string,) => {
+
+
+
+
+  return `/api/whisps/${id}/matches`
+}
+
+/**
+ * @summary Aggregate-only reach stats for a Ghost Boost whisp (never a per-subscriber breakdown)
+ */
+export const getGhostBoostMatches = async (id: string, options?: RequestInit): Promise<MatchStats> => {
+
+  return customFetch<MatchStats>(getGetGhostBoostMatchesUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetGhostBoostMatchesQueryKey = (id: string,) => {
+    return [
+    `/api/whisps/${id}/matches`
+    ] as const;
+    }
+
+
+export const getGetGhostBoostMatchesQueryOptions = <TData = Awaited<ReturnType<typeof getGhostBoostMatches>>, TError = ErrorType<ApiError>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGhostBoostMatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetGhostBoostMatchesQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGhostBoostMatches>>> = ({ signal }) => getGhostBoostMatches(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGhostBoostMatches>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetGhostBoostMatchesQueryResult = NonNullable<Awaited<ReturnType<typeof getGhostBoostMatches>>>
+export type GetGhostBoostMatchesQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Aggregate-only reach stats for a Ghost Boost whisp (never a per-subscriber breakdown)
+ */
+
+export function useGetGhostBoostMatches<TData = Awaited<ReturnType<typeof getGhostBoostMatches>>, TError = ErrorType<ApiError>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGhostBoostMatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetGhostBoostMatchesQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
