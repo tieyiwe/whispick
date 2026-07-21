@@ -28,4 +28,6 @@ export interface PublicWhisp {
   revealRequested: boolean;
   /** @nullable */
   groupSize?: number | null;
+  /** @nullable */
+  appreciationResponse?: string | null;
 }

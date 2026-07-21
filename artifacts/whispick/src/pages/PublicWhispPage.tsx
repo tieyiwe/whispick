@@ -6,6 +6,7 @@ import {
   usePublicReply,
   useRespondReveal,
   useScrapeVideoMeta,
+  useSubmitAppreciation,
   getGetPublicWhispQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -15,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MoodTag, MOOD_CONFIG } from "@/components/shared/MoodTag";
 import { useToast } from "@/hooks/use-toast";
-import { Send, Check, Loader2, Video, X, Link2 } from "lucide-react";
+import { Send, Check, Loader2, Video, X, Link2, HeartHandshake } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { VideoPlayer } from "@/components/shared/VideoPlayer";
 import { QUICK_REPLIES } from "@/lib/quickReplies";
@@ -37,6 +38,7 @@ export function PublicWhispPage() {
   const [replyText, setReplyText] = useState("");
   const [hasTrackedOpen, setHasTrackedOpen] = useState(false);
   const [revealResponse, setRevealResponse] = useState<"accepted" | "declined" | null>(null);
+  const [localAppreciation, setLocalAppreciation] = useState<"yes" | "no" | null>(null);
   const [showVideoReply, setShowVideoReply] = useState(false);
   const [replyVideoUrl, setReplyVideoUrl] = useState("");
   const [replyVideoMeta, setReplyVideoMeta] = useState<{
@@ -57,6 +59,17 @@ export function PublicWhispPage() {
   const publicReply = usePublicReply();
   const respondReveal = useRespondReveal();
   const scrapeReplyVideo = useScrapeVideoMeta();
+  const submitAppreciation = useSubmitAppreciation();
+
+  function handleAppreciation(appreciated: boolean) {
+    submitAppreciation.mutate(
+      { token: token!, data: { appreciated } },
+      {
+        onSuccess: () => setLocalAppreciation(appreciated ? "yes" : "no"),
+        onError: () => toast({ title: "Something went wrong", variant: "destructive" }),
+      }
+    );
+  }
 
   function handleRevealResponse(accepted: boolean) {
     if (!whisp?.id) return;
@@ -122,6 +135,7 @@ export function PublicWhispPage() {
   }
 
   const moodColor = (whisp?.moodTag && MOOD_CONFIG[whisp.moodTag]?.color) || "#7C5CFC";
+  const appreciationResponse = localAppreciation ?? whisp?.appreciationResponse ?? null;
 
   return (
     <div className="min-h-[100dvh] bg-background flex flex-col relative overflow-hidden">
@@ -198,6 +212,41 @@ export function PublicWhispPage() {
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* Appreciation prompt */}
+            <div className="bg-card border border-border/50 rounded-2xl p-4 text-center space-y-2">
+              {appreciationResponse ? (
+                <p className="text-sm text-muted-foreground flex items-center justify-center gap-1.5">
+                  <HeartHandshake className="w-4 h-4 text-primary" />
+                  {appreciationResponse === "yes" ? "Glad this reached you." : "Thanks for letting them know."}
+                </p>
+              ) : (
+                <>
+                  <p className="text-sm font-medium text-foreground">Was this something you needed to hear?</p>
+                  <div className="flex gap-2 justify-center pt-1">
+                    <Button
+                      size="sm"
+                      className="rounded-full"
+                      onClick={() => handleAppreciation(true)}
+                      disabled={submitAppreciation.isPending}
+                      data-testid="button-appreciation-yes"
+                    >
+                      Yes
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-full"
+                      onClick={() => handleAppreciation(false)}
+                      disabled={submitAppreciation.isPending}
+                      data-testid="button-appreciation-no"
+                    >
+                      Not really
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Reply section */}

@@ -48,6 +48,8 @@ export const ListWhispsResponseItem = zod.object({
   "watchedAt": zod.string().nullish(),
   "revealRequested": zod.boolean(),
   "revealAccepted": zod.boolean().nullish(),
+  "appreciationResponse": zod.string().nullish(),
+  "appreciationRespondedAt": zod.string().nullish(),
   "createdAt": zod.string()
 })
 export const ListWhispsResponse = zod.array(ListWhispsResponseItem)
@@ -99,6 +101,8 @@ export const CreateWhispResponse = zod.object({
   "watchedAt": zod.string().nullish(),
   "revealRequested": zod.boolean(),
   "revealAccepted": zod.boolean().nullish(),
+  "appreciationResponse": zod.string().nullish(),
+  "appreciationRespondedAt": zod.string().nullish(),
   "createdAt": zod.string()
 })
 
@@ -140,6 +144,8 @@ export const GetWhispStatsResponse = zod.object({
   "watchedAt": zod.string().nullish(),
   "revealRequested": zod.boolean(),
   "revealAccepted": zod.boolean().nullish(),
+  "appreciationResponse": zod.string().nullish(),
+  "appreciationRespondedAt": zod.string().nullish(),
   "createdAt": zod.string()
 }))
 })
@@ -178,6 +184,8 @@ export const GetWhispResponse = zod.object({
   "watchedAt": zod.string().nullish(),
   "revealRequested": zod.boolean(),
   "revealAccepted": zod.boolean().nullish(),
+  "appreciationResponse": zod.string().nullish(),
+  "appreciationRespondedAt": zod.string().nullish(),
   "createdAt": zod.string()
 }),
   "trackingEvents": zod.array(zod.object({
@@ -294,6 +302,8 @@ export const RequestRevealResponse = zod.object({
   "watchedAt": zod.string().nullish(),
   "revealRequested": zod.boolean(),
   "revealAccepted": zod.boolean().nullish(),
+  "appreciationResponse": zod.string().nullish(),
+  "appreciationRespondedAt": zod.string().nullish(),
   "createdAt": zod.string()
 })
 
@@ -351,7 +361,8 @@ export const GetPublicWhispResponse = zod.object({
   "senderAlias": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
   "revealRequested": zod.boolean(),
-  "groupSize": zod.number().nullish()
+  "groupSize": zod.number().nullish(),
+  "appreciationResponse": zod.string().nullish()
 })
 
 
@@ -400,6 +411,23 @@ export const PublicReplyResponse = zod.object({
   "videoPlatform": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
   "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Recipient answers "was this something you needed to hear?"
+ */
+export const SubmitAppreciationParams = zod.object({
+  "token": zod.coerce.string()
+})
+
+export const SubmitAppreciationBody = zod.object({
+  "appreciated": zod.boolean()
+})
+
+export const SubmitAppreciationResponse = zod.object({
+  "ok": zod.boolean(),
+  "appreciationResponse": zod.string()
 })
 
 
@@ -688,6 +716,8 @@ export const AdminGetUserResponse = zod.object({
   "watchedAt": zod.string().nullish(),
   "revealRequested": zod.boolean(),
   "revealAccepted": zod.boolean().nullish(),
+  "appreciationResponse": zod.string().nullish(),
+  "appreciationRespondedAt": zod.string().nullish(),
   "createdAt": zod.string()
 })),
   "totalWhisps": zod.number(),
@@ -828,6 +858,8 @@ export const AdminGetWhispResponse = zod.object({
   "watchedAt": zod.string().nullish(),
   "revealRequested": zod.boolean(),
   "revealAccepted": zod.boolean().nullish(),
+  "appreciationResponse": zod.string().nullish(),
+  "appreciationRespondedAt": zod.string().nullish(),
   "createdAt": zod.string()
 }),
   "senderId": zod.string().nullish(),
@@ -1035,6 +1067,7 @@ export const GetGroupWhispSendResponse = zod.object({
   "watchedAt": zod.string().nullish(),
   "revealRequested": zod.boolean(),
   "revealAccepted": zod.boolean().nullish(),
+  "appreciationResponse": zod.string().nullish(),
   "replies": zod.array(zod.object({
   "id": zod.string(),
   "whispId": zod.string(),

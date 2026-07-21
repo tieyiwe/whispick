@@ -40,6 +40,7 @@ import {
   Loader2,
   Trash2,
   UserCircle2,
+  HeartHandshake,
 } from "lucide-react";
 import { deliveryLabel } from "@/lib/deliveryMethod";
 
@@ -238,8 +239,14 @@ export function WhispDetail() {
             )}
             {whisp.moodTag && <MoodTag mood={whisp.moodTag} className="mb-2" />}
             {whisp.anonymousNote && (
-              <p className="text-sm text-muted-foreground italic border-l-2 border-primary/40 pl-3">
+              <p className="text-sm text-muted-foreground italic border-l-2 border-primary/40 pl-3 mb-2">
                 "{whisp.anonymousNote}"
+              </p>
+            )}
+            {whisp.appreciationResponse && (
+              <p className={`text-sm flex items-center gap-1.5 ${whisp.appreciationResponse === "yes" ? "text-primary" : "text-muted-foreground"}`}>
+                <HeartHandshake className="w-4 h-4" />
+                {whisp.appreciationResponse === "yes" ? "They said this was something they needed to hear" : "They said this wasn't quite what they needed"}
               </p>
             )}
           </CardContent>

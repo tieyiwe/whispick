@@ -163,6 +163,7 @@ router.get("/sends/:groupSendId", requireAuth, async (req, res): Promise<void> =
       watchedAt: m.watchedAt,
       revealRequested: m.revealRequested,
       revealAccepted: m.revealAccepted,
+      appreciationResponse: m.appreciationResponse,
       replies: repliesByWhispId[m.id] ?? [],
     })),
   });

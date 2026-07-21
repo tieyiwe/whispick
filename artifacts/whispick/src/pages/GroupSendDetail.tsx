@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { ArrowLeft, PlayCircle, UsersRound, Eye, MessageSquare } from "lucide-react";
+import { ArrowLeft, PlayCircle, UsersRound, Eye, MessageSquare, HeartHandshake } from "lucide-react";
 
 export function GroupSendDetail() {
   const { groupSendId } = useParams<{ groupSendId: string }>();
@@ -40,6 +40,7 @@ export function GroupSendDetail() {
   const opened = members.filter((m) => m.openedAt).length;
   const watched = members.filter((m) => m.watchedAt).length;
   const replied = members.filter((m) => m.replies.length > 0).length;
+  const appreciated = members.filter((m) => m.appreciationResponse === "yes").length;
 
   return (
     <AppLayout>
@@ -62,10 +63,11 @@ export function GroupSendDetail() {
             <p className="text-sm text-muted-foreground flex items-center gap-1.5">
               <UsersRound className="w-4 h-4" /> {groupName ?? "Group"} · {members.length} member{members.length === 1 ? "" : "s"}
             </p>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground pt-1">
+            <div className="flex items-center gap-4 text-sm text-muted-foreground pt-1 flex-wrap">
               <span className="flex items-center gap-1"><Eye className="w-3.5 h-3.5" /> {opened} opened</span>
               <span className="flex items-center gap-1"><PlayCircle className="w-3.5 h-3.5" /> {watched} watched</span>
               <span className="flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5" /> {replied} replied</span>
+              {appreciated > 0 && <span className="flex items-center gap-1 text-primary"><HeartHandshake className="w-3.5 h-3.5" /> {appreciated} appreciated</span>}
             </div>
           </CardContent>
         </Card>

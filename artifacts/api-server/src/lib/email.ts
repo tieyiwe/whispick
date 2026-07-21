@@ -50,3 +50,10 @@ export function replyNotificationEmailHtml(videoTitle: string | null): string {
     <p>Someone replied anonymously to ${subject}. Log in to Whispick to read it.</p>
   </div>`;
 }
+
+export function appreciationNotificationEmailHtml(videoTitle: string | null): string {
+  const subject = videoTitle ? `"${videoTitle}"` : "your whisp";
+  return `<div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a2e;">
+    <p>Good news — the person you sent ${subject} to said it was something they needed to hear. 💜</p>
+  </div>`;
+}

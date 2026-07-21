@@ -9,7 +9,7 @@ import {
 import { eq, count } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { z } from "zod";
-import { sendEmail, replyNotificationEmailHtml } from "../lib/email";
+import { sendEmail, replyNotificationEmailHtml, appreciationNotificationEmailHtml } from "../lib/email";
 import { notifyUser } from "../lib/push";
 import { getPublicAppUrl } from "../lib/publicUrl";
 
@@ -52,6 +52,7 @@ router.get("/w/:token", async (req, res): Promise<void> => {
     moodTag: whisp.moodTag,
     revealRequested: whisp.revealRequested,
     groupSize,
+    appreciationResponse: whisp.appreciationResponse,
   });
 });
 
@@ -170,6 +171,54 @@ router.post("/w/:token/reply", async (req, res): Promise<void> => {
 
   const reply = await db.select().from(whispRepliesTable).where(eq(whispRepliesTable.id, id)).then(r => r[0]);
   res.status(201).json(reply);
+});
+
+// POST /api/public/w/:token/appreciation — the recipient's own answer to
+// "was this something you needed to hear?" A 'yes' notifies the sender; a
+// 'no' is recorded the same way but doesn't (no upside to a "they didn't
+// like it" push). Overwritable — if they tap the other option afterwards,
+// the latest answer wins and no second sender notification fires on a
+// later change (only fires on a fresh answer, not a flip).
+router.post("/w/:token/appreciation", async (req, res): Promise<void> => {
+  const parsed = z.object({ appreciated: z.boolean() }).safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request" });
+    return;
+  }
+
+  const whisp = await db
+    .select()
+    .from(whispsTable)
+    .where(eq(whispsTable.publicToken, req.params.token))
+    .then((r) => r[0]);
+
+  if (!whisp) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+
+  const alreadyAnswered = whisp.appreciationResponse !== null;
+  const response = parsed.data.appreciated ? "yes" : "no";
+
+  await db
+    .update(whispsTable)
+    .set({ appreciationResponse: response, appreciationRespondedAt: new Date() })
+    .where(eq(whispsTable.id, whisp.id));
+
+  if (parsed.data.appreciated && !alreadyAnswered) {
+    const sender = await db.select().from(usersTable).where(eq(usersTable.id, whisp.senderId)).then((r) => r[0]);
+    if (sender?.email) {
+      void sendEmail(sender.email, "They needed to hear that 💜", appreciationNotificationEmailHtml(whisp.videoTitle));
+    }
+    void notifyUser(
+      whisp.senderId,
+      "They appreciated it 💜",
+      "The person you sent your whisp to said it was something they needed to hear.",
+      `${getPublicAppUrl(req)}/whisps/${whisp.id}`,
+    );
+  }
+
+  res.json({ ok: true, appreciationResponse: response });
 });
 
 export default router;

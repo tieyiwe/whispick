@@ -335,6 +335,37 @@ paths:
               schema:
                 $ref: "#/components/schemas/WhispReply"
 
+  /public/w/{token}/appreciation:
+    post:
+      operationId: submitAppreciation
+      tags: [public]
+      summary: Recipient answers "was this something you needed to hear?"
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppreciationInput"
+      responses:
+        "200":
+          description: Recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppreciationResult"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /user/profile:
     get:
       operationId: getUserProfile
@@ -1175,6 +1206,10 @@ components:
           type: boolean
         revealAccepted:
           type: ["boolean", "null"]
+        appreciationResponse:
+          type: ["string", "null"]
+        appreciationRespondedAt:
+          type: ["string", "null"]
         createdAt:
           type: string
       required:
@@ -1390,6 +1425,8 @@ components:
           type: boolean
         groupSize:
           type: ["integer", "null"]
+        appreciationResponse:
+          type: ["string", "null"]
       required:
         - id
         - videoUrl
@@ -2300,6 +2337,8 @@ components:
           type: boolean
         revealAccepted:
           type: ["boolean", "null"]
+        appreciationResponse:
+          type: ["string", "null"]
         replies:
           type: array
           items:
@@ -2339,3 +2378,22 @@ components:
         - groupSendId
         - video
         - members
+
+    AppreciationInput:
+      type: object
+      properties:
+        appreciated:
+          type: boolean
+      required:
+        - appreciated
+
+    AppreciationResult:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        appreciationResponse:
+          type: string
+      required:
+        - ok
+        - appreciationResponse

@@ -23,5 +23,7 @@ export interface GroupWhispSendMember {
   revealRequested: boolean;
   /** @nullable */
   revealAccepted?: boolean | null;
+  /** @nullable */
+  appreciationResponse?: string | null;
   replies: WhispReply[];
 }

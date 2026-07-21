@@ -34,6 +34,8 @@ import type {
   AdminWhispDetail,
   AdminWhispListResponse,
   ApiError,
+  AppreciationInput,
+  AppreciationResult,
   CheckoutRequest,
   CheckoutResponse,
   Circle,
@@ -1133,6 +1135,77 @@ export const usePublicReply = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getPublicReplyMutationOptions(options));
+    }
+
+export const getSubmitAppreciationUrl = (token: string,) => {
+
+
+
+
+  return `/api/public/w/${token}/appreciation`
+}
+
+/**
+ * @summary Recipient answers "was this something you needed to hear?"
+ */
+export const submitAppreciation = async (token: string,
+    appreciationInput: AppreciationInput, options?: RequestInit): Promise<AppreciationResult> => {
+
+  return customFetch<AppreciationResult>(getSubmitAppreciationUrl(token),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(appreciationInput)
+  }
+);}
+
+
+
+
+export const getSubmitAppreciationMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitAppreciation>>, TError,{token: string;data: BodyType<AppreciationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitAppreciation>>, TError,{token: string;data: BodyType<AppreciationInput>}, TContext> => {
+
+const mutationKey = ['submitAppreciation'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitAppreciation>>, {token: string;data: BodyType<AppreciationInput>}> = (props) => {
+          const {token,data} = props ?? {};
+
+          return  submitAppreciation(token,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitAppreciationMutationResult = NonNullable<Awaited<ReturnType<typeof submitAppreciation>>>
+    export type SubmitAppreciationMutationBody = BodyType<AppreciationInput>
+    export type SubmitAppreciationMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Recipient answers "was this something you needed to hear?"
+ */
+export const useSubmitAppreciation = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitAppreciation>>, TError,{token: string;data: BodyType<AppreciationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitAppreciation>>,
+        TError,
+        {token: string;data: BodyType<AppreciationInput>},
+        TContext
+      > => {
+      return useMutation(getSubmitAppreciationMutationOptions(options));
     }
 
 export const getGetUserProfileUrl = () => {

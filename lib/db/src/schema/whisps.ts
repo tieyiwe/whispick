@@ -39,6 +39,12 @@ export const whispsTable = pgTable("whisps", {
   watchedAt: timestamp("watched_at", { withTimezone: true }),
   revealRequested: boolean("reveal_requested").notNull().default(false),
   revealAccepted: boolean("reveal_accepted"),
+  // The recipient's own answer to "was this something you needed to hear?" —
+  // 'yes' | 'no'. Distinct from watch/reply tracking: this is an explicit,
+  // one-tap signal of whether the whisp actually landed, and a 'yes'
+  // notifies the sender (see lib/push.ts, routes/public.ts).
+  appreciationResponse: text("appreciation_response"),
+  appreciationRespondedAt: timestamp("appreciation_responded_at", { withTimezone: true }),
   boostSpendUsd: numeric("boost_spend_usd", { precision: 6, scale: 2 }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

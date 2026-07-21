@@ -49,5 +49,9 @@ export interface Whisp {
   revealRequested: boolean;
   /** @nullable */
   revealAccepted?: boolean | null;
+  /** @nullable */
+  appreciationResponse?: string | null;
+  /** @nullable */
+  appreciationRespondedAt?: string | null;
   createdAt: string;
 }

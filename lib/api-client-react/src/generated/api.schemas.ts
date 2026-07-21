@@ -57,6 +57,10 @@ export interface Whisp {
   revealRequested: boolean;
   /** @nullable */
   revealAccepted?: boolean | null;
+  /** @nullable */
+  appreciationResponse?: string | null;
+  /** @nullable */
+  appreciationRespondedAt?: string | null;
   createdAt: string;
 }
 
@@ -189,6 +193,8 @@ export interface PublicWhisp {
   revealRequested: boolean;
   /** @nullable */
   groupSize?: number | null;
+  /** @nullable */
+  appreciationResponse?: string | null;
 }
 
 export interface TrackingEventInput {
@@ -685,6 +691,8 @@ export interface GroupWhispSendMember {
   revealRequested: boolean;
   /** @nullable */
   revealAccepted?: boolean | null;
+  /** @nullable */
+  appreciationResponse?: string | null;
   replies: WhispReply[];
 }
 
@@ -702,6 +710,15 @@ export interface GroupWhispSendDetail {
   groupName?: string | null;
   video: GroupWhispSendVideo;
   members: GroupWhispSendMember[];
+}
+
+export interface AppreciationInput {
+  appreciated: boolean;
+}
+
+export interface AppreciationResult {
+  ok: boolean;
+  appreciationResponse: string;
 }
 
 export type ListWhispsParams = {

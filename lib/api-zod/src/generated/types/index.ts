@@ -30,6 +30,8 @@ export * from './adminWhispDetail';
 export * from './adminWhispListItem';
 export * from './adminWhispListResponse';
 export * from './apiError';
+export * from './appreciationInput';
+export * from './appreciationResult';
 export * from './checkoutRequest';
 export * from './checkoutRequestKind';
 export * from './checkoutResponse';
