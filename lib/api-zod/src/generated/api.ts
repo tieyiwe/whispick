@@ -33,6 +33,7 @@ export const ListWhispsResponseItem = zod.object({
   "videoStartSeconds": zod.number().nullish(),
   "videoPlatform": zod.string().nullish(),
   "videoTranscript": zod.string().nullish(),
+  "uploadedVideoId": zod.string().nullish(),
   "deliveryMethod": zod.string(),
   "whisperChannel": zod.string().nullish(),
   "circleId": zod.string().nullish(),
@@ -42,6 +43,7 @@ export const ListWhispsResponseItem = zod.object({
   "senderAlias": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
   "status": zod.string(),
+  "publicToken": zod.string(),
   "scheduledAt": zod.string().nullish(),
   "deliveredAt": zod.string().nullish(),
   "openedAt": zod.string().nullish(),
@@ -50,6 +52,8 @@ export const ListWhispsResponseItem = zod.object({
   "revealAccepted": zod.boolean().nullish(),
   "appreciationResponse": zod.string().nullish(),
   "appreciationRespondedAt": zod.string().nullish(),
+  "aiTakeaway": zod.string().nullish(),
+  "aiTakeawayStatus": zod.string().nullish(),
   "createdAt": zod.string()
 })
 export const ListWhispsResponse = zod.array(ListWhispsResponseItem)
@@ -59,12 +63,13 @@ export const ListWhispsResponse = zod.array(ListWhispsResponseItem)
  * @summary Send a new whisp
  */
 export const CreateWhispBody = zod.object({
-  "videoUrl": zod.string(),
+  "videoUrl": zod.string().nullish(),
   "videoTitle": zod.string().nullish(),
   "videoThumbnail": zod.string().nullish(),
   "videoEmbedUrl": zod.string().nullish(),
   "videoStartSeconds": zod.number().nullish(),
   "videoPlatform": zod.string().nullish(),
+  "uploadedVideoId": zod.string().nullish().describe('An id from the sender\'s Media Library — an alternative to videoUrl. One of the two is required.'),
   "deliveryMethod": zod.string(),
   "whisperChannel": zod.string().nullish(),
   "circleId": zod.string().nullish(),
@@ -86,6 +91,7 @@ export const CreateWhispResponse = zod.object({
   "videoStartSeconds": zod.number().nullish(),
   "videoPlatform": zod.string().nullish(),
   "videoTranscript": zod.string().nullish(),
+  "uploadedVideoId": zod.string().nullish(),
   "deliveryMethod": zod.string(),
   "whisperChannel": zod.string().nullish(),
   "circleId": zod.string().nullish(),
@@ -95,6 +101,7 @@ export const CreateWhispResponse = zod.object({
   "senderAlias": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
   "status": zod.string(),
+  "publicToken": zod.string(),
   "scheduledAt": zod.string().nullish(),
   "deliveredAt": zod.string().nullish(),
   "openedAt": zod.string().nullish(),
@@ -103,6 +110,8 @@ export const CreateWhispResponse = zod.object({
   "revealAccepted": zod.boolean().nullish(),
   "appreciationResponse": zod.string().nullish(),
   "appreciationRespondedAt": zod.string().nullish(),
+  "aiTakeaway": zod.string().nullish(),
+  "aiTakeawayStatus": zod.string().nullish(),
   "createdAt": zod.string()
 })
 
@@ -129,6 +138,7 @@ export const GetWhispStatsResponse = zod.object({
   "videoStartSeconds": zod.number().nullish(),
   "videoPlatform": zod.string().nullish(),
   "videoTranscript": zod.string().nullish(),
+  "uploadedVideoId": zod.string().nullish(),
   "deliveryMethod": zod.string(),
   "whisperChannel": zod.string().nullish(),
   "circleId": zod.string().nullish(),
@@ -138,6 +148,7 @@ export const GetWhispStatsResponse = zod.object({
   "senderAlias": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
   "status": zod.string(),
+  "publicToken": zod.string(),
   "scheduledAt": zod.string().nullish(),
   "deliveredAt": zod.string().nullish(),
   "openedAt": zod.string().nullish(),
@@ -146,6 +157,8 @@ export const GetWhispStatsResponse = zod.object({
   "revealAccepted": zod.boolean().nullish(),
   "appreciationResponse": zod.string().nullish(),
   "appreciationRespondedAt": zod.string().nullish(),
+  "aiTakeaway": zod.string().nullish(),
+  "aiTakeawayStatus": zod.string().nullish(),
   "createdAt": zod.string()
 }))
 })
@@ -169,6 +182,7 @@ export const GetWhispResponse = zod.object({
   "videoStartSeconds": zod.number().nullish(),
   "videoPlatform": zod.string().nullish(),
   "videoTranscript": zod.string().nullish(),
+  "uploadedVideoId": zod.string().nullish(),
   "deliveryMethod": zod.string(),
   "whisperChannel": zod.string().nullish(),
   "circleId": zod.string().nullish(),
@@ -178,6 +192,7 @@ export const GetWhispResponse = zod.object({
   "senderAlias": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
   "status": zod.string(),
+  "publicToken": zod.string(),
   "scheduledAt": zod.string().nullish(),
   "deliveredAt": zod.string().nullish(),
   "openedAt": zod.string().nullish(),
@@ -186,6 +201,8 @@ export const GetWhispResponse = zod.object({
   "revealAccepted": zod.boolean().nullish(),
   "appreciationResponse": zod.string().nullish(),
   "appreciationRespondedAt": zod.string().nullish(),
+  "aiTakeaway": zod.string().nullish(),
+  "aiTakeawayStatus": zod.string().nullish(),
   "createdAt": zod.string()
 }),
   "trackingEvents": zod.array(zod.object({
@@ -287,6 +304,7 @@ export const RequestRevealResponse = zod.object({
   "videoStartSeconds": zod.number().nullish(),
   "videoPlatform": zod.string().nullish(),
   "videoTranscript": zod.string().nullish(),
+  "uploadedVideoId": zod.string().nullish(),
   "deliveryMethod": zod.string(),
   "whisperChannel": zod.string().nullish(),
   "circleId": zod.string().nullish(),
@@ -296,6 +314,7 @@ export const RequestRevealResponse = zod.object({
   "senderAlias": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
   "status": zod.string(),
+  "publicToken": zod.string(),
   "scheduledAt": zod.string().nullish(),
   "deliveredAt": zod.string().nullish(),
   "openedAt": zod.string().nullish(),
@@ -304,6 +323,8 @@ export const RequestRevealResponse = zod.object({
   "revealAccepted": zod.boolean().nullish(),
   "appreciationResponse": zod.string().nullish(),
   "appreciationRespondedAt": zod.string().nullish(),
+  "aiTakeaway": zod.string().nullish(),
+  "aiTakeawayStatus": zod.string().nullish(),
   "createdAt": zod.string()
 })
 
@@ -365,7 +386,10 @@ export const GetPublicWhispResponse = zod.object({
   "appreciationResponse": zod.string().nullish(),
   "expiresAt": zod.coerce.date().nullish(),
   "reminderCount": zod.number().optional(),
-  "expired": zod.boolean()
+  "expired": zod.boolean(),
+  "hasUpload": zod.boolean(),
+  "aiTakeaway": zod.string().nullish(),
+  "aiTakeawayStatus": zod.string().nullish()
 })
 
 
@@ -722,6 +746,7 @@ export const AdminGetUserResponse = zod.object({
   "videoStartSeconds": zod.number().nullish(),
   "videoPlatform": zod.string().nullish(),
   "videoTranscript": zod.string().nullish(),
+  "uploadedVideoId": zod.string().nullish(),
   "deliveryMethod": zod.string(),
   "whisperChannel": zod.string().nullish(),
   "circleId": zod.string().nullish(),
@@ -731,6 +756,7 @@ export const AdminGetUserResponse = zod.object({
   "senderAlias": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
   "status": zod.string(),
+  "publicToken": zod.string(),
   "scheduledAt": zod.string().nullish(),
   "deliveredAt": zod.string().nullish(),
   "openedAt": zod.string().nullish(),
@@ -739,6 +765,8 @@ export const AdminGetUserResponse = zod.object({
   "revealAccepted": zod.boolean().nullish(),
   "appreciationResponse": zod.string().nullish(),
   "appreciationRespondedAt": zod.string().nullish(),
+  "aiTakeaway": zod.string().nullish(),
+  "aiTakeawayStatus": zod.string().nullish(),
   "createdAt": zod.string()
 })),
   "totalWhisps": zod.number(),
@@ -864,6 +892,7 @@ export const AdminGetWhispResponse = zod.object({
   "videoStartSeconds": zod.number().nullish(),
   "videoPlatform": zod.string().nullish(),
   "videoTranscript": zod.string().nullish(),
+  "uploadedVideoId": zod.string().nullish(),
   "deliveryMethod": zod.string(),
   "whisperChannel": zod.string().nullish(),
   "circleId": zod.string().nullish(),
@@ -873,6 +902,7 @@ export const AdminGetWhispResponse = zod.object({
   "senderAlias": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
   "status": zod.string(),
+  "publicToken": zod.string(),
   "scheduledAt": zod.string().nullish(),
   "deliveredAt": zod.string().nullish(),
   "openedAt": zod.string().nullish(),
@@ -881,6 +911,8 @@ export const AdminGetWhispResponse = zod.object({
   "revealAccepted": zod.boolean().nullish(),
   "appreciationResponse": zod.string().nullish(),
   "appreciationRespondedAt": zod.string().nullish(),
+  "aiTakeaway": zod.string().nullish(),
+  "aiTakeawayStatus": zod.string().nullish(),
   "createdAt": zod.string()
 }),
   "senderId": zod.string().nullish(),
@@ -1076,7 +1108,9 @@ export const GetGroupWhispSendResponse = zod.object({
   "video": zod.object({
   "videoUrl": zod.string(),
   "videoTitle": zod.string().nullish(),
-  "videoThumbnail": zod.string().nullish()
+  "videoThumbnail": zod.string().nullish(),
+  "videoPlatform": zod.string().nullish(),
+  "uploadedVideoId": zod.string().nullish()
 }),
   "members": zod.array(zod.object({
   "whispId": zod.string(),
@@ -1203,12 +1237,13 @@ export const SendGroupWhispParams = zod.object({
 })
 
 export const SendGroupWhispBody = zod.object({
-  "videoUrl": zod.string(),
+  "videoUrl": zod.string().nullish(),
   "videoTitle": zod.string().nullish(),
   "videoThumbnail": zod.string().nullish(),
   "videoEmbedUrl": zod.string().nullish(),
   "videoStartSeconds": zod.number().nullish(),
   "videoPlatform": zod.string().nullish(),
+  "uploadedVideoId": zod.string().nullish().describe('An id from the sender\'s Media Library — an alternative to videoUrl. One of the two is required.'),
   "whisperChannel": zod.enum(['email', 'sms', 'whatsapp']),
   "anonymousNote": zod.string().nullish(),
   "senderAlias": zod.string().nullish(),
@@ -1224,6 +1259,36 @@ export const SendGroupWhispResponse = zod.object({
   "name": zod.string().nullish(),
   "reason": zod.string()
 }))
+})
+
+
+/**
+ * @summary The sender's Media Library — their own uploaded clips, with a per-clip usage count
+ */
+export const ListMediaResponseItem = zod.object({
+  "id": zod.string(),
+  "originalFilename": zod.string(),
+  "mimeType": zod.string(),
+  "sizeBytes": zod.number(),
+  "durationSeconds": zod.number().nullish(),
+  "status": zod.string(),
+  "expiresAt": zod.coerce.date(),
+  "deletionWarnedAt": zod.coerce.date().nullish(),
+  "createdAt": zod.string(),
+  "usageCount": zod.number().describe('Number of whisps sent using this clip')
+})
+export const ListMediaResponse = zod.array(ListMediaResponseItem)
+
+
+/**
+ * @summary Remove an uploaded video ahead of its automatic retention deadline
+ */
+export const DeleteMediaParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const DeleteMediaResponse = zod.object({
+  "ok": zod.boolean()
 })
 
 

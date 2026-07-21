@@ -53,7 +53,12 @@ export function GroupSendDetail() {
           {video.videoThumbnail && (
             <div className="relative h-40 overflow-hidden">
               <img src={video.videoThumbnail} alt="Video" className="w-full h-full object-cover" />
-              <a href={video.videoUrl} target="_blank" rel="noopener noreferrer" className="absolute inset-0 bg-black/50 flex items-center justify-center hover:bg-black/40 transition-colors">
+              <a
+                href={video.videoPlatform === "upload" ? `/api/media/${video.uploadedVideoId}/file` : video.videoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="absolute inset-0 bg-black/50 flex items-center justify-center hover:bg-black/40 transition-colors"
+              >
                 <PlayCircle className="w-10 h-10 text-white" />
               </a>
             </div>

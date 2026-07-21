@@ -57,3 +57,11 @@ export function appreciationNotificationEmailHtml(videoTitle: string | null): st
     <p>Good news — the person you sent ${subject} to said it was something they needed to hear. 💜</p>
   </div>`;
 }
+
+export function mediaExpiringEmailHtml(filename: string, expiresAt: Date): string {
+  const when = expiresAt.toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" });
+  return `<div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a2e;">
+    <p>Your uploaded video "${filename}" will be removed from Whispick on ${when} — save a copy now if you still need it.</p>
+    <p style="font-size: 13px; color: #6b7280;">Whisps that already used it aren't affected as long as the recipient opened them in time.</p>
+  </div>`;
+}

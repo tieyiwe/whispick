@@ -1,5 +1,6 @@
 import { useParams } from "wouter";
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import {
   useGetPublicWhisp,
   useTrackWhispEvent,
@@ -33,6 +34,39 @@ function WhispickLogoMark() {
   );
 }
 
+function splitSentences(text: string): string[] {
+  return text.split(/(?<=[.!?])\s+/).filter(Boolean);
+}
+
+function TakeawayCard({ text }: { text: string }) {
+  const sentences = splitSentences(text);
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card p-5 space-y-2.5"
+    >
+      <div className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-primary uppercase">
+        <Sparkles className="w-3.5 h-3.5" /> Takeaway
+      </div>
+      <div className="space-y-2">
+        {sentences.map((sentence, i) => (
+          <motion.p
+            key={i}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.45, duration: 0.5, ease: "easeOut" }}
+            className="text-foreground font-serif text-[15px] leading-relaxed"
+          >
+            {sentence}
+          </motion.p>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
 export function PublicWhispPage() {
   const { token } = useParams<{ token: string }>();
   const { toast } = useToast();
@@ -45,6 +79,7 @@ export function PublicWhispPage() {
   const [showReminderPicker, setShowReminderPicker] = useState(false);
   const [reminderScheduled, setReminderScheduled] = useState<{ nextReminderAt: string; isFinal: boolean } | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const [justWatched, setJustWatched] = useState(false);
   const [showVideoReply, setShowVideoReply] = useState(false);
   const [replyVideoUrl, setReplyVideoUrl] = useState("");
   const [replyVideoMeta, setReplyVideoMeta] = useState<{
@@ -58,6 +93,9 @@ export function PublicWhispPage() {
     query: {
       enabled: !!token,
       queryKey: getGetPublicWhispQueryKey(token!),
+      // The takeaway generates asynchronously after watched_complete fires —
+      // poll briefly to pick it up once it lands, then stop.
+      refetchInterval: (query) => (justWatched && !query.state.data?.aiTakeawayStatus ? 3000 : false),
     },
   });
 
@@ -116,6 +154,7 @@ export function PublicWhispPage() {
 
   function handleWatchEvent(eventType: "clicked" | "watched_10s" | "watched_50pct" | "watched_complete") {
     trackEvent.mutate({ token: token!, data: { eventType } });
+    if (eventType === "watched_complete") setJustWatched(true);
   }
 
   function submitReply(text: string, video?: { url: string; meta: typeof replyVideoMeta }) {
@@ -248,7 +287,8 @@ export function PublicWhispPage() {
                 platform={whisp.videoPlatform}
                 embedUrl={whisp.videoEmbedUrl}
                 videoUrl={whisp.videoUrl}
-                thumbnail={whisp.videoThumbnail}
+                thumbnail={whisp.videoPlatform === "upload" ? `/api/public/w/${token}/media/thumbnail` : whisp.videoThumbnail}
+                uploadSrc={whisp.videoPlatform === "upload" ? `/api/public/w/${token}/media` : null}
                 title={whisp.videoTitle}
                 startSeconds={whisp.videoStartSeconds}
                 onWatchEvent={handleWatchEvent}
@@ -271,6 +311,8 @@ export function PublicWhispPage() {
                 )}
               </div>
             </div>
+
+            {whisp.aiTakeawayStatus === "ready" && whisp.aiTakeaway && <TakeawayCard text={whisp.aiTakeaway} />}
 
             {/* Appreciation prompt */}
             <div className="bg-card border border-border/50 rounded-2xl p-4 text-center space-y-2">

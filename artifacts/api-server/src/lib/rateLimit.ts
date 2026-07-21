@@ -21,3 +21,13 @@ export const createWhispLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+// Uploads write real bytes to object storage and count against a sender's
+// own storage footprint — bound how many a single account can push through
+// per hour regardless of the per-request size cap.
+export const uploadLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+});

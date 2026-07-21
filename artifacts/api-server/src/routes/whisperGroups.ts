@@ -7,6 +7,7 @@ import {
   whispsTable,
   whispRepliesTable,
   usersTable,
+  uploadedVideosTable,
 } from "@workspace/db";
 import { eq, and, desc, count, sql, inArray } from "drizzle-orm";
 import { randomUUID } from "crypto";
@@ -153,6 +154,8 @@ router.get("/sends/:groupSendId", requireAuth, async (req, res): Promise<void> =
       videoUrl: members[0]!.videoUrl,
       videoTitle: members[0]!.videoTitle,
       videoThumbnail: members[0]!.videoThumbnail,
+      videoPlatform: members[0]!.videoPlatform,
+      uploadedVideoId: members[0]!.uploadedVideoId,
     },
     members: members.map((m) => ({
       whispId: m.id,
@@ -285,19 +288,24 @@ router.delete("/:id/members/:memberId", requireAuth, async (req, res): Promise<v
   res.status(204).send();
 });
 
-const sendSchema = z.object({
-  videoUrl: z.string().min(1),
-  videoTitle: z.string().nullable().optional(),
-  videoThumbnail: z.string().nullable().optional(),
-  videoEmbedUrl: z.string().nullable().optional(),
-  videoStartSeconds: z.number().int().min(0).nullable().optional(),
-  videoPlatform: z.string().nullable().optional(),
-  whisperChannel: z.enum(WHISPER_CHANNELS),
-  anonymousNote: z.string().nullable().optional(),
-  senderAlias: z.string().nullable().optional(),
-  moodTag: z.string().nullable().optional(),
-  scheduledAt: z.string().nullable().optional(),
-});
+const sendSchema = z
+  .object({
+    videoUrl: z.string().min(1).nullable().optional(),
+    videoTitle: z.string().nullable().optional(),
+    videoThumbnail: z.string().nullable().optional(),
+    videoEmbedUrl: z.string().nullable().optional(),
+    videoStartSeconds: z.number().int().min(0).nullable().optional(),
+    videoPlatform: z.string().nullable().optional(),
+    uploadedVideoId: z.string().nullable().optional(),
+    whisperChannel: z.enum(WHISPER_CHANNELS),
+    anonymousNote: z.string().nullable().optional(),
+    senderAlias: z.string().nullable().optional(),
+    moodTag: z.string().nullable().optional(),
+    scheduledAt: z.string().nullable().optional(),
+  })
+  .refine((data) => !!data.videoUrl || !!data.uploadedVideoId, {
+    message: "A video URL or an uploaded video is required",
+  });
 
 // POST /api/whisper-groups/:id/send — fans out one whisp per member that has
 // the contact info the chosen channel needs; members missing it are skipped
@@ -322,6 +330,20 @@ router.post("/:id/send", requireAuth, createWhispLimiter, async (req, res): Prom
     return;
   }
   const data = parsed.data;
+
+  let uploadedVideo: typeof uploadedVideosTable.$inferSelect | null = null;
+  if (data.uploadedVideoId) {
+    const media = await db
+      .select()
+      .from(uploadedVideosTable)
+      .where(and(eq(uploadedVideosTable.id, data.uploadedVideoId), eq(uploadedVideosTable.ownerId, user.id)))
+      .then((r) => r[0]);
+    if (!media || media.status !== "ready") {
+      res.status(400).json({ error: "That uploaded video is no longer available" });
+      return;
+    }
+    uploadedVideo = media;
+  }
 
   const allMembers = await db.select().from(whisperGroupMembersTable).where(eq(whisperGroupMembersTable.groupId, group.id));
   const needsEmail = data.whisperChannel === "email";
@@ -363,21 +385,35 @@ router.post("/:id/send", requireAuth, createWhispLimiter, async (req, res): Prom
   const hookLine = groupHookLine(deliverable.length);
   const appUrl = getPublicAppUrl(req);
 
+  const effectiveVideoUrl = uploadedVideo ? `upload:${uploadedVideo.id}` : data.videoUrl!;
+  const effectiveVideoTitle = data.videoTitle ?? uploadedVideo?.originalFilename ?? null;
+  const effectiveVideoPlatform = uploadedVideo ? "upload" : data.videoPlatform ?? null;
+
   const whispIds: string[] = [];
   for (const member of deliverable) {
     const id = randomUUID();
     const publicToken = randomUUID().replace(/-/g, "");
     whispIds.push(id);
 
+    // Token-scoped (not media-id-scoped) so it resolves for ANY viewer, not
+    // just the sender — see the identical comment in routes/whisps.ts. Each
+    // member's whisp gets its own token, all pointing at the same bytes.
+    const effectiveVideoThumbnail = uploadedVideo
+      ? uploadedVideo.thumbnailObjectKey
+        ? `/api/public/w/${publicToken}/media/thumbnail`
+        : null
+      : data.videoThumbnail ?? null;
+
     await db.insert(whispsTable).values({
       id,
       senderId: user.id,
-      videoUrl: data.videoUrl,
-      videoTitle: data.videoTitle ?? null,
-      videoThumbnail: data.videoThumbnail ?? null,
-      videoEmbedUrl: data.videoEmbedUrl ?? null,
+      videoUrl: effectiveVideoUrl,
+      videoTitle: effectiveVideoTitle,
+      videoThumbnail: effectiveVideoThumbnail,
+      videoEmbedUrl: uploadedVideo ? null : data.videoEmbedUrl ?? null,
       videoStartSeconds: data.videoStartSeconds ?? null,
-      videoPlatform: data.videoPlatform ?? null,
+      videoPlatform: effectiveVideoPlatform,
+      uploadedVideoId: uploadedVideo?.id ?? null,
       deliveryMethod: "group_whisper",
       whisperChannel: data.whisperChannel,
       groupSendId,
@@ -403,7 +439,7 @@ router.post("/:id/send", requireAuth, createWhispLimiter, async (req, res): Prom
     }
   }
 
-  void categorizeWhispsAsync(whispIds, { videoUrl: data.videoUrl, videoTitle: data.videoTitle ?? null, videoPlatform: data.videoPlatform ?? null });
+  void categorizeWhispsAsync(whispIds, { videoUrl: effectiveVideoUrl, videoTitle: effectiveVideoTitle, videoPlatform: effectiveVideoPlatform });
 
   res.status(201).json({
     groupSendId,

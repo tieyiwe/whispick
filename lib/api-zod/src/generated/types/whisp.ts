@@ -22,6 +22,8 @@ export interface Whisp {
   videoPlatform?: string | null;
   /** @nullable */
   videoTranscript?: string | null;
+  /** @nullable */
+  uploadedVideoId?: string | null;
   deliveryMethod: string;
   /** @nullable */
   whisperChannel?: string | null;
@@ -38,6 +40,7 @@ export interface Whisp {
   /** @nullable */
   moodTag?: string | null;
   status: string;
+  publicToken: string;
   /** @nullable */
   scheduledAt?: string | null;
   /** @nullable */
@@ -53,5 +56,9 @@ export interface Whisp {
   appreciationResponse?: string | null;
   /** @nullable */
   appreciationRespondedAt?: string | null;
+  /** @nullable */
+  aiTakeaway?: string | null;
+  /** @nullable */
+  aiTakeawayStatus?: string | null;
   createdAt: string;
 }

@@ -14,6 +14,7 @@ import { MyCircles } from "@/pages/MyCircles";
 import { CircleDetail } from "@/pages/CircleDetail";
 import { SendWhisp } from "@/pages/SendWhisp";
 import { WhisperGroups } from "@/pages/WhisperGroups";
+import { MediaLibrary } from "@/pages/MediaLibrary";
 import { WhisperGroupDetail } from "@/pages/WhisperGroupDetail";
 import { GroupSendDetail } from "@/pages/GroupSendDetail";
 import { WhispDetail } from "@/pages/WhispDetail";
@@ -153,6 +154,7 @@ function ClerkProviderWithRoutes() {
           <Route path="/whisper-groups/sends/:groupSendId" component={() => <ProtectedRoute component={GroupSendDetail} />} />
           <Route path="/whisper-groups/:id" component={() => <ProtectedRoute component={WhisperGroupDetail} />} />
           <Route path="/whisper-groups" component={() => <ProtectedRoute component={WhisperGroups} />} />
+          <Route path="/media-library" component={() => <ProtectedRoute component={MediaLibrary} />} />
           <Route path="/replies" component={() => <ProtectedRoute component={RepliesInbox} />} />
           <Route path="/credits" component={() => <ProtectedRoute component={CreditsPage} />} />
           <Route path="/settings" component={() => <ProtectedRoute component={SettingsPage} />} />

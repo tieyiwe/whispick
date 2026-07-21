@@ -42,6 +42,7 @@ import type {
   CircleFeedResponse,
   CreateCircleInput,
   CreditTransaction,
+  DeleteMedia200,
   GroupWhispSendDetail,
   GroupWhispSendSummary,
   HealthStatus,
@@ -62,6 +63,7 @@ import type {
   TrackingEventInput,
   TrackingResult,
   UpdateAdminUserInput,
+  UploadedVideo,
   UserProfile,
   UserProfileUpdate,
   VideoMeta,
@@ -3819,5 +3821,152 @@ export const useSendGroupWhisp = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getSendGroupWhispMutationOptions(options));
+    }
+
+export const getListMediaUrl = () => {
+
+
+
+
+  return `/api/media`
+}
+
+/**
+ * @summary The sender's Media Library — their own uploaded clips, with a per-clip usage count
+ */
+export const listMedia = async ( options?: RequestInit): Promise<UploadedVideo[]> => {
+
+  return customFetch<UploadedVideo[]>(getListMediaUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMediaQueryKey = () => {
+    return [
+    `/api/media`
+    ] as const;
+    }
+
+
+export const getListMediaQueryOptions = <TData = Awaited<ReturnType<typeof listMedia>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMedia>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMediaQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMedia>>> = ({ signal }) => listMedia({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMedia>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMediaQueryResult = NonNullable<Awaited<ReturnType<typeof listMedia>>>
+export type ListMediaQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary The sender's Media Library — their own uploaded clips, with a per-clip usage count
+ */
+
+export function useListMedia<TData = Awaited<ReturnType<typeof listMedia>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMedia>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMediaQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getDeleteMediaUrl = (id: string,) => {
+
+
+
+
+  return `/api/media/${id}`
+}
+
+/**
+ * @summary Remove an uploaded video ahead of its automatic retention deadline
+ */
+export const deleteMedia = async (id: string, options?: RequestInit): Promise<DeleteMedia200> => {
+
+  return customFetch<DeleteMedia200>(getDeleteMediaUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteMediaMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteMedia>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteMedia>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteMedia'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteMedia>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteMedia(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteMediaMutationResult = NonNullable<Awaited<ReturnType<typeof deleteMedia>>>
+
+    export type DeleteMediaMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Remove an uploaded video ahead of its automatic retention deadline
+ */
+export const useDeleteMedia = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteMedia>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteMedia>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getDeleteMediaMutationOptions(options));
     }
 

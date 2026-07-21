@@ -1178,6 +1178,59 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
 
+  # POST /media/upload (multipart/form-data video+thumbnail+durationSeconds
+  # → UploadedVideo | 400 | 503 ApiError) is intentionally not modeled here:
+  # a `format: binary` request body generates `File`/`Blob`-typed Zod schemas
+  # that don't compile in lib/api-zod's Node-only (no DOM lib) project, and
+  # this endpoint is called via a hand-written fetch from the frontend
+  # anyway (multipart isn't a great fit for the generated JSON client) — see
+  # artifacts/whispick/src/lib/uploadMedia.ts.
+
+  /media:
+    get:
+      operationId: listMedia
+      tags: [media]
+      summary: The sender's Media Library — their own uploaded clips, with a per-clip usage count
+      responses:
+        "200":
+          description: Uploaded videos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UploadedVideo"
+
+  /media/{id}:
+    delete:
+      operationId: deleteMedia
+      tags: [media]
+      summary: Remove an uploaded video ahead of its automatic retention deadline
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
 components:
   schemas:
     HealthStatus:
@@ -1219,6 +1272,8 @@ components:
           type: ["string", "null"]
         videoTranscript:
           type: ["string", "null"]
+        uploadedVideoId:
+          type: ["string", "null"]
         deliveryMethod:
           type: string
         whisperChannel:
@@ -1237,6 +1292,8 @@ components:
           type: ["string", "null"]
         status:
           type: string
+        publicToken:
+          type: string
         scheduledAt:
           type: ["string", "null"]
         deliveredAt:
@@ -1253,6 +1310,10 @@ components:
           type: ["string", "null"]
         appreciationRespondedAt:
           type: ["string", "null"]
+        aiTakeaway:
+          type: ["string", "null"]
+        aiTakeawayStatus:
+          type: ["string", "null"]
         createdAt:
           type: string
       required:
@@ -1261,6 +1322,7 @@ components:
         - videoUrl
         - deliveryMethod
         - status
+        - publicToken
         - revealRequested
         - createdAt
 
@@ -1268,7 +1330,7 @@ components:
       type: object
       properties:
         videoUrl:
-          type: string
+          type: ["string", "null"]
         videoTitle:
           type: ["string", "null"]
         videoThumbnail:
@@ -1279,6 +1341,9 @@ components:
           type: ["integer", "null"]
         videoPlatform:
           type: ["string", "null"]
+        uploadedVideoId:
+          type: ["string", "null"]
+          description: An id from the sender's Media Library — an alternative to videoUrl. One of the two is required.
         deliveryMethod:
           type: string
         whisperChannel:
@@ -1298,7 +1363,6 @@ components:
         scheduledAt:
           type: ["string", "null"]
       required:
-        - videoUrl
         - deliveryMethod
 
     WhispDetail:
@@ -1477,11 +1541,18 @@ components:
           type: integer
         expired:
           type: boolean
+        hasUpload:
+          type: boolean
+        aiTakeaway:
+          type: ["string", "null"]
+        aiTakeawayStatus:
+          type: ["string", "null"]
       required:
         - id
         - videoUrl
         - revealRequested
         - expired
+        - hasUpload
 
     TrackingEvent:
       type: object
@@ -2274,7 +2345,7 @@ components:
       type: object
       properties:
         videoUrl:
-          type: string
+          type: ["string", "null"]
         videoTitle:
           type: ["string", "null"]
         videoThumbnail:
@@ -2285,6 +2356,9 @@ components:
           type: ["integer", "null"]
         videoPlatform:
           type: ["string", "null"]
+        uploadedVideoId:
+          type: ["string", "null"]
+          description: An id from the sender's Media Library — an alternative to videoUrl. One of the two is required.
         whisperChannel:
           type: string
           enum: [email, sms, whatsapp]
@@ -2297,7 +2371,6 @@ components:
         scheduledAt:
           type: ["string", "null"]
       required:
-        - videoUrl
         - whisperChannel
 
     SkippedGroupMember:
@@ -2409,6 +2482,10 @@ components:
           type: ["string", "null"]
         videoThumbnail:
           type: ["string", "null"]
+        videoPlatform:
+          type: ["string", "null"]
+        uploadedVideoId:
+          type: ["string", "null"]
       required:
         - videoUrl
 
@@ -2473,3 +2550,39 @@ components:
         - ok
         - nextReminderAt
         - isFinal
+
+    UploadedVideo:
+      type: object
+      properties:
+        id:
+          type: string
+        originalFilename:
+          type: string
+        mimeType:
+          type: string
+        sizeBytes:
+          type: integer
+        durationSeconds:
+          type: ["integer", "null"]
+        status:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        deletionWarnedAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+        usageCount:
+          type: integer
+          description: Number of whisps sent using this clip
+      required:
+        - id
+        - originalFilename
+        - mimeType
+        - sizeBytes
+        - status
+        - expiresAt
+        - createdAt
+        - usageCount

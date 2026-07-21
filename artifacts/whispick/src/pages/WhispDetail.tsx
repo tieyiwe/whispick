@@ -41,6 +41,7 @@ import {
   Trash2,
   UserCircle2,
   HeartHandshake,
+  Sparkles,
 } from "lucide-react";
 import { deliveryLabel } from "@/lib/deliveryMethod";
 
@@ -211,7 +212,11 @@ export function WhispDetail() {
             <div className="relative h-48 overflow-hidden">
               <img src={whisp.videoThumbnail} alt="Video" className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                <a href={whisp.videoUrl} target="_blank" rel="noopener noreferrer">
+                <a
+                  href={whisp.videoPlatform === "upload" ? `/api/public/w/${whisp.publicToken}/media` : whisp.videoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur flex items-center justify-center hover:bg-white/30 transition-colors">
                     <PlayCircle className="w-8 h-8 text-white" />
                   </div>
@@ -248,6 +253,14 @@ export function WhispDetail() {
                 <HeartHandshake className="w-4 h-4" />
                 {whisp.appreciationResponse === "yes" ? "They said this was something they needed to hear" : "They said this wasn't quite what they needed"}
               </p>
+            )}
+            {whisp.aiTakeawayStatus === "ready" && whisp.aiTakeaway && (
+              <div className="mt-3 rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-1">
+                <p className="text-xs font-semibold tracking-wide text-primary uppercase flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" /> Takeaway they got
+                </p>
+                <p className="text-sm text-foreground font-serif leading-relaxed">{whisp.aiTakeaway}</p>
+              </div>
             )}
           </CardContent>
         </Card>

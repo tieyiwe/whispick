@@ -30,6 +30,8 @@ export interface Whisp {
   videoPlatform?: string | null;
   /** @nullable */
   videoTranscript?: string | null;
+  /** @nullable */
+  uploadedVideoId?: string | null;
   deliveryMethod: string;
   /** @nullable */
   whisperChannel?: string | null;
@@ -46,6 +48,7 @@ export interface Whisp {
   /** @nullable */
   moodTag?: string | null;
   status: string;
+  publicToken: string;
   /** @nullable */
   scheduledAt?: string | null;
   /** @nullable */
@@ -61,11 +64,16 @@ export interface Whisp {
   appreciationResponse?: string | null;
   /** @nullable */
   appreciationRespondedAt?: string | null;
+  /** @nullable */
+  aiTakeaway?: string | null;
+  /** @nullable */
+  aiTakeawayStatus?: string | null;
   createdAt: string;
 }
 
 export interface WhispInput {
-  videoUrl: string;
+  /** @nullable */
+  videoUrl?: string | null;
   /** @nullable */
   videoTitle?: string | null;
   /** @nullable */
@@ -76,6 +84,11 @@ export interface WhispInput {
   videoStartSeconds?: number | null;
   /** @nullable */
   videoPlatform?: string | null;
+  /**
+     * An id from the sender's Media Library — an alternative to videoUrl. One of the two is required.
+     * @nullable
+     */
+  uploadedVideoId?: string | null;
   deliveryMethod: string;
   /** @nullable */
   whisperChannel?: string | null;
@@ -199,6 +212,11 @@ export interface PublicWhisp {
   expiresAt?: string | null;
   reminderCount?: number;
   expired: boolean;
+  hasUpload: boolean;
+  /** @nullable */
+  aiTakeaway?: string | null;
+  /** @nullable */
+  aiTakeawayStatus?: string | null;
 }
 
 export interface TrackingEventInput {
@@ -622,7 +640,8 @@ export const SendGroupWhispInputWhisperChannel = {
 } as const;
 
 export interface SendGroupWhispInput {
-  videoUrl: string;
+  /** @nullable */
+  videoUrl?: string | null;
   /** @nullable */
   videoTitle?: string | null;
   /** @nullable */
@@ -633,6 +652,11 @@ export interface SendGroupWhispInput {
   videoStartSeconds?: number | null;
   /** @nullable */
   videoPlatform?: string | null;
+  /**
+     * An id from the sender's Media Library — an alternative to videoUrl. One of the two is required.
+     * @nullable
+     */
+  uploadedVideoId?: string | null;
   whisperChannel: SendGroupWhispInputWhisperChannel;
   /** @nullable */
   anonymousNote?: string | null;
@@ -706,6 +730,10 @@ export interface GroupWhispSendVideo {
   videoTitle?: string | null;
   /** @nullable */
   videoThumbnail?: string | null;
+  /** @nullable */
+  videoPlatform?: string | null;
+  /** @nullable */
+  uploadedVideoId?: string | null;
 }
 
 export interface GroupWhispSendDetail {
@@ -737,6 +765,22 @@ export interface RemindMeResult {
   isFinal: boolean;
 }
 
+export interface UploadedVideo {
+  id: string;
+  originalFilename: string;
+  mimeType: string;
+  sizeBytes: number;
+  /** @nullable */
+  durationSeconds?: number | null;
+  status: string;
+  expiresAt: string;
+  /** @nullable */
+  deletionWarnedAt?: string | null;
+  createdAt: string;
+  /** Number of whisps sent using this clip */
+  usageCount: number;
+}
+
 export type ListWhispsParams = {
 status?: string;
 };
@@ -761,5 +805,9 @@ deliveryMethod?: string;
 category?: string;
 page?: number;
 pageSize?: number;
+};
+
+export type DeleteMedia200 = {
+  ok: boolean;
 };
 

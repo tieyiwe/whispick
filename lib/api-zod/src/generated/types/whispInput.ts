@@ -7,7 +7,8 @@
  */
 
 export interface WhispInput {
-  videoUrl: string;
+  /** @nullable */
+  videoUrl?: string | null;
   /** @nullable */
   videoTitle?: string | null;
   /** @nullable */
@@ -18,6 +19,11 @@ export interface WhispInput {
   videoStartSeconds?: number | null;
   /** @nullable */
   videoPlatform?: string | null;
+  /**
+     * An id from the sender's Media Library — an alternative to videoUrl. One of the two is required.
+     * @nullable
+     */
+  uploadedVideoId?: string | null;
   deliveryMethod: string;
   /** @nullable */
   whisperChannel?: string | null;

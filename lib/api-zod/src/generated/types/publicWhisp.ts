@@ -34,4 +34,9 @@ export interface PublicWhisp {
   expiresAt?: Date | null;
   reminderCount?: number;
   expired: boolean;
+  hasUpload: boolean;
+  /** @nullable */
+  aiTakeaway?: string | null;
+  /** @nullable */
+  aiTakeawayStatus?: string | null;
 }

@@ -9,6 +9,12 @@ type Props = {
   thumbnail?: string | null;
   title?: string | null;
   startSeconds?: number | null;
+  // For platform === "upload": the actual streamable bytes URL and poster
+  // image. videoUrl itself is a non-navigable "upload:<id>" marker in that
+  // case (see routes/whisps.ts), so the caller resolves the real src — it's
+  // the only one who knows the whisp's public token (or, for a sender's own
+  // authenticated views, the media id).
+  uploadSrc?: string | null;
   onWatchEvent: (eventType: "clicked" | "watched_10s" | "watched_50pct" | "watched_complete") => void;
 };
 
@@ -45,8 +51,9 @@ function loadYouTubeApi(): Promise<void> {
  * player with progress events, so we fall back to opening the original link
  * and can only ever know it was clicked, not watched.
  */
-export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, startSeconds, onWatchEvent }: Props) {
+export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, startSeconds, uploadSrc, onWatchEvent }: Props) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const firedRef = useRef({ tenSec: false, halfway: false, complete: false });
   const [playing, setPlaying] = useState(false);
 
@@ -126,6 +133,31 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
   }, [playing, platform]);
 
   const isEmbeddable = !!embedUrl && (platform === "youtube" || platform === "vimeo");
+  const isNativeVideo = platform === "upload" && !!uploadSrc;
+
+  if (isNativeVideo && playing) {
+    return (
+      <video
+        ref={videoRef}
+        src={uploadSrc!}
+        poster={thumbnail ?? undefined}
+        controls
+        autoPlay
+        playsInline
+        className="w-full max-h-64 bg-black"
+        onLoadedMetadata={(e) => {
+          if (startSeconds) e.currentTarget.currentTime = startSeconds;
+        }}
+        onTimeUpdate={(e) => checkProgress(e.currentTarget.currentTime, e.currentTarget.duration)}
+        onEnded={() => {
+          if (!firedRef.current.complete) {
+            firedRef.current.complete = true;
+            onWatchEvent("watched_complete");
+          }
+        }}
+      />
+    );
+  }
 
   if (isEmbeddable && playing) {
     const startParam = startSeconds ? (platform === "youtube" ? `&start=${startSeconds}` : "") : "";
@@ -158,7 +190,7 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
     });
 
     onWatchEvent("clicked");
-    if (isEmbeddable) {
+    if (isEmbeddable || isNativeVideo) {
       setPlaying(true);
     } else {
       window.open(videoUrl, "_blank", "noopener,noreferrer");

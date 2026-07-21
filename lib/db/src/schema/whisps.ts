@@ -10,7 +10,14 @@ export const whispsTable = pgTable("whisps", {
   videoThumbnail: text("video_thumbnail"),
   videoEmbedUrl: text("video_embed_url"), // set for platforms with an embeddable player (YouTube, Vimeo) — powers real watch tracking
   videoStartSeconds: integer("video_start_seconds"), // optional timestamp bookmark — playback starts here instead of 0
-  videoPlatform: text("video_platform"), // 'youtube' | 'tiktok' | 'instagram' | 'facebook' | 'vimeo' | 'other'
+  videoPlatform: text("video_platform"), // 'youtube' | 'tiktok' | 'instagram' | 'facebook' | 'vimeo' | 'upload' | 'other'
+  // Set when the video came from the sender's own Media Library (an
+  // upload) instead of a pasted URL — see uploaded_videos.ts. videoUrl is
+  // still populated (a non-dereferenced "upload:<id>" marker, since the
+  // column is NOT NULL) but is never itself navigated to; playback goes
+  // through /public/w/:token/media instead, scoped by token possession like
+  // everything else public-facing here.
+  uploadedVideoId: text("uploaded_video_id"),
   // Best-effort captions text, fetched after send to confirm/refine the video's
   // category tags (see lib/categorize.ts). Only ever populated for platforms
   // we can scrape captions from (currently YouTube); null otherwise.
@@ -57,6 +64,15 @@ export const whispsTable = pgTable("whisps", {
   nextReminderAt: timestamp("next_reminder_at", { withTimezone: true }),
   lastReminderAt: timestamp("last_reminder_at", { withTimezone: true }),
   boostSpendUsd: numeric("boost_spend_usd", { precision: 6, scale: 2 }),
+  // A short, therapist-toned "takeaway" of the video's message, generated for
+  // the RECIPIENT (not the sender) once they finish watching, or proactively
+  // if they haven't watched after a while so the gist is there whenever they
+  // do open it (see lib/aiTakeaway.ts). Transcript-based, so only ever
+  // populated for platforms we can get a transcript from (YouTube today) —
+  // 'unavailable' covers both "no transcript" and a failed generation.
+  aiTakeaway: text("ai_takeaway"),
+  aiTakeawayStatus: text("ai_takeaway_status"), // null (not attempted yet) | 'ready' | 'unavailable'
+  aiTakeawayGeneratedAt: timestamp("ai_takeaway_generated_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

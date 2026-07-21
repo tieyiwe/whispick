@@ -5,6 +5,7 @@ import {
   whispRepliesTable,
   trackingEventsTable,
   usersTable,
+  uploadedVideosTable,
 } from "@workspace/db";
 import { eq, count } from "drizzle-orm";
 import { randomUUID } from "crypto";
@@ -13,6 +14,8 @@ import { sendEmail, replyNotificationEmailHtml, appreciationNotificationEmailHtm
 import { notifyUser } from "../lib/push";
 import { getPublicAppUrl } from "../lib/publicUrl";
 import { isExpired, MAX_REMINDERS } from "../lib/expiration";
+import { downloadObject } from "../lib/objectStorage";
+import { generateTakeawayAsync } from "../lib/aiTakeaway";
 
 const router = Router();
 
@@ -57,7 +60,66 @@ router.get("/w/:token", async (req, res): Promise<void> => {
     expiresAt: whisp.expiresAt,
     reminderCount: whisp.reminderCount,
     expired: isExpired(whisp.expiresAt),
+    hasUpload: !!whisp.uploadedVideoId,
+    aiTakeaway: whisp.aiTakeaway,
+    aiTakeawayStatus: whisp.aiTakeawayStatus,
   });
+});
+
+async function loadWhispUpload(token: string) {
+  const whisp = await db.select().from(whispsTable).where(eq(whispsTable.publicToken, token)).then((r) => r[0]);
+  if (!whisp?.uploadedVideoId) return { status: 404 as const };
+
+  const media = await db
+    .select()
+    .from(uploadedVideosTable)
+    .where(eq(uploadedVideosTable.id, whisp.uploadedVideoId))
+    .then((r) => r[0]);
+
+  if (!media) return { status: 404 as const };
+  if (media.status !== "ready") return { status: 410 as const };
+  return { status: 200 as const, media };
+}
+
+// GET /api/public/w/:token/media — streams an uploaded (device) video's
+// bytes. Scoped by the whisp's own public token (possession-of-token is this
+// app's whole trust model for public routes), not by a raw media id, so a
+// recipient can never probe someone else's library by guessing ids.
+router.get("/w/:token/media", async (req, res): Promise<void> => {
+  const result = await loadWhispUpload(req.params.token);
+  if (result.status !== 200) {
+    res.status(result.status).json({ error: result.status === 410 ? "This video is no longer available" : "Not found" });
+    return;
+  }
+
+  const bytes = await downloadObject(result.media.objectKey);
+  if (!bytes) {
+    res.status(503).json({ error: "Video storage is temporarily unavailable" });
+    return;
+  }
+
+  res.setHeader("Content-Type", result.media.mimeType);
+  res.setHeader("Content-Length", String(bytes.length));
+  res.send(bytes);
+});
+
+// GET /api/public/w/:token/media/thumbnail
+router.get("/w/:token/media/thumbnail", async (req, res): Promise<void> => {
+  const result = await loadWhispUpload(req.params.token);
+  if (result.status !== 200 || !result.media.thumbnailObjectKey) {
+    res.status(result.status === 410 ? 410 : 404).json({ error: "Not found" });
+    return;
+  }
+
+  const bytes = await downloadObject(result.media.thumbnailObjectKey);
+  if (!bytes) {
+    res.status(503).json({ error: "Thumbnail storage is temporarily unavailable" });
+    return;
+  }
+
+  res.setHeader("Content-Type", "image/jpeg");
+  res.setHeader("Content-Length", String(bytes.length));
+  res.send(bytes);
 });
 
 // POST /api/public/w/:token/track — tracking pixel
@@ -111,6 +173,7 @@ router.post("/w/:token/track", async (req, res): Promise<void> => {
       .set({ watchedAt: new Date(), ...(whisp.status === "replied" ? {} : { status: "watched" }) })
       .where(eq(whispsTable.id, whisp.id));
     void notifyUser(whisp.senderId, "They watched it 🎬", "Your whisp was watched all the way through.", whispUrl);
+    void generateTakeawayAsync(whisp.id);
   }
 
   res.json({ ok: true });

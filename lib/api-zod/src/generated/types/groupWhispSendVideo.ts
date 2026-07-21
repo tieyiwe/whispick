@@ -12,4 +12,8 @@ export interface GroupWhispSendVideo {
   videoTitle?: string | null;
   /** @nullable */
   videoThumbnail?: string | null;
+  /** @nullable */
+  videoPlatform?: string | null;
+  /** @nullable */
+  uploadedVideoId?: string | null;
 }

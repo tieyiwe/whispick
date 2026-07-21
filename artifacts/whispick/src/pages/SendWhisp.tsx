@@ -9,10 +9,12 @@ import {
   useListMyCircles,
   useListWhisperGroups,
   useSendGroupWhisp,
+  useListMedia,
   getListMyCirclesQueryKey,
   getListWhisperGroupsQueryKey,
   getGetWhispStatsQueryKey,
   getListWhispsQueryKey,
+  getListMediaQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -40,6 +42,9 @@ import {
   Contact,
   UsersRound,
   Plus,
+  Upload,
+  FolderOpen,
+  Video,
 } from "lucide-react";
 import {
   SiYoutube,
@@ -49,6 +54,7 @@ import {
   SiWhatsapp,
 } from "react-icons/si";
 import { isContactPickerSupported, pickContact } from "@/lib/contactPicker";
+import { uploadMedia, UploadValidationError } from "@/lib/uploadMedia";
 
 const WHISPER_CHANNELS = [
   { key: "email", label: "Email", icon: Mail },
@@ -76,6 +82,7 @@ function PlatformIcon({ platform }: { platform?: string | null }) {
     case "tiktok": return <SiTiktok className={cls} />;
     case "instagram": return <SiInstagram className={cls} style={{ color: "#E1306C" }} />;
     case "facebook": return <SiFacebook className={cls} style={{ color: "#1877F2" }} />;
+    case "upload": return <Video className={cls} style={{ color: "#7C5CFC" }} />;
     default: return <PlayCircle className={cls} />;
   }
 }
@@ -119,6 +126,7 @@ const step5Schema = z.object({
 
 export function SendWhisp() {
   const [step, setStep] = useState(1);
+  const [videoSource, setVideoSource] = useState<"url" | "upload" | "library">("url");
   const [videoUrl, setVideoUrl] = useState("");
   const [videoMeta, setVideoMeta] = useState<{
     title?: string | null;
@@ -127,6 +135,9 @@ export function SendWhisp() {
     platform?: string;
     authorName?: string | null;
   } | null>(null);
+  const [uploadedVideoId, setUploadedVideoId] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [moodTag, setMoodTag] = useState<string | null>(null);
   const [anonymousNote, setAnonymousNote] = useState("");
   const [senderAlias, setSenderAlias] = useState(SENDER_ALIASES[0]);
@@ -157,6 +168,9 @@ export function SendWhisp() {
   const { data: myWhisperGroups } = useListWhisperGroups({
     query: { enabled: deliveryMethod === "group_whisper", queryKey: getListWhisperGroupsQueryKey() },
   });
+  const { data: mediaLibrary } = useListMedia({
+    query: { enabled: videoSource === "library" && step === 1, queryKey: getListMediaQueryKey() },
+  });
 
   // Deep link from a group's page ("Send a Whisp" there goes to /send?group=ID)
   // — preselect Group Whisper + that group so the sender doesn't have to
@@ -176,6 +190,7 @@ export function SendWhisp() {
     const url = urlForm.getValues("videoUrl");
     if (!url) return;
     setVideoUrl(url);
+    setUploadedVideoId(null);
     scrapeMeta.mutate(
       { data: { url } },
       {
@@ -200,6 +215,31 @@ export function SendWhisp() {
     );
   }
 
+  async function handleFileSelect(file: File | undefined) {
+    if (!file) return;
+    setUploadError(null);
+    setIsUploading(true);
+    try {
+      const result = await uploadMedia(file);
+      setUploadedVideoId(result.id);
+      setVideoUrl("");
+      setVideoMeta({ title: result.originalFilename, thumbnail: `/api/media/${result.id}/thumbnail`, platform: "upload" });
+      setStep(2);
+    } catch (err) {
+      setUploadError(err instanceof UploadValidationError ? err.message : "Upload failed. Please try again.");
+    } finally {
+      setIsUploading(false);
+    }
+  }
+
+  function handleLibrarySelect(item: { id: string; originalFilename: string; status: string }) {
+    if (item.status !== "ready") return;
+    setUploadedVideoId(item.id);
+    setVideoUrl("");
+    setVideoMeta({ title: item.originalFilename, thumbnail: `/api/media/${item.id}/thumbnail`, platform: "upload" });
+    setStep(2);
+  }
+
   async function handleSend() {
     const alias = customAlias.trim() || senderAlias;
     const isScheduling = scheduleEnabled && deliveryMethod !== "ghost_boost" && !!scheduledAtValue;
@@ -210,11 +250,12 @@ export function SendWhisp() {
         {
           id: whisperGroupId,
           data: {
-            videoUrl,
+            videoUrl: uploadedVideoId ? null : videoUrl,
             videoTitle: videoMeta?.title ?? null,
             videoThumbnail: videoMeta?.thumbnail ?? null,
-            videoEmbedUrl: videoMeta?.embedUrl ?? null,
+            videoEmbedUrl: uploadedVideoId ? null : videoMeta?.embedUrl ?? null,
             videoPlatform: videoMeta?.platform ?? null,
+            uploadedVideoId,
             videoStartSeconds: parseTimestampToSeconds(startTimestamp),
             whisperChannel,
             anonymousNote: anonymousNote || null,
@@ -247,11 +288,12 @@ export function SendWhisp() {
     createWhisp.mutate(
       {
         data: {
-          videoUrl,
+          videoUrl: uploadedVideoId ? null : videoUrl,
           videoTitle: videoMeta?.title ?? null,
           videoThumbnail: videoMeta?.thumbnail ?? null,
-          videoEmbedUrl: videoMeta?.embedUrl ?? null,
+          videoEmbedUrl: uploadedVideoId ? null : videoMeta?.embedUrl ?? null,
           videoPlatform: videoMeta?.platform ?? null,
+          uploadedVideoId,
           videoStartSeconds: parseTimestampToSeconds(startTimestamp),
           deliveryMethod,
           whisperChannel: deliveryMethod === "whisper_link" ? whisperChannel : null,
@@ -386,33 +428,123 @@ export function SendWhisp() {
 
         <Card className="bg-card border-border/50 overflow-hidden">
           <CardContent className="p-6 space-y-5">
-            {/* Step 1: Paste URL */}
+            {/* Step 1: choose a video */}
             {step === 1 && (
               <div className="space-y-4">
-                <h2 className="text-xl font-serif font-semibold">Paste a video link</h2>
-                <p className="text-sm text-muted-foreground">YouTube, TikTok, Instagram, Facebook, Vimeo — any public video URL.</p>
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      className="pl-9 bg-input/50 border-border/50 rounded-xl"
-                      placeholder="https://youtube.com/watch?v=..."
-                      {...urlForm.register("videoUrl")}
-                      onKeyDown={(e) => e.key === "Enter" && urlForm.handleSubmit(handleUrlSubmit)()}
-                      data-testid="input-video-url"
-                    />
-                  </div>
-                  <Button
-                    onClick={urlForm.handleSubmit(handleUrlSubmit)}
-                    disabled={scrapeMeta.isPending}
-                    className="rounded-xl"
-                    data-testid="button-fetch-video"
-                  >
-                    {scrapeMeta.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
-                  </Button>
+                <div className="flex gap-1.5 p-1 bg-muted/30 rounded-xl w-fit">
+                  {([
+                    { key: "url" as const, label: "Paste a link", icon: Link2 },
+                    { key: "upload" as const, label: "Upload", icon: Upload },
+                    { key: "library" as const, label: "My library", icon: FolderOpen },
+                  ]).map((tab) => (
+                    <button
+                      key={tab.key}
+                      type="button"
+                      onClick={() => setVideoSource(tab.key)}
+                      data-testid={`tab-source-${tab.key}`}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                        videoSource === tab.key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
+                      }`}
+                    >
+                      <tab.icon className="w-3.5 h-3.5" /> {tab.label}
+                    </button>
+                  ))}
                 </div>
-                {urlForm.formState.errors.videoUrl && (
-                  <p className="text-sm text-destructive">{urlForm.formState.errors.videoUrl.message}</p>
+
+                {videoSource === "url" && (
+                  <>
+                    <h2 className="text-xl font-serif font-semibold">Paste a video link</h2>
+                    <p className="text-sm text-muted-foreground">YouTube, TikTok, Instagram, Facebook, Vimeo — any public video URL.</p>
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          className="pl-9 bg-input/50 border-border/50 rounded-xl"
+                          placeholder="https://youtube.com/watch?v=..."
+                          {...urlForm.register("videoUrl")}
+                          onKeyDown={(e) => e.key === "Enter" && urlForm.handleSubmit(handleUrlSubmit)()}
+                          data-testid="input-video-url"
+                        />
+                      </div>
+                      <Button
+                        onClick={urlForm.handleSubmit(handleUrlSubmit)}
+                        disabled={scrapeMeta.isPending}
+                        className="rounded-xl"
+                        data-testid="button-fetch-video"
+                      >
+                        {scrapeMeta.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
+                      </Button>
+                    </div>
+                    {urlForm.formState.errors.videoUrl && (
+                      <p className="text-sm text-destructive">{urlForm.formState.errors.videoUrl.message}</p>
+                    )}
+                  </>
+                )}
+
+                {videoSource === "upload" && (
+                  <>
+                    <h2 className="text-xl font-serif font-semibold">Upload a video</h2>
+                    <p className="text-sm text-muted-foreground">
+                      Under 2 minutes, MP4/WebM/MOV. Kept short so it loads fast for the recipient.
+                    </p>
+                    <label
+                      className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-border/60 rounded-xl py-10 cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                      data-testid="label-upload-video"
+                    >
+                      {isUploading ? (
+                        <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
+                      ) : (
+                        <Upload className="w-6 h-6 text-muted-foreground" />
+                      )}
+                      <span className="text-sm text-muted-foreground">
+                        {isUploading ? "Processing your video…" : "Tap to choose a video from your device"}
+                      </span>
+                      <input
+                        type="file"
+                        accept="video/mp4,video/webm,video/quicktime"
+                        className="hidden"
+                        disabled={isUploading}
+                        onChange={(e) => handleFileSelect(e.target.files?.[0])}
+                        data-testid="input-upload-video"
+                      />
+                    </label>
+                    {uploadError && <p className="text-sm text-destructive">{uploadError}</p>}
+                  </>
+                )}
+
+                {videoSource === "library" && (
+                  <>
+                    <h2 className="text-xl font-serif font-semibold">Your Media Library</h2>
+                    <p className="text-sm text-muted-foreground">Reuse a clip you've already uploaded.</p>
+                    {!mediaLibrary?.length ? (
+                      <p className="text-sm text-muted-foreground py-6 text-center">
+                        Nothing here yet — upload a video to add one.
+                      </p>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2">
+                        {mediaLibrary.map((item) => (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => handleLibrarySelect(item)}
+                            disabled={item.status !== "ready"}
+                            data-testid={`button-library-item-${item.id}`}
+                            className="relative flex flex-col gap-1.5 p-2 rounded-xl border border-border/50 bg-muted/20 text-left hover:border-primary/50 hover:bg-primary/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            <div className="aspect-video bg-muted rounded-lg overflow-hidden flex items-center justify-center">
+                              <img src={`/api/media/${item.id}/thumbnail`} alt="" className="w-full h-full object-cover" />
+                            </div>
+                            <p className="text-xs font-medium text-foreground truncate">{item.originalFilename}</p>
+                            {item.status !== "ready" && (
+                              <span className="absolute top-2 right-2 text-[10px] px-1.5 py-0.5 rounded-full bg-background/90 text-muted-foreground">
+                                No longer available
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}

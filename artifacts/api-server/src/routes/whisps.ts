@@ -8,6 +8,7 @@ import {
   usersTable,
   creditTransactionsTable,
   circleMembersTable,
+  uploadedVideosTable,
 } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
@@ -51,23 +52,30 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
   const { userId } = getAuth(req);
   const user = await ensureUser(userId!, req);
 
-  const schema = z.object({
-    videoUrl: z.string().min(1),
-    videoTitle: z.string().nullable().optional(),
-    videoThumbnail: z.string().nullable().optional(),
-    videoEmbedUrl: z.string().nullable().optional(),
-    videoStartSeconds: z.number().int().min(0).nullable().optional(),
-    videoPlatform: z.string().nullable().optional(),
-    deliveryMethod: z.enum(DELIVERY_METHODS),
-    whisperChannel: z.enum(WHISPER_CHANNELS).nullable().optional(),
-    circleId: z.string().nullable().optional(),
-    recipientEmail: z.string().nullable().optional(),
-    recipientPhone: z.string().nullable().optional(),
-    anonymousNote: z.string().nullable().optional(),
-    senderAlias: z.string().nullable().optional(),
-    moodTag: z.string().nullable().optional(),
-    scheduledAt: z.string().nullable().optional(),
-  });
+  const schema = z
+    .object({
+      videoUrl: z.string().min(1).nullable().optional(),
+      videoTitle: z.string().nullable().optional(),
+      videoThumbnail: z.string().nullable().optional(),
+      videoEmbedUrl: z.string().nullable().optional(),
+      videoStartSeconds: z.number().int().min(0).nullable().optional(),
+      videoPlatform: z.string().nullable().optional(),
+      // A video from the sender's own Media Library instead of a pasted URL
+      // — mutually exclusive with videoUrl (see the refine below).
+      uploadedVideoId: z.string().nullable().optional(),
+      deliveryMethod: z.enum(DELIVERY_METHODS),
+      whisperChannel: z.enum(WHISPER_CHANNELS).nullable().optional(),
+      circleId: z.string().nullable().optional(),
+      recipientEmail: z.string().nullable().optional(),
+      recipientPhone: z.string().nullable().optional(),
+      anonymousNote: z.string().nullable().optional(),
+      senderAlias: z.string().nullable().optional(),
+      moodTag: z.string().nullable().optional(),
+      scheduledAt: z.string().nullable().optional(),
+    })
+    .refine((data) => !!data.videoUrl || !!data.uploadedVideoId, {
+      message: "A video URL or an uploaded video is required",
+    });
 
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) {
@@ -76,6 +84,20 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
   }
 
   const data = parsed.data;
+
+  let uploadedVideo: typeof uploadedVideosTable.$inferSelect | null = null;
+  if (data.uploadedVideoId) {
+    const media = await db
+      .select()
+      .from(uploadedVideosTable)
+      .where(and(eq(uploadedVideosTable.id, data.uploadedVideoId), eq(uploadedVideosTable.ownerId, user.id)))
+      .then((r) => r[0]);
+    if (!media || media.status !== "ready") {
+      res.status(400).json({ error: "That uploaded video is no longer available" });
+      return;
+    }
+    uploadedVideo = media;
+  }
 
   if (data.deliveryMethod === "whisper_link") {
     if (!data.whisperChannel) {
@@ -151,15 +173,33 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
   // integration" — scheduling isn't layered on top of that.
   const isScheduled = !isGhostBoost && scheduledDate !== null && scheduledDate.getTime() > Date.now();
 
+  // An uploaded video is never itself dereferenced by videoUrl — playback
+  // goes through /public/w/:token/media instead — but the column is NOT
+  // NULL, so a synthetic, unnavigable marker fills it.
+  const effectiveVideoUrl = uploadedVideo ? `upload:${uploadedVideo.id}` : data.videoUrl!;
+  const effectiveVideoTitle = data.videoTitle ?? uploadedVideo?.originalFilename ?? null;
+  // Token-scoped (not media-id-scoped) so it resolves for ANY viewer who can
+  // see this whisp — the recipient's public page, a Circle Drop browser, an
+  // admin — not just the sender. The Media Library's own owner-only
+  // /api/media/:id/thumbnail is for browsing uploads before they're
+  // attached to a whisp (no token exists yet).
+  const effectiveVideoThumbnail = uploadedVideo
+    ? uploadedVideo.thumbnailObjectKey
+      ? `/api/public/w/${publicToken}/media/thumbnail`
+      : null
+    : data.videoThumbnail ?? null;
+  const effectiveVideoPlatform = uploadedVideo ? "upload" : data.videoPlatform ?? null;
+
   await db.insert(whispsTable).values({
     id,
     senderId: user.id,
-    videoUrl: data.videoUrl,
-    videoTitle: data.videoTitle ?? null,
-    videoThumbnail: data.videoThumbnail ?? null,
-    videoEmbedUrl: data.videoEmbedUrl ?? null,
+    videoUrl: effectiveVideoUrl,
+    videoTitle: effectiveVideoTitle,
+    videoThumbnail: effectiveVideoThumbnail,
+    videoEmbedUrl: uploadedVideo ? null : data.videoEmbedUrl ?? null,
     videoStartSeconds: data.videoStartSeconds ?? null,
-    videoPlatform: data.videoPlatform ?? null,
+    videoPlatform: effectiveVideoPlatform,
+    uploadedVideoId: uploadedVideo?.id ?? null,
     deliveryMethod: data.deliveryMethod,
     whisperChannel: data.deliveryMethod === "whisper_link" ? data.whisperChannel ?? null : null,
     circleId: data.deliveryMethod === "circle_drop" ? data.circleId ?? null : null,
@@ -202,9 +242,9 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
   // of delivery — it's about what the video is, not whether/when it's sent.
   void categorizeWhispAsync({
     id,
-    videoUrl: data.videoUrl,
-    videoTitle: data.videoTitle ?? null,
-    videoPlatform: data.videoPlatform ?? null,
+    videoUrl: effectiveVideoUrl,
+    videoTitle: effectiveVideoTitle,
+    videoPlatform: effectiveVideoPlatform,
   });
 
   const whisp = await db.select().from(whispsTable).where(eq(whispsTable.id, id)).then(r => r[0]);
