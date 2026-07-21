@@ -55,6 +55,7 @@ import {
 } from "react-icons/si";
 import { isContactPickerSupported, pickContact } from "@/lib/contactPicker";
 import { uploadMedia, UploadValidationError } from "@/lib/uploadMedia";
+import { Thumbnail } from "@/components/shared/Thumbnail";
 
 const WHISPER_CHANNELS = [
   { key: "email", label: "Email", icon: Mail },
@@ -532,7 +533,7 @@ export function SendWhisp() {
                             className="relative flex flex-col gap-1.5 p-2 rounded-xl border border-border/50 bg-muted/20 text-left hover:border-primary/50 hover:bg-primary/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                           >
                             <div className="aspect-video bg-muted rounded-lg overflow-hidden flex items-center justify-center">
-                              <img src={`/api/media/${item.id}/thumbnail`} alt="" className="w-full h-full object-cover" />
+                              <Thumbnail src={`/api/media/${item.id}/thumbnail`} className="w-full h-full object-cover" />
                             </div>
                             <p className="text-xs font-medium text-foreground truncate">{item.originalFilename}</p>
                             {item.status !== "ready" && (
@@ -556,7 +557,7 @@ export function SendWhisp() {
                 {(videoMeta?.thumbnail || videoMeta?.title) && (
                   <div className="flex gap-3 p-3 bg-muted/30 rounded-xl items-center">
                     {videoMeta.thumbnail ? (
-                      <img src={videoMeta.thumbnail} className="w-16 h-12 object-cover rounded-lg" alt="thumbnail" />
+                      <Thumbnail src={videoMeta.thumbnail} alt="thumbnail" className="w-16 h-12 object-cover rounded-lg" />
                     ) : (
                       <div className="w-16 h-12 bg-muted rounded-lg flex items-center justify-center">
                         <PlayCircle className="w-5 h-5 text-muted-foreground" />
@@ -990,7 +991,7 @@ export function SendWhisp() {
                 <h2 className="text-xl font-serif font-semibold">Ready to send?</h2>
                 <div className="space-y-2 text-sm">
                   {videoMeta?.thumbnail && (
-                    <img src={videoMeta.thumbnail} className="w-full h-32 object-cover rounded-xl" alt="Video thumbnail" />
+                    <Thumbnail src={videoMeta.thumbnail} alt="Video thumbnail" className="w-full h-32 object-cover rounded-xl" />
                   )}
                   <div className="p-3 bg-muted/30 rounded-xl space-y-2">
                     <div className="flex justify-between">

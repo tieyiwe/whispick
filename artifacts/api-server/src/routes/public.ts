@@ -100,6 +100,7 @@ router.get("/w/:token/media", async (req, res): Promise<void> => {
 
   res.setHeader("Content-Type", result.media.mimeType);
   res.setHeader("Content-Length", String(bytes.length));
+  res.setHeader("X-Content-Type-Options", "nosniff");
   res.send(bytes);
 });
 
@@ -119,6 +120,7 @@ router.get("/w/:token/media/thumbnail", async (req, res): Promise<void> => {
 
   res.setHeader("Content-Type", "image/jpeg");
   res.setHeader("Content-Length", String(bytes.length));
+  res.setHeader("X-Content-Type-Options", "nosniff");
   res.send(bytes);
 });
 

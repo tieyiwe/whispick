@@ -56,6 +56,11 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
   const videoRef = useRef<HTMLVideoElement>(null);
   const firedRef = useRef({ tenSec: false, halfway: false, complete: false });
   const [playing, setPlaying] = useState(false);
+  // A thumbnail URL we construct client-side (e.g. an upload whose
+  // client-side capture failed) isn't guaranteed to actually resolve — fall
+  // back to the plain "no thumbnail" state rather than showing a broken
+  // image behind the play button.
+  const [thumbnailFailed, setThumbnailFailed] = useState(false);
 
   function checkProgress(currentTime: number, duration: number) {
     const fired = firedRef.current;
@@ -197,9 +202,14 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
     }
   }
 
-  return thumbnail ? (
+  return thumbnail && !thumbnailFailed ? (
     <div className="relative">
-      <img src={thumbnail} alt={title ?? "Video"} className="w-full object-cover max-h-64" />
+      <img
+        src={thumbnail}
+        alt={title ?? "Video"}
+        className="w-full object-cover max-h-64"
+        onError={() => setThumbnailFailed(true)}
+      />
       <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
         <button
           onClick={handlePlayClick}

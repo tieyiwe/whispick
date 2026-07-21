@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { uploadMedia, UploadValidationError } from "@/lib/uploadMedia";
+import { Thumbnail } from "@/components/shared/Thumbnail";
 import { Clapperboard, Upload, Loader2, Send, Trash2, Clock } from "lucide-react";
 
 function formatSize(bytes: number): string {
@@ -115,7 +116,7 @@ export function MediaLibrary() {
             {media.map((item) => (
               <Card key={item.id} className="bg-card border-border/50 overflow-hidden">
                 <div className="aspect-video bg-muted relative">
-                  <img src={`/api/media/${item.id}/thumbnail`} alt="" className="w-full h-full object-cover" />
+                  <Thumbnail src={`/api/media/${item.id}/thumbnail`} className="w-full h-full object-cover" />
                   {item.status !== "ready" && (
                     <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
                       <span className="text-xs text-muted-foreground">No longer available</span>

@@ -20,6 +20,37 @@ export const UPLOAD_RETENTION_DAYS = 7;
 // save a copy if they still want one.
 export const UPLOAD_DELETION_WARNING_DAYS = 2;
 
+// A whisp built from an uploaded video can't be scheduled further out than
+// this — otherwise "Schedule for later" could land after the video's own
+// retention window (UPLOAD_RETENTION_DAYS) has already phased it out,
+// handing the recipient a dead link the moment it's delivered. Left with a
+// couple of days' margin below the retention window rather than cutting it
+// exactly at the edge. (lib/scheduler.ts also re-checks the media's status
+// at actual dispatch time, as a second line of defense — this cap just
+// keeps that from being the only thing standing between a sender and a
+// broken send.)
+export const MAX_SCHEDULE_DAYS_WITH_UPLOAD = UPLOAD_RETENTION_DAYS - UPLOAD_DELETION_WARNING_DAYS;
+
 export function computeUploadExpiresAt(from: Date = new Date()): Date {
   return new Date(from.getTime() + UPLOAD_RETENTION_DAYS * 24 * 60 * 60 * 1000);
+}
+
+// A quick magic-byte sanity check — the client-supplied mimetype is trusted
+// for what Content-Type we later serve the file back as (it's validated
+// against ALLOWED_UPLOAD_VIDEO_MIME_TYPES first, so it can never become
+// something browser-dangerous like text/html), but without this, someone
+// could still park arbitrary non-video bytes behind an unguessable public
+// link labeled as a video. Not a full container-format validator — just
+// enough to reject an obvious mismatch.
+export function looksLikeDeclaredVideoFormat(buffer: Buffer, mimeType: string): boolean {
+  if (mimeType === "video/mp4" || mimeType === "video/quicktime") {
+    // ISO base media file format (mp4, mov, ...): a 4-byte size field
+    // followed by an "ftyp" box type, normally within the first few bytes.
+    return buffer.length >= 8 && buffer.subarray(4, 8).toString("ascii") === "ftyp";
+  }
+  if (mimeType === "video/webm") {
+    // EBML header magic number, used by both WebM and Matroska.
+    return buffer.length > 4 && buffer[0] === 0x1a && buffer[1] === 0x45 && buffer[2] === 0xdf && buffer[3] === 0xa3;
+  }
+  return false;
 }

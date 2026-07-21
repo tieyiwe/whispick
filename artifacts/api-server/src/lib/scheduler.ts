@@ -1,9 +1,10 @@
 import { db } from "@workspace/db";
-import { whispsTable } from "@workspace/db";
+import { whispsTable, uploadedVideosTable } from "@workspace/db";
 import { eq, and, lte, count } from "drizzle-orm";
 import { deliverWhisperLink } from "./deliver";
 import { groupHookLine } from "./copy";
 import { computeExpiresAt } from "./expiration";
+import { notifyUser } from "./push";
 import { logger } from "./logger";
 
 const POLL_INTERVAL_MS = 60_000;
@@ -35,6 +36,30 @@ export function startScheduledWhispDispatcher(): void {
       }
 
       for (const whisp of due) {
+        // A far-future schedule can outlive an attached uploaded video's
+        // retention window (see lib/uploads.ts) — sending the link out
+        // anyway would hand the recipient a dead video. Check freshly at
+        // dispatch time rather than trusting whatever was true when the
+        // whisp was created.
+        if (whisp.uploadedVideoId) {
+          const media = await db
+            .select({ status: uploadedVideosTable.status })
+            .from(uploadedVideosTable)
+            .where(eq(uploadedVideosTable.id, whisp.uploadedVideoId))
+            .then((r) => r[0]);
+
+          if (!media || media.status !== "ready") {
+            await db.update(whispsTable).set({ status: "failed" }).where(eq(whispsTable.id, whisp.id));
+            void notifyUser(
+              whisp.senderId,
+              "A scheduled whisp couldn't be sent",
+              "The video you uploaded is no longer available, so this scheduled whisp wasn't delivered.",
+              `${appUrl}/whisps/${whisp.id}`,
+            );
+            continue;
+          }
+        }
+
         if (whisp.deliveryMethod === "whisper_link") {
           deliverWhisperLink(whisp, appUrl);
         } else if (whisp.deliveryMethod === "group_whisper" && whisp.groupSendId) {

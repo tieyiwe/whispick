@@ -18,7 +18,8 @@ import { ensureUser } from "../lib/ensureUser";
 import { getPublicAppUrl } from "../lib/publicUrl";
 import { deliverWhisperLink } from "../lib/deliver";
 import { categorizeWhispAsync } from "../lib/categorizeWhisp";
-import { computeExpiresAt } from "../lib/expiration";
+import { computeExpiresAt, MAX_SCHEDULE_DAYS } from "../lib/expiration";
+import { MAX_SCHEDULE_DAYS_WITH_UPLOAD } from "../lib/uploads";
 import { whisperLinkLimitFor, GHOST_BOOST_COST_USD } from "../lib/plans";
 import { createWhispLimiter } from "../lib/rateLimit";
 
@@ -99,6 +100,27 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
     uploadedVideo = media;
   }
 
+  const isGhostBoost = data.deliveryMethod === "ghost_boost";
+  const scheduledDate = data.scheduledAt ? new Date(data.scheduledAt) : null;
+  // Ghost Boost's own "pending" status already means "queued, no live ad
+  // integration" — scheduling isn't layered on top of that.
+  const isScheduled = !isGhostBoost && scheduledDate !== null && scheduledDate.getTime() > Date.now();
+
+  // Validated before any quota/credit is spent below, so a rejected schedule
+  // never costs the sender a Whisper Link or a Ghost Boost credit.
+  if (isScheduled) {
+    const maxDays = uploadedVideo ? MAX_SCHEDULE_DAYS_WITH_UPLOAD : MAX_SCHEDULE_DAYS;
+    const maxDate = new Date(Date.now() + maxDays * 24 * 60 * 60 * 1000);
+    if (scheduledDate!.getTime() > maxDate.getTime()) {
+      res.status(400).json({
+        error: uploadedVideo
+          ? `An uploaded video can only be scheduled up to ${maxDays} days out, so it doesn't expire before it's sent.`
+          : `Please schedule within ${maxDays} days.`,
+      });
+      return;
+    }
+  }
+
   if (data.deliveryMethod === "whisper_link") {
     if (!data.whisperChannel) {
       res.status(400).json({ error: "Whisper Link requires a delivery channel (email, sms, or whatsapp)" });
@@ -167,11 +189,6 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
 
   const id = randomUUID();
   const publicToken = randomUUID().replace(/-/g, "");
-  const isGhostBoost = data.deliveryMethod === "ghost_boost";
-  const scheduledDate = data.scheduledAt ? new Date(data.scheduledAt) : null;
-  // Ghost Boost's own "pending" status already means "queued, no live ad
-  // integration" — scheduling isn't layered on top of that.
-  const isScheduled = !isGhostBoost && scheduledDate !== null && scheduledDate.getTime() > Date.now();
 
   // An uploaded video is never itself dereferenced by videoUrl — playback
   // goes through /public/w/:token/media instead — but the column is NOT

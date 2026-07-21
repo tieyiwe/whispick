@@ -20,7 +20,8 @@ import { categorizeWhispsAsync } from "../lib/categorizeWhisp";
 import { groupHookLine } from "../lib/copy";
 import { whisperLinkLimitFor } from "../lib/plans";
 import { createWhispLimiter } from "../lib/rateLimit";
-import { computeExpiresAt } from "../lib/expiration";
+import { computeExpiresAt, MAX_SCHEDULE_DAYS } from "../lib/expiration";
+import { MAX_SCHEDULE_DAYS_WITH_UPLOAD } from "../lib/uploads";
 
 const router = Router();
 
@@ -343,6 +344,22 @@ router.post("/:id/send", requireAuth, createWhispLimiter, async (req, res): Prom
       return;
     }
     uploadedVideo = media;
+  }
+
+  // Validated before any quota is spent below, so a rejected schedule never
+  // costs the sender their Whisper Link allowance for this batch.
+  const scheduledDateCheck = data.scheduledAt ? new Date(data.scheduledAt) : null;
+  if (scheduledDateCheck !== null && scheduledDateCheck.getTime() > Date.now()) {
+    const maxDays = uploadedVideo ? MAX_SCHEDULE_DAYS_WITH_UPLOAD : MAX_SCHEDULE_DAYS;
+    const maxDate = new Date(Date.now() + maxDays * 24 * 60 * 60 * 1000);
+    if (scheduledDateCheck.getTime() > maxDate.getTime()) {
+      res.status(400).json({
+        error: uploadedVideo
+          ? `An uploaded video can only be scheduled up to ${maxDays} days out, so it doesn't expire before it's sent.`
+          : `Please schedule within ${maxDays} days.`,
+      });
+      return;
+    }
   }
 
   const allMembers = await db.select().from(whisperGroupMembersTable).where(eq(whisperGroupMembersTable.groupId, group.id));

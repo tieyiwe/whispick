@@ -4,6 +4,7 @@ import app from "../app";
 import { db, uploadedVideosTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { TEST_USER_HEADER } from "./setup";
+import { MAX_SCHEDULE_DAYS_WITH_UPLOAD } from "../lib/uploads";
 
 const objectStorageMock = vi.hoisted(() => ({
   uploadObject: vi.fn(async () => true),
@@ -61,6 +62,15 @@ describe("POST /api/media/upload", () => {
 
   it("requires a valid duration", async () => {
     const res = await uploadVideo(USER_A, { durationSeconds: "not-a-number" });
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects a file whose bytes don't match the declared video format", async () => {
+    const res = await request(app)
+      .post("/api/media/upload")
+      .set(asUser(USER_A))
+      .field("durationSeconds", "30")
+      .attach("video", Buffer.from("not actually a video, just text"), { filename: "clip.mp4", contentType: "video/mp4" });
     expect(res.status).toBe(400);
   });
 
@@ -157,6 +167,31 @@ describe("whisps created from an uploaded video", () => {
 
     const stream = await request(app).get(`/api/public/w/${res.body.publicToken}/media`);
     expect(stream.status).toBe(200);
+  });
+
+  it("rejects scheduling an uploaded-video whisp beyond its tighter cap", async () => {
+    const media = await uploadVideo(USER_A);
+    const tooFar = new Date(Date.now() + (MAX_SCHEDULE_DAYS_WITH_UPLOAD + 1) * 24 * 60 * 60 * 1000).toISOString();
+
+    const res = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_A))
+      .send({ deliveryMethod: "circle_drop", uploadedVideoId: media.body.id, scheduledAt: tooFar });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("allows scheduling an uploaded-video whisp within its tighter cap", async () => {
+    const media = await uploadVideo(USER_A);
+    const withinCap = new Date(Date.now() + (MAX_SCHEDULE_DAYS_WITH_UPLOAD - 1) * 24 * 60 * 60 * 1000).toISOString();
+
+    const res = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_A))
+      .send({ deliveryMethod: "circle_drop", uploadedVideoId: media.body.id, scheduledAt: withinCap });
+
+    expect(res.status).toBe(201);
+    expect(res.body.status).toBe("scheduled");
   });
 
   it("404s the public media stream once the whisp's video has expired from retention", async () => {

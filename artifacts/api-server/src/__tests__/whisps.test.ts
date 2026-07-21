@@ -188,6 +188,39 @@ describe("Scheduled sending", () => {
     expect(res.body.deliveredAt).not.toBeNull();
   });
 
+  it("rejects a schedule further out than the general max", async () => {
+    const tooFar = new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString();
+    const res = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_A))
+      .send({
+        videoUrl: "https://youtu.be/x",
+        deliveryMethod: "whisper_link",
+        whisperChannel: "email",
+        recipientEmail: "friend@example.com",
+        scheduledAt: tooFar,
+      });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("does not spend the sender's Whisper Link quota when a schedule is rejected", async () => {
+    const tooFar = new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString();
+    await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_A))
+      .send({
+        videoUrl: "https://youtu.be/x",
+        deliveryMethod: "whisper_link",
+        whisperChannel: "email",
+        recipientEmail: "friend@example.com",
+        scheduledAt: tooFar,
+      });
+
+    const user = await getUser(USER_A);
+    expect(user.whisperLinksUsed).toBe(0);
+  });
+
   it("ignores scheduledAt for Ghost Boost, which is always queued as pending", async () => {
     await request(app).get("/api/user/profile").set(asUser(USER_A));
     const user = await getUser(USER_A);

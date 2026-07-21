@@ -1,4 +1,5 @@
 import { Router } from "express";
+import type { Request, Response, NextFunction } from "express";
 import { getAuth } from "@clerk/express";
 import multer from "multer";
 import { db, uploadedVideosTable, whispsTable } from "@workspace/db";
@@ -8,22 +9,45 @@ import { requireAuth } from "../lib/auth";
 import { ensureUser } from "../lib/ensureUser";
 import { uploadObject, downloadObject, deleteObject } from "../lib/objectStorage";
 import { uploadLimiter } from "../lib/rateLimit";
+import { fieldLimitedMemoryStorage } from "../lib/fieldLimitedStorage";
 import {
   ALLOWED_UPLOAD_VIDEO_MIME_TYPES,
   MAX_UPLOAD_DURATION_SECONDS,
   MAX_UPLOAD_THUMBNAIL_BYTES,
   MAX_UPLOAD_VIDEO_BYTES,
   computeUploadExpiresAt,
+  looksLikeDeclaredVideoFormat,
 } from "../lib/uploads";
 
 const router = Router();
 
 const upload = multer({
-  storage: multer.memoryStorage(),
-  // multer applies one fileSize limit across every field in the request;
-  // the thumbnail (much smaller) is checked by hand below.
-  limits: { fileSize: MAX_UPLOAD_VIDEO_BYTES, files: 2 },
+  storage: fieldLimitedMemoryStorage({ video: MAX_UPLOAD_VIDEO_BYTES, thumbnail: MAX_UPLOAD_THUMBNAIL_BYTES }),
+  limits: { files: 2 },
 });
+
+// multer calls back with an error (rather than throwing) on a stream
+// failure — including our own storage engine's per-field size rejection —
+// so it needs to be surfaced as a clean 400 instead of falling through to
+// Express's default HTML error page.
+function uploadFields(req: Request, res: Response, next: NextFunction) {
+  upload.fields([{ name: "video", maxCount: 1 }, { name: "thumbnail", maxCount: 1 }])(req, res, (err: unknown) => {
+    if (!err) {
+      next();
+      return;
+    }
+    const message = err instanceof Error ? err.message : "Upload failed";
+    if (message.startsWith("FIELD_TOO_LARGE:video")) {
+      res.status(400).json({ error: "Video is too large" });
+      return;
+    }
+    if (message.startsWith("FIELD_TOO_LARGE:thumbnail")) {
+      res.status(400).json({ error: "Thumbnail is too large" });
+      return;
+    }
+    res.status(400).json({ error: "Upload failed" });
+  });
+}
 
 const EXTENSION_BY_MIME: Record<string, string> = {
   "video/mp4": "mp4",
@@ -55,7 +79,7 @@ router.post(
   "/upload",
   requireAuth,
   uploadLimiter,
-  upload.fields([{ name: "video", maxCount: 1 }, { name: "thumbnail", maxCount: 1 }]),
+  uploadFields,
   async (req, res): Promise<void> => {
     const { userId } = getAuth(req);
     const user = await ensureUser(userId!, req);
@@ -71,6 +95,11 @@ router.post(
 
     if (!ALLOWED_UPLOAD_VIDEO_MIME_TYPES.includes(video.mimetype as (typeof ALLOWED_UPLOAD_VIDEO_MIME_TYPES)[number])) {
       res.status(400).json({ error: "Unsupported video format. Please upload MP4, WebM, or MOV." });
+      return;
+    }
+
+    if (!looksLikeDeclaredVideoFormat(video.buffer, video.mimetype)) {
+      res.status(400).json({ error: "This file doesn't look like a valid video." });
       return;
     }
 
@@ -191,6 +220,7 @@ router.get("/:id/file", requireAuth, async (req, res): Promise<void> => {
 
   res.setHeader("Content-Type", media!.mimeType);
   res.setHeader("Content-Length", String(bytes.length));
+  res.setHeader("X-Content-Type-Options", "nosniff");
   res.send(bytes);
 });
 
@@ -214,6 +244,7 @@ router.get("/:id/thumbnail", requireAuth, async (req, res): Promise<void> => {
 
   res.setHeader("Content-Type", "image/jpeg");
   res.setHeader("Content-Length", String(bytes.length));
+  res.setHeader("X-Content-Type-Options", "nosniff");
   res.send(bytes);
 });
 
