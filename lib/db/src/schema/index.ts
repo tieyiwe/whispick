@@ -6,3 +6,4 @@ export * from "./credit_transactions";
 export * from "./circles";
 export * from "./push_subscriptions";
 export * from "./whisp_categories";
+export * from "./whisper_groups";

@@ -72,6 +72,6 @@ export async function sendWhatsApp(to: string, linkUrl: string): Promise<boolean
   );
 }
 
-export function whisperLinkSmsBody(publicUrl: string): string {
-  return `${HOOK_LINE}\n${publicUrl}\n— sent anonymously via Whispick`;
+export function whisperLinkSmsBody(publicUrl: string, hookLine: string = HOOK_LINE): string {
+  return `${hookLine}\n${publicUrl}\n— sent anonymously via Whispick`;
 }

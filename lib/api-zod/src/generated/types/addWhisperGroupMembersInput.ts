@@ -5,8 +5,8 @@
  * Whispick API — anonymous video recommendation platform
  * OpenAPI spec version: 0.1.0
  */
+import type { GroupMemberInput } from './groupMemberInput';
 
-export interface ApiError {
-  error: string;
-  code?: string;
+export interface AddWhisperGroupMembersInput {
+  members: GroupMemberInput[];
 }

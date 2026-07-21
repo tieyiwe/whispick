@@ -163,9 +163,11 @@ export function PublicWhispPage() {
           </div>
         ) : (
           <>
-            {/* Lead text — keep in sync with api-server's lib/copy.ts HOOK_LINE */}
+            {/* Lead text — keep in sync with api-server's lib/copy.ts HOOK_LINE/groupHookLine */}
             <p className="text-center text-xl font-serif text-foreground leading-snug">
-              Someone who cares about you thought you needed to see this 👀
+              {whisp.groupSize
+                ? `Someone in your circle sent this anonymously — you're one of ${whisp.groupSize} people who got it 👀`
+                : "Someone who cares about you thought you needed to see this 👀"}
             </p>
 
             {/* Video card */}

@@ -350,7 +350,8 @@ export const GetPublicWhispResponse = zod.object({
   "anonymousNote": zod.string().nullish(),
   "senderAlias": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
-  "revealRequested": zod.boolean()
+  "revealRequested": zod.boolean(),
+  "groupSize": zod.number().nullish()
 })
 
 
@@ -955,6 +956,219 @@ export const AdminGetOpportunitiesResponse = zod.object({
   "description": zod.string(),
   "severity": zod.enum(['opportunity', 'warning', 'info']),
   "metric": zod.string().nullish()
+}))
+})
+
+
+/**
+ * @summary List the current user's saved whisper groups
+ */
+export const ListWhisperGroupsResponseItem = zod.object({
+  "id": zod.string(),
+  "ownerId": zod.string(),
+  "name": zod.string(),
+  "createdAt": zod.string(),
+  "memberCount": zod.number()
+})
+export const ListWhisperGroupsResponse = zod.array(ListWhisperGroupsResponseItem)
+
+
+/**
+ * @summary Create a new whisper group
+ */
+export const CreateWhisperGroupBody = zod.object({
+  "name": zod.string()
+})
+
+export const CreateWhisperGroupResponse = zod.object({
+  "id": zod.string(),
+  "ownerId": zod.string(),
+  "name": zod.string(),
+  "createdAt": zod.string(),
+  "memberCount": zod.number()
+})
+
+
+/**
+ * @summary List past group whisper sends, aggregated per send
+ */
+export const ListGroupWhispSendsResponseItem = zod.object({
+  "groupSendId": zod.string().nullish(),
+  "whisperGroupId": zod.string().nullish(),
+  "groupName": zod.string().nullish(),
+  "videoUrl": zod.string(),
+  "videoTitle": zod.string().nullish(),
+  "videoThumbnail": zod.string().nullish(),
+  "whisperChannel": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "memberCount": zod.number(),
+  "openedCount": zod.number(),
+  "watchedCount": zod.number(),
+  "repliedCount": zod.number(),
+  "scheduledCount": zod.number()
+})
+export const ListGroupWhispSendsResponse = zod.array(ListGroupWhispSendsResponseItem)
+
+
+/**
+ * @summary Per-member breakdown of one past group whisper send
+ */
+export const GetGroupWhispSendParams = zod.object({
+  "groupSendId": zod.coerce.string()
+})
+
+export const GetGroupWhispSendResponse = zod.object({
+  "groupSendId": zod.string(),
+  "groupName": zod.string().nullish(),
+  "video": zod.object({
+  "videoUrl": zod.string(),
+  "videoTitle": zod.string().nullish(),
+  "videoThumbnail": zod.string().nullish()
+}),
+  "members": zod.array(zod.object({
+  "whispId": zod.string(),
+  "recipientEmail": zod.string().nullish(),
+  "recipientPhone": zod.string().nullish(),
+  "status": zod.string(),
+  "deliveredAt": zod.string().nullish(),
+  "openedAt": zod.string().nullish(),
+  "watchedAt": zod.string().nullish(),
+  "revealRequested": zod.boolean(),
+  "revealAccepted": zod.boolean().nullish(),
+  "replies": zod.array(zod.object({
+  "id": zod.string(),
+  "whispId": zod.string(),
+  "replyText": zod.string(),
+  "fromRecipient": zod.boolean(),
+  "videoUrl": zod.string().nullish(),
+  "videoTitle": zod.string().nullish(),
+  "videoThumbnail": zod.string().nullish(),
+  "videoEmbedUrl": zod.string().nullish(),
+  "videoPlatform": zod.string().nullish(),
+  "moodTag": zod.string().nullish(),
+  "createdAt": zod.string()
+}))
+}))
+})
+
+
+/**
+ * @summary Get a whisper group and its members
+ */
+export const GetWhisperGroupParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetWhisperGroupResponse = zod.object({
+  "id": zod.string(),
+  "ownerId": zod.string(),
+  "name": zod.string(),
+  "createdAt": zod.string(),
+  "members": zod.array(zod.object({
+  "id": zod.string(),
+  "groupId": zod.string(),
+  "name": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "createdAt": zod.string()
+}))
+})
+
+
+/**
+ * @summary Rename a whisper group
+ */
+export const RenameWhisperGroupParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const RenameWhisperGroupBody = zod.object({
+  "name": zod.string()
+})
+
+export const RenameWhisperGroupResponse = zod.object({
+  "id": zod.string(),
+  "ownerId": zod.string(),
+  "name": zod.string(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Delete a whisper group and its saved member list
+ */
+export const DeleteWhisperGroupParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const DeleteWhisperGroupResponse = zod.void()
+
+
+/**
+ * @summary Add one or more members to a whisper group (manual entry or a Contact Picker batch)
+ */
+export const AddWhisperGroupMembersParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const AddWhisperGroupMembersBody = zod.object({
+  "members": zod.array(zod.object({
+  "name": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "phone": zod.string().nullish()
+}))
+})
+
+export const AddWhisperGroupMembersResponseItem = zod.object({
+  "id": zod.string(),
+  "groupId": zod.string(),
+  "name": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+export const AddWhisperGroupMembersResponse = zod.array(AddWhisperGroupMembersResponseItem)
+
+
+/**
+ * @summary Remove a member from a whisper group
+ */
+export const RemoveWhisperGroupMemberParams = zod.object({
+  "id": zod.coerce.string(),
+  "memberId": zod.coerce.string()
+})
+
+export const RemoveWhisperGroupMemberResponse = zod.void()
+
+
+/**
+ * @summary Send a whisp to every deliverable member of a whisper group, anonymously
+ */
+export const SendGroupWhispParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const SendGroupWhispBody = zod.object({
+  "videoUrl": zod.string(),
+  "videoTitle": zod.string().nullish(),
+  "videoThumbnail": zod.string().nullish(),
+  "videoEmbedUrl": zod.string().nullish(),
+  "videoStartSeconds": zod.number().nullish(),
+  "videoPlatform": zod.string().nullish(),
+  "whisperChannel": zod.enum(['email', 'sms', 'whatsapp']),
+  "anonymousNote": zod.string().nullish(),
+  "senderAlias": zod.string().nullish(),
+  "moodTag": zod.string().nullish(),
+  "scheduledAt": zod.string().nullish()
+})
+
+export const SendGroupWhispResponse = zod.object({
+  "groupSendId": zod.string(),
+  "memberCount": zod.number(),
+  "skippedMembers": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string().nullish(),
+  "reason": zod.string()
 }))
 })
 

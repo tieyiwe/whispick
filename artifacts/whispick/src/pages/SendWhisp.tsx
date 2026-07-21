@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,7 +7,10 @@ import {
   useScrapeVideoMeta,
   useCreateWhisp,
   useListMyCircles,
+  useListWhisperGroups,
+  useSendGroupWhisp,
   getListMyCirclesQueryKey,
+  getListWhisperGroupsQueryKey,
   getGetWhispStatsQueryKey,
   getListWhispsQueryKey,
 } from "@workspace/api-client-react";
@@ -35,6 +38,8 @@ import {
   CalendarClock,
   Globe,
   Contact,
+  UsersRound,
+  Plus,
 } from "lucide-react";
 import {
   SiYoutube,
@@ -126,7 +131,7 @@ export function SendWhisp() {
   const [anonymousNote, setAnonymousNote] = useState("");
   const [senderAlias, setSenderAlias] = useState(SENDER_ALIASES[0]);
   const [customAlias, setCustomAlias] = useState("");
-  const [deliveryMethod, setDeliveryMethod] = useState<"whisper_link" | "ghost_boost" | "circle_drop">("whisper_link");
+  const [deliveryMethod, setDeliveryMethod] = useState<"whisper_link" | "ghost_boost" | "circle_drop" | "group_whisper">("whisper_link");
   const [whisperChannel, setWhisperChannel] = useState<"email" | "sms" | "whatsapp">("email");
   const [recipientEmail, setRecipientEmail] = useState("");
   const [recipientPhone, setRecipientPhone] = useState("");
@@ -134,8 +139,10 @@ export function SendWhisp() {
   const [scheduleEnabled, setScheduleEnabled] = useState(false);
   const [scheduledAtValue, setScheduledAtValue] = useState("");
   const [circleId, setCircleId] = useState<string | null>(null);
+  const [whisperGroupId, setWhisperGroupId] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
   const [sentWhispId, setSentWhispId] = useState<string | null>(null);
+  const [sentGroupSendId, setSentGroupSendId] = useState<string | null>(null);
 
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -143,9 +150,25 @@ export function SendWhisp() {
 
   const scrapeMeta = useScrapeVideoMeta();
   const createWhisp = useCreateWhisp();
+  const sendGroupWhisp = useSendGroupWhisp();
   const { data: myCircles } = useListMyCircles({
     query: { enabled: deliveryMethod === "circle_drop", queryKey: getListMyCirclesQueryKey() },
   });
+  const { data: myWhisperGroups } = useListWhisperGroups({
+    query: { enabled: deliveryMethod === "group_whisper", queryKey: getListWhisperGroupsQueryKey() },
+  });
+
+  // Deep link from a group's page ("Send a Whisp" there goes to /send?group=ID)
+  // — preselect Group Whisper + that group so the sender doesn't have to
+  // re-pick it once they reach the delivery-method step.
+  useEffect(() => {
+    const groupParam = new URLSearchParams(window.location.search).get("group");
+    if (groupParam) {
+      setDeliveryMethod("group_whisper");
+      setWhisperGroupId(groupParam);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const urlForm = useForm({ resolver: zodResolver(step1Schema), defaultValues: { videoUrl: "" } });
 
@@ -160,7 +183,16 @@ export function SendWhisp() {
           setVideoMeta(meta);
           setStep(2);
         },
-        onError: () => {
+        onError: (err: any) => {
+          const code = err?.data?.code;
+          if (code === "video_private" || code === "video_not_found") {
+            urlForm.setError("videoUrl", { type: "manual", message: err.data.error });
+            return;
+          }
+          // Any other scrape failure is inconclusive (network hiccup, a
+          // platform whose page we just couldn't parse) rather than a
+          // confirmed "the recipient can't open this" — still let the
+          // sender proceed with unknown metadata, same as before.
           setVideoMeta({ platform: "other" });
           setStep(2);
         },
@@ -171,6 +203,47 @@ export function SendWhisp() {
   async function handleSend() {
     const alias = customAlias.trim() || senderAlias;
     const isScheduling = scheduleEnabled && deliveryMethod !== "ghost_boost" && !!scheduledAtValue;
+
+    if (deliveryMethod === "group_whisper") {
+      if (!whisperGroupId) return;
+      sendGroupWhisp.mutate(
+        {
+          id: whisperGroupId,
+          data: {
+            videoUrl,
+            videoTitle: videoMeta?.title ?? null,
+            videoThumbnail: videoMeta?.thumbnail ?? null,
+            videoEmbedUrl: videoMeta?.embedUrl ?? null,
+            videoPlatform: videoMeta?.platform ?? null,
+            videoStartSeconds: parseTimestampToSeconds(startTimestamp),
+            whisperChannel,
+            anonymousNote: anonymousNote || null,
+            senderAlias: alias,
+            moodTag: moodTag,
+            scheduledAt: isScheduling ? new Date(scheduledAtValue).toISOString() : null,
+          },
+        },
+        {
+          onSuccess: (result) => {
+            setSentGroupSendId(result.groupSendId);
+            setSent(true);
+            if (result.skippedMembers.length) {
+              toast({
+                title: `${result.skippedMembers.length} member${result.skippedMembers.length > 1 ? "s" : ""} skipped`,
+                description: "They didn't have the contact info this channel needs.",
+              });
+            }
+            queryClient.invalidateQueries({ queryKey: getGetWhispStatsQueryKey() });
+            queryClient.invalidateQueries({ queryKey: getListWhispsQueryKey() });
+          },
+          onError: (err: any) => {
+            toast({ title: err?.data?.error ?? "Failed to send group whisp", variant: "destructive" });
+          },
+        }
+      );
+      return;
+    }
+
     createWhisp.mutate(
       {
         data: {
@@ -242,7 +315,10 @@ export function SendWhisp() {
             <Button
               variant="outline"
               className="rounded-full"
-              onClick={() => sentWhispId && setLocation(`/whisps/${sentWhispId}`)}
+              onClick={() => {
+                if (sentGroupSendId) setLocation(`/whisper-groups/sends/${sentGroupSendId}`);
+                else if (sentWhispId) setLocation(`/whisps/${sentWhispId}`);
+              }}
               data-testid="button-track-whisp"
             >
               Track this whisp
@@ -266,7 +342,9 @@ export function SendWhisp() {
                 setScheduleEnabled(false);
                 setScheduledAtValue("");
                 setCircleId(null);
+                setWhisperGroupId(null);
                 setSentWhispId(null);
+                setSentGroupSendId(null);
                 urlForm.reset();
               }}
               data-testid="button-send-another"
@@ -488,7 +566,7 @@ export function SendWhisp() {
                     </div>
                   </button>
 
-                  {deliveryMethod === "whisper_link" && (
+                  {(deliveryMethod === "whisper_link" || deliveryMethod === "group_whisper") && (
                     <div className="pl-2 pr-1 -mt-1 grid grid-cols-3 gap-2">
                       {WHISPER_CHANNELS.map((ch) => {
                         const Icon = ch.icon;
@@ -509,6 +587,63 @@ export function SendWhisp() {
                           </button>
                         );
                       })}
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setDeliveryMethod("group_whisper")}
+                    data-testid="delivery-group-whisper"
+                    className={`p-4 rounded-xl border text-left transition-all ${
+                      deliveryMethod === "group_whisper"
+                        ? "border-primary bg-primary/10"
+                        : "border-border/50 hover:border-border"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`p-2 rounded-xl ${deliveryMethod === "group_whisper" ? "bg-primary/20" : "bg-muted/40"}`}>
+                        <UsersRound className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-foreground">Group Whisper</p>
+                        <p className="text-sm text-muted-foreground mt-0.5">Send the same anonymous whisp to a saved group of your contacts at once</p>
+                        <p className="text-xs text-primary mt-1 font-medium">Uses Whisper Link credits, 1 per member</p>
+                      </div>
+                    </div>
+                  </button>
+
+                  {deliveryMethod === "group_whisper" && (
+                    <div className="pl-2 pr-1 -mt-1 space-y-2">
+                      <p className="text-xs font-medium text-muted-foreground">Which group?</p>
+                      {(myWhisperGroups ?? []).length === 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => setLocation("/whisper-groups")}
+                          data-testid="button-create-whisper-group"
+                          className="w-full flex items-center gap-2 p-3 rounded-xl border border-dashed border-border/60 text-sm text-muted-foreground hover:text-foreground hover:border-border transition-all"
+                        >
+                          <Plus className="w-4 h-4" /> You don't have any groups yet — create one
+                        </button>
+                      ) : (
+                        <div className="grid grid-cols-1 gap-2">
+                          {(myWhisperGroups ?? []).map((g) => (
+                            <button
+                              key={g.id}
+                              type="button"
+                              onClick={() => setWhisperGroupId(g.id)}
+                              data-testid={`whisper-group-option-${g.id}`}
+                              className={`flex items-center justify-between gap-2 p-2.5 rounded-xl border text-sm font-medium transition-all ${
+                                whisperGroupId === g.id
+                                  ? "border-primary bg-primary/10 text-foreground"
+                                  : "border-border/50 text-muted-foreground hover:border-border"
+                              }`}
+                            >
+                              <span className="flex items-center gap-2"><UsersRound className="w-4 h-4" /> {g.name}</span>
+                              <span className="text-xs text-muted-foreground">{g.memberCount} member{g.memberCount === 1 ? "" : "s"}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -632,7 +767,10 @@ export function SendWhisp() {
                   </Button>
                   <Button
                     onClick={() => setStep(deliveryMethod === "whisper_link" ? 5 : 6)}
-                    disabled={scheduleEnabled && deliveryMethod !== "ghost_boost" && !scheduledAtValue}
+                    disabled={
+                      (scheduleEnabled && deliveryMethod !== "ghost_boost" && !scheduledAtValue) ||
+                      (deliveryMethod === "group_whisper" && !whisperGroupId)
+                    }
                     className="rounded-xl"
                     data-testid="button-next-step4"
                   >
@@ -740,8 +878,8 @@ export function SendWhisp() {
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Delivery</span>
                       <span className="text-foreground capitalize">
-                        {deliveryMethod === "whisper_link"
-                          ? `Whisper Link (${WHISPER_CHANNELS.find((c) => c.key === whisperChannel)?.label})`
+                        {deliveryMethod === "whisper_link" || deliveryMethod === "group_whisper"
+                          ? `${deliveryMethod === "group_whisper" ? "Group Whisper" : "Whisper Link"} (${WHISPER_CHANNELS.find((c) => c.key === whisperChannel)?.label})`
                           : deliveryMethod.replace("_", " ")}
                       </span>
                     </div>
@@ -754,6 +892,11 @@ export function SendWhisp() {
                             : "Anyone in the Circle feed"
                           : deliveryMethod === "ghost_boost"
                           ? "No specific recipient (boosted reach)"
+                          : deliveryMethod === "group_whisper"
+                          ? (() => {
+                              const g = myWhisperGroups?.find((g) => g.id === whisperGroupId);
+                              return g ? `${g.name} (${g.memberCount} member${g.memberCount === 1 ? "" : "s"})` : "Group";
+                            })()
                           : whisperChannel === "email"
                           ? recipientEmail
                           : recipientPhone}
@@ -794,11 +937,11 @@ export function SendWhisp() {
                   </Button>
                   <Button
                     onClick={handleSend}
-                    disabled={createWhisp.isPending}
+                    disabled={createWhisp.isPending || sendGroupWhisp.isPending}
                     className="rounded-full shadow-[0_0_15px_rgba(124,92,252,0.3)] px-6"
                     data-testid="button-send-whisp"
                   >
-                    {createWhisp.isPending ? (
+                    {createWhisp.isPending || sendGroupWhisp.isPending ? (
                       <Loader2 className="w-4 h-4 animate-spin mr-2" />
                     ) : (
                       <Send className="w-4 h-4 mr-2" />

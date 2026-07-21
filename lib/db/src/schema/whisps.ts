@@ -15,9 +15,17 @@ export const whispsTable = pgTable("whisps", {
   // category tags (see lib/categorize.ts). Only ever populated for platforms
   // we can scrape captions from (currently YouTube); null otherwise.
   videoTranscript: text("video_transcript"),
-  deliveryMethod: text("delivery_method").notNull(), // 'whisper_link' | 'ghost_boost' | 'circle_drop'
-  whisperChannel: text("whisper_channel"), // 'email' | 'sms' | 'whatsapp' — only set when deliveryMethod is 'whisper_link'
+  deliveryMethod: text("delivery_method").notNull(), // 'whisper_link' | 'ghost_boost' | 'circle_drop' | 'group_whisper'
+  whisperChannel: text("whisper_channel"), // 'email' | 'sms' | 'whatsapp' — set when deliveryMethod is 'whisper_link' or 'group_whisper'
   circleId: text("circle_id"), // set for circle_drop whisps posted to a private Circle instead of the public feed
+  // A group_whisper send fans out to one whisp row per group member (each
+  // gets its own token/tracking/reply thread, same as a normal Whisper
+  // Link) — groupSendId ties all of them back together as one logical send
+  // for the sender's UI. whisperGroupId records which saved group was used,
+  // for display only; it's not re-queried for who received THIS send, since
+  // group membership can change after the fact.
+  groupSendId: text("group_send_id"),
+  whisperGroupId: text("whisper_group_id"),
   recipientEmail: text("recipient_email"),
   recipientPhone: text("recipient_phone"),
   anonymousNote: text("anonymous_note"),

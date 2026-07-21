@@ -10,6 +10,7 @@ import creditsRouter from "./credits";
 import billingRouter from "./billing";
 import linkRouter from "./link";
 import adminRouter from "./admin";
+import whisperGroupsRouter from "./whisperGroups";
 import { publicEndpointLimiter } from "../lib/rateLimit";
 
 const router: IRouter = Router();
@@ -25,5 +26,6 @@ router.use("/credits", creditsRouter);
 router.use("/billing", billingRouter);
 router.use("/l", publicEndpointLimiter, linkRouter);
 router.use("/admin", adminRouter);
+router.use("/whisper-groups", whisperGroupsRouter);
 
 export default router;

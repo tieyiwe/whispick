@@ -5,9 +5,9 @@
  * Whispick API — anonymous video recommendation platform
  * OpenAPI spec version: 0.1.0
  */
+import type { SendGroupWhispInputWhisperChannel } from './sendGroupWhispInputWhisperChannel';
 
-export interface PublicWhisp {
-  id: string;
+export interface SendGroupWhispInput {
   videoUrl: string;
   /** @nullable */
   videoTitle?: string | null;
@@ -19,13 +19,13 @@ export interface PublicWhisp {
   videoStartSeconds?: number | null;
   /** @nullable */
   videoPlatform?: string | null;
+  whisperChannel: SendGroupWhispInputWhisperChannel;
   /** @nullable */
   anonymousNote?: string | null;
   /** @nullable */
   senderAlias?: string | null;
   /** @nullable */
   moodTag?: string | null;
-  revealRequested: boolean;
   /** @nullable */
-  groupSize?: number | null;
+  scheduledAt?: string | null;
 }

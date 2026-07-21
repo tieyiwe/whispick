@@ -6,7 +6,7 @@ import {
   trackingEventsTable,
   usersTable,
 } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, count } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { z } from "zod";
 import { sendEmail, replyNotificationEmailHtml } from "../lib/email";
@@ -28,6 +28,16 @@ router.get("/w/:token", async (req, res): Promise<void> => {
     return;
   }
 
+  let groupSize: number | null = null;
+  if (whisp.deliveryMethod === "group_whisper" && whisp.groupSendId) {
+    const row = await db
+      .select({ count: count() })
+      .from(whispsTable)
+      .where(eq(whispsTable.groupSendId, whisp.groupSendId))
+      .then((r) => r[0]);
+    groupSize = row?.count ?? 1;
+  }
+
   // Return only public-safe fields
   res.json({
     id: whisp.id,
@@ -41,6 +51,7 @@ router.get("/w/:token", async (req, res): Promise<void> => {
     senderAlias: whisp.senderAlias,
     moodTag: whisp.moodTag,
     revealRequested: whisp.revealRequested,
+    groupSize,
   });
 });
 

@@ -32,9 +32,9 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
   }
 }
 
-export function whisperLinkEmailHtml(publicUrl: string): string {
+export function whisperLinkEmailHtml(publicUrl: string, hookLine: string = HOOK_LINE): string {
   return `<div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a2e;">
-    <p style="font-size: 16px;">${HOOK_LINE}</p>
+    <p style="font-size: 16px;">${hookLine}</p>
     <p>
       <a href="${publicUrl}" style="display:inline-block; padding: 12px 24px; background:#7C5CFC; color:#fff; border-radius: 999px; text-decoration:none; font-weight: 600;">
         View it

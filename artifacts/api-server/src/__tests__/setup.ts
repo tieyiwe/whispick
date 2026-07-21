@@ -14,7 +14,7 @@ vi.mock("@clerk/express", () => ({
 afterEach(async () => {
   const { pool } = await import("@workspace/db");
   await pool.query(
-    "TRUNCATE TABLE tracking_events, whisp_replies, credit_transactions, push_subscriptions, whisp_categories, whisps, circle_members, circles, users RESTART IDENTITY CASCADE",
+    "TRUNCATE TABLE tracking_events, whisp_replies, credit_transactions, push_subscriptions, whisp_categories, whisps, circle_members, circles, whisper_group_members, whisper_groups, users RESTART IDENTITY CASCADE",
   );
 });
 

@@ -1,7 +1,8 @@
 import { db } from "@workspace/db";
 import { whispsTable } from "@workspace/db";
-import { eq, and, lte } from "drizzle-orm";
+import { eq, and, lte, count } from "drizzle-orm";
 import { deliverWhisperLink } from "./deliver";
+import { groupHookLine } from "./copy";
 import { logger } from "./logger";
 
 const POLL_INTERVAL_MS = 60_000;
@@ -35,6 +36,13 @@ export function startScheduledWhispDispatcher(): void {
       for (const whisp of due) {
         if (whisp.deliveryMethod === "whisper_link") {
           deliverWhisperLink(whisp, appUrl);
+        } else if (whisp.deliveryMethod === "group_whisper" && whisp.groupSendId) {
+          const memberCountRow = await db
+            .select({ count: count() })
+            .from(whispsTable)
+            .where(eq(whispsTable.groupSendId, whisp.groupSendId))
+            .then((r) => r[0]);
+          deliverWhisperLink(whisp, appUrl, groupHookLine(memberCountRow?.count ?? 1));
         }
         await db
           .update(whispsTable)

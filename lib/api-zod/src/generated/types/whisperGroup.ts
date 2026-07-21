@@ -6,7 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface ApiError {
-  error: string;
-  code?: string;
+export interface WhisperGroup {
+  id: string;
+  ownerId: string;
+  name: string;
+  createdAt: string;
 }

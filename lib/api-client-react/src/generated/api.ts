@@ -20,6 +20,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AddWhisperGroupMembersInput,
   AdminCategoryStatsResponse,
   AdminDeliveryMethodStatsResponse,
   AdminListUsersParams,
@@ -39,6 +40,8 @@ import type {
   CircleFeedResponse,
   CreateCircleInput,
   CreditTransaction,
+  GroupWhispSendDetail,
+  GroupWhispSendSummary,
   HealthStatus,
   JoinCircleInput,
   ListCircleFeedParams,
@@ -50,6 +53,8 @@ import type {
   PushSubscriptionInput,
   RevealResponse,
   RevealResult,
+  SendGroupWhispInput,
+  SendGroupWhispResult,
   TrackingEventInput,
   TrackingResult,
   UpdateAdminUserInput,
@@ -62,7 +67,12 @@ import type {
   WhispInput,
   WhispReply,
   WhispReplyInput,
-  WhispStats
+  WhispStats,
+  WhisperGroup,
+  WhisperGroupDetail,
+  WhisperGroupMember,
+  WhisperGroupNameInput,
+  WhisperGroupSummary
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -2931,4 +2941,737 @@ export function useAdminGetOpportunities<TData = Awaited<ReturnType<typeof admin
 
 
 
+
+export const getListWhisperGroupsUrl = () => {
+
+
+
+
+  return `/api/whisper-groups`
+}
+
+/**
+ * @summary List the current user's saved whisper groups
+ */
+export const listWhisperGroups = async ( options?: RequestInit): Promise<WhisperGroupSummary[]> => {
+
+  return customFetch<WhisperGroupSummary[]>(getListWhisperGroupsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListWhisperGroupsQueryKey = () => {
+    return [
+    `/api/whisper-groups`
+    ] as const;
+    }
+
+
+export const getListWhisperGroupsQueryOptions = <TData = Awaited<ReturnType<typeof listWhisperGroups>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWhisperGroups>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListWhisperGroupsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listWhisperGroups>>> = ({ signal }) => listWhisperGroups({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listWhisperGroups>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListWhisperGroupsQueryResult = NonNullable<Awaited<ReturnType<typeof listWhisperGroups>>>
+export type ListWhisperGroupsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List the current user's saved whisper groups
+ */
+
+export function useListWhisperGroups<TData = Awaited<ReturnType<typeof listWhisperGroups>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWhisperGroups>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListWhisperGroupsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateWhisperGroupUrl = () => {
+
+
+
+
+  return `/api/whisper-groups`
+}
+
+/**
+ * @summary Create a new whisper group
+ */
+export const createWhisperGroup = async (whisperGroupNameInput: WhisperGroupNameInput, options?: RequestInit): Promise<WhisperGroupSummary> => {
+
+  return customFetch<WhisperGroupSummary>(getCreateWhisperGroupUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(whisperGroupNameInput)
+  }
+);}
+
+
+
+
+export const getCreateWhisperGroupMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createWhisperGroup>>, TError,{data: BodyType<WhisperGroupNameInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createWhisperGroup>>, TError,{data: BodyType<WhisperGroupNameInput>}, TContext> => {
+
+const mutationKey = ['createWhisperGroup'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createWhisperGroup>>, {data: BodyType<WhisperGroupNameInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createWhisperGroup(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateWhisperGroupMutationResult = NonNullable<Awaited<ReturnType<typeof createWhisperGroup>>>
+    export type CreateWhisperGroupMutationBody = BodyType<WhisperGroupNameInput>
+    export type CreateWhisperGroupMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a new whisper group
+ */
+export const useCreateWhisperGroup = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createWhisperGroup>>, TError,{data: BodyType<WhisperGroupNameInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createWhisperGroup>>,
+        TError,
+        {data: BodyType<WhisperGroupNameInput>},
+        TContext
+      > => {
+      return useMutation(getCreateWhisperGroupMutationOptions(options));
+    }
+
+export const getListGroupWhispSendsUrl = () => {
+
+
+
+
+  return `/api/whisper-groups/sends`
+}
+
+/**
+ * @summary List past group whisper sends, aggregated per send
+ */
+export const listGroupWhispSends = async ( options?: RequestInit): Promise<GroupWhispSendSummary[]> => {
+
+  return customFetch<GroupWhispSendSummary[]>(getListGroupWhispSendsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListGroupWhispSendsQueryKey = () => {
+    return [
+    `/api/whisper-groups/sends`
+    ] as const;
+    }
+
+
+export const getListGroupWhispSendsQueryOptions = <TData = Awaited<ReturnType<typeof listGroupWhispSends>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listGroupWhispSends>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListGroupWhispSendsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listGroupWhispSends>>> = ({ signal }) => listGroupWhispSends({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listGroupWhispSends>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListGroupWhispSendsQueryResult = NonNullable<Awaited<ReturnType<typeof listGroupWhispSends>>>
+export type ListGroupWhispSendsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List past group whisper sends, aggregated per send
+ */
+
+export function useListGroupWhispSends<TData = Awaited<ReturnType<typeof listGroupWhispSends>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listGroupWhispSends>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListGroupWhispSendsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetGroupWhispSendUrl = (groupSendId: string,) => {
+
+
+
+
+  return `/api/whisper-groups/sends/${groupSendId}`
+}
+
+/**
+ * @summary Per-member breakdown of one past group whisper send
+ */
+export const getGroupWhispSend = async (groupSendId: string, options?: RequestInit): Promise<GroupWhispSendDetail> => {
+
+  return customFetch<GroupWhispSendDetail>(getGetGroupWhispSendUrl(groupSendId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetGroupWhispSendQueryKey = (groupSendId: string,) => {
+    return [
+    `/api/whisper-groups/sends/${groupSendId}`
+    ] as const;
+    }
+
+
+export const getGetGroupWhispSendQueryOptions = <TData = Awaited<ReturnType<typeof getGroupWhispSend>>, TError = ErrorType<ApiError>>(groupSendId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGroupWhispSend>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetGroupWhispSendQueryKey(groupSendId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGroupWhispSend>>> = ({ signal }) => getGroupWhispSend(groupSendId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: groupSendId !== null && groupSendId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGroupWhispSend>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetGroupWhispSendQueryResult = NonNullable<Awaited<ReturnType<typeof getGroupWhispSend>>>
+export type GetGroupWhispSendQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Per-member breakdown of one past group whisper send
+ */
+
+export function useGetGroupWhispSend<TData = Awaited<ReturnType<typeof getGroupWhispSend>>, TError = ErrorType<ApiError>>(
+ groupSendId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGroupWhispSend>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetGroupWhispSendQueryOptions(groupSendId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetWhisperGroupUrl = (id: string,) => {
+
+
+
+
+  return `/api/whisper-groups/${id}`
+}
+
+/**
+ * @summary Get a whisper group and its members
+ */
+export const getWhisperGroup = async (id: string, options?: RequestInit): Promise<WhisperGroupDetail> => {
+
+  return customFetch<WhisperGroupDetail>(getGetWhisperGroupUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWhisperGroupQueryKey = (id: string,) => {
+    return [
+    `/api/whisper-groups/${id}`
+    ] as const;
+    }
+
+
+export const getGetWhisperGroupQueryOptions = <TData = Awaited<ReturnType<typeof getWhisperGroup>>, TError = ErrorType<ApiError>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWhisperGroup>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWhisperGroupQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWhisperGroup>>> = ({ signal }) => getWhisperGroup(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWhisperGroup>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWhisperGroupQueryResult = NonNullable<Awaited<ReturnType<typeof getWhisperGroup>>>
+export type GetWhisperGroupQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Get a whisper group and its members
+ */
+
+export function useGetWhisperGroup<TData = Awaited<ReturnType<typeof getWhisperGroup>>, TError = ErrorType<ApiError>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWhisperGroup>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWhisperGroupQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRenameWhisperGroupUrl = (id: string,) => {
+
+
+
+
+  return `/api/whisper-groups/${id}`
+}
+
+/**
+ * @summary Rename a whisper group
+ */
+export const renameWhisperGroup = async (id: string,
+    whisperGroupNameInput: WhisperGroupNameInput, options?: RequestInit): Promise<WhisperGroup> => {
+
+  return customFetch<WhisperGroup>(getRenameWhisperGroupUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(whisperGroupNameInput)
+  }
+);}
+
+
+
+
+export const getRenameWhisperGroupMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameWhisperGroup>>, TError,{id: string;data: BodyType<WhisperGroupNameInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof renameWhisperGroup>>, TError,{id: string;data: BodyType<WhisperGroupNameInput>}, TContext> => {
+
+const mutationKey = ['renameWhisperGroup'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof renameWhisperGroup>>, {id: string;data: BodyType<WhisperGroupNameInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  renameWhisperGroup(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RenameWhisperGroupMutationResult = NonNullable<Awaited<ReturnType<typeof renameWhisperGroup>>>
+    export type RenameWhisperGroupMutationBody = BodyType<WhisperGroupNameInput>
+    export type RenameWhisperGroupMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Rename a whisper group
+ */
+export const useRenameWhisperGroup = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameWhisperGroup>>, TError,{id: string;data: BodyType<WhisperGroupNameInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof renameWhisperGroup>>,
+        TError,
+        {id: string;data: BodyType<WhisperGroupNameInput>},
+        TContext
+      > => {
+      return useMutation(getRenameWhisperGroupMutationOptions(options));
+    }
+
+export const getDeleteWhisperGroupUrl = (id: string,) => {
+
+
+
+
+  return `/api/whisper-groups/${id}`
+}
+
+/**
+ * @summary Delete a whisper group and its saved member list
+ */
+export const deleteWhisperGroup = async (id: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteWhisperGroupUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteWhisperGroupMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteWhisperGroup>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteWhisperGroup>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteWhisperGroup'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteWhisperGroup>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteWhisperGroup(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteWhisperGroupMutationResult = NonNullable<Awaited<ReturnType<typeof deleteWhisperGroup>>>
+
+    export type DeleteWhisperGroupMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Delete a whisper group and its saved member list
+ */
+export const useDeleteWhisperGroup = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteWhisperGroup>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteWhisperGroup>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getDeleteWhisperGroupMutationOptions(options));
+    }
+
+export const getAddWhisperGroupMembersUrl = (id: string,) => {
+
+
+
+
+  return `/api/whisper-groups/${id}/members`
+}
+
+/**
+ * @summary Add one or more members to a whisper group (manual entry or a Contact Picker batch)
+ */
+export const addWhisperGroupMembers = async (id: string,
+    addWhisperGroupMembersInput: AddWhisperGroupMembersInput, options?: RequestInit): Promise<WhisperGroupMember[]> => {
+
+  return customFetch<WhisperGroupMember[]>(getAddWhisperGroupMembersUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(addWhisperGroupMembersInput)
+  }
+);}
+
+
+
+
+export const getAddWhisperGroupMembersMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addWhisperGroupMembers>>, TError,{id: string;data: BodyType<AddWhisperGroupMembersInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addWhisperGroupMembers>>, TError,{id: string;data: BodyType<AddWhisperGroupMembersInput>}, TContext> => {
+
+const mutationKey = ['addWhisperGroupMembers'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addWhisperGroupMembers>>, {id: string;data: BodyType<AddWhisperGroupMembersInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  addWhisperGroupMembers(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddWhisperGroupMembersMutationResult = NonNullable<Awaited<ReturnType<typeof addWhisperGroupMembers>>>
+    export type AddWhisperGroupMembersMutationBody = BodyType<AddWhisperGroupMembersInput>
+    export type AddWhisperGroupMembersMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Add one or more members to a whisper group (manual entry or a Contact Picker batch)
+ */
+export const useAddWhisperGroupMembers = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addWhisperGroupMembers>>, TError,{id: string;data: BodyType<AddWhisperGroupMembersInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addWhisperGroupMembers>>,
+        TError,
+        {id: string;data: BodyType<AddWhisperGroupMembersInput>},
+        TContext
+      > => {
+      return useMutation(getAddWhisperGroupMembersMutationOptions(options));
+    }
+
+export const getRemoveWhisperGroupMemberUrl = (id: string,
+    memberId: string,) => {
+
+
+
+
+  return `/api/whisper-groups/${id}/members/${memberId}`
+}
+
+/**
+ * @summary Remove a member from a whisper group
+ */
+export const removeWhisperGroupMember = async (id: string,
+    memberId: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRemoveWhisperGroupMemberUrl(id,memberId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRemoveWhisperGroupMemberMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeWhisperGroupMember>>, TError,{id: string;memberId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeWhisperGroupMember>>, TError,{id: string;memberId: string}, TContext> => {
+
+const mutationKey = ['removeWhisperGroupMember'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeWhisperGroupMember>>, {id: string;memberId: string}> = (props) => {
+          const {id,memberId} = props ?? {};
+
+          return  removeWhisperGroupMember(id,memberId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveWhisperGroupMemberMutationResult = NonNullable<Awaited<ReturnType<typeof removeWhisperGroupMember>>>
+
+    export type RemoveWhisperGroupMemberMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Remove a member from a whisper group
+ */
+export const useRemoveWhisperGroupMember = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeWhisperGroupMember>>, TError,{id: string;memberId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removeWhisperGroupMember>>,
+        TError,
+        {id: string;memberId: string},
+        TContext
+      > => {
+      return useMutation(getRemoveWhisperGroupMemberMutationOptions(options));
+    }
+
+export const getSendGroupWhispUrl = (id: string,) => {
+
+
+
+
+  return `/api/whisper-groups/${id}/send`
+}
+
+/**
+ * @summary Send a whisp to every deliverable member of a whisper group, anonymously
+ */
+export const sendGroupWhisp = async (id: string,
+    sendGroupWhispInput: SendGroupWhispInput, options?: RequestInit): Promise<SendGroupWhispResult> => {
+
+  return customFetch<SendGroupWhispResult>(getSendGroupWhispUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(sendGroupWhispInput)
+  }
+);}
+
+
+
+
+export const getSendGroupWhispMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendGroupWhisp>>, TError,{id: string;data: BodyType<SendGroupWhispInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendGroupWhisp>>, TError,{id: string;data: BodyType<SendGroupWhispInput>}, TContext> => {
+
+const mutationKey = ['sendGroupWhisp'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendGroupWhisp>>, {id: string;data: BodyType<SendGroupWhispInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  sendGroupWhisp(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendGroupWhispMutationResult = NonNullable<Awaited<ReturnType<typeof sendGroupWhisp>>>
+    export type SendGroupWhispMutationBody = BodyType<SendGroupWhispInput>
+    export type SendGroupWhispMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Send a whisp to every deliverable member of a whisper group, anonymously
+ */
+export const useSendGroupWhisp = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendGroupWhisp>>, TError,{id: string;data: BodyType<SendGroupWhispInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sendGroupWhisp>>,
+        TError,
+        {id: string;data: BodyType<SendGroupWhispInput>},
+        TContext
+      > => {
+      return useMutation(getSendGroupWhispMutationOptions(options));
+    }
 

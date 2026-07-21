@@ -45,3 +45,21 @@ export async function pickContact(): Promise<PickedContact | null> {
     return null;
   }
 }
+
+// Multi-select variant, for bulk-adding members to a Whisper Group in one
+// pick. Same no-persistent-permission caveat as pickContact — resolves to an
+// empty array on cancel or if the API throws.
+export async function pickContacts(): Promise<PickedContact[]> {
+  if (!isContactPickerSupported()) return [];
+
+  try {
+    const contacts = await navigator.contacts!.select(["name", "email", "tel"], { multiple: true });
+    return contacts.map((contact) => ({
+      name: contact.name?.[0] ?? null,
+      email: contact.email?.[0] ?? null,
+      tel: contact.tel?.[0] ?? null,
+    }));
+  } catch {
+    return [];
+  }
+}

@@ -26,6 +26,8 @@ tags:
     description: Private invite-only circles
   - name: admin
     description: App-owner admin panel — user/content management and analytics
+  - name: whisperGroups
+    description: Saved contact groups for sending one whisp to several people at once, anonymously
 paths:
   /healthz:
     get:
@@ -247,6 +249,12 @@ paths:
                 $ref: "#/components/schemas/VideoMeta"
         "400":
           description: Could not scrape URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "422":
+          description: Video is private, restricted, or no longer exists — the recipient wouldn't be able to open it
           content:
             application/json:
               schema:
@@ -849,6 +857,253 @@ paths:
               schema:
                 $ref: "#/components/schemas/AdminOpportunitiesResponse"
 
+  /whisper-groups:
+    get:
+      operationId: listWhisperGroups
+      tags: [whisperGroups]
+      summary: List the current user's saved whisper groups
+      responses:
+        "200":
+          description: Groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WhisperGroupSummary"
+    post:
+      operationId: createWhisperGroup
+      tags: [whisperGroups]
+      summary: Create a new whisper group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WhisperGroupNameInput"
+      responses:
+        "201":
+          description: Group created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhisperGroupSummary"
+
+  /whisper-groups/sends:
+    get:
+      operationId: listGroupWhispSends
+      tags: [whisperGroups]
+      summary: List past group whisper sends, aggregated per send
+      responses:
+        "200":
+          description: Group sends
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GroupWhispSendSummary"
+
+  /whisper-groups/sends/{groupSendId}:
+    get:
+      operationId: getGroupWhispSend
+      tags: [whisperGroups]
+      summary: Per-member breakdown of one past group whisper send
+      parameters:
+        - in: path
+          name: groupSendId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Group send detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupWhispSendDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /whisper-groups/{id}:
+    get:
+      operationId: getWhisperGroup
+      tags: [whisperGroups]
+      summary: Get a whisper group and its members
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Group detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhisperGroupDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    patch:
+      operationId: renameWhisperGroup
+      tags: [whisperGroups]
+      summary: Rename a whisper group
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WhisperGroupNameInput"
+      responses:
+        "200":
+          description: Renamed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhisperGroup"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      operationId: deleteWhisperGroup
+      tags: [whisperGroups]
+      summary: Delete a whisper group and its saved member list
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /whisper-groups/{id}/members:
+    post:
+      operationId: addWhisperGroupMembers
+      tags: [whisperGroups]
+      summary: Add one or more members to a whisper group (manual entry or a Contact Picker batch)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddWhisperGroupMembersInput"
+      responses:
+        "201":
+          description: Updated member list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WhisperGroupMember"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /whisper-groups/{id}/members/{memberId}:
+    delete:
+      operationId: removeWhisperGroupMember
+      tags: [whisperGroups]
+      summary: Remove a member from a whisper group
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: memberId
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Removed
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /whisper-groups/{id}/send:
+    post:
+      operationId: sendGroupWhisp
+      tags: [whisperGroups]
+      summary: Send a whisp to every deliverable member of a whisper group, anonymously
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendGroupWhispInput"
+      responses:
+        "201":
+          description: Sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SendGroupWhispResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "402":
+          description: Payment required — Whisper Link plan limit reached
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
 components:
   schemas:
     HealthStatus:
@@ -863,6 +1118,8 @@ components:
       type: object
       properties:
         error:
+          type: string
+        code:
           type: string
       required:
         - error
@@ -1131,6 +1388,8 @@ components:
           type: ["string", "null"]
         revealRequested:
           type: boolean
+        groupSize:
+          type: ["integer", "null"]
       required:
         - id
         - videoUrl
@@ -1815,3 +2074,268 @@ components:
             $ref: "#/components/schemas/AdminOpportunity"
       required:
         - insights
+
+    WhisperGroup:
+      type: object
+      properties:
+        id:
+          type: string
+        ownerId:
+          type: string
+        name:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - ownerId
+        - name
+        - createdAt
+
+    WhisperGroupSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        ownerId:
+          type: string
+        name:
+          type: string
+        createdAt:
+          type: string
+        memberCount:
+          type: integer
+      required:
+        - id
+        - ownerId
+        - name
+        - createdAt
+        - memberCount
+
+    WhisperGroupMember:
+      type: object
+      properties:
+        id:
+          type: string
+        groupId:
+          type: string
+        name:
+          type: ["string", "null"]
+        email:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - groupId
+        - createdAt
+
+    WhisperGroupDetail:
+      type: object
+      properties:
+        id:
+          type: string
+        ownerId:
+          type: string
+        name:
+          type: string
+        createdAt:
+          type: string
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/WhisperGroupMember"
+      required:
+        - id
+        - ownerId
+        - name
+        - createdAt
+        - members
+
+    WhisperGroupNameInput:
+      type: object
+      properties:
+        name:
+          type: string
+      required:
+        - name
+
+    GroupMemberInput:
+      type: object
+      properties:
+        name:
+          type: ["string", "null"]
+        email:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+
+    AddWhisperGroupMembersInput:
+      type: object
+      properties:
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/GroupMemberInput"
+      required:
+        - members
+
+    SendGroupWhispInput:
+      type: object
+      properties:
+        videoUrl:
+          type: string
+        videoTitle:
+          type: ["string", "null"]
+        videoThumbnail:
+          type: ["string", "null"]
+        videoEmbedUrl:
+          type: ["string", "null"]
+        videoStartSeconds:
+          type: ["integer", "null"]
+        videoPlatform:
+          type: ["string", "null"]
+        whisperChannel:
+          type: string
+          enum: [email, sms, whatsapp]
+        anonymousNote:
+          type: ["string", "null"]
+        senderAlias:
+          type: ["string", "null"]
+        moodTag:
+          type: ["string", "null"]
+        scheduledAt:
+          type: ["string", "null"]
+      required:
+        - videoUrl
+        - whisperChannel
+
+    SkippedGroupMember:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: ["string", "null"]
+        reason:
+          type: string
+      required:
+        - id
+        - reason
+
+    SendGroupWhispResult:
+      type: object
+      properties:
+        groupSendId:
+          type: string
+        memberCount:
+          type: integer
+        skippedMembers:
+          type: array
+          items:
+            $ref: "#/components/schemas/SkippedGroupMember"
+      required:
+        - groupSendId
+        - memberCount
+        - skippedMembers
+
+    GroupWhispSendSummary:
+      type: object
+      properties:
+        groupSendId:
+          type: ["string", "null"]
+        whisperGroupId:
+          type: ["string", "null"]
+        groupName:
+          type: ["string", "null"]
+        videoUrl:
+          type: string
+        videoTitle:
+          type: ["string", "null"]
+        videoThumbnail:
+          type: ["string", "null"]
+        whisperChannel:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        memberCount:
+          type: integer
+        openedCount:
+          type: integer
+        watchedCount:
+          type: integer
+        repliedCount:
+          type: integer
+        scheduledCount:
+          type: integer
+      required:
+        - videoUrl
+        - createdAt
+        - memberCount
+        - openedCount
+        - watchedCount
+        - repliedCount
+        - scheduledCount
+
+    GroupWhispSendMember:
+      type: object
+      properties:
+        whispId:
+          type: string
+        recipientEmail:
+          type: ["string", "null"]
+        recipientPhone:
+          type: ["string", "null"]
+        status:
+          type: string
+        deliveredAt:
+          type: ["string", "null"]
+        openedAt:
+          type: ["string", "null"]
+        watchedAt:
+          type: ["string", "null"]
+        revealRequested:
+          type: boolean
+        revealAccepted:
+          type: ["boolean", "null"]
+        replies:
+          type: array
+          items:
+            $ref: "#/components/schemas/WhispReply"
+      required:
+        - whispId
+        - status
+        - revealRequested
+        - replies
+
+    GroupWhispSendVideo:
+      type: object
+      properties:
+        videoUrl:
+          type: string
+        videoTitle:
+          type: ["string", "null"]
+        videoThumbnail:
+          type: ["string", "null"]
+      required:
+        - videoUrl
+
+    GroupWhispSendDetail:
+      type: object
+      properties:
+        groupSendId:
+          type: string
+        groupName:
+          type: ["string", "null"]
+        video:
+          $ref: "#/components/schemas/GroupWhispSendVideo"
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/GroupWhispSendMember"
+      required:
+        - groupSendId
+        - video
+        - members

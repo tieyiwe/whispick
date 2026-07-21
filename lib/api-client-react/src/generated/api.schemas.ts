@@ -11,6 +11,7 @@ export interface HealthStatus {
 
 export interface ApiError {
   error: string;
+  code?: string;
 }
 
 export interface Whisp {
@@ -186,6 +187,8 @@ export interface PublicWhisp {
   /** @nullable */
   moodTag?: string | null;
   revealRequested: boolean;
+  /** @nullable */
+  groupSize?: number | null;
 }
 
 export interface TrackingEventInput {
@@ -545,6 +548,160 @@ export interface AdminOpportunity {
 
 export interface AdminOpportunitiesResponse {
   insights: AdminOpportunity[];
+}
+
+export interface WhisperGroup {
+  id: string;
+  ownerId: string;
+  name: string;
+  createdAt: string;
+}
+
+export interface WhisperGroupSummary {
+  id: string;
+  ownerId: string;
+  name: string;
+  createdAt: string;
+  memberCount: number;
+}
+
+export interface WhisperGroupMember {
+  id: string;
+  groupId: string;
+  /** @nullable */
+  name?: string | null;
+  /** @nullable */
+  email?: string | null;
+  /** @nullable */
+  phone?: string | null;
+  createdAt: string;
+}
+
+export interface WhisperGroupDetail {
+  id: string;
+  ownerId: string;
+  name: string;
+  createdAt: string;
+  members: WhisperGroupMember[];
+}
+
+export interface WhisperGroupNameInput {
+  name: string;
+}
+
+export interface GroupMemberInput {
+  /** @nullable */
+  name?: string | null;
+  /** @nullable */
+  email?: string | null;
+  /** @nullable */
+  phone?: string | null;
+}
+
+export interface AddWhisperGroupMembersInput {
+  members: GroupMemberInput[];
+}
+
+export type SendGroupWhispInputWhisperChannel = typeof SendGroupWhispInputWhisperChannel[keyof typeof SendGroupWhispInputWhisperChannel];
+
+
+export const SendGroupWhispInputWhisperChannel = {
+  email: 'email',
+  sms: 'sms',
+  whatsapp: 'whatsapp',
+} as const;
+
+export interface SendGroupWhispInput {
+  videoUrl: string;
+  /** @nullable */
+  videoTitle?: string | null;
+  /** @nullable */
+  videoThumbnail?: string | null;
+  /** @nullable */
+  videoEmbedUrl?: string | null;
+  /** @nullable */
+  videoStartSeconds?: number | null;
+  /** @nullable */
+  videoPlatform?: string | null;
+  whisperChannel: SendGroupWhispInputWhisperChannel;
+  /** @nullable */
+  anonymousNote?: string | null;
+  /** @nullable */
+  senderAlias?: string | null;
+  /** @nullable */
+  moodTag?: string | null;
+  /** @nullable */
+  scheduledAt?: string | null;
+}
+
+export interface SkippedGroupMember {
+  id: string;
+  /** @nullable */
+  name?: string | null;
+  reason: string;
+}
+
+export interface SendGroupWhispResult {
+  groupSendId: string;
+  memberCount: number;
+  skippedMembers: SkippedGroupMember[];
+}
+
+export interface GroupWhispSendSummary {
+  /** @nullable */
+  groupSendId?: string | null;
+  /** @nullable */
+  whisperGroupId?: string | null;
+  /** @nullable */
+  groupName?: string | null;
+  videoUrl: string;
+  /** @nullable */
+  videoTitle?: string | null;
+  /** @nullable */
+  videoThumbnail?: string | null;
+  /** @nullable */
+  whisperChannel?: string | null;
+  createdAt: string;
+  memberCount: number;
+  openedCount: number;
+  watchedCount: number;
+  repliedCount: number;
+  scheduledCount: number;
+}
+
+export interface GroupWhispSendMember {
+  whispId: string;
+  /** @nullable */
+  recipientEmail?: string | null;
+  /** @nullable */
+  recipientPhone?: string | null;
+  status: string;
+  /** @nullable */
+  deliveredAt?: string | null;
+  /** @nullable */
+  openedAt?: string | null;
+  /** @nullable */
+  watchedAt?: string | null;
+  revealRequested: boolean;
+  /** @nullable */
+  revealAccepted?: boolean | null;
+  replies: WhispReply[];
+}
+
+export interface GroupWhispSendVideo {
+  videoUrl: string;
+  /** @nullable */
+  videoTitle?: string | null;
+  /** @nullable */
+  videoThumbnail?: string | null;
+}
+
+export interface GroupWhispSendDetail {
+  groupSendId: string;
+  /** @nullable */
+  groupName?: string | null;
+  video: GroupWhispSendVideo;
+  members: GroupWhispSendMember[];
 }
 
 export type ListWhispsParams = {

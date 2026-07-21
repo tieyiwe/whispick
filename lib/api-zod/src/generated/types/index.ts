@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './addWhisperGroupMembersInput';
 export * from './adminCategoryStat';
 export * from './adminCategoryStatsResponse';
 export * from './adminChannelStat';
@@ -37,6 +38,11 @@ export * from './circleFeedItem';
 export * from './circleFeedResponse';
 export * from './createCircleInput';
 export * from './creditTransaction';
+export * from './groupMemberInput';
+export * from './groupWhispSendDetail';
+export * from './groupWhispSendMember';
+export * from './groupWhispSendSummary';
+export * from './groupWhispSendVideo';
 export * from './healthStatus';
 export * from './joinCircleInput';
 export * from './listCircleFeedParams';
@@ -49,6 +55,10 @@ export * from './pushSubscriptionInput';
 export * from './pushSubscriptionKeys';
 export * from './revealResponse';
 export * from './revealResult';
+export * from './sendGroupWhispInput';
+export * from './sendGroupWhispInputWhisperChannel';
+export * from './sendGroupWhispResult';
+export * from './skippedGroupMember';
 export * from './trackingEvent';
 export * from './trackingEventInput';
 export * from './trackingResult';
@@ -62,6 +72,11 @@ export * from './videoMetaRequest';
 export * from './whisp';
 export * from './whispCategory';
 export * from './whispDetail';
+export * from './whisperGroup';
+export * from './whisperGroupDetail';
+export * from './whisperGroupMember';
+export * from './whisperGroupNameInput';
+export * from './whisperGroupSummary';
 export * from './whispInput';
 export * from './whispReply';
 export * from './whispReplyInput';
