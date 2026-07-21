@@ -20,9 +20,19 @@ const router: IRouter = Router();
 router.use(healthRouter);
 router.use("/whisps", whispsRouter);
 router.use("/video", videoRouter);
-router.use("/public", publicEndpointLimiter, publicRouter);
-router.use("/public", publicEndpointLimiter, circleRouter);
-router.use("/public", publicEndpointLimiter, subscribeRouter);
+// One limiter application per request, not one per sub-router: mounting
+// publicEndpointLimiter separately on each of these three `.use("/public", ...)`
+// registrations re-ran it (and re-incremented its counter) for every router
+// that fell through without a matching route before the request finally
+// matched — a request to /public/subscribe, for instance, passed through
+// (and got counted against) publicRouter's and circleRouter's limiter
+// instances before ever reaching subscribeRouter's own. That silently cut
+// the real quota to a fraction of the intended 60 requests / 5 minutes,
+// worse the later a router's own routes appear in this list.
+router.use("/public", publicEndpointLimiter);
+router.use("/public", publicRouter);
+router.use("/public", circleRouter);
+router.use("/public", subscribeRouter);
 router.use("/circles", circlesRouter);
 router.use("/user", userRouter);
 router.use("/credits", creditsRouter);

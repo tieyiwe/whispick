@@ -78,7 +78,7 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
       fired.halfway = true;
       onWatchEvent("watched_50pct");
     }
-    if (endSeconds && !fired.complete && currentTime >= endSeconds) {
+    if (endSeconds != null && !fired.complete && currentTime >= endSeconds) {
       fired.complete = true;
       onWatchEvent("watched_complete");
     }
@@ -107,7 +107,7 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
         if (typeof player.getCurrentTime === "function") {
           const time = player.getCurrentTime();
           checkProgress(time, player.getDuration());
-          if (endSeconds && time >= endSeconds && typeof player.pauseVideo === "function") {
+          if (endSeconds != null && time >= endSeconds && typeof player.pauseVideo === "function") {
             player.pauseVideo();
           }
         }
@@ -135,7 +135,7 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
       }
       player.on("timeupdate", ({ seconds, duration }: { seconds: number; duration: number }) => {
         checkProgress(seconds, duration);
-        if (endSeconds && seconds >= endSeconds) {
+        if (endSeconds != null && seconds >= endSeconds) {
           player?.pause().catch(() => {});
         }
       });
@@ -172,7 +172,7 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
         }}
         onTimeUpdate={(e) => {
           checkProgress(e.currentTarget.currentTime, e.currentTarget.duration);
-          if (endSeconds && e.currentTarget.currentTime >= endSeconds) e.currentTarget.pause();
+          if (endSeconds != null && e.currentTarget.currentTime >= endSeconds) e.currentTarget.pause();
         }}
         onEnded={() => {
           if (!firedRef.current.complete) {
@@ -190,7 +190,7 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
     // checkProgress/pauseVideo above still runs as a fallback (and to
     // reliably fire watched_complete) since not every platform supports a
     // native trim param the same way.
-    const endParam = endSeconds && platform === "youtube" ? `&end=${endSeconds}` : "";
+    const endParam = endSeconds != null && platform === "youtube" ? `&end=${endSeconds}` : "";
     return (
       <div className="relative aspect-video w-full bg-black">
         <iframe

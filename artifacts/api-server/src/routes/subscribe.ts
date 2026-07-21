@@ -33,7 +33,11 @@ router.post("/subscribe", async (req, res): Promise<void> => {
     return;
   }
 
-  const { email, categories } = parsed.data;
+  // Normalized so "Foo@x.com" and "foo@x.com" can never create two rows for
+  // the same inbox (which could otherwise each independently pass as a
+  // distinct match candidate in the same Ghost Boost sweep).
+  const email = parsed.data.email.trim().toLowerCase();
+  const { categories } = parsed.data;
   const existing = await db.select().from(matchSubscribersTable).where(eq(matchSubscribersTable.email, email)).then((r) => r[0]);
 
   let token: string;
@@ -41,10 +45,16 @@ router.post("/subscribe", async (req, res): Promise<void> => {
 
   if (existing) {
     token = existing.token;
-    alreadyVerified = !!existing.verifiedAt;
+    // A previously-unsubscribed address must re-confirm via a fresh click
+    // on the emailed verification link before it's match-eligible again —
+    // clearing unsubscribedAt right here, on a bare POST with no proof of
+    // inbox access, would let anyone who merely knows the address silently
+    // resubscribe it against its owner's wishes.
+    const wasUnsubscribed = !!existing.unsubscribedAt;
+    alreadyVerified = !!existing.verifiedAt && !wasUnsubscribed;
     await db
       .update(matchSubscribersTable)
-      .set({ categories, unsubscribedAt: null })
+      .set({ categories, ...(wasUnsubscribed ? { verifiedAt: null } : {}) })
       .where(eq(matchSubscribersTable.id, existing.id));
   } else {
     token = randomUUID();
@@ -75,8 +85,14 @@ router.get("/subscribe/verify", async (req, res): Promise<void> => {
     return;
   }
 
-  if (!subscriber.verifiedAt) {
-    await db.update(matchSubscribersTable).set({ verifiedAt: new Date() }).where(eq(matchSubscribersTable.id, subscriber.id));
+  // Also clears unsubscribedAt: this click is the proof-of-inbox-access
+  // that a resubscribe-after-unsubscribe needs (see POST /subscribe above),
+  // so it's the right place to actually flip the flag back.
+  if (!subscriber.verifiedAt || subscriber.unsubscribedAt) {
+    await db
+      .update(matchSubscribersTable)
+      .set({ verifiedAt: new Date(), unsubscribedAt: null })
+      .where(eq(matchSubscribersTable.id, subscriber.id));
   }
 
   res.json({ ok: true });

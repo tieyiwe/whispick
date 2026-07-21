@@ -14,7 +14,12 @@ import { z } from "zod/v4";
 // sent a video that reached them.
 export const matchSubscribersTable = pgTable("match_subscribers", {
   id: text("id").primaryKey(),
-  email: text("email").notNull(),
+  // Always stored lowercased+trimmed (routes/subscribe.ts normalizes before
+  // every read/write) so "Foo@x.com" and "foo@x.com" can't create two rows
+  // for the same inbox — without this, both rows could independently pass
+  // matching.ts's "already matched" check in the same sweep and get the
+  // same person matched (and emailed) twice for one campaign.
+  email: text("email").unique().notNull(),
   // Postgres native array — the category keys this subscriber wants (see
   // artifacts/api-server/src/lib/categorize.ts's VIDEO_CATEGORIES). Kept in
   // sync with the frontend's mirrored labels the same way HOOK_LINE is.

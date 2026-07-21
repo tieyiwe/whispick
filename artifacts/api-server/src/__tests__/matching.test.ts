@@ -17,6 +17,12 @@ vi.mock("../lib/categorizeWhisp", () => ({
   categorizeWhispsAsync: async () => {},
 }));
 
+// notifyUser is a no-op without VAPID keys (unset in tests) either way, so
+// mocking it here is the only way to distinguish "the ghost_boost fan-out
+// guard skipped the call" from "it was called and silently no-opped."
+const notifyUserMock = vi.hoisted(() => vi.fn(async () => {}));
+vi.mock("../lib/push", () => ({ notifyUser: notifyUserMock }));
+
 function asUser(userId: string) {
   return { [TEST_USER_HEADER]: userId };
 }
@@ -249,17 +255,14 @@ describe("POST /api/public/subscribe", () => {
     expect(row.categories).toEqual(["music", "comedy"]);
   });
 
-  it("updates categories and clears unsubscribedAt when an existing subscriber signs up again", async () => {
+  it("updates categories when a still-subscribed existing subscriber signs up again", async () => {
     await request(app).post("/api/public/subscribe").send({ email: "repeat@example.com", categories: ["music"] });
     const first = await db
       .select()
       .from(matchSubscribersTable)
       .where(eq(matchSubscribersTable.email, "repeat@example.com"))
       .then((r) => r[0]);
-    await db
-      .update(matchSubscribersTable)
-      .set({ verifiedAt: new Date(), unsubscribedAt: new Date() })
-      .where(eq(matchSubscribersTable.id, first.id));
+    await db.update(matchSubscribersTable).set({ verifiedAt: new Date() }).where(eq(matchSubscribersTable.id, first.id));
 
     const res = await request(app)
       .post("/api/public/subscribe")
@@ -272,8 +275,62 @@ describe("POST /api/public/subscribe", () => {
       .where(eq(matchSubscribersTable.id, first.id))
       .then((r) => r[0]);
     expect(updated.categories).toEqual(["travel"]);
-    expect(updated.unsubscribedAt).toBeNull();
     expect(updated.token).toBe(first.token);
+  });
+
+  it("normalizes email case so the same inbox can't create two rows", async () => {
+    await request(app).post("/api/public/subscribe").send({ email: "Mixed.Case@Example.com", categories: ["music"] });
+    const res = await request(app)
+      .post("/api/public/subscribe")
+      .send({ email: "mixed.case@example.com", categories: ["travel"] });
+
+    expect(res.body.alreadyVerified).toBe(false);
+    const rows = await db
+      .select()
+      .from(matchSubscribersTable)
+      .where(eq(matchSubscribersTable.email, "mixed.case@example.com"));
+    expect(rows).toHaveLength(1);
+    expect(rows[0].categories).toEqual(["travel"]);
+  });
+
+  it("does not silently resubscribe a previously-unsubscribed address, and requires re-verification", async () => {
+    // A stranger who merely knows the address must not be able to
+    // resubscribe it without proving inbox access via a fresh verify click.
+    await request(app).post("/api/public/subscribe").send({ email: "was-unsubscribed@example.com", categories: ["music"] });
+    const first = await db
+      .select()
+      .from(matchSubscribersTable)
+      .where(eq(matchSubscribersTable.email, "was-unsubscribed@example.com"))
+      .then((r) => r[0]);
+    await db
+      .update(matchSubscribersTable)
+      .set({ verifiedAt: new Date(), unsubscribedAt: new Date() })
+      .where(eq(matchSubscribersTable.id, first.id));
+
+    const res = await request(app)
+      .post("/api/public/subscribe")
+      .send({ email: "was-unsubscribed@example.com", categories: ["travel"] });
+
+    expect(res.body).toEqual({ ok: true, alreadyVerified: false });
+    const afterRepost = await db
+      .select()
+      .from(matchSubscribersTable)
+      .where(eq(matchSubscribersTable.id, first.id))
+      .then((r) => r[0]);
+    expect(afterRepost.categories).toEqual(["travel"]);
+    expect(afterRepost.unsubscribedAt).not.toBeNull(); // still unsubscribed — a bare POST can't clear this
+    expect(afterRepost.verifiedAt).toBeNull(); // must re-prove ownership
+
+    // Clicking the (re-sent) verification link is what actually reactivates it.
+    const verifyRes = await request(app).get("/api/public/subscribe/verify").query({ token: first.token });
+    expect(verifyRes.status).toBe(200);
+    const afterVerify = await db
+      .select()
+      .from(matchSubscribersTable)
+      .where(eq(matchSubscribersTable.id, first.id))
+      .then((r) => r[0]);
+    expect(afterVerify.unsubscribedAt).toBeNull();
+    expect(afterVerify.verifiedAt).not.toBeNull();
   });
 });
 
@@ -411,5 +468,66 @@ describe("Ghost Boost matched-delivery privacy", () => {
     const { campaign } = await setupCampaignWithFanOut("clerk_privacy_owner");
     const res = await request(app).get(`/api/whisps/${campaign.id}/matches`).set(asUser("clerk_privacy_intruder"));
     expect(res.status).toBe(404);
+  });
+
+  it("404s every other sender-facing lookup on a matched-subscriber fan-out row, not just GET /:id", async () => {
+    const clerkId = "clerk_privacy_endpoints";
+    const { fanOutId } = await setupCampaignWithFanOut(clerkId);
+    const auth = asUser(clerkId);
+
+    expect((await request(app).get(`/api/whisps/${fanOutId}/replies`).set(auth)).status).toBe(404);
+    expect((await request(app).post(`/api/whisps/${fanOutId}/replies`).set(auth).send({ replyText: "hi" })).status).toBe(404);
+    expect((await request(app).post(`/api/whisps/${fanOutId}/reveal`).set(auth)).status).toBe(404);
+    expect((await request(app).delete(`/api/whisps/${fanOutId}`).set(auth)).status).toBe(404);
+
+    // The fan-out row must still exist — the delete attempt above was
+    // rejected, not silently a no-op that happened to also succeed.
+    const stillThere = await db.select().from(whispsTable).where(eq(whispsTable.id, fanOutId)).then((r) => r[0]);
+    expect(stillThere).toBeDefined();
+  });
+});
+
+describe("Ghost Boost matched-delivery notification suppression", () => {
+  it("does not push/email the sender for individual open/watch/reply/appreciation events on a matched fan-out row", async () => {
+    notifyUserMock.mockClear();
+    const clerkId = "clerk_notify_ghost_boost";
+    const campaign = await createGhostBoostWhisp(clerkId);
+    const fanOutId = randomUUID();
+    const publicToken = randomUUID().replace(/-/g, "");
+    await db.insert(whispsTable).values({
+      id: fanOutId,
+      senderId: (await getUser(clerkId)).id,
+      videoUrl: "https://youtu.be/x",
+      deliveryMethod: "ghost_boost",
+      groupSendId: campaign.id,
+      recipientEmail: "matched-stranger@example.com",
+      status: "delivered",
+      publicToken,
+    });
+
+    await request(app).post(`/api/public/w/${publicToken}/track`).send({ eventType: "opened" });
+    await request(app).post(`/api/public/w/${publicToken}/track`).send({ eventType: "watched_complete" });
+    await request(app).post(`/api/public/w/${publicToken}/reply`).send({ replyText: "thanks" });
+    await request(app).post(`/api/public/w/${publicToken}/appreciation`).send({ appreciated: true });
+
+    expect(notifyUserMock).not.toHaveBeenCalled();
+  });
+
+  it("still notifies the sender for a normal whisper_link whisp (control — suppression isn't global)", async () => {
+    notifyUserMock.mockClear();
+    const clerkId = "clerk_notify_whisper_link";
+    const res = await request(app)
+      .post("/api/whisps")
+      .set(asUser(clerkId))
+      .send({
+        videoUrl: "https://youtu.be/x",
+        deliveryMethod: "whisper_link",
+        whisperChannel: "email",
+        recipientEmail: "friend@example.com",
+      });
+
+    await request(app).post(`/api/public/w/${res.body.publicToken}/track`).send({ eventType: "opened" });
+
+    expect(notifyUserMock).toHaveBeenCalled();
   });
 });

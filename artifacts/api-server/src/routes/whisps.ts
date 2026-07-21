@@ -93,8 +93,11 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
       videoTitle: z.string().nullable().optional(),
       videoThumbnail: z.string().nullable().optional(),
       videoEmbedUrl: z.string().nullable().optional(),
-      videoStartSeconds: z.number().int().min(0).nullable().optional(),
-      videoEndSeconds: z.number().int().min(0).nullable().optional(),
+      videoStartSeconds: z.number().int().min(0).max(86400).nullable().optional(),
+      // min(1), not min(0): an end trim of 0 seconds is meaningless (no
+      // clip has zero length) and the falsy 0 would otherwise slip past a
+      // `!data.videoEndSeconds` check further down as if unset.
+      videoEndSeconds: z.number().int().min(1).max(86400).nullable().optional(),
       videoPlatform: z.string().nullable().optional(),
       // A video from the sender's own Media Library instead of a pasted URL
       // — mutually exclusive with videoUrl (see the refine below).
@@ -112,9 +115,10 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
     .refine((data) => !!data.videoUrl || !!data.uploadedVideoId, {
       message: "A video URL or an uploaded video is required",
     })
-    .refine((data) => !data.videoEndSeconds || !data.videoStartSeconds || data.videoEndSeconds > data.videoStartSeconds, {
-      message: "The end time must be after the start time",
-    });
+    .refine(
+      (data) => data.videoEndSeconds == null || data.videoStartSeconds == null || data.videoEndSeconds > data.videoStartSeconds,
+      { message: "The end time must be after the start time" },
+    );
 
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) {
@@ -400,7 +404,7 @@ router.delete("/:id", requireAuth, async (req, res): Promise<void> => {
   const whisp = await db
     .select()
     .from(whispsTable)
-    .where(and(eq(whispsTable.id, req.params.id), eq(whispsTable.senderId, user.id)))
+    .where(and(eq(whispsTable.id, req.params.id), eq(whispsTable.senderId, user.id), excludeMatchDeliveries()))
     .then(r => r[0]);
 
   if (!whisp) {
@@ -423,7 +427,7 @@ router.get("/:id/replies", requireAuth, async (req, res): Promise<void> => {
   const whisp = await db
     .select()
     .from(whispsTable)
-    .where(and(eq(whispsTable.id, req.params.id), eq(whispsTable.senderId, user.id)))
+    .where(and(eq(whispsTable.id, req.params.id), eq(whispsTable.senderId, user.id), excludeMatchDeliveries()))
     .then(r => r[0]);
 
   if (!whisp) {
@@ -448,7 +452,7 @@ router.post("/:id/replies", requireAuth, async (req, res): Promise<void> => {
   const whisp = await db
     .select()
     .from(whispsTable)
-    .where(and(eq(whispsTable.id, req.params.id), eq(whispsTable.senderId, user.id)))
+    .where(and(eq(whispsTable.id, req.params.id), eq(whispsTable.senderId, user.id), excludeMatchDeliveries()))
     .then(r => r[0]);
 
   if (!whisp) {
@@ -487,7 +491,7 @@ router.post("/:id/reveal", requireAuth, async (req, res): Promise<void> => {
   const whisp = await db
     .select()
     .from(whispsTable)
-    .where(and(eq(whispsTable.id, req.params.id), eq(whispsTable.senderId, user.id)))
+    .where(and(eq(whispsTable.id, req.params.id), eq(whispsTable.senderId, user.id), excludeMatchDeliveries()))
     .then(r => r[0]);
 
   if (!whisp) {

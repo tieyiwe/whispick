@@ -294,6 +294,25 @@ describe("Video trimming", () => {
     const publicView = await request(app).get(`/api/public/w/${created.body.publicToken}`);
     expect(publicView.body.videoEndSeconds).toBe(45);
   });
+
+  it("rejects videoEndSeconds: 0 rather than silently treating it as unset", async () => {
+    // 0 is falsy in JS — a naive `!data.videoEndSeconds` check would let this
+    // slip past the end-after-start validation and get stored as a trim
+    // that's never actually enforced during playback.
+    const res = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_A))
+      .send({ videoUrl: "https://youtu.be/x", deliveryMethod: "circle_drop", videoStartSeconds: 30, videoEndSeconds: 0 });
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects an implausibly large trim value", async () => {
+    const res = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_A))
+      .send({ videoUrl: "https://youtu.be/x", deliveryMethod: "circle_drop", videoEndSeconds: 99999999999 });
+    expect(res.status).toBe(400);
+  });
 });
 
 describe("GET /api/whisps", () => {

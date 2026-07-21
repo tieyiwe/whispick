@@ -295,8 +295,11 @@ const sendSchema = z
     videoTitle: z.string().nullable().optional(),
     videoThumbnail: z.string().nullable().optional(),
     videoEmbedUrl: z.string().nullable().optional(),
-    videoStartSeconds: z.number().int().min(0).nullable().optional(),
-    videoEndSeconds: z.number().int().min(0).nullable().optional(),
+    videoStartSeconds: z.number().int().min(0).max(86400).nullable().optional(),
+    // min(1), not min(0): an end trim of 0 seconds is meaningless (no clip
+    // has zero length) and the falsy 0 would otherwise slip past a
+    // `!data.videoEndSeconds` check further down as if unset.
+    videoEndSeconds: z.number().int().min(1).max(86400).nullable().optional(),
     videoPlatform: z.string().nullable().optional(),
     uploadedVideoId: z.string().nullable().optional(),
     whisperChannel: z.enum(WHISPER_CHANNELS),
@@ -308,9 +311,10 @@ const sendSchema = z
   .refine((data) => !!data.videoUrl || !!data.uploadedVideoId, {
     message: "A video URL or an uploaded video is required",
   })
-  .refine((data) => !data.videoEndSeconds || !data.videoStartSeconds || data.videoEndSeconds > data.videoStartSeconds, {
-    message: "The end time must be after the start time",
-  });
+  .refine(
+    (data) => data.videoEndSeconds == null || data.videoStartSeconds == null || data.videoEndSeconds > data.videoStartSeconds,
+    { message: "The end time must be after the start time" },
+  );
 
 // POST /api/whisper-groups/:id/send — fans out one whisp per member that has
 // the contact info the chosen channel needs; members missing it are skipped

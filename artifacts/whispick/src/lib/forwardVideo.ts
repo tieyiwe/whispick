@@ -12,6 +12,7 @@ export interface ForwardVideo {
   videoEmbedUrl?: string | null;
   videoPlatform?: string | null;
   videoStartSeconds?: number | null;
+  videoEndSeconds?: number | null;
 }
 
 export function savePendingForward(video: ForwardVideo): void {

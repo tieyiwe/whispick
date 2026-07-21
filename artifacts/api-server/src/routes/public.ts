@@ -19,6 +19,17 @@ import { generateTakeawayAsync } from "../lib/aiTakeaway";
 
 const router = Router();
 
+// A Ghost Boost fan-out row (see lib/matching.ts) shares its senderId with
+// the campaign it belongs to, but the sender's only intended visibility into
+// it is the aggregate stats on GET /whisps/:id/matches — never a per-event
+// notification, which would both leak that one specific stranger did
+// something (breaking "anonymous both ways") and hand the sender a whisp id
+// that, if any endpoint's ownership check ever missed the exclude filter,
+// could be used to look up that one subscriber's own reply/interaction.
+function isMatchedFanout(whisp: { deliveryMethod: string; groupSendId: string | null }): boolean {
+  return whisp.deliveryMethod === "ghost_boost" && !!whisp.groupSendId;
+}
+
 // GET /api/public/w/:token — public recipient page
 router.get("/w/:token", async (req, res): Promise<void> => {
   const whisp = await db
@@ -169,13 +180,17 @@ router.post("/w/:token/track", async (req, res): Promise<void> => {
   const whispUrl = `${getPublicAppUrl(req)}/whisps/${whisp.id}`;
   if (eventType === "opened" && !whisp.openedAt) {
     await db.update(whispsTable).set({ status: "opened", openedAt: new Date() }).where(eq(whispsTable.id, whisp.id));
-    void notifyUser(whisp.senderId, "Your whisp was opened 👀", "Someone just opened the link you sent.", whispUrl);
+    if (!isMatchedFanout(whisp)) {
+      void notifyUser(whisp.senderId, "Your whisp was opened 👀", "Someone just opened the link you sent.", whispUrl);
+    }
   } else if (eventType === "watched_complete" && !whisp.watchedAt) {
     await db
       .update(whispsTable)
       .set({ watchedAt: new Date(), ...(whisp.status === "replied" ? {} : { status: "watched" }) })
       .where(eq(whispsTable.id, whisp.id));
-    void notifyUser(whisp.senderId, "They watched it 🎬", "Your whisp was watched all the way through.", whispUrl);
+    if (!isMatchedFanout(whisp)) {
+      void notifyUser(whisp.senderId, "They watched it 🎬", "Your whisp was watched all the way through.", whispUrl);
+    }
     void generateTakeawayAsync(whisp.id);
   }
 
@@ -238,16 +253,18 @@ router.post("/w/:token/reply", async (req, res): Promise<void> => {
   // Update whisp status to replied
   await db.update(whispsTable).set({ status: "replied" }).where(eq(whispsTable.id, whisp.id));
 
-  const sender = await db.select().from(usersTable).where(eq(usersTable.id, whisp.senderId)).then(r => r[0]);
-  if (sender?.email) {
-    void sendEmail(sender.email, "Someone replied to your whisp", replyNotificationEmailHtml(whisp.videoTitle));
+  if (!isMatchedFanout(whisp)) {
+    const sender = await db.select().from(usersTable).where(eq(usersTable.id, whisp.senderId)).then(r => r[0]);
+    if (sender?.email) {
+      void sendEmail(sender.email, "Someone replied to your whisp", replyNotificationEmailHtml(whisp.videoTitle));
+    }
+    void notifyUser(
+      whisp.senderId,
+      "You got a reply 💬",
+      parsed.data.videoUrl ? "Someone whisped a video back to you." : "Someone replied anonymously to your whisp.",
+      `${getPublicAppUrl(req)}/whisps/${whisp.id}`,
+    );
   }
-  void notifyUser(
-    whisp.senderId,
-    "You got a reply 💬",
-    parsed.data.videoUrl ? "Someone whisped a video back to you." : "Someone replied anonymously to your whisp.",
-    `${getPublicAppUrl(req)}/whisps/${whisp.id}`,
-  );
 
   const reply = await db.select().from(whispRepliesTable).where(eq(whispRepliesTable.id, id)).then(r => r[0]);
   res.status(201).json(reply);
@@ -290,7 +307,7 @@ router.post("/w/:token/appreciation", async (req, res): Promise<void> => {
     .set({ appreciationResponse: response, appreciationRespondedAt: new Date() })
     .where(eq(whispsTable.id, whisp.id));
 
-  if (parsed.data.appreciated && !alreadyAnswered) {
+  if (parsed.data.appreciated && !alreadyAnswered && !isMatchedFanout(whisp)) {
     const sender = await db.select().from(usersTable).where(eq(usersTable.id, whisp.senderId)).then((r) => r[0]);
     if (sender?.email) {
       void sendEmail(sender.email, "They needed to hear that 💜", appreciationNotificationEmailHtml(whisp.videoTitle));

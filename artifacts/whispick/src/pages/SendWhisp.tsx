@@ -214,6 +214,7 @@ export function SendWhisp() {
       platform: forward.videoPlatform ?? undefined,
     });
     if (forward.videoStartSeconds) setStartTimestamp(formatSecondsAsTimestamp(forward.videoStartSeconds));
+    if (forward.videoEndSeconds) setEndTimestamp(formatSecondsAsTimestamp(forward.videoEndSeconds));
     setIsForwarded(true);
     setStep(2);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -458,9 +459,11 @@ export function SendWhisp() {
     ? null
     : parsedEndSeconds === null
       ? "Invalid time format"
-      : parsedStartSeconds !== null && parsedEndSeconds <= parsedStartSeconds
-        ? "End time must be after the start time"
-        : null;
+      : parsedEndSeconds <= 0
+        ? "End time must be greater than 0:00"
+        : parsedStartSeconds !== null && parsedEndSeconds <= parsedStartSeconds
+          ? "End time must be after the start time"
+          : null;
 
   return (
     <AppLayout>

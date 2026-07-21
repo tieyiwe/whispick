@@ -148,6 +148,7 @@ export function PublicWhispPage() {
       videoEmbedUrl: whisp.videoEmbedUrl,
       videoPlatform: whisp.videoPlatform,
       videoStartSeconds: whisp.videoStartSeconds,
+      videoEndSeconds: whisp.videoEndSeconds,
     });
     setLocation(isSignedIn ? "/send" : "/sign-up");
   }
