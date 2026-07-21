@@ -366,6 +366,49 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
 
+  /public/w/{token}/remind-me:
+    post:
+      operationId: requestWhispReminder
+      tags: [public]
+      summary: Recipient schedules a "remind me later" nudge (max 2 total, must land before expiry)
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RemindMeInput"
+      responses:
+        "200":
+          description: Reminder scheduled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemindMeResult"
+        "400":
+          description: Reminder not available (expired, out of reminders, or time out of range)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "410":
+          description: Whisp has expired
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /user/profile:
     get:
       operationId: getUserProfile
@@ -1427,10 +1470,18 @@ components:
           type: ["integer", "null"]
         appreciationResponse:
           type: ["string", "null"]
+        expiresAt:
+          type: ["string", "null"]
+          format: date-time
+        reminderCount:
+          type: integer
+        expired:
+          type: boolean
       required:
         - id
         - videoUrl
         - revealRequested
+        - expired
 
     TrackingEvent:
       type: object
@@ -2397,3 +2448,28 @@ components:
       required:
         - ok
         - appreciationResponse
+
+    RemindMeInput:
+      type: object
+      properties:
+        minutes:
+          type: integer
+          description: Minutes from now to send the reminder
+      required:
+        - minutes
+
+    RemindMeResult:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        nextReminderAt:
+          type: string
+          format: date-time
+        isFinal:
+          type: boolean
+          description: True if this will be the recipient's last available reminder
+      required:
+        - ok
+        - nextReminderAt
+        - isFinal

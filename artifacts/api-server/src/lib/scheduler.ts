@@ -3,6 +3,7 @@ import { whispsTable } from "@workspace/db";
 import { eq, and, lte, count } from "drizzle-orm";
 import { deliverWhisperLink } from "./deliver";
 import { groupHookLine } from "./copy";
+import { computeExpiresAt } from "./expiration";
 import { logger } from "./logger";
 
 const POLL_INTERVAL_MS = 60_000;
@@ -46,7 +47,7 @@ export function startScheduledWhispDispatcher(): void {
         }
         await db
           .update(whispsTable)
-          .set({ status: "delivered", deliveredAt: new Date() })
+          .set({ status: "delivered", deliveredAt: new Date(), expiresAt: computeExpiresAt() })
           .where(eq(whispsTable.id, whisp.id));
       }
 

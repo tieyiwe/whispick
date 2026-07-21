@@ -53,6 +53,8 @@ import type {
   PushPublicKeyResponse,
   PushSubscriptionDeleteInput,
   PushSubscriptionInput,
+  RemindMeInput,
+  RemindMeResult,
   RevealResponse,
   RevealResult,
   SendGroupWhispInput,
@@ -1206,6 +1208,77 @@ export const useSubmitAppreciation = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getSubmitAppreciationMutationOptions(options));
+    }
+
+export const getRequestWhispReminderUrl = (token: string,) => {
+
+
+
+
+  return `/api/public/w/${token}/remind-me`
+}
+
+/**
+ * @summary Recipient schedules a "remind me later" nudge (max 2 total, must land before expiry)
+ */
+export const requestWhispReminder = async (token: string,
+    remindMeInput: RemindMeInput, options?: RequestInit): Promise<RemindMeResult> => {
+
+  return customFetch<RemindMeResult>(getRequestWhispReminderUrl(token),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(remindMeInput)
+  }
+);}
+
+
+
+
+export const getRequestWhispReminderMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestWhispReminder>>, TError,{token: string;data: BodyType<RemindMeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestWhispReminder>>, TError,{token: string;data: BodyType<RemindMeInput>}, TContext> => {
+
+const mutationKey = ['requestWhispReminder'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestWhispReminder>>, {token: string;data: BodyType<RemindMeInput>}> = (props) => {
+          const {token,data} = props ?? {};
+
+          return  requestWhispReminder(token,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestWhispReminderMutationResult = NonNullable<Awaited<ReturnType<typeof requestWhispReminder>>>
+    export type RequestWhispReminderMutationBody = BodyType<RemindMeInput>
+    export type RequestWhispReminderMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Recipient schedules a "remind me later" nudge (max 2 total, must land before expiry)
+ */
+export const useRequestWhispReminder = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestWhispReminder>>, TError,{token: string;data: BodyType<RemindMeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestWhispReminder>>,
+        TError,
+        {token: string;data: BodyType<RemindMeInput>},
+        TContext
+      > => {
+      return useMutation(getRequestWhispReminderMutationOptions(options));
     }
 
 export const getGetUserProfileUrl = () => {

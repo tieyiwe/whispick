@@ -45,6 +45,17 @@ export const whispsTable = pgTable("whisps", {
   // notifies the sender (see lib/push.ts, routes/public.ts).
   appreciationResponse: text("appreciation_response"),
   appreciationRespondedAt: timestamp("appreciation_responded_at", { withTimezone: true }),
+  // Urgency framing for whisper_link/group_whisper deliveries only (no
+  // specific recipient to notify for circle_drop/ghost_boost, so those stay
+  // null). Set at actual delivery time, not creation time, so a scheduled
+  // whisp's countdown starts when it's really sent. Reminders re-notify the
+  // recipient over the same channel before expiresAt, capped at
+  // MAX_REMINDERS (see lib/expiration.ts) — they don't push the deadline
+  // back, only re-surface it.
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  reminderCount: integer("reminder_count").notNull().default(0),
+  nextReminderAt: timestamp("next_reminder_at", { withTimezone: true }),
+  lastReminderAt: timestamp("last_reminder_at", { withTimezone: true }),
   boostSpendUsd: numeric("boost_spend_usd", { precision: 6, scale: 2 }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

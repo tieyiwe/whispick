@@ -55,6 +55,8 @@ export * from './pushPublicKeyResponse';
 export * from './pushSubscriptionDeleteInput';
 export * from './pushSubscriptionInput';
 export * from './pushSubscriptionKeys';
+export * from './remindMeInput';
+export * from './remindMeResult';
 export * from './revealResponse';
 export * from './revealResult';
 export * from './sendGroupWhispInput';

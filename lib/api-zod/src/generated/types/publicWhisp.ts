@@ -30,4 +30,8 @@ export interface PublicWhisp {
   groupSize?: number | null;
   /** @nullable */
   appreciationResponse?: string | null;
+  /** @nullable */
+  expiresAt?: Date | null;
+  reminderCount?: number;
+  expired: boolean;
 }

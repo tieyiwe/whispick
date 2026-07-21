@@ -17,6 +17,7 @@ import { ensureUser } from "../lib/ensureUser";
 import { getPublicAppUrl } from "../lib/publicUrl";
 import { deliverWhisperLink } from "../lib/deliver";
 import { categorizeWhispAsync } from "../lib/categorizeWhisp";
+import { computeExpiresAt } from "../lib/expiration";
 import { whisperLinkLimitFor, GHOST_BOOST_COST_USD } from "../lib/plans";
 import { createWhispLimiter } from "../lib/rateLimit";
 
@@ -171,6 +172,7 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
     publicToken,
     scheduledAt: scheduledDate,
     deliveredAt: isGhostBoost || isScheduled ? null : new Date(),
+    expiresAt: data.deliveryMethod === "whisper_link" && !isScheduled ? computeExpiresAt() : null,
     boostSpendUsd: isGhostBoost ? String(GHOST_BOOST_COST_USD) : null,
   });
 

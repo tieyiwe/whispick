@@ -362,7 +362,10 @@ export const GetPublicWhispResponse = zod.object({
   "moodTag": zod.string().nullish(),
   "revealRequested": zod.boolean(),
   "groupSize": zod.number().nullish(),
-  "appreciationResponse": zod.string().nullish()
+  "appreciationResponse": zod.string().nullish(),
+  "expiresAt": zod.coerce.date().nullish(),
+  "reminderCount": zod.number().optional(),
+  "expired": zod.boolean()
 })
 
 
@@ -428,6 +431,24 @@ export const SubmitAppreciationBody = zod.object({
 export const SubmitAppreciationResponse = zod.object({
   "ok": zod.boolean(),
   "appreciationResponse": zod.string()
+})
+
+
+/**
+ * @summary Recipient schedules a "remind me later" nudge (max 2 total, must land before expiry)
+ */
+export const RequestWhispReminderParams = zod.object({
+  "token": zod.coerce.string()
+})
+
+export const RequestWhispReminderBody = zod.object({
+  "minutes": zod.number().describe('Minutes from now to send the reminder')
+})
+
+export const RequestWhispReminderResponse = zod.object({
+  "ok": zod.boolean(),
+  "nextReminderAt": zod.coerce.date(),
+  "isFinal": zod.boolean().describe('True if this will be the recipient\'s last available reminder')
 })
 
 

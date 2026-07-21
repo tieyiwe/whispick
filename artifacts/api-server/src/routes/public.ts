@@ -12,6 +12,7 @@ import { z } from "zod";
 import { sendEmail, replyNotificationEmailHtml, appreciationNotificationEmailHtml } from "../lib/email";
 import { notifyUser } from "../lib/push";
 import { getPublicAppUrl } from "../lib/publicUrl";
+import { isExpired, MAX_REMINDERS } from "../lib/expiration";
 
 const router = Router();
 
@@ -53,6 +54,9 @@ router.get("/w/:token", async (req, res): Promise<void> => {
     revealRequested: whisp.revealRequested,
     groupSize,
     appreciationResponse: whisp.appreciationResponse,
+    expiresAt: whisp.expiresAt,
+    reminderCount: whisp.reminderCount,
+    expired: isExpired(whisp.expiresAt),
   });
 });
 
@@ -73,6 +77,11 @@ router.post("/w/:token/track", async (req, res): Promise<void> => {
 
   if (!whisp) {
     res.json({ ok: true }); // Silent success even if not found
+    return;
+  }
+
+  if (isExpired(whisp.expiresAt)) {
+    res.json({ ok: true }); // Silent success — expired whisp shouldn't move status or notify
     return;
   }
 
@@ -141,6 +150,11 @@ router.post("/w/:token/reply", async (req, res): Promise<void> => {
     return;
   }
 
+  if (isExpired(whisp.expiresAt)) {
+    res.status(410).json({ error: "This whisp has expired" });
+    return;
+  }
+
   const id = randomUUID();
   await db.insert(whispRepliesTable).values({
     id,
@@ -197,6 +211,11 @@ router.post("/w/:token/appreciation", async (req, res): Promise<void> => {
     return;
   }
 
+  if (isExpired(whisp.expiresAt)) {
+    res.status(410).json({ error: "This whisp has expired" });
+    return;
+  }
+
   const alreadyAnswered = whisp.appreciationResponse !== null;
   const response = parsed.data.appreciated ? "yes" : "no";
 
@@ -219,6 +238,56 @@ router.post("/w/:token/appreciation", async (req, res): Promise<void> => {
   }
 
   res.json({ ok: true, appreciationResponse: response });
+});
+
+// POST /api/public/w/:token/remind-me — recipient asks to be re-notified
+// later, up to MAX_REMINDERS times, no later than the whisp's expiresAt.
+router.post("/w/:token/remind-me", async (req, res): Promise<void> => {
+  const parsed = z.object({ minutes: z.number().int().positive() }).safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request" });
+    return;
+  }
+
+  const whisp = await db
+    .select()
+    .from(whispsTable)
+    .where(eq(whispsTable.publicToken, req.params.token))
+    .then((r) => r[0]);
+
+  if (!whisp) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+
+  if (!whisp.expiresAt) {
+    res.status(400).json({ error: "Reminders aren't available for this whisp" });
+    return;
+  }
+
+  if (isExpired(whisp.expiresAt)) {
+    res.status(410).json({ error: "This whisp has expired" });
+    return;
+  }
+
+  if (whisp.reminderCount >= MAX_REMINDERS) {
+    res.status(400).json({ error: "No more reminders available for this whisp" });
+    return;
+  }
+
+  const proposedTime = new Date(Date.now() + parsed.data.minutes * 60 * 1000);
+  if (proposedTime.getTime() >= new Date(whisp.expiresAt).getTime()) {
+    res.status(400).json({ error: "That reminder time is after this whisp expires" });
+    return;
+  }
+
+  await db.update(whispsTable).set({ nextReminderAt: proposedTime }).where(eq(whispsTable.id, whisp.id));
+
+  res.json({
+    ok: true,
+    nextReminderAt: proposedTime,
+    isFinal: whisp.reminderCount + 1 >= MAX_REMINDERS,
+  });
 });
 
 export default router;

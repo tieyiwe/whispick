@@ -1,5 +1,5 @@
 import { useParams } from "wouter";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   useGetPublicWhisp,
   useTrackWhispEvent,
@@ -7,19 +7,22 @@ import {
   useRespondReveal,
   useScrapeVideoMeta,
   useSubmitAppreciation,
+  useRequestWhispReminder,
   getGetPublicWhispQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { formatDistanceToNowStrict } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MoodTag, MOOD_CONFIG } from "@/components/shared/MoodTag";
 import { useToast } from "@/hooks/use-toast";
-import { Send, Check, Loader2, Video, X, Link2, HeartHandshake } from "lucide-react";
+import { Send, Check, Loader2, Video, X, Link2, HeartHandshake, Clock, BellRing, Sparkles } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { VideoPlayer } from "@/components/shared/VideoPlayer";
 import { QUICK_REPLIES } from "@/lib/quickReplies";
+import { REMINDER_PRESETS, MAX_REMINDERS } from "@/lib/reminderPresets";
 
 function WhispickLogoMark() {
   return (
@@ -39,6 +42,9 @@ export function PublicWhispPage() {
   const [hasTrackedOpen, setHasTrackedOpen] = useState(false);
   const [revealResponse, setRevealResponse] = useState<"accepted" | "declined" | null>(null);
   const [localAppreciation, setLocalAppreciation] = useState<"yes" | "no" | null>(null);
+  const [showReminderPicker, setShowReminderPicker] = useState(false);
+  const [reminderScheduled, setReminderScheduled] = useState<{ nextReminderAt: string; isFinal: boolean } | null>(null);
+  const [now, setNow] = useState(() => Date.now());
   const [showVideoReply, setShowVideoReply] = useState(false);
   const [replyVideoUrl, setReplyVideoUrl] = useState("");
   const [replyVideoMeta, setReplyVideoMeta] = useState<{
@@ -60,6 +66,26 @@ export function PublicWhispPage() {
   const respondReveal = useRespondReveal();
   const scrapeReplyVideo = useScrapeVideoMeta();
   const submitAppreciation = useSubmitAppreciation();
+  const requestReminder = useRequestWhispReminder();
+
+  // Keep the countdown fresh without refetching the whisp itself.
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  function handleRemindMe(minutes: number) {
+    requestReminder.mutate(
+      { token: token!, data: { minutes } },
+      {
+        onSuccess: (result) => {
+          setReminderScheduled({ nextReminderAt: result.nextReminderAt, isFinal: result.isFinal });
+          setShowReminderPicker(false);
+        },
+        onError: () => toast({ title: "Couldn't schedule that reminder", variant: "destructive" }),
+      }
+    );
+  }
 
   function handleAppreciation(appreciated: boolean) {
     submitAppreciation.mutate(
@@ -137,6 +163,15 @@ export function PublicWhispPage() {
   const moodColor = (whisp?.moodTag && MOOD_CONFIG[whisp.moodTag]?.color) || "#7C5CFC";
   const appreciationResponse = localAppreciation ?? whisp?.appreciationResponse ?? null;
 
+  const expired = whisp?.expired ?? false;
+  const expiresAtMs = whisp?.expiresAt ? new Date(whisp.expiresAt).getTime() : null;
+  const remainingMs = expiresAtMs ? expiresAtMs - now : null;
+  const remindersUsedUp = (whisp?.reminderCount ?? 0) >= MAX_REMINDERS;
+  const canRemind = !!expiresAtMs && !expired && !reminderScheduled && !remindersUsedUp;
+  const availablePresets = expiresAtMs
+    ? REMINDER_PRESETS.filter((p) => now + p.minutes * 60_000 < expiresAtMs)
+    : [];
+
   return (
     <div className="min-h-[100dvh] bg-background flex flex-col relative overflow-hidden">
       {/* Ambient background, tinted by the whisp's mood */}
@@ -159,7 +194,7 @@ export function PublicWhispPage() {
           href="/sign-up"
           className="text-xs text-muted-foreground hover:text-primary transition-colors py-2"
         >
-          Create your own whisp
+          Become a Whisperer
         </a>
       </header>
 
@@ -183,6 +218,29 @@ export function PublicWhispPage() {
                 ? `Someone in your circle sent this anonymously — you're one of ${whisp.groupSize} people who got it 👀`
                 : "Someone who cares about you thought you needed to see this 👀"}
             </p>
+
+            {expired ? (
+              <div className="rounded-2xl bg-card border border-border/50 p-8 text-center space-y-3">
+                <div className="w-12 h-12 rounded-full bg-muted/60 flex items-center justify-center mx-auto">
+                  <Clock className="w-6 h-6 text-muted-foreground" />
+                </div>
+                <p className="font-medium text-foreground">This whisp has expired</p>
+                <p className="text-sm text-muted-foreground">
+                  Whoever sent it can always send you a new one.
+                </p>
+              </div>
+            ) : (
+              <>
+            {remainingMs !== null && remainingMs > 0 && (
+              <div
+                className="flex items-center justify-center gap-1.5 text-xs font-medium rounded-full py-2 px-4 mx-auto w-fit"
+                style={{ backgroundColor: `${moodColor}1f`, color: moodColor }}
+                data-testid="text-expiry-countdown"
+              >
+                <Clock className="w-3.5 h-3.5" />
+                Expires in {formatDistanceToNowStrict(expiresAtMs!)}
+              </div>
+            )}
 
             {/* Video card */}
             <div className="rounded-2xl overflow-hidden bg-card border border-border/50 glow-card">
@@ -420,6 +478,60 @@ export function PublicWhispPage() {
                 )}
               </div>
             )}
+
+            {/* Remind me later */}
+            {reminderScheduled ? (
+              <p className="text-center text-xs text-muted-foreground flex items-center justify-center gap-1.5">
+                <BellRing className="w-3.5 h-3.5 text-primary" />
+                {reminderScheduled.isFinal
+                  ? "We'll remind you one last time — after that this whisp won't be available anymore."
+                  : "We'll remind you before this whisp expires."}
+              </p>
+            ) : canRemind && availablePresets.length > 0 ? (
+              showReminderPicker ? (
+                <div className="bg-card border border-border/50 rounded-2xl p-4 text-center space-y-2">
+                  <p className="text-sm font-medium text-foreground">When should we remind you?</p>
+                  <div className="flex flex-wrap gap-2 justify-center pt-1">
+                    {availablePresets.map((preset) => (
+                      <button
+                        key={preset.key}
+                        type="button"
+                        onClick={() => handleRemindMe(preset.minutes)}
+                        disabled={requestReminder.isPending}
+                        data-testid={`button-remind-${preset.key}`}
+                        className="px-4 py-2 rounded-full border border-border/50 bg-background text-sm text-foreground hover:border-primary/50 hover:bg-primary/10 active:scale-95 transition-all disabled:opacity-50"
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowReminderPicker(true)}
+                  data-testid="button-show-remind-picker"
+                  className="mx-auto flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
+                >
+                  <BellRing className="w-3.5 h-3.5" /> Remind me about this later
+                </button>
+              )
+            ) : null}
+              </>
+            )}
+
+            {/* Signup CTA — recipients never need an account to watch or reply,
+                this is just an invite to send their own. */}
+            <a
+              href="/sign-up"
+              className="flex items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors p-4"
+            >
+              <div>
+                <p className="text-sm font-medium text-foreground">Have a video someone needs to see?</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Become a Whisperer — send your own, anonymously.</p>
+              </div>
+              <Sparkles className="w-5 h-5 text-primary shrink-0" />
+            </a>
           </>
         )}
       </main>

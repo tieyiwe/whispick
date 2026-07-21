@@ -10,3 +10,15 @@ export const HOOK_LINE = "Someone who cares about you thought you needed to see 
 export function groupHookLine(memberCount: number): string {
   return `Someone in your circle sent this anonymously — you're one of ${memberCount} people who got it 👀`;
 }
+
+// Re-notification copy for a "remind me later" follow-up. `isFinal` marks
+// the last reminder a whisp is allowed (see lib/expiration.ts's
+// MAX_REMINDERS) — that one has to say so explicitly and give the real
+// deadline, since there's no reminder after it.
+export function reminderHookLine(isFinal: boolean, expiresAt: Date): string {
+  if (isFinal) {
+    const when = expiresAt.toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" });
+    return `Last reminder — the anonymous whisp you were sent won't be available after ${when}.`;
+  }
+  return "Don't forget — you have an anonymous whisp waiting for you 👀";
+}

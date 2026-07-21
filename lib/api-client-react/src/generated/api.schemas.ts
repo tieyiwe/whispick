@@ -195,6 +195,10 @@ export interface PublicWhisp {
   groupSize?: number | null;
   /** @nullable */
   appreciationResponse?: string | null;
+  /** @nullable */
+  expiresAt?: string | null;
+  reminderCount?: number;
+  expired: boolean;
 }
 
 export interface TrackingEventInput {
@@ -719,6 +723,18 @@ export interface AppreciationInput {
 export interface AppreciationResult {
   ok: boolean;
   appreciationResponse: string;
+}
+
+export interface RemindMeInput {
+  /** Minutes from now to send the reminder */
+  minutes: number;
+}
+
+export interface RemindMeResult {
+  ok: boolean;
+  nextReminderAt: string;
+  /** True if this will be the recipient's last available reminder */
+  isFinal: boolean;
 }
 
 export type ListWhispsParams = {

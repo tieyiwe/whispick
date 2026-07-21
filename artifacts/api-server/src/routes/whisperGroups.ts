@@ -19,6 +19,7 @@ import { categorizeWhispsAsync } from "../lib/categorizeWhisp";
 import { groupHookLine } from "../lib/copy";
 import { whisperLinkLimitFor } from "../lib/plans";
 import { createWhispLimiter } from "../lib/rateLimit";
+import { computeExpiresAt } from "../lib/expiration";
 
 const router = Router();
 
@@ -390,6 +391,7 @@ router.post("/:id/send", requireAuth, createWhispLimiter, async (req, res): Prom
       publicToken,
       scheduledAt: scheduledDate,
       deliveredAt: isScheduled ? null : new Date(),
+      expiresAt: isScheduled ? null : computeExpiresAt(),
     });
 
     if (!isScheduled) {
