@@ -23,6 +23,7 @@ import type {
   AddWhisperGroupMembersInput,
   AdminCategoryStatsResponse,
   AdminDeliveryMethodStatsResponse,
+  AdminListSuggestionsParams,
   AdminListUsersParams,
   AdminListWhispsParams,
   AdminLocationStatsResponse,
@@ -41,6 +42,7 @@ import type {
   Circle,
   CircleFeedResponse,
   CreateCircleInput,
+  CreateSuggestionInput,
   CreditTransaction,
   DeleteMedia200,
   GroupWhispSendDetail,
@@ -48,6 +50,7 @@ import type {
   HealthStatus,
   JoinCircleInput,
   ListCircleFeedParams,
+  ListSuggestionsParams,
   ListWhispsParams,
   MatchStats,
   NoteSuggestionsInput,
@@ -65,11 +68,15 @@ import type {
   SendGroupWhispResult,
   SubscribeInput,
   SubscribeResult,
+  SuggestedVideo,
+  SuggestionGalleryResponse,
+  SuggestionListResponse,
   TrackingEventInput,
   TrackingResult,
   UnsubscribeFromMatching200,
   UnsubscribeFromMatchingParams,
   UpdateAdminUserInput,
+  UpdateSuggestionInput,
   UploadedVideo,
   UserProfile,
   UserProfileUpdate,
@@ -3087,6 +3094,539 @@ export function useAdminGetOpportunities<TData = Awaited<ReturnType<typeof admin
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getAdminGetOpportunitiesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminListSuggestionsUrl = (params?: AdminListSuggestionsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/suggestions?${stringifiedParams}` : `/api/admin/suggestions`
+}
+
+/**
+ * @summary List Suggestions Library videos, including pending AI-agent finds (admin only)
+ */
+export const adminListSuggestions = async (params?: AdminListSuggestionsParams, options?: RequestInit): Promise<SuggestionListResponse> => {
+
+  return customFetch<SuggestionListResponse>(getAdminListSuggestionsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListSuggestionsQueryKey = (params?: AdminListSuggestionsParams,) => {
+    return [
+    `/api/admin/suggestions`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getAdminListSuggestionsQueryOptions = <TData = Awaited<ReturnType<typeof adminListSuggestions>>, TError = ErrorType<ApiError>>(params?: AdminListSuggestionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListSuggestions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListSuggestionsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListSuggestions>>> = ({ signal }) => adminListSuggestions(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListSuggestions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListSuggestionsQueryResult = NonNullable<Awaited<ReturnType<typeof adminListSuggestions>>>
+export type AdminListSuggestionsQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary List Suggestions Library videos, including pending AI-agent finds (admin only)
+ */
+
+export function useAdminListSuggestions<TData = Awaited<ReturnType<typeof adminListSuggestions>>, TError = ErrorType<ApiError>>(
+ params?: AdminListSuggestionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListSuggestions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListSuggestionsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminCreateSuggestionUrl = () => {
+
+
+
+
+  return `/api/admin/suggestions`
+}
+
+/**
+ * @summary Add a video to the Suggestions Library (admin only)
+ */
+export const adminCreateSuggestion = async (createSuggestionInput: CreateSuggestionInput, options?: RequestInit): Promise<SuggestedVideo> => {
+
+  return customFetch<SuggestedVideo>(getAdminCreateSuggestionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createSuggestionInput)
+  }
+);}
+
+
+
+
+export const getAdminCreateSuggestionMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateSuggestion>>, TError,{data: BodyType<CreateSuggestionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminCreateSuggestion>>, TError,{data: BodyType<CreateSuggestionInput>}, TContext> => {
+
+const mutationKey = ['adminCreateSuggestion'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminCreateSuggestion>>, {data: BodyType<CreateSuggestionInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminCreateSuggestion(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminCreateSuggestionMutationResult = NonNullable<Awaited<ReturnType<typeof adminCreateSuggestion>>>
+    export type AdminCreateSuggestionMutationBody = BodyType<CreateSuggestionInput>
+    export type AdminCreateSuggestionMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Add a video to the Suggestions Library (admin only)
+ */
+export const useAdminCreateSuggestion = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateSuggestion>>, TError,{data: BodyType<CreateSuggestionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminCreateSuggestion>>,
+        TError,
+        {data: BodyType<CreateSuggestionInput>},
+        TContext
+      > => {
+      return useMutation(getAdminCreateSuggestionMutationOptions(options));
+    }
+
+export const getAdminGetSuggestionUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/suggestions/${id}`
+}
+
+/**
+ * @summary Get a single Suggestions Library entry (admin only)
+ */
+export const adminGetSuggestion = async (id: string, options?: RequestInit): Promise<SuggestedVideo> => {
+
+  return customFetch<SuggestedVideo>(getAdminGetSuggestionUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetSuggestionQueryKey = (id: string,) => {
+    return [
+    `/api/admin/suggestions/${id}`
+    ] as const;
+    }
+
+
+export const getAdminGetSuggestionQueryOptions = <TData = Awaited<ReturnType<typeof adminGetSuggestion>>, TError = ErrorType<ApiError>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetSuggestion>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetSuggestionQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetSuggestion>>> = ({ signal }) => adminGetSuggestion(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetSuggestion>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetSuggestionQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetSuggestion>>>
+export type AdminGetSuggestionQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Get a single Suggestions Library entry (admin only)
+ */
+
+export function useAdminGetSuggestion<TData = Awaited<ReturnType<typeof adminGetSuggestion>>, TError = ErrorType<ApiError>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetSuggestion>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetSuggestionQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminUpdateSuggestionUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/suggestions/${id}`
+}
+
+/**
+ * @summary Approve, edit, or archive a Suggestions Library entry (admin only)
+ */
+export const adminUpdateSuggestion = async (id: string,
+    updateSuggestionInput: UpdateSuggestionInput, options?: RequestInit): Promise<SuggestedVideo> => {
+
+  return customFetch<SuggestedVideo>(getAdminUpdateSuggestionUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateSuggestionInput)
+  }
+);}
+
+
+
+
+export const getAdminUpdateSuggestionMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateSuggestion>>, TError,{id: string;data: BodyType<UpdateSuggestionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminUpdateSuggestion>>, TError,{id: string;data: BodyType<UpdateSuggestionInput>}, TContext> => {
+
+const mutationKey = ['adminUpdateSuggestion'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminUpdateSuggestion>>, {id: string;data: BodyType<UpdateSuggestionInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  adminUpdateSuggestion(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminUpdateSuggestionMutationResult = NonNullable<Awaited<ReturnType<typeof adminUpdateSuggestion>>>
+    export type AdminUpdateSuggestionMutationBody = BodyType<UpdateSuggestionInput>
+    export type AdminUpdateSuggestionMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Approve, edit, or archive a Suggestions Library entry (admin only)
+ */
+export const useAdminUpdateSuggestion = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateSuggestion>>, TError,{id: string;data: BodyType<UpdateSuggestionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminUpdateSuggestion>>,
+        TError,
+        {id: string;data: BodyType<UpdateSuggestionInput>},
+        TContext
+      > => {
+      return useMutation(getAdminUpdateSuggestionMutationOptions(options));
+    }
+
+export const getAdminDeleteSuggestionUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/suggestions/${id}`
+}
+
+/**
+ * @summary Remove a Suggestions Library entry (admin only)
+ */
+export const adminDeleteSuggestion = async (id: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getAdminDeleteSuggestionUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getAdminDeleteSuggestionMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteSuggestion>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminDeleteSuggestion>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['adminDeleteSuggestion'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminDeleteSuggestion>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adminDeleteSuggestion(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminDeleteSuggestionMutationResult = NonNullable<Awaited<ReturnType<typeof adminDeleteSuggestion>>>
+
+    export type AdminDeleteSuggestionMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Remove a Suggestions Library entry (admin only)
+ */
+export const useAdminDeleteSuggestion = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteSuggestion>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminDeleteSuggestion>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getAdminDeleteSuggestionMutationOptions(options));
+    }
+
+export const getListSuggestionsUrl = (params?: ListSuggestionsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/suggestions?${stringifiedParams}` : `/api/suggestions`
+}
+
+/**
+ * @summary Browse the published Suggestions Library gallery
+ */
+export const listSuggestions = async (params?: ListSuggestionsParams, options?: RequestInit): Promise<SuggestionGalleryResponse> => {
+
+  return customFetch<SuggestionGalleryResponse>(getListSuggestionsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSuggestionsQueryKey = (params?: ListSuggestionsParams,) => {
+    return [
+    `/api/suggestions`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListSuggestionsQueryOptions = <TData = Awaited<ReturnType<typeof listSuggestions>>, TError = ErrorType<unknown>>(params?: ListSuggestionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSuggestions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSuggestionsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSuggestions>>> = ({ signal }) => listSuggestions(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSuggestions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSuggestionsQueryResult = NonNullable<Awaited<ReturnType<typeof listSuggestions>>>
+export type ListSuggestionsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Browse the published Suggestions Library gallery
+ */
+
+export function useListSuggestions<TData = Awaited<ReturnType<typeof listSuggestions>>, TError = ErrorType<unknown>>(
+ params?: ListSuggestionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSuggestions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSuggestionsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetSuggestionUrl = (id: string,) => {
+
+
+
+
+  return `/api/suggestions/${id}`
+}
+
+/**
+ * @summary Get a single published suggestion (for the "Whisper this" flow)
+ */
+export const getSuggestion = async (id: string, options?: RequestInit): Promise<SuggestedVideo> => {
+
+  return customFetch<SuggestedVideo>(getGetSuggestionUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSuggestionQueryKey = (id: string,) => {
+    return [
+    `/api/suggestions/${id}`
+    ] as const;
+    }
+
+
+export const getGetSuggestionQueryOptions = <TData = Awaited<ReturnType<typeof getSuggestion>>, TError = ErrorType<ApiError>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSuggestion>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSuggestionQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSuggestion>>> = ({ signal }) => getSuggestion(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSuggestion>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSuggestionQueryResult = NonNullable<Awaited<ReturnType<typeof getSuggestion>>>
+export type GetSuggestionQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Get a single published suggestion (for the "Whisper this" flow)
+ */
+
+export function useGetSuggestion<TData = Awaited<ReturnType<typeof getSuggestion>>, TError = ErrorType<ApiError>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSuggestion>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSuggestionQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

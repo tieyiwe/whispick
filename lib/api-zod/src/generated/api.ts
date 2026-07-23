@@ -1055,6 +1055,205 @@ export const AdminGetOpportunitiesResponse = zod.object({
 
 
 /**
+ * @summary List Suggestions Library videos, including pending AI-agent finds (admin only)
+ */
+export const AdminListSuggestionsQueryParams = zod.object({
+  "search": zod.coerce.string().optional(),
+  "status": zod.coerce.string().optional(),
+  "source": zod.coerce.string().optional(),
+  "category": zod.coerce.string().optional(),
+  "featured": zod.coerce.string().optional(),
+  "page": zod.coerce.number().optional(),
+  "pageSize": zod.coerce.number().optional()
+})
+
+export const AdminListSuggestionsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "videoUrl": zod.string(),
+  "videoTitle": zod.string().nullish(),
+  "videoThumbnail": zod.string().nullish(),
+  "videoEmbedUrl": zod.string().nullish(),
+  "videoPlatform": zod.string().nullish(),
+  "authorName": zod.string().nullish(),
+  "categories": zod.array(zod.string()),
+  "aiSummary": zod.string().nullish(),
+  "aiSummaryStatus": zod.string().nullish().describe('null | \'pending\' | \'ready\' | \'unavailable\''),
+  "featured": zod.boolean(),
+  "status": zod.string().describe('\'pending\' | \'published\' | \'archived\''),
+  "source": zod.string().describe('\'admin\' | \'ai_agent\''),
+  "addedByUserId": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "publishedAt": zod.string().nullish()
+})),
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number()
+})
+
+
+/**
+ * @summary Add a video to the Suggestions Library (admin only)
+ */
+export const AdminCreateSuggestionBody = zod.object({
+  "videoUrl": zod.string(),
+  "categories": zod.array(zod.string()),
+  "featured": zod.boolean().optional()
+})
+
+export const AdminCreateSuggestionResponse = zod.object({
+  "id": zod.string(),
+  "videoUrl": zod.string(),
+  "videoTitle": zod.string().nullish(),
+  "videoThumbnail": zod.string().nullish(),
+  "videoEmbedUrl": zod.string().nullish(),
+  "videoPlatform": zod.string().nullish(),
+  "authorName": zod.string().nullish(),
+  "categories": zod.array(zod.string()),
+  "aiSummary": zod.string().nullish(),
+  "aiSummaryStatus": zod.string().nullish().describe('null | \'pending\' | \'ready\' | \'unavailable\''),
+  "featured": zod.boolean(),
+  "status": zod.string().describe('\'pending\' | \'published\' | \'archived\''),
+  "source": zod.string().describe('\'admin\' | \'ai_agent\''),
+  "addedByUserId": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "publishedAt": zod.string().nullish()
+})
+
+
+/**
+ * @summary Get a single Suggestions Library entry (admin only)
+ */
+export const AdminGetSuggestionParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const AdminGetSuggestionResponse = zod.object({
+  "id": zod.string(),
+  "videoUrl": zod.string(),
+  "videoTitle": zod.string().nullish(),
+  "videoThumbnail": zod.string().nullish(),
+  "videoEmbedUrl": zod.string().nullish(),
+  "videoPlatform": zod.string().nullish(),
+  "authorName": zod.string().nullish(),
+  "categories": zod.array(zod.string()),
+  "aiSummary": zod.string().nullish(),
+  "aiSummaryStatus": zod.string().nullish().describe('null | \'pending\' | \'ready\' | \'unavailable\''),
+  "featured": zod.boolean(),
+  "status": zod.string().describe('\'pending\' | \'published\' | \'archived\''),
+  "source": zod.string().describe('\'admin\' | \'ai_agent\''),
+  "addedByUserId": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "publishedAt": zod.string().nullish()
+})
+
+
+/**
+ * @summary Approve, edit, or archive a Suggestions Library entry (admin only)
+ */
+export const AdminUpdateSuggestionParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const AdminUpdateSuggestionBody = zod.object({
+  "categories": zod.array(zod.string()).optional(),
+  "featured": zod.boolean().optional(),
+  "status": zod.string().optional().describe('\'pending\' | \'published\' | \'archived\''),
+  "aiSummary": zod.string().nullish()
+})
+
+export const AdminUpdateSuggestionResponse = zod.object({
+  "id": zod.string(),
+  "videoUrl": zod.string(),
+  "videoTitle": zod.string().nullish(),
+  "videoThumbnail": zod.string().nullish(),
+  "videoEmbedUrl": zod.string().nullish(),
+  "videoPlatform": zod.string().nullish(),
+  "authorName": zod.string().nullish(),
+  "categories": zod.array(zod.string()),
+  "aiSummary": zod.string().nullish(),
+  "aiSummaryStatus": zod.string().nullish().describe('null | \'pending\' | \'ready\' | \'unavailable\''),
+  "featured": zod.boolean(),
+  "status": zod.string().describe('\'pending\' | \'published\' | \'archived\''),
+  "source": zod.string().describe('\'admin\' | \'ai_agent\''),
+  "addedByUserId": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "publishedAt": zod.string().nullish()
+})
+
+
+/**
+ * @summary Remove a Suggestions Library entry (admin only)
+ */
+export const AdminDeleteSuggestionParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const AdminDeleteSuggestionResponse = zod.void()
+
+
+/**
+ * @summary Browse the published Suggestions Library gallery
+ */
+export const ListSuggestionsQueryParams = zod.object({
+  "category": zod.coerce.string().optional(),
+  "featured": zod.coerce.string().optional()
+})
+
+export const ListSuggestionsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "videoUrl": zod.string(),
+  "videoTitle": zod.string().nullish(),
+  "videoThumbnail": zod.string().nullish(),
+  "videoEmbedUrl": zod.string().nullish(),
+  "videoPlatform": zod.string().nullish(),
+  "authorName": zod.string().nullish(),
+  "categories": zod.array(zod.string()),
+  "aiSummary": zod.string().nullish(),
+  "aiSummaryStatus": zod.string().nullish().describe('null | \'pending\' | \'ready\' | \'unavailable\''),
+  "featured": zod.boolean(),
+  "status": zod.string().describe('\'pending\' | \'published\' | \'archived\''),
+  "source": zod.string().describe('\'admin\' | \'ai_agent\''),
+  "addedByUserId": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "publishedAt": zod.string().nullish()
+})),
+  "categories": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string()
+}))
+})
+
+
+/**
+ * @summary Get a single published suggestion (for the "Whisper this" flow)
+ */
+export const GetSuggestionParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetSuggestionResponse = zod.object({
+  "id": zod.string(),
+  "videoUrl": zod.string(),
+  "videoTitle": zod.string().nullish(),
+  "videoThumbnail": zod.string().nullish(),
+  "videoEmbedUrl": zod.string().nullish(),
+  "videoPlatform": zod.string().nullish(),
+  "authorName": zod.string().nullish(),
+  "categories": zod.array(zod.string()),
+  "aiSummary": zod.string().nullish(),
+  "aiSummaryStatus": zod.string().nullish().describe('null | \'pending\' | \'ready\' | \'unavailable\''),
+  "featured": zod.boolean(),
+  "status": zod.string().describe('\'pending\' | \'published\' | \'archived\''),
+  "source": zod.string().describe('\'admin\' | \'ai_agent\''),
+  "addedByUserId": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "publishedAt": zod.string().nullish()
+})
+
+
+/**
  * @summary List the current user's saved whisper groups
  */
 export const ListWhisperGroupsResponseItem = zod.object({

@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   LogOut,
   Clapperboard,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -25,6 +26,7 @@ const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/send", label: "Send Whisp", icon: Send },
   { href: "/whisps", label: "My Whisps", icon: ListVideo },
+  { href: "/suggestions", label: "Suggestions", icon: Sparkles },
   { href: "/circle", label: "Circle", icon: Users },
   { href: "/circles", label: "My Circles", icon: Lock },
   { href: "/whisper-groups", label: "Whisper Groups", icon: UsersRound },

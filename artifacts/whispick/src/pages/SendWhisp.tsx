@@ -49,13 +49,8 @@ import {
   Sparkles,
   RefreshCw,
 } from "lucide-react";
-import {
-  SiYoutube,
-  SiTiktok,
-  SiInstagram,
-  SiFacebook,
-  SiWhatsapp,
-} from "react-icons/si";
+import { SiWhatsapp } from "react-icons/si";
+import { PlatformIcon } from "@/components/shared/PlatformIcon";
 import { isContactPickerSupported, pickContact } from "@/lib/contactPicker";
 import { uploadMedia, UploadValidationError } from "@/lib/uploadMedia";
 import { Thumbnail } from "@/components/shared/Thumbnail";
@@ -79,18 +74,6 @@ const SENDER_ALIASES = [
   "Someone who loves you",
   "An admirer",
 ];
-
-function PlatformIcon({ platform }: { platform?: string | null }) {
-  const cls = "w-5 h-5";
-  switch (platform) {
-    case "youtube": return <SiYoutube className={cls} style={{ color: "#FF0000" }} />;
-    case "tiktok": return <SiTiktok className={cls} />;
-    case "instagram": return <SiInstagram className={cls} style={{ color: "#E1306C" }} />;
-    case "facebook": return <SiFacebook className={cls} style={{ color: "#1877F2" }} />;
-    case "upload": return <Video className={cls} style={{ color: "#7C5CFC" }} />;
-    default: return <PlayCircle className={cls} />;
-  }
-}
 
 function ParticleAnimation() {
   return (
@@ -1118,14 +1101,25 @@ export function SendWhisp() {
               <div className="space-y-4">
                 <h2 className="text-xl font-serif font-semibold">Ready to send?</h2>
                 <div className="space-y-2 text-sm">
-                  {videoMeta?.thumbnail && (
-                    <Thumbnail src={videoMeta.thumbnail} alt="Video thumbnail" className="w-full h-32 object-cover rounded-xl" />
+                  {(videoMeta?.thumbnail || videoMeta?.title) && (
+                    <div className="flex gap-3 p-3 bg-muted/30 rounded-xl items-center" data-testid="review-video-preview-card">
+                      {videoMeta.thumbnail ? (
+                        <Thumbnail src={videoMeta.thumbnail} alt="thumbnail" className="w-20 h-14 object-cover rounded-lg" />
+                      ) : (
+                        <div className="w-20 h-14 bg-muted rounded-lg flex items-center justify-center shrink-0">
+                          <PlayCircle className="w-5 h-5 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <PlatformIcon platform={videoMeta.platform} />
+                          <span className="text-xs text-muted-foreground capitalize">{videoMeta.platform}</span>
+                        </div>
+                        <p className="text-sm font-medium text-foreground truncate">{videoMeta.title || videoUrl}</p>
+                      </div>
+                    </div>
                   )}
                   <div className="p-3 bg-muted/30 rounded-xl space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Video</span>
-                      <span className="text-foreground font-medium truncate max-w-[60%] text-right">{videoMeta?.title || videoUrl}</span>
-                    </div>
                     {moodTag && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Mood</span>

@@ -1,12 +1,13 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { Logo } from "@/components/ui/logo";
-import { LayoutDashboard, Users, ListVideo, BarChart3, ArrowLeft, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, Users, ListVideo, BarChart3, ArrowLeft, ShieldCheck, Sparkles } from "lucide-react";
 
 const ADMIN_NAV_ITEMS = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/whisps", label: "Content", icon: ListVideo },
+  { href: "/admin/suggestions", label: "Suggestions", icon: Sparkles },
   { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
 ];
 

@@ -13,6 +13,7 @@ import { CircleFeed } from "@/pages/CircleFeed";
 import { MyCircles } from "@/pages/MyCircles";
 import { CircleDetail } from "@/pages/CircleDetail";
 import { SendWhisp } from "@/pages/SendWhisp";
+import { SuggestionsLibrary } from "@/pages/SuggestionsLibrary";
 import { WhisperGroups } from "@/pages/WhisperGroups";
 import { MediaLibrary } from "@/pages/MediaLibrary";
 import { WhisperGroupDetail } from "@/pages/WhisperGroupDetail";
@@ -32,6 +33,7 @@ import { AdminUserDetail } from "@/pages/admin/AdminUserDetail";
 import { AdminWhisps } from "@/pages/admin/AdminWhisps";
 import { AdminWhispDetail } from "@/pages/admin/AdminWhispDetail";
 import { AdminAnalytics } from "@/pages/admin/AdminAnalytics";
+import { AdminSuggestions } from "@/pages/admin/AdminSuggestions";
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
@@ -149,6 +151,7 @@ function ClerkProviderWithRoutes() {
 
           <Route path="/dashboard" component={() => <ProtectedRoute component={Dashboard} />} />
           <Route path="/send" component={() => <ProtectedRoute component={SendWhisp} />} />
+          <Route path="/suggestions" component={() => <ProtectedRoute component={SuggestionsLibrary} />} />
           <Route path="/whisps/:id" component={() => <ProtectedRoute component={WhispDetail} />} />
           <Route path="/whisps" component={() => <ProtectedRoute component={WhispsList} />} />
           <Route path="/circle" component={() => <ProtectedRoute component={CircleFeed} />} />
@@ -167,6 +170,7 @@ function ClerkProviderWithRoutes() {
           <Route path="/admin/whisps/:id" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminWhispDetail} />} />} />
           <Route path="/admin/whisps" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminWhisps} />} />} />
           <Route path="/admin/analytics" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminAnalytics} />} />} />
+          <Route path="/admin/suggestions" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminSuggestions} />} />} />
           <Route path="/admin" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminDashboard} />} />} />
 
           <Route path="/w/:token" component={PublicWhispPage} />

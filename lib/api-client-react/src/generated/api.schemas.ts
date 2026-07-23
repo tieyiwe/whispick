@@ -820,6 +820,71 @@ export interface NoteSuggestionsResult {
   suggestions: string[];
 }
 
+export interface SuggestedVideo {
+  id: string;
+  videoUrl: string;
+  /** @nullable */
+  videoTitle?: string | null;
+  /** @nullable */
+  videoThumbnail?: string | null;
+  /** @nullable */
+  videoEmbedUrl?: string | null;
+  /** @nullable */
+  videoPlatform?: string | null;
+  /** @nullable */
+  authorName?: string | null;
+  categories: string[];
+  /** @nullable */
+  aiSummary?: string | null;
+  /**
+     * null | 'pending' | 'ready' | 'unavailable'
+     * @nullable
+     */
+  aiSummaryStatus?: string | null;
+  featured: boolean;
+  /** 'pending' | 'published' | 'archived' */
+  status: string;
+  /** 'admin' | 'ai_agent' */
+  source: string;
+  /** @nullable */
+  addedByUserId?: string | null;
+  createdAt: string;
+  /** @nullable */
+  publishedAt?: string | null;
+}
+
+export interface SuggestionListResponse {
+  items: SuggestedVideo[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface SuggestionCategory {
+  key: string;
+  label: string;
+}
+
+export interface SuggestionGalleryResponse {
+  items: SuggestedVideo[];
+  categories: SuggestionCategory[];
+}
+
+export interface CreateSuggestionInput {
+  videoUrl: string;
+  categories: string[];
+  featured?: boolean;
+}
+
+export interface UpdateSuggestionInput {
+  categories?: string[];
+  featured?: boolean;
+  /** 'pending' | 'published' | 'archived' */
+  status?: string;
+  /** @nullable */
+  aiSummary?: string | null;
+}
+
 export type ListWhispsParams = {
 status?: string;
 };
@@ -844,6 +909,21 @@ deliveryMethod?: string;
 category?: string;
 page?: number;
 pageSize?: number;
+};
+
+export type AdminListSuggestionsParams = {
+search?: string;
+status?: string;
+source?: string;
+category?: string;
+featured?: string;
+page?: number;
+pageSize?: number;
+};
+
+export type ListSuggestionsParams = {
+category?: string;
+featured?: string;
 };
 
 export type DeleteMedia200 = {

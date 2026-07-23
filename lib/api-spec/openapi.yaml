@@ -28,6 +28,8 @@ tags:
     description: App-owner admin panel — user/content management and analytics
   - name: whisperGroups
     description: Saved contact groups for sending one whisp to several people at once, anonymously
+  - name: suggestions
+    description: Admin-curated + AI-discovered Suggestions Library
 paths:
   /healthz:
     get:
@@ -930,6 +932,218 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AdminOpportunitiesResponse"
+
+  /admin/suggestions:
+    get:
+      operationId: adminListSuggestions
+      tags: [admin, suggestions]
+      summary: List Suggestions Library videos, including pending AI-agent finds (admin only)
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: status
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: source
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: category
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: featured
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: page
+          schema:
+            type: integer
+          required: false
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+          required: false
+      responses:
+        "200":
+          description: Suggestions page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuggestionListResponse"
+        "403":
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    post:
+      operationId: adminCreateSuggestion
+      tags: [admin, suggestions]
+      summary: Add a video to the Suggestions Library (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSuggestionInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuggestedVideo"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "422":
+          description: Video is private, restricted, or otherwise unusable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/suggestions/{id}:
+    get:
+      operationId: adminGetSuggestion
+      tags: [admin, suggestions]
+      summary: Get a single Suggestions Library entry (admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Suggestion detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuggestedVideo"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    patch:
+      operationId: adminUpdateSuggestion
+      tags: [admin, suggestions]
+      summary: Approve, edit, or archive a Suggestions Library entry (admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSuggestionInput"
+      responses:
+        "200":
+          description: Updated suggestion
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuggestedVideo"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      operationId: adminDeleteSuggestion
+      tags: [admin, suggestions]
+      summary: Remove a Suggestions Library entry (admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /suggestions:
+    get:
+      operationId: listSuggestions
+      tags: [suggestions]
+      summary: Browse the published Suggestions Library gallery
+      parameters:
+        - in: query
+          name: category
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: featured
+          schema:
+            type: string
+          required: false
+      responses:
+        "200":
+          description: Published suggestions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuggestionGalleryResponse"
+
+  /suggestions/{id}:
+    get:
+      operationId: getSuggestion
+      tags: [suggestions]
+      summary: Get a single published suggestion (for the "Whisper this" flow)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Suggestion detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuggestedVideo"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
 
   /whisper-groups:
     get:
@@ -2793,3 +3007,127 @@ components:
           description: 0-3 suggested note options — may be empty if generation is unavailable
       required:
         - suggestions
+
+    SuggestedVideo:
+      type: object
+      properties:
+        id:
+          type: string
+        videoUrl:
+          type: string
+        videoTitle:
+          type: ["string", "null"]
+        videoThumbnail:
+          type: ["string", "null"]
+        videoEmbedUrl:
+          type: ["string", "null"]
+        videoPlatform:
+          type: ["string", "null"]
+        authorName:
+          type: ["string", "null"]
+        categories:
+          type: array
+          items:
+            type: string
+        aiSummary:
+          type: ["string", "null"]
+        aiSummaryStatus:
+          type: ["string", "null"]
+          description: "null | 'pending' | 'ready' | 'unavailable'"
+        featured:
+          type: boolean
+        status:
+          type: string
+          description: "'pending' | 'published' | 'archived'"
+        source:
+          type: string
+          description: "'admin' | 'ai_agent'"
+        addedByUserId:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        publishedAt:
+          type: ["string", "null"]
+      required:
+        - id
+        - videoUrl
+        - categories
+        - featured
+        - status
+        - source
+        - createdAt
+
+    SuggestionListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SuggestedVideo"
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+      required:
+        - items
+        - total
+        - page
+        - pageSize
+
+    SuggestionCategory:
+      type: object
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+      required:
+        - key
+        - label
+
+    SuggestionGalleryResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SuggestedVideo"
+        categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/SuggestionCategory"
+      required:
+        - items
+        - categories
+
+    CreateSuggestionInput:
+      type: object
+      properties:
+        videoUrl:
+          type: string
+        categories:
+          type: array
+          items:
+            type: string
+        featured:
+          type: boolean
+      required:
+        - videoUrl
+        - categories
+
+    UpdateSuggestionInput:
+      type: object
+      properties:
+        categories:
+          type: array
+          items:
+            type: string
+        featured:
+          type: boolean
+        status:
+          type: string
+          description: "'pending' | 'published' | 'archived'"
+        aiSummary:
+          type: ["string", "null"]

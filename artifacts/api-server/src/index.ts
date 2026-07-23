@@ -5,6 +5,7 @@ import { startReminderDispatcher } from "./lib/reminderScheduler";
 import { startMediaRetentionScheduler } from "./lib/mediaRetentionScheduler";
 import { startTakeawayScheduler } from "./lib/takeawayScheduler";
 import { startMatchScheduler } from "./lib/matchScheduler";
+import { startSuggestionAgentScheduler } from "./lib/suggestionAgentScheduler";
 
 const rawPort = process.env["PORT"];
 
@@ -34,3 +35,4 @@ startReminderDispatcher();
 startMediaRetentionScheduler();
 startTakeawayScheduler();
 startMatchScheduler();
+startSuggestionAgentScheduler();

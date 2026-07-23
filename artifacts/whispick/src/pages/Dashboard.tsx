@@ -1,18 +1,37 @@
 import { useEffect } from "react";
-import { useGetWhispStats } from "@workspace/api-client-react";
+import { useGetWhispStats, useListSuggestions, getListSuggestionsQueryKey } from "@workspace/api-client-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Send, Eye, PlayCircle, MessageSquareHeart, TrendingUp, Ghost } from "lucide-react";
+import { Send, Eye, PlayCircle, MessageSquareHeart, TrendingUp, Ghost, Sparkles } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link, useLocation } from "wouter";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { MoodTag } from "@/components/shared/MoodTag";
+import { Thumbnail } from "@/components/shared/Thumbnail";
 import { Button } from "@/components/ui/button";
-import { hasPendingForward } from "@/lib/forwardVideo";
+import { hasPendingForward, savePendingForward } from "@/lib/forwardVideo";
+
+const FEATURED_SUGGESTIONS_PARAMS = { featured: "true" };
 
 export function Dashboard() {
   const { data: stats, isLoading } = useGetWhispStats();
+  const { data: suggestionsData } = useListSuggestions(FEATURED_SUGGESTIONS_PARAMS, {
+    query: { queryKey: getListSuggestionsQueryKey(FEATURED_SUGGESTIONS_PARAMS) },
+  });
+  const featuredSuggestion = suggestionsData?.items[0];
   const [, setLocation] = useLocation();
+
+  function handleWhisperFeatured() {
+    if (!featuredSuggestion) return;
+    savePendingForward({
+      videoUrl: featuredSuggestion.videoUrl,
+      videoTitle: featuredSuggestion.videoTitle,
+      videoThumbnail: featuredSuggestion.videoThumbnail,
+      videoEmbedUrl: featuredSuggestion.videoEmbedUrl,
+      videoPlatform: featuredSuggestion.videoPlatform,
+    });
+    setLocation("/send");
+  }
 
   // A brand-new account created via "Pass it forward" from the public whisp
   // page always lands here first (Clerk's sign-up redirect is fixed at
@@ -157,6 +176,49 @@ export function Dashboard() {
                     Get More Credits
                   </Button>
                 </Link>
+              </CardContent>
+            </Card>
+
+            <h2 className="text-xl font-serif font-semibold pt-2">Suggestions Library</h2>
+            <Card className="bg-card border-border/50 relative overflow-hidden" data-testid="card-suggestions-nudge">
+              <CardContent className="p-6 space-y-4">
+                {featuredSuggestion ? (
+                  <>
+                    <div className="flex gap-3 items-center">
+                      {featuredSuggestion.videoThumbnail ? (
+                        <Thumbnail src={featuredSuggestion.videoThumbnail} alt="thumbnail" className="w-16 h-12 object-cover rounded-lg shrink-0" />
+                      ) : (
+                        <div className="w-16 h-12 bg-muted rounded-lg flex items-center justify-center shrink-0">
+                          <Sparkles className="w-5 h-5 text-muted-foreground" />
+                        </div>
+                      )}
+                      <p className="text-sm font-medium text-foreground line-clamp-2">{featuredSuggestion.videoTitle || "A video worth sharing"}</p>
+                    </div>
+                    {featuredSuggestion.aiSummary && (
+                      <p className="text-xs text-muted-foreground line-clamp-2">{featuredSuggestion.aiSummary}</p>
+                    )}
+                    <div className="flex gap-2">
+                      <Button variant="outline" className="flex-1 rounded-full" onClick={() => setLocation("/suggestions")}>
+                        Browse library
+                      </Button>
+                      <Button className="flex-1 rounded-full" onClick={handleWhisperFeatured} data-testid="button-whisper-featured-suggestion">
+                        Whisper this
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                      <Sparkles className="w-8 h-8 text-primary" />
+                    </div>
+                    <p className="text-sm text-muted-foreground text-center">
+                      Browse a curated library of videos and whisper one to someone in your circle who could use it.
+                    </p>
+                    <Link href="/suggestions">
+                      <Button variant="outline" className="w-full rounded-full">Browse Suggestions</Button>
+                    </Link>
+                  </>
+                )}
               </CardContent>
             </Card>
           </div>

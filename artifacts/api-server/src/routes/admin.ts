@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
+import { randomUUID } from "crypto";
 import {
   db,
   usersTable,
@@ -11,12 +12,15 @@ import {
   pushSubscriptionsTable,
   circlesTable,
   circleMembersTable,
+  suggestedVideosTable,
   type User,
 } from "@workspace/db";
 import { and, asc, count, desc, eq, gte, ilike, inArray, isNotNull, isNull, or, sql } from "drizzle-orm";
 import { requireAdmin } from "../lib/adminAuth";
 import { VIDEO_CATEGORIES } from "../lib/categorize";
 import { computeOpportunities } from "../lib/insights";
+import { resolveVideoMeta } from "../lib/videoMeta";
+import { generateSuggestionSummaryAsync } from "../lib/suggestionSummary";
 
 const router = Router();
 
@@ -383,6 +387,161 @@ router.get("/stats/locations", async (_req, res): Promise<void> => {
 router.get("/stats/opportunities", async (_req, res): Promise<void> => {
   const insights = await computeOpportunities();
   res.json({ insights });
+});
+
+// ---------------------------------------------------------------------------
+// Suggestions Library
+// ---------------------------------------------------------------------------
+
+const VALID_SUGGESTION_CATEGORY_KEYS = new Set<string>(VIDEO_CATEGORIES.map((c) => c.key));
+
+const createSuggestionSchema = z.object({
+  videoUrl: z.string().url(),
+  categories: z
+    .array(z.string())
+    .min(1)
+    .max(5)
+    .refine((cats) => cats.every((c) => VALID_SUGGESTION_CATEGORY_KEYS.has(c)), { message: "Invalid category" }),
+  featured: z.boolean().optional(),
+});
+
+const updateSuggestionSchema = z.object({
+  categories: z
+    .array(z.string())
+    .min(1)
+    .max(5)
+    .refine((cats) => cats.every((c) => VALID_SUGGESTION_CATEGORY_KEYS.has(c)), { message: "Invalid category" })
+    .optional(),
+  featured: z.boolean().optional(),
+  status: z.enum(["pending", "published", "archived"]).optional(),
+  aiSummary: z.string().max(200).nullable().optional(),
+});
+
+// POST /api/admin/suggestions — admin manually adds a video to the library.
+router.post("/suggestions", async (req, res): Promise<void> => {
+  const parsed = createSuggestionSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const outcome = await resolveVideoMeta(parsed.data.videoUrl);
+  switch (outcome.kind) {
+    case "invalid_url":
+      res.status(400).json({ error: "Only http/https URLs are supported" });
+      return;
+    case "unsupported":
+      res.status(400).json({ error: "Unsupported video URL. Only YouTube, TikTok, Instagram, Facebook, Vimeo, and X/Twitter links are supported." });
+      return;
+    case "blocked":
+      res.status(422).json({ error: outcome.error, code: outcome.code });
+      return;
+  }
+
+  const adminUser = (req as any).adminUser as User;
+  const id = randomUUID();
+  const now = new Date();
+
+  await db.insert(suggestedVideosTable).values({
+    id,
+    videoUrl: parsed.data.videoUrl,
+    videoTitle: outcome.title,
+    videoThumbnail: outcome.thumbnail,
+    videoEmbedUrl: outcome.embedUrl,
+    videoPlatform: outcome.platform,
+    authorName: outcome.authorName,
+    categories: parsed.data.categories,
+    featured: parsed.data.featured ?? false,
+    status: "published",
+    source: "admin",
+    addedByUserId: adminUser.id,
+    publishedAt: now,
+  });
+
+  void generateSuggestionSummaryAsync(id);
+
+  const created = await db.select().from(suggestedVideosTable).where(eq(suggestedVideosTable.id, id)).then((r) => r[0]);
+  res.status(201).json(created);
+});
+
+// GET /api/admin/suggestions
+router.get("/suggestions", async (req, res): Promise<void> => {
+  const { page, pageSize } = parsePagination(req);
+  const search = typeof req.query.search === "string" ? req.query.search.trim() : "";
+  const statusFilter = typeof req.query.status === "string" ? req.query.status : undefined;
+  const sourceFilter = typeof req.query.source === "string" ? req.query.source : undefined;
+  const categoryFilter = typeof req.query.category === "string" ? req.query.category : undefined;
+  const featuredFilter = req.query.featured === "true" ? true : req.query.featured === "false" ? false : undefined;
+
+  const conditions = [];
+  if (search) conditions.push(ilike(suggestedVideosTable.videoTitle, `%${search}%`));
+  if (statusFilter) conditions.push(eq(suggestedVideosTable.status, statusFilter));
+  if (sourceFilter) conditions.push(eq(suggestedVideosTable.source, sourceFilter));
+  if (featuredFilter !== undefined) conditions.push(eq(suggestedVideosTable.featured, featuredFilter));
+  if (categoryFilter) conditions.push(sql`${categoryFilter} = ANY(${suggestedVideosTable.categories})`);
+  const where = conditions.length ? and(...conditions) : undefined;
+
+  const [items, totalRow] = await Promise.all([
+    db.select().from(suggestedVideosTable).where(where).orderBy(desc(suggestedVideosTable.createdAt)).limit(pageSize).offset((page - 1) * pageSize),
+    db.select({ count: count() }).from(suggestedVideosTable).where(where).then((r) => r[0]),
+  ]);
+
+  res.json({ items, total: totalRow?.count ?? 0, page, pageSize });
+});
+
+// GET /api/admin/suggestions/:id
+router.get("/suggestions/:id", async (req, res): Promise<void> => {
+  const suggestion = await db.select().from(suggestedVideosTable).where(eq(suggestedVideosTable.id, req.params.id)).then((r) => r[0]);
+  if (!suggestion) {
+    res.status(404).json({ error: "Suggestion not found" });
+    return;
+  }
+  res.json(suggestion);
+});
+
+// PATCH /api/admin/suggestions/:id — approve/edit/archive. Approving an
+// AI-agent-discovered suggestion is just a status transition to "published";
+// a manual aiSummary override marks the status "ready" so the background
+// generator won't clobber it (the atomic-claim UPDATE only fires when
+// aiSummaryStatus is still null).
+router.patch("/suggestions/:id", async (req, res): Promise<void> => {
+  const existing = await db.select().from(suggestedVideosTable).where(eq(suggestedVideosTable.id, req.params.id)).then((r) => r[0]);
+  if (!existing) {
+    res.status(404).json({ error: "Suggestion not found" });
+    return;
+  }
+
+  const parsed = updateSuggestionSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { aiSummary, ...rest } = parsed.data;
+  const updates: Partial<typeof suggestedVideosTable.$inferInsert> = { ...rest };
+  if (aiSummary !== undefined) {
+    updates.aiSummary = aiSummary;
+    updates.aiSummaryStatus = aiSummary === null ? null : "ready";
+  }
+  if (rest.status === "published" && existing.status !== "published") {
+    updates.publishedAt = new Date();
+  }
+
+  await db.update(suggestedVideosTable).set(updates).where(eq(suggestedVideosTable.id, existing.id));
+  const updated = await db.select().from(suggestedVideosTable).where(eq(suggestedVideosTable.id, existing.id)).then((r) => r[0]);
+  res.json(updated);
+});
+
+// DELETE /api/admin/suggestions/:id
+router.delete("/suggestions/:id", async (req, res): Promise<void> => {
+  const existing = await db.select().from(suggestedVideosTable).where(eq(suggestedVideosTable.id, req.params.id)).then((r) => r[0]);
+  if (!existing) {
+    res.status(404).json({ error: "Suggestion not found" });
+    return;
+  }
+
+  await db.delete(suggestedVideosTable).where(eq(suggestedVideosTable.id, existing.id));
+  res.status(204).send();
 });
 
 export default router;

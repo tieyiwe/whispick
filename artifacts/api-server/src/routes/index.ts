@@ -13,6 +13,7 @@ import adminRouter from "./admin";
 import whisperGroupsRouter from "./whisperGroups";
 import mediaRouter from "./media";
 import subscribeRouter from "./subscribe";
+import suggestionsRouter from "./suggestions";
 import { publicEndpointLimiter } from "../lib/rateLimit";
 
 const router: IRouter = Router();
@@ -41,5 +42,6 @@ router.use("/l", publicEndpointLimiter, linkRouter);
 router.use("/admin", adminRouter);
 router.use("/whisper-groups", whisperGroupsRouter);
 router.use("/media", mediaRouter);
+router.use("/suggestions", suggestionsRouter);
 
 export default router;

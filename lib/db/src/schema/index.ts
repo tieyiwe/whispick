@@ -9,3 +9,4 @@ export * from "./whisp_categories";
 export * from "./whisper_groups";
 export * from "./uploaded_videos";
 export * from "./match_subscribers";
+export * from "./suggested_videos";
