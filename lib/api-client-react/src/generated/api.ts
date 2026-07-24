@@ -64,11 +64,13 @@ import type {
   RemindMeResult,
   RevealResponse,
   RevealResult,
+  RunSuggestionAgentResult,
   SendGroupWhispInput,
   SendGroupWhispResult,
   SubscribeInput,
   SubscribeResult,
   SuggestedVideo,
+  SuggestionAgentStatus,
   SuggestionGalleryResponse,
   SuggestionListResponse,
   TrackingEventInput,
@@ -3258,6 +3260,153 @@ export const useAdminCreateSuggestion = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getAdminCreateSuggestionMutationOptions(options));
+    }
+
+export const getAdminGetSuggestionAgentStatusUrl = () => {
+
+
+
+
+  return `/api/admin/suggestions/agent-status`
+}
+
+/**
+ * @summary Get the AI discovery agent's last run outcome, including whether it looks blocked by a low Anthropic credit balance (admin only)
+ */
+export const adminGetSuggestionAgentStatus = async ( options?: RequestInit): Promise<SuggestionAgentStatus> => {
+
+  return customFetch<SuggestionAgentStatus>(getAdminGetSuggestionAgentStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetSuggestionAgentStatusQueryKey = () => {
+    return [
+    `/api/admin/suggestions/agent-status`
+    ] as const;
+    }
+
+
+export const getAdminGetSuggestionAgentStatusQueryOptions = <TData = Awaited<ReturnType<typeof adminGetSuggestionAgentStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetSuggestionAgentStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetSuggestionAgentStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetSuggestionAgentStatus>>> = ({ signal }) => adminGetSuggestionAgentStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetSuggestionAgentStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetSuggestionAgentStatusQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetSuggestionAgentStatus>>>
+export type AdminGetSuggestionAgentStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the AI discovery agent's last run outcome, including whether it looks blocked by a low Anthropic credit balance (admin only)
+ */
+
+export function useAdminGetSuggestionAgentStatus<TData = Awaited<ReturnType<typeof adminGetSuggestionAgentStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetSuggestionAgentStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetSuggestionAgentStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminRunSuggestionAgentUrl = () => {
+
+
+
+
+  return `/api/admin/suggestions/run-agent`
+}
+
+/**
+ * @summary Trigger an AI discovery sweep immediately instead of waiting for the daily schedule (admin only)
+ */
+export const adminRunSuggestionAgent = async ( options?: RequestInit): Promise<RunSuggestionAgentResult> => {
+
+  return customFetch<RunSuggestionAgentResult>(getAdminRunSuggestionAgentUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAdminRunSuggestionAgentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRunSuggestionAgent>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminRunSuggestionAgent>>, TError,void, TContext> => {
+
+const mutationKey = ['adminRunSuggestionAgent'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminRunSuggestionAgent>>, void> = () => {
+
+
+          return  adminRunSuggestionAgent(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminRunSuggestionAgentMutationResult = NonNullable<Awaited<ReturnType<typeof adminRunSuggestionAgent>>>
+
+    export type AdminRunSuggestionAgentMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Trigger an AI discovery sweep immediately instead of waiting for the daily schedule (admin only)
+ */
+export const useAdminRunSuggestionAgent = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRunSuggestionAgent>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminRunSuggestionAgent>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getAdminRunSuggestionAgentMutationOptions(options));
     }
 
 export const getAdminGetSuggestionUrl = (id: string,) => {

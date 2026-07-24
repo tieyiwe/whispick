@@ -1,9 +1,13 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { randomUUID } from "crypto";
-import { db, suggestedVideosTable } from "@workspace/db";
+import { db, suggestedVideosTable, suggestionAgentStatusTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { anthropicMessagesCreateMock } from "./setup";
 import { runSuggestionDiscoveryAgent } from "../lib/suggestionAgent";
+
+async function getAgentStatus() {
+  return db.select().from(suggestionAgentStatusTable).where(eq(suggestionAgentStatusTable.id, "singleton")).then((r) => r[0]);
+}
 
 const GOOD_URL = "https://youtu.be/goodVideo12";
 
@@ -83,5 +87,65 @@ describe("runSuggestionDiscoveryAgent", () => {
 
     expect(result.inserted).toBe(0);
     expect(result.skipped).toBe(0);
+  });
+});
+
+describe("runSuggestionDiscoveryAgent — run status tracking", () => {
+  it("flags a run as low-credit when every category's search call fails with a credit-balance-shaped message", async () => {
+    anthropicMessagesCreateMock.mockRejectedValue(
+      new Error("Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."),
+    );
+
+    await runSuggestionDiscoveryAgent();
+
+    const row = await getAgentStatus();
+    expect(row?.lastRunOk).toBe(false);
+    expect(row?.lowCreditSuspected).toBe(true);
+    expect(row?.lastErrorMessage).toContain("credit balance");
+    expect(row?.consecutiveFailures).toBe(1);
+  });
+
+  it("records a run as failed (but not low-credit) for an unrelated error, and increments consecutiveFailures across repeated failures", async () => {
+    anthropicMessagesCreateMock.mockRejectedValue(new Error("upstream timeout"));
+
+    await runSuggestionDiscoveryAgent();
+    let row = await getAgentStatus();
+    expect(row?.lastRunOk).toBe(false);
+    expect(row?.lowCreditSuspected).toBe(false);
+    expect(row?.consecutiveFailures).toBe(1);
+
+    await runSuggestionDiscoveryAgent();
+    row = await getAgentStatus();
+    expect(row?.consecutiveFailures).toBe(2);
+  });
+
+  it("does not flag a run as failed when only some categories fail (a partial result is still a healthy run)", async () => {
+    stubYoutubeOembed();
+    anthropicMessagesCreateMock
+      .mockResolvedValueOnce({ content: [{ type: "text", text: GOOD_URL }] })
+      .mockRejectedValueOnce(new Error("search unavailable"))
+      .mockRejectedValueOnce(new Error("search unavailable"));
+
+    await runSuggestionDiscoveryAgent();
+
+    const row = await getAgentStatus();
+    expect(row?.lastRunOk).toBe(true);
+    expect(row?.lowCreditSuspected).toBe(false);
+    expect(row?.consecutiveFailures).toBe(0);
+  });
+
+  it("resets consecutiveFailures and clears the low-credit flag once a run succeeds again", async () => {
+    anthropicMessagesCreateMock.mockRejectedValue(new Error("Your credit balance is too low to access the Anthropic API."));
+    await runSuggestionDiscoveryAgent();
+    expect((await getAgentStatus())?.lowCreditSuspected).toBe(true);
+
+    stubYoutubeOembed();
+    anthropicMessagesCreateMock.mockResolvedValue({ content: [{ type: "text", text: GOOD_URL }] });
+    await runSuggestionDiscoveryAgent();
+
+    const row = await getAgentStatus();
+    expect(row?.lastRunOk).toBe(true);
+    expect(row?.lowCreditSuspected).toBe(false);
+    expect(row?.consecutiveFailures).toBe(0);
   });
 });

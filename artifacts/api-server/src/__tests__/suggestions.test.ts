@@ -202,6 +202,44 @@ describe("Admin: suggestions CRUD", () => {
   });
 });
 
+describe("Admin: suggestion discovery agent status + manual trigger", () => {
+  it("rejects unauthenticated and non-admin requests for both endpoints", async () => {
+    expect((await request(app).get("/api/admin/suggestions/agent-status")).status).toBe(401);
+    expect((await request(app).post("/api/admin/suggestions/run-agent")).status).toBe(401);
+
+    const status = await request(app).get("/api/admin/suggestions/agent-status").set(asUser(USER_A));
+    expect(status.status).toBe(403);
+
+    const run = await request(app).post("/api/admin/suggestions/run-agent").set(asUser(USER_A));
+    expect(run.status).toBe(403);
+  });
+
+  it("reports a healthy 'never run' default before the agent has ever run", async () => {
+    const adminHeaders = await asAdmin();
+    const res = await request(app).get("/api/admin/suggestions/agent-status").set(adminHeaders);
+    expect(res.status).toBe(200);
+    expect(res.body.lastRunAt).toBeNull();
+    expect(res.body.lastRunOk).toBe(true);
+    expect(res.body.lowCreditSuspected).toBe(false);
+  });
+
+  it("POST /run-agent triggers a sweep immediately and reflects a low-credit failure in the returned status", async () => {
+    anthropicMessagesCreateMock.mockRejectedValue(
+      new Error("Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to purchase credits."),
+    );
+    const adminHeaders = await asAdmin();
+
+    const res = await request(app).post("/api/admin/suggestions/run-agent").set(adminHeaders);
+    expect(res.status).toBe(200);
+    expect(res.body.inserted).toBe(0);
+    expect(res.body.status.lastRunOk).toBe(false);
+    expect(res.body.status.lowCreditSuspected).toBe(true);
+
+    const followUp = await request(app).get("/api/admin/suggestions/agent-status").set(adminHeaders);
+    expect(followUp.body.lowCreditSuspected).toBe(true);
+  });
+});
+
 describe("User-facing: GET /api/suggestions", () => {
   it("requires auth", async () => {
     const res = await request(app).get("/api/suggestions");

@@ -1122,6 +1122,36 @@ export const AdminCreateSuggestionResponse = zod.object({
 
 
 /**
+ * @summary Get the AI discovery agent's last run outcome, including whether it looks blocked by a low Anthropic credit balance (admin only)
+ */
+export const AdminGetSuggestionAgentStatusResponse = zod.object({
+  "id": zod.string(),
+  "lastRunAt": zod.string().nullish(),
+  "lastRunOk": zod.boolean(),
+  "lastErrorMessage": zod.string().nullish(),
+  "lowCreditSuspected": zod.boolean().describe('Best-effort heuristic match on the last error\'s message text — true when it looks like the Anthropic account\'s credit balance is too low'),
+  "consecutiveFailures": zod.number()
+})
+
+
+/**
+ * @summary Trigger an AI discovery sweep immediately instead of waiting for the daily schedule (admin only)
+ */
+export const AdminRunSuggestionAgentResponse = zod.object({
+  "inserted": zod.number(),
+  "skipped": zod.number(),
+  "status": zod.object({
+  "id": zod.string(),
+  "lastRunAt": zod.string().nullish(),
+  "lastRunOk": zod.boolean(),
+  "lastErrorMessage": zod.string().nullish(),
+  "lowCreditSuspected": zod.boolean().describe('Best-effort heuristic match on the last error\'s message text — true when it looks like the Anthropic account\'s credit balance is too low'),
+  "consecutiveFailures": zod.number()
+}).optional()
+})
+
+
+/**
  * @summary Get a single Suggestions Library entry (admin only)
  */
 export const AdminGetSuggestionParams = zod.object({

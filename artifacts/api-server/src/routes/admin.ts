@@ -13,6 +13,7 @@ import {
   circlesTable,
   circleMembersTable,
   suggestedVideosTable,
+  suggestionAgentStatusTable,
   type User,
 } from "@workspace/db";
 import { and, asc, count, desc, eq, gte, ilike, inArray, isNotNull, isNull, or, sql } from "drizzle-orm";
@@ -21,6 +22,7 @@ import { VIDEO_CATEGORIES } from "../lib/categorize";
 import { computeOpportunities } from "../lib/insights";
 import { resolveVideoMeta } from "../lib/videoMeta";
 import { generateSuggestionSummaryAsync } from "../lib/suggestionSummary";
+import { runSuggestionDiscoveryAgent } from "../lib/suggestionAgent";
 
 const router = Router();
 
@@ -487,6 +489,47 @@ router.get("/suggestions", async (req, res): Promise<void> => {
   ]);
 
   res.json({ items, total: totalRow?.count ?? 0, page, pageSize });
+});
+
+// GET /api/admin/suggestions/agent-status — surfaces the AI discovery
+// agent's last run outcome, most importantly whether it looks like it
+// stopped working because the Anthropic account ran out of credit (the one
+// failure mode that needs a human to actually do something, versus a
+// transient error the next scheduled run will just retry past). Registered
+// before the /suggestions/:id route below so "agent-status" is never
+// swallowed as a suggestion id.
+router.get("/suggestions/agent-status", async (_req, res): Promise<void> => {
+  const status = await db
+    .select()
+    .from(suggestionAgentStatusTable)
+    .where(eq(suggestionAgentStatusTable.id, "singleton"))
+    .then((r) => r[0]);
+
+  res.json(
+    status ?? {
+      id: "singleton",
+      lastRunAt: null,
+      lastRunOk: true,
+      lastErrorMessage: null,
+      lowCreditSuspected: false,
+      consecutiveFailures: 0,
+    },
+  );
+});
+
+// POST /api/admin/suggestions/run-agent — triggers a discovery sweep
+// immediately instead of waiting for the next scheduled run (once a day),
+// so an admin can verify the agent is working (or see exactly why it
+// isn't) right after setting it up.
+router.post("/suggestions/run-agent", async (_req, res): Promise<void> => {
+  const result = await runSuggestionDiscoveryAgent();
+  const status = await db
+    .select()
+    .from(suggestionAgentStatusTable)
+    .where(eq(suggestionAgentStatusTable.id, "singleton"))
+    .then((r) => r[0]);
+
+  res.json({ ...result, status: status ?? null });
 });
 
 // GET /api/admin/suggestions/:id

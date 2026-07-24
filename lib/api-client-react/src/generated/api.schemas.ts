@@ -885,6 +885,24 @@ export interface UpdateSuggestionInput {
   aiSummary?: string | null;
 }
 
+export interface SuggestionAgentStatus {
+  id: string;
+  /** @nullable */
+  lastRunAt?: string | null;
+  lastRunOk: boolean;
+  /** @nullable */
+  lastErrorMessage?: string | null;
+  /** Best-effort heuristic match on the last error's message text — true when it looks like the Anthropic account's credit balance is too low */
+  lowCreditSuspected: boolean;
+  consecutiveFailures: number;
+}
+
+export interface RunSuggestionAgentResult {
+  inserted: number;
+  skipped: number;
+  status?: SuggestionAgentStatus;
+}
+
 export type ListWhispsParams = {
 status?: string;
 };

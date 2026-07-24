@@ -5,7 +5,10 @@ import {
   useAdminCreateSuggestion,
   useAdminUpdateSuggestion,
   useAdminDeleteSuggestion,
+  useAdminGetSuggestionAgentStatus,
+  useAdminRunSuggestionAgent,
   getAdminListSuggestionsQueryKey,
+  getAdminGetSuggestionAgentStatusQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
@@ -37,7 +40,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { PlatformIcon } from "@/components/shared/PlatformIcon";
 import { VIDEO_CATEGORY_LABELS, categoryLabel } from "@/lib/videoCategories";
-import { Search, ChevronLeft, ChevronRight, PlayCircle, Trash2, Plus, Star, CheckCircle2, Archive, Loader2, Bot, UserCog } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, PlayCircle, Trash2, Plus, Star, CheckCircle2, Archive, Loader2, Bot, UserCog, AlertTriangle, Zap } from "lucide-react";
 
 const PAGE_SIZE = 20;
 const ADD_CATEGORIES = Object.entries(VIDEO_CATEGORY_LABELS).filter(([key]) => key !== "uncategorized");
@@ -147,6 +150,86 @@ function AddSuggestionDialog() {
   );
 }
 
+function AgentStatusBanner() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { data: status } = useAdminGetSuggestionAgentStatus({
+    query: { queryKey: getAdminGetSuggestionAgentStatusQueryKey(), refetchInterval: 60_000 },
+  });
+  const runAgent = useAdminRunSuggestionAgent();
+
+  function handleRunNow() {
+    runAgent.mutate(undefined, {
+      onSuccess: (result) => {
+        queryClient.invalidateQueries({ queryKey: getAdminGetSuggestionAgentStatusQueryKey() });
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/suggestions"] });
+        toast({ title: `Discovery run complete — ${result.inserted} added, ${result.skipped} skipped` });
+      },
+      onError: () => toast({ title: "Discovery run failed to complete", variant: "destructive" }),
+    });
+  }
+
+  const runNowButton = (
+    <Button size="sm" variant="outline" className="rounded-full shrink-0" onClick={handleRunNow} disabled={runAgent.isPending} data-testid="button-run-suggestion-agent">
+      {runAgent.isPending ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Zap className="w-3.5 h-3.5 mr-1.5" />}
+      Run discovery now
+    </Button>
+  );
+
+  if (!status?.lastRunAt) {
+    return (
+      <Card className="bg-card border-border/50" data-testid="agent-status-banner-never-run">
+        <CardContent className="p-4 flex items-center justify-between gap-4 flex-wrap">
+          <p className="text-sm text-muted-foreground">
+            The AI discovery agent hasn't run yet — it checks automatically once a day, or you can trigger it now.
+          </p>
+          {runNowButton}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!status.lastRunOk) {
+    return (
+      <Card
+        className={status.lowCreditSuspected ? "border-destructive/40 bg-destructive/5" : "border-amber-500/40 bg-amber-500/5"}
+        data-testid="agent-status-banner-error"
+      >
+        <CardContent className="p-4 flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-start gap-2.5">
+            <AlertTriangle className={`w-4 h-4 mt-0.5 shrink-0 ${status.lowCreditSuspected ? "text-destructive" : "text-amber-400"}`} />
+            <div>
+              <p className={`text-sm font-medium ${status.lowCreditSuspected ? "text-destructive" : "text-amber-400"}`}>
+                {status.lowCreditSuspected
+                  ? "AI discovery agent stopped — your Anthropic credit balance looks too low"
+                  : "The last AI discovery run failed"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {status.lowCreditSuspected
+                  ? "Add credits in your Anthropic Console, then run it again."
+                  : status.lastErrorMessage ?? "Check the server logs for details."}
+                {status.consecutiveFailures > 1 && ` · Failed ${status.consecutiveFailures} times in a row.`}
+              </p>
+            </div>
+          </div>
+          {runNowButton}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="bg-card border-border/50" data-testid="agent-status-banner-ok">
+      <CardContent className="p-4 flex items-center justify-between gap-4 flex-wrap">
+        <p className="text-sm text-muted-foreground">
+          AI discovery last ran {new Date(status.lastRunAt).toLocaleString()} — looking healthy.
+        </p>
+        {runNowButton}
+      </CardContent>
+    </Card>
+  );
+}
+
 export function AdminSuggestions() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -216,6 +299,8 @@ export function AdminSuggestions() {
           </div>
           <AddSuggestionDialog />
         </div>
+
+        <AgentStatusBanner />
 
         <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
           <div className="relative flex-1 min-w-[200px]">

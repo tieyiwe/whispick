@@ -29,7 +29,7 @@ afterEach(async () => {
   anthropicMessagesCreateMock.mockClear();
   const { pool } = await import("@workspace/db");
   await pool.query(
-    "TRUNCATE TABLE tracking_events, whisp_replies, credit_transactions, push_subscriptions, whisp_categories, whisps, circle_members, circles, whisper_group_members, whisper_groups, uploaded_videos, match_subscribers, suggested_videos, users RESTART IDENTITY CASCADE",
+    "TRUNCATE TABLE tracking_events, whisp_replies, credit_transactions, push_subscriptions, whisp_categories, whisps, circle_members, circles, whisper_group_members, whisper_groups, uploaded_videos, match_subscribers, suggested_videos, suggestion_agent_status, users RESTART IDENTITY CASCADE",
   );
 });
 

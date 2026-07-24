@@ -1017,6 +1017,32 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
 
+  /admin/suggestions/agent-status:
+    get:
+      operationId: adminGetSuggestionAgentStatus
+      tags: [admin, suggestions]
+      summary: Get the AI discovery agent's last run outcome, including whether it looks blocked by a low Anthropic credit balance (admin only)
+      responses:
+        "200":
+          description: Agent status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuggestionAgentStatus"
+
+  /admin/suggestions/run-agent:
+    post:
+      operationId: adminRunSuggestionAgent
+      tags: [admin, suggestions]
+      summary: Trigger an AI discovery sweep immediately instead of waiting for the daily schedule (admin only)
+      responses:
+        "200":
+          description: Run result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunSuggestionAgentResult"
+
   /admin/suggestions/{id}:
     get:
       operationId: adminGetSuggestion
@@ -3131,3 +3157,38 @@ components:
           description: "'pending' | 'published' | 'archived'"
         aiSummary:
           type: ["string", "null"]
+
+    SuggestionAgentStatus:
+      type: object
+      properties:
+        id:
+          type: string
+        lastRunAt:
+          type: ["string", "null"]
+        lastRunOk:
+          type: boolean
+        lastErrorMessage:
+          type: ["string", "null"]
+        lowCreditSuspected:
+          type: boolean
+          description: Best-effort heuristic match on the last error's message text — true when it looks like the Anthropic account's credit balance is too low
+        consecutiveFailures:
+          type: integer
+      required:
+        - id
+        - lastRunOk
+        - lowCreditSuspected
+        - consecutiveFailures
+
+    RunSuggestionAgentResult:
+      type: object
+      properties:
+        inserted:
+          type: integer
+        skipped:
+          type: integer
+        status:
+          $ref: "#/components/schemas/SuggestionAgentStatus"
+      required:
+        - inserted
+        - skipped

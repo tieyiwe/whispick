@@ -1,11 +1,13 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { db, suggestedVideosTable } from "@workspace/db";
+import { db, suggestedVideosTable, suggestionAgentStatusTable } from "@workspace/db";
 import { eq, inArray } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { VIDEO_CATEGORIES } from "./categorize";
 import { resolveVideoMeta, ALLOWED_HOSTS } from "./videoMeta";
 import { generateSuggestionSummaryAsync } from "./suggestionSummary";
 import { logger } from "./logger";
+
+const AGENT_STATUS_ROW_ID = "singleton";
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 // Same cheap/fast tier as the rest of this feature's AI calls — finding a
@@ -58,12 +60,74 @@ interface DiscoveredCandidate {
   category: string;
 }
 
+interface CategoryResult {
+  candidates: DiscoveredCandidate[];
+  error: unknown | null;
+}
+
 function extractUrls(text: string): string[] {
   const matches = text.match(/https?:\/\/[^\s<>"')\]]+/g) ?? [];
   return matches.map((u) => u.replace(/[.,;:!?]+$/, ""));
 }
 
-async function discoverForCategory(categoryKey: string, categoryLabel: string): Promise<DiscoveredCandidate[]> {
+// Anthropic surfaces an empty/low credit balance as a plain error message
+// ("Your credit balance is too low to access the Anthropic API...") rather
+// than a dedicated error type/code, so this is a message-content check —
+// deliberately loose (a plain substring match, not tied to SDK error class
+// or exact status code) so it still catches the case if the wording is
+// reached through a slightly different error shape, and so it works against
+// the plain Error objects test mocks reject with too.
+function looksLikeLowCreditError(err: unknown): boolean {
+  const message = describeError(err).toLowerCase();
+  return (
+    message.includes("credit balance") ||
+    message.includes("purchase credits") ||
+    (message.includes("insufficient") && message.includes("credit"))
+  );
+}
+
+function describeError(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === "string") return err;
+  return "Unknown error";
+}
+
+// Persists the agent's last run outcome to a singleton DB row (rather than
+// an in-memory variable) so the admin panel can show it even after a
+// restart — the same "always resolvable, never just lost" posture other
+// status fields in this app (aiTakeawayStatus, aiSummaryStatus) take.
+async function recordAgentRunResult(result: { ok: boolean; errorMessage?: string; lowCreditSuspected?: boolean }): Promise<void> {
+  const existing = await db
+    .select({ consecutiveFailures: suggestionAgentStatusTable.consecutiveFailures })
+    .from(suggestionAgentStatusTable)
+    .where(eq(suggestionAgentStatusTable.id, AGENT_STATUS_ROW_ID))
+    .then((r) => r[0]);
+
+  const consecutiveFailures = result.ok ? 0 : (existing?.consecutiveFailures ?? 0) + 1;
+
+  await db
+    .insert(suggestionAgentStatusTable)
+    .values({
+      id: AGENT_STATUS_ROW_ID,
+      lastRunAt: new Date(),
+      lastRunOk: result.ok,
+      lastErrorMessage: result.ok ? null : (result.errorMessage ?? "Unknown error"),
+      lowCreditSuspected: result.ok ? false : (result.lowCreditSuspected ?? false),
+      consecutiveFailures,
+    })
+    .onConflictDoUpdate({
+      target: suggestionAgentStatusTable.id,
+      set: {
+        lastRunAt: new Date(),
+        lastRunOk: result.ok,
+        lastErrorMessage: result.ok ? null : (result.errorMessage ?? "Unknown error"),
+        lowCreditSuspected: result.ok ? false : (result.lowCreditSuspected ?? false),
+        consecutiveFailures,
+      },
+    });
+}
+
+async function discoverForCategory(categoryKey: string, categoryLabel: string): Promise<CategoryResult> {
   try {
     const response = await getClient().messages.create({
       model: MODEL,
@@ -86,10 +150,10 @@ async function discoverForCategory(categoryKey: string, categoryLabel: string): 
       .join("\n");
 
     const urls = [...new Set(extractUrls(text))].slice(0, VIDEOS_PER_CATEGORY);
-    return urls.map((url) => ({ url, category: categoryKey }));
+    return { candidates: urls.map((url) => ({ url, category: categoryKey })), error: null };
   } catch (err) {
     logger.warn({ err, categoryKey }, "Suggestion discovery search failed for category");
-    return [];
+    return { candidates: [], error: err };
   }
 }
 
@@ -116,13 +180,36 @@ function pickCategoriesForRun(): (typeof VIDEO_CATEGORIES)[number][] {
 // users.
 export async function runSuggestionDiscoveryAgent(): Promise<{ inserted: number; skipped: number }> {
   if (!ANTHROPIC_API_KEY) {
+    // Deliberately doesn't touch suggestionAgentStatusTable — an unset key is
+    // a configuration state, not a run failure, and every other AI feature in
+    // this app treats a missing key as "not attempted" rather than an error.
     logger.warn("ANTHROPIC_API_KEY not set; skipping suggestion discovery run");
     return { inserted: 0, skipped: 0 };
   }
 
   const categories = pickCategoriesForRun();
-  const results = await Promise.all(categories.map((c) => discoverForCategory(c.key, c.label)));
-  const candidates = results.flat();
+  const perCategory = await Promise.all(categories.map((c) => discoverForCategory(c.key, c.label)));
+
+  // Every category's search call failing together (as opposed to one flaky
+  // category among several that succeeded) points at a systemic problem —
+  // an expired/invalid key, a depleted credit balance, or a persistent rate
+  // limit — worth surfacing to an admin rather than silently no-oping every
+  // day. A single category failing on its own is left alone; that's just
+  // "found nothing this time."
+  const failures = perCategory.filter((r) => r.error);
+  if (categories.length > 0 && failures.length === perCategory.length) {
+    const err = failures[0]!.error;
+    await recordAgentRunResult({
+      ok: false,
+      errorMessage: describeError(err),
+      lowCreditSuspected: looksLikeLowCreditError(err),
+    });
+    return { inserted: 0, skipped: 0 };
+  }
+
+  await recordAgentRunResult({ ok: true });
+
+  const candidates = perCategory.flatMap((r) => r.candidates);
   if (!candidates.length) return { inserted: 0, skipped: 0 };
 
   const candidateUrls = [...new Set(candidates.map((c) => c.url))];

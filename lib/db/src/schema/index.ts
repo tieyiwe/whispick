@@ -10,3 +10,4 @@ export * from "./whisper_groups";
 export * from "./uploaded_videos";
 export * from "./match_subscribers";
 export * from "./suggested_videos";
+export * from "./suggestion_agent_status";
