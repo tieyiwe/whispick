@@ -11,7 +11,7 @@ export function PrivacyPolicy() {
         sub-entity of TILO GROUP, LLC, a limited liability company organized under the laws of the State of
         Maryland, United States of America. Blind Whisper is an anonymous video-recommendation platform that lets
         users ("Senders") share video content with recipients ("Recipients") through anonymous delivery methods,
-        including Whisper Links and Ghost Boosts. This Privacy Policy governs how we collect, use, store, share, and
+        including Whisper Links, Whisper Groups, Ghost Boosts, and Circle. This Privacy Policy governs how we collect, use, store, share, and
         protect information in connection with our website, mobile experience, and all related services
         (collectively, the "Platform"). It applies to everyone who interacts with Blind Whisper — including people
         who never create an account, because our service is built around sending things to people who haven't
@@ -32,14 +32,16 @@ export function PrivacyPolicy() {
           <li><strong>Recipient contact information:</strong> the email address or phone number of a person you choose to send a Whisper Link to. That person hasn't created an account and hasn't directly given us their information — you have, by choosing to send them something. We use this solely to deliver your message, track delivery/read status, and — where the recipient opts in — let them reply anonymously or manage reminders. It is not sold, rented, or shared with third parties for marketing purposes.</li>
         </ul>
         <p><strong>1.2 Ghost Boost delivery.</strong> Ghost Boost is not a targeted-advertising product and does not involve any third-party ad platform. When a Sender uses Ghost Boost, we do not collect a specific Recipient's contact information at all — instead, the Sender's Whisp is matched against Blind Whisper's own pool of subscribers who have separately, affirmatively opted in (via double opt-in email confirmation) to receive anonymous video recommendations matching their stated mood or topic preferences. Delivery happens entirely through Blind Whisper's own email and notification systems. Subscribers can unsubscribe at any time via a one-click link in every match email, no account required.</p>
-        <p><strong>1.3 Information collected automatically.</strong></p>
+        <p><strong>1.3 Circle.</strong> Circle is a different kind of delivery: instead of sending to one chosen Recipient, a Sender can post a Whisp to a public, community discovery feed that anyone can browse without an account, or to a private Circle that only its invited members can see. Content posted to Circle — the video, note, and mood tag — is visible to whoever can see that feed; it is not delivered privately the way a Whisper Link is. The Sender's identity is still not attached to the post, but the content itself is not private in the way a one-to-one Whisper Link is.</p>
+        <p><strong>1.4 Whisper Groups.</strong> A Sender can also send a single Whisp to multiple saved recipients at once ("Whisper Groups"). Each recipient receives it the same way as an individual Whisper Link, and the same delivery/tracking practices in this Policy apply to each of them.</p>
+        <p><strong>1.5 Information collected automatically.</strong></p>
         <ul className="list-disc pl-5 space-y-1">
-          <li><strong>Device and usage data:</strong> device/browser type, IP address, pages visited, links clicked, and delivery/read/watch events tied to messages sent or received, collected as part of operating the Service and measuring whether a message was actually delivered and viewed.</li>
+          <li><strong>Device and usage data:</strong> device/browser type, IP address, pages visited, and links clicked, collected as part of operating the Service.</li>
           <li><strong>Location data:</strong> at signup, we perform a one-time, best-effort lookup of your IP address to estimate your country/region/city for aggregate analytics. We do not track precise real-time location, and this has no effect on the anonymity we provide to the people you send things to.</li>
-          <li><strong>Tracking events:</strong> when a Whisper Link is opened or a video link is clicked, collected via a tracking mechanism on Whisper Link landing pages. Recipients are informed of this on the landing page.</li>
+          <li><strong>Delivery and read-tracking events:</strong> when a Whisper Link is opened or its video is clicked, our servers record that event so we can show the Sender whether their message was delivered and viewed, and so the Recipient can be offered a reminder before the link expires. This tracking call does not capture or store the Recipient's IP address or device identifier — only that the link was opened. Recipients are informed of this on the landing page. Whisper Links expire 48 hours after delivery; we may send the Recipient up to two reminders before then.</li>
           <li><strong>Push notification data:</strong> if you opt in, we store a device/browser push subscription endpoint so we can notify you when something you sent is opened, watched, or replied to.</li>
         </ul>
-        <p><strong>1.4 Information from third parties.</strong> If you sign in using a supported social login provider through Clerk, we receive your name, email address, and profile photo from that provider in accordance with your account permissions there. We also receive transaction confirmations and subscription status from Stripe.</p>
+        <p><strong>1.6 Information from third parties.</strong> If you sign in using a supported social login provider through Clerk, we receive your name, email address, and profile photo from that provider in accordance with your account permissions there. We also receive transaction confirmations and subscription status from Stripe.</p>
       </LegalSection>
 
       <LegalSection heading="2. How We Use Your Information">
@@ -77,6 +79,12 @@ export function PrivacyPolicy() {
           <li>Whisper Link landing pages do not contain metadata linking back to the Sender's account.</li>
           <li>Ghost Boost matches are delivered as ordinary emails to opted-in subscribers; nothing in the delivery identifies the Sender to the Recipient.</li>
         </ul>
+        <p>
+          <strong>Circle is different.</strong> The Sender's identity is never attached to a Circle post, but Circle
+          content itself is posted to a public or shared feed rather than delivered privately to one Recipient —
+          anyone who can see that feed can see the content. Don't use Circle for anything you'd only want one
+          specific person to see.
+        </p>
         <p>
           <strong>Important limitation:</strong> we cannot guarantee absolute anonymity in all circumstances. We may
           be required to disclose Sender information in response to valid legal process, including court orders,
@@ -169,14 +177,21 @@ export function PrivacyPolicy() {
         </p>
       </LegalSection>
 
-      <LegalSection heading="12. Cookies and Tracking Technologies">
-        <p>We use cookies and similar technologies, including:</p>
+      <LegalSection heading="12. Cookies and Similar Technologies">
+        <p>
+          We keep this deliberately minimal. We don't use any third-party analytics or advertising cookies, and we
+          don't run an analytics tracker of any kind. The only cookies the Platform sets are:
+        </p>
         <ul className="list-disc pl-5 space-y-1">
-          <li><strong>Essential cookies:</strong> required for Platform functionality, authentication, and security.</li>
-          <li><strong>Analytics cookies:</strong> used to understand how users interact with the Platform (anonymized).</li>
-          <li><strong>Tracking pixels:</strong> embedded in Whisper Link landing pages to notify Senders of Recipient engagement; disclosed to Recipients on the landing page.</li>
+          <li><strong>Authentication:</strong> a session cookie set by our identity provider, Clerk, so you stay signed in.</li>
+          <li><strong>Interface preference:</strong> a cookie that remembers whether your sidebar is expanded or collapsed. It stores no personal information.</li>
         </ul>
-        <p>You can control cookie preferences through your browser settings. Disabling essential cookies may impair Platform functionality.</p>
+        <p>
+          Whisper Link open/click tracking (described in Section 1.5) is done with a direct call from the Recipient's
+          browser when they open the link — not a cookie or an embedded tracking pixel — and it doesn't set any
+          cookie on the Recipient's device. You can control cookie preferences through your browser settings;
+          disabling the authentication cookie will prevent you from staying signed in.
+        </p>
       </LegalSection>
 
       <LegalSection heading="13. Changes to This Privacy Policy">
