@@ -27,6 +27,16 @@ async function postToTwilio(params: Record<string, string>, context: Record<stri
       return false;
     }
 
+    // Twilio's response here only confirms the message was *accepted and
+    // queued* — actual delivery to the handset happens asynchronously and
+    // this app doesn't subscribe to Twilio's delivery-status webhooks, so a
+    // "queued" here can still end up undelivered later (most commonly: a
+    // trial account sending to a recipient number that isn't in its
+    // verified caller ID list). Logging the sid/status at least makes that
+    // queued-vs-never-attempted distinction visible in our own logs instead
+    // of only in the Twilio Console.
+    const accepted = (await res.json().catch(() => null)) as { sid?: string; status?: string } | null;
+    logger.info({ ...context, sid: accepted?.sid, status: accepted?.status }, "Twilio message accepted");
     return true;
   } catch (err) {
     logger.error({ ...context, err }, "Error sending Twilio message");
