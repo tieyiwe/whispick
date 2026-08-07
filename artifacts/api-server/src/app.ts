@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+import express, { type Express, type ErrorRequestHandler } from "express";
 import cors from "cors";
 import compression from "compression";
 import pinoHttp from "pino-http";
@@ -100,5 +100,27 @@ app.use(
 );
 
 app.use("/api", router);
+
+// Unknown /api/* routes previously fell through to Express's default HTML
+// 404 page — every real endpoint in this API returns JSON, so an unknown
+// path should too.
+app.use("/api", (_req, res) => {
+  res.status(404).json({ error: "Not found" });
+});
+
+// Terminal error handler. Individual routes rely on Express 5's built-in
+// promise-rejection-to-next(err) behavior rather than their own try/catch,
+// so without this, any unhandled exception previously fell through to
+// Express's default handler — an HTML page, not the {error: "..."} JSON
+// shape every other endpoint here returns, which the frontend can't parse.
+// Never echo err.message/stack to the client: full detail goes to the
+// logger only, since an unhandled exception can carry information (query
+// values, internal state) that wasn't meant to be user-facing.
+const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
+  req.log?.error({ err }, "Unhandled error");
+  if (res.headersSent) return;
+  res.status(500).json({ error: "Internal server error" });
+};
+app.use(errorHandler);
 
 export default app;
