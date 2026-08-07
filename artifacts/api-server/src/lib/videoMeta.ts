@@ -87,6 +87,18 @@ export async function scrapeOEmbed(url: string, platform: string | null): Promis
   const endpoints: Record<string, string> = {
     youtube: `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`,
     vimeo: `https://vimeo.com/api/oembed.json?url=${encodeURIComponent(url)}`,
+    // TikTok's oEmbed is public and unauthenticated, same as YouTube/Vimeo's.
+    tiktok: `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`,
+    // Twitter/X's oEmbed still works unauthenticated for public tweets as of
+    // this writing, but it's the least stable of these — X has tightened
+    // access to everything else. Worth keeping since it's free when it
+    // works; falls through to OpenGraph scraping below when it doesn't.
+    twitter: `https://publish.twitter.com/oembed?url=${encodeURIComponent(url)}`,
+    // Facebook and Instagram have no public, unauthenticated oEmbed
+    // endpoint — Meta's real oEmbed (graph.facebook.com) requires an app
+    // access token we don't have. They fall through to OpenGraph scraping
+    // below, which works for these two as long as the request looks like a
+    // known link-preview crawler (see scrapeOpenGraph's User-Agent choice).
   };
 
   const endpoint = platform ? endpoints[platform] : undefined;
@@ -107,11 +119,29 @@ export async function scrapeOEmbed(url: string, platform: string | null): Promis
   }
 }
 
-export async function scrapeOpenGraph(url: string): Promise<ScrapeResult | null> {
+// Facebook/Instagram (and, to a lesser extent, other platforms) serve a
+// stripped-down login-wall page — no OG tags — to requests that don't look
+// like a recognized link-preview crawler, but serve the real page (full
+// og:title/og:image) to ones they do recognize, since that's exactly how
+// link previews work when you share an FB/IG link in iMessage, WhatsApp, or
+// Slack. A generic custom bot name like the old "BlindWhisperBot/1.0" gets
+// treated as an arbitrary unrecognized client and blocked. Use Meta's own
+// crawler UA for its two properties, and a standard desktop browser UA
+// everywhere else in this fallback path (TikTok/Twitter mostly succeed via
+// oEmbed above and rarely reach this function, but a browser UA is a safer
+// default for them too than an identifiable custom bot name).
+function ogScrapeUserAgent(platform: string | null): string {
+  if (platform === "facebook" || platform === "instagram") {
+    return "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)";
+  }
+  return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+}
+
+export async function scrapeOpenGraph(url: string, platform: string | null = null): Promise<ScrapeResult | null> {
   try {
     const res = await fetch(url, {
       signal: AbortSignal.timeout(8000),
-      headers: { "User-Agent": "BlindWhisperBot/1.0" },
+      headers: { "User-Agent": ogScrapeUserAgent(platform) },
     });
     if (!res.ok) return { status: res.status };
     const html = await res.text();
@@ -194,7 +224,7 @@ export async function resolveVideoMeta(url: string): Promise<VideoMetaOutcome> {
   }
 
   const needsOg = !oembed || (!oembed.title && !oembed.thumbnail);
-  const og = needsOg ? await scrapeOpenGraph(url) : null;
+  const og = needsOg ? await scrapeOpenGraph(url, platform) : null;
   const result = oembed?.title || oembed?.thumbnail ? oembed : og;
 
   const blocked = result ? blockResponse(result.status) : null;
