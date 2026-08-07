@@ -1,5 +1,6 @@
 import express, { type Express } from "express";
 import cors from "cors";
+import compression from "compression";
 import pinoHttp from "pino-http";
 import { clerkMiddleware } from "@clerk/express";
 import { publishableKeyFromHost } from "@clerk/shared/keys";
@@ -19,6 +20,14 @@ const app: Express = express();
 // reflect the real client behind Replit's edge proxy rather than the proxy
 // itself.
 app.set("trust proxy", 1);
+
+// Gzip/brotli-negotiated compression for every response this server sends —
+// biggest win on the admin analytics/list JSON payloads (large arrays of
+// whisps/users serialized as JSON compress very well) but free for
+// everything else too. Placed before the Stripe webhook route on purpose:
+// compression only touches response bodies, never the raw request body
+// express.raw() needs for signature verification, so it's safe there.
+app.use(compression());
 
 app.use(
   pinoHttp({
