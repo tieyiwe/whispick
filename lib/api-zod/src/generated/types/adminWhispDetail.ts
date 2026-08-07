@@ -5,6 +5,8 @@
  * Blind Whisper API — anonymous video recommendation platform
  * OpenAPI spec version: 0.1.0
  */
+import type { DeliveryAttempt } from './deliveryAttempt';
+import type { ModerationFlag } from './moderationFlag';
 import type { TrackingEvent } from './trackingEvent';
 import type { Whisp } from './whisp';
 import type { WhispCategory } from './whispCategory';
@@ -21,4 +23,6 @@ export interface AdminWhispDetail {
   trackingEvents: TrackingEvent[];
   replies: WhispReply[];
   categories: WhispCategory[];
+  deliveryAttempts: DeliveryAttempt[];
+  moderationFlags: ModerationFlag[];
 }

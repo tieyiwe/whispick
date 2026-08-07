@@ -1,9 +1,10 @@
+import { Link } from "wouter";
 import { AdminLayout } from "@/components/layout/AdminLayout";
-import { useAdminGetOverviewStats, useAdminGetOpportunities } from "@workspace/api-client-react";
+import { useAdminGetOverviewStats, useAdminGetOpportunities, useAdminGetFunnelStats } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TrendAreaChart } from "@/components/shared/TrendAreaChart";
-import { Users, Send, UserX, TrendingUp, Lightbulb, TriangleAlert, Info } from "lucide-react";
+import { Users, Send, UserX, TrendingUp, Lightbulb, TriangleAlert, Info, AlertOctagon } from "lucide-react";
 
 const SEVERITY_CONFIG = {
   opportunity: { icon: Lightbulb, className: "bg-primary/10 border-primary/20 text-primary" },
@@ -14,11 +15,13 @@ const SEVERITY_CONFIG = {
 export function AdminDashboard() {
   const { data: stats, isLoading: statsLoading } = useAdminGetOverviewStats();
   const { data: opportunities, isLoading: opportunitiesLoading } = useAdminGetOpportunities();
+  const { data: funnelStats } = useAdminGetFunnelStats();
 
   const statCards = [
     { label: "Total Users", value: stats?.totalUsers ?? 0, icon: Users, color: "text-primary", bg: "bg-primary/10" },
     { label: "Total Whisps", value: stats?.totalWhisps ?? 0, icon: Send, color: "text-blue-400", bg: "bg-blue-500/10" },
     { label: "Active (7d)", value: stats?.activeUsersLast7Days ?? 0, icon: TrendingUp, color: "text-secondary", bg: "bg-secondary/10" },
+    { label: "Failed Deliveries", value: funnelStats?.funnel.failed ?? 0, icon: AlertOctagon, color: "text-destructive", bg: "bg-destructive/10", href: "/admin/whisps?status=failed" },
     { label: "Banned", value: stats?.bannedUsers ?? 0, icon: UserX, color: "text-destructive", bg: "bg-destructive/10" },
   ];
 
@@ -31,26 +34,33 @@ export function AdminDashboard() {
         </div>
 
         {statsLoading ? (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-28 rounded-2xl" />)}
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+            {[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-28 rounded-2xl" />)}
           </div>
         ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {statCards.map((s) => (
-              <Card key={s.label} className="bg-card border-border/50">
-                <CardContent className="p-5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground">{s.label}</p>
-                      <h3 className="text-2xl font-bold text-foreground mt-1">{s.value.toLocaleString()}</h3>
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+            {statCards.map((s) => {
+              const card = (
+                <Card className="bg-card border-border/50 h-full">
+                  <CardContent className="p-5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground">{s.label}</p>
+                        <h3 className="text-2xl font-bold text-foreground mt-1">{s.value.toLocaleString()}</h3>
+                      </div>
+                      <div className={`p-2.5 rounded-xl ${s.bg}`}>
+                        <s.icon className={`w-4 h-4 ${s.color}`} />
+                      </div>
                     </div>
-                    <div className={`p-2.5 rounded-xl ${s.bg}`}>
-                      <s.icon className={`w-4 h-4 ${s.color}`} />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              );
+              return s.href ? (
+                <Link key={s.label} href={s.href} className="block hover:opacity-80 transition-opacity">{card}</Link>
+              ) : (
+                <div key={s.label}>{card}</div>
+              );
+            })}
           </div>
         )}
 

@@ -18,6 +18,8 @@ import { ensureUser } from "../lib/ensureUser";
 import { getPublicAppUrl } from "../lib/publicUrl";
 import { deliverWhisperLink } from "../lib/deliver";
 import { categorizeWhispAsync } from "../lib/categorizeWhisp";
+import { moderateWhispAsync } from "../lib/moderation";
+import { needsDemographics } from "../lib/demographics";
 import { computeExpiresAt, MAX_SCHEDULE_DAYS } from "../lib/expiration";
 import { MAX_SCHEDULE_DAYS_WITH_UPLOAD } from "../lib/uploads";
 import { whisperLinkLimitFor, GHOST_BOOST_COST_USD } from "../lib/plans";
@@ -86,6 +88,15 @@ router.get("/", requireAuth, async (req, res): Promise<void> => {
 router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void> => {
   const { userId } = getAuth(req);
   const user = await ensureUser(userId!, req);
+
+  // One-time demographic confirmation gate — independent of (and checked
+  // before) content moderation below; see lib/demographics.ts. The frontend
+  // intercepts this specific error to show a confirmation step, save via
+  // PATCH /user/profile, then retry the same send.
+  if (needsDemographics(user)) {
+    res.status(428).json({ error: "Please confirm your gender and age range before sending your first whisp.", code: "demographics_required" });
+    return;
+  }
 
   const schema = z
     .object({
@@ -286,14 +297,24 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
     });
   }
 
+  // Read back and respond before kicking off the fire-and-forget delivery
+  // send below — deliverWhisperLink awaits the actual Twilio/Resend call and
+  // (for a failed initial send) updates this same row's status, so building
+  // the response from a fresh select afterward would race it. The response
+  // reflects the whisp as inserted (status 'delivered' = "attempted
+  // delivery"); a transport failure discovered moments later is visible via
+  // GET, not this response, same as the scheduled-send and reminder paths.
+  const whisp = await db.select().from(whispsTable).where(eq(whispsTable.id, id)).then(r => r[0]);
+  res.status(201).json(whisp);
+
   // The shared link goes through /l/:token (server-rendered) rather than
   // straight to /w/:token (the SPA) so link-preview crawlers in
   // email/SMS/WhatsApp clients see a real per-video Open Graph card instead
   // of the app's generic static shell. Scheduled whisps are dispatched later
   // by lib/scheduler.ts when their scheduledAt comes due.
   if (data.deliveryMethod === "whisper_link" && !isScheduled) {
-    deliverWhisperLink(
-      { publicToken, whisperChannel: data.whisperChannel ?? null, recipientEmail: data.recipientEmail ?? null, recipientPhone: data.recipientPhone ?? null },
+    void deliverWhisperLink(
+      { id, publicToken, whisperChannel: data.whisperChannel ?? null, recipientEmail: data.recipientEmail ?? null, recipientPhone: data.recipientPhone ?? null },
       getPublicAppUrl(req),
     );
   }
@@ -307,8 +328,17 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
     videoPlatform: effectiveVideoPlatform,
   });
 
-  const whisp = await db.select().from(whispsTable).where(eq(whispsTable.id, id)).then(r => r[0]);
-  res.status(201).json(whisp);
+  // Content-safety pass — also independent of delivery, runs on every whisp
+  // regardless of channel (a Circle Drop or Ghost Boost's note/title can be
+  // just as much a policy problem as a Whisper Link's).
+  void moderateWhispAsync({
+    id,
+    senderId: user.id,
+    videoUrl: effectiveVideoUrl,
+    videoTitle: effectiveVideoTitle,
+    videoPlatform: effectiveVideoPlatform,
+    anonymousNote: data.anonymousNote ?? null,
+  });
 });
 
 // GET /api/whisps/stats

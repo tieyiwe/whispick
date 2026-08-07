@@ -258,6 +258,18 @@ export interface UserProfile {
   fullName?: string | null;
   /** @nullable */
   avatarUrl?: string | null;
+  /** @nullable */
+  phone?: string | null;
+  /**
+     * 'woman' | 'man' | 'nonbinary' | 'prefer_not_to_say' | null (not yet answered)
+     * @nullable
+     */
+  gender?: string | null;
+  /**
+     * '13-17' | '18-24' | '25-34' | '35-44' | '45-54' | '55-64' | '65+' | 'prefer_not_to_say' | null (not yet answered)
+     * @nullable
+     */
+  ageRange?: string | null;
   plan: string;
   boostCredits: number;
   whisperLinksUsed: number;
@@ -270,6 +282,10 @@ export interface UserProfileUpdate {
   fullName?: string | null;
   /** @nullable */
   avatarUrl?: string | null;
+  /** @nullable */
+  gender?: string | null;
+  /** @nullable */
+  ageRange?: string | null;
 }
 
 export interface CreditTransaction {
@@ -367,6 +383,12 @@ export interface AdminUser {
   fullName?: string | null;
   /** @nullable */
   avatarUrl?: string | null;
+  /** @nullable */
+  phone?: string | null;
+  /** @nullable */
+  gender?: string | null;
+  /** @nullable */
+  ageRange?: string | null;
   plan: string;
   boostCredits: number;
   whisperLinksUsed: number;
@@ -396,11 +418,66 @@ export interface AdminUserListResponse {
   pageSize: number;
 }
 
+/**
+ * Whisp count by status ('delivered', 'failed', 'opened', 'watched', 'replied', 'pending', 'scheduled') across ALL of this user's whisps, not just recentWhisps.
+ */
+export type AdminUserDetailStatusCounts = {[key: string]: number};
+
+export type ModerationFlagSeverity = typeof ModerationFlagSeverity[keyof typeof ModerationFlagSeverity];
+
+
+export const ModerationFlagSeverity = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+} as const;
+
+export interface ModerationFlag {
+  id: string;
+  whispId: string;
+  userId: string;
+  /**
+     * The flagged whisp's video title, denormalized for display in flag lists without a second lookup.
+     * @nullable
+     */
+  videoTitle?: string | null;
+  /** @nullable */
+  senderEmail?: string | null;
+  severity: ModerationFlagSeverity;
+  reasoning: string;
+  /** 'ai_classifier' | 'admin_manual' */
+  source: string;
+  dismissed: boolean;
+  /** @nullable */
+  reviewedAt?: string | null;
+  /** @nullable */
+  reviewedByAdminId?: string | null;
+  createdAt: string;
+}
+
 export interface AdminUserDetail {
   user: AdminUser;
   recentWhisps: Whisp[];
   totalWhisps: number;
   creditTransactions: CreditTransaction[];
+  /** Whisp count by status ('delivered', 'failed', 'opened', 'watched', 'replied', 'pending', 'scheduled') across ALL of this user's whisps, not just recentWhisps. */
+  statusCounts: AdminUserDetailStatusCounts;
+  /** Replies received across all whisps this user sent. */
+  totalReplies: number;
+  /** Non-dismissed content-safety flags across this user's whisps. */
+  moderationFlagCount: number;
+  moderationFlags: ModerationFlag[];
+}
+
+export interface ModerationFlagListResponse {
+  items: ModerationFlag[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface UpdateModerationFlagInput {
+  dismissed: boolean;
 }
 
 export type UpdateAdminUserInputRole = typeof UpdateAdminUserInputRole[keyof typeof UpdateAdminUserInputRole];
@@ -453,6 +530,10 @@ export interface AdminWhispListItem {
   whisperChannel?: string | null;
   /** @nullable */
   circleId?: string | null;
+  /** @nullable */
+  recipientEmail?: string | null;
+  /** @nullable */
+  recipientPhone?: string | null;
   status: string;
   /** @nullable */
   scheduledAt?: string | null;
@@ -462,10 +543,16 @@ export interface AdminWhispListItem {
   openedAt?: string | null;
   /** @nullable */
   watchedAt?: string | null;
+  revealRequested: boolean;
+  /** @nullable */
+  revealAccepted?: boolean | null;
+  /** @nullable */
+  appreciationResponse?: string | null;
   /** @nullable */
   moodTag?: string | null;
   /** @nullable */
   boostSpendUsd?: string | null;
+  replyCount: number;
   categories: WhispCategory[];
   createdAt: string;
 }
@@ -475,6 +562,25 @@ export interface AdminWhispListResponse {
   total: number;
   page: number;
   pageSize: number;
+}
+
+export interface DeliveryAttempt {
+  id: string;
+  /** @nullable */
+  whispId?: string | null;
+  /** 'email' | 'sms' | 'whatsapp' */
+  channel: string;
+  /** 'whisper_link' | 'reminder' | 'ghost_boost_match' | 'reply_notification' | 'appreciation_notification' | 'subscription_verification' | 'media_expiring' */
+  purpose: string;
+  toAddress: string;
+  success: boolean;
+  /** @nullable */
+  providerMessageId?: string | null;
+  /** @nullable */
+  providerStatus?: string | null;
+  /** @nullable */
+  errorMessage?: string | null;
+  createdAt: string;
 }
 
 export interface AdminWhispDetail {
@@ -488,6 +594,8 @@ export interface AdminWhispDetail {
   trackingEvents: TrackingEvent[];
   replies: WhispReply[];
   categories: WhispCategory[];
+  deliveryAttempts: DeliveryAttempt[];
+  moderationFlags: ModerationFlag[];
 }
 
 export interface AdminTrendPoint {
@@ -555,8 +663,31 @@ export interface AdminCityStat {
   count: number;
 }
 
+export interface AdminRegionStat {
+  /** @nullable */
+  region: string | null;
+  /** @nullable */
+  country?: string | null;
+  count: number;
+}
+
+export interface AdminDemographicStat {
+  /** @nullable */
+  value: string | null;
+  count: number;
+}
+
+export interface AdminDemographicStatsResponse {
+  byGender: AdminDemographicStat[];
+  byAgeRange: AdminDemographicStat[];
+  /** Users who haven't been asked yet (gender and ageRange both null) — they haven't sent a first whisp, or answered "prefer not to say," which is itself counted under its own bucket, not here. */
+  unansweredUsers: number;
+  totalUsers: number;
+}
+
 export interface AdminLocationStatsResponse {
   byCountry: AdminCountryStat[];
+  byRegion: AdminRegionStat[];
   byCity: AdminCityStat[];
   unknownLocationUsers: number;
   totalUsers: number;
@@ -582,6 +713,117 @@ export interface AdminOpportunity {
 
 export interface AdminOpportunitiesResponse {
   insights: AdminOpportunity[];
+}
+
+/**
+ * Sent → delivered → opened → watched → replied across every recipient-directed whisp (whisper_link, group_whisper, ghost_boost) — circle_drop is excluded since it has no single recipient to fall off for.
+ */
+export type AdminFunnelStatsFunnel = {
+  sent: number;
+  delivered: number;
+  failed: number;
+  opened: number;
+  watched: number;
+  replied: number;
+};
+
+export type AdminFunnelStatsGhostBoost = {
+  campaigns: number;
+  totalMatched: number;
+  avgMatchedPerCampaign: number;
+};
+
+export type AdminFunnelStatsCircles = {
+  totalCircles: number;
+  totalMembers: number;
+  totalDrops: number;
+};
+
+export interface AdminChannelDeliveryStat {
+  channel: string;
+  attempts: number;
+  succeeded: number;
+  failed: number;
+  successRate: number;
+}
+
+export interface AdminFunnelStats {
+  /** Sent → delivered → opened → watched → replied across every recipient-directed whisp (whisper_link, group_whisper, ghost_boost) — circle_drop is excluded since it has no single recipient to fall off for. */
+  funnel: AdminFunnelStatsFunnel;
+  deliveryByChannel: AdminChannelDeliveryStat[];
+  ghostBoost: AdminFunnelStatsGhostBoost;
+  circles: AdminFunnelStatsCircles;
+}
+
+export interface Notification {
+  id: string;
+  /** @nullable */
+  targetUserId?: string | null;
+  /** @nullable */
+  targetUserEmail?: string | null;
+  title: string;
+  body: string;
+  /** @nullable */
+  url?: string | null;
+  /**
+     * Null means system-generated (e.g. a repeated content-flag warning), not composed by an admin.
+     * @nullable
+     */
+  createdByAdminId?: string | null;
+  /** @nullable */
+  createdByAdminEmail?: string | null;
+  createdAt: string;
+  /** Only populated for the current user's own notification list (GET /user/notifications) — omitted from the admin audit list, which has no single "reader". */
+  read?: boolean;
+}
+
+export type SendNotificationInputAudience = typeof SendNotificationInputAudience[keyof typeof SendNotificationInputAudience];
+
+
+export const SendNotificationInputAudience = {
+  all: 'all',
+  users: 'users',
+} as const;
+
+export interface SendNotificationInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title: string;
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  body: string;
+  /** @nullable */
+  url?: string | null;
+  audience: SendNotificationInputAudience;
+  /** Required (non-empty) when audience is 'users'; ignored for 'all'. */
+  userIds?: string[];
+}
+
+export interface SendNotificationResult {
+  /** Number of users this notification was created for — total user count for 'all', or userIds.length for 'users'. */
+  recipientCount: number;
+  /** How many active push subscriptions were actually notified live (best-effort; recipients without one still see it in-app). */
+  pushDelivered: number;
+}
+
+export interface AdminNotificationListResponse {
+  items: Notification[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface NotificationListResponse {
+  items: Notification[];
+  unreadCount: number;
+}
+
+export interface UnreadNotificationCountResponse {
+  unreadCount: number;
 }
 
 export interface WhisperGroup {
@@ -920,11 +1162,37 @@ page?: number;
 pageSize?: number;
 };
 
+export type AdminListUserWhispsParams = {
+status?: string;
+deliveryMethod?: string;
+page?: number;
+pageSize?: number;
+};
+
 export type AdminListWhispsParams = {
 search?: string;
+/**
+ * Matches against recipientEmail or recipientPhone — find every whisp sent to a contact (e.g. "I never got my link").
+ */
+recipient?: string;
 status?: string;
 deliveryMethod?: string;
 category?: string;
+page?: number;
+pageSize?: number;
+};
+
+export type AdminListNotificationsParams = {
+page?: number;
+pageSize?: number;
+};
+
+export type AdminListModerationFlagsParams = {
+/**
+ * Filter to "true" (already-reviewed false positives) or "false" (still needs review, the default view).
+ */
+dismissed?: string;
+severity?: string;
 page?: number;
 pageSize?: number;
 };

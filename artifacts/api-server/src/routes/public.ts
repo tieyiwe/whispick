@@ -256,7 +256,10 @@ router.post("/w/:token/reply", async (req, res): Promise<void> => {
   if (!isMatchedFanout(whisp)) {
     const sender = await db.select().from(usersTable).where(eq(usersTable.id, whisp.senderId)).then(r => r[0]);
     if (sender?.email) {
-      void sendEmail(sender.email, "Someone replied to your whisp", replyNotificationEmailHtml(whisp.videoTitle));
+      void sendEmail(sender.email, "Someone replied to your whisp", replyNotificationEmailHtml(whisp.videoTitle), {
+        whispId: whisp.id,
+        purpose: "reply_notification",
+      });
     }
     void notifyUser(
       whisp.senderId,
@@ -310,7 +313,10 @@ router.post("/w/:token/appreciation", async (req, res): Promise<void> => {
   if (parsed.data.appreciated && !alreadyAnswered && !isMatchedFanout(whisp)) {
     const sender = await db.select().from(usersTable).where(eq(usersTable.id, whisp.senderId)).then((r) => r[0]);
     if (sender?.email) {
-      void sendEmail(sender.email, "They needed to hear that 💜", appreciationNotificationEmailHtml(whisp.videoTitle));
+      void sendEmail(sender.email, "They needed to hear that 💜", appreciationNotificationEmailHtml(whisp.videoTitle), {
+        whispId: whisp.id,
+        purpose: "appreciation_notification",
+      });
     }
     void notifyUser(
       whisp.senderId,

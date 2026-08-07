@@ -7,9 +7,11 @@
  */
 import type { AdminCityStat } from './adminCityStat';
 import type { AdminCountryStat } from './adminCountryStat';
+import type { AdminRegionStat } from './adminRegionStat';
 
 export interface AdminLocationStatsResponse {
   byCountry: AdminCountryStat[];
+  byRegion: AdminRegionStat[];
   byCity: AdminCityStat[];
   unknownLocationUsers: number;
   totalUsers: number;

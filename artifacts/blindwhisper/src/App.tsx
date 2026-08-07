@@ -36,6 +36,8 @@ import { AdminWhisps } from "@/pages/admin/AdminWhisps";
 import { AdminWhispDetail } from "@/pages/admin/AdminWhispDetail";
 import { AdminAnalytics } from "@/pages/admin/AdminAnalytics";
 import { AdminSuggestions } from "@/pages/admin/AdminSuggestions";
+import { AdminModeration } from "@/pages/admin/AdminModeration";
+import { AdminNotifications } from "@/pages/admin/AdminNotifications";
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
@@ -173,6 +175,8 @@ function ClerkProviderWithRoutes() {
           <Route path="/admin/whisps" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminWhisps} />} />} />
           <Route path="/admin/analytics" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminAnalytics} />} />} />
           <Route path="/admin/suggestions" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminSuggestions} />} />} />
+          <Route path="/admin/moderation" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminModeration} />} />} />
+          <Route path="/admin/notifications" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminNotifications} />} />} />
           <Route path="/admin" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminDashboard} />} />} />
 
           <Route path="/w/:token" component={PublicWhispPage} />

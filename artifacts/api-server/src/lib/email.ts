@@ -1,12 +1,14 @@
 import { logger } from "./logger";
 import { HOOK_LINE } from "./copy";
+import { logDeliveryAttempt, type DeliveryLogContext } from "./deliveryLog";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const EMAIL_FROM = process.env.EMAIL_FROM ?? "Blind Whisper <whispers@blindwhisper.com>";
 
-export async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
+export async function sendEmail(to: string, subject: string, html: string, logCtx: DeliveryLogContext): Promise<boolean> {
   if (!RESEND_API_KEY) {
     logger.warn({ to }, "RESEND_API_KEY not set; skipping email send");
+    await logDeliveryAttempt("email", to, logCtx, { success: false, errorMessage: "RESEND_API_KEY is not set" });
     return false;
   }
 
@@ -21,13 +23,25 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
     });
 
     if (!res.ok) {
-      logger.error({ to, status: res.status, body: await res.text() }, "Failed to send email");
+      const body = await res.text();
+      logger.error({ to, status: res.status, body }, "Failed to send email");
+      await logDeliveryAttempt("email", to, logCtx, {
+        success: false,
+        providerStatus: String(res.status),
+        errorMessage: body.slice(0, 500),
+      });
       return false;
     }
 
+    const sent = (await res.json().catch(() => null)) as { id?: string } | null;
+    await logDeliveryAttempt("email", to, logCtx, { success: true, providerMessageId: sent?.id ?? null });
     return true;
   } catch (err) {
     logger.error({ to, err }, "Error sending email");
+    await logDeliveryAttempt("email", to, logCtx, {
+      success: false,
+      errorMessage: err instanceof Error ? err.message : String(err),
+    });
     return false;
   }
 }

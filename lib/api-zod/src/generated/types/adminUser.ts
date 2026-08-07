@@ -14,6 +14,12 @@ export interface AdminUser {
   fullName?: string | null;
   /** @nullable */
   avatarUrl?: string | null;
+  /** @nullable */
+  phone?: string | null;
+  /** @nullable */
+  gender?: string | null;
+  /** @nullable */
+  ageRange?: string | null;
   plan: string;
   boostCredits: number;
   whisperLinksUsed: number;

@@ -17,6 +17,8 @@ import { ensureUser } from "../lib/ensureUser";
 import { getPublicAppUrl } from "../lib/publicUrl";
 import { deliverWhisperLink } from "../lib/deliver";
 import { categorizeWhispsAsync } from "../lib/categorizeWhisp";
+import { moderateWhispAsync } from "../lib/moderation";
+import { needsDemographics } from "../lib/demographics";
 import { groupHookLine } from "../lib/copy";
 import { whisperLinkLimitFor } from "../lib/plans";
 import { createWhispLimiter } from "../lib/rateLimit";
@@ -323,6 +325,13 @@ router.post("/:id/send", requireAuth, createWhispLimiter, async (req, res): Prom
   const { userId } = getAuth(req);
   const user = await ensureUser(userId!, req);
 
+  // Same one-time demographic confirmation gate as POST /whisps — see
+  // lib/demographics.ts.
+  if (needsDemographics(user)) {
+    res.status(428).json({ error: "Please confirm your gender and age range before sending your first whisp.", code: "demographics_required" });
+    return;
+  }
+
   // createWhispLimiter's explicit Request/Response typing widens this
   // handler chain's params to Express's generic ParamsDictionary (see the
   // comment on requireAuth in lib/auth.ts) — cast back to the string this
@@ -457,8 +466,8 @@ router.post("/:id/send", requireAuth, createWhispLimiter, async (req, res): Prom
     });
 
     if (!isScheduled) {
-      deliverWhisperLink(
-        { publicToken, whisperChannel: data.whisperChannel, recipientEmail: needsEmail ? member.email : null, recipientPhone: needsEmail ? null : member.phone },
+      void deliverWhisperLink(
+        { id, publicToken, whisperChannel: data.whisperChannel, recipientEmail: needsEmail ? member.email : null, recipientPhone: needsEmail ? null : member.phone },
         appUrl,
         hookLine,
       );
@@ -466,6 +475,21 @@ router.post("/:id/send", requireAuth, createWhispLimiter, async (req, res): Prom
   }
 
   void categorizeWhispsAsync(whispIds, { videoUrl: effectiveVideoUrl, videoTitle: effectiveVideoTitle, videoPlatform: effectiveVideoPlatform });
+
+  // Every member's whisp in this send carries the same video/note, so one
+  // classification covers the whole batch — flagging it against each
+  // member's own whisp id would multiply the same content into N flags for
+  // this sender and unfairly inflate their warning count for a single send.
+  if (whispIds[0]) {
+    void moderateWhispAsync({
+      id: whispIds[0],
+      senderId: user.id,
+      videoUrl: effectiveVideoUrl,
+      videoTitle: effectiveVideoTitle,
+      videoPlatform: effectiveVideoPlatform,
+      anonymousNote: data.anonymousNote ?? null,
+    });
+  }
 
   res.status(201).json({
     groupSendId,

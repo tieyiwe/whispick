@@ -39,6 +39,11 @@ export async function ensureUser(clerkId: string, req: any): Promise<User> {
   const sessionClaims = (req.auth?.sessionClaims as Record<string, unknown>) ?? {};
   const email = (sessionClaims.email as string) ?? `${clerkId}@blindwhisper.com`;
   const fullName = (sessionClaims.name as string) ?? null;
+  // Only present if the Clerk JWT template includes it (same caveat as
+  // email/name above) — phone-number collection at signup is a Clerk
+  // Dashboard toggle, not something this app controls, so this stays
+  // best-effort and null otherwise.
+  const phone = (sessionClaims.phone as string) ?? null;
   const role = isBootstrapAdminEmail(email) ? "admin" : "user";
 
   await db.insert(usersTable).values({
@@ -46,6 +51,7 @@ export async function ensureUser(clerkId: string, req: any): Promise<User> {
     clerkId,
     email,
     fullName,
+    phone,
     plan: "free",
     boostCredits: 0,
     whisperLinksUsed: 0,

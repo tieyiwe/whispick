@@ -144,6 +144,7 @@ export async function matchGhostBoostWhisp(
       subscriber.email,
       hookLine,
       whisperLinkEmailHtml(sharedUrl, hookLine) + subscriptionMatchedEmailFooter(unsubscribeUrl),
+      { whispId: id, purpose: "ghost_boost_match" },
     );
 
     await db.update(matchSubscribersTable).set({ lastMatchedAt: new Date() }).where(eq(matchSubscribersTable.id, subscriber.id));

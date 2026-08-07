@@ -23,10 +23,16 @@ import type {
   AddWhisperGroupMembersInput,
   AdminCategoryStatsResponse,
   AdminDeliveryMethodStatsResponse,
+  AdminDemographicStatsResponse,
+  AdminFunnelStats,
+  AdminListModerationFlagsParams,
+  AdminListNotificationsParams,
   AdminListSuggestionsParams,
+  AdminListUserWhispsParams,
   AdminListUsersParams,
   AdminListWhispsParams,
   AdminLocationStatsResponse,
+  AdminNotificationListResponse,
   AdminOpportunitiesResponse,
   AdminOverviewStats,
   AdminUser,
@@ -53,8 +59,11 @@ import type {
   ListSuggestionsParams,
   ListWhispsParams,
   MatchStats,
+  ModerationFlag,
+  ModerationFlagListResponse,
   NoteSuggestionsInput,
   NoteSuggestionsResult,
+  NotificationListResponse,
   PublicReplyInput,
   PublicWhisp,
   PushPublicKeyResponse,
@@ -67,6 +76,8 @@ import type {
   RunSuggestionAgentResult,
   SendGroupWhispInput,
   SendGroupWhispResult,
+  SendNotificationInput,
+  SendNotificationResult,
   SubscribeInput,
   SubscribeResult,
   SuggestedVideo,
@@ -75,9 +86,11 @@ import type {
   SuggestionListResponse,
   TrackingEventInput,
   TrackingResult,
+  UnreadNotificationCountResponse,
   UnsubscribeFromMatching200,
   UnsubscribeFromMatchingParams,
   UpdateAdminUserInput,
+  UpdateModerationFlagInput,
   UpdateSuggestionInput,
   UploadedVideo,
   UserProfile,
@@ -2492,6 +2505,95 @@ export const useAdminDeleteUser = <TError = ErrorType<ApiError>,
       return useMutation(getAdminDeleteUserMutationOptions(options));
     }
 
+export const getAdminListUserWhispsUrl = (id: string,
+    params?: AdminListUserWhispsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/users/${id}/whisps?${stringifiedParams}` : `/api/admin/users/${id}/whisps`
+}
+
+/**
+ * @summary Every whisp a user sent, across all delivery methods — the full per-user activity timeline (admin only)
+ */
+export const adminListUserWhisps = async (id: string,
+    params?: AdminListUserWhispsParams, options?: RequestInit): Promise<AdminWhispListResponse> => {
+
+  return customFetch<AdminWhispListResponse>(getAdminListUserWhispsUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListUserWhispsQueryKey = (id: string,
+    params?: AdminListUserWhispsParams,) => {
+    return [
+    `/api/admin/users/${id}/whisps`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getAdminListUserWhispsQueryOptions = <TData = Awaited<ReturnType<typeof adminListUserWhisps>>, TError = ErrorType<ApiError>>(id: string,
+    params?: AdminListUserWhispsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListUserWhisps>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListUserWhispsQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListUserWhisps>>> = ({ signal }) => adminListUserWhisps(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListUserWhisps>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListUserWhispsQueryResult = NonNullable<Awaited<ReturnType<typeof adminListUserWhisps>>>
+export type AdminListUserWhispsQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Every whisp a user sent, across all delivery methods — the full per-user activity timeline (admin only)
+ */
+
+export function useAdminListUserWhisps<TData = Awaited<ReturnType<typeof adminListUserWhisps>>, TError = ErrorType<ApiError>>(
+ id: string,
+    params?: AdminListUserWhispsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListUserWhisps>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListUserWhispsQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getAdminListWhispsUrl = (params?: AdminListWhispsParams,) => {
   const normalizedParams = new URLSearchParams();
 
@@ -3031,6 +3133,83 @@ export function useAdminGetLocationStats<TData = Awaited<ReturnType<typeof admin
 
 
 
+export const getAdminGetDemographicStatsUrl = () => {
+
+
+
+
+  return `/api/admin/stats/demographics`
+}
+
+/**
+ * @summary Self-reported gender/age-range breakdown — "who is Whispering the most" (admin only)
+ */
+export const adminGetDemographicStats = async ( options?: RequestInit): Promise<AdminDemographicStatsResponse> => {
+
+  return customFetch<AdminDemographicStatsResponse>(getAdminGetDemographicStatsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetDemographicStatsQueryKey = () => {
+    return [
+    `/api/admin/stats/demographics`
+    ] as const;
+    }
+
+
+export const getAdminGetDemographicStatsQueryOptions = <TData = Awaited<ReturnType<typeof adminGetDemographicStats>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetDemographicStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetDemographicStatsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetDemographicStats>>> = ({ signal }) => adminGetDemographicStats({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetDemographicStats>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetDemographicStatsQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetDemographicStats>>>
+export type AdminGetDemographicStatsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Self-reported gender/age-range breakdown — "who is Whispering the most" (admin only)
+ */
+
+export function useAdminGetDemographicStats<TData = Awaited<ReturnType<typeof adminGetDemographicStats>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetDemographicStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetDemographicStatsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getAdminGetOpportunitiesUrl = () => {
 
 
@@ -3107,6 +3286,686 @@ export function useAdminGetOpportunities<TData = Awaited<ReturnType<typeof admin
 
 
 
+
+export const getAdminGetFunnelStatsUrl = () => {
+
+
+
+
+  return `/api/admin/stats/funnel`
+}
+
+/**
+ * @summary Delivery success rate by channel, sent→delivered→opened→watched→replied funnel, Ghost Boost match volume, and Circle activity (admin only)
+ */
+export const adminGetFunnelStats = async ( options?: RequestInit): Promise<AdminFunnelStats> => {
+
+  return customFetch<AdminFunnelStats>(getAdminGetFunnelStatsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetFunnelStatsQueryKey = () => {
+    return [
+    `/api/admin/stats/funnel`
+    ] as const;
+    }
+
+
+export const getAdminGetFunnelStatsQueryOptions = <TData = Awaited<ReturnType<typeof adminGetFunnelStats>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetFunnelStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetFunnelStatsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetFunnelStats>>> = ({ signal }) => adminGetFunnelStats({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetFunnelStats>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetFunnelStatsQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetFunnelStats>>>
+export type AdminGetFunnelStatsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Delivery success rate by channel, sent→delivered→opened→watched→replied funnel, Ghost Boost match volume, and Circle activity (admin only)
+ */
+
+export function useAdminGetFunnelStats<TData = Awaited<ReturnType<typeof adminGetFunnelStats>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetFunnelStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetFunnelStatsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminListNotificationsUrl = (params?: AdminListNotificationsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/notifications?${stringifiedParams}` : `/api/admin/notifications`
+}
+
+/**
+ * @summary Audit log of notifications sent to users (admin only)
+ */
+export const adminListNotifications = async (params?: AdminListNotificationsParams, options?: RequestInit): Promise<AdminNotificationListResponse> => {
+
+  return customFetch<AdminNotificationListResponse>(getAdminListNotificationsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListNotificationsQueryKey = (params?: AdminListNotificationsParams,) => {
+    return [
+    `/api/admin/notifications`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getAdminListNotificationsQueryOptions = <TData = Awaited<ReturnType<typeof adminListNotifications>>, TError = ErrorType<unknown>>(params?: AdminListNotificationsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListNotifications>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListNotificationsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListNotifications>>> = ({ signal }) => adminListNotifications(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListNotifications>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListNotificationsQueryResult = NonNullable<Awaited<ReturnType<typeof adminListNotifications>>>
+export type AdminListNotificationsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Audit log of notifications sent to users (admin only)
+ */
+
+export function useAdminListNotifications<TData = Awaited<ReturnType<typeof adminListNotifications>>, TError = ErrorType<unknown>>(
+ params?: AdminListNotificationsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListNotifications>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListNotificationsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminSendNotificationUrl = () => {
+
+
+
+
+  return `/api/admin/notifications`
+}
+
+/**
+ * @summary Send an in-app (plus best-effort push) notification to all users or specific ones (admin only)
+ */
+export const adminSendNotification = async (sendNotificationInput: SendNotificationInput, options?: RequestInit): Promise<SendNotificationResult> => {
+
+  return customFetch<SendNotificationResult>(getAdminSendNotificationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(sendNotificationInput)
+  }
+);}
+
+
+
+
+export const getAdminSendNotificationMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminSendNotification>>, TError,{data: BodyType<SendNotificationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminSendNotification>>, TError,{data: BodyType<SendNotificationInput>}, TContext> => {
+
+const mutationKey = ['adminSendNotification'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminSendNotification>>, {data: BodyType<SendNotificationInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminSendNotification(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminSendNotificationMutationResult = NonNullable<Awaited<ReturnType<typeof adminSendNotification>>>
+    export type AdminSendNotificationMutationBody = BodyType<SendNotificationInput>
+    export type AdminSendNotificationMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Send an in-app (plus best-effort push) notification to all users or specific ones (admin only)
+ */
+export const useAdminSendNotification = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminSendNotification>>, TError,{data: BodyType<SendNotificationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminSendNotification>>,
+        TError,
+        {data: BodyType<SendNotificationInput>},
+        TContext
+      > => {
+      return useMutation(getAdminSendNotificationMutationOptions(options));
+    }
+
+export const getGetMyNotificationsUrl = () => {
+
+
+
+
+  return `/api/user/notifications`
+}
+
+/**
+ * @summary This user's notifications (broadcasts + ones sent specifically to them), most recent first
+ */
+export const getMyNotifications = async ( options?: RequestInit): Promise<NotificationListResponse> => {
+
+  return customFetch<NotificationListResponse>(getGetMyNotificationsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyNotificationsQueryKey = () => {
+    return [
+    `/api/user/notifications`
+    ] as const;
+    }
+
+
+export const getGetMyNotificationsQueryOptions = <TData = Awaited<ReturnType<typeof getMyNotifications>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyNotifications>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyNotificationsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyNotifications>>> = ({ signal }) => getMyNotifications({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyNotifications>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyNotificationsQueryResult = NonNullable<Awaited<ReturnType<typeof getMyNotifications>>>
+export type GetMyNotificationsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary This user's notifications (broadcasts + ones sent specifically to them), most recent first
+ */
+
+export function useGetMyNotifications<TData = Awaited<ReturnType<typeof getMyNotifications>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyNotifications>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyNotificationsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetMyUnreadNotificationCountUrl = () => {
+
+
+
+
+  return `/api/user/notifications/unread-count`
+}
+
+/**
+ * @summary Lightweight unread count for a nav badge, without fetching the full list
+ */
+export const getMyUnreadNotificationCount = async ( options?: RequestInit): Promise<UnreadNotificationCountResponse> => {
+
+  return customFetch<UnreadNotificationCountResponse>(getGetMyUnreadNotificationCountUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyUnreadNotificationCountQueryKey = () => {
+    return [
+    `/api/user/notifications/unread-count`
+    ] as const;
+    }
+
+
+export const getGetMyUnreadNotificationCountQueryOptions = <TData = Awaited<ReturnType<typeof getMyUnreadNotificationCount>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyUnreadNotificationCount>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyUnreadNotificationCountQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyUnreadNotificationCount>>> = ({ signal }) => getMyUnreadNotificationCount({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyUnreadNotificationCount>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyUnreadNotificationCountQueryResult = NonNullable<Awaited<ReturnType<typeof getMyUnreadNotificationCount>>>
+export type GetMyUnreadNotificationCountQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Lightweight unread count for a nav badge, without fetching the full list
+ */
+
+export function useGetMyUnreadNotificationCount<TData = Awaited<ReturnType<typeof getMyUnreadNotificationCount>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyUnreadNotificationCount>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyUnreadNotificationCountQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getMarkNotificationReadUrl = (id: string,) => {
+
+
+
+
+  return `/api/user/notifications/${id}/read`
+}
+
+/**
+ * @summary Mark one notification as read
+ */
+export const markNotificationRead = async (id: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getMarkNotificationReadUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getMarkNotificationReadMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markNotificationRead>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof markNotificationRead>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['markNotificationRead'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markNotificationRead>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  markNotificationRead(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkNotificationReadMutationResult = NonNullable<Awaited<ReturnType<typeof markNotificationRead>>>
+
+    export type MarkNotificationReadMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Mark one notification as read
+ */
+export const useMarkNotificationRead = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markNotificationRead>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof markNotificationRead>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getMarkNotificationReadMutationOptions(options));
+    }
+
+export const getMarkAllNotificationsReadUrl = () => {
+
+
+
+
+  return `/api/user/notifications/read-all`
+}
+
+/**
+ * @summary Mark every one of this user's notifications as read
+ */
+export const markAllNotificationsRead = async ( options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getMarkAllNotificationsReadUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getMarkAllNotificationsReadMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markAllNotificationsRead>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof markAllNotificationsRead>>, TError,void, TContext> => {
+
+const mutationKey = ['markAllNotificationsRead'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markAllNotificationsRead>>, void> = () => {
+
+
+          return  markAllNotificationsRead(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkAllNotificationsReadMutationResult = NonNullable<Awaited<ReturnType<typeof markAllNotificationsRead>>>
+
+    export type MarkAllNotificationsReadMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Mark every one of this user's notifications as read
+ */
+export const useMarkAllNotificationsRead = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markAllNotificationsRead>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof markAllNotificationsRead>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getMarkAllNotificationsReadMutationOptions(options));
+    }
+
+export const getAdminListModerationFlagsUrl = (params?: AdminListModerationFlagsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/moderation/flags?${stringifiedParams}` : `/api/admin/moderation/flags`
+}
+
+/**
+ * @summary Content-safety flag queue — whisps an automated pass flagged as possibly sexual/explicit content, for review (admin only)
+ */
+export const adminListModerationFlags = async (params?: AdminListModerationFlagsParams, options?: RequestInit): Promise<ModerationFlagListResponse> => {
+
+  return customFetch<ModerationFlagListResponse>(getAdminListModerationFlagsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListModerationFlagsQueryKey = (params?: AdminListModerationFlagsParams,) => {
+    return [
+    `/api/admin/moderation/flags`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getAdminListModerationFlagsQueryOptions = <TData = Awaited<ReturnType<typeof adminListModerationFlags>>, TError = ErrorType<unknown>>(params?: AdminListModerationFlagsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListModerationFlags>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListModerationFlagsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListModerationFlags>>> = ({ signal }) => adminListModerationFlags(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListModerationFlags>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListModerationFlagsQueryResult = NonNullable<Awaited<ReturnType<typeof adminListModerationFlags>>>
+export type AdminListModerationFlagsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Content-safety flag queue — whisps an automated pass flagged as possibly sexual/explicit content, for review (admin only)
+ */
+
+export function useAdminListModerationFlags<TData = Awaited<ReturnType<typeof adminListModerationFlags>>, TError = ErrorType<unknown>>(
+ params?: AdminListModerationFlagsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListModerationFlags>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListModerationFlagsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminUpdateModerationFlagUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/moderation/flags/${id}`
+}
+
+/**
+ * @summary Dismiss a flag as a false positive, or un-dismiss it (admin only)
+ */
+export const adminUpdateModerationFlag = async (id: string,
+    updateModerationFlagInput: UpdateModerationFlagInput, options?: RequestInit): Promise<ModerationFlag> => {
+
+  return customFetch<ModerationFlag>(getAdminUpdateModerationFlagUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateModerationFlagInput)
+  }
+);}
+
+
+
+
+export const getAdminUpdateModerationFlagMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateModerationFlag>>, TError,{id: string;data: BodyType<UpdateModerationFlagInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminUpdateModerationFlag>>, TError,{id: string;data: BodyType<UpdateModerationFlagInput>}, TContext> => {
+
+const mutationKey = ['adminUpdateModerationFlag'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminUpdateModerationFlag>>, {id: string;data: BodyType<UpdateModerationFlagInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  adminUpdateModerationFlag(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminUpdateModerationFlagMutationResult = NonNullable<Awaited<ReturnType<typeof adminUpdateModerationFlag>>>
+    export type AdminUpdateModerationFlagMutationBody = BodyType<UpdateModerationFlagInput>
+    export type AdminUpdateModerationFlagMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Dismiss a flag as a false positive, or un-dismiss it (admin only)
+ */
+export const useAdminUpdateModerationFlag = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateModerationFlag>>, TError,{id: string;data: BodyType<UpdateModerationFlagInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminUpdateModerationFlag>>,
+        TError,
+        {id: string;data: BodyType<UpdateModerationFlagInput>},
+        TContext
+      > => {
+      return useMutation(getAdminUpdateModerationFlagMutationOptions(options));
+    }
 
 export const getAdminListSuggestionsUrl = (params?: AdminListSuggestionsParams,) => {
   const normalizedParams = new URLSearchParams();

@@ -17,9 +17,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, User, Mail, Shield, Bell } from "lucide-react";
 import { isPushSupported, getExistingPushSubscription, subscribeToPush, pushSubscriptionToJson } from "@/lib/push";
+import { GENDER_OPTIONS, GENDER_LABELS, AGE_RANGE_OPTIONS, AGE_RANGE_LABELS } from "@/lib/demographics";
 
 const WHISPER_LINK_LIMITS: Record<string, number | null> = {
   free: 3,
@@ -32,10 +34,14 @@ export function SettingsPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [fullName, setFullName] = useState("");
+  const [gender, setGender] = useState("");
+  const [ageRange, setAgeRange] = useState("");
   const [initialized, setInitialized] = useState(false);
 
   if (profile && !initialized) {
     setFullName(profile.fullName ?? "");
+    setGender(profile.gender ?? "");
+    setAgeRange(profile.ageRange ?? "");
     setInitialized(true);
   }
 
@@ -107,7 +113,7 @@ export function SettingsPage() {
 
   function handleSave() {
     updateProfile.mutate(
-      { data: { fullName: fullName || null } },
+      { data: { fullName: fullName || null, gender: gender || null, ageRange: ageRange || null } },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetUserProfileQueryKey() });
@@ -169,6 +175,35 @@ export function SettingsPage() {
                 onChange={(e) => setFullName(e.target.value)}
                 data-testid="input-full-name"
               />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">Gender</Label>
+                <Select value={gender} onValueChange={setGender}>
+                  <SelectTrigger className="bg-input/50 border-border/50 rounded-xl" data-testid="select-settings-gender">
+                    <SelectValue placeholder="Not set" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {GENDER_OPTIONS.map((g) => (
+                      <SelectItem key={g} value={g}>{GENDER_LABELS[g]}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">Age range</Label>
+                <Select value={ageRange} onValueChange={setAgeRange}>
+                  <SelectTrigger className="bg-input/50 border-border/50 rounded-xl" data-testid="select-settings-age-range">
+                    <SelectValue placeholder="Not set" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {AGE_RANGE_OPTIONS.map((a) => (
+                      <SelectItem key={a} value={a}>{AGE_RANGE_LABELS[a]}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <Button

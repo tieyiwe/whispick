@@ -21,6 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import { NotificationBell } from "@/components/shared/NotificationBell";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -74,11 +75,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-[100dvh] bg-background flex flex-col md:flex-row">
       <aside className="w-full md:w-64 border-r border-border bg-card/50 backdrop-blur-xl flex flex-col hidden md:flex h-screen sticky top-0">
-        <div className="p-6">
-          <Link href="/dashboard" className="flex items-center gap-3 text-primary hover:opacity-80 transition-opacity">
-            <Logo className="w-8 h-8 text-primary" />
-            <span className="font-serif text-2xl font-bold tracking-tight text-foreground">Blind Whisper</span>
+        <div className="p-6 flex items-center justify-between gap-2">
+          <Link href="/dashboard" className="flex items-center gap-3 text-primary hover:opacity-80 transition-opacity min-w-0">
+            <Logo className="w-8 h-8 text-primary shrink-0" />
+            <span className="font-serif text-2xl font-bold tracking-tight text-foreground truncate">Blind Whisper</span>
           </Link>
+          <NotificationBell />
         </div>
 
         <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
@@ -135,12 +137,15 @@ export function AppLayout({ children }: { children: ReactNode }) {
           <Logo className="w-6 h-6 text-primary" />
           <span className="font-serif text-xl font-bold">Blind Whisper</span>
         </Link>
-        <Link href="/settings" className="flex items-center justify-center w-11 h-11 -mr-2 text-muted-foreground" data-testid="link-settings-mobile">
-          <Avatar className="w-8 h-8 border border-border">
-            <AvatarImage src={user?.imageUrl} />
-            <AvatarFallback className="text-xs">{user?.firstName?.charAt(0) || "U"}</AvatarFallback>
-          </Avatar>
-        </Link>
+        <div className="flex items-center gap-1">
+          <NotificationBell />
+          <Link href="/settings" className="flex items-center justify-center w-11 h-11 -mr-2 text-muted-foreground" data-testid="link-settings-mobile">
+            <Avatar className="w-8 h-8 border border-border">
+              <AvatarImage src={user?.imageUrl} />
+              <AvatarFallback className="text-xs">{user?.firstName?.charAt(0) || "U"}</AvatarFallback>
+            </Avatar>
+          </Link>
+        </div>
       </header>
 
       <main className="flex-1 overflow-x-hidden md:min-h-screen pb-24 md:pb-0">

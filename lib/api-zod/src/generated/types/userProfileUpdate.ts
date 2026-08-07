@@ -11,4 +11,8 @@ export interface UserProfileUpdate {
   fullName?: string | null;
   /** @nullable */
   avatarUrl?: string | null;
+  /** @nullable */
+  gender?: string | null;
+  /** @nullable */
+  ageRange?: string | null;
 }

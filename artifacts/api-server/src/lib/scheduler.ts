@@ -60,20 +60,26 @@ export function startScheduledWhispDispatcher(): void {
           }
         }
 
+        let delivered = true;
         if (whisp.deliveryMethod === "whisper_link") {
-          deliverWhisperLink(whisp, appUrl);
+          delivered = await deliverWhisperLink(whisp, appUrl);
         } else if (whisp.deliveryMethod === "group_whisper" && whisp.groupSendId) {
           const memberCountRow = await db
             .select({ count: count() })
             .from(whispsTable)
             .where(eq(whispsTable.groupSendId, whisp.groupSendId))
             .then((r) => r[0]);
-          deliverWhisperLink(whisp, appUrl, groupHookLine(memberCountRow?.count ?? 1));
+          delivered = await deliverWhisperLink(whisp, appUrl, groupHookLine(memberCountRow?.count ?? 1));
         }
-        await db
-          .update(whispsTable)
-          .set({ status: "delivered", deliveredAt: new Date(), expiresAt: computeExpiresAt() })
-          .where(eq(whispsTable.id, whisp.id));
+        // deliverWhisperLink already flipped status to 'failed' (and logged
+        // why — see delivery_attempts) when the transport itself rejected
+        // it; only claim 'delivered' when it actually went out.
+        if (delivered) {
+          await db
+            .update(whispsTable)
+            .set({ status: "delivered", deliveredAt: new Date(), expiresAt: computeExpiresAt() })
+            .where(eq(whispsTable.id, whisp.id));
+        }
       }
 
       logger.info({ count: due.length }, "Dispatched scheduled whisps");

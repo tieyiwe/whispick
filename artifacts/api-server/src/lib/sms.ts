@@ -1,5 +1,6 @@
 import { logger } from "./logger";
 import { HOOK_LINE } from "./copy";
+import { logDeliveryAttempt, type DeliveryLogContext } from "./deliveryLog";
 
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
@@ -11,7 +12,13 @@ function twilioAuthHeader(): string {
   return `Basic ${Buffer.from(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`).toString("base64")}`;
 }
 
-async function postToTwilio(params: Record<string, string>, context: Record<string, unknown>): Promise<boolean> {
+async function postToTwilio(
+  to: string,
+  channel: "sms" | "whatsapp",
+  params: Record<string, string>,
+  logCtx: DeliveryLogContext,
+): Promise<boolean> {
+  const context = { to, channel };
   try {
     const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`, {
       method: "POST",
@@ -23,7 +30,13 @@ async function postToTwilio(params: Record<string, string>, context: Record<stri
     });
 
     if (!res.ok) {
-      logger.error({ ...context, status: res.status, body: await res.text() }, "Failed to send Twilio message");
+      const body = await res.text();
+      logger.error({ ...context, status: res.status, body }, "Failed to send Twilio message");
+      await logDeliveryAttempt(channel, to, logCtx, {
+        success: false,
+        providerStatus: String(res.status),
+        errorMessage: body.slice(0, 500),
+      });
       return false;
     }
 
@@ -32,25 +45,36 @@ async function postToTwilio(params: Record<string, string>, context: Record<stri
     // this app doesn't subscribe to Twilio's delivery-status webhooks, so a
     // "queued" here can still end up undelivered later (most commonly: a
     // trial account sending to a recipient number that isn't in its
-    // verified caller ID list). Logging the sid/status at least makes that
-    // queued-vs-never-attempted distinction visible in our own logs instead
-    // of only in the Twilio Console.
+    // verified caller ID list). Logging the sid/status makes that
+    // queued-vs-never-attempted distinction visible in our own logs, and
+    // persisting it to delivery_attempts makes it visible to admins too,
+    // not just whoever can read the Twilio Console or server logs.
     const accepted = (await res.json().catch(() => null)) as { sid?: string; status?: string } | null;
     logger.info({ ...context, sid: accepted?.sid, status: accepted?.status }, "Twilio message accepted");
+    await logDeliveryAttempt(channel, to, logCtx, {
+      success: true,
+      providerMessageId: accepted?.sid ?? null,
+      providerStatus: accepted?.status ?? null,
+    });
     return true;
   } catch (err) {
     logger.error({ ...context, err }, "Error sending Twilio message");
+    await logDeliveryAttempt(channel, to, logCtx, {
+      success: false,
+      errorMessage: err instanceof Error ? err.message : String(err),
+    });
     return false;
   }
 }
 
-export async function sendSms(to: string, body: string): Promise<boolean> {
+export async function sendSms(to: string, body: string, logCtx: DeliveryLogContext): Promise<boolean> {
   if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_FROM_NUMBER) {
     logger.warn({ to }, "Twilio SMS not configured (TWILIO_ACCOUNT_SID/TWILIO_AUTH_TOKEN/TWILIO_FROM_NUMBER); skipping SMS send");
+    await logDeliveryAttempt("sms", to, logCtx, { success: false, errorMessage: "Twilio SMS is not configured" });
     return false;
   }
 
-  return postToTwilio({ To: to, From: TWILIO_FROM_NUMBER, Body: body }, { to, channel: "sms" });
+  return postToTwilio(to, "sms", { To: to, From: TWILIO_FROM_NUMBER, Body: body }, logCtx);
 }
 
 /**
@@ -62,23 +86,26 @@ export async function sendSms(to: string, body: string): Promise<boolean> {
  * Builder) with a single {{1}} variable for the link, then set its SID as
  * TWILIO_WHATSAPP_CONTENT_SID.
  */
-export async function sendWhatsApp(to: string, linkUrl: string): Promise<boolean> {
+export async function sendWhatsApp(to: string, linkUrl: string, logCtx: DeliveryLogContext): Promise<boolean> {
   if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_WHATSAPP_FROM || !TWILIO_WHATSAPP_CONTENT_SID) {
     logger.warn(
       { to },
       "Twilio WhatsApp not configured (TWILIO_WHATSAPP_FROM/TWILIO_WHATSAPP_CONTENT_SID); skipping WhatsApp send",
     );
+    await logDeliveryAttempt("whatsapp", to, logCtx, { success: false, errorMessage: "Twilio WhatsApp is not configured" });
     return false;
   }
 
   return postToTwilio(
+    to,
+    "whatsapp",
     {
       To: `whatsapp:${to}`,
       From: `whatsapp:${TWILIO_WHATSAPP_FROM}`,
       ContentSid: TWILIO_WHATSAPP_CONTENT_SID,
       ContentVariables: JSON.stringify({ "1": linkUrl }),
     },
-    { to, channel: "whatsapp" },
+    logCtx,
   );
 }
 

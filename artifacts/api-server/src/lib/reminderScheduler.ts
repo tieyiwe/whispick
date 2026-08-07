@@ -39,7 +39,7 @@ export function startReminderDispatcher(): void {
 
         const newCount = whisp.reminderCount + 1;
         const isFinal = newCount >= MAX_REMINDERS;
-        deliverWhisperLink(whisp, appUrl, reminderHookLine(isFinal, whisp.expiresAt));
+        void deliverWhisperLink(whisp, appUrl, reminderHookLine(isFinal, whisp.expiresAt), "reminder");
 
         await db
           .update(whispsTable)

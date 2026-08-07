@@ -492,6 +492,9 @@ export const GetUserProfileResponse = zod.object({
   "email": zod.string(),
   "fullName": zod.string().nullish(),
   "avatarUrl": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "gender": zod.string().nullish().describe('\'woman\' | \'man\' | \'nonbinary\' | \'prefer_not_to_say\' | null (not yet answered)'),
+  "ageRange": zod.string().nullish().describe('\'13-17\' | \'18-24\' | \'25-34\' | \'35-44\' | \'45-54\' | \'55-64\' | \'65+\' | \'prefer_not_to_say\' | null (not yet answered)'),
   "plan": zod.string(),
   "boostCredits": zod.number(),
   "whisperLinksUsed": zod.number(),
@@ -505,7 +508,9 @@ export const GetUserProfileResponse = zod.object({
  */
 export const UpdateUserProfileBody = zod.object({
   "fullName": zod.string().nullish(),
-  "avatarUrl": zod.string().nullish()
+  "avatarUrl": zod.string().nullish(),
+  "gender": zod.string().nullish(),
+  "ageRange": zod.string().nullish()
 })
 
 export const UpdateUserProfileResponse = zod.object({
@@ -514,6 +519,9 @@ export const UpdateUserProfileResponse = zod.object({
   "email": zod.string(),
   "fullName": zod.string().nullish(),
   "avatarUrl": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "gender": zod.string().nullish().describe('\'woman\' | \'man\' | \'nonbinary\' | \'prefer_not_to_say\' | null (not yet answered)'),
+  "ageRange": zod.string().nullish().describe('\'13-17\' | \'18-24\' | \'25-34\' | \'35-44\' | \'45-54\' | \'55-64\' | \'65+\' | \'prefer_not_to_say\' | null (not yet answered)'),
   "plan": zod.string(),
   "boostCredits": zod.number(),
   "whisperLinksUsed": zod.number(),
@@ -695,6 +703,9 @@ export const AdminListUsersResponse = zod.object({
   "email": zod.string(),
   "fullName": zod.string().nullish(),
   "avatarUrl": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "gender": zod.string().nullish(),
+  "ageRange": zod.string().nullish(),
   "plan": zod.string(),
   "boostCredits": zod.number(),
   "whisperLinksUsed": zod.number(),
@@ -729,6 +740,9 @@ export const AdminGetUserResponse = zod.object({
   "email": zod.string(),
   "fullName": zod.string().nullish(),
   "avatarUrl": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "gender": zod.string().nullish(),
+  "ageRange": zod.string().nullish(),
   "plan": zod.string(),
   "boostCredits": zod.number(),
   "whisperLinksUsed": zod.number(),
@@ -785,6 +799,23 @@ export const AdminGetUserResponse = zod.object({
   "amount": zod.number(),
   "whispId": zod.string().nullish(),
   "createdAt": zod.string()
+})),
+  "statusCounts": zod.record(zod.string(), zod.number()).describe('Whisp count by status (\'delivered\', \'failed\', \'opened\', \'watched\', \'replied\', \'pending\', \'scheduled\') across ALL of this user\'s whisps, not just recentWhisps.'),
+  "totalReplies": zod.number().describe('Replies received across all whisps this user sent.'),
+  "moderationFlagCount": zod.number().describe('Non-dismissed content-safety flags across this user\'s whisps.'),
+  "moderationFlags": zod.array(zod.object({
+  "id": zod.string(),
+  "whispId": zod.string(),
+  "userId": zod.string(),
+  "videoTitle": zod.string().nullish().describe('The flagged whisp\'s video title, denormalized for display in flag lists without a second lookup.'),
+  "senderEmail": zod.string().nullish(),
+  "severity": zod.enum(['low', 'medium', 'high']),
+  "reasoning": zod.string(),
+  "source": zod.string().describe('\'ai_classifier\' | \'admin_manual\''),
+  "dismissed": zod.boolean(),
+  "reviewedAt": zod.string().nullish(),
+  "reviewedByAdminId": zod.string().nullish(),
+  "createdAt": zod.string()
 }))
 })
 
@@ -809,6 +840,9 @@ export const AdminUpdateUserResponse = zod.object({
   "email": zod.string(),
   "fullName": zod.string().nullish(),
   "avatarUrl": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "gender": zod.string().nullish(),
+  "ageRange": zod.string().nullish(),
   "plan": zod.string(),
   "boostCredits": zod.number(),
   "whisperLinksUsed": zod.number(),
@@ -836,10 +870,66 @@ export const AdminDeleteUserResponse = zod.void()
 
 
 /**
+ * @summary Every whisp a user sent, across all delivery methods — the full per-user activity timeline (admin only)
+ */
+export const AdminListUserWhispsParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const AdminListUserWhispsQueryParams = zod.object({
+  "status": zod.coerce.string().optional(),
+  "deliveryMethod": zod.coerce.string().optional(),
+  "page": zod.coerce.number().optional(),
+  "pageSize": zod.coerce.number().optional()
+})
+
+export const AdminListUserWhispsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "senderId": zod.string(),
+  "senderEmail": zod.string().nullish(),
+  "videoUrl": zod.string(),
+  "videoTitle": zod.string().nullish(),
+  "videoThumbnail": zod.string().nullish(),
+  "videoPlatform": zod.string().nullish(),
+  "deliveryMethod": zod.string(),
+  "whisperChannel": zod.string().nullish(),
+  "circleId": zod.string().nullish(),
+  "recipientEmail": zod.string().nullish(),
+  "recipientPhone": zod.string().nullish(),
+  "status": zod.string(),
+  "scheduledAt": zod.string().nullish(),
+  "deliveredAt": zod.string().nullish(),
+  "openedAt": zod.string().nullish(),
+  "watchedAt": zod.string().nullish(),
+  "revealRequested": zod.boolean(),
+  "revealAccepted": zod.boolean().nullish(),
+  "appreciationResponse": zod.string().nullish(),
+  "moodTag": zod.string().nullish(),
+  "boostSpendUsd": zod.string().nullish(),
+  "replyCount": zod.number(),
+  "categories": zod.array(zod.object({
+  "id": zod.string(),
+  "whispId": zod.string(),
+  "category": zod.string(),
+  "rank": zod.number(),
+  "score": zod.number(),
+  "createdAt": zod.string()
+})),
+  "createdAt": zod.string()
+})),
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number()
+})
+
+
+/**
  * @summary List all whisps across all users (admin only)
  */
 export const AdminListWhispsQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
+  "recipient": zod.coerce.string().optional().describe('Matches against recipientEmail or recipientPhone — find every whisp sent to a contact (e.g. \"I never got my link\").'),
   "status": zod.coerce.string().optional(),
   "deliveryMethod": zod.coerce.string().optional(),
   "category": zod.coerce.string().optional(),
@@ -859,13 +949,19 @@ export const AdminListWhispsResponse = zod.object({
   "deliveryMethod": zod.string(),
   "whisperChannel": zod.string().nullish(),
   "circleId": zod.string().nullish(),
+  "recipientEmail": zod.string().nullish(),
+  "recipientPhone": zod.string().nullish(),
   "status": zod.string(),
   "scheduledAt": zod.string().nullish(),
   "deliveredAt": zod.string().nullish(),
   "openedAt": zod.string().nullish(),
   "watchedAt": zod.string().nullish(),
+  "revealRequested": zod.boolean(),
+  "revealAccepted": zod.boolean().nullish(),
+  "appreciationResponse": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
   "boostSpendUsd": zod.string().nullish(),
+  "replyCount": zod.number(),
   "categories": zod.array(zod.object({
   "id": zod.string(),
   "whispId": zod.string(),
@@ -953,6 +1049,32 @@ export const AdminGetWhispResponse = zod.object({
   "rank": zod.number(),
   "score": zod.number(),
   "createdAt": zod.string()
+})),
+  "deliveryAttempts": zod.array(zod.object({
+  "id": zod.string(),
+  "whispId": zod.string().nullish(),
+  "channel": zod.string().describe('\'email\' | \'sms\' | \'whatsapp\''),
+  "purpose": zod.string().describe('\'whisper_link\' | \'reminder\' | \'ghost_boost_match\' | \'reply_notification\' | \'appreciation_notification\' | \'subscription_verification\' | \'media_expiring\''),
+  "toAddress": zod.string(),
+  "success": zod.boolean(),
+  "providerMessageId": zod.string().nullish(),
+  "providerStatus": zod.string().nullish(),
+  "errorMessage": zod.string().nullish(),
+  "createdAt": zod.string()
+})),
+  "moderationFlags": zod.array(zod.object({
+  "id": zod.string(),
+  "whispId": zod.string(),
+  "userId": zod.string(),
+  "videoTitle": zod.string().nullish().describe('The flagged whisp\'s video title, denormalized for display in flag lists without a second lookup.'),
+  "senderEmail": zod.string().nullish(),
+  "severity": zod.enum(['low', 'medium', 'high']),
+  "reasoning": zod.string(),
+  "source": zod.string().describe('\'ai_classifier\' | \'admin_manual\''),
+  "dismissed": zod.boolean(),
+  "reviewedAt": zod.string().nullish(),
+  "reviewedByAdminId": zod.string().nullish(),
+  "createdAt": zod.string()
 }))
 })
 
@@ -1030,12 +1152,34 @@ export const AdminGetLocationStatsResponse = zod.object({
   "country": zod.string().nullable(),
   "count": zod.number()
 })),
+  "byRegion": zod.array(zod.object({
+  "region": zod.string().nullable(),
+  "country": zod.string().nullish(),
+  "count": zod.number()
+})),
   "byCity": zod.array(zod.object({
   "city": zod.string().nullable(),
   "country": zod.string().nullish(),
   "count": zod.number()
 })),
   "unknownLocationUsers": zod.number(),
+  "totalUsers": zod.number()
+})
+
+
+/**
+ * @summary Self-reported gender/age-range breakdown — "who is Whispering the most" (admin only)
+ */
+export const AdminGetDemographicStatsResponse = zod.object({
+  "byGender": zod.array(zod.object({
+  "value": zod.string().nullable(),
+  "count": zod.number()
+})),
+  "byAgeRange": zod.array(zod.object({
+  "value": zod.string().nullable(),
+  "count": zod.number()
+})),
+  "unansweredUsers": zod.number().describe('Users who haven\'t been asked yet (gender and ageRange both null) — they haven\'t sent a first whisp, or answered \"prefer not to say,\" which is itself counted under its own bucket, not here.'),
   "totalUsers": zod.number()
 })
 
@@ -1051,6 +1195,190 @@ export const AdminGetOpportunitiesResponse = zod.object({
   "severity": zod.enum(['opportunity', 'warning', 'info']),
   "metric": zod.string().nullish()
 }))
+})
+
+
+/**
+ * @summary Delivery success rate by channel, sent→delivered→opened→watched→replied funnel, Ghost Boost match volume, and Circle activity (admin only)
+ */
+export const AdminGetFunnelStatsResponse = zod.object({
+  "funnel": zod.object({
+  "sent": zod.number(),
+  "delivered": zod.number(),
+  "failed": zod.number(),
+  "opened": zod.number(),
+  "watched": zod.number(),
+  "replied": zod.number()
+}).describe('Sent → delivered → opened → watched → replied across every recipient-directed whisp (whisper_link, group_whisper, ghost_boost) — circle_drop is excluded since it has no single recipient to fall off for.'),
+  "deliveryByChannel": zod.array(zod.object({
+  "channel": zod.string(),
+  "attempts": zod.number(),
+  "succeeded": zod.number(),
+  "failed": zod.number(),
+  "successRate": zod.number()
+})),
+  "ghostBoost": zod.object({
+  "campaigns": zod.number(),
+  "totalMatched": zod.number(),
+  "avgMatchedPerCampaign": zod.number()
+}),
+  "circles": zod.object({
+  "totalCircles": zod.number(),
+  "totalMembers": zod.number(),
+  "totalDrops": zod.number()
+})
+})
+
+
+/**
+ * @summary Audit log of notifications sent to users (admin only)
+ */
+export const AdminListNotificationsQueryParams = zod.object({
+  "page": zod.coerce.number().optional(),
+  "pageSize": zod.coerce.number().optional()
+})
+
+export const AdminListNotificationsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "targetUserId": zod.string().nullish(),
+  "targetUserEmail": zod.string().nullish(),
+  "title": zod.string(),
+  "body": zod.string(),
+  "url": zod.string().nullish(),
+  "createdByAdminId": zod.string().nullish().describe('Null means system-generated (e.g. a repeated content-flag warning), not composed by an admin.'),
+  "createdByAdminEmail": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "read": zod.boolean().optional().describe('Only populated for the current user\'s own notification list (GET \/user\/notifications) — omitted from the admin audit list, which has no single \"reader\".')
+})),
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number()
+})
+
+
+/**
+ * @summary Send an in-app (plus best-effort push) notification to all users or specific ones (admin only)
+ */
+export const adminSendNotificationBodyTitleMax = 200;
+
+export const adminSendNotificationBodyBodyMax = 2000;
+
+
+
+export const AdminSendNotificationBody = zod.object({
+  "title": zod.string().min(1).max(adminSendNotificationBodyTitleMax),
+  "body": zod.string().min(1).max(adminSendNotificationBodyBodyMax),
+  "url": zod.string().nullish(),
+  "audience": zod.enum(['all', 'users']),
+  "userIds": zod.array(zod.string()).optional().describe('Required (non-empty) when audience is \'users\'; ignored for \'all\'.')
+})
+
+export const AdminSendNotificationResponse = zod.object({
+  "recipientCount": zod.number().describe('Number of users this notification was created for — total user count for \'all\', or userIds.length for \'users\'.'),
+  "pushDelivered": zod.number().describe('How many active push subscriptions were actually notified live (best-effort; recipients without one still see it in-app).')
+})
+
+
+/**
+ * @summary This user's notifications (broadcasts + ones sent specifically to them), most recent first
+ */
+export const GetMyNotificationsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "targetUserId": zod.string().nullish(),
+  "targetUserEmail": zod.string().nullish(),
+  "title": zod.string(),
+  "body": zod.string(),
+  "url": zod.string().nullish(),
+  "createdByAdminId": zod.string().nullish().describe('Null means system-generated (e.g. a repeated content-flag warning), not composed by an admin.'),
+  "createdByAdminEmail": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "read": zod.boolean().optional().describe('Only populated for the current user\'s own notification list (GET \/user\/notifications) — omitted from the admin audit list, which has no single \"reader\".')
+})),
+  "unreadCount": zod.number()
+})
+
+
+/**
+ * @summary Lightweight unread count for a nav badge, without fetching the full list
+ */
+export const GetMyUnreadNotificationCountResponse = zod.object({
+  "unreadCount": zod.number()
+})
+
+
+/**
+ * @summary Mark one notification as read
+ */
+export const MarkNotificationReadParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const MarkNotificationReadResponse = zod.void()
+
+
+/**
+ * @summary Mark every one of this user's notifications as read
+ */
+export const MarkAllNotificationsReadResponse = zod.void()
+
+
+/**
+ * @summary Content-safety flag queue — whisps an automated pass flagged as possibly sexual/explicit content, for review (admin only)
+ */
+export const AdminListModerationFlagsQueryParams = zod.object({
+  "dismissed": zod.coerce.string().optional().describe('Filter to \"true\" (already-reviewed false positives) or \"false\" (still needs review, the default view).'),
+  "severity": zod.coerce.string().optional(),
+  "page": zod.coerce.number().optional(),
+  "pageSize": zod.coerce.number().optional()
+})
+
+export const AdminListModerationFlagsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "whispId": zod.string(),
+  "userId": zod.string(),
+  "videoTitle": zod.string().nullish().describe('The flagged whisp\'s video title, denormalized for display in flag lists without a second lookup.'),
+  "senderEmail": zod.string().nullish(),
+  "severity": zod.enum(['low', 'medium', 'high']),
+  "reasoning": zod.string(),
+  "source": zod.string().describe('\'ai_classifier\' | \'admin_manual\''),
+  "dismissed": zod.boolean(),
+  "reviewedAt": zod.string().nullish(),
+  "reviewedByAdminId": zod.string().nullish(),
+  "createdAt": zod.string()
+})),
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number()
+})
+
+
+/**
+ * @summary Dismiss a flag as a false positive, or un-dismiss it (admin only)
+ */
+export const AdminUpdateModerationFlagParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const AdminUpdateModerationFlagBody = zod.object({
+  "dismissed": zod.boolean()
+})
+
+export const AdminUpdateModerationFlagResponse = zod.object({
+  "id": zod.string(),
+  "whispId": zod.string(),
+  "userId": zod.string(),
+  "videoTitle": zod.string().nullish().describe('The flagged whisp\'s video title, denormalized for display in flag lists without a second lookup.'),
+  "senderEmail": zod.string().nullish(),
+  "severity": zod.enum(['low', 'medium', 'high']),
+  "reasoning": zod.string(),
+  "source": zod.string().describe('\'ai_classifier\' | \'admin_manual\''),
+  "dismissed": zod.boolean(),
+  "reviewedAt": zod.string().nullish(),
+  "reviewedByAdminId": zod.string().nullish(),
+  "createdAt": zod.string()
 })
 
 

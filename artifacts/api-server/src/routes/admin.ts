@@ -14,15 +14,19 @@ import {
   circleMembersTable,
   suggestedVideosTable,
   suggestionAgentStatusTable,
+  deliveryAttemptsTable,
+  notificationsTable,
+  moderationFlagsTable,
   type User,
 } from "@workspace/db";
-import { and, asc, count, desc, eq, gte, ilike, inArray, isNotNull, isNull, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, ilike, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
 import { requireAdmin } from "../lib/adminAuth";
 import { VIDEO_CATEGORIES } from "../lib/categorize";
 import { computeOpportunities } from "../lib/insights";
 import { resolveVideoMeta } from "../lib/videoMeta";
 import { generateSuggestionSummaryAsync } from "../lib/suggestionSummary";
 import { runSuggestionDiscoveryAgent } from "../lib/suggestionAgent";
+import { notifyUser, notifyAllUsers } from "../lib/push";
 
 const router = Router();
 
@@ -65,7 +69,12 @@ router.get("/users", async (req, res): Promise<void> => {
   res.json({ items, total: totalRow?.count ?? 0, page, pageSize });
 });
 
-// GET /api/admin/users/:id
+// GET /api/admin/users/:id — everything needed to answer "what happened
+// with this person's account" at a glance: a preview of recent whisps (see
+// GET /users/:id/whisps for the full, paginated, filterable history),
+// credit transaction history, a whisp-status breakdown across ALL of their
+// whisps (so "3 failed deliveries" is visible without paging through every
+// whisp), and how many replies they've ever received.
 router.get("/users/:id", async (req, res): Promise<void> => {
   const user = await db.select().from(usersTable).where(eq(usersTable.id, req.params.id)).then((r) => r[0]);
   if (!user) {
@@ -73,13 +82,124 @@ router.get("/users/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  const [recentWhisps, totalWhispsRow, creditTransactions] = await Promise.all([
+  const [recentWhisps, totalWhispsRow, creditTransactions, statusRows, totalRepliesRow, moderationFlagRows] = await Promise.all([
     db.select().from(whispsTable).where(eq(whispsTable.senderId, user.id)).orderBy(desc(whispsTable.createdAt)).limit(50),
     db.select({ count: count() }).from(whispsTable).where(eq(whispsTable.senderId, user.id)).then((r) => r[0]),
     db.select().from(creditTransactionsTable).where(eq(creditTransactionsTable.userId, user.id)).orderBy(desc(creditTransactionsTable.createdAt)).limit(50),
+    db.select({ status: whispsTable.status, count: count() }).from(whispsTable).where(eq(whispsTable.senderId, user.id)).groupBy(whispsTable.status),
+    db
+      .select({ count: count() })
+      .from(whispRepliesTable)
+      .innerJoin(whispsTable, eq(whispRepliesTable.whispId, whispsTable.id))
+      .where(eq(whispsTable.senderId, user.id))
+      .then((r) => r[0]),
+    // Every content-safety flag on this user's whisps, dismissed or not —
+    // an admin reviewing one flag can see this person's full flag history
+    // right here instead of hunting for it in the site-wide queue.
+    db
+      .select({
+        id: moderationFlagsTable.id,
+        whispId: moderationFlagsTable.whispId,
+        userId: moderationFlagsTable.userId,
+        severity: moderationFlagsTable.severity,
+        reasoning: moderationFlagsTable.reasoning,
+        source: moderationFlagsTable.source,
+        dismissed: moderationFlagsTable.dismissed,
+        reviewedAt: moderationFlagsTable.reviewedAt,
+        reviewedByAdminId: moderationFlagsTable.reviewedByAdminId,
+        createdAt: moderationFlagsTable.createdAt,
+        videoTitle: whispsTable.videoTitle,
+      })
+      .from(moderationFlagsTable)
+      .innerJoin(whispsTable, eq(moderationFlagsTable.whispId, whispsTable.id))
+      .where(eq(moderationFlagsTable.userId, user.id))
+      .orderBy(desc(moderationFlagsTable.createdAt)),
   ]);
 
-  res.json({ user, recentWhisps, totalWhisps: totalWhispsRow?.count ?? 0, creditTransactions });
+  res.json({
+    user,
+    recentWhisps,
+    totalWhisps: totalWhispsRow?.count ?? 0,
+    creditTransactions,
+    statusCounts: Object.fromEntries(statusRows.map((r) => [r.status, r.count])),
+    totalReplies: totalRepliesRow?.count ?? 0,
+    moderationFlagCount: moderationFlagRows.filter((f) => !f.dismissed).length,
+    moderationFlags: moderationFlagRows,
+  });
+});
+
+// Attaches categories + reply counts to a page of whisp rows — shared by
+// GET /whisps and GET /users/:id/whisps so both the site-wide content
+// browser and a single user's activity timeline render the same shape.
+async function enrichWhispList<T extends { id: string; senderId: string }>(
+  items: T[],
+  opts: { includeSenderEmail: boolean },
+): Promise<Array<T & { senderEmail: string | null; categories: unknown[]; replyCount: number }>> {
+  const whispIds = items.map((w) => w.id);
+  if (!whispIds.length) return [];
+
+  const [senders, categories, replyRows] = await Promise.all([
+    opts.includeSenderEmail
+      ? db
+          .select({ id: usersTable.id, email: usersTable.email })
+          .from(usersTable)
+          .where(inArray(usersTable.id, [...new Set(items.map((w) => w.senderId))]))
+      : Promise.resolve([]),
+    db.select().from(whispCategoriesTable).where(inArray(whispCategoriesTable.whispId, whispIds)).orderBy(asc(whispCategoriesTable.rank)),
+    db
+      .select({ whispId: whispRepliesTable.whispId, count: count() })
+      .from(whispRepliesTable)
+      .where(inArray(whispRepliesTable.whispId, whispIds))
+      .groupBy(whispRepliesTable.whispId),
+  ]);
+
+  const senderEmailById = Object.fromEntries(senders.map((s) => [s.id, s.email]));
+  const categoriesByWhisp: Record<string, typeof categories> = {};
+  for (const c of categories) (categoriesByWhisp[c.whispId] ??= []).push(c);
+  const replyCountByWhisp = Object.fromEntries(replyRows.map((r) => [r.whispId, r.count]));
+
+  return items.map((w) => ({
+    ...w,
+    senderEmail: senderEmailById[w.senderId] ?? null,
+    categories: categoriesByWhisp[w.id] ?? [],
+    replyCount: replyCountByWhisp[w.id] ?? 0,
+  }));
+}
+
+// GET /api/admin/users/:id/whisps — the full per-user activity timeline:
+// every whisp this user ever sent, across every delivery method
+// (whisper_link, ghost_boost, circle_drop, group_whisper), with recipient
+// contact info, delivery/open/watch timestamps, reveal flow state,
+// appreciation response, and reply count all on each row — everything
+// support needs to answer "what happened when this person sent things"
+// without opening each whisp individually.
+router.get("/users/:id/whisps", async (req, res): Promise<void> => {
+  const user = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.id, req.params.id)).then((r) => r[0]);
+  if (!user) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+
+  const { page, pageSize } = parsePagination(req);
+  const statusFilter = typeof req.query.status === "string" ? req.query.status : undefined;
+  const deliveryFilter = typeof req.query.deliveryMethod === "string" ? req.query.deliveryMethod : undefined;
+
+  const conditions = [eq(whispsTable.senderId, user.id)];
+  if (statusFilter) conditions.push(eq(whispsTable.status, statusFilter));
+  if (deliveryFilter) conditions.push(eq(whispsTable.deliveryMethod, deliveryFilter));
+  const where = and(...conditions);
+
+  const [items, totalRow] = await Promise.all([
+    db.select().from(whispsTable).where(where).orderBy(desc(whispsTable.createdAt)).limit(pageSize).offset((page - 1) * pageSize),
+    db.select({ count: count() }).from(whispsTable).where(where).then((r) => r[0]),
+  ]);
+
+  res.json({
+    items: await enrichWhispList(items, { includeSenderEmail: false }),
+    total: totalRow?.count ?? 0,
+    page,
+    pageSize,
+  });
 });
 
 const updateUserSchema = z.object({
@@ -159,12 +279,18 @@ router.delete("/users/:id", async (req, res): Promise<void> => {
 router.get("/whisps", async (req, res): Promise<void> => {
   const { page, pageSize } = parsePagination(req);
   const search = typeof req.query.search === "string" ? req.query.search.trim() : "";
+  // Finds every whisp sent to a given contact regardless of who sent it or
+  // which account (if any) they hold — the support-desk case of "I never
+  // got my link," where the person reporting the issue is the recipient,
+  // not necessarily an app user at all.
+  const recipient = typeof req.query.recipient === "string" ? req.query.recipient.trim() : "";
   const statusFilter = typeof req.query.status === "string" ? req.query.status : undefined;
   const deliveryFilter = typeof req.query.deliveryMethod === "string" ? req.query.deliveryMethod : undefined;
   const categoryFilter = typeof req.query.category === "string" ? req.query.category : undefined;
 
   const conditions = [];
   if (search) conditions.push(ilike(whispsTable.videoTitle, `%${search}%`));
+  if (recipient) conditions.push(or(ilike(whispsTable.recipientEmail, `%${recipient}%`), ilike(whispsTable.recipientPhone, `%${recipient}%`)));
   if (statusFilter) conditions.push(eq(whispsTable.status, statusFilter));
   if (deliveryFilter) conditions.push(eq(whispsTable.deliveryMethod, deliveryFilter));
 
@@ -188,27 +314,8 @@ router.get("/whisps", async (req, res): Promise<void> => {
     db.select({ count: count() }).from(whispsTable).where(where).then((r) => r[0]),
   ]);
 
-  const senderIds = [...new Set(items.map((w) => w.senderId))];
-  const senders = senderIds.length
-    ? await db.select({ id: usersTable.id, email: usersTable.email }).from(usersTable).where(inArray(usersTable.id, senderIds))
-    : [];
-  const senderEmailById = Object.fromEntries(senders.map((s) => [s.id, s.email]));
-
-  const whispIds = items.map((w) => w.id);
-  const categories = whispIds.length
-    ? await db.select().from(whispCategoriesTable).where(inArray(whispCategoriesTable.whispId, whispIds)).orderBy(asc(whispCategoriesTable.rank))
-    : [];
-  const categoriesByWhisp: Record<string, typeof categories> = {};
-  for (const c of categories) {
-    (categoriesByWhisp[c.whispId] ??= []).push(c);
-  }
-
   res.json({
-    items: items.map((w) => ({
-      ...w,
-      senderEmail: senderEmailById[w.senderId] ?? null,
-      categories: categoriesByWhisp[w.id] ?? [],
-    })),
+    items: await enrichWhispList(items, { includeSenderEmail: true }),
     total: totalRow?.count ?? 0,
     page,
     pageSize,
@@ -223,11 +330,17 @@ router.get("/whisps/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  const [sender, trackingEvents, replies, categories] = await Promise.all([
+  const [sender, trackingEvents, replies, categories, deliveryAttempts, moderationFlags] = await Promise.all([
     db.select().from(usersTable).where(eq(usersTable.id, whisp.senderId)).then((r) => r[0]),
     db.select().from(trackingEventsTable).where(eq(trackingEventsTable.whispId, whisp.id)).orderBy(asc(trackingEventsTable.createdAt)),
     db.select().from(whispRepliesTable).where(eq(whispRepliesTable.whispId, whisp.id)).orderBy(asc(whispRepliesTable.createdAt)),
     db.select().from(whispCategoriesTable).where(eq(whispCategoriesTable.whispId, whisp.id)).orderBy(asc(whispCategoriesTable.rank)),
+    // Every Twilio/Resend send attempt tied to this whisp — the initial
+    // send plus any reminders — so an admin can see exactly why a delivery
+    // did or didn't go out (accepted sid/status, or the provider's error)
+    // without reading server logs.
+    db.select().from(deliveryAttemptsTable).where(eq(deliveryAttemptsTable.whispId, whisp.id)).orderBy(asc(deliveryAttemptsTable.createdAt)),
+    db.select().from(moderationFlagsTable).where(eq(moderationFlagsTable.whispId, whisp.id)).orderBy(desc(moderationFlagsTable.createdAt)),
   ]);
 
   res.json({
@@ -238,6 +351,8 @@ router.get("/whisps/:id", async (req, res): Promise<void> => {
     trackingEvents,
     replies,
     categories,
+    deliveryAttempts,
+    moderationFlags: moderationFlags.map((f) => ({ ...f, videoTitle: whisp.videoTitle, senderEmail: sender?.email ?? null })),
   });
 });
 
@@ -358,12 +473,21 @@ router.get("/stats/delivery-methods", async (_req, res): Promise<void> => {
 
 // GET /api/admin/stats/locations
 router.get("/stats/locations", async (_req, res): Promise<void> => {
-  const [byCountry, byCity, unknownRow, totalRow] = await Promise.all([
+  const [byCountry, byRegion, byCity, unknownRow, totalRow] = await Promise.all([
     db
       .select({ country: usersTable.country, count: count() })
       .from(usersTable)
       .where(isNotNull(usersTable.country))
       .groupBy(usersTable.country)
+      .orderBy(desc(count()))
+      .limit(25),
+    // Region names (e.g. "CA", "Ontario") aren't unique without their
+    // country, same reasoning as byCity below.
+    db
+      .select({ region: usersTable.region, country: usersTable.country, count: count() })
+      .from(usersTable)
+      .where(isNotNull(usersTable.region))
+      .groupBy(usersTable.region, usersTable.country)
       .orderBy(desc(count()))
       .limit(25),
     db
@@ -379,8 +503,39 @@ router.get("/stats/locations", async (_req, res): Promise<void> => {
 
   res.json({
     byCountry,
+    byRegion,
     byCity,
     unknownLocationUsers: unknownRow?.count ?? 0,
+    totalUsers: totalRow?.count ?? 0,
+  });
+});
+
+// GET /api/admin/stats/demographics — self-reported gender/age-range,
+// collected once via the gate before a user's first whisp send (see
+// lib/demographics.ts). Never populated for a user who hasn't sent a whisp
+// yet, same "one-time, best-effort" spirit as the IP-geolocation stats above.
+router.get("/stats/demographics", async (_req, res): Promise<void> => {
+  const [byGender, byAgeRange, unansweredRow, totalRow] = await Promise.all([
+    db
+      .select({ value: usersTable.gender, count: count() })
+      .from(usersTable)
+      .where(isNotNull(usersTable.gender))
+      .groupBy(usersTable.gender)
+      .orderBy(desc(count())),
+    db
+      .select({ value: usersTable.ageRange, count: count() })
+      .from(usersTable)
+      .where(isNotNull(usersTable.ageRange))
+      .groupBy(usersTable.ageRange)
+      .orderBy(desc(count())),
+    db.select({ count: count() }).from(usersTable).where(isNull(usersTable.gender)).then((r) => r[0]),
+    db.select({ count: count() }).from(usersTable).then((r) => r[0]),
+  ]);
+
+  res.json({
+    byGender,
+    byAgeRange,
+    unansweredUsers: unansweredRow?.count ?? 0,
     totalUsers: totalRow?.count ?? 0,
   });
 });
@@ -389,6 +544,251 @@ router.get("/stats/locations", async (_req, res): Promise<void> => {
 router.get("/stats/opportunities", async (_req, res): Promise<void> => {
   const insights = await computeOpportunities();
   res.json({ insights });
+});
+
+// GET /api/admin/stats/funnel — the operational picture the other /stats
+// endpoints don't cover: does delivery actually work (by channel), how far
+// through sent → delivered → opened → watched → replied whisps get, and how
+// much volume Ghost Boost matching and Circles are actually driving.
+router.get("/stats/funnel", async (_req, res): Promise<void> => {
+  // Circle Drop has no single recipient to fall off for — it's posted to a
+  // shared feed, not delivered to one address — so it's excluded from the
+  // recipient-directed funnel below and reported separately.
+  const recipientDirected = ne(whispsTable.deliveryMethod, "circle_drop");
+
+  const [funnelRow, channelRows, ghostBoostRow, circleCountRow, memberCountRow, dropsRow] = await Promise.all([
+    db
+      .select({
+        sent: count(),
+        delivered: sql<number>`count(*) filter (where ${whispsTable.deliveredAt} is not null)`.mapWith(Number),
+        failed: sql<number>`count(*) filter (where ${whispsTable.status} = 'failed')`.mapWith(Number),
+        opened: sql<number>`count(*) filter (where ${whispsTable.openedAt} is not null)`.mapWith(Number),
+        watched: sql<number>`count(*) filter (where ${whispsTable.watchedAt} is not null)`.mapWith(Number),
+        replied: sql<number>`count(*) filter (where ${whispsTable.status} = 'replied')`.mapWith(Number),
+      })
+      .from(whispsTable)
+      .where(recipientDirected)
+      .then((r) => r[0]!),
+    db
+      .select({
+        channel: deliveryAttemptsTable.channel,
+        attempts: count(),
+        succeeded: sql<number>`count(*) filter (where ${deliveryAttemptsTable.success})`.mapWith(Number),
+      })
+      .from(deliveryAttemptsTable)
+      .groupBy(deliveryAttemptsTable.channel)
+      .orderBy(desc(count())),
+    db
+      .select({
+        campaigns: sql<number>`count(*) filter (where ${whispsTable.groupSendId} is null)`.mapWith(Number),
+        totalMatched: sql<number>`count(*) filter (where ${whispsTable.groupSendId} is not null)`.mapWith(Number),
+      })
+      .from(whispsTable)
+      .where(eq(whispsTable.deliveryMethod, "ghost_boost"))
+      .then((r) => r[0]!),
+    db.select({ count: count() }).from(circlesTable).then((r) => r[0]),
+    db.select({ count: count() }).from(circleMembersTable).then((r) => r[0]),
+    db
+      .select({ count: count() })
+      .from(whispsTable)
+      .where(eq(whispsTable.deliveryMethod, "circle_drop"))
+      .then((r) => r[0]),
+  ]);
+
+  res.json({
+    funnel: funnelRow,
+    deliveryByChannel: channelRows.map((r) => ({
+      channel: r.channel,
+      attempts: r.attempts,
+      succeeded: r.succeeded,
+      failed: r.attempts - r.succeeded,
+      successRate: r.attempts ? Math.round((r.succeeded / r.attempts) * 1000) / 10 : 0,
+    })),
+    ghostBoost: {
+      campaigns: ghostBoostRow.campaigns,
+      totalMatched: ghostBoostRow.totalMatched,
+      avgMatchedPerCampaign: ghostBoostRow.campaigns ? Math.round((ghostBoostRow.totalMatched / ghostBoostRow.campaigns) * 10) / 10 : 0,
+    },
+    circles: {
+      totalCircles: circleCountRow?.count ?? 0,
+      totalMembers: memberCountRow?.count ?? 0,
+      totalDrops: dropsRow?.count ?? 0,
+    },
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Notifications — admin-composed, persistent in-app notifications (distinct
+// from the ephemeral, opt-in push in lib/push.ts). Sending one both writes
+// the durable row(s) recipients can see in-app, and best-effort fires a live
+// push to anyone with an active subscription — see routes/user.ts's
+// GET /notifications for the recipient side.
+// ---------------------------------------------------------------------------
+
+const sendNotificationSchema = z
+  .object({
+    title: z.string().trim().min(1).max(200),
+    body: z.string().trim().min(1).max(2000),
+    url: z.string().min(1).nullable().optional(),
+    audience: z.enum(["all", "users"]),
+    userIds: z.array(z.string()).optional(),
+  })
+  .refine((data) => data.audience !== "users" || (data.userIds && data.userIds.length > 0), {
+    message: "userIds is required and must be non-empty when audience is 'users'",
+    path: ["userIds"],
+  });
+
+// POST /api/admin/notifications
+router.post("/notifications", async (req, res): Promise<void> => {
+  const parsed = sendNotificationSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const adminUser = (req as any).adminUser as User;
+  const { title, body, audience } = parsed.data;
+  const url = parsed.data.url ?? null;
+
+  let targetUserIds: (string | null)[];
+  if (audience === "all") {
+    targetUserIds = [null];
+  } else {
+    // De-duplicate — sending to the same user id twice would just create two
+    // identical rows they'd see twice in their notification list.
+    targetUserIds = [...new Set(parsed.data.userIds!)];
+  }
+
+  await db.insert(notificationsTable).values(
+    targetUserIds.map((targetUserId) => ({
+      id: randomUUID(),
+      targetUserId,
+      title,
+      body,
+      url,
+      createdByAdminId: adminUser.id,
+    })),
+  );
+
+  const recipientCount = audience === "all" ? await db.select({ count: count() }).from(usersTable).then((r) => r[0]?.count ?? 0) : targetUserIds.length;
+
+  // Best-effort live push alongside the durable in-app row — recipients
+  // without an active push subscription still see it next time they open
+  // the app, same as any other in-app notification.
+  let pushDelivered = 0;
+  if (audience === "all") {
+    pushDelivered = await notifyAllUsers(title, body, url ?? undefined);
+  } else {
+    const perUserCounts = await Promise.all((targetUserIds as string[]).map((userId) => notifyUser(userId, title, body, url ?? "")));
+    pushDelivered = perUserCounts.reduce((sum, n) => sum + n, 0);
+  }
+
+  res.status(201).json({ recipientCount, pushDelivered });
+});
+
+// GET /api/admin/notifications — audit log of everything sent, newest first.
+router.get("/notifications", async (req, res): Promise<void> => {
+  const { page, pageSize } = parsePagination(req);
+
+  const [rows, totalRow] = await Promise.all([
+    db
+      .select()
+      .from(notificationsTable)
+      .orderBy(desc(notificationsTable.createdAt))
+      .limit(pageSize)
+      .offset((page - 1) * pageSize),
+    db.select({ count: count() }).from(notificationsTable).then((r) => r[0]),
+  ]);
+
+  const userIds = [...new Set(rows.flatMap((n) => [n.targetUserId, n.createdByAdminId]).filter((id): id is string => !!id))];
+  const users = userIds.length ? await db.select({ id: usersTable.id, email: usersTable.email }).from(usersTable).where(inArray(usersTable.id, userIds)) : [];
+  const emailById = Object.fromEntries(users.map((u) => [u.id, u.email]));
+
+  res.json({
+    items: rows.map((n) => ({
+      ...n,
+      targetUserEmail: n.targetUserId ? (emailById[n.targetUserId] ?? null) : null,
+      createdByAdminEmail: n.createdByAdminId ? (emailById[n.createdByAdminId] ?? null) : null,
+    })),
+    total: totalRow?.count ?? 0,
+    page,
+    pageSize,
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Moderation — the content-safety flag queue lib/moderation.ts's classifier
+// writes to. A flag is a "worth a human look" signal, not a verdict:
+// dismissing one records that an admin looked and decided it's a false
+// positive; leaving it as-is is itself the record. Nothing here ever bans
+// or suspends anyone — that stays a deliberate action via PATCH
+// /users/:id's existing `banned` field.
+// ---------------------------------------------------------------------------
+
+// GET /api/admin/moderation/flags
+router.get("/moderation/flags", async (req, res): Promise<void> => {
+  const { page, pageSize } = parsePagination(req);
+  const dismissedFilter = req.query.dismissed === "true" ? true : req.query.dismissed === "false" ? false : undefined;
+  const severityFilter = typeof req.query.severity === "string" ? req.query.severity : undefined;
+
+  const conditions = [];
+  if (dismissedFilter !== undefined) conditions.push(eq(moderationFlagsTable.dismissed, dismissedFilter));
+  if (severityFilter) conditions.push(eq(moderationFlagsTable.severity, severityFilter));
+  const where = conditions.length ? and(...conditions) : undefined;
+
+  const [rows, totalRow] = await Promise.all([
+    db
+      .select({
+        id: moderationFlagsTable.id,
+        whispId: moderationFlagsTable.whispId,
+        userId: moderationFlagsTable.userId,
+        severity: moderationFlagsTable.severity,
+        reasoning: moderationFlagsTable.reasoning,
+        source: moderationFlagsTable.source,
+        dismissed: moderationFlagsTable.dismissed,
+        reviewedAt: moderationFlagsTable.reviewedAt,
+        reviewedByAdminId: moderationFlagsTable.reviewedByAdminId,
+        createdAt: moderationFlagsTable.createdAt,
+        videoTitle: whispsTable.videoTitle,
+        senderEmail: usersTable.email,
+      })
+      .from(moderationFlagsTable)
+      .innerJoin(whispsTable, eq(moderationFlagsTable.whispId, whispsTable.id))
+      .leftJoin(usersTable, eq(moderationFlagsTable.userId, usersTable.id))
+      .where(where)
+      .orderBy(desc(moderationFlagsTable.createdAt))
+      .limit(pageSize)
+      .offset((page - 1) * pageSize),
+    db.select({ count: count() }).from(moderationFlagsTable).where(where).then((r) => r[0]),
+  ]);
+
+  res.json({ items: rows, total: totalRow?.count ?? 0, page, pageSize });
+});
+
+const updateModerationFlagSchema = z.object({ dismissed: z.boolean() });
+
+// PATCH /api/admin/moderation/flags/:id
+router.patch("/moderation/flags/:id", async (req, res): Promise<void> => {
+  const existing = await db.select().from(moderationFlagsTable).where(eq(moderationFlagsTable.id, req.params.id)).then((r) => r[0]);
+  if (!existing) {
+    res.status(404).json({ error: "Flag not found" });
+    return;
+  }
+
+  const parsed = updateModerationFlagSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const adminUser = (req as any).adminUser as User;
+  await db
+    .update(moderationFlagsTable)
+    .set({ dismissed: parsed.data.dismissed, reviewedAt: new Date(), reviewedByAdminId: adminUser.id })
+    .where(eq(moderationFlagsTable.id, existing.id));
+
+  const updated = await db.select().from(moderationFlagsTable).where(eq(moderationFlagsTable.id, existing.id)).then((r) => r[0]);
+  res.json(updated);
 });
 
 // ---------------------------------------------------------------------------

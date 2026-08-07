@@ -17,6 +17,13 @@ const fetchTranscriptMock = vi.hoisted(() =>
 );
 vi.mock("../lib/transcript", () => ({ fetchTranscript: fetchTranscriptMock }));
 
+// Whisp creation also fires lib/moderation's fire-and-forget content-safety
+// pass, which shares the same mocked Anthropic client as generateTakeawayAsync
+// — left un-isolated, its calls race the queued mockResolvedValueOnce/
+// mockRejectedValueOnce responses and call-count assertions below. Mocked out
+// entirely here since this file is specifically about takeaway generation.
+vi.mock("../lib/moderation", () => ({ moderateWhispAsync: vi.fn() }));
+
 const USER_A = "clerk_takeaway_sender";
 
 function asUser(userId: string) {

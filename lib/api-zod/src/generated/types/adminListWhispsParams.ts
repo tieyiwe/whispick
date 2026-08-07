@@ -8,6 +8,10 @@
 
 export type AdminListWhispsParams = {
 search?: string;
+/**
+ * Matches against recipientEmail or recipientPhone — find every whisp sent to a contact (e.g. "I never got my link").
+ */
+recipient?: string;
 status?: string;
 deliveryMethod?: string;
 category?: string;

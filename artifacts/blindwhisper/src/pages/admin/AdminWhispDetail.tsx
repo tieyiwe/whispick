@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, useLocation } from "wouter";
+import { useParams, useLocation, Link } from "wouter";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { useAdminGetWhisp, useAdminDeleteWhisp, getAdminGetWhispQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -70,7 +70,7 @@ export function AdminWhispDetail() {
     );
   }
 
-  const { whisp, senderEmail, senderFullName, trackingEvents, replies, categories } = data;
+  const { whisp, senderEmail, senderFullName, trackingEvents, replies, categories, deliveryAttempts, moderationFlags } = data;
 
   return (
     <AdminLayout>
@@ -124,6 +124,41 @@ export function AdminWhispDetail() {
             {whisp.anonymousNote && (
               <p className="text-sm text-muted-foreground italic border-l-2 border-primary/40 pl-3">"{whisp.anonymousNote}"</p>
             )}
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs pt-1 border-t border-border/30">
+              {(whisp.recipientEmail || whisp.recipientPhone) && (
+                <div>
+                  <p className="text-muted-foreground">Recipient</p>
+                  <p className="text-foreground font-medium truncate">{whisp.recipientEmail || whisp.recipientPhone}</p>
+                </div>
+              )}
+              <div>
+                <p className="text-muted-foreground">Delivered</p>
+                <p className="text-foreground font-medium">{whisp.deliveredAt ? new Date(whisp.deliveredAt).toLocaleString() : "—"}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Opened</p>
+                <p className="text-foreground font-medium">{whisp.openedAt ? new Date(whisp.openedAt).toLocaleString() : "—"}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Watched</p>
+                <p className="text-foreground font-medium">{whisp.watchedAt ? new Date(whisp.watchedAt).toLocaleString() : "—"}</p>
+              </div>
+              {whisp.revealRequested && (
+                <div>
+                  <p className="text-muted-foreground">Reveal</p>
+                  <p className="text-foreground font-medium">
+                    {whisp.revealAccepted === null ? "Requested" : whisp.revealAccepted ? "Accepted" : "Declined"}
+                  </p>
+                </div>
+              )}
+              {whisp.appreciationResponse && (
+                <div>
+                  <p className="text-muted-foreground">Appreciated</p>
+                  <p className="text-foreground font-medium capitalize">{whisp.appreciationResponse}</p>
+                </div>
+              )}
+            </div>
             {categories.length > 0 && (
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {categories.map((c) => (
@@ -148,6 +183,51 @@ export function AdminWhispDetail() {
                 )}
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {moderationFlags.length > 0 && (
+          <Card className="bg-destructive/5 border-destructive/30">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-serif text-destructive">Content Flags</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {moderationFlags.map((f) => (
+                <div key={f.id} className="p-3 rounded-xl text-sm bg-card border border-destructive/20">
+                  <div className="flex items-center justify-between mb-1">
+                    <Badge variant="destructive" className="capitalize">{f.severity}</Badge>
+                    <span className="text-xs text-muted-foreground">{new Date(f.createdAt).toLocaleString()}</span>
+                  </div>
+                  <p className="text-foreground">{f.reasoning}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {f.dismissed ? "Dismissed as a false positive" : "Awaiting review"} · <Link href="/admin/moderation" className="hover:text-primary transition-colors">Review queue</Link>
+                  </p>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
+        <Card className="bg-card border-border/50">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-serif">Delivery Attempts</CardTitle>
+            <p className="text-xs text-muted-foreground">Every SMS/email/WhatsApp send Blind Whisper made for this whisp, accepted or failed.</p>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {deliveryAttempts.length ? deliveryAttempts.map((a) => (
+              <div key={a.id} className="p-3 rounded-xl text-sm bg-muted/20 border border-border/30">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <Badge variant={a.success ? "outline" : "destructive"} className="capitalize">{a.success ? "Accepted" : "Failed"}</Badge>
+                    <span className="text-xs text-muted-foreground capitalize">{a.channel} · {a.purpose.replace(/_/g, " ")}</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">{new Date(a.createdAt).toLocaleString()}</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">To {a.toAddress}</p>
+                {a.errorMessage && <p className="text-xs text-destructive mt-1">{a.errorMessage}</p>}
+                {a.providerMessageId && <p className="text-xs text-muted-foreground mt-1 font-mono">{a.providerMessageId}</p>}
+              </div>
+            )) : <p className="text-sm text-muted-foreground py-4 text-center">No send attempts logged for this whisp.</p>}
           </CardContent>
         </Card>
 

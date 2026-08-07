@@ -11,6 +11,7 @@ import {
   useSendGroupWhisp,
   useListMedia,
   useGetNoteSuggestions,
+  useGetUserProfile,
   getListMyCirclesQueryKey,
   getListWhisperGroupsQueryKey,
   getGetWhispStatsQueryKey,
@@ -55,6 +56,8 @@ import { isContactPickerSupported, pickContact } from "@/lib/contactPicker";
 import { uploadMedia, UploadValidationError } from "@/lib/uploadMedia";
 import { Thumbnail } from "@/components/shared/Thumbnail";
 import { takePendingForward } from "@/lib/forwardVideo";
+import { DemographicsGateDialog } from "@/components/shared/DemographicsGateDialog";
+import { needsDemographics } from "@/lib/demographics";
 
 const WHISPER_CHANNELS = [
   { key: "email", label: "Email", icon: Mail },
@@ -151,11 +154,13 @@ export function SendWhisp() {
   const [sent, setSent] = useState(false);
   const [sentWhispId, setSentWhispId] = useState<string | null>(null);
   const [sentGroupSendId, setSentGroupSendId] = useState<string | null>(null);
+  const [showDemographicsGate, setShowDemographicsGate] = useState(false);
 
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
 
+  const { data: profile } = useGetUserProfile();
   const scrapeMeta = useScrapeVideoMeta();
   const createWhisp = useCreateWhisp();
   const sendGroupWhisp = useSendGroupWhisp();
@@ -276,6 +281,16 @@ export function SendWhisp() {
   }
 
   async function handleSend() {
+    // One-time gate before a sender's very first whisp — see
+    // lib/demographics.ts. Checked here so it interrupts before the send
+    // even fires; the server enforces the same thing (428
+    // "demographics_required") as a backstop in case this check ever gets
+    // out of sync with a stale cached profile.
+    if (needsDemographics(profile)) {
+      setShowDemographicsGate(true);
+      return;
+    }
+
     const alias = customAlias.trim() || senderAlias;
     const isScheduling = scheduleEnabled && deliveryMethod !== "ghost_boost" && !!scheduledAtValue;
 
@@ -314,6 +329,10 @@ export function SendWhisp() {
             queryClient.invalidateQueries({ queryKey: getListWhispsQueryKey() });
           },
           onError: (err: any) => {
+            if (err?.status === 428) {
+              setShowDemographicsGate(true);
+              return;
+            }
             toast({ title: err?.data?.error ?? "Failed to send group whisp", variant: "destructive" });
           },
         }
@@ -350,7 +369,11 @@ export function SendWhisp() {
           queryClient.invalidateQueries({ queryKey: getGetWhispStatsQueryKey() });
           queryClient.invalidateQueries({ queryKey: getListWhispsQueryKey() });
         },
-        onError: () => {
+        onError: (err: any) => {
+          if (err?.status === 428) {
+            setShowDemographicsGate(true);
+            return;
+          }
           toast({ title: "Failed to send whisp", variant: "destructive" });
         },
       }
@@ -1215,6 +1238,13 @@ export function SendWhisp() {
           </CardContent>
         </Card>
       </div>
+      <DemographicsGateDialog
+        open={showDemographicsGate}
+        onConfirmed={() => {
+          setShowDemographicsGate(false);
+          void handleSend();
+        }}
+      />
     </AppLayout>
   );
 }

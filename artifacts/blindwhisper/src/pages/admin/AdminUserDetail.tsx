@@ -5,7 +5,9 @@ import {
   useAdminGetUser,
   useAdminUpdateUser,
   useAdminDeleteUser,
+  useAdminListUserWhisps,
   getAdminGetUserQueryKey,
+  getAdminListUserWhispsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,7 +30,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { ArrowLeft, Loader2, MapPin, Trash2, PlayCircle } from "lucide-react";
+import { deliveryLabel } from "@/lib/deliveryMethod";
+import { ArrowLeft, Loader2, MapPin, Trash2, PlayCircle, MessageSquareHeart, ShieldAlert } from "lucide-react";
+
+const WHISP_PAGE_SIZE = 15;
 
 export function AdminUserDetail() {
   const { id } = useParams<{ id: string }>();
@@ -39,6 +44,17 @@ export function AdminUserDetail() {
   const { data, isLoading } = useAdminGetUser(id!, { query: { enabled: !!id, queryKey: getAdminGetUserQueryKey(id!) } });
   const updateUser = useAdminUpdateUser();
   const deleteUser = useAdminDeleteUser();
+
+  const [whispStatusFilter, setWhispStatusFilter] = useState("all");
+  const [whispPage, setWhispPage] = useState(1);
+  const whispParams = {
+    ...(whispStatusFilter !== "all" ? { status: whispStatusFilter } : {}),
+    page: whispPage,
+    pageSize: WHISP_PAGE_SIZE,
+  };
+  const { data: whispsPage, isLoading: whispsLoading } = useAdminListUserWhisps(id!, whispParams, {
+    query: { enabled: !!id, queryKey: getAdminListUserWhispsQueryKey(id!, whispParams) },
+  });
 
   const [role, setRole] = useState("user");
   const [plan, setPlan] = useState("free");
@@ -115,7 +131,7 @@ export function AdminUserDetail() {
     );
   }
 
-  const { user, recentWhisps, totalWhisps, creditTransactions } = data;
+  const { user, totalWhisps, creditTransactions, statusCounts, totalReplies, moderationFlagCount, moderationFlags } = data;
 
   return (
     <AdminLayout>
@@ -166,12 +182,28 @@ export function AdminUserDetail() {
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
               <div>
+                <p className="text-muted-foreground">Phone</p>
+                <p className="font-medium text-foreground">{user.phone || "—"}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Gender</p>
+                <p className="font-medium text-foreground capitalize">{user.gender?.replace(/_/g, " ") || "—"}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Age range</p>
+                <p className="font-medium text-foreground">{user.ageRange?.replace(/_/g, " ") || "—"}</p>
+              </div>
+              <div>
                 <p className="text-muted-foreground">Whisper Links used</p>
                 <p className="font-medium text-foreground">{user.whisperLinksUsed}</p>
               </div>
               <div>
                 <p className="text-muted-foreground">Total whisps</p>
                 <p className="font-medium text-foreground">{totalWhisps}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Replies received</p>
+                <p className="font-medium text-foreground">{totalReplies}</p>
               </div>
               <div>
                 <p className="text-muted-foreground">Joined</p>
@@ -182,6 +214,17 @@ export function AdminUserDetail() {
                 <p className="font-medium text-foreground">{user.lastSeenAt ? new Date(user.lastSeenAt).toLocaleDateString() : "—"}</p>
               </div>
             </div>
+
+            {Object.keys(statusCounts).length > 0 && (
+              <div className="flex flex-wrap gap-2 pt-3 border-t border-border/30">
+                {Object.entries(statusCounts).map(([status, statusCount]) => (
+                  <span key={status} className="flex items-center gap-1.5">
+                    <StatusBadge status={status} />
+                    <span className="text-xs text-muted-foreground">×{statusCount}</span>
+                  </span>
+                ))}
+              </div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-1.5">
@@ -229,18 +272,94 @@ export function AdminUserDetail() {
           </CardContent>
         </Card>
 
+        {moderationFlagCount > 0 && (
+          <Card className="bg-destructive/5 border-destructive/30">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-serif text-destructive flex items-center gap-1.5">
+                <ShieldAlert className="w-4 h-4" /> Content Flags ({moderationFlagCount} active)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {moderationFlags.map((f) => (
+                <Link
+                  key={f.id}
+                  href={`/admin/whisps/${f.whispId}`}
+                  className={`block p-3 rounded-xl text-sm border transition-colors hover:bg-muted/30 ${f.dismissed ? "bg-muted/10 border-border/30 opacity-60" : "bg-card border-destructive/20"}`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="flex items-center gap-2">
+                      <Badge variant={f.dismissed ? "outline" : "destructive"} className="capitalize">{f.severity}</Badge>
+                      <span className="text-foreground truncate">{f.videoTitle || "Video"}</span>
+                    </span>
+                    <span className="text-xs text-muted-foreground shrink-0">{new Date(f.createdAt).toLocaleDateString()}</span>
+                  </div>
+                  <p className="text-muted-foreground text-xs">{f.reasoning}</p>
+                </Link>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
         <Card className="bg-card border-border/50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-serif">Recent Whisps</CardTitle>
+          <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-base font-serif">Activity Timeline</CardTitle>
+            <Select value={whispStatusFilter} onValueChange={(v) => { setWhispStatusFilter(v); setWhispPage(1); }}>
+              <SelectTrigger className="w-36 h-8 text-xs bg-input/50 border-border/50 rounded-full"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="delivered">Delivered</SelectItem>
+                <SelectItem value="failed">Couldn't send</SelectItem>
+                <SelectItem value="opened">Opened</SelectItem>
+                <SelectItem value="watched">Watched</SelectItem>
+                <SelectItem value="replied">Replied</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="scheduled">Scheduled</SelectItem>
+              </SelectContent>
+            </Select>
           </CardHeader>
-          <CardContent className="space-y-2">
-            {recentWhisps.length ? recentWhisps.map((w) => (
-              <Link key={w.id} href={`/admin/whisps/${w.id}`} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted/30 transition-colors">
-                <PlayCircle className="w-4 h-4 text-muted-foreground shrink-0" />
-                <span className="flex-1 min-w-0 truncate text-sm text-foreground">{w.videoTitle || w.videoUrl}</span>
-                <StatusBadge status={w.status} />
-              </Link>
-            )) : <p className="text-sm text-muted-foreground py-4 text-center">No whisps sent yet.</p>}
+          <CardContent className="space-y-1">
+            {whispsLoading ? (
+              <div className="space-y-2">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-14 rounded-xl" />)}</div>
+            ) : whispsPage?.items.length ? (
+              <>
+                {whispsPage.items.map((w) => (
+                  <Link key={w.id} href={`/admin/whisps/${w.id}`} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted/30 transition-colors">
+                    <PlayCircle className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate text-sm text-foreground">{w.videoTitle || w.videoUrl}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {deliveryLabel(w.deliveryMethod, w.whisperChannel)}
+                        {(w.recipientEmail || w.recipientPhone) ? ` · to ${w.recipientEmail || w.recipientPhone}` : ""}
+                        {w.replyCount > 0 ? (
+                          <span className="inline-flex items-center gap-0.5 ml-1.5"><MessageSquareHeart className="w-3 h-3" /> {w.replyCount}</span>
+                        ) : ""}
+                      </p>
+                    </div>
+                    <span className="text-xs text-muted-foreground shrink-0">{new Date(w.createdAt).toLocaleDateString()}</span>
+                    <StatusBadge status={w.status} />
+                  </Link>
+                ))}
+                {whispsPage.total > WHISP_PAGE_SIZE && (
+                  <div className="flex items-center justify-between pt-2">
+                    <Button variant="outline" size="sm" className="rounded-full" disabled={whispPage <= 1} onClick={() => setWhispPage((p) => p - 1)}>
+                      Prev
+                    </Button>
+                    <span className="text-xs text-muted-foreground">
+                      Page {whispPage} of {Math.max(1, Math.ceil(whispsPage.total / WHISP_PAGE_SIZE))}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-full"
+                      disabled={whispPage >= Math.ceil(whispsPage.total / WHISP_PAGE_SIZE)}
+                      onClick={() => setWhispPage((p) => p + 1)}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                )}
+              </>
+            ) : <p className="text-sm text-muted-foreground py-4 text-center">No whisps match this filter.</p>}
           </CardContent>
         </Card>
 
@@ -248,17 +367,26 @@ export function AdminUserDetail() {
           <Card className="bg-card border-border/50">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-serif">Credit Transactions</CardTitle>
+              <p className="text-xs text-muted-foreground">Running balance walked backward from the current Ghost Boost credit count ({user.boostCredits}).</p>
             </CardHeader>
             <CardContent className="space-y-2">
-              {creditTransactions.map((tx) => (
-                <div key={tx.id} className="flex items-center justify-between text-sm py-1.5 border-b border-border/30 last:border-0">
-                  <span className="text-muted-foreground capitalize">{tx.type.replace("_", " ")}</span>
-                  <span className={tx.amount >= 0 ? "text-primary font-medium" : "text-destructive font-medium"}>
-                    {tx.amount >= 0 ? "+" : ""}{tx.amount}
-                  </span>
-                  <span className="text-xs text-muted-foreground">{new Date(tx.createdAt).toLocaleDateString()}</span>
-                </div>
-              ))}
+              {(() => {
+                let runningBalance = user.boostCredits;
+                return creditTransactions.map((tx) => {
+                  const balanceAfter = runningBalance;
+                  runningBalance -= tx.amount;
+                  return (
+                    <div key={tx.id} className="flex items-center justify-between text-sm py-1.5 border-b border-border/30 last:border-0">
+                      <span className="text-muted-foreground capitalize">{tx.type.replace("_", " ")}</span>
+                      <span className={tx.amount >= 0 ? "text-primary font-medium" : "text-destructive font-medium"}>
+                        {tx.amount >= 0 ? "+" : ""}{tx.amount}
+                      </span>
+                      <span className="text-xs text-muted-foreground font-mono">bal. {balanceAfter}</span>
+                      <span className="text-xs text-muted-foreground">{new Date(tx.createdAt).toLocaleDateString()}</span>
+                    </div>
+                  );
+                });
+              })()}
             </CardContent>
           </Card>
         )}

@@ -50,6 +50,7 @@ async function warnUpcomingDeletions(): Promise<void> {
         owner.email,
         "Your uploaded video is about to be removed",
         mediaExpiringEmailHtml(media.originalFilename, media.expiresAt),
+        { whispId: null, purpose: "media_expiring" },
       );
     }
     if (owner && appUrl) {

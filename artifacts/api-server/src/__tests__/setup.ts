@@ -25,11 +25,22 @@ vi.mock("@anthropic-ai/sdk", () => ({
   },
 }));
 
+// Global default: skip the one-time demographic-confirmation gate (see
+// lib/demographics.ts) so the hundred-plus existing tests that send a whisp
+// without first answering it aren't all forced to do that dance — same
+// spirit as mocking Clerk/Anthropic above, a cross-cutting concern unrelated
+// tests shouldn't have to think about. demographics.test.ts overrides this
+// back to the real implementation to actually exercise the gate.
+vi.mock("../lib/demographics", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../lib/demographics")>();
+  return { ...actual, needsDemographics: () => false };
+});
+
 afterEach(async () => {
   anthropicMessagesCreateMock.mockClear();
   const { pool } = await import("@workspace/db");
   await pool.query(
-    "TRUNCATE TABLE tracking_events, whisp_replies, credit_transactions, push_subscriptions, whisp_categories, whisps, circle_members, circles, whisper_group_members, whisper_groups, uploaded_videos, match_subscribers, suggested_videos, suggestion_agent_status, users RESTART IDENTITY CASCADE",
+    "TRUNCATE TABLE tracking_events, whisp_replies, credit_transactions, push_subscriptions, whisp_categories, whisps, circle_members, circles, whisper_group_members, whisper_groups, uploaded_videos, match_subscribers, suggested_videos, suggestion_agent_status, delivery_attempts, notification_reads, notifications, moderation_flags, users RESTART IDENTITY CASCADE",
   );
 });
 

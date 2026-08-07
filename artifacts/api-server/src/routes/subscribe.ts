@@ -64,7 +64,10 @@ router.post("/subscribe", async (req, res): Promise<void> => {
 
   if (!alreadyVerified) {
     const verifyUrl = `${getPublicAppUrl(req)}/verify-subscription?token=${token}`;
-    void sendEmail(email, "Confirm your Blind Whisper subscription", subscriptionVerificationEmailHtml(verifyUrl));
+    void sendEmail(email, "Confirm your Blind Whisper subscription", subscriptionVerificationEmailHtml(verifyUrl), {
+      whispId: null,
+      purpose: "subscription_verification",
+    });
   }
 
   res.json({ ok: true, alreadyVerified });

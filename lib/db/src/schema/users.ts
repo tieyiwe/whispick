@@ -8,6 +8,17 @@ export const usersTable = pgTable("users", {
   email: text("email").unique().notNull(),
   fullName: text("full_name"),
   avatarUrl: text("avatar_url"),
+  // Synced from Clerk (sessionClaims.phone) at account creation, same
+  // best-effort pattern as email/fullName in ensureUser.ts — separate from
+  // whisps.recipientPhone, which is a contact this user sent TO, not their
+  // own number.
+  phone: text("phone"),
+  // Self-reported, optional-to-decline demographic buckets — see
+  // artifacts/api-server/src/lib/demographics.ts for the fixed value sets
+  // and where they're collected (a one-time gate before a user's first
+  // whisp send) and edited (Settings page).
+  gender: text("gender"), // 'woman' | 'man' | 'nonbinary' | 'prefer_not_to_say'
+  ageRange: text("age_range"), // '13-17' | '18-24' | '25-34' | '35-44' | '45-54' | '55-64' | '65+' | 'prefer_not_to_say'
   plan: text("plan").notNull().default("free"), // 'free' | 'spark' | 'ember'
   boostCredits: integer("boost_credits").notNull().default(0),
   whisperLinksUsed: integer("whisper_links_used").notNull().default(0),

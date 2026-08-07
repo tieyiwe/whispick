@@ -780,6 +780,51 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
 
+  /admin/users/{id}/whisps:
+    get:
+      operationId: adminListUserWhisps
+      tags: [admin]
+      summary: Every whisp a user sent, across all delivery methods — the full per-user activity timeline (admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: status
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: deliveryMethod
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: page
+          schema:
+            type: integer
+          required: false
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+          required: false
+      responses:
+        "200":
+          description: The user's whisps
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminWhispListResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /admin/whisps:
     get:
       operationId: adminListWhisps
@@ -791,6 +836,12 @@ paths:
           schema:
             type: string
           required: false
+        - in: query
+          name: recipient
+          schema:
+            type: string
+          required: false
+          description: Matches against recipientEmail or recipientPhone — find every whisp sent to a contact (e.g. "I never got my link").
         - in: query
           name: status
           schema:
@@ -920,6 +971,19 @@ paths:
               schema:
                 $ref: "#/components/schemas/AdminLocationStatsResponse"
 
+  /admin/stats/demographics:
+    get:
+      operationId: adminGetDemographicStats
+      tags: [admin]
+      summary: Self-reported gender/age-range breakdown — "who is Whispering the most" (admin only)
+      responses:
+        "200":
+          description: Demographic stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDemographicStatsResponse"
+
   /admin/stats/opportunities:
     get:
       operationId: adminGetOpportunities
@@ -932,6 +996,182 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AdminOpportunitiesResponse"
+
+  /admin/stats/funnel:
+    get:
+      operationId: adminGetFunnelStats
+      tags: [admin]
+      summary: Delivery success rate by channel, sent→delivered→opened→watched→replied funnel, Ghost Boost match volume, and Circle activity (admin only)
+      responses:
+        "200":
+          description: Funnel and delivery-health stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminFunnelStats"
+
+  /admin/notifications:
+    get:
+      operationId: adminListNotifications
+      tags: [admin]
+      summary: Audit log of notifications sent to users (admin only)
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+          required: false
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+          required: false
+      responses:
+        "200":
+          description: Notifications page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminNotificationListResponse"
+    post:
+      operationId: adminSendNotification
+      tags: [admin]
+      summary: Send an in-app (plus best-effort push) notification to all users or specific ones (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendNotificationInput"
+      responses:
+        "201":
+          description: Sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SendNotificationResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /user/notifications:
+    get:
+      operationId: getMyNotifications
+      tags: [user]
+      summary: This user's notifications (broadcasts + ones sent specifically to them), most recent first
+      responses:
+        "200":
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationListResponse"
+
+  /user/notifications/unread-count:
+    get:
+      operationId: getMyUnreadNotificationCount
+      tags: [user]
+      summary: Lightweight unread count for a nav badge, without fetching the full list
+      responses:
+        "200":
+          description: Unread count
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnreadNotificationCountResponse"
+
+  /user/notifications/{id}/read:
+    post:
+      operationId: markNotificationRead
+      tags: [user]
+      summary: Mark one notification as read
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Marked read
+
+  /user/notifications/read-all:
+    post:
+      operationId: markAllNotificationsRead
+      tags: [user]
+      summary: Mark every one of this user's notifications as read
+      responses:
+        "204":
+          description: Marked read
+
+  /admin/moderation/flags:
+    get:
+      operationId: adminListModerationFlags
+      tags: [admin]
+      summary: Content-safety flag queue — whisps an automated pass flagged as possibly sexual/explicit content, for review (admin only)
+      parameters:
+        - in: query
+          name: dismissed
+          schema:
+            type: string
+          required: false
+          description: Filter to "true" (already-reviewed false positives) or "false" (still needs review, the default view).
+        - in: query
+          name: severity
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: page
+          schema:
+            type: integer
+          required: false
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+          required: false
+      responses:
+        "200":
+          description: Flags page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModerationFlagListResponse"
+
+  /admin/moderation/flags/{id}:
+    patch:
+      operationId: adminUpdateModerationFlag
+      tags: [admin]
+      summary: Dismiss a flag as a false positive, or un-dismiss it (admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateModerationFlagInput"
+      responses:
+        "200":
+          description: Updated flag
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModerationFlag"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
 
   /admin/suggestions:
     get:
@@ -1999,6 +2239,14 @@ components:
           type: ["string", "null"]
         avatarUrl:
           type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        gender:
+          type: ["string", "null"]
+          description: "'woman' | 'man' | 'nonbinary' | 'prefer_not_to_say' | null (not yet answered)"
+        ageRange:
+          type: ["string", "null"]
+          description: "'13-17' | '18-24' | '25-34' | '35-44' | '45-54' | '55-64' | '65+' | 'prefer_not_to_say' | null (not yet answered)"
         plan:
           type: string
         boostCredits:
@@ -2025,6 +2273,10 @@ components:
         fullName:
           type: ["string", "null"]
         avatarUrl:
+          type: ["string", "null"]
+        gender:
+          type: ["string", "null"]
+        ageRange:
           type: ["string", "null"]
 
     CreditTransaction:
@@ -2198,6 +2450,12 @@ components:
           type: ["string", "null"]
         avatarUrl:
           type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        gender:
+          type: ["string", "null"]
+        ageRange:
+          type: ["string", "null"]
         plan:
           type: string
         boostCredits:
@@ -2269,11 +2527,97 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/CreditTransaction"
+        statusCounts:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Whisp count by status ('delivered', 'failed', 'opened', 'watched', 'replied', 'pending', 'scheduled') across ALL of this user's whisps, not just recentWhisps.
+        totalReplies:
+          type: integer
+          description: Replies received across all whisps this user sent.
+        moderationFlagCount:
+          type: integer
+          description: Non-dismissed content-safety flags across this user's whisps.
+        moderationFlags:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModerationFlag"
       required:
         - user
         - recentWhisps
         - totalWhisps
         - creditTransactions
+        - statusCounts
+        - totalReplies
+        - moderationFlagCount
+        - moderationFlags
+
+    ModerationFlag:
+      type: object
+      properties:
+        id:
+          type: string
+        whispId:
+          type: string
+        userId:
+          type: string
+        videoTitle:
+          type: ["string", "null"]
+          description: The flagged whisp's video title, denormalized for display in flag lists without a second lookup.
+        senderEmail:
+          type: ["string", "null"]
+        severity:
+          type: string
+          enum: [low, medium, high]
+        reasoning:
+          type: string
+        source:
+          type: string
+          description: "'ai_classifier' | 'admin_manual'"
+        dismissed:
+          type: boolean
+        reviewedAt:
+          type: ["string", "null"]
+        reviewedByAdminId:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - whispId
+        - userId
+        - severity
+        - reasoning
+        - source
+        - dismissed
+        - createdAt
+
+    ModerationFlagListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModerationFlag"
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+      required:
+        - items
+        - total
+        - page
+        - pageSize
+
+    UpdateModerationFlagInput:
+      type: object
+      properties:
+        dismissed:
+          type: boolean
+      required:
+        - dismissed
 
     UpdateAdminUserInput:
       type: object
@@ -2335,6 +2679,10 @@ components:
           type: ["string", "null"]
         circleId:
           type: ["string", "null"]
+        recipientEmail:
+          type: ["string", "null"]
+        recipientPhone:
+          type: ["string", "null"]
         status:
           type: string
         scheduledAt:
@@ -2345,10 +2693,18 @@ components:
           type: ["string", "null"]
         watchedAt:
           type: ["string", "null"]
+        revealRequested:
+          type: boolean
+        revealAccepted:
+          type: ["boolean", "null"]
+        appreciationResponse:
+          type: ["string", "null"]
         moodTag:
           type: ["string", "null"]
         boostSpendUsd:
           type: ["string", "null"]
+        replyCount:
+          type: integer
         categories:
           type: array
           items:
@@ -2361,6 +2717,8 @@ components:
         - videoUrl
         - deliveryMethod
         - status
+        - revealRequested
+        - replyCount
         - categories
         - createdAt
 
@@ -2406,11 +2764,54 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/WhispCategory"
+        deliveryAttempts:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeliveryAttempt"
+        moderationFlags:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModerationFlag"
       required:
         - whisp
         - trackingEvents
         - replies
         - categories
+        - deliveryAttempts
+        - moderationFlags
+
+    DeliveryAttempt:
+      type: object
+      properties:
+        id:
+          type: string
+        whispId:
+          type: ["string", "null"]
+        channel:
+          type: string
+          description: "'email' | 'sms' | 'whatsapp'"
+        purpose:
+          type: string
+          description: "'whisper_link' | 'reminder' | 'ghost_boost_match' | 'reply_notification' | 'appreciation_notification' | 'subscription_verification' | 'media_expiring'"
+        toAddress:
+          type: string
+        success:
+          type: boolean
+        providerMessageId:
+          type: ["string", "null"]
+        providerStatus:
+          type: ["string", "null"]
+        errorMessage:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - channel
+        - purpose
+        - toAddress
+        - success
+        - createdAt
 
     AdminTrendPoint:
       type: object
@@ -2564,6 +2965,52 @@ components:
         - city
         - count
 
+    AdminRegionStat:
+      type: object
+      properties:
+        region:
+          type: ["string", "null"]
+        country:
+          type: ["string", "null"]
+        count:
+          type: integer
+      required:
+        - region
+        - count
+
+    AdminDemographicStat:
+      type: object
+      properties:
+        value:
+          type: ["string", "null"]
+        count:
+          type: integer
+      required:
+        - value
+        - count
+
+    AdminDemographicStatsResponse:
+      type: object
+      properties:
+        byGender:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminDemographicStat"
+        byAgeRange:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminDemographicStat"
+        unansweredUsers:
+          type: integer
+          description: Users who haven't been asked yet (gender and ageRange both null) — they haven't sent a first whisp, or answered "prefer not to say," which is itself counted under its own bucket, not here.
+        totalUsers:
+          type: integer
+      required:
+        - byGender
+        - byAgeRange
+        - unansweredUsers
+        - totalUsers
+
     AdminLocationStatsResponse:
       type: object
       properties:
@@ -2571,6 +3018,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/AdminCountryStat"
+        byRegion:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminRegionStat"
         byCity:
           type: array
           items:
@@ -2581,6 +3032,7 @@ components:
           type: integer
       required:
         - byCountry
+        - byRegion
         - byCity
         - unknownLocationUsers
         - totalUsers
@@ -2614,6 +3066,186 @@ components:
             $ref: "#/components/schemas/AdminOpportunity"
       required:
         - insights
+
+    AdminFunnelStats:
+      type: object
+      properties:
+        funnel:
+          type: object
+          description: Sent → delivered → opened → watched → replied across every recipient-directed whisp (whisper_link, group_whisper, ghost_boost) — circle_drop is excluded since it has no single recipient to fall off for.
+          properties:
+            sent:
+              type: integer
+            delivered:
+              type: integer
+            failed:
+              type: integer
+            opened:
+              type: integer
+            watched:
+              type: integer
+            replied:
+              type: integer
+          required: [sent, delivered, failed, opened, watched, replied]
+        deliveryByChannel:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminChannelDeliveryStat"
+        ghostBoost:
+          type: object
+          properties:
+            campaigns:
+              type: integer
+            totalMatched:
+              type: integer
+            avgMatchedPerCampaign:
+              type: number
+          required: [campaigns, totalMatched, avgMatchedPerCampaign]
+        circles:
+          type: object
+          properties:
+            totalCircles:
+              type: integer
+            totalMembers:
+              type: integer
+            totalDrops:
+              type: integer
+          required: [totalCircles, totalMembers, totalDrops]
+      required:
+        - funnel
+        - deliveryByChannel
+        - ghostBoost
+        - circles
+
+    AdminChannelDeliveryStat:
+      type: object
+      properties:
+        channel:
+          type: string
+        attempts:
+          type: integer
+        succeeded:
+          type: integer
+        failed:
+          type: integer
+        successRate:
+          type: number
+      required:
+        - channel
+        - attempts
+        - succeeded
+        - failed
+        - successRate
+
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+        targetUserId:
+          type: ["string", "null"]
+        targetUserEmail:
+          type: ["string", "null"]
+        title:
+          type: string
+        body:
+          type: string
+        url:
+          type: ["string", "null"]
+        createdByAdminId:
+          type: ["string", "null"]
+          description: Null means system-generated (e.g. a repeated content-flag warning), not composed by an admin.
+        createdByAdminEmail:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        read:
+          type: boolean
+          description: Only populated for the current user's own notification list (GET /user/notifications) — omitted from the admin audit list, which has no single "reader".
+      required:
+        - id
+        - title
+        - body
+        - createdAt
+
+    SendNotificationInput:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        body:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        url:
+          type: ["string", "null"]
+        audience:
+          type: string
+          enum: [all, users]
+        userIds:
+          type: array
+          items:
+            type: string
+          description: Required (non-empty) when audience is 'users'; ignored for 'all'.
+      required:
+        - title
+        - body
+        - audience
+
+    SendNotificationResult:
+      type: object
+      properties:
+        recipientCount:
+          type: integer
+          description: Number of users this notification was created for — total user count for 'all', or userIds.length for 'users'.
+        pushDelivered:
+          type: integer
+          description: How many active push subscriptions were actually notified live (best-effort; recipients without one still see it in-app).
+      required:
+        - recipientCount
+        - pushDelivered
+
+    AdminNotificationListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Notification"
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+      required:
+        - items
+        - total
+        - page
+        - pageSize
+
+    NotificationListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Notification"
+        unreadCount:
+          type: integer
+      required:
+        - items
+        - unreadCount
+
+    UnreadNotificationCountResponse:
+      type: object
+      properties:
+        unreadCount:
+          type: integer
+      required:
+        - unreadCount
 
     WhisperGroup:
       type: object

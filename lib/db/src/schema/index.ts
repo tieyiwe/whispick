@@ -11,3 +11,6 @@ export * from "./uploaded_videos";
 export * from "./match_subscribers";
 export * from "./suggested_videos";
 export * from "./suggestion_agent_status";
+export * from "./delivery_attempts";
+export * from "./notifications";
+export * from "./moderation_flags";

@@ -24,6 +24,10 @@ export interface AdminWhispListItem {
   whisperChannel?: string | null;
   /** @nullable */
   circleId?: string | null;
+  /** @nullable */
+  recipientEmail?: string | null;
+  /** @nullable */
+  recipientPhone?: string | null;
   status: string;
   /** @nullable */
   scheduledAt?: string | null;
@@ -33,10 +37,16 @@ export interface AdminWhispListItem {
   openedAt?: string | null;
   /** @nullable */
   watchedAt?: string | null;
+  revealRequested: boolean;
+  /** @nullable */
+  revealAccepted?: boolean | null;
+  /** @nullable */
+  appreciationResponse?: string | null;
   /** @nullable */
   moodTag?: string | null;
   /** @nullable */
   boostSpendUsd?: string | null;
+  replyCount: number;
   categories: WhispCategory[];
   createdAt: string;
 }

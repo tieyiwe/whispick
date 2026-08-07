@@ -14,6 +14,18 @@ export interface UserProfile {
   fullName?: string | null;
   /** @nullable */
   avatarUrl?: string | null;
+  /** @nullable */
+  phone?: string | null;
+  /**
+     * 'woman' | 'man' | 'nonbinary' | 'prefer_not_to_say' | null (not yet answered)
+     * @nullable
+     */
+  gender?: string | null;
+  /**
+     * '13-17' | '18-24' | '25-34' | '35-44' | '45-54' | '55-64' | '65+' | 'prefer_not_to_say' | null (not yet answered)
+     * @nullable
+     */
+  ageRange?: string | null;
   plan: string;
   boostCredits: number;
   whisperLinksUsed: number;

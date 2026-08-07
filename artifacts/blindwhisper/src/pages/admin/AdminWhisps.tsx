@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useSearch } from "wouter";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { useAdminListWhisps, useAdminDeleteWhisp, getAdminListWhispsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -24,21 +24,27 @@ import { useToast } from "@/hooks/use-toast";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { deliveryLabel } from "@/lib/deliveryMethod";
 import { VIDEO_CATEGORY_LABELS, categoryLabel } from "@/lib/videoCategories";
-import { Search, ChevronLeft, ChevronRight, PlayCircle, Trash2 } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, PlayCircle, Trash2, Contact } from "lucide-react";
 
 const PAGE_SIZE = 20;
 
 export function AdminWhisps() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  // Deep-linkable status filter (e.g. AdminDashboard's "Failed Deliveries"
+  // stat links here with ?status=failed) — only read once, on mount, so it
+  // doesn't fight the Select below on every render.
+  const initialStatus = new URLSearchParams(useSearch()).get("status") ?? "all";
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("all");
+  const [recipient, setRecipient] = useState("");
+  const [status, setStatus] = useState(initialStatus);
   const [deliveryMethod, setDeliveryMethod] = useState("all");
   const [category, setCategory] = useState("all");
   const [page, setPage] = useState(1);
 
   const params = {
     ...(search ? { search } : {}),
+    ...(recipient ? { recipient } : {}),
     ...(status !== "all" ? { status } : {}),
     ...(deliveryMethod !== "all" ? { deliveryMethod } : {}),
     ...(category !== "all" ? { category } : {}),
@@ -84,6 +90,16 @@ export function AdminWhisps() {
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               className="pl-9 bg-card border-border/50 rounded-full"
               data-testid="input-admin-whisp-search"
+            />
+          </div>
+          <div className="relative flex-1 min-w-[200px]">
+            <Contact className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Find by recipient email or phone..."
+              value={recipient}
+              onChange={(e) => { setRecipient(e.target.value); setPage(1); }}
+              className="pl-9 bg-card border-border/50 rounded-full"
+              data-testid="input-admin-whisp-recipient-search"
             />
           </div>
           <Select value={status} onValueChange={(v) => { setStatus(v); setPage(1); }}>
@@ -136,7 +152,10 @@ export function AdminWhisps() {
                       <Link href={`/admin/whisps/${w.id}`} className="font-medium text-foreground hover:text-primary transition-colors truncate block">
                         {w.videoTitle || w.videoUrl}
                       </Link>
-                      <p className="text-xs text-muted-foreground truncate">{w.senderEmail ?? "Unknown sender"} · via {deliveryLabel(w.deliveryMethod, w.whisperChannel)}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {w.senderEmail ?? "Unknown sender"} · via {deliveryLabel(w.deliveryMethod, w.whisperChannel)}
+                        {(w.recipientEmail || w.recipientPhone) ? ` · to ${w.recipientEmail || w.recipientPhone}` : ""}
+                      </p>
                     </div>
                     {primaryCategory && <Badge variant="outline">{categoryLabel(primaryCategory.category)}</Badge>}
                     <StatusBadge status={w.status} />

@@ -6,7 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AdminUser } from './adminUser';
+import type { AdminUserDetailStatusCounts } from './adminUserDetailStatusCounts';
 import type { CreditTransaction } from './creditTransaction';
+import type { ModerationFlag } from './moderationFlag';
 import type { Whisp } from './whisp';
 
 export interface AdminUserDetail {
@@ -14,4 +16,11 @@ export interface AdminUserDetail {
   recentWhisps: Whisp[];
   totalWhisps: number;
   creditTransactions: CreditTransaction[];
+  /** Whisp count by status ('delivered', 'failed', 'opened', 'watched', 'replied', 'pending', 'scheduled') across ALL of this user's whisps, not just recentWhisps. */
+  statusCounts: AdminUserDetailStatusCounts;
+  /** Replies received across all whisps this user sent. */
+  totalReplies: number;
+  /** Non-dismissed content-safety flags across this user's whisps. */
+  moderationFlagCount: number;
+  moderationFlags: ModerationFlag[];
 }
