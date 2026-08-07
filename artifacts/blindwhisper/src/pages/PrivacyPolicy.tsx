@@ -1,123 +1,206 @@
 import { LegalLayout, LegalSection } from "@/components/shared/LegalLayout";
 
-const SUPPORT_EMAIL = "privacy@blindwhisper.com";
+const PRIVACY_EMAIL = "privacy@blindwhisper.com";
 
 export function PrivacyPolicy() {
   return (
     <LegalLayout title="Privacy Policy" updatedDate="August 7, 2026">
+      <p className="text-sm text-muted-foreground">A product of TIBLOGICS, a sub-entity of TILO GROUP, LLC.</p>
       <p>
-        Blind Whisper ("Blind Whisper," "we," "us," or "our") operates an anonymous video-sharing platform. This
-        Privacy Policy explains what information we collect, how we use it, who we share it with, and the choices
-        available to you. It applies to everyone who interacts with Blind Whisper — including people who never
-        create an account, because our service is built around sending things to people who haven't signed up.
+        Welcome to Blind Whisper ("Blind Whisper," "we," "us," or "our"), a product of TIBLOGICS, which is a
+        sub-entity of TILO GROUP, LLC, a limited liability company organized under the laws of the State of
+        Maryland, United States of America. Blind Whisper is an anonymous video-recommendation platform that lets
+        users ("Senders") share video content with recipients ("Recipients") through anonymous delivery methods,
+        including Whisper Links and Ghost Boosts. This Privacy Policy governs how we collect, use, store, share, and
+        protect information in connection with our website, mobile experience, and all related services
+        (collectively, the "Platform"). It applies to everyone who interacts with Blind Whisper — including people
+        who never create an account, because our service is built around sending things to people who haven't
+        signed up.
       </p>
       <p>
-        By using Blind Whisper, you agree to the collection and use of information as described here. If you don't
-        agree, please don't use the Service.
+        BY ACCESSING OR USING THE PLATFORM, YOU ACKNOWLEDGE THAT YOU HAVE READ, UNDERSTOOD, AND AGREE TO BE BOUND BY
+        THIS PRIVACY POLICY. IF YOU DO NOT AGREE, YOU MUST DISCONTINUE USE OF THE PLATFORM.
       </p>
 
       <LegalSection heading="1. Information We Collect">
-        <p><strong>Account information.</strong> If you create an account, we collect your email address, name, and authentication data through our identity provider (Clerk). We do not store your password ourselves.</p>
-        <p><strong>Content you submit.</strong> Video links or uploaded video files, anonymous notes, mood tags, timestamps/trim points, and any replies you send or receive through the Service.</p>
-        <p><strong>Recipient information.</strong> When you send something through Blind Whisper, you may provide us with a recipient's email address or phone number so we can deliver it. That person has not created an account and has not directly given us their information — <em>you</em> have, by choosing to send them something. We treat this information as sensitive and use it solely to deliver your message, track its delivery/read status, and — where the recipient opts in — allow them to reply anonymously or manage reminders/unsubscribe from future matches.</p>
-        <p><strong>Payment information.</strong> If you purchase credits or a subscription, payment is processed by Stripe. We receive and store a Stripe customer/subscription identifier and a record of the transaction — we never receive or store your full card number.</p>
-        <p><strong>Usage and device data.</strong> Standard technical data such as IP address, browser/device type, pages visited, links clicked, and delivery/read/watch events tied to messages sent or received, collected automatically as part of operating the Service and measuring whether a message was actually delivered and viewed.</p>
-        <p><strong>Location data.</strong> At signup, we perform a one-time, best-effort lookup of your IP address to estimate your country/region/city for aggregate analytics. We do not track your precise real-time location, and this has no effect on the anonymity we provide to the people you send things to.</p>
-        <p><strong>Push notification data.</strong> If you opt in to push notifications, we store a device/browser push subscription endpoint so we can notify you when something you sent is opened, watched, or replied to.</p>
+        <p><strong>1.1 Information you provide directly.</strong></p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><strong>Account registration information:</strong> name and email address, plus authentication data handled by our identity provider, Clerk. We do not directly collect or store your password — Clerk manages credentials on our behalf under its own security and privacy practices.</li>
+          <li><strong>Profile information:</strong> display name and optional avatar image.</li>
+          <li><strong>Payment information:</strong> billing details submitted through our payment processor, Stripe, Inc. Blind Whisper does not directly collect, store, or process credit card numbers or other sensitive financial information — all payment data is handled by Stripe under its own privacy policy and PCI-DSS compliance standards. We retain a Stripe customer/subscription identifier and a record of the transaction.</li>
+          <li><strong>Content you submit:</strong> video URLs or uploaded video files, anonymous notes, sender alias selections, mood tags, trim points, and scheduled delivery preferences.</li>
+          <li><strong>Recipient contact information:</strong> the email address or phone number of a person you choose to send a Whisper Link to. That person hasn't created an account and hasn't directly given us their information — you have, by choosing to send them something. We use this solely to deliver your message, track delivery/read status, and — where the recipient opts in — let them reply anonymously or manage reminders. It is not sold, rented, or shared with third parties for marketing purposes.</li>
+        </ul>
+        <p><strong>1.2 Ghost Boost delivery.</strong> Ghost Boost is not a targeted-advertising product and does not involve any third-party ad platform. When a Sender uses Ghost Boost, we do not collect a specific Recipient's contact information at all — instead, the Sender's Whisp is matched against Blind Whisper's own pool of subscribers who have separately, affirmatively opted in (via double opt-in email confirmation) to receive anonymous video recommendations matching their stated mood or topic preferences. Delivery happens entirely through Blind Whisper's own email and notification systems. Subscribers can unsubscribe at any time via a one-click link in every match email, no account required.</p>
+        <p><strong>1.3 Information collected automatically.</strong></p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><strong>Device and usage data:</strong> device/browser type, IP address, pages visited, links clicked, and delivery/read/watch events tied to messages sent or received, collected as part of operating the Service and measuring whether a message was actually delivered and viewed.</li>
+          <li><strong>Location data:</strong> at signup, we perform a one-time, best-effort lookup of your IP address to estimate your country/region/city for aggregate analytics. We do not track precise real-time location, and this has no effect on the anonymity we provide to the people you send things to.</li>
+          <li><strong>Tracking events:</strong> when a Whisper Link is opened or a video link is clicked, collected via a tracking mechanism on Whisper Link landing pages. Recipients are informed of this on the landing page.</li>
+          <li><strong>Push notification data:</strong> if you opt in, we store a device/browser push subscription endpoint so we can notify you when something you sent is opened, watched, or replied to.</li>
+        </ul>
+        <p><strong>1.4 Information from third parties.</strong> If you sign in using a supported social login provider through Clerk, we receive your name, email address, and profile photo from that provider in accordance with your account permissions there. We also receive transaction confirmations and subscription status from Stripe.</p>
       </LegalSection>
 
-      <LegalSection heading="2. How We Use Information">
+      <LegalSection heading="2. How We Use Your Information">
         <ul className="list-disc pl-5 space-y-1">
-          <li>To operate the Service — deliver messages, track delivery/read status, process replies, send reminders, and process payments</li>
-          <li>To generate optional AI features you use (a short "takeaway" of a video, note-writing suggestions, or a summary in our curated Suggestions Library)</li>
-          <li>To maintain the security of the Service, detect abuse, enforce our Terms of Service, and prevent fraud</li>
-          <li>To communicate with you about your account, transactional messages, and — only if you separately opt in — anonymous message matches</li>
-          <li>To analyze aggregate usage trends so we can improve the Service</li>
-          <li>To comply with legal obligations</li>
+          <li>To provide, operate, and maintain the Platform and all its features</li>
+          <li>To process transactions, manage subscriptions, and fulfill Ghost Boost credit purchases through Stripe</li>
+          <li>To deliver Whisper Links via SMS/WhatsApp (Twilio) and email (Resend) on behalf of Senders</li>
+          <li>To match Ghost Boost Whisps against our opted-in subscriber pool and deliver them</li>
+          <li>To send Senders tracking notifications when Recipients open, click, or engage with their Whisper Links</li>
+          <li>To facilitate anonymous reply exchanges between Senders and Recipients within the Platform</li>
+          <li>To power the optional Reveal Flow feature, enabling consensual identity disclosure between a Sender and Recipient</li>
+          <li>To generate optional AI features you use, as described in Section 3</li>
+          <li>To enforce our Terms and Conditions, detect fraud, and prevent abuse</li>
+          <li>To communicate with you about account updates, subscription renewals, credit balances, and product changes</li>
+          <li>To comply with applicable laws, regulations, and legal obligations</li>
+          <li>To improve, personalize, and develop the Platform through aggregated, anonymized analytics</li>
         </ul>
       </LegalSection>
 
       <LegalSection heading="3. AI Processing">
         <p>
-          Certain optional features (a video "takeaway," note-writing suggestions, and Suggestions Library
-          summaries/discovery) send limited content — such as a video's title, publicly available transcript, or
-          your chosen mood — to Anthropic's Claude API for processing. We do not send your account's email, phone
+          Certain optional features — a video "takeaway," note-writing suggestions, and Suggestions Library
+          summaries/discovery — send limited content, such as a video's title, publicly available transcript, or
+          your chosen mood, to Anthropic's Claude API for processing. We do not send your account's email, phone
           number, or payment information to this service. Anthropic processes this data under its own privacy and
           data-use terms.
         </p>
       </LegalSection>
 
-      <LegalSection heading="4. Who We Share Information With">
-        <p>We don't sell your information. We share it only with the service providers necessary to run Blind Whisper, and only for that purpose:</p>
+      <LegalSection heading="4. Anonymous Delivery and Sender Identity Protection">
+        <p>Blind Whisper's core functionality is built on Sender anonymity. We implement the following protections:</p>
         <ul className="list-disc pl-5 space-y-1">
-          <li><strong>Clerk</strong> — account authentication</li>
-          <li><strong>Stripe</strong> — payment processing</li>
-          <li><strong>Twilio</strong> — SMS and WhatsApp message delivery</li>
-          <li><strong>Resend</strong> — email delivery</li>
-          <li><strong>Anthropic</strong> — optional AI-generated content, as described above</li>
-          <li><strong>Our hosting and cloud storage providers</strong> — running the Service and storing uploaded video files</li>
-          <li>Law enforcement or other parties, if required by law, subpoena, or valid legal process, or to protect the rights, safety, or property of Blind Whisper, our users, or the public — see Section 6 on the limits of anonymity</li>
+          <li>Sender identities are never disclosed to Recipients through automated delivery mechanisms.</li>
+          <li>The optional Reveal Flow feature requires affirmative, two-step consent from both the Sender and Recipient before any identity is disclosed.</li>
+          <li>Whisper Link landing pages do not contain metadata linking back to the Sender's account.</li>
+          <li>Ghost Boost matches are delivered as ordinary emails to opted-in subscribers; nothing in the delivery identifies the Sender to the Recipient.</li>
         </ul>
+        <p>
+          <strong>Important limitation:</strong> we cannot guarantee absolute anonymity in all circumstances. We may
+          be required to disclose Sender information in response to valid legal process, including court orders,
+          subpoenas, or law enforcement requests. If a Sender violates our Terms and Conditions, we reserve the
+          right to disclose information as necessary to protect the safety of Recipients and third parties. We also
+          cannot control what a Recipient does with content after receiving it — including sharing it,
+          screenshotting it, or identifying context clues within it.
+        </p>
       </LegalSection>
 
-      <LegalSection heading="5. Data Retention">
+      <LegalSection heading="5. Sharing of Information">
+        <p>We do not sell your personal information. We share information only in the following circumstances:</p>
+        <p><strong>5.1 Service providers</strong> — trusted third parties who help us operate the Platform, bound by confidentiality obligations:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Clerk — account authentication</li>
+          <li>Stripe, Inc. — payment processing and subscription management</li>
+          <li>Twilio Inc. — SMS/WhatsApp delivery for Whisper Links</li>
+          <li>Resend — transactional and match-delivery email</li>
+          <li>Anthropic — optional AI-generated content, as described in Section 3</li>
+          <li>Our hosting and database infrastructure providers — running the Platform and storing uploaded video files</li>
+        </ul>
+        <p><strong>5.2 Legal requirements.</strong> We may disclose information when required by law, regulation, legal process, or governmental request, or to protect the rights, property, or safety of Blind Whisper, TIBLOGICS, TILO GROUP, LLC, our users, or the public.</p>
+        <p><strong>5.3 Business transfers.</strong> If TILO GROUP, LLC or TIBLOGICS is involved in a merger, acquisition, reorganization, or sale of assets, your information may be transferred as part of that transaction. We will provide notice before your personal information becomes subject to a different privacy policy.</p>
+        <p><strong>5.4 With your consent.</strong> We may share information with third parties when you've given explicit, informed consent.</p>
+      </LegalSection>
+
+      <LegalSection heading="6. Data Retention">
         <p>
           We retain account and message data for as long as your account is active, or as needed to provide the
-          Service. Uploaded video files are automatically deleted approximately 7 days after upload. You can request
-          deletion of your account and associated data at any time by contacting us at{" "}
-          <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a>; we may
-          retain limited records where required for legal, security, or fraud-prevention purposes.
+          Service. Uploaded video files are automatically deleted approximately 7 days after upload. Payment
+          records are kept for as long as reasonably necessary to meet our tax and financial recordkeeping
+          obligations. You can request deletion of your account and associated data at any time by contacting us at{" "}
+          <a href={`mailto:${PRIVACY_EMAIL}`} className="text-primary hover:underline">{PRIVACY_EMAIL}</a>; we'll
+          process your request within 30 days, subject to limited records we may need to retain for legal, security,
+          or fraud-prevention purposes. Aggregate, anonymized analytics data may be retained indefinitely.
         </p>
       </LegalSection>
 
-      <LegalSection heading="6. Anonymity and Its Limits">
-        <p>
-          Blind Whisper is built so that senders and recipients don't see each other's identity in the ordinary
-          course of using the Service. We take deliberate technical steps to prevent one side from learning who the
-          other is through the app itself. However, anonymity on Blind Whisper is <strong>not absolute</strong>:
-        </p>
+      <LegalSection heading="7. Data Security">
+        <p>We use reasonable technical and organizational measures to protect your information, including:</p>
         <ul className="list-disc pl-5 space-y-1">
-          <li>We do retain technical records (such as account identifiers, IP addresses, and delivery logs) that could, in principle, be used to identify a sender or recipient</li>
-          <li>We will disclose this information if compelled by a valid subpoena, court order, or other legal process, or where we believe in good faith it's necessary to prevent harm, fraud, or illegal activity</li>
-          <li>We cannot control what a recipient does with content after they receive it — including sharing it, screenshotting it, or otherwise identifying context clues within it</li>
+          <li>TLS/SSL encryption for data in transit</li>
+          <li>Encryption of sensitive data at rest</li>
+          <li>Access controls limiting employee and contractor access to personal data on a need-to-know basis</li>
         </ul>
-        <p>We do not claim, and you should not rely on, absolute or untraceable anonymity.</p>
+        <p>
+          No method of transmission over the internet or electronic storage is 100% secure. While we strive to use
+          commercially acceptable means to protect your information, we cannot guarantee absolute security. You
+          provide information at your own risk.
+        </p>
       </LegalSection>
 
-      <LegalSection heading="7. Your Rights and Choices">
+      <LegalSection heading="8. Your Rights and Choices">
         <ul className="list-disc pl-5 space-y-1">
-          <li>You can access, correct, or request deletion of your account information by contacting us</li>
-          <li>You can reply STOP to any text message to opt out of future SMS from us, or HELP for assistance</li>
-          <li>You can unsubscribe from anonymous-matching emails with a one-click link in every such email, no account required</li>
-          <li>Depending on where you live, you may have additional rights (such as under the CCPA or GDPR) to access, correct, delete, or restrict use of your personal information — contact us to exercise these</li>
+          <li>You can access, correct, or update your account information at any time through your account settings.</li>
+          <li>You can request deletion of your account by contacting us at <a href={`mailto:${PRIVACY_EMAIL}`} className="text-primary hover:underline">{PRIVACY_EMAIL}</a>.</li>
+          <li>You can reply STOP to any text message to opt out of future SMS from us, or HELP for assistance.</li>
+          <li>You can unsubscribe from Ghost Boost match emails with a one-click link in every such email, no account required.</li>
+          <li>You can opt out of non-essential communications at any time via your notification preferences. Transactional communications related to your account and paid services can't be opted out of while your account is active.</li>
         </ul>
+        <p><strong>California residents (CCPA)</strong> have the right to know what personal information we collect, disclose, and sell (we do not sell personal information); the right to delete personal information; the right to opt out of the sale of personal information; and the right to non-discrimination for exercising these rights.</p>
+        <p><strong>Canadian residents (PIPEDA)</strong> have the right to access personal information we hold about you and to challenge its accuracy and completeness.</p>
+        <p>To exercise any of these rights, contact us at <a href={`mailto:${PRIVACY_EMAIL}`} className="text-primary hover:underline">{PRIVACY_EMAIL}</a>.</p>
       </LegalSection>
 
-      <LegalSection heading="8. Children's Privacy">
+      <LegalSection heading="9. Children's Privacy">
         <p>
-          Blind Whisper is intended for users 18 and older. We do not knowingly collect personal information from
-          anyone under 18. If we learn that we've collected information from someone under 18, we will delete it.
+          THE PLATFORM IS NOT INTENDED FOR USE BY INDIVIDUALS UNDER THE AGE OF 18. We do not knowingly collect
+          personal information from anyone under 18. If we become aware that we've inadvertently collected personal
+          information from a child under 18 without verifiable parental consent, we'll take immediate steps to
+          delete it. If you believe we may have collected information from a child under 18, contact us immediately
+          at <a href={`mailto:${PRIVACY_EMAIL}`} className="text-primary hover:underline">{PRIVACY_EMAIL}</a>.
         </p>
       </LegalSection>
 
-      <LegalSection heading="9. Security">
+      <LegalSection heading="10. Third-Party Links and Services">
         <p>
-          We use reasonable technical and organizational measures to protect your information. No method of
-          transmission or storage is completely secure, and we cannot guarantee absolute security.
+          The Platform may contain links to third-party video platforms (YouTube, TikTok, Instagram, Facebook, and
+          others) and services. This Privacy Policy doesn't apply to those third-party services, and we aren't
+          responsible for their privacy practices. We encourage you to review their privacy policies directly.
         </p>
       </LegalSection>
 
-      <LegalSection heading="10. Changes to This Policy">
+      <LegalSection heading="11. International Data Transfers">
         <p>
-          We may update this Privacy Policy from time to time. If we make material changes, we'll update the "Last
-          updated" date above and, where appropriate, notify you directly.
+          Blind Whisper is operated from the United States. If you access the Platform from outside the United
+          States, your information may be transferred to and processed in the United States and other countries
+          where our service providers operate, which may have data protection laws that differ from those in your
+          country. By using the Platform, you consent to this transfer.
         </p>
       </LegalSection>
 
-      <LegalSection heading="11. Contact Us">
+      <LegalSection heading="12. Cookies and Tracking Technologies">
+        <p>We use cookies and similar technologies, including:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><strong>Essential cookies:</strong> required for Platform functionality, authentication, and security.</li>
+          <li><strong>Analytics cookies:</strong> used to understand how users interact with the Platform (anonymized).</li>
+          <li><strong>Tracking pixels:</strong> embedded in Whisper Link landing pages to notify Senders of Recipient engagement; disclosed to Recipients on the landing page.</li>
+        </ul>
+        <p>You can control cookie preferences through your browser settings. Disabling essential cookies may impair Platform functionality.</p>
+      </LegalSection>
+
+      <LegalSection heading="13. Changes to This Privacy Policy">
         <p>
-          Questions about this Privacy Policy? Email us at{" "}
-          <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a>.
+          We may update this Privacy Policy at any time. When we make material changes, we'll notify you via email
+          and/or a prominent notice on the Platform at least 14 days before the changes take effect. Your continued
+          use of the Platform after the effective date of any change constitutes acceptance of the revised policy.
+        </p>
+      </LegalSection>
+
+      <LegalSection heading="14. Contact Us">
+        <p>
+          If you have questions, concerns, or requests regarding this Privacy Policy or our data practices, contact
+          us:
+        </p>
+        <p>
+          TIBLOGICS / TILO GROUP, LLC<br />
+          Attn: Privacy Officer — Blind Whisper<br />
+          Email: <a href={`mailto:${PRIVACY_EMAIL}`} className="text-primary hover:underline">{PRIVACY_EMAIL}</a><br />
+          Wheaton, Maryland, United States
+        </p>
+        <p className="text-sm text-muted-foreground">
+          © 2026 TIBLOGICS / TILO GROUP, LLC. All rights reserved. Blind Whisper is a product of TIBLOGICS, a
+          sub-entity of TILO GROUP, LLC. This document does not constitute legal advice.
         </p>
       </LegalSection>
     </LegalLayout>

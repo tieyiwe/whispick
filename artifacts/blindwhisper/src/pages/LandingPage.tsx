@@ -92,6 +92,12 @@ export function LandingPage() {
           </p>
         </div>
       </main>
+
+      <footer className="relative z-10 pb-8 flex justify-center gap-4 text-xs text-muted-foreground">
+        <Link href="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link>
+        <span className="text-border">•</span>
+        <Link href="/terms" className="hover:text-primary transition-colors">Terms of Service</Link>
+      </footer>
     </div>
   );
 }

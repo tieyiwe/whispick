@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "wouter";
 import {
   useGetUserProfile,
   useUpdateUserProfile,
@@ -259,6 +260,11 @@ export function SettingsPage() {
             <p>All whisps are sent anonymously by default. Recipient contact information (email/phone) is used solely for delivery and is never shared with third parties.</p>
             <p>Ghost Boost doesn't collect recipient contact info — it's a queued, boosted-reach send with no specific recipient, not a targeted ad.</p>
             <p>You can request a full data export or account deletion by contacting support.</p>
+            <p className="flex items-center gap-3 pt-1">
+              <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link>
+              <span className="text-border">•</span>
+              <Link href="/terms" className="text-primary hover:underline">Terms of Service</Link>
+            </p>
           </CardContent>
         </Card>
       </div>

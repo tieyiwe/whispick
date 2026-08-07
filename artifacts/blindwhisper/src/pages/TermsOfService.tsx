@@ -2,184 +2,192 @@ import { LegalLayout, LegalSection } from "@/components/shared/LegalLayout";
 
 const SUPPORT_EMAIL = "support@blindwhisper.com";
 const LEGAL_EMAIL = "legal@blindwhisper.com";
+const BILLING_EMAIL = "billing@blindwhisper.com";
 
 export function TermsOfService() {
   return (
-    <LegalLayout title="Terms of Service" updatedDate="August 7, 2026">
+    <LegalLayout title="Terms and Conditions of Use" updatedDate="August 7, 2026">
+      <p className="text-sm text-muted-foreground">A product of TIBLOGICS, a sub-entity of TILO GROUP, LLC.</p>
       <p>
-        These Terms of Service ("Terms") govern your access to and use of Blind Whisper (the "Service"), operated by
-        Blind Whisper ("we," "us," or "our"). By creating an account, sending a message, or otherwise using the
-        Service, you agree to be bound by these Terms. If you don't agree, don't use the Service.
+        PLEASE READ THESE TERMS AND CONDITIONS CAREFULLY BEFORE USING BLIND WHISPER. BY CREATING AN ACCOUNT,
+        ACCESSING, OR USING THE PLATFORM IN ANY WAY, YOU AGREE TO BE LEGALLY BOUND BY THESE TERMS. IF YOU DO NOT
+        AGREE, DO NOT USE THE PLATFORM.
       </p>
 
-      <LegalSection heading="1. Eligibility">
+      <LegalSection heading="1. Parties and Agreement">
         <p>
-          You must be at least 18 years old to create an account or use Blind Whisper. By using the Service, you
-          represent that you meet this requirement. Blind Whisper is not directed at, and we do not knowingly permit
-          use by, anyone under 18.
+          These Terms and Conditions ("Terms," "Agreement") are a legally binding contract between you ("User,"
+          "you," or "your") and TILO GROUP, LLC, a Maryland limited liability company, operating through its
+          sub-entity TIBLOGICS ("Company," "we," "us," or "our"), governing your access to and use of the Blind
+          Whisper platform, including its website, mobile experience, and all related services, features, and
+          content (collectively, the "Platform").
         </p>
+        <p>In these Terms: "Sender" means any User who initiates delivery of a video recommendation through the Platform; "Recipient" means any individual who receives a Whisper Link or Ghost Boost delivery; "Whisp" means a single anonymous video recommendation delivery; "Whisper Link" means an anonymous SMS, WhatsApp, or email delivery of a Whisp to a specific Recipient chosen by the Sender; "Ghost Boost" means the delivery of a Whisp to a member of Blind Whisper's own opted-in subscriber pool, matched by mood or topic preference — Ghost Boost does not involve targeting any specific individual chosen by the Sender, and does not run through any third-party advertising platform; "Ghost Boost Credit" means a prepaid unit entitling the Sender to one Ghost Boost delivery.</p>
       </LegalSection>
 
-      <LegalSection heading="2. The Service">
-        <p>
-          Blind Whisper lets a registered user ("Sender") privately share a video with a specific person of their
-          choosing ("Recipient") via a link delivered by email, text message, or a public community feed, without
-          revealing the Sender's identity to the Recipient in the ordinary course of using the Service. Optional
-          features include AI-generated summaries, note-writing suggestions, a curated library of admin-selected
-          videos, and anonymous matching to opted-in subscribers. We may add, change, or remove features at any
-          time.
-        </p>
-      </LegalSection>
-
-      <LegalSection heading="3. Your Account">
-        <p>
-          You're responsible for maintaining the confidentiality of your account credentials and for all activity
-          under your account. Notify us immediately of any unauthorized use. You agree to provide accurate
-          information and to keep it up to date.
-        </p>
-      </LegalSection>
-
-      <LegalSection heading="4. Acceptable Use">
-        <p>You agree not to use Blind Whisper to:</p>
+      <LegalSection heading="2. Eligibility">
+        <p>You must meet all of the following to use the Platform:</p>
         <ul className="list-disc pl-5 space-y-1">
-          <li>Harass, threaten, bully, stalk, or intimidate anyone</li>
-          <li>Send content to someone without a good-faith, reasonable belief that they'd want to receive it from you</li>
-          <li>Send unlawful, defamatory, obscene, hateful, or discriminatory content, or content that infringes someone else's rights</li>
-          <li>Impersonate any person or entity, or misrepresent your affiliation with anyone</li>
-          <li>Send spam, chain messages, or unsolicited bulk messages, or use the Service for any advertising or commercial solicitation</li>
-          <li>Attempt to identify, deanonymize, or reveal the identity of another user against their wishes</li>
-          <li>Upload or share content you don't have the rights to share, or that violates a third party's intellectual property, privacy, or publicity rights</li>
-          <li>Attempt to interfere with, disrupt, reverse-engineer, or gain unauthorized access to the Service or its infrastructure</li>
-          <li>Use the Service in any way that violates applicable law, including anti-harassment, telecommunications, and messaging consent laws</li>
+          <li>You are at least 18 years of age.</li>
+          <li>You have the legal capacity to enter into a binding contract under applicable law.</li>
+          <li>You are not located in a country subject to a United States government embargo or designated as a terrorist-supporting country.</li>
+          <li>You are not listed on any United States government list of prohibited or restricted parties.</li>
+          <li>You have not been previously suspended or removed from the Platform by us.</li>
         </ul>
-        <p>
-          We reserve the right to investigate, remove content, suspend, or terminate accounts that violate this
-          section, and to report unlawful activity — including threats of harm — to law enforcement.
+        <p>By using the Platform, you represent and warrant that you meet all eligibility requirements. If you're using the Platform on behalf of a business entity, you represent that you have authority to bind that entity to these Terms.</p>
+      </LegalSection>
+
+      <LegalSection heading="3. Account Registration and Security">
+        <p><strong>3.1 Account creation.</strong> To access most features, you must create an account by providing accurate, current, and complete information, and keep it up to date.</p>
+        <p><strong>3.2 Account security.</strong> You're solely responsible for maintaining the confidentiality of your account credentials and for all activity under your account. You agree to select a strong, unique password; notify us immediately at {" "}
+          <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a> of any unauthorized use or security breach; and log out at the end of each session on shared or public devices. We won't be liable for loss or damage arising from your failure to maintain account security, and you may be held liable for losses we or others incur due to unauthorized use of your account.
+        </p>
+        <p><strong>3.3 One account per user.</strong> You may only maintain one active account. Creating multiple accounts to circumvent restrictions, suspensions, or bans is prohibited and will result in termination of all associated accounts.</p>
+      </LegalSection>
+
+      <LegalSection heading="4. Acceptable Use Policy">
+        <p><strong>4.1 Permitted uses.</strong> The Platform is designed solely for anonymously recommending video content to individuals with whom you have a personal, professional, or familial relationship, for lawful purposes — including facilitating difficult conversations, sharing educational content, expressing care or concern, and relationship communication.</p>
+        <p><strong>4.2 Strictly prohibited conduct.</strong> The following will result in account termination, forfeiture of credits and subscription fees, and may result in civil and criminal liability:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Sending a Whisp to a Recipient who hasn't consented to receiving communications from unknown parties, or who has explicitly requested no contact from you</li>
+          <li>Using the Platform to harass, stalk, threaten, intimidate, or harm anyone</li>
+          <li>Sending Whisps containing or linking to content that's defamatory, obscene, pornographic, sexually explicit, or violent</li>
+          <li>Sending Whisps containing or linking to content that sexualizes, exploits, or endangers minors in any way — this is a zero-tolerance policy, and we will report all such instances to the National Center for Missing and Exploited Children (NCMEC) and relevant law enforcement</li>
+          <li>Using the Platform to send unsolicited commercial messages (spam) or conduct unauthorized marketing campaigns</li>
+          <li>Sending Whisps that promote, incite, or facilitate illegal activity, including fraud, money laundering, drug trafficking, or terrorism</li>
+          <li>Providing false, inaccurate, or fraudulent information about your relationship with a Recipient</li>
+          <li>Attempting to reverse-engineer, decompile, disassemble, or derive the source code or underlying structure of the Platform</li>
+          <li>Using automated scripts, bots, scrapers, or other automated means to access or interact with the Platform</li>
+          <li>Circumventing, disabling, or interfering with security-related features of the Platform</li>
+          <li>Impersonating any person or entity, or misrepresenting your affiliation with any person or entity</li>
+          <li>Uploading or transmitting viruses, malware, or other malicious code</li>
+          <li>Interfering with or disrupting the integrity or performance of the Platform or its infrastructure</li>
+          <li>Using the Platform in any manner that could expose TILO GROUP, LLC, TIBLOGICS, or Blind Whisper to legal liability</li>
+        </ul>
+        <p><strong>4.3 Content standards.</strong> All video URLs or files submitted through the Platform must be lawful and, if linked, publicly accessible. You represent and warrant that: (a) you have the right to share and recommend the content; (b) it doesn't infringe any third-party intellectual property rights; (c) it complies with applicable law; and (d) it doesn't violate the terms of service of the originating platform (YouTube, TikTok, Instagram, Facebook, etc.).</p>
+      </LegalSection>
+
+      <LegalSection heading="5. Sender Responsibilities and Representations">
+        <p>As a Sender, you represent, warrant, and covenant that:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>You'll only send Whisper Links to individuals with whom you have a genuine pre-existing personal, familial, or professional relationship.</li>
+          <li>You have a good-faith basis for believing the Recipient would benefit from or wish to receive the recommended content.</li>
+          <li>You accept sole and full responsibility for the content of all Whisps you send, including any consequences arising from a Recipient's receipt of that content.</li>
+          <li>You won't use the anonymous nature of the Platform to engage in conduct that would otherwise be prohibited by applicable law or these Terms.</li>
+          <li>You understand that Blind Whisper's anonymity protections don't extend to unlawful conduct, and that we may disclose your identity in response to valid legal process.</li>
+        </ul>
+      </LegalSection>
+
+      <LegalSection heading="6. Subscriptions, Payments, and Refunds">
+        <p><strong>6.1 Subscription plans.</strong> Blind Whisper offers the following tiers, billed monthly: a Free tier with limited features at no charge; the Spark plan at $9.99 USD/month; and the Ember plan at $19.99 USD/month, each including the features described on the Platform at the time of purchase. We may modify subscription pricing with 30 days' notice to current subscribers; continued use after a price change means you accept the new pricing.</p>
+        <p><strong>6.2 Ghost Boost Credits.</strong> Ghost Boost Credits may be purchased in packs as offered on the Platform. Credits are non-refundable, non-transferable, and have no cash value. Purchased credits expire 12 months from the date of purchase or upon account termination, whichever is earlier. Monthly credits included with a paid plan expire at the end of each billing cycle and don't roll over.</p>
+        <p><strong>6.3 Payment processing.</strong> All payments are processed by Stripe, Inc. By providing payment information, you agree to Stripe's Terms of Service and authorize us to charge your payment method for applicable fees. You represent that you're authorized to use the payment method provided.</p>
+        <p><strong>6.4 Automatic renewal.</strong> Paid subscriptions renew automatically at the end of each billing cycle unless canceled before the renewal date. You may cancel anytime through your account settings; cancellation takes effect at the end of the current billing period, and no prorated refunds are issued for unused portions.</p>
+        <p><strong>6.5 Refund policy.</strong> ALL PURCHASES, INCLUDING SUBSCRIPTION FEES AND GHOST BOOST CREDIT PACKS, ARE FINAL AND NON-REFUNDABLE, EXCEPT AS REQUIRED BY APPLICABLE LAW. If you believe you've been charged in error, contact {" "}
+          <a href={`mailto:${BILLING_EMAIL}`} className="text-primary hover:underline">{BILLING_EMAIL}</a> within 14 days of the charge. We'll review billing disputes in good faith but reserve the right to make final determinations on refund requests.
         </p>
       </LegalSection>
 
-      <LegalSection heading="5. Content You Submit">
+      <LegalSection heading="7. Anonymity, Reveal Flow, and Consent">
+        <p><strong>7.1 Anonymity protections.</strong> The Platform is designed to protect Sender anonymity in standard use, and we implement technical measures to prevent automated delivery mechanisms from revealing a Sender's identity to a Recipient. As stated in our Privacy Policy, anonymity may be compromised in response to valid legal process or to protect safety.</p>
+        <p><strong>7.2 Reveal Flow.</strong> The optional Reveal Flow feature lets a Sender initiate a consensual identity disclosure process. By initiating a Reveal Flow: (a) you acknowledge your identity may be disclosed to the Recipient if they consent; (b) you agree the Recipient's decision to accept or decline is final and binding through the Platform; (c) you won't attempt to coerce or pressure a Recipient into accepting a reveal; and (d) a Recipient's decision to decline doesn't entitle you to a refund.</p>
+        <p><strong>7.3 Anonymous replies.</strong> The anonymous reply feature lets Recipients respond to Whisps without disclosing their identity. You agree not to use it for harassment, threats, or any conduct prohibited by Section 4.</p>
+      </LegalSection>
+
+      <LegalSection heading="8. Intellectual Property">
+        <p><strong>8.1 Platform ownership.</strong> The Platform — including all software, algorithms, design elements, trademarks, text, graphics, and other content created by or for Blind Whisper — is the exclusive property of TILO GROUP, LLC and/or TIBLOGICS and is protected by U.S. and international intellectual property laws. "Blind Whisper," the Blind Whisper logo, and related marks are trademarks of TILO GROUP, LLC.</p>
+        <p><strong>8.2 License to use.</strong> Subject to your compliance with these Terms, we grant you a limited, non-exclusive, non-transferable, non-sublicensable, revocable license to access and use the Platform for its intended personal, non-commercial purposes. This license doesn't include any right to resell or commercially exploit the Platform, collect or harvest user data, use data mining or similar gathering methods, or download or copy account information for the benefit of any third party.</p>
+        <p><strong>8.3 Third-party content.</strong> The Platform lets Senders share URLs to third-party video content. We don't claim ownership of such content. By submitting a video URL, you represent that you have the right to recommend it and that sharing it complies with applicable law and the originating platform's terms.</p>
+      </LegalSection>
+
+      <LegalSection heading="9. Disclaimer of Warranties">
         <p>
-          You retain ownership of content you submit through Blind Whisper. By submitting it, you grant us a
-          worldwide, non-exclusive, royalty-free license to host, store, transmit, and display that content solely
-          as necessary to operate the Service (for example, delivering it to your chosen Recipient and displaying it
-          on the page they open). You're solely responsible for content you submit and for having the rights
-          necessary to share it.
-        </p>
-        <p>
-          If you believe content on Blind Whisper infringes your copyright, contact us at{" "}
-          <a href={`mailto:${LEGAL_EMAIL}`} className="text-primary hover:underline">{LEGAL_EMAIL}</a> with a
-          description of the content and your rights in it, and we'll investigate and, where appropriate, remove it.
+          THE PLATFORM IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, EXPRESS OR IMPLIED,
+          INCLUDING IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND
+          NON-INFRINGEMENT. WE DO NOT WARRANT THAT: (A) THE PLATFORM WILL BE UNINTERRUPTED, ERROR-FREE, OR SECURE;
+          (B) ANY DEFECTS WILL BE CORRECTED; (C) THE PLATFORM IS FREE OF VIRUSES OR OTHER HARMFUL COMPONENTS; (D)
+          ANY GHOST BOOST WILL ACHIEVE DELIVERY TO A MATCHED SUBSCRIBER; (E) SENDER ANONYMITY WILL BE PRESERVED IN
+          ALL CIRCUMSTANCES; OR (F) THE PLATFORM WILL MEET YOUR EXPECTATIONS OR REQUIREMENTS. YOUR USE OF THE
+          PLATFORM IS ENTIRELY AT YOUR OWN RISK.
         </p>
       </LegalSection>
 
-      <LegalSection heading="6. Anonymity Is Not a Guarantee">
+      <LegalSection heading="10. Limitation of Liability">
         <p>
-          Blind Whisper is designed to prevent Senders and Recipients from learning each other's identity through
-          the ordinary use of the Service. It is <strong>not</strong> designed or intended to shield anyone from
-          legal accountability. We retain technical records that could identify a user and will disclose them in
-          response to valid legal process, or where we believe in good faith it's necessary to prevent harm, fraud,
-          or violation of these Terms. See our Privacy Policy for details.
+          TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL TILO GROUP, LLC, TIBLOGICS, BLIND
+          WHISPER, OR THEIR RESPECTIVE OFFICERS, DIRECTORS, EMPLOYEES, AGENTS, PARTNERS, SUPPLIERS, OR LICENSORS BE
+          LIABLE FOR: (A) ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, EXEMPLARY, OR PUNITIVE DAMAGES; (B) ANY
+          LOSS OF PROFITS, REVENUE, DATA, GOODWILL, OR OTHER INTANGIBLE LOSSES; (C) ANY UNAUTHORIZED ACCESS TO OR
+          ALTERATION OF YOUR TRANSMISSIONS OR DATA; (D) ANY CONDUCT OR CONTENT OF ANY THIRD PARTY ON THE PLATFORM;
+          (E) ANY CONTENT OBTAINED FROM THE PLATFORM; OR (F) UNAUTHORIZED ACCESS, USE, OR ALTERATION OF YOUR
+          CONTENT — WHETHER BASED ON WARRANTY, CONTRACT, TORT (INCLUDING NEGLIGENCE), OR ANY OTHER LEGAL THEORY,
+          EVEN IF WE'VE BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. OUR AGGREGATE LIABILITY WILL NOT EXCEED THE
+          GREATER OF (I) THE TOTAL AMOUNT YOU PAID TO BLIND WHISPER IN THE 12 MONTHS PRECEDING THE CLAIM, OR (II)
+          ONE HUNDRED DOLLARS ($100.00 USD).
         </p>
       </LegalSection>
 
-      <LegalSection heading="7. Message Delivery Disclaimers">
+      <LegalSection heading="11. Indemnification">
+        <p>You agree to defend, indemnify, and hold harmless TILO GROUP, LLC, TIBLOGICS, Blind Whisper, and their respective officers, directors, employees, agents, affiliates, and licensors (the "Indemnified Parties") from and against any claims, damages, obligations, losses, liabilities, costs, and expenses (including reasonable attorneys' fees) arising from or related to:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Your use of or access to the Platform</li>
+          <li>Your violation of any provision of these Terms</li>
+          <li>Your violation of any third-party rights, including privacy, publicity, or intellectual property rights</li>
+          <li>Any Whisp you send, including any harm suffered by a Recipient as a result</li>
+          <li>Your violation of any applicable law, rule, or regulation</li>
+          <li>Any claim that your use of the Platform caused damage to a third party</li>
+        </ul>
+        <p>We reserve the right to assume exclusive defense and control of any matter subject to indemnification by you, in which case you agree to cooperate fully with our defense.</p>
+      </LegalSection>
+
+      <LegalSection heading="12. Termination">
+        <p><strong>12.1 By you.</strong> You may terminate your account at any time by deleting it through Platform settings or by contacting {" "}
+          <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a>. Termination doesn't entitle you to a refund of subscription fees or unused Ghost Boost Credits.
+        </p>
+        <p><strong>12.2 By us.</strong> We may suspend, restrict, or terminate your account, with or without notice, at our discretion, for reasons including violation of these Terms, conduct we determine is harmful to other users or the Platform, requests from law enforcement or government agencies, extended inactivity, or non-payment of fees. Upon termination, your right to use the Platform ceases immediately. Provisions that by their nature should survive termination — including ownership, warranty disclaimers, indemnification, and limitations of liability — will survive.</p>
+      </LegalSection>
+
+      <LegalSection heading="13. Governing Law and Dispute Resolution">
+        <p><strong>13.1 Governing law.</strong> These Terms are governed by the laws of the State of Maryland, United States of America, without regard to conflict-of-law provisions. For Canadian users, mandatory consumer protection laws of your province or territory may also apply.</p>
+        <p><strong>13.2 Informal resolution.</strong> Before initiating formal dispute resolution, you agree to contact us at {" "}
+          <a href={`mailto:${LEGAL_EMAIL}`} className="text-primary hover:underline">{LEGAL_EMAIL}</a> and attempt to resolve the dispute informally for 30 days.
+        </p>
+        <p><strong>13.3 Binding arbitration.</strong> EXCEPT AS PROVIDED BELOW, ANY DISPUTE, CLAIM, OR CONTROVERSY ARISING OUT OF OR RELATING TO THESE TERMS OR THE PLATFORM SHALL BE RESOLVED BY FINAL AND BINDING ARBITRATION ADMINISTERED BY THE AMERICAN ARBITRATION ASSOCIATION (AAA) UNDER ITS CONSUMER ARBITRATION RULES, CONDUCTED IN MARYLAND OR VIA VIDEOCONFERENCE. THE ARBITRATOR'S AWARD SHALL BE FINAL AND BINDING AND MAY BE ENTERED AS A JUDGMENT IN ANY COURT OF COMPETENT JURISDICTION.</p>
+        <p><strong>13.4 Class action waiver.</strong> YOU AND BLIND WHISPER AGREE THAT EACH MAY BRING CLAIMS AGAINST THE OTHER ONLY IN AN INDIVIDUAL CAPACITY, NOT AS A PLAINTIFF OR CLASS MEMBER IN ANY PURPORTED CLASS, CONSOLIDATED, OR REPRESENTATIVE ACTION. THE ARBITRATOR MAY NOT CONSOLIDATE MORE THAN ONE PERSON'S CLAIMS.</p>
+        <p><strong>13.5 Exceptions.</strong> Either party may seek injunctive or other equitable relief in any court of competent jurisdiction to prevent actual or threatened infringement, misappropriation, or violation of intellectual property rights, or in cases involving the safety of minors.</p>
+      </LegalSection>
+
+      <LegalSection heading="14. Modifications to These Terms">
         <p>
-          We use third-party providers (including email and SMS/text carriers) to deliver messages. Delivery is
-          best-effort — we do not guarantee that any message will be delivered, delivered on time, or delivered at
-          all, since carriers may filter, delay, or block messages for reasons outside our control. If you provide a
-          phone number for delivery, message and data rates may apply from your carrier. Reply STOP to opt out of
-          future texts, or HELP for help. Message frequency varies based on your own use of the Service.
+          We may modify these Terms at any time. When we make material changes, we'll notify you via email and/or a
+          prominent notice on the Platform at least 14 days before the changes take effect. Your continued use of
+          the Platform after the effective date of any change constitutes acceptance of the revised Terms. If you
+          don't agree, you must stop using the Platform before the effective date.
         </p>
       </LegalSection>
 
-      <LegalSection heading="8. AI-Generated and Curated Content">
-        <p>
-          Some content on Blind Whisper — including video "takeaway" summaries, note suggestions, and entries in our
-          Suggestions Library — is generated or discovered with the help of AI. We don't guarantee the accuracy,
-          appropriateness, or completeness of AI-generated content, and it does not represent our endorsement of any
-          third-party video's content. Admin-added or AI-discovered videos in the Suggestions Library link to
-          content hosted by third parties (e.g., YouTube, Vimeo, TikTok) that we don't control and aren't
-          responsible for.
-        </p>
+      <LegalSection heading="15. Miscellaneous">
+        <p><strong>15.1 Entire agreement.</strong> These Terms, together with our Privacy Policy and any other agreements or policies expressly incorporated herein, constitute the entire agreement between you and TILO GROUP, LLC regarding the Platform and supersede all prior agreements and understandings.</p>
+        <p><strong>15.2 Severability.</strong> If any provision of these Terms is found invalid, illegal, or unenforceable, the remaining provisions continue in full force and effect, and the invalid provision will be modified to the minimum extent necessary to make it enforceable.</p>
+        <p><strong>15.3 Waiver.</strong> Our failure to enforce any right or provision of these Terms isn't a waiver of that right or provision. Any waiver must be in writing and signed by an authorized representative of TILO GROUP, LLC.</p>
+        <p><strong>15.4 Assignment.</strong> You may not assign or transfer your rights or obligations under these Terms without our prior written consent. We may freely assign these Terms, including in connection with a merger, acquisition, or sale of assets, without notice to you.</p>
+        <p><strong>15.5 Force majeure.</strong> We won't be liable for any failure or delay in performance resulting from causes beyond our reasonable control, including acts of God, natural disasters, pandemics, war, civil unrest, government actions, internet outages, or failures of third-party service providers.</p>
+        <p><strong>15.6 No third-party beneficiaries.</strong> These Terms don't create third-party beneficiary rights. Recipients of Whisps are not parties to this Agreement and have no rights under these Terms against TILO GROUP, LLC, TIBLOGICS, or Blind Whisper.</p>
       </LegalSection>
 
-      <LegalSection heading="9. Fees, Credits, and Billing">
+      <LegalSection heading="16. Contact Us">
+        <p>For questions about these Terms, contact us:</p>
         <p>
-          Some features require a paid subscription or the purchase of credits, processed by Stripe. Prices are as
-          displayed at the time of purchase and may change going forward. Subscriptions renew automatically until
-          canceled; you can cancel anytime from your account settings, effective at the end of the current billing
-          period. Purchased credits are non-refundable except as required by law or as we otherwise decide at our
-          discretion.
+          TIBLOGICS / TILO GROUP, LLC<br />
+          Attn: Legal — Blind Whisper<br />
+          General: <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a><br />
+          Legal: <a href={`mailto:${LEGAL_EMAIL}`} className="text-primary hover:underline">{LEGAL_EMAIL}</a><br />
+          Billing: <a href={`mailto:${BILLING_EMAIL}`} className="text-primary hover:underline">{BILLING_EMAIL}</a><br />
+          Wheaton, Maryland, United States
         </p>
-      </LegalSection>
-
-      <LegalSection heading="10. Third-Party Services">
-        <p>
-          The Service relies on and links to third-party services (including Stripe, Twilio, Resend, Clerk,
-          Anthropic, and video platforms like YouTube, Vimeo, TikTok, Instagram, Facebook, and X/Twitter). We aren't
-          responsible for the availability, content, or practices of these third parties, which are governed by
-          their own terms and privacy policies.
-        </p>
-      </LegalSection>
-
-      <LegalSection heading="11. Termination">
-        <p>
-          You may stop using the Service or delete your account at any time. We may suspend or terminate your
-          access, with or without notice, if we believe you've violated these Terms, created risk or legal exposure
-          for us, or for any other reason at our discretion. Sections that by their nature should survive
-          termination (including Sections 5, 6, 13, 14, and 15) will survive.
-        </p>
-      </LegalSection>
-
-      <LegalSection heading="12. Changes to the Service or These Terms">
-        <p>
-          We may modify or discontinue any part of the Service at any time. We may update these Terms from time to
-          time; if we make material changes, we'll update the "Last updated" date above and, where appropriate,
-          notify you. Continuing to use the Service after changes take effect means you accept the updated Terms.
-        </p>
-      </LegalSection>
-
-      <LegalSection heading="13. Disclaimer of Warranties">
-        <p>
-          THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE," WITHOUT WARRANTIES OF ANY KIND, WHETHER EXPRESS OR
-          IMPLIED, INCLUDING WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, OR
-          THAT THE SERVICE WILL BE UNINTERRUPTED, SECURE, OR ERROR-FREE. WE DO NOT WARRANT THAT MESSAGES WILL BE
-          DELIVERED OR THAT ANONYMITY WILL BE PRESERVED IN ALL CIRCUMSTANCES.
-        </p>
-      </LegalSection>
-
-      <LegalSection heading="14. Limitation of Liability">
-        <p>
-          TO THE MAXIMUM EXTENT PERMITTED BY LAW, BLIND WHISPER AND ITS OPERATORS WILL NOT BE LIABLE FOR ANY
-          INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF DATA, GOODWILL, OR
-          PROFITS, ARISING FROM YOUR USE OF THE SERVICE — INCLUDING CONTENT SENT OR RECEIVED THROUGH IT, OR ANY
-          FAILURE OR DELAY OF MESSAGE DELIVERY — EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. OUR TOTAL
-          LIABILITY FOR ANY CLAIM RELATING TO THE SERVICE WILL NOT EXCEED THE GREATER OF (A) THE AMOUNT YOU PAID US
-          IN THE 12 MONTHS BEFORE THE CLAIM AROSE, OR (B) $100.
-        </p>
-      </LegalSection>
-
-      <LegalSection heading="15. Indemnification">
-        <p>
-          You agree to indemnify and hold Blind Whisper and its operators harmless from any claim, liability,
-          damage, or expense (including reasonable attorneys' fees) arising from your use of the Service, content
-          you submit, or your violation of these Terms or any law or third-party right.
-        </p>
-      </LegalSection>
-
-      <LegalSection heading="16. Governing Law">
-        <p>
-          These Terms are governed by the laws of [Insert Your State/Country], without regard to conflict-of-law
-          principles, and any dispute will be resolved in the courts located there, unless applicable law requires
-          otherwise.
-        </p>
-      </LegalSection>
-
-      <LegalSection heading="17. Contact Us">
-        <p>
-          Questions about these Terms? Email us at{" "}
-          <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a>.
+        <p className="text-sm text-muted-foreground">
+          © 2026 TIBLOGICS / TILO GROUP, LLC. All rights reserved. Blind Whisper is a product of TIBLOGICS, a
+          sub-entity of TILO GROUP, LLC. This document does not constitute legal advice.
         </p>
       </LegalSection>
     </LegalLayout>
