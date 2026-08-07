@@ -1,43 +1,65 @@
-import { useEffect, useRef } from "react";
+import { lazy, Suspense, useEffect, useRef } from "react";
 import { ClerkProvider, SignIn, SignUp, Show, useClerk } from '@clerk/react';
 import { dark } from '@clerk/themes';
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from 'wouter';
+import { Loader2 } from "lucide-react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 
 import { LandingPage } from "@/pages/LandingPage";
-import { PrivacyPolicy } from "@/pages/PrivacyPolicy";
-import { TermsOfService } from "@/pages/TermsOfService";
 import { Dashboard } from "@/pages/Dashboard";
-import { WhispsList } from "@/pages/WhispsList";
-import { CircleFeed } from "@/pages/CircleFeed";
-import { MyCircles } from "@/pages/MyCircles";
-import { CircleDetail } from "@/pages/CircleDetail";
-import { SendWhisp } from "@/pages/SendWhisp";
-import { SuggestionsLibrary } from "@/pages/SuggestionsLibrary";
-import { WhisperGroups } from "@/pages/WhisperGroups";
-import { MediaLibrary } from "@/pages/MediaLibrary";
-import { WhisperGroupDetail } from "@/pages/WhisperGroupDetail";
-import { GroupSendDetail } from "@/pages/GroupSendDetail";
-import { WhispDetail } from "@/pages/WhispDetail";
-import { RepliesInbox } from "@/pages/RepliesInbox";
-import { CreditsPage } from "@/pages/CreditsPage";
-import { SettingsPage } from "@/pages/SettingsPage";
-import { PublicWhispPage } from "@/pages/PublicWhispPage";
-import { SubscribePage } from "@/pages/SubscribePage";
-import { VerifySubscriptionPage } from "@/pages/VerifySubscriptionPage";
-import { UnsubscribeFromMatchingPage } from "@/pages/UnsubscribeFromMatchingPage";
 import { AdminRoute } from "@/components/layout/AdminRoute";
-import { AdminDashboard } from "@/pages/admin/AdminDashboard";
-import { AdminUsers } from "@/pages/admin/AdminUsers";
-import { AdminUserDetail } from "@/pages/admin/AdminUserDetail";
-import { AdminWhisps } from "@/pages/admin/AdminWhisps";
-import { AdminWhispDetail } from "@/pages/admin/AdminWhispDetail";
-import { AdminAnalytics } from "@/pages/admin/AdminAnalytics";
-import { AdminSuggestions } from "@/pages/admin/AdminSuggestions";
-import { AdminModeration } from "@/pages/admin/AdminModeration";
-import { AdminNotifications } from "@/pages/admin/AdminNotifications";
+
+// Everything below is off the critical first-load path (landing, sign-in/up,
+// and dashboard are the only pages most visits ever touch) — code-split so a
+// visitor never downloads/parses the admin panel (and the recharts library
+// it pulls in via AdminAnalytics) or any other page they didn't ask for.
+// Named exports need the `.then(m => ({ default: m.X }))` unwrap since
+// React.lazy only accepts a module with a default export.
+const PrivacyPolicy = lazy(() => import("@/pages/PrivacyPolicy").then((m) => ({ default: m.PrivacyPolicy })));
+const TermsOfService = lazy(() => import("@/pages/TermsOfService").then((m) => ({ default: m.TermsOfService })));
+const WhispsList = lazy(() => import("@/pages/WhispsList").then((m) => ({ default: m.WhispsList })));
+const CircleFeed = lazy(() => import("@/pages/CircleFeed").then((m) => ({ default: m.CircleFeed })));
+const MyCircles = lazy(() => import("@/pages/MyCircles").then((m) => ({ default: m.MyCircles })));
+const CircleDetail = lazy(() => import("@/pages/CircleDetail").then((m) => ({ default: m.CircleDetail })));
+const SendWhisp = lazy(() => import("@/pages/SendWhisp").then((m) => ({ default: m.SendWhisp })));
+const SuggestionsLibrary = lazy(() => import("@/pages/SuggestionsLibrary").then((m) => ({ default: m.SuggestionsLibrary })));
+const WhisperGroups = lazy(() => import("@/pages/WhisperGroups").then((m) => ({ default: m.WhisperGroups })));
+const MediaLibrary = lazy(() => import("@/pages/MediaLibrary").then((m) => ({ default: m.MediaLibrary })));
+const WhisperGroupDetail = lazy(() => import("@/pages/WhisperGroupDetail").then((m) => ({ default: m.WhisperGroupDetail })));
+const GroupSendDetail = lazy(() => import("@/pages/GroupSendDetail").then((m) => ({ default: m.GroupSendDetail })));
+const WhispDetail = lazy(() => import("@/pages/WhispDetail").then((m) => ({ default: m.WhispDetail })));
+const RepliesInbox = lazy(() => import("@/pages/RepliesInbox").then((m) => ({ default: m.RepliesInbox })));
+const CreditsPage = lazy(() => import("@/pages/CreditsPage").then((m) => ({ default: m.CreditsPage })));
+const SettingsPage = lazy(() => import("@/pages/SettingsPage").then((m) => ({ default: m.SettingsPage })));
+const PublicWhispPage = lazy(() => import("@/pages/PublicWhispPage").then((m) => ({ default: m.PublicWhispPage })));
+const SubscribePage = lazy(() => import("@/pages/SubscribePage").then((m) => ({ default: m.SubscribePage })));
+const VerifySubscriptionPage = lazy(() => import("@/pages/VerifySubscriptionPage").then((m) => ({ default: m.VerifySubscriptionPage })));
+const UnsubscribeFromMatchingPage = lazy(() => import("@/pages/UnsubscribeFromMatchingPage").then((m) => ({ default: m.UnsubscribeFromMatchingPage })));
+
+// Admin panel — highest-value split. Most users never load any of this, and
+// AdminAnalytics alone pulls in the recharts charting library.
+const AdminDashboard = lazy(() => import("@/pages/admin/AdminDashboard").then((m) => ({ default: m.AdminDashboard })));
+const AdminUsers = lazy(() => import("@/pages/admin/AdminUsers").then((m) => ({ default: m.AdminUsers })));
+const AdminUserDetail = lazy(() => import("@/pages/admin/AdminUserDetail").then((m) => ({ default: m.AdminUserDetail })));
+const AdminWhisps = lazy(() => import("@/pages/admin/AdminWhisps").then((m) => ({ default: m.AdminWhisps })));
+const AdminWhispDetail = lazy(() => import("@/pages/admin/AdminWhispDetail").then((m) => ({ default: m.AdminWhispDetail })));
+const AdminAnalytics = lazy(() => import("@/pages/admin/AdminAnalytics").then((m) => ({ default: m.AdminAnalytics })));
+const AdminSuggestions = lazy(() => import("@/pages/admin/AdminSuggestions").then((m) => ({ default: m.AdminSuggestions })));
+const AdminModeration = lazy(() => import("@/pages/admin/AdminModeration").then((m) => ({ default: m.AdminModeration })));
+const AdminNotifications = lazy(() => import("@/pages/admin/AdminNotifications").then((m) => ({ default: m.AdminNotifications })));
+
+// Route-level Suspense fallback — same full-page centered spinner AdminRoute
+// already uses while it waits on the user profile fetch, so a lazy chunk
+// loading doesn't introduce a new, inconsistent loading affordance.
+function RouteLoadingFallback() {
+  return (
+    <div className="min-h-[100dvh] flex items-center justify-center bg-background">
+      <Loader2 className="w-6 h-6 text-primary animate-spin" />
+    </div>
+  );
+}
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
@@ -148,55 +170,57 @@ function ClerkProviderWithRoutes() {
     >
       <QueryClientProvider client={queryClient}>
         <ClerkQueryClientCacheInvalidator />
-        <Switch>
-          <Route path="/" component={HomeRedirect} />
-          <Route path="/sign-in/*?" component={SignInPage} />
-          <Route path="/sign-up/*?" component={SignUpPage} />
+        <Suspense fallback={<RouteLoadingFallback />}>
+          <Switch>
+            <Route path="/" component={HomeRedirect} />
+            <Route path="/sign-in/*?" component={SignInPage} />
+            <Route path="/sign-up/*?" component={SignUpPage} />
 
-          <Route path="/dashboard" component={() => <ProtectedRoute component={Dashboard} />} />
-          <Route path="/send" component={() => <ProtectedRoute component={SendWhisp} />} />
-          <Route path="/suggestions" component={() => <ProtectedRoute component={SuggestionsLibrary} />} />
-          <Route path="/whisps/:id" component={() => <ProtectedRoute component={WhispDetail} />} />
-          <Route path="/whisps" component={() => <ProtectedRoute component={WhispsList} />} />
-          <Route path="/circle" component={() => <ProtectedRoute component={CircleFeed} />} />
-          <Route path="/circles/:id" component={() => <ProtectedRoute component={CircleDetail} />} />
-          <Route path="/circles" component={() => <ProtectedRoute component={MyCircles} />} />
-          <Route path="/whisper-groups/sends/:groupSendId" component={() => <ProtectedRoute component={GroupSendDetail} />} />
-          <Route path="/whisper-groups/:id" component={() => <ProtectedRoute component={WhisperGroupDetail} />} />
-          <Route path="/whisper-groups" component={() => <ProtectedRoute component={WhisperGroups} />} />
-          <Route path="/media-library" component={() => <ProtectedRoute component={MediaLibrary} />} />
-          <Route path="/replies" component={() => <ProtectedRoute component={RepliesInbox} />} />
-          <Route path="/credits" component={() => <ProtectedRoute component={CreditsPage} />} />
-          <Route path="/settings" component={() => <ProtectedRoute component={SettingsPage} />} />
+            <Route path="/dashboard" component={() => <ProtectedRoute component={Dashboard} />} />
+            <Route path="/send" component={() => <ProtectedRoute component={SendWhisp} />} />
+            <Route path="/suggestions" component={() => <ProtectedRoute component={SuggestionsLibrary} />} />
+            <Route path="/whisps/:id" component={() => <ProtectedRoute component={WhispDetail} />} />
+            <Route path="/whisps" component={() => <ProtectedRoute component={WhispsList} />} />
+            <Route path="/circle" component={() => <ProtectedRoute component={CircleFeed} />} />
+            <Route path="/circles/:id" component={() => <ProtectedRoute component={CircleDetail} />} />
+            <Route path="/circles" component={() => <ProtectedRoute component={MyCircles} />} />
+            <Route path="/whisper-groups/sends/:groupSendId" component={() => <ProtectedRoute component={GroupSendDetail} />} />
+            <Route path="/whisper-groups/:id" component={() => <ProtectedRoute component={WhisperGroupDetail} />} />
+            <Route path="/whisper-groups" component={() => <ProtectedRoute component={WhisperGroups} />} />
+            <Route path="/media-library" component={() => <ProtectedRoute component={MediaLibrary} />} />
+            <Route path="/replies" component={() => <ProtectedRoute component={RepliesInbox} />} />
+            <Route path="/credits" component={() => <ProtectedRoute component={CreditsPage} />} />
+            <Route path="/settings" component={() => <ProtectedRoute component={SettingsPage} />} />
 
-          <Route path="/admin/users/:id" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminUserDetail} />} />} />
-          <Route path="/admin/users" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminUsers} />} />} />
-          <Route path="/admin/whisps/:id" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminWhispDetail} />} />} />
-          <Route path="/admin/whisps" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminWhisps} />} />} />
-          <Route path="/admin/analytics" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminAnalytics} />} />} />
-          <Route path="/admin/suggestions" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminSuggestions} />} />} />
-          <Route path="/admin/moderation" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminModeration} />} />} />
-          <Route path="/admin/notifications" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminNotifications} />} />} />
-          <Route path="/admin" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminDashboard} />} />} />
+            <Route path="/admin/users/:id" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminUserDetail} />} />} />
+            <Route path="/admin/users" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminUsers} />} />} />
+            <Route path="/admin/whisps/:id" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminWhispDetail} />} />} />
+            <Route path="/admin/whisps" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminWhisps} />} />} />
+            <Route path="/admin/analytics" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminAnalytics} />} />} />
+            <Route path="/admin/suggestions" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminSuggestions} />} />} />
+            <Route path="/admin/moderation" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminModeration} />} />} />
+            <Route path="/admin/notifications" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminNotifications} />} />} />
+            <Route path="/admin" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminDashboard} />} />} />
 
-          <Route path="/w/:token" component={PublicWhispPage} />
-          <Route path="/privacy" component={PrivacyPolicy} />
-          <Route path="/privacy-policy" component={PrivacyPolicy} />
-          <Route path="/terms" component={TermsOfService} />
-          <Route path="/terms-and-conditions" component={TermsOfService} />
-          <Route path="/subscribe" component={SubscribePage} />
-          <Route path="/verify-subscription" component={VerifySubscriptionPage} />
-          <Route path="/unsubscribe" component={UnsubscribeFromMatchingPage} />
+            <Route path="/w/:token" component={PublicWhispPage} />
+            <Route path="/privacy" component={PrivacyPolicy} />
+            <Route path="/privacy-policy" component={PrivacyPolicy} />
+            <Route path="/terms" component={TermsOfService} />
+            <Route path="/terms-and-conditions" component={TermsOfService} />
+            <Route path="/subscribe" component={SubscribePage} />
+            <Route path="/verify-subscription" component={VerifySubscriptionPage} />
+            <Route path="/unsubscribe" component={UnsubscribeFromMatchingPage} />
 
-          <Route>
-            <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
-              <div className="text-center">
-                <h1 className="text-4xl font-serif font-bold text-foreground mb-4">404</h1>
-                <p className="text-muted-foreground">Page not found</p>
+            <Route>
+              <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+                <div className="text-center">
+                  <h1 className="text-4xl font-serif font-bold text-foreground mb-4">404</h1>
+                  <p className="text-muted-foreground">Page not found</p>
+                </div>
               </div>
-            </div>
-          </Route>
-        </Switch>
+            </Route>
+          </Switch>
+        </Suspense>
         <Toaster />
       </QueryClientProvider>
     </ClerkProvider>
