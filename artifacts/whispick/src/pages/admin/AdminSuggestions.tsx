@@ -7,6 +7,7 @@ import {
   useAdminDeleteSuggestion,
   useAdminGetSuggestionAgentStatus,
   useAdminRunSuggestionAgent,
+  useScrapeVideoMeta,
   getAdminListSuggestionsQueryKey,
   getAdminGetSuggestionAgentStatusQueryKey,
 } from "@workspace/api-client-react";
@@ -39,6 +40,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { PlatformIcon } from "@/components/shared/PlatformIcon";
+import { Thumbnail } from "@/components/shared/Thumbnail";
 import { VIDEO_CATEGORY_LABELS, categoryLabel } from "@/lib/videoCategories";
 import { Search, ChevronLeft, ChevronRight, PlayCircle, Trash2, Plus, Star, CheckCircle2, Archive, Loader2, Bot, UserCog, AlertTriangle, Zap } from "lucide-react";
 
@@ -52,6 +54,12 @@ function SuggestionStatusBadge({ status }: { status: string }) {
   return <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 rounded-full">Published</Badge>;
 }
 
+interface PreviewMeta {
+  title?: string | null;
+  thumbnail?: string | null;
+  platform?: string | null;
+}
+
 function AddSuggestionDialog() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -60,7 +68,10 @@ function AddSuggestionDialog() {
   const [categories, setCategories] = useState<string[]>([]);
   const [featured, setFeatured] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [videoMeta, setVideoMeta] = useState<PreviewMeta | null>(null);
+  const [previewedUrl, setPreviewedUrl] = useState<string | null>(null);
   const createSuggestion = useAdminCreateSuggestion();
+  const scrapeMeta = useScrapeVideoMeta();
 
   function toggleCategory(key: string) {
     setCategories((prev) =>
@@ -73,6 +84,31 @@ function AddSuggestionDialog() {
     setCategories([]);
     setFeatured(false);
     setError(null);
+    setVideoMeta(null);
+    setPreviewedUrl(null);
+  }
+
+  // Fetches a thumbnail/title preview as soon as a link is pasted in — the
+  // same scrape SendWhisp's composer runs on the sender's own paste step —
+  // so an admin can see what they're about to add before committing to it,
+  // and gets the same "this looks private/restricted" warning a sender
+  // would, rather than only finding out after the row's already created.
+  function handlePreview() {
+    const url = videoUrl.trim();
+    if (!url || url === previewedUrl) return;
+    setPreviewedUrl(url);
+    setVideoMeta(null);
+    setError(null);
+    scrapeMeta.mutate(
+      { data: { url } },
+      {
+        onSuccess: (meta) => setVideoMeta(meta),
+        onError: (err: any) => {
+          const message = err?.data?.error ?? "Couldn't load a preview for that link — double-check the URL.";
+          setError(message);
+        },
+      }
+    );
   }
 
   function handleSubmit() {
@@ -94,7 +130,7 @@ function AddSuggestionDialog() {
           setOpen(false);
           reset();
         },
-        onError: (err: any) => setError(err?.response?.data?.error ?? "Couldn't add that video"),
+        onError: (err: any) => setError(err?.data?.error ?? "Couldn't add that video"),
       }
     );
   }
@@ -116,10 +152,41 @@ function AddSuggestionDialog() {
             <Input
               placeholder="https://youtube.com/watch?v=..."
               value={videoUrl}
-              onChange={(e) => setVideoUrl(e.target.value)}
+              onChange={(e) => {
+                setVideoUrl(e.target.value);
+                if (e.target.value.trim() !== previewedUrl) {
+                  setVideoMeta(null);
+                  setPreviewedUrl(null);
+                }
+              }}
+              onBlur={handlePreview}
+              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handlePreview())}
               className="bg-input/50 border-border/50 rounded-xl"
               data-testid="input-suggestion-url"
             />
+            {scrapeMeta.isPending && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground py-1">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading preview...
+              </div>
+            )}
+            {videoMeta && (
+              <div className="flex gap-3 p-3 bg-muted/30 rounded-xl items-center" data-testid="suggestion-video-preview">
+                {videoMeta.thumbnail ? (
+                  <Thumbnail src={videoMeta.thumbnail} alt="thumbnail" className="w-16 h-12 object-cover rounded-lg shrink-0" />
+                ) : (
+                  <div className="w-16 h-12 bg-muted rounded-lg flex items-center justify-center shrink-0">
+                    <PlayCircle className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <PlatformIcon platform={videoMeta.platform} className="w-3.5 h-3.5" />
+                    <span className="text-xs text-muted-foreground capitalize">{videoMeta.platform}</span>
+                  </div>
+                  <p className="text-sm font-medium text-foreground truncate">{videoMeta.title || "Untitled video"}</p>
+                </div>
+              </div>
+            )}
           </div>
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground">Categories ({categories.length}/{MAX_ADD_CATEGORIES})</p>

@@ -92,6 +92,7 @@ export function PublicWhispPage() {
     embedUrl?: string | null;
     platform?: string;
   } | null>(null);
+  const [replyVideoError, setReplyVideoError] = useState<string | null>(null);
 
   const { data: whisp, isLoading } = useGetPublicWhisp(token!, {
     query: {
@@ -202,11 +203,26 @@ export function PublicWhispPage() {
   function handleFetchReplyVideo() {
     const url = replyVideoUrl.trim();
     if (!url) return;
+    setReplyVideoError(null);
     scrapeReplyVideo.mutate(
       { data: { url } },
       {
         onSuccess: (meta) => setReplyVideoMeta(meta),
-        onError: () => setReplyVideoMeta({ platform: "other" }),
+        onError: (err: any) => {
+          const code = err?.data?.code;
+          if (code === "video_private" || code === "video_not_found") {
+            // A private/deleted video isn't something we can quietly work
+            // around here — the sender wouldn't be able to open it either,
+            // so surface it instead of attaching a dead link to the reply.
+            setReplyVideoError(err.data.error);
+            return;
+          }
+          // Any other scrape failure is inconclusive (network hiccup, a
+          // platform we just couldn't parse) — same tolerant fallback the
+          // sender's own composer uses, so a reply video can still be
+          // attached with unknown metadata rather than blocked outright.
+          setReplyVideoMeta({ platform: "other" });
+        },
       }
     );
   }
@@ -465,28 +481,33 @@ export function PublicWhispPage() {
                           <p className="text-xs text-foreground truncate flex-1">{replyVideoMeta.title || replyVideoUrl}</p>
                         </div>
                       ) : (
-                        <div className="flex gap-2">
-                          <div className="relative flex-1">
-                            <Link2 className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                            <Input
-                              className="pl-8 h-9 text-xs bg-card border-border/50 rounded-lg"
-                              placeholder="Paste a video link..."
-                              value={replyVideoUrl}
-                              onChange={(e) => setReplyVideoUrl(e.target.value)}
-                              data-testid="input-reply-video-url"
-                            />
+                        <div className="space-y-1.5">
+                          <div className="flex gap-2">
+                            <div className="relative flex-1">
+                              <Link2 className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                              <Input
+                                className="pl-8 h-9 text-xs bg-card border-border/50 rounded-lg"
+                                placeholder="Paste a video link..."
+                                value={replyVideoUrl}
+                                onChange={(e) => { setReplyVideoUrl(e.target.value); setReplyVideoError(null); }}
+                                data-testid="input-reply-video-url"
+                              />
+                            </div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="rounded-lg h-9"
+                              onClick={handleFetchReplyVideo}
+                              disabled={!replyVideoUrl.trim() || scrapeReplyVideo.isPending}
+                              data-testid="button-fetch-reply-video"
+                            >
+                              {scrapeReplyVideo.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Add"}
+                            </Button>
                           </div>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            className="rounded-lg h-9"
-                            onClick={handleFetchReplyVideo}
-                            disabled={!replyVideoUrl.trim() || scrapeReplyVideo.isPending}
-                            data-testid="button-fetch-reply-video"
-                          >
-                            {scrapeReplyVideo.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Add"}
-                          </Button>
+                          {replyVideoError && (
+                            <p className="text-xs text-destructive" data-testid="text-reply-video-error">{replyVideoError}</p>
+                          )}
                         </div>
                       )}
                     </div>
