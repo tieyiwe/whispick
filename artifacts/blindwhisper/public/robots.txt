@@ -1,2 +1,26 @@
 User-agent: *
 Allow: /
+Allow: /privacy
+Allow: /privacy-policy
+Allow: /terms
+Allow: /terms-and-conditions
+Allow: /subscribe
+Disallow: /w/
+Disallow: /dashboard
+Disallow: /send
+Disallow: /suggestions
+Disallow: /whisps
+Disallow: /circle
+Disallow: /circles
+Disallow: /whisper-groups
+Disallow: /media-library
+Disallow: /replies
+Disallow: /credits
+Disallow: /settings
+Disallow: /admin
+Disallow: /sign-in
+Disallow: /sign-up
+Disallow: /verify-subscription
+Disallow: /unsubscribe
+
+Sitemap: https://blindwhisper.com/sitemap.xml

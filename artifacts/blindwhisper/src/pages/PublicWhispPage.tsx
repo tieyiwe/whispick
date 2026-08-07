@@ -84,6 +84,20 @@ export function PublicWhispPage() {
   const [reminderScheduled, setReminderScheduled] = useState<{ nextReminderAt: string; isFinal: boolean } | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [justWatched, setJustWatched] = useState(false);
+
+  // This is a private, single-recipient page — never indexable, even if a
+  // link to it ends up publicly posted somewhere. robots.txt disallows /w/
+  // for well-behaved crawlers, but a noindex tag also stops a page from
+  // being indexed off a discovered backlink alone.
+  useEffect(() => {
+    const meta = document.createElement("meta");
+    meta.name = "robots";
+    meta.content = "noindex, nofollow";
+    document.head.appendChild(meta);
+    return () => {
+      document.head.removeChild(meta);
+    };
+  }, []);
   const [showVideoReply, setShowVideoReply] = useState(false);
   const [replyVideoUrl, setReplyVideoUrl] = useState("");
   const [replyVideoMeta, setReplyVideoMeta] = useState<{
