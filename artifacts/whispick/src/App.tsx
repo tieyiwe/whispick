@@ -7,6 +7,8 @@ import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 
 import { LandingPage } from "@/pages/LandingPage";
+import { PrivacyPolicy } from "@/pages/PrivacyPolicy";
+import { TermsOfService } from "@/pages/TermsOfService";
 import { Dashboard } from "@/pages/Dashboard";
 import { WhispsList } from "@/pages/WhispsList";
 import { CircleFeed } from "@/pages/CircleFeed";
@@ -174,6 +176,8 @@ function ClerkProviderWithRoutes() {
           <Route path="/admin" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminDashboard} />} />} />
 
           <Route path="/w/:token" component={PublicWhispPage} />
+          <Route path="/privacy" component={PrivacyPolicy} />
+          <Route path="/terms" component={TermsOfService} />
           <Route path="/subscribe" component={SubscribePage} />
           <Route path="/verify-subscription" component={VerifySubscriptionPage} />
           <Route path="/unsubscribe" component={UnsubscribeFromMatchingPage} />
