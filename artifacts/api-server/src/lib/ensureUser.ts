@@ -37,7 +37,7 @@ export async function ensureUser(clerkId: string, req: any): Promise<User> {
 
   const id = randomUUID();
   const sessionClaims = (req.auth?.sessionClaims as Record<string, unknown>) ?? {};
-  const email = (sessionClaims.email as string) ?? `${clerkId}@whispick.app`;
+  const email = (sessionClaims.email as string) ?? `${clerkId}@blindwhisper.com`;
   const fullName = (sessionClaims.name as string) ?? null;
   const role = isBootstrapAdminEmail(email) ? "admin" : "user";
 

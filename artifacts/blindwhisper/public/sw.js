@@ -4,9 +4,9 @@ self.addEventListener("push", (event) => {
   try {
     payload = event.data.json();
   } catch {
-    payload = { title: "Whispick", body: event.data.text() };
+    payload = { title: "Blind Whisper", body: event.data.text() };
   }
-  const { title = "Whispick", body, url } = payload;
+  const { title = "Blind Whisper", body, url } = payload;
   event.waitUntil(
     self.registration.showNotification(title, {
       body,

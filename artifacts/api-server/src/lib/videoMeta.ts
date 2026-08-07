@@ -111,7 +111,7 @@ export async function scrapeOpenGraph(url: string): Promise<ScrapeResult | null>
   try {
     const res = await fetch(url, {
       signal: AbortSignal.timeout(8000),
-      headers: { "User-Agent": "WhispickBot/1.0" },
+      headers: { "User-Agent": "BlindWhisperBot/1.0" },
     });
     if (!res.ok) return { status: res.status };
     const html = await res.text();

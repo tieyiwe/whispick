@@ -88,7 +88,7 @@ router.post("/checkout", requireAuth, async (req, res): Promise<void> => {
       {
         price_data: {
           currency: "usd",
-          product_data: { name: `Whispick ${plan.label} plan` },
+          product_data: { name: `Blind Whisper ${plan.label} plan` },
           unit_amount: plan.priceUsdCents,
           recurring: { interval: "month" },
         },

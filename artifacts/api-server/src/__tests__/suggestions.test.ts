@@ -7,7 +7,7 @@ import { eq } from "drizzle-orm";
 import { TEST_USER_HEADER, anthropicMessagesCreateMock } from "./setup";
 
 const ADMIN_CLERK_ID = "clerk_suggestions_admin";
-const ADMIN_EMAIL = `${ADMIN_CLERK_ID}@whispick.app`;
+const ADMIN_EMAIL = `${ADMIN_CLERK_ID}@blindwhisper.com`;
 const USER_A = "clerk_suggestions_user_a";
 
 function asUser(userId: string) {

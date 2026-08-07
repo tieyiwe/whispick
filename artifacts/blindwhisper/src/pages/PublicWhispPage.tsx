@@ -27,11 +27,11 @@ import { QUICK_REPLIES } from "@/lib/quickReplies";
 import { REMINDER_PRESETS, MAX_REMINDERS } from "@/lib/reminderPresets";
 import { savePendingForward } from "@/lib/forwardVideo";
 
-function WhispickLogoMark() {
+function BlindWhisperLogoMark() {
   return (
     <div className="flex items-center gap-2">
       <Logo className="w-6 h-6 text-primary" />
-      <span className="font-serif text-xl font-bold text-foreground tracking-tight">whispick</span>
+      <span className="font-serif text-xl font-bold text-foreground tracking-tight">Blind Whisper</span>
     </div>
   );
 }
@@ -262,7 +262,7 @@ export function PublicWhispPage() {
         className="px-5 pb-5 flex items-center justify-between border-b border-border/30 relative z-10"
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 1.25rem)" }}
       >
-        <WhispickLogoMark />
+        <BlindWhisperLogoMark />
         <a
           href="/sign-up"
           className="text-xs text-muted-foreground hover:text-primary transition-colors py-2"
@@ -656,7 +656,7 @@ export function PublicWhispPage() {
       >
         <p className="text-xs text-muted-foreground">
           Powered by{" "}
-          <a href="/" className="text-primary hover:underline">Whispick</a>
+          <a href="/" className="text-primary hover:underline">Blind Whisper</a>
           {" "}— send what matters, without the awkward part.
         </p>
       </footer>

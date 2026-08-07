@@ -16,7 +16,7 @@ export function LandingPage() {
       >
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <Logo className="w-7 h-7 sm:w-8 sm:h-8 text-primary shrink-0" />
-          <span className="font-serif text-lg sm:text-2xl font-bold tracking-tight truncate">Whispick</span>
+          <span className="font-serif text-lg sm:text-2xl font-bold tracking-tight truncate">Blind Whisper</span>
         </div>
         <div className="flex items-center gap-2 sm:gap-4 shrink-0">
           <Link href="/sign-in">

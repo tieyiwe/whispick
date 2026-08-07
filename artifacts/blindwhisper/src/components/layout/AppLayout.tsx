@@ -77,7 +77,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
         <div className="p-6">
           <Link href="/dashboard" className="flex items-center gap-3 text-primary hover:opacity-80 transition-opacity">
             <Logo className="w-8 h-8 text-primary" />
-            <span className="font-serif text-2xl font-bold tracking-tight text-foreground">Whispick</span>
+            <span className="font-serif text-2xl font-bold tracking-tight text-foreground">Blind Whisper</span>
           </Link>
         </div>
 
@@ -133,7 +133,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       >
         <Link href="/dashboard" className="flex items-center gap-2 min-h-11">
           <Logo className="w-6 h-6 text-primary" />
-          <span className="font-serif text-xl font-bold">Whispick</span>
+          <span className="font-serif text-xl font-bold">Blind Whisper</span>
         </Link>
         <Link href="/settings" className="flex items-center justify-center w-11 h-11 -mr-2 text-muted-foreground" data-testid="link-settings-mobile">
           <Avatar className="w-8 h-8 border border-border">

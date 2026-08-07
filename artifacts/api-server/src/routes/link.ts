@@ -45,7 +45,7 @@ router.get("/:token", async (req, res): Promise<void> => {
     return;
   }
 
-  const title = whisp.videoTitle ? escapeHtml(whisp.videoTitle) : "Whispick";
+  const title = whisp.videoTitle ? escapeHtml(whisp.videoTitle) : "Blind Whisper";
   const description = escapeHtml(HOOK_LINE);
   const image = whisp.videoThumbnail ? escapeHtml(whisp.videoThumbnail) : `${appUrl}/opengraph.jpg`;
   const url = escapeHtml(destination);

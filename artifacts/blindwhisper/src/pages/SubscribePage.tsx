@@ -50,7 +50,7 @@ export function SubscribePage() {
       >
         <div className="flex items-center gap-2">
           <Logo className="w-6 h-6 text-primary" />
-          <span className="font-serif text-xl font-bold text-foreground tracking-tight">whispick</span>
+          <span className="font-serif text-xl font-bold text-foreground tracking-tight">Blind Whisper</span>
         </div>
         <a href="/sign-up" className="text-xs text-muted-foreground hover:text-primary transition-colors py-2">
           Become a Whisperer
@@ -80,7 +80,7 @@ export function SubscribePage() {
               </div>
               <h1 className="text-xl font-serif font-semibold text-foreground">Get matched with anonymous whisps</h1>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Strangers on Whispick send videos anonymously to people who might need them. Pick a few topics and
+                Strangers on Blind Whisper send videos anonymously to people who might need them. Pick a few topics and
                 we'll occasionally send you one that matches — no account needed, unsubscribe anytime.
               </p>
             </div>

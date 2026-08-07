@@ -5,7 +5,7 @@ import { z } from "zod/v4";
 // The other half of Ghost Boost: instead of "spend a credit, go nowhere"
 // (no real ad-platform integration — see replit.md), a Ghost Boost whisp is
 // matched to strangers who opted in to receive anonymous videos on topics
-// they choose. No Whispick account required to subscribe — same
+// they choose. No Blind Whisper account required to subscribe — same
 // no-account-needed spirit as receiving a whisp at all.
 //
 // Anonymous both ways: the sender never learns who specifically received

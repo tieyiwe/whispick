@@ -2,7 +2,7 @@ import { logger } from "./logger";
 import { HOOK_LINE } from "./copy";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const EMAIL_FROM = process.env.EMAIL_FROM ?? "Whispick <whispers@whispick.app>";
+const EMAIL_FROM = process.env.EMAIL_FROM ?? "Blind Whisper <whispers@blindwhisper.com>";
 
 export async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
   if (!RESEND_API_KEY) {
@@ -40,14 +40,14 @@ export function whisperLinkEmailHtml(publicUrl: string, hookLine: string = HOOK_
         View it
       </a>
     </p>
-    <p style="color:#888; font-size: 12px;">Sent anonymously via Whispick. No sender identity is included unless they choose to reveal it.</p>
+    <p style="color:#888; font-size: 12px;">Sent anonymously via Blind Whisper. No sender identity is included unless they choose to reveal it.</p>
   </div>`;
 }
 
 export function replyNotificationEmailHtml(videoTitle: string | null): string {
   const subject = videoTitle ? `your whisp "${videoTitle}"` : "your whisp";
   return `<div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a2e;">
-    <p>Someone replied anonymously to ${subject}. Log in to Whispick to read it.</p>
+    <p>Someone replied anonymously to ${subject}. Log in to Blind Whisper to read it.</p>
   </div>`;
 }
 
@@ -61,7 +61,7 @@ export function appreciationNotificationEmailHtml(videoTitle: string | null): st
 export function mediaExpiringEmailHtml(filename: string, expiresAt: Date): string {
   const when = expiresAt.toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" });
   return `<div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a2e;">
-    <p>Your uploaded video "${filename}" will be removed from Whispick on ${when} — save a copy now if you still need it.</p>
+    <p>Your uploaded video "${filename}" will be removed from Blind Whisper on ${when} — save a copy now if you still need it.</p>
     <p style="font-size: 13px; color: #6b7280;">Whisps that already used it aren't affected as long as the recipient opened them in time.</p>
   </div>`;
 }

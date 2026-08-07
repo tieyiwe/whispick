@@ -6,7 +6,7 @@ import { logger } from "./logger";
 
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
-const VAPID_SUBJECT = process.env.VAPID_SUBJECT ?? "mailto:support@whispick.app";
+const VAPID_SUBJECT = process.env.VAPID_SUBJECT ?? "mailto:support@blindwhisper.com";
 
 const isConfigured = !!VAPID_PUBLIC_KEY && !!VAPID_PRIVATE_KEY;
 

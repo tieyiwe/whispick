@@ -3,7 +3,7 @@
 // composer. sessionStorage (not localStorage) is deliberate — this is a
 // one-shot intent for the current tab, not something that should linger
 // across browser sessions or leak into a shared/public computer's history.
-const STORAGE_KEY = "whispick:forwardVideo";
+const STORAGE_KEY = "blindwhisper:forwardVideo";
 
 export interface ForwardVideo {
   videoUrl: string;

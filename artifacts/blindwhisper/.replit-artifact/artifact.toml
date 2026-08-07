@@ -1,6 +1,6 @@
 kind = "web"
 previewPath = "/"
-title = "Whispick"
+title = "Blind Whisper"
 version = "1.0.0"
 id = "artifacts/whispick"
 router = "path"
@@ -15,11 +15,11 @@ paths = [ "/" ]
 localPort = 22964
 
 [services.development]
-run = "pnpm --filter @workspace/whispick run dev"
+run = "pnpm --filter @workspace/blindwhisper run dev"
 
 [services.production]
-build = [ "pnpm", "--filter", "@workspace/whispick", "run", "build" ]
-publicDir = "artifacts/whispick/dist/public"
+build = [ "pnpm", "--filter", "@workspace/blindwhisper", "run", "build" ]
+publicDir = "artifacts/blindwhisper/dist/public"
 serve = "static"
 
 [[services.production.rewrites]]

@@ -177,7 +177,9 @@ function ClerkProviderWithRoutes() {
 
           <Route path="/w/:token" component={PublicWhispPage} />
           <Route path="/privacy" component={PrivacyPolicy} />
+          <Route path="/privacy-policy" component={PrivacyPolicy} />
           <Route path="/terms" component={TermsOfService} />
+          <Route path="/terms-and-conditions" component={TermsOfService} />
           <Route path="/subscribe" component={SubscribePage} />
           <Route path="/verify-subscription" component={VerifySubscriptionPage} />
           <Route path="/unsubscribe" component={UnsubscribeFromMatchingPage} />

@@ -2,7 +2,7 @@ import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
-// A reusable, sender-owned list of contacts (not Whispick accounts — just
+// A reusable, sender-owned list of contacts (not Blind Whisper accounts — just
 // names/emails/phones, like a saved address-book group) that a Group Whisper
 // send can target all at once. Saved independently of any particular send —
 // editing membership later doesn't change who received a past send (see

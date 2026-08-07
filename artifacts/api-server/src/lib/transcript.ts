@@ -29,7 +29,7 @@ export async function fetchYoutubeTranscript(videoUrl: string): Promise<string |
   try {
     const pageRes = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
       signal: AbortSignal.timeout(8000),
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; WhispickBot/1.0)" },
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; BlindWhisperBot/1.0)" },
     });
     if (!pageRes.ok) return null;
     const html = await pageRes.text();

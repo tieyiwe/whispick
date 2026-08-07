@@ -24,7 +24,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-3">
             <Logo className="w-7 h-7 text-primary" />
             <div className="flex items-center gap-2">
-              <span className="font-serif text-xl font-bold text-foreground tracking-tight">Whispick</span>
+              <span className="font-serif text-xl font-bold text-foreground tracking-tight">Blind Whisper</span>
               <span className="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-primary/15 text-primary">
                 <ShieldCheck className="w-3 h-3" /> Admin
               </span>

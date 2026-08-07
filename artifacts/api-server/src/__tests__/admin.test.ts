@@ -4,7 +4,7 @@ import app from "../app";
 import { TEST_USER_HEADER } from "./setup";
 
 const ADMIN_CLERK_ID = "clerk_admin";
-const ADMIN_EMAIL = `${ADMIN_CLERK_ID}@whispick.app`;
+const ADMIN_EMAIL = `${ADMIN_CLERK_ID}@blindwhisper.com`;
 const USER_A = "clerk_user_a";
 const USER_B = "clerk_user_b";
 

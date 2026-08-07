@@ -21,7 +21,7 @@ const subscribeSchema = z.object({
 });
 
 // POST /api/public/subscribe — opt in to receive anonymous Ghost Boost
-// whisps on chosen topics. No Whispick account needed, matching the app's
+// whisps on chosen topics. No Blind Whisper account needed, matching the app's
 // no-account-required spirit for receiving a whisp at all. Double opt-in
 // (a verification email must be confirmed before this row is match-eligible
 // — see lib/matching.ts) so a stranger can't sign someone else's email up
@@ -64,7 +64,7 @@ router.post("/subscribe", async (req, res): Promise<void> => {
 
   if (!alreadyVerified) {
     const verifyUrl = `${getPublicAppUrl(req)}/verify-subscription?token=${token}`;
-    void sendEmail(email, "Confirm your Whispick subscription", subscriptionVerificationEmailHtml(verifyUrl));
+    void sendEmail(email, "Confirm your Blind Whisper subscription", subscriptionVerificationEmailHtml(verifyUrl));
   }
 
   res.json({ ok: true, alreadyVerified });
