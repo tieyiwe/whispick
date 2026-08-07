@@ -14,3 +14,4 @@ export * from "./suggestion_agent_status";
 export * from "./delivery_attempts";
 export * from "./notifications";
 export * from "./moderation_flags";
+export * from "./concierge_requests";

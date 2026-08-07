@@ -70,6 +70,11 @@ export interface Whisp {
   aiTakeaway?: string | null;
   /** @nullable */
   aiTakeawayStatus?: string | null;
+  /**
+     * Set when this whisp's video and/or note came from the "Not sure what to send?" AI concierge (see POST /whisps/concierge)
+     * @nullable
+     */
+  conciergeRequestId?: string | null;
   createdAt: string;
 }
 
@@ -110,6 +115,11 @@ export interface WhispInput {
   moodTag?: string | null;
   /** @nullable */
   scheduledAt?: string | null;
+  /**
+     * The requestId from a prior POST /whisps/concierge call, if this send used its video suggestion and/or note draft
+     * @nullable
+     */
+  conciergeRequestId?: string | null;
 }
 
 export interface TrackingEvent {
@@ -150,6 +160,7 @@ export interface WhispStats {
   totalOpened: number;
   totalWatched: number;
   totalReplied: number;
+  totalAppreciated: number;
   deliveryRate: number;
   openRate: number;
   boostCredits: number;
@@ -223,6 +234,7 @@ export interface PublicWhisp {
   aiTakeaway?: string | null;
   /** @nullable */
   aiTakeawayStatus?: string | null;
+  replies: WhispReply[];
 }
 
 export interface TrackingEventInput {
@@ -725,6 +737,8 @@ export type AdminFunnelStatsFunnel = {
   opened: number;
   watched: number;
   replied: number;
+  /** Recipients who answered "yes" to "was this something you needed to hear?" */
+  appreciated: number;
 };
 
 export type AdminFunnelStatsGhostBoost = {
@@ -737,6 +751,17 @@ export type AdminFunnelStatsCircles = {
   totalCircles: number;
   totalMembers: number;
   totalDrops: number;
+};
+
+/**
+ * Usage of the "Not sure what to send?" AI concierge (POST /whisps/concierge).
+ */
+export type AdminFunnelStatsConcierge = {
+  totalRequests: number;
+  /** Requests where at least one Suggestions Library video was matched (as opposed to falling back to note-draft-only). */
+  requestsWithVideoMatch: number;
+  /** Whisps actually sent using a concierge request's video and/or note (whisps.conciergeRequestId is set). */
+  sends: number;
 };
 
 export interface AdminChannelDeliveryStat {
@@ -753,6 +778,8 @@ export interface AdminFunnelStats {
   deliveryByChannel: AdminChannelDeliveryStat[];
   ghostBoost: AdminFunnelStatsGhostBoost;
   circles: AdminFunnelStatsCircles;
+  /** Usage of the "Not sure what to send?" AI concierge (POST /whisps/concierge). */
+  concierge: AdminFunnelStatsConcierge;
 }
 
 export interface Notification {
@@ -1062,6 +1089,15 @@ export interface NoteSuggestionsResult {
   suggestions: string[];
 }
 
+export interface ConciergeInput {
+  /**
+     * The sender's own free-text description of who this is for and why, e.g. "my friend is going through a rough breakup"
+     * @minLength 1
+     * @maxLength 500
+     */
+  situation: string;
+}
+
 export interface SuggestedVideo {
   id: string;
   videoUrl: string;
@@ -1093,6 +1129,20 @@ export interface SuggestedVideo {
   createdAt: string;
   /** @nullable */
   publishedAt?: string | null;
+}
+
+export interface ConciergeResult {
+  /** concierge_requests id — pass back as conciergeRequestId on POST /whisps if the sender goes on to send using this request's suggestions */
+  requestId: string;
+  /** 0-3 Suggestions Library videos matched to the situation, ranked best-first — empty when nothing in the library fit well */
+  videoSuggestions: SuggestedVideo[];
+  /**
+     * A single drafted anonymous note the sender can use as-is or edit — null if generation was unavailable
+     * @nullable
+     */
+  noteDraft: string | null;
+  /** The fixed taxonomy category keys (see the categories field on GET /suggestions) the model matched from the situation text */
+  matchedCategories: string[];
 }
 
 export interface SuggestionListResponse {

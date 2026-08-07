@@ -55,6 +55,7 @@ export const ListWhispsResponseItem = zod.object({
   "appreciationRespondedAt": zod.string().nullish(),
   "aiTakeaway": zod.string().nullish(),
   "aiTakeawayStatus": zod.string().nullish(),
+  "conciergeRequestId": zod.string().nullish().describe('Set when this whisp\'s video and\/or note came from the \"Not sure what to send?\" AI concierge (see POST \/whisps\/concierge)'),
   "createdAt": zod.string()
 })
 export const ListWhispsResponse = zod.array(ListWhispsResponseItem)
@@ -80,7 +81,8 @@ export const CreateWhispBody = zod.object({
   "anonymousNote": zod.string().nullish(),
   "senderAlias": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
-  "scheduledAt": zod.string().nullish()
+  "scheduledAt": zod.string().nullish(),
+  "conciergeRequestId": zod.string().nullish().describe('The requestId from a prior POST \/whisps\/concierge call, if this send used its video suggestion and\/or note draft')
 })
 
 export const CreateWhispResponse = zod.object({
@@ -115,6 +117,7 @@ export const CreateWhispResponse = zod.object({
   "appreciationRespondedAt": zod.string().nullish(),
   "aiTakeaway": zod.string().nullish(),
   "aiTakeawayStatus": zod.string().nullish(),
+  "conciergeRequestId": zod.string().nullish().describe('Set when this whisp\'s video and\/or note came from the \"Not sure what to send?\" AI concierge (see POST \/whisps\/concierge)'),
   "createdAt": zod.string()
 })
 
@@ -127,6 +130,7 @@ export const GetWhispStatsResponse = zod.object({
   "totalOpened": zod.number(),
   "totalWatched": zod.number(),
   "totalReplied": zod.number(),
+  "totalAppreciated": zod.number(),
   "deliveryRate": zod.number(),
   "openRate": zod.number(),
   "boostCredits": zod.number(),
@@ -163,6 +167,7 @@ export const GetWhispStatsResponse = zod.object({
   "appreciationRespondedAt": zod.string().nullish(),
   "aiTakeaway": zod.string().nullish(),
   "aiTakeawayStatus": zod.string().nullish(),
+  "conciergeRequestId": zod.string().nullish().describe('Set when this whisp\'s video and\/or note came from the \"Not sure what to send?\" AI concierge (see POST \/whisps\/concierge)'),
   "createdAt": zod.string()
 }))
 })
@@ -208,6 +213,7 @@ export const GetWhispResponse = zod.object({
   "appreciationRespondedAt": zod.string().nullish(),
   "aiTakeaway": zod.string().nullish(),
   "aiTakeawayStatus": zod.string().nullish(),
+  "conciergeRequestId": zod.string().nullish().describe('Set when this whisp\'s video and\/or note came from the \"Not sure what to send?\" AI concierge (see POST \/whisps\/concierge)'),
   "createdAt": zod.string()
 }),
   "trackingEvents": zod.array(zod.object({
@@ -331,6 +337,7 @@ export const RequestRevealResponse = zod.object({
   "appreciationRespondedAt": zod.string().nullish(),
   "aiTakeaway": zod.string().nullish(),
   "aiTakeawayStatus": zod.string().nullish(),
+  "conciergeRequestId": zod.string().nullish().describe('Set when this whisp\'s video and\/or note came from the \"Not sure what to send?\" AI concierge (see POST \/whisps\/concierge)'),
   "createdAt": zod.string()
 })
 
@@ -396,7 +403,20 @@ export const GetPublicWhispResponse = zod.object({
   "expired": zod.boolean(),
   "hasUpload": zod.boolean(),
   "aiTakeaway": zod.string().nullish(),
-  "aiTakeawayStatus": zod.string().nullish()
+  "aiTakeawayStatus": zod.string().nullish(),
+  "replies": zod.array(zod.object({
+  "id": zod.string(),
+  "whispId": zod.string(),
+  "replyText": zod.string(),
+  "fromRecipient": zod.boolean(),
+  "videoUrl": zod.string().nullish(),
+  "videoTitle": zod.string().nullish(),
+  "videoThumbnail": zod.string().nullish(),
+  "videoEmbedUrl": zod.string().nullish(),
+  "videoPlatform": zod.string().nullish(),
+  "moodTag": zod.string().nullish(),
+  "createdAt": zod.string()
+}))
 })
 
 
@@ -789,6 +809,7 @@ export const AdminGetUserResponse = zod.object({
   "appreciationRespondedAt": zod.string().nullish(),
   "aiTakeaway": zod.string().nullish(),
   "aiTakeawayStatus": zod.string().nullish(),
+  "conciergeRequestId": zod.string().nullish().describe('Set when this whisp\'s video and\/or note came from the \"Not sure what to send?\" AI concierge (see POST \/whisps\/concierge)'),
   "createdAt": zod.string()
 })),
   "totalWhisps": zod.number(),
@@ -1018,6 +1039,7 @@ export const AdminGetWhispResponse = zod.object({
   "appreciationRespondedAt": zod.string().nullish(),
   "aiTakeaway": zod.string().nullish(),
   "aiTakeawayStatus": zod.string().nullish(),
+  "conciergeRequestId": zod.string().nullish().describe('Set when this whisp\'s video and\/or note came from the \"Not sure what to send?\" AI concierge (see POST \/whisps\/concierge)'),
   "createdAt": zod.string()
 }),
   "senderId": zod.string().nullish(),
@@ -1208,7 +1230,8 @@ export const AdminGetFunnelStatsResponse = zod.object({
   "failed": zod.number(),
   "opened": zod.number(),
   "watched": zod.number(),
-  "replied": zod.number()
+  "replied": zod.number(),
+  "appreciated": zod.number().describe('Recipients who answered \"yes\" to \"was this something you needed to hear?\"')
 }).describe('Sent → delivered → opened → watched → replied across every recipient-directed whisp (whisper_link, group_whisper, ghost_boost) — circle_drop is excluded since it has no single recipient to fall off for.'),
   "deliveryByChannel": zod.array(zod.object({
   "channel": zod.string(),
@@ -1226,7 +1249,12 @@ export const AdminGetFunnelStatsResponse = zod.object({
   "totalCircles": zod.number(),
   "totalMembers": zod.number(),
   "totalDrops": zod.number()
-})
+}),
+  "concierge": zod.object({
+  "totalRequests": zod.number(),
+  "requestsWithVideoMatch": zod.number().describe('Requests where at least one Suggestions Library video was matched (as opposed to falling back to note-draft-only).'),
+  "sends": zod.number().describe('Whisps actually sent using a concierge request\'s video and\/or note (whisps.conciergeRequestId is set).')
+}).describe('Usage of the \"Not sure what to send?\" AI concierge (POST \/whisps\/concierge).')
 })
 
 
@@ -1907,6 +1935,42 @@ export const GetNoteSuggestionsBody = zod.object({
 
 export const GetNoteSuggestionsResponse = zod.object({
   "suggestions": zod.array(zod.string()).describe('0-3 suggested note options — may be empty if generation is unavailable')
+})
+
+
+/**
+ * @summary "Not sure what to send?" — the sender describes their situation in a sentence or two and gets back up to a few Suggestions Library videos that fit, plus a drafted anonymous note. Matches only against the existing curated library, never a live discovery.
+ */
+export const getConciergeSuggestionsBodySituationMax = 500;
+
+
+
+export const GetConciergeSuggestionsBody = zod.object({
+  "situation": zod.string().min(1).max(getConciergeSuggestionsBodySituationMax).describe('The sender\'s own free-text description of who this is for and why, e.g. \"my friend is going through a rough breakup\"')
+})
+
+export const GetConciergeSuggestionsResponse = zod.object({
+  "requestId": zod.string().describe('concierge_requests id — pass back as conciergeRequestId on POST \/whisps if the sender goes on to send using this request\'s suggestions'),
+  "videoSuggestions": zod.array(zod.object({
+  "id": zod.string(),
+  "videoUrl": zod.string(),
+  "videoTitle": zod.string().nullish(),
+  "videoThumbnail": zod.string().nullish(),
+  "videoEmbedUrl": zod.string().nullish(),
+  "videoPlatform": zod.string().nullish(),
+  "authorName": zod.string().nullish(),
+  "categories": zod.array(zod.string()),
+  "aiSummary": zod.string().nullish(),
+  "aiSummaryStatus": zod.string().nullish().describe('null | \'pending\' | \'ready\' | \'unavailable\''),
+  "featured": zod.boolean(),
+  "status": zod.string().describe('\'pending\' | \'published\' | \'archived\''),
+  "source": zod.string().describe('\'admin\' | \'ai_agent\''),
+  "addedByUserId": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "publishedAt": zod.string().nullish()
+})).describe('0-3 Suggestions Library videos matched to the situation, ranked best-first — empty when nothing in the library fit well'),
+  "noteDraft": zod.string().nullable().describe('A single drafted anonymous note the sender can use as-is or edit — null if generation was unavailable'),
+  "matchedCategories": zod.array(zod.string()).describe('The fixed taxonomy category keys (see the categories field on GET \/suggestions) the model matched from the situation text')
 })
 
 

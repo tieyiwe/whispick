@@ -17,6 +17,7 @@ import {
   deliveryAttemptsTable,
   notificationsTable,
   moderationFlagsTable,
+  conciergeRequestsTable,
   type User,
 } from "@workspace/db";
 import { and, asc, count, desc, eq, gte, ilike, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
@@ -556,7 +557,7 @@ router.get("/stats/funnel", async (_req, res): Promise<void> => {
   // recipient-directed funnel below and reported separately.
   const recipientDirected = ne(whispsTable.deliveryMethod, "circle_drop");
 
-  const [funnelRow, channelRows, ghostBoostRow, circleCountRow, memberCountRow, dropsRow] = await Promise.all([
+  const [funnelRow, channelRows, ghostBoostRow, circleCountRow, memberCountRow, dropsRow, conciergeRequestRow, conciergeMatchedRow, conciergeSendsRow] = await Promise.all([
     db
       .select({
         sent: count(),
@@ -565,6 +566,7 @@ router.get("/stats/funnel", async (_req, res): Promise<void> => {
         opened: sql<number>`count(*) filter (where ${whispsTable.openedAt} is not null)`.mapWith(Number),
         watched: sql<number>`count(*) filter (where ${whispsTable.watchedAt} is not null)`.mapWith(Number),
         replied: sql<number>`count(*) filter (where ${whispsTable.status} = 'replied')`.mapWith(Number),
+        appreciated: sql<number>`count(*) filter (where ${whispsTable.appreciationResponse} = 'yes')`.mapWith(Number),
       })
       .from(whispsTable)
       .where(recipientDirected)
@@ -593,6 +595,16 @@ router.get("/stats/funnel", async (_req, res): Promise<void> => {
       .from(whispsTable)
       .where(eq(whispsTable.deliveryMethod, "circle_drop"))
       .then((r) => r[0]),
+    // "Not sure what to send?" concierge usage (lib/concierge.ts) — kept in
+    // the same funnel endpoint rather than a whole new admin section, per
+    // the product ask for lightweight visibility.
+    db.select({ count: count() }).from(conciergeRequestsTable).then((r) => r[0]),
+    db
+      .select({ count: count() })
+      .from(conciergeRequestsTable)
+      .where(sql`cardinality(${conciergeRequestsTable.suggestedVideoIds}) > 0`)
+      .then((r) => r[0]),
+    db.select({ count: count() }).from(whispsTable).where(isNotNull(whispsTable.conciergeRequestId)).then((r) => r[0]),
   ]);
 
   res.json({
@@ -613,6 +625,11 @@ router.get("/stats/funnel", async (_req, res): Promise<void> => {
       totalCircles: circleCountRow?.count ?? 0,
       totalMembers: memberCountRow?.count ?? 0,
       totalDrops: dropsRow?.count ?? 0,
+    },
+    concierge: {
+      totalRequests: conciergeRequestRow?.count ?? 0,
+      requestsWithVideoMatch: conciergeMatchedRow?.count ?? 0,
+      sends: conciergeSendsRow?.count ?? 0,
     },
   });
 });

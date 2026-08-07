@@ -12,6 +12,7 @@ export interface WhispStats {
   totalOpened: number;
   totalWatched: number;
   totalReplied: number;
+  totalAppreciated: number;
   deliveryRate: number;
   openRate: number;
   boostCredits: number;

@@ -1821,6 +1821,35 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
 
+  /whisps/concierge:
+    post:
+      operationId: getConciergeSuggestions
+      tags: [whisps]
+      summary: >-
+        "Not sure what to send?" — the sender describes their situation in a
+        sentence or two and gets back up to a few Suggestions Library videos
+        that fit, plus a drafted anonymous note. Matches only against the
+        existing curated library, never a live discovery.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConciergeInput"
+      responses:
+        "200":
+          description: Matched video suggestions (may be empty) and a drafted note (may be null)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConciergeResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /whisps/{id}/matches:
     get:
       operationId: getGhostBoostMatches
@@ -1931,6 +1960,9 @@ components:
           type: ["string", "null"]
         aiTakeawayStatus:
           type: ["string", "null"]
+        conciergeRequestId:
+          type: ["string", "null"]
+          description: Set when this whisp's video and/or note came from the "Not sure what to send?" AI concierge (see POST /whisps/concierge)
         createdAt:
           type: string
       required:
@@ -1981,6 +2013,9 @@ components:
           type: ["string", "null"]
         scheduledAt:
           type: ["string", "null"]
+        conciergeRequestId:
+          type: ["string", "null"]
+          description: The requestId from a prior POST /whisps/concierge call, if this send used its video suggestion and/or note draft
       required:
         - deliveryMethod
 
@@ -2013,6 +2048,8 @@ components:
           type: integer
         totalReplied:
           type: integer
+        totalAppreciated:
+          type: integer
         deliveryRate:
           type: number
         openRate:
@@ -2030,6 +2067,7 @@ components:
         - totalOpened
         - totalWatched
         - totalReplied
+        - totalAppreciated
         - deliveryRate
         - openRate
         - boostCredits
@@ -2168,12 +2206,17 @@ components:
           type: ["string", "null"]
         aiTakeawayStatus:
           type: ["string", "null"]
+        replies:
+          type: array
+          items:
+            $ref: "#/components/schemas/WhispReply"
       required:
         - id
         - videoUrl
         - revealRequested
         - expired
         - hasUpload
+        - replies
 
     TrackingEvent:
       type: object
@@ -3086,7 +3129,10 @@ components:
               type: integer
             replied:
               type: integer
-          required: [sent, delivered, failed, opened, watched, replied]
+            appreciated:
+              type: integer
+              description: Recipients who answered "yes" to "was this something you needed to hear?"
+          required: [sent, delivered, failed, opened, watched, replied, appreciated]
         deliveryByChannel:
           type: array
           items:
@@ -3111,11 +3157,25 @@ components:
             totalDrops:
               type: integer
           required: [totalCircles, totalMembers, totalDrops]
+        concierge:
+          type: object
+          description: Usage of the "Not sure what to send?" AI concierge (POST /whisps/concierge).
+          properties:
+            totalRequests:
+              type: integer
+            requestsWithVideoMatch:
+              type: integer
+              description: Requests where at least one Suggestions Library video was matched (as opposed to falling back to note-draft-only).
+            sends:
+              type: integer
+              description: Whisps actually sent using a concierge request's video and/or note (whisps.conciergeRequestId is set).
+          required: [totalRequests, requestsWithVideoMatch, sends]
       required:
         - funnel
         - deliveryByChannel
         - ghostBoost
         - circles
+        - concierge
 
     AdminChannelDeliveryStat:
       type: object
@@ -3665,6 +3725,42 @@ components:
           description: 0-3 suggested note options — may be empty if generation is unavailable
       required:
         - suggestions
+
+    ConciergeInput:
+      type: object
+      properties:
+        situation:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: The sender's own free-text description of who this is for and why, e.g. "my friend is going through a rough breakup"
+      required:
+        - situation
+
+    ConciergeResult:
+      type: object
+      properties:
+        requestId:
+          type: string
+          description: concierge_requests id — pass back as conciergeRequestId on POST /whisps if the sender goes on to send using this request's suggestions
+        videoSuggestions:
+          type: array
+          items:
+            $ref: "#/components/schemas/SuggestedVideo"
+          description: 0-3 Suggestions Library videos matched to the situation, ranked best-first — empty when nothing in the library fit well
+        noteDraft:
+          type: ["string", "null"]
+          description: A single drafted anonymous note the sender can use as-is or edit — null if generation was unavailable
+        matchedCategories:
+          type: array
+          items:
+            type: string
+          description: The fixed taxonomy category keys (see the categories field on GET /suggestions) the model matched from the situation text
+      required:
+        - requestId
+        - videoSuggestions
+        - noteDraft
+        - matchedCategories
 
     SuggestedVideo:
       type: object

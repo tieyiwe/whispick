@@ -9,6 +9,7 @@ import {
   creditTransactionsTable,
   circleMembersTable,
   uploadedVideosTable,
+  conciergeRequestsTable,
 } from "@workspace/db";
 import { eq, and, sql, isNull, or } from "drizzle-orm";
 import { randomUUID } from "crypto";
@@ -17,16 +18,17 @@ import { requireAuth } from "../lib/auth";
 import { ensureUser } from "../lib/ensureUser";
 import { getPublicAppUrl } from "../lib/publicUrl";
 import { deliverWhisperLink } from "../lib/deliver";
-import { revealRequestHookLine } from "../lib/copy";
+import { revealRequestHookLine, newReplyHookLine } from "../lib/copy";
 import { categorizeWhispAsync } from "../lib/categorizeWhisp";
 import { moderateWhispAsync } from "../lib/moderation";
 import { needsDemographics } from "../lib/demographics";
 import { computeExpiresAt, MAX_SCHEDULE_DAYS } from "../lib/expiration";
 import { MAX_SCHEDULE_DAYS_WITH_UPLOAD } from "../lib/uploads";
 import { whisperLinkLimitFor, GHOST_BOOST_COST_USD } from "../lib/plans";
-import { createWhispLimiter, noteSuggestionLimiter } from "../lib/rateLimit";
+import { createWhispLimiter, noteSuggestionLimiter, conciergeLimiter } from "../lib/rateLimit";
 import { getGhostBoostMatchStats } from "../lib/matching";
 import { generateNoteSuggestions } from "../lib/noteSuggestions";
+import { runConcierge, MAX_SITUATION_LENGTH } from "../lib/concierge";
 
 const router = Router();
 
@@ -70,6 +72,49 @@ router.post("/note-suggestions", requireAuth, noteSuggestionLimiter, async (req,
 
   const suggestions = await generateNoteSuggestions(parsed.data.videoTitle ?? null, parsed.data.moodTag ?? null);
   res.json({ suggestions });
+});
+
+const conciergeSchema = z.object({
+  situation: z.string().min(1).max(MAX_SITUATION_LENGTH),
+});
+
+// POST /api/whisps/concierge — the "Not sure what to send?" entry point
+// above the normal manual compose flow: the sender describes their
+// situation in a sentence or two and gets back up to a few Suggestions
+// Library videos that fit, plus a drafted anonymous note. Matches only
+// against the existing curated library (lib/concierge.ts) rather than
+// discovering anything new live — that's suggestionAgent.ts's separate
+// background job. Every call is persisted to concierge_requests so the
+// admin panel can show usage (and, via whisps.conciergeRequestId set on an
+// eventual POST /api/whisps, whether it actually led to a send).
+router.post("/concierge", requireAuth, conciergeLimiter, async (req, res): Promise<void> => {
+  const { userId } = getAuth(req);
+  const user = await ensureUser(userId!, req);
+
+  const parsed = conciergeSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const result = await runConcierge(parsed.data.situation);
+
+  const id = randomUUID();
+  await db.insert(conciergeRequestsTable).values({
+    id,
+    userId: user.id,
+    situation: parsed.data.situation,
+    matchedCategories: result.matchedCategories,
+    suggestedVideoIds: result.videoSuggestions.map((v) => v.id),
+    noteDraft: result.noteDraft,
+  });
+
+  res.json({
+    requestId: id,
+    videoSuggestions: result.videoSuggestions,
+    noteDraft: result.noteDraft,
+    matchedCategories: result.matchedCategories,
+  });
 });
 
 // GET /api/whisps
@@ -130,6 +175,10 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
       senderAlias: z.string().nullable().optional(),
       moodTag: z.string().nullable().optional(),
       scheduledAt: z.string().nullable().optional(),
+      // Set by the composer when the video and/or note came from the "Not
+      // sure what to send?" concierge — see the ownership check below.
+      // Purely an analytics correlation, never trusted for anything else.
+      conciergeRequestId: z.string().nullable().optional(),
     })
     .refine((data) => !!data.videoUrl || !!data.uploadedVideoId, {
       message: "A video URL or an uploaded video is required",
@@ -159,6 +208,21 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
       return;
     }
     uploadedVideo = media;
+  }
+
+  // Never trust a client-supplied id past ownership: only ever set the FK
+  // when a concierge_requests row with this id really belongs to this
+  // sender, same posture as the circle-membership check below. A stale,
+  // mistyped, or someone-else's id just silently doesn't get recorded,
+  // rather than failing the whole send over an analytics-only field.
+  let conciergeRequestId: string | null = null;
+  if (data.conciergeRequestId) {
+    const conciergeRequest = await db
+      .select({ id: conciergeRequestsTable.id })
+      .from(conciergeRequestsTable)
+      .where(and(eq(conciergeRequestsTable.id, data.conciergeRequestId), eq(conciergeRequestsTable.userId, user.id)))
+      .then((r) => r[0]);
+    conciergeRequestId = conciergeRequest?.id ?? null;
   }
 
   const isGhostBoost = data.deliveryMethod === "ghost_boost";
@@ -293,6 +357,7 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
     deliveredAt: isGhostBoost || isScheduled ? null : new Date(),
     expiresAt: data.deliveryMethod === "whisper_link" && !isScheduled ? computeExpiresAt() : null,
     boostSpendUsd: isGhostBoost ? String(GHOST_BOOST_COST_USD) : null,
+    conciergeRequestId,
   });
 
   if (isGhostBoost) {
@@ -364,6 +429,12 @@ router.get("/stats", requireAuth, async (req, res): Promise<void> => {
   const totalOpened = allWhisps.filter(w => w.openedAt).length;
   const totalWatched = allWhisps.filter(w => w.watchedAt).length;
   const totalReplied = allWhisps.filter(w => w.status === "replied").length;
+  // The recipient's own answer to "was this something you needed to hear?"
+  // (see whisps.appreciationResponse) was previously a private per-whisp
+  // signal with no aggregate anywhere — the sender had no visible sense of
+  // their overall impact, just isolated yes/no badges scattered across
+  // individual whisp pages. Surfaced here as a running personal count.
+  const totalAppreciated = allWhisps.filter(w => w.appreciationResponse === "yes").length;
   const deliveryRate = totalSent > 0 ? (allWhisps.filter(w => w.deliveredAt).length / totalSent) * 100 : 0;
   const openRate = totalSent > 0 ? (totalOpened / totalSent) * 100 : 0;
 
@@ -372,6 +443,7 @@ router.get("/stats", requireAuth, async (req, res): Promise<void> => {
     totalOpened,
     totalWatched,
     totalReplied,
+    totalAppreciated,
     deliveryRate: Math.round(deliveryRate),
     openRate: Math.round(openRate),
     boostCredits: user.boostCredits,
@@ -503,7 +575,6 @@ router.post("/:id/replies", requireAuth, async (req, res): Promise<void> => {
 
   const schema = z.object({
     replyText: z.string().min(1).max(300),
-    fromRecipient: z.boolean().optional(),
   });
 
   const parsed = schema.safeParse(req.body);
@@ -517,11 +588,27 @@ router.post("/:id/replies", requireAuth, async (req, res): Promise<void> => {
     id,
     whispId: whisp.id,
     replyText: parsed.data.replyText,
-    fromRecipient: parsed.data.fromRecipient ?? false,
+    // This route is requireAuth-gated to the whisp's own sender — the
+    // caller IS the sender, full stop, so fromRecipient is never
+    // client-controlled here (it used to accept an optional override,
+    // which had no legitimate caller and let a sender mislabel their own
+    // message as if it came from the recipient). The real recipient path is
+    // the separate, unauthenticated POST /api/public/w/:token/reply below.
+    fromRecipient: false,
   });
 
   const reply = await db.select().from(whispRepliesTable).where(eq(whispRepliesTable.id, id)).then(r => r[0]);
   res.status(201).json(reply);
+
+  // Notify the recipient a new follow-up is waiting — mirrors the reveal-
+  // request notification above; without this, a sender's follow-up was
+  // silently invisible to the recipient unless they happened to reopen an
+  // already-delivered link on their own. Same fire-and-forget, same
+  // single-recipient-channel scoping (whisperChannel is null for
+  // circle_drop/ghost_boost).
+  if (whisp.whisperChannel) {
+    void deliverWhisperLink(whisp, getPublicAppUrl(req), newReplyHookLine(), "reply_to_recipient");
+  }
 });
 
 // POST /api/whisps/:id/reveal

@@ -20,7 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MoodTag, MOOD_CONFIG } from "@/components/shared/MoodTag";
 import { useToast } from "@/hooks/use-toast";
-import { Send, Check, Loader2, Video, X, Link2, HeartHandshake, Clock, BellRing, Sparkles } from "lucide-react";
+import { Send, Loader2, Video, X, Link2, HeartHandshake, Clock, BellRing, Sparkles, UserCircle2, PlayCircle } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { VideoPlayer } from "@/components/shared/VideoPlayer";
 import { QUICK_REPLIES } from "@/lib/quickReplies";
@@ -75,7 +75,6 @@ export function PublicWhispPage() {
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const { isSignedIn } = useUser();
-  const [replied, setReplied] = useState(false);
   const [replyText, setReplyText] = useState("");
   const [hasTrackedOpen, setHasTrackedOpen] = useState(false);
   const [revealResponse, setRevealResponse] = useState<"accepted" | "declined" | null>(null);
@@ -205,7 +204,10 @@ export function PublicWhispPage() {
       },
       {
         onSuccess: () => {
-          setReplied(true);
+          setReplyText("");
+          setShowVideoReply(false);
+          setReplyVideoUrl("");
+          setReplyVideoMeta(null);
           queryClient.invalidateQueries({ queryKey: getGetPublicWhispQueryKey(token!) });
           toast({ title: "Reply sent anonymously" });
         },
@@ -418,19 +420,67 @@ export function PublicWhispPage() {
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <div className="flex-1 h-px bg-border/40" />
-                <span className="text-xs text-muted-foreground">Want to reply anonymously?</span>
+                <span className="text-xs text-muted-foreground">
+                  {whisp.replies.length > 0 ? "Anonymous conversation" : "Want to reply anonymously?"}
+                </span>
                 <div className="flex-1 h-px bg-border/40" />
               </div>
 
-              {replied ? (
-                <div className="text-center py-4 space-y-2">
-                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mx-auto">
-                    <Check className="w-5 h-5 text-primary" />
-                  </div>
-                  <p className="text-sm text-muted-foreground">Your reply was sent anonymously.</p>
+              {whisp.replies.length > 0 && (
+                <div className="space-y-2">
+                  {whisp.replies.map((reply) => (
+                    <div
+                      key={reply.id}
+                      data-testid={`reply-${reply.id}`}
+                      className={`p-3 rounded-xl text-sm ${
+                        reply.fromRecipient
+                          ? "bg-primary/10 border border-primary/20"
+                          : "bg-muted/30 border border-border/50 mr-8"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <UserCircle2 className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">
+                          {reply.fromRecipient ? "You" : whisp.senderAlias || "The sender"} ·{" "}
+                          {new Date(reply.createdAt).toLocaleString()}
+                        </span>
+                      </div>
+                      {reply.replyText && <p className="text-foreground">{reply.replyText}</p>}
+                      {reply.videoUrl && (
+                        <a
+                          href={reply.videoUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          data-testid={`reply-video-${reply.id}`}
+                          className={`flex gap-2 items-center bg-card rounded-lg p-2 hover:bg-card/70 transition-colors ${reply.replyText ? "mt-2" : ""}`}
+                        >
+                          {reply.videoThumbnail ? (
+                            <img src={reply.videoThumbnail} className="w-16 h-12 object-cover rounded" alt="Video reply thumbnail" />
+                          ) : (
+                            <div className="w-16 h-12 bg-muted rounded flex items-center justify-center shrink-0">
+                              <PlayCircle className="w-5 h-5 text-muted-foreground" />
+                            </div>
+                          )}
+                          <span className="text-xs text-foreground truncate">{reply.videoTitle || "Whisped a video back"}</span>
+                        </a>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ) : (
+              )}
+
+              {(() => {
+                const disabled = whisp.expired;
+                if (disabled) {
+                  return (
+                    <p className="text-xs text-muted-foreground text-center py-2">
+                      This whisp has expired, so you can't reply anymore.
+                    </p>
+                  );
+                }
+                return (
                 <div className="space-y-3">
+                  {whisp.replies.length === 0 && (
                   <div className="flex flex-wrap gap-2 justify-center">
                     {QUICK_REPLIES.map((qr) => (
                       <button
@@ -445,6 +495,7 @@ export function PublicWhispPage() {
                       </button>
                     ))}
                   </div>
+                  )}
                   <div className="flex items-center gap-2">
                     <div className="flex-1 h-px bg-border/40" />
                     <span className="text-xs text-muted-foreground">or write your own</span>
@@ -545,7 +596,8 @@ export function PublicWhispPage() {
                     </Button>
                   </div>
                 </div>
-              )}
+                );
+              })()}
             </div>
 
             {/* Reveal section */}

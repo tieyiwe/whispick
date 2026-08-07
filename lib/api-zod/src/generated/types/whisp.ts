@@ -62,5 +62,10 @@ export interface Whisp {
   aiTakeaway?: string | null;
   /** @nullable */
   aiTakeawayStatus?: string | null;
+  /**
+     * Set when this whisp's video and/or note came from the "Not sure what to send?" AI concierge (see POST /whisps/concierge)
+     * @nullable
+     */
+  conciergeRequestId?: string | null;
   createdAt: string;
 }

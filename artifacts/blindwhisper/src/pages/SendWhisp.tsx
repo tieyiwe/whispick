@@ -11,12 +11,14 @@ import {
   useSendGroupWhisp,
   useListMedia,
   useGetNoteSuggestions,
+  useGetConciergeSuggestions,
   useGetUserProfile,
   getListMyCirclesQueryKey,
   getListWhisperGroupsQueryKey,
   getGetWhispStatsQueryKey,
   getListWhispsQueryKey,
   getListMediaQueryKey,
+  type SuggestedVideo,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -123,7 +125,7 @@ const step5Schema = z.object({
 
 export function SendWhisp() {
   const [step, setStep] = useState(1);
-  const [videoSource, setVideoSource] = useState<"url" | "upload" | "library">("url");
+  const [videoSource, setVideoSource] = useState<"url" | "upload" | "library" | "concierge">("url");
   const [videoUrl, setVideoUrl] = useState("");
   const [videoMeta, setVideoMeta] = useState<{
     title?: string | null;
@@ -139,6 +141,24 @@ export function SendWhisp() {
   const [moodTag, setMoodTag] = useState<string | null>(null);
   const [anonymousNote, setAnonymousNote] = useState("");
   const [noteSuggestions, setNoteSuggestions] = useState<string[]>([]);
+  // "Not sure what to send?" concierge — a free-text situation matched
+  // against the Suggestions Library (routes/whisps.ts's POST /concierge),
+  // an alternate entry point above the normal manual video-source tabs.
+  // conciergeRequestId is only set once the sender actually acts on a
+  // concierge result (picks a suggested video, or keeps the drafted note),
+  // and is carried into the final whisp so admin analytics can see whether
+  // concierge suggestions led to a real send.
+  const [conciergeSituation, setConciergeSituation] = useState("");
+  const [conciergeVideoSuggestions, setConciergeVideoSuggestions] = useState<SuggestedVideo[]>([]);
+  const [conciergeNoteDraft, setConciergeNoteDraft] = useState<string | null>(null);
+  const [conciergeSearched, setConciergeSearched] = useState(false);
+  // Set as soon as a concierge call succeeds — needed so a subsequent
+  // "use this video"/"keep this note" tap can commit it below.
+  const [conciergeResultId, setConciergeResultId] = useState<string | null>(null);
+  // Only committed once the sender actually acts on a concierge result —
+  // this is what's carried into the final whisp, so admin analytics can
+  // tell whether concierge suggestions led to a real send.
+  const [conciergeRequestId, setConciergeRequestId] = useState<string | null>(null);
   const [senderAlias, setSenderAlias] = useState(SENDER_ALIASES[0]);
   const [customAlias, setCustomAlias] = useState("");
   const [deliveryMethod, setDeliveryMethod] = useState<"whisper_link" | "ghost_boost" | "circle_drop" | "group_whisper">("whisper_link");
@@ -165,6 +185,7 @@ export function SendWhisp() {
   const createWhisp = useCreateWhisp();
   const sendGroupWhisp = useSendGroupWhisp();
   const noteSuggestionsMutation = useGetNoteSuggestions();
+  const conciergeMutation = useGetConciergeSuggestions();
   const { data: myCircles } = useListMyCircles({
     query: { enabled: deliveryMethod === "circle_drop", queryKey: getListMyCirclesQueryKey() },
   });
@@ -264,6 +285,57 @@ export function SendWhisp() {
     setStep(2);
   }
 
+  function handleConciergeSubmit() {
+    const situation = conciergeSituation.trim();
+    if (!situation) return;
+    conciergeMutation.mutate(
+      { data: { situation } },
+      {
+        onSuccess: (result) => {
+          setConciergeVideoSuggestions(result.videoSuggestions);
+          setConciergeNoteDraft(result.noteDraft);
+          setConciergeResultId(result.requestId);
+          setConciergeSearched(true);
+          if (result.videoSuggestions.length === 0 && !result.noteDraft) {
+            toast({ title: "Couldn't come up with anything for that just now", variant: "destructive" });
+          }
+        },
+        onError: () => toast({ title: "Couldn't come up with suggestions right now", variant: "destructive" }),
+      }
+    );
+  }
+
+  // Same fields a Suggestions Library pick auto-fills (see
+  // SuggestionsLibrary.tsx's handleWhisper), but set directly rather than
+  // via the forwardVideo.ts sessionStorage handoff — the concierge lives
+  // right here on the composer, so there's no page navigation to carry
+  // metadata across. Also carries the drafted note into the same
+  // tap-to-fill "note suggestions" list Step 3 already renders, so picking
+  // it up there needs no new UI.
+  function handleUseConciergeVideo(video: SuggestedVideo) {
+    setUploadedVideoId(null);
+    setVideoUrl(video.videoUrl);
+    setVideoMeta({
+      title: video.videoTitle,
+      thumbnail: video.videoThumbnail,
+      embedUrl: video.videoEmbedUrl,
+      platform: video.videoPlatform ?? undefined,
+      authorName: video.authorName,
+    });
+    setNoteSuggestions(conciergeNoteDraft ? [conciergeNoteDraft] : []);
+    setConciergeRequestId(conciergeResultId);
+    setStep(2);
+  }
+
+  // For the "no strong video match" fallback — keep the drafted note (via
+  // the same Step 3 tap-to-fill list) and let the sender pick their own
+  // video the normal way.
+  function handleUseConciergeNoteOnly() {
+    setNoteSuggestions(conciergeNoteDraft ? [conciergeNoteDraft] : []);
+    setConciergeRequestId(conciergeResultId);
+    setVideoSource("url");
+  }
+
   function handleSuggestNotes() {
     noteSuggestionsMutation.mutate(
       { data: { videoTitle: videoMeta?.title ?? null, moodTag } },
@@ -360,6 +432,7 @@ export function SendWhisp() {
           senderAlias: alias,
           moodTag: moodTag,
           scheduledAt: isScheduling ? new Date(scheduledAtValue).toISOString() : null,
+          conciergeRequestId,
         },
       },
       {
@@ -447,6 +520,12 @@ export function SendWhisp() {
                 setWhisperGroupId(null);
                 setSentWhispId(null);
                 setSentGroupSendId(null);
+                setConciergeSituation("");
+                setConciergeVideoSuggestions([]);
+                setConciergeNoteDraft(null);
+                setConciergeSearched(false);
+                setConciergeResultId(null);
+                setConciergeRequestId(null);
                 urlForm.reset();
               }}
               data-testid="button-send-another"
@@ -503,8 +582,9 @@ export function SendWhisp() {
             {/* Step 1: choose a video */}
             {step === 1 && (
               <div className="space-y-4">
-                <div className="flex gap-1.5 p-1 bg-muted/30 rounded-xl w-fit">
+                <div className="flex gap-1.5 p-1 bg-muted/30 rounded-xl w-fit flex-wrap">
                   {([
+                    { key: "concierge" as const, label: "Not sure? Describe it", icon: Sparkles },
                     { key: "url" as const, label: "Paste a link", icon: Link2 },
                     { key: "upload" as const, label: "Upload", icon: Upload },
                     { key: "library" as const, label: "My library", icon: FolderOpen },
@@ -618,6 +698,102 @@ export function SendWhisp() {
                     )}
                   </>
                 )}
+
+                {videoSource === "concierge" && (
+                  <>
+                    <h2 className="text-xl font-serif font-semibold flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-primary" /> Not sure what to send?
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                      Describe the situation and we'll suggest a video from our Suggestions Library and draft an anonymous note to go with it.
+                    </p>
+                    <div className="relative">
+                      <Textarea
+                        className="bg-input/50 border-border/50 rounded-xl min-h-[80px] resize-none"
+                        placeholder="e.g. I want to tell my brother I'm proud of him but don't know how"
+                        maxLength={500}
+                        value={conciergeSituation}
+                        onChange={(e) => setConciergeSituation(e.target.value)}
+                        data-testid="textarea-concierge-situation"
+                      />
+                      <span className="absolute bottom-2 right-3 text-xs text-muted-foreground">{conciergeSituation.length}/500</span>
+                    </div>
+                    <Button
+                      onClick={handleConciergeSubmit}
+                      disabled={conciergeMutation.isPending || !conciergeSituation.trim()}
+                      className="rounded-xl"
+                      data-testid="button-concierge-submit"
+                    >
+                      {conciergeMutation.isPending ? (
+                        <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                      ) : (
+                        <Sparkles className="w-4 h-4 mr-1.5" />
+                      )}
+                      {conciergeSearched ? "Try again" : "Get suggestions"}
+                    </Button>
+
+                    {conciergeSearched && !conciergeMutation.isPending && (
+                      <div className="space-y-3 pt-3 border-t border-border/30" data-testid="concierge-results">
+                        {conciergeVideoSuggestions.length > 0 ? (
+                          <>
+                            <p className="text-sm font-medium text-foreground">A few videos that might fit:</p>
+                            <div className="grid grid-cols-1 gap-2">
+                              {conciergeVideoSuggestions.map((video) => (
+                                <button
+                                  key={video.id}
+                                  type="button"
+                                  onClick={() => handleUseConciergeVideo(video)}
+                                  data-testid={`button-concierge-video-${video.id}`}
+                                  className="flex gap-3 p-2.5 rounded-xl border border-border/50 bg-muted/20 text-left hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                                >
+                                  <div className="w-16 h-12 flex-shrink-0 bg-muted rounded-lg overflow-hidden flex items-center justify-center">
+                                    {video.videoThumbnail ? (
+                                      <Thumbnail src={video.videoThumbnail} alt={video.videoTitle ?? "Video thumbnail"} className="w-full h-full object-cover" />
+                                    ) : (
+                                      <PlayCircle className="w-5 h-5 text-muted-foreground" />
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-1.5 mb-0.5">
+                                      <PlatformIcon platform={video.videoPlatform} className="w-3 h-3" />
+                                      <span className="text-[11px] text-muted-foreground capitalize">{video.videoPlatform}</span>
+                                    </div>
+                                    <p className="text-sm font-medium text-foreground truncate">{video.videoTitle || "Untitled video"}</p>
+                                    {video.aiSummary && <p className="text-xs text-muted-foreground line-clamp-2">{video.aiSummary}</p>}
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          </>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">
+                            No strong match in our library for this one — but here's a note draft below. Pick your own video from another tab and it'll carry over.
+                          </p>
+                        )}
+
+                        {conciergeNoteDraft && (
+                          <div className="space-y-1.5">
+                            <p className="text-xs font-medium text-muted-foreground">Drafted note:</p>
+                            <p className="text-sm p-2.5 rounded-xl border border-border/50 bg-card text-foreground" data-testid="concierge-note-draft">
+                              {conciergeNoteDraft}
+                            </p>
+                            {conciergeVideoSuggestions.length === 0 && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="rounded-full"
+                                onClick={handleUseConciergeNoteOnly}
+                                data-testid="button-concierge-note-only"
+                              >
+                                Use this note, I'll pick a video
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             )}
 
@@ -627,6 +803,11 @@ export function SendWhisp() {
                 {isForwarded && (
                   <div className="flex items-center gap-1.5 text-xs text-primary bg-primary/10 rounded-full px-3 py-1.5 w-fit" data-testid="badge-passing-forward">
                     <Send className="w-3 h-3" /> Passing this one forward
+                  </div>
+                )}
+                {!isForwarded && conciergeRequestId && (
+                  <div className="flex items-center gap-1.5 text-xs text-primary bg-primary/10 rounded-full px-3 py-1.5 w-fit" data-testid="badge-concierge-suggested">
+                    <Sparkles className="w-3 h-3" /> Suggested for your situation
                   </div>
                 )}
                 {/* Video preview */}

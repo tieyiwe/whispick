@@ -7,6 +7,7 @@
  */
 import type { AdminChannelDeliveryStat } from './adminChannelDeliveryStat';
 import type { AdminFunnelStatsCircles } from './adminFunnelStatsCircles';
+import type { AdminFunnelStatsConcierge } from './adminFunnelStatsConcierge';
 import type { AdminFunnelStatsFunnel } from './adminFunnelStatsFunnel';
 import type { AdminFunnelStatsGhostBoost } from './adminFunnelStatsGhostBoost';
 
@@ -16,4 +17,6 @@ export interface AdminFunnelStats {
   deliveryByChannel: AdminChannelDeliveryStat[];
   ghostBoost: AdminFunnelStatsGhostBoost;
   circles: AdminFunnelStatsCircles;
+  /** Usage of the "Not sure what to send?" AI concierge (POST /whisps/concierge). */
+  concierge: AdminFunnelStatsConcierge;
 }

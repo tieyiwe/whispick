@@ -33,6 +33,14 @@ export function revealRequestHookLine(): string {
   return "Someone who sent you an anonymous whisp wants to reveal who they are... 👀";
 }
 
+// Sent when a Sender posts a follow-up on an already-delivered whisp (see
+// routes/whisps.ts POST /:id/replies) — keeps the recipient from needing to
+// coincidentally reopen the link to notice a new message. Keep in sync with
+// PublicWhispPage.tsx's reply-thread copy the same way as HOOK_LINE.
+export function newReplyHookLine(): string {
+  return "The person who sent you an anonymous whisp replied 💬";
+}
+
 // Ghost Boost match delivery — deliberately doesn't say "a stranger sent
 // this" (true, but a colder framing than the rest of the app's copy) or
 // imply the sender picked THEM specifically (they didn't — a subscriber

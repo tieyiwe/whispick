@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useGetWhispStats, useListSuggestions, getListSuggestionsQueryKey } from "@workspace/api-client-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Send, Eye, PlayCircle, MessageSquareHeart, TrendingUp, Ghost, Sparkles, Repeat } from "lucide-react";
+import { Send, Eye, PlayCircle, MessageSquareHeart, TrendingUp, Ghost, Sparkles, Repeat, Heart } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link, useLocation } from "wouter";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -70,8 +70,8 @@ export function Dashboard() {
       <AppLayout>
         <div className="space-y-6">
           <Skeleton className="h-10 w-48" />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32 rounded-2xl" />)}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-32 rounded-2xl" />)}
           </div>
           <Skeleton className="h-[400px] rounded-2xl mt-8" />
         </div>
@@ -84,6 +84,10 @@ export function Dashboard() {
     { title: "Open Rate", value: `${Math.round(stats?.openRate || 0)}%`, icon: Eye, color: "text-blue-400", bg: "bg-blue-500/10" },
     { title: "Videos Watched", value: stats?.totalWatched || 0, icon: PlayCircle, color: "text-secondary", bg: "bg-secondary/10" },
     { title: "Replies Received", value: stats?.totalReplied || 0, icon: MessageSquareHeart, color: "text-amber-400", bg: "bg-amber-500/10" },
+    // The recipient's own "was this something you needed to hear?" signal,
+    // rolled up — previously visible only one whisp at a time, buried on
+    // each individual detail page, with no sense of overall impact.
+    { title: "Whisps That Helped", value: stats?.totalAppreciated || 0, icon: Heart, color: "text-rose-400", bg: "bg-rose-500/10" },
   ];
 
   return (

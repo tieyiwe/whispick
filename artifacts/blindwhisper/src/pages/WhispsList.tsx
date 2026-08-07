@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Link, useLocation } from "wouter";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { MoodTag } from "@/components/shared/MoodTag";
-import { PlayCircle, Search, Filter, Repeat } from "lucide-react";
+import { PlayCircle, Search, Filter, Repeat, Heart } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -105,7 +105,12 @@ export function WhispsList() {
                     <div className="p-5 flex-1 flex flex-col justify-center min-w-0">
                       <div className="flex items-start justify-between gap-4 mb-2">
                         <h3 className="font-semibold text-foreground text-lg truncate">{whisp.videoTitle || "Video Link"}</h3>
-                        <StatusBadge status={whisp.status} />
+                        <div className="flex items-center gap-2 shrink-0">
+                          {whisp.appreciationResponse === "yes" && (
+                            <Heart className="w-4 h-4 text-rose-400 fill-rose-400" data-testid={`icon-appreciated-${whisp.id}`} />
+                          )}
+                          <StatusBadge status={whisp.status} />
+                        </div>
                       </div>
                       <div className="flex items-center text-sm text-muted-foreground mb-4">
                         <span className="truncate">

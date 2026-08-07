@@ -43,4 +43,9 @@ export interface WhispInput {
   moodTag?: string | null;
   /** @nullable */
   scheduledAt?: string | null;
+  /**
+     * The requestId from a prior POST /whisps/concierge call, if this send used its video suggestion and/or note draft
+     * @nullable
+     */
+  conciergeRequestId?: string | null;
 }

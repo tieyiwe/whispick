@@ -47,6 +47,8 @@ import type {
   CheckoutResponse,
   Circle,
   CircleFeedResponse,
+  ConciergeInput,
+  ConciergeResult,
   CreateCircleInput,
   CreateSuggestionInput,
   CreditTransaction,
@@ -5833,6 +5835,76 @@ export const useGetNoteSuggestions = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getGetNoteSuggestionsMutationOptions(options));
+    }
+
+export const getGetConciergeSuggestionsUrl = () => {
+
+
+
+
+  return `/api/whisps/concierge`
+}
+
+/**
+ * @summary "Not sure what to send?" — the sender describes their situation in a sentence or two and gets back up to a few Suggestions Library videos that fit, plus a drafted anonymous note. Matches only against the existing curated library, never a live discovery.
+ */
+export const getConciergeSuggestions = async (conciergeInput: ConciergeInput, options?: RequestInit): Promise<ConciergeResult> => {
+
+  return customFetch<ConciergeResult>(getGetConciergeSuggestionsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(conciergeInput)
+  }
+);}
+
+
+
+
+export const getGetConciergeSuggestionsMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getConciergeSuggestions>>, TError,{data: BodyType<ConciergeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof getConciergeSuggestions>>, TError,{data: BodyType<ConciergeInput>}, TContext> => {
+
+const mutationKey = ['getConciergeSuggestions'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getConciergeSuggestions>>, {data: BodyType<ConciergeInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  getConciergeSuggestions(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetConciergeSuggestionsMutationResult = NonNullable<Awaited<ReturnType<typeof getConciergeSuggestions>>>
+    export type GetConciergeSuggestionsMutationBody = BodyType<ConciergeInput>
+    export type GetConciergeSuggestionsMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary "Not sure what to send?" — the sender describes their situation in a sentence or two and gets back up to a few Suggestions Library videos that fit, plus a drafted anonymous note. Matches only against the existing curated library, never a live discovery.
+ */
+export const useGetConciergeSuggestions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getConciergeSuggestions>>, TError,{data: BodyType<ConciergeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof getConciergeSuggestions>>,
+        TError,
+        {data: BodyType<ConciergeInput>},
+        TContext
+      > => {
+      return useMutation(getGetConciergeSuggestionsMutationOptions(options));
     }
 
 export const getGetGhostBoostMatchesUrl = (id: string,) => {

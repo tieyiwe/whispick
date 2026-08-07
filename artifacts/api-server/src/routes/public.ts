@@ -53,6 +53,18 @@ router.get("/w/:token", async (req, res): Promise<void> => {
     groupSize = row?.count ?? 1;
   }
 
+  // The reply thread, same as the sender's own WhispDetail view gets — none
+  // of these fields are sender-identifying (no senderId/email/phone), so
+  // there's nothing here that breaks the "recipient never learns who sent
+  // this" guarantee. Without this, a recipient could send a reply but never
+  // see it (or any sender follow-up) again on a later visit — every reply
+  // looked like it vanished into a one-shot box instead of a real thread.
+  const replies = await db
+    .select()
+    .from(whispRepliesTable)
+    .where(eq(whispRepliesTable.whispId, whisp.id))
+    .orderBy(whispRepliesTable.createdAt);
+
   // Return only public-safe fields
   res.json({
     id: whisp.id,
@@ -75,6 +87,7 @@ router.get("/w/:token", async (req, res): Promise<void> => {
     hasUpload: !!whisp.uploadedVideoId,
     aiTakeaway: whisp.aiTakeaway,
     aiTakeawayStatus: whisp.aiTakeawayStatus,
+    replies,
   });
 });
 

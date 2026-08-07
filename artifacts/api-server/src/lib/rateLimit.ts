@@ -57,3 +57,14 @@ export const noteSuggestionLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: authKeyGenerator,
 });
+
+// The "Not sure what to send?" concierge (lib/concierge.ts) is a Claude call
+// plus a library lookup — slightly heavier than a plain note suggestion, so
+// it gets a somewhat tighter cap, same per-user keying rationale as above.
+export const conciergeLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: authKeyGenerator,
+});

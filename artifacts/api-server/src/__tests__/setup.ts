@@ -15,7 +15,7 @@ vi.mock("@clerk/express", () => ({
 // Global mock so every test file gets a harmless, controllable Claude client
 // instead of making real API calls. Import this from a test file and use
 // mockResolvedValueOnce/mockRejectedValueOnce to script specific responses.
-export const anthropicMessagesCreateMock = vi.fn(async () => ({
+export const anthropicMessagesCreateMock = vi.fn(async (..._args: any[]) => ({
   content: [{ type: "text", text: "Default mock takeaway." }],
 }));
 
@@ -40,7 +40,7 @@ afterEach(async () => {
   anthropicMessagesCreateMock.mockClear();
   const { pool } = await import("@workspace/db");
   await pool.query(
-    "TRUNCATE TABLE tracking_events, whisp_replies, credit_transactions, push_subscriptions, whisp_categories, whisps, circle_members, circles, whisper_group_members, whisper_groups, uploaded_videos, match_subscribers, suggested_videos, suggestion_agent_status, delivery_attempts, notification_reads, notifications, moderation_flags, users RESTART IDENTITY CASCADE",
+    "TRUNCATE TABLE tracking_events, whisp_replies, credit_transactions, push_subscriptions, whisp_categories, whisps, circle_members, circles, whisper_group_members, whisper_groups, uploaded_videos, match_subscribers, suggested_videos, suggestion_agent_status, delivery_attempts, notification_reads, notifications, moderation_flags, concierge_requests, users RESTART IDENTITY CASCADE",
   );
 });
 

@@ -27,6 +27,22 @@ describe("GET /api/public/w/:token", () => {
     expect(res.body.anonymousNote).toBe("be well");
     expect(res.body).not.toHaveProperty("senderId");
   });
+
+  it("includes the reply thread so the recipient can see prior messages, not just send a one-shot reply", async () => {
+    const whisp = await createWhisp();
+
+    await request(app).post(`/api/public/w/${whisp.publicToken}/reply`).send({ replyText: "thank you" });
+    await request(app)
+      .post(`/api/whisps/${whisp.id}/replies`)
+      .set(TEST_USER_HEADER, USER_A)
+      .send({ replyText: "of course" });
+
+    const res = await request(app).get(`/api/public/w/${whisp.publicToken}`);
+    expect(res.status).toBe(200);
+    expect(res.body.replies).toHaveLength(2);
+    expect(res.body.replies[0].fromRecipient).toBe(true);
+    expect(res.body.replies[1].fromRecipient).toBe(false);
+  });
 });
 
 describe("POST /api/public/w/:token/track", () => {

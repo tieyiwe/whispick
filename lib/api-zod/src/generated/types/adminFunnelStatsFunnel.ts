@@ -16,4 +16,6 @@ export type AdminFunnelStatsFunnel = {
   opened: number;
   watched: number;
   replied: number;
+  /** Recipients who answered "yes" to "was this something you needed to hear?" */
+  appreciated: number;
 };

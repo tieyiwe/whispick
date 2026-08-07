@@ -5,6 +5,7 @@
  * Blind Whisper API — anonymous video recommendation platform
  * OpenAPI spec version: 0.1.0
  */
+import type { WhispReply } from './whispReply';
 
 export interface PublicWhisp {
   id: string;
@@ -41,4 +42,5 @@ export interface PublicWhisp {
   aiTakeaway?: string | null;
   /** @nullable */
   aiTakeawayStatus?: string | null;
+  replies: WhispReply[];
 }

@@ -18,6 +18,7 @@ const FUNNEL_STAGES = [
   { key: "opened", label: "Opened" },
   { key: "watched", label: "Watched" },
   { key: "replied", label: "Replied" },
+  { key: "appreciated", label: "Appreciated" },
 ] as const;
 
 export function AdminAnalytics() {
@@ -122,6 +123,44 @@ export function AdminAnalytics() {
             </CardContent>
           </Card>
         </div>
+
+        <Card className="bg-card border-border/50">
+          <CardHeader>
+            <CardTitle className="text-base font-serif">AI Concierge ("Not sure what to send?")</CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Usage of the composer's situation-to-suggestion assist — how often it's used, whether it found a library video to match, and
+              whether that led to an actual send.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {funnelLoading ? <Skeleton className="h-24 rounded-xl" /> : (
+              <>
+                <div className="flex items-center justify-between text-sm py-1.5 px-3 rounded-lg bg-muted/20">
+                  <span className="text-foreground">Requests</span>
+                  <span className="text-muted-foreground font-mono">{funnelStats?.concierge.totalRequests ?? 0}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm py-1.5 px-3 rounded-lg bg-muted/20">
+                  <span className="text-foreground">Requests with a video match</span>
+                  <span className="text-muted-foreground font-mono">
+                    {funnelStats?.concierge.requestsWithVideoMatch ?? 0}
+                    {funnelStats && funnelStats.concierge.totalRequests > 0
+                      ? ` (${Math.round((funnelStats.concierge.requestsWithVideoMatch / funnelStats.concierge.totalRequests) * 100)}%)`
+                      : ""}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-sm py-1.5 px-3 rounded-lg bg-muted/20">
+                  <span className="text-foreground">Led to a send</span>
+                  <span className="text-muted-foreground font-mono">
+                    {funnelStats?.concierge.sends ?? 0}
+                    {funnelStats && funnelStats.concierge.totalRequests > 0
+                      ? ` (${Math.round((funnelStats.concierge.sends / funnelStats.concierge.totalRequests) * 100)}%)`
+                      : ""}
+                  </span>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
 
         <Card className="bg-card border-border/50">
           <CardHeader>

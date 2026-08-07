@@ -80,6 +80,13 @@ export const whispsTable = pgTable("whisps", {
   aiTakeaway: text("ai_takeaway"),
   aiTakeawayStatus: text("ai_takeaway_status"), // null (not attempted yet) | 'ready' | 'unavailable'
   aiTakeawayGeneratedAt: timestamp("ai_takeaway_generated_at", { withTimezone: true }),
+  // Set when this whisp's video and/or note came from the "Not sure what to
+  // send?" AI concierge (see lib/concierge.ts, concierge_requests.ts) —
+  // null for every whisp composed the normal manual way. Purely an
+  // analytics correlation (routes/admin.ts's funnel stats use it to answer
+  // "did concierge suggestions actually lead to a send"), never read on any
+  // send/delivery path.
+  conciergeRequestId: text("concierge_request_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   // Soft delete, sender-initiated: hides the whisp (and its reply thread)
   // from the sender's own list/detail/dashboard views, without touching the
@@ -96,6 +103,7 @@ export const whispsTable = pgTable("whisps", {
   index("whisps_status_idx").on(table.status),
   index("whisps_recipient_email_idx").on(table.recipientEmail),
   index("whisps_recipient_phone_idx").on(table.recipientPhone),
+  index("whisps_concierge_request_id_idx").on(table.conciergeRequestId),
 ]);
 
 export const insertWhispSchema = createInsertSchema(whispsTable).omit({ createdAt: true });
