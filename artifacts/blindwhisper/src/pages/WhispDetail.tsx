@@ -197,7 +197,9 @@ export function WhispDetail() {
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete this whisp?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This permanently deletes the whisp, its tracking history, and any replies. This can't be undone.
+                  {replies.length > 0
+                    ? `This whisp has ${replies.length === 1 ? "a reply" : `${replies.length} replies`} from the recipient. Deleting it removes it — and that ${replies.length === 1 ? "reply" : "reply thread"} — from your whisps. This can't be undone from your side.`
+                    : "This removes the whisp from your whisps. This can't be undone from your side."}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

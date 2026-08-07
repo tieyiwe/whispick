@@ -81,6 +81,12 @@ export const whispsTable = pgTable("whisps", {
   aiTakeawayStatus: text("ai_takeaway_status"), // null (not attempted yet) | 'ready' | 'unavailable'
   aiTakeawayGeneratedAt: timestamp("ai_takeaway_generated_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  // Soft delete, sender-initiated: hides the whisp (and its reply thread)
+  // from the sender's own list/detail/dashboard views, without touching the
+  // row itself — admins can still see everything for support purposes (see
+  // routes/admin.ts, which never filters on this). Doesn't affect the
+  // Recipient's own public link, which keeps working as already delivered.
+  deletedBySenderAt: timestamp("deleted_by_sender_at", { withTimezone: true }),
 }, (table) => [
   // publicToken already gets an index for free from its unique() constraint
   // above — not duplicated here. The rest back the admin panel's list/detail

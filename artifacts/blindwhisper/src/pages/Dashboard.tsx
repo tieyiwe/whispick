@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useGetWhispStats, useListSuggestions, getListSuggestionsQueryKey } from "@workspace/api-client-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Send, Eye, PlayCircle, MessageSquareHeart, TrendingUp, Ghost, Sparkles } from "lucide-react";
+import { Send, Eye, PlayCircle, MessageSquareHeart, TrendingUp, Ghost, Sparkles, Repeat } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link, useLocation } from "wouter";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -29,6 +29,30 @@ export function Dashboard() {
       videoThumbnail: featuredSuggestion.videoThumbnail,
       videoEmbedUrl: featuredSuggestion.videoEmbedUrl,
       videoPlatform: featuredSuggestion.videoPlatform,
+    });
+    setLocation("/send");
+  }
+
+  function handleWhispAgain(e: React.MouseEvent, whisp: {
+    videoUrl: string;
+    videoTitle?: string | null;
+    videoThumbnail?: string | null;
+    videoEmbedUrl?: string | null;
+    videoPlatform?: string | null;
+    videoStartSeconds?: number | null;
+    videoEndSeconds?: number | null;
+  }) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (whisp.videoPlatform === "upload") return;
+    savePendingForward({
+      videoUrl: whisp.videoUrl,
+      videoTitle: whisp.videoTitle,
+      videoThumbnail: whisp.videoThumbnail,
+      videoEmbedUrl: whisp.videoEmbedUrl,
+      videoPlatform: whisp.videoPlatform,
+      videoStartSeconds: whisp.videoStartSeconds,
+      videoEndSeconds: whisp.videoEndSeconds,
     });
     setLocation("/send");
   }
@@ -133,7 +157,20 @@ export function Dashboard() {
                             <span className="mx-2">•</span>
                             <span>{new Date(whisp.createdAt).toLocaleDateString()}</span>
                           </div>
-                          {whisp.moodTag && <MoodTag mood={whisp.moodTag} className="scale-90 origin-left self-start" />}
+                          <div className="flex items-center justify-between gap-3">
+                            {whisp.moodTag ? <MoodTag mood={whisp.moodTag} className="scale-90 origin-left self-start" /> : <span />}
+                            {whisp.videoPlatform !== "upload" && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="rounded-full shrink-0"
+                                onClick={(e) => handleWhispAgain(e, whisp)}
+                                data-testid={`button-whisp-again-${whisp.id}`}
+                              >
+                                <Repeat className="w-3.5 h-3.5 mr-1.5" /> Whisp to someone else
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </Card>

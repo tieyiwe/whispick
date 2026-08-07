@@ -3,22 +3,40 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useListWhisps } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { MoodTag } from "@/components/shared/MoodTag";
-import { PlayCircle, Search, Filter } from "lucide-react";
+import { PlayCircle, Search, Filter, Repeat } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { deliveryLabel } from "@/lib/deliveryMethod";
+import { savePendingForward, type ForwardVideo } from "@/lib/forwardVideo";
 
 export function WhispsList() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  
+  const [, setLocation] = useLocation();
+
   const { data: whisps, isLoading } = useListWhisps(
     statusFilter !== "all" ? { status: statusFilter } : undefined
   );
+
+  function handleWhispAgain(e: React.MouseEvent, whisp: ForwardVideo & { videoPlatform?: string | null }) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (whisp.videoPlatform === "upload") return;
+    savePendingForward({
+      videoUrl: whisp.videoUrl,
+      videoTitle: whisp.videoTitle,
+      videoThumbnail: whisp.videoThumbnail,
+      videoEmbedUrl: whisp.videoEmbedUrl,
+      videoPlatform: whisp.videoPlatform,
+      videoStartSeconds: whisp.videoStartSeconds,
+      videoEndSeconds: whisp.videoEndSeconds,
+    });
+    setLocation("/send");
+  }
 
   const filteredWhisps = whisps?.filter(w => 
     !searchQuery || 
@@ -98,8 +116,19 @@ export function WhispsList() {
                         <span className="mx-2">•</span>
                         <span>via {deliveryLabel(whisp.deliveryMethod, whisp.whisperChannel)}</span>
                       </div>
-                      <div className="mt-auto">
-                        {whisp.moodTag && <MoodTag mood={whisp.moodTag} className="scale-90 origin-left" />}
+                      <div className="mt-auto flex items-center justify-between gap-3">
+                        {whisp.moodTag ? <MoodTag mood={whisp.moodTag} className="scale-90 origin-left" /> : <span />}
+                        {whisp.videoPlatform !== "upload" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="rounded-full shrink-0"
+                            onClick={(e) => handleWhispAgain(e, whisp)}
+                            data-testid={`button-whisp-again-${whisp.id}`}
+                          >
+                            <Repeat className="w-3.5 h-3.5 mr-1.5" /> Whisp to someone else
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </div>

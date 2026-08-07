@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import request from "supertest";
 import app from "../app";
-import { db, usersTable } from "@workspace/db";
+import { db, usersTable, whispsTable, whispRepliesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { TEST_USER_HEADER } from "./setup";
 
@@ -379,6 +379,55 @@ describe("Reveal flow", () => {
     expect(responded.body).not.toHaveProperty("senderId");
     expect(responded.body).not.toHaveProperty("recipientEmail");
     expect(responded.body).not.toHaveProperty("recipientPhone");
+  });
+});
+
+describe("DELETE /api/whisps/:id", () => {
+  // Dedicated users, not USER_A/USER_B: createWhispLimiter is in-memory and
+  // keyed per user for the lifetime of this test file, so reusing USER_A's
+  // budget here would push it toward the shared 30/hour cap other
+  // describe blocks in this file also rely on staying under.
+  const USER_C = "clerk_user_c";
+  const USER_D = "clerk_user_d";
+
+  it("soft-deletes: hides the whisp from the sender without touching the row, its replies, or tracking events", async () => {
+    const created = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_C))
+      .send({ videoUrl: "https://youtu.be/a", deliveryMethod: "circle_drop" });
+    const whispId = created.body.id;
+
+    const reply = await request(app)
+      .post(`/api/whisps/${whispId}/replies`)
+      .set(asUser(USER_C))
+      .send({ replyText: "a reply worth keeping", fromRecipient: true });
+    expect(reply.status).toBe(201);
+
+    const del = await request(app).delete(`/api/whisps/${whispId}`).set(asUser(USER_C));
+    expect(del.status).toBe(204);
+
+    const list = await request(app).get("/api/whisps").set(asUser(USER_C));
+    expect(list.body.find((w: { id: string }) => w.id === whispId)).toBeUndefined();
+
+    const detail = await request(app).get(`/api/whisps/${whispId}`).set(asUser(USER_C));
+    expect(detail.status).toBe(404);
+
+    const [row] = await db.select().from(whispsTable).where(eq(whispsTable.id, whispId));
+    expect(row).toBeTruthy();
+    expect(row.deletedBySenderAt).toBeTruthy();
+
+    const replies = await db.select().from(whispRepliesTable).where(eq(whispRepliesTable.whispId, whispId));
+    expect(replies).toHaveLength(1);
+  });
+
+  it("404s for a whisp belonging to another user", async () => {
+    const created = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_C))
+      .send({ videoUrl: "https://youtu.be/a", deliveryMethod: "circle_drop" });
+
+    const del = await request(app).delete(`/api/whisps/${created.body.id}`).set(asUser(USER_D));
+    expect(del.status).toBe(404);
   });
 });
 

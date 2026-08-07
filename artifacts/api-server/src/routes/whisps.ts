@@ -43,6 +43,13 @@ function excludeMatchDeliveries() {
   return or(sql`${whispsTable.deliveryMethod} != 'ghost_boost'`, isNull(whispsTable.groupSendId));
 }
 
+// Sender-initiated soft delete (see whisps.ts schema) — every sender-facing
+// list/lookup excludes these, same as excludeMatchDeliveries() above.
+// Deliberately not applied anywhere in routes/admin.ts.
+function excludeDeleted() {
+  return isNull(whispsTable.deletedBySenderAt);
+}
+
 const noteSuggestionsSchema = z.object({
   videoTitle: z.string().max(300).nullable().optional(),
   moodTag: z.string().max(50).nullable().optional(),
@@ -76,8 +83,8 @@ router.get("/", requireAuth, async (req, res): Promise<void> => {
     .from(whispsTable)
     .where(
       statusFilter
-        ? and(eq(whispsTable.senderId, user.id), eq(whispsTable.status, statusFilter), excludeMatchDeliveries())
-        : and(eq(whispsTable.senderId, user.id), excludeMatchDeliveries()),
+        ? and(eq(whispsTable.senderId, user.id), eq(whispsTable.status, statusFilter), excludeMatchDeliveries(), excludeDeleted())
+        : and(eq(whispsTable.senderId, user.id), excludeMatchDeliveries(), excludeDeleted()),
     )
     .orderBy(sql`${whispsTable.createdAt} DESC`);
 
@@ -349,7 +356,7 @@ router.get("/stats", requireAuth, async (req, res): Promise<void> => {
   const allWhisps = await db
     .select()
     .from(whispsTable)
-    .where(and(eq(whispsTable.senderId, user.id), excludeMatchDeliveries()))
+    .where(and(eq(whispsTable.senderId, user.id), excludeMatchDeliveries(), excludeDeleted()))
     .orderBy(sql`${whispsTable.createdAt} DESC`);
 
   const totalSent = allWhisps.length;
@@ -380,7 +387,7 @@ router.get("/:id", requireAuth, async (req, res): Promise<void> => {
   const whisp = await db
     .select()
     .from(whispsTable)
-    .where(and(eq(whispsTable.id, req.params.id), eq(whispsTable.senderId, user.id), excludeMatchDeliveries()))
+    .where(and(eq(whispsTable.id, req.params.id), eq(whispsTable.senderId, user.id), excludeMatchDeliveries(), excludeDeleted()))
     .then(r => r[0]);
 
   if (!whisp) {
@@ -426,7 +433,12 @@ router.get("/:id/matches", requireAuth, async (req, res): Promise<void> => {
   res.json(stats);
 });
 
-// DELETE /api/whisps/:id
+// DELETE /api/whisps/:id — soft delete. Hides the whisp (and its reply
+// thread) from this sender's own list/detail/dashboard views, but never
+// touches the row, its replies, or its tracking events: admins still see
+// the full history for support purposes (routes/admin.ts never filters on
+// deletedBySenderAt), and the Recipient's own public link keeps working,
+// same as before this was deleted.
 router.delete("/:id", requireAuth, async (req, res): Promise<void> => {
   const { userId } = getAuth(req);
   const user = await ensureUser(userId!, req);
@@ -434,7 +446,7 @@ router.delete("/:id", requireAuth, async (req, res): Promise<void> => {
   const whisp = await db
     .select()
     .from(whispsTable)
-    .where(and(eq(whispsTable.id, req.params.id), eq(whispsTable.senderId, user.id), excludeMatchDeliveries()))
+    .where(and(eq(whispsTable.id, req.params.id), eq(whispsTable.senderId, user.id), excludeMatchDeliveries(), excludeDeleted()))
     .then(r => r[0]);
 
   if (!whisp) {
@@ -442,9 +454,7 @@ router.delete("/:id", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  await db.delete(whispRepliesTable).where(eq(whispRepliesTable.whispId, whisp.id));
-  await db.delete(trackingEventsTable).where(eq(trackingEventsTable.whispId, whisp.id));
-  await db.delete(whispsTable).where(eq(whispsTable.id, whisp.id));
+  await db.update(whispsTable).set({ deletedBySenderAt: new Date() }).where(eq(whispsTable.id, whisp.id));
 
   res.status(204).send();
 });
@@ -457,7 +467,7 @@ router.get("/:id/replies", requireAuth, async (req, res): Promise<void> => {
   const whisp = await db
     .select()
     .from(whispsTable)
-    .where(and(eq(whispsTable.id, req.params.id), eq(whispsTable.senderId, user.id), excludeMatchDeliveries()))
+    .where(and(eq(whispsTable.id, req.params.id), eq(whispsTable.senderId, user.id), excludeMatchDeliveries(), excludeDeleted()))
     .then(r => r[0]);
 
   if (!whisp) {
@@ -482,7 +492,7 @@ router.post("/:id/replies", requireAuth, async (req, res): Promise<void> => {
   const whisp = await db
     .select()
     .from(whispsTable)
-    .where(and(eq(whispsTable.id, req.params.id), eq(whispsTable.senderId, user.id), excludeMatchDeliveries()))
+    .where(and(eq(whispsTable.id, req.params.id), eq(whispsTable.senderId, user.id), excludeMatchDeliveries(), excludeDeleted()))
     .then(r => r[0]);
 
   if (!whisp) {
@@ -521,7 +531,7 @@ router.post("/:id/reveal", requireAuth, async (req, res): Promise<void> => {
   const whisp = await db
     .select()
     .from(whispsTable)
-    .where(and(eq(whispsTable.id, req.params.id), eq(whispsTable.senderId, user.id), excludeMatchDeliveries()))
+    .where(and(eq(whispsTable.id, req.params.id), eq(whispsTable.senderId, user.id), excludeMatchDeliveries(), excludeDeleted()))
     .then(r => r[0]);
 
   if (!whisp) {
