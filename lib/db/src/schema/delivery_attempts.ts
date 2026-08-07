@@ -1,4 +1,4 @@
-import { pgTable, text, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, boolean, timestamp, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -32,7 +32,9 @@ export const deliveryAttemptsTable = pgTable("delivery_attempts", {
   providerStatus: text("provider_status"),
   errorMessage: text("error_message"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [
+  index("delivery_attempts_whisp_id_idx").on(table.whispId),
+]);
 
 export const insertDeliveryAttemptSchema = createInsertSchema(deliveryAttemptsTable).omit({ createdAt: true });
 export type InsertDeliveryAttempt = z.infer<typeof insertDeliveryAttemptSchema>;

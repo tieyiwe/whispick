@@ -1,4 +1,4 @@
-import { pgTable, text, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, boolean, timestamp, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -21,7 +21,10 @@ export const moderationFlagsTable = pgTable("moderation_flags", {
   reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
   reviewedByAdminId: text("reviewed_by_admin_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [
+  index("moderation_flags_user_id_idx").on(table.userId),
+  index("moderation_flags_whisp_id_idx").on(table.whispId),
+]);
 
 export const insertModerationFlagSchema = createInsertSchema(moderationFlagsTable).omit({ createdAt: true });
 export type InsertModerationFlag = z.infer<typeof insertModerationFlagSchema>;

@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -28,7 +28,11 @@ export const whisperGroupMembersTable = pgTable("whisper_group_members", {
   email: text("email"),
   phone: text("phone"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [
+  // Same gap as whisp_categories.whispId — routes/whisperGroups.ts filters
+  // this table by groupId on every group-detail/send/delete call.
+  index("whisper_group_members_group_id_idx").on(table.groupId),
+]);
 
 export const insertWhisperGroupMemberSchema = createInsertSchema(whisperGroupMembersTable).omit({ createdAt: true });
 export type InsertWhisperGroupMember = z.infer<typeof insertWhisperGroupMemberSchema>;

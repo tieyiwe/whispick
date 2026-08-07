@@ -1,4 +1,4 @@
-import { pgTable, text, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, timestamp, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -12,7 +12,12 @@ export const whispCategoriesTable = pgTable("whisp_categories", {
   rank: integer("rank").notNull(), // 1 (best fit) .. 3 (least, among the chosen top 3)
   score: integer("score").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [
+  // Not in the original punch list, but the same FK-shaped-column-with-no-
+  // index gap: matching.ts, categorizeWhisp.ts, and routes/admin.ts all
+  // filter this table by whispId.
+  index("whisp_categories_whisp_id_idx").on(table.whispId),
+]);
 
 export const insertWhispCategorySchema = createInsertSchema(whispCategoriesTable).omit({ createdAt: true });
 export type InsertWhispCategory = z.infer<typeof insertWhispCategorySchema>;

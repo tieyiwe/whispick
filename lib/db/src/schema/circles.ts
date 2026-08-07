@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -19,7 +19,14 @@ export const circleMembersTable = pgTable("circle_members", {
   circleId: text("circle_id").notNull(),
   userId: text("user_id").notNull(),
   joinedAt: timestamp("joined_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [
+  // "is this user a member of this circle" membership checks (routes/circles.ts, routes/whisps.ts).
+  index("circle_members_circle_id_user_id_idx").on(table.circleId, table.userId),
+  // "every circle this user belongs to" (routes/circles.ts) and cascading
+  // deletes on account removal (routes/admin.ts) both filter by userId
+  // alone — not served by the composite index above.
+  index("circle_members_user_id_idx").on(table.userId),
+]);
 
 export const insertCircleMemberSchema = createInsertSchema(circleMembersTable).omit({ joinedAt: true });
 export type InsertCircleMember = z.infer<typeof insertCircleMemberSchema>;

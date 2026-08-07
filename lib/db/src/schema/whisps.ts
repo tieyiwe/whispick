@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, numeric, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, numeric, integer, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -81,7 +81,16 @@ export const whispsTable = pgTable("whisps", {
   aiTakeawayStatus: text("ai_takeaway_status"), // null (not attempted yet) | 'ready' | 'unavailable'
   aiTakeawayGeneratedAt: timestamp("ai_takeaway_generated_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [
+  // publicToken already gets an index for free from its unique() constraint
+  // above — not duplicated here. The rest back the admin panel's list/detail
+  // queries (routes/admin.ts) and the sender-scoped lookups every
+  // user-facing whisp list/dashboard query does (routes/whisps.ts).
+  index("whisps_sender_id_idx").on(table.senderId),
+  index("whisps_status_idx").on(table.status),
+  index("whisps_recipient_email_idx").on(table.recipientEmail),
+  index("whisps_recipient_phone_idx").on(table.recipientPhone),
+]);
 
 export const insertWhispSchema = createInsertSchema(whispsTable).omit({ createdAt: true });
 export type InsertWhisp = z.infer<typeof insertWhispSchema>;

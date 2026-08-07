@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -9,7 +9,9 @@ export const trackingEventsTable = pgTable("tracking_events", {
   userAgent: text("user_agent"),
   ipHash: text("ip_hash"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [
+  index("tracking_events_whisp_id_idx").on(table.whispId),
+]);
 
 export const insertTrackingEventSchema = createInsertSchema(trackingEventsTable).omit({ createdAt: true });
 export type InsertTrackingEvent = z.infer<typeof insertTrackingEventSchema>;
