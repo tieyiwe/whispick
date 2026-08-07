@@ -17,6 +17,7 @@ import { requireAuth } from "../lib/auth";
 import { ensureUser } from "../lib/ensureUser";
 import { getPublicAppUrl } from "../lib/publicUrl";
 import { deliverWhisperLink } from "../lib/deliver";
+import { revealRequestHookLine } from "../lib/copy";
 import { categorizeWhispAsync } from "../lib/categorizeWhisp";
 import { moderateWhispAsync } from "../lib/moderation";
 import { needsDemographics } from "../lib/demographics";
@@ -546,6 +547,17 @@ router.post("/:id/reveal", requireAuth, async (req, res): Promise<void> => {
 
   const updated = await db.select().from(whispsTable).where(eq(whispsTable.id, whisp.id)).then(r => r[0]);
   res.json(updated);
+
+  // Notify the recipient a reveal is pending — otherwise they'd only ever
+  // find out by coincidentally reopening an already-delivered link. Only
+  // whisper_link/group_whisper deliveries have a single recipient contact +
+  // channel to notify on (whisperChannel is null for circle_drop/ghost_boost,
+  // and deliverWhisperLink already no-ops safely if it's not set). Fire and
+  // forget: whether this notification goes out shouldn't affect the reveal
+  // request itself, already saved and returned above.
+  if (whisp.whisperChannel) {
+    void deliverWhisperLink(whisp, getPublicAppUrl(req), revealRequestHookLine(), "reveal_request");
+  }
 });
 
 // PATCH /api/whisps/:id/reveal — called by the (unauthenticated) recipient,

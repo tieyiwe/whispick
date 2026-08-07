@@ -13,7 +13,8 @@ export type DeliveryPurpose =
   | "reply_notification"
   | "appreciation_notification"
   | "subscription_verification"
-  | "media_expiring";
+  | "media_expiring"
+  | "reveal_request";
 
 export type DeliveryLogContext = {
   // Nullable at the type level for sends that aren't about any one whisp
