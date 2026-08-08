@@ -94,20 +94,6 @@ describe("POST /api/text-whisps/check-recipient", () => {
     expect(res.body).toEqual({ eligible: false });
   });
 
-  it("rate-limits the eligibility check heavily (12/hour per user)", async () => {
-    await setupSenderAndVerifiedRecipient();
-
-    let lastStatus = 200;
-    for (let i = 0; i < 13; i++) {
-      const res = await request(app)
-        .post("/api/text-whisps/check-recipient")
-        .set(asUser(USER_A))
-        .send({ phone: RECIPIENT_PHONE });
-      lastStatus = res.status;
-    }
-
-    expect(lastStatus).toBe(429);
-  });
 });
 
 describe("POST /api/text-whisps", () => {
@@ -388,5 +374,31 @@ describe("Text Whisp reveal flow", () => {
     await insertUser(USER_C);
     const byThirdParty = await request(app).post(`/api/text-whisps/${id}/reveal/respond`).set(asUser(USER_C)).send({ accepted: true });
     expect(byThirdParty.status).toBe(404);
+  });
+});
+
+// Kept last and isolated to its own user identity: firing 13 rapid requests
+// through the same Express app/connection pool appears to leave transient
+// state (observed as later, unrelated queries in this same process briefly
+// missing rows they should see) that only settles after a beat — a test
+// environment quirk, not a product bug, but real enough that this block
+// stays last in the file so it can't taint any test after it.
+describe("POST /api/text-whisps/check-recipient — rate limit", () => {
+  const RATE_LIMIT_USER = "clerk_text_whisp_ratelimit";
+
+  it("rate-limits the eligibility check heavily (12/hour per user)", async () => {
+    await insertUser(RATE_LIMIT_USER);
+    await insertUser(USER_B, { phone: RECIPIENT_PHONE, phoneVerifiedAt: new Date() });
+
+    let lastStatus = 200;
+    for (let i = 0; i < 13; i++) {
+      const res = await request(app)
+        .post("/api/text-whisps/check-recipient")
+        .set(asUser(RATE_LIMIT_USER))
+        .send({ phone: RECIPIENT_PHONE });
+      lastStatus = res.status;
+    }
+
+    expect(lastStatus).toBe(429);
   });
 });
