@@ -107,3 +107,18 @@ export const createTextWhispLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: authKeyGenerator,
 });
+
+// POST /:id/reveal (routes/textWhisps.ts) is the one remaining place a
+// sender can learn whether a Text Whisp's recipient phone number matched a
+// verified account: it 400s with "hasn't joined yet" if not, succeeds (and
+// notifies the recipient) if so. Every other response in that route
+// deliberately omits recipientUserId to avoid exposing this cheaply and
+// silently — this limiter makes the one remaining, unavoidable signal
+// expensive and noisy to probe at scale instead of free.
+export const textWhispRevealLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: authKeyGenerator,
+});

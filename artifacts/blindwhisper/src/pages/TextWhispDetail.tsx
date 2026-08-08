@@ -77,7 +77,7 @@ export function TextWhispDetail() {
 
   const { textWhisp, replies } = data;
   const isSender = profile?.id === textWhisp.senderId;
-  const isRecipient = profile?.id === textWhisp.recipientUserId;
+  const isRecipient = textWhisp.viewerIsRecipient;
   // The recipient gets the closed-scroll "moment"; the sender (viewing their
   // own sent message) sees it already open — there's nothing to unwrap for
   // the person who wrote it.
@@ -255,12 +255,16 @@ export function TextWhispDetail() {
               </CardContent>
             </Card>
 
-            {/* Reveal flow — only offered once the recipient is a real
-                account holder (recipientUserId set). A Text Whisp sent to a
-                phone number that hasn't signed up yet has no one to reveal
-                to (or notify) — see routes/textWhisps.ts POST /:id/reveal's
-                "hasn't joined yet" gate. */}
-            {isSender && !textWhisp.revealRequested && textWhisp.recipientUserId && (
+            {/* Reveal flow — the button is always offered to the sender; the
+                API alone decides (and reports, via a toast on failure)
+                whether the recipient has actually joined yet. This is
+                deliberate: the frontend never pre-checks or displays
+                eligibility ahead of time, since that would let a sender
+                learn whether an arbitrary phone number belongs to a
+                verified Blind Whisper account without ever attempting a
+                reveal — see routes/textWhisps.ts's toResponse() and its
+                ANTI-ENUMERATION comment. */}
+            {isSender && !textWhisp.revealRequested && (
               <Button
                 variant="outline"
                 className="w-full rounded-full border-primary/30 hover:bg-primary/10 hover:text-primary"
@@ -271,11 +275,6 @@ export function TextWhispDetail() {
                 {requestReveal.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
                 Reveal Yourself
               </Button>
-            )}
-            {isSender && !textWhisp.revealRequested && !textWhisp.recipientUserId && (
-              <p className="text-xs text-muted-foreground text-center" data-testid="text-reveal-unavailable-not-joined">
-                They haven't signed up yet — you'll be able to reveal yourself once they do.
-              </p>
             )}
             {isSender && textWhisp.revealRequested && (
               <Card className="bg-primary/10 border-primary/20">

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { getAuth } from "@clerk/express";
-import { db, textWhispsTable, textWhispRepliesTable } from "@workspace/db";
+import { db, textWhispsTable, textWhispRepliesTable, type TextWhisp } from "@workspace/db";
 import { eq, and, or, isNull, asc, desc } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { z } from "zod";
@@ -8,7 +8,7 @@ import { requireAuth } from "../lib/auth";
 import { ensureUser } from "../lib/ensureUser";
 import { findVerifiedRecipient, deliverInApp } from "../lib/deliver";
 import { moderateTextWhispAsync } from "../lib/moderation";
-import { createTextWhispLimiter } from "../lib/rateLimit";
+import { createTextWhispLimiter, textWhispRevealLimiter } from "../lib/rateLimit";
 import { normalizePhoneE164 } from "../lib/phone";
 import { sendSms, textWhispGuestSmsBody } from "../lib/sms";
 import { getPublicAppUrl } from "../lib/publicUrl";
@@ -53,6 +53,24 @@ async function loadTextWhispForUser(id: string, userId: string) {
   return textWhisp;
 }
 
+// ANTI-ENUMERATION: strips recipientUserId from every response this route
+// sends back, replacing it with viewerIsRecipient — true only when the
+// CALLER's own id matches it. That's always safe to reveal (it's a fact
+// about the caller themselves, which they already know), whereas the raw
+// recipientUserId's null-vs-set-to-someone-else-ness is not: a sender could
+// otherwise read it straight off the create/list/detail response to learn
+// whether an arbitrary phone number belongs to a verified Blind Whisper
+// account with zero cost and zero trace, defeating the same anti-
+// enumeration guarantee lib/deliver.ts's ANTI-ENUMERATION comment describes
+// for whisps. The one remaining, unavoidable place this fact becomes
+// observable is POST /:id/reveal's success/400 response — see its own
+// comment and textWhispRevealLimiter for why that's an acceptable,
+// deliberately narrower and rate-limited exception.
+function toResponse(textWhisp: TextWhisp, viewerId: string) {
+  const { recipientUserId, ...rest } = textWhisp;
+  return { ...rest, viewerIsRecipient: recipientUserId === viewerId };
+}
+
 // GET /api/text-whisps — the authenticated user's own text whisps, sent and
 // received, excluding ones they (as sender) soft-deleted.
 router.get("/", requireAuth, async (req, res): Promise<void> => {
@@ -73,7 +91,7 @@ router.get("/", requireAuth, async (req, res): Promise<void> => {
     )
     .orderBy(desc(textWhispsTable.createdAt));
 
-  res.json(rows);
+  res.json(rows.map((row) => toResponse(row, user.id)));
 });
 
 // POST /api/text-whisps
@@ -133,7 +151,7 @@ router.post("/", requireAuth, createTextWhispLimiter, async (req, res): Promise<
   // call above this line, and do not let its result or timing change what's
   // sent back here.
   const textWhisp = await db.select().from(textWhispsTable).where(eq(textWhispsTable.id, id)).then((r) => r[0]);
-  res.status(201).json(textWhisp);
+  res.status(201).json(toResponse(textWhisp, user.id));
 
   const logCtx = { whispId: null, purpose: "text_whisp" as const };
   if (matched) {
@@ -177,11 +195,11 @@ router.get("/:id", requireAuth, async (req, res): Promise<void> => {
       .set({ readAt: new Date(), status: textWhisp.status === "replied" ? "replied" : "read" })
       .where(eq(textWhispsTable.id, textWhisp.id));
     const refreshed = await db.select().from(textWhispsTable).where(eq(textWhispsTable.id, textWhisp.id)).then((r) => r[0]!);
-    res.json({ textWhisp: refreshed, replies });
+    res.json({ textWhisp: toResponse(refreshed, user.id), replies });
     return;
   }
 
-  res.json({ textWhisp, replies });
+  res.json({ textWhisp: toResponse(textWhisp, user.id), replies });
 });
 
 // DELETE /api/text-whisps/:id — soft delete, sender only. Same semantics as
@@ -286,6 +304,12 @@ router.post("/:id/replies", requireAuth, async (req, res): Promise<void> => {
 // the sender specifically, unlike whisps.ts (no unauthenticated recipient
 // exists here, so both reveal endpoints can just check the caller's role
 // directly instead of trusting an unauthenticated public token).
+// Applied via a separate router.use() rather than inline in router.post()
+// — see the identical fix/comment on routes/whisps.ts's and
+// routes/invites.ts's PATCH /:id/reveal for why: express-rate-limit's own
+// explicit RequestHandler typing, mixed into the same route-registration
+// call as the handler below, widens this route's own :id param inference.
+router.use("/:id/reveal", textWhispRevealLimiter);
 router.post("/:id/reveal", requireAuth, async (req, res): Promise<void> => {
   const { userId } = getAuth(req);
   const user = await ensureUser(userId!, req);
@@ -314,7 +338,7 @@ router.post("/:id/reveal", requireAuth, async (req, res): Promise<void> => {
 
   await db.update(textWhispsTable).set({ revealRequested: true }).where(eq(textWhispsTable.id, textWhisp.id));
   const updated = await db.select().from(textWhispsTable).where(eq(textWhispsTable.id, textWhisp.id)).then((r) => r[0]);
-  res.json(updated);
+  res.json(toResponse(updated, user.id));
 
   void deliverInApp(
     textWhisp.recipientUserId,

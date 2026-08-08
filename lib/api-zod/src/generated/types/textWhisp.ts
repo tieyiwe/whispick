@@ -9,11 +9,8 @@
 export interface TextWhisp {
   id: string;
   senderId: string;
-  /**
-     * Set only when recipientPhone matched a known, OTP-verified Blind Whisper account at send time. Null means it went out as a guest link over SMS instead — see recipientPhone and publicToken.
-     * @nullable
-     */
-  recipientUserId: string | null;
+  /** True only if the authenticated caller IS this Text Whisp's recipient. Deliberately caller-relative and self-referential (safe for a sender to see, since it's always false for their own sent messages) rather than exposing the underlying recipientUserId, which would let a sender learn whether an arbitrary phone number belongs to a verified Blind Whisper account. */
+  viewerIsRecipient: boolean;
   /** The E.164-normalized phone number provided at send time, regardless of whether it matched a user. */
   recipientPhone: string;
   /** Token for the public guest landing page (/tw/{publicToken}, see GET /public/text-whisps/{token}). Always set, even for a matched in-app send. */

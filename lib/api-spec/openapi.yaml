@@ -2566,9 +2566,9 @@ components:
           type: string
         senderId:
           type: string
-        recipientUserId:
-          type: ["string", "null"]
-          description: Set only when recipientPhone matched a known, OTP-verified Blind Whisper account at send time. Null means it went out as a guest link over SMS instead — see recipientPhone and publicToken.
+        viewerIsRecipient:
+          type: boolean
+          description: True only if the authenticated caller IS this Text Whisp's recipient. Deliberately caller-relative and self-referential (safe for a sender to see, since it's always false for their own sent messages) rather than exposing the underlying recipientUserId, which would let a sender learn whether an arbitrary phone number belongs to a verified Blind Whisper account.
         recipientPhone:
           type: string
           description: The E.164-normalized phone number provided at send time, regardless of whether it matched a user.
@@ -2594,7 +2594,7 @@ components:
       required:
         - id
         - senderId
-        - recipientUserId
+        - viewerIsRecipient
         - recipientPhone
         - publicToken
         - messageText

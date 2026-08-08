@@ -97,10 +97,13 @@ describe("POST /api/text-whisps", () => {
 
     expect(res.status).toBe(201);
     expect(res.body.status).toBe("sent");
-    expect(res.body.recipientUserId).toBe(recipientId);
     expect(res.body.recipientPhone).toBe(RECIPIENT_PHONE);
     expect(res.body.publicToken).toBeTruthy();
     expect(res.body.messageText).toBe("You matter.");
+    // ANTI-ENUMERATION: the sender's own response must never say whether the
+    // number matched — see toResponse()'s comment in routes/textWhisps.ts.
+    expect(res.body.recipientUserId).toBeUndefined();
+    expect(res.body.viewerIsRecipient).toBe(false);
 
     const row = await db.select().from(textWhispsTable).where(eq(textWhispsTable.id, res.body.id)).then((r) => r[0]);
     expect(row).toBeTruthy();
@@ -116,10 +119,13 @@ describe("POST /api/text-whisps", () => {
       .send({ recipientPhone: "+15550000000", messageText: "Hey there." });
 
     expect(res.status).toBe(201);
-    expect(res.body.recipientUserId).toBeNull();
     expect(res.body.recipientPhone).toBe("+15550000000");
     expect(res.body.publicToken).toBeTruthy();
     expect(typeof res.body.publicToken).toBe("string");
+    // Identical response shape to the matched case above — the sender can't
+    // tell a match from a non-match apart from either response.
+    expect(res.body.recipientUserId).toBeUndefined();
+    expect(res.body.viewerIsRecipient).toBe(false);
 
     const row = await db.select().from(textWhispsTable).where(eq(textWhispsTable.id, res.body.id)).then((r) => r[0]);
     expect(row).toBeTruthy();
@@ -138,7 +144,52 @@ describe("POST /api/text-whisps", () => {
       .send({ recipientPhone: RECIPIENT_PHONE, messageText: "hello" });
 
     expect(res.status).toBe(201);
-    expect(res.body.recipientUserId).toBeNull();
+    const row = await db.select().from(textWhispsTable).where(eq(textWhispsTable.id, res.body.id)).then((r) => r[0]);
+    expect(row.recipientUserId).toBeNull();
+  });
+
+  it("never includes recipientUserId in any sender-facing response, whether matched or not (anti-enumeration)", async () => {
+    // Dedicated users/phones rather than USER_A/USER_B — this test alone
+    // makes 2 creates plus a list and a detail call, and USER_A's shared
+    // createTextWhispLimiter budget is already exercised by every other
+    // test above; reusing it here risks tripping the limiter for whichever
+    // test runs after this one in the same file/process.
+    const ENUM_SENDER = "clerk_text_whisp_enum_sender";
+    const ENUM_RECIPIENT = "clerk_text_whisp_enum_recipient";
+    const ENUM_RECIPIENT_PHONE = "+15557778888";
+    await insertUser(ENUM_SENDER);
+    const recipientId = await insertUser(ENUM_RECIPIENT, { phone: ENUM_RECIPIENT_PHONE, phoneVerifiedAt: new Date() });
+
+    const matched = await request(app)
+      .post("/api/text-whisps")
+      .set(asUser(ENUM_SENDER))
+      .send({ recipientPhone: ENUM_RECIPIENT_PHONE, messageText: "matched" });
+    const unmatched = await request(app)
+      .post("/api/text-whisps")
+      .set(asUser(ENUM_SENDER))
+      .send({ recipientPhone: "+15559998888", messageText: "unmatched" });
+
+    for (const res of [matched, unmatched]) {
+      expect("recipientUserId" in res.body).toBe(false);
+    }
+
+    const list = await request(app).get("/api/text-whisps").set(asUser(ENUM_SENDER));
+    expect(list.status).toBe(200);
+    for (const item of list.body) {
+      expect("recipientUserId" in item).toBe(false);
+    }
+
+    const detail = await request(app).get(`/api/text-whisps/${matched.body.id}`).set(asUser(ENUM_SENDER));
+    expect(detail.status).toBe(200);
+    expect("recipientUserId" in detail.body.textWhisp).toBe(false);
+
+    // Confirm the underlying DB rows genuinely did differ (matched vs not) —
+    // the point isn't that matching never happens, only that the sender's
+    // own API responses never reveal which one occurred.
+    const matchedRow = await db.select().from(textWhispsTable).where(eq(textWhispsTable.id, matched.body.id)).then((r) => r[0]);
+    const unmatchedRow = await db.select().from(textWhispsTable).where(eq(textWhispsTable.id, unmatched.body.id)).then((r) => r[0]);
+    expect(matchedRow.recipientUserId).toBe(recipientId);
+    expect(unmatchedRow.recipientUserId).toBeNull();
   });
 });
 
@@ -363,7 +414,8 @@ describe("Text Whisp reveal flow", () => {
       .post("/api/text-whisps")
       .set(asUser(USER_A))
       .send({ recipientPhone: "+15550001111", messageText: "hi there" });
-    expect(create.body.recipientUserId).toBeNull();
+    const createdRow = await db.select().from(textWhispsTable).where(eq(textWhispsTable.id, create.body.id)).then((r) => r[0]);
+    expect(createdRow.recipientUserId).toBeNull();
 
     const res = await request(app).post(`/api/text-whisps/${create.body.id}/reveal`).set(asUser(USER_A));
     expect(res.status).toBe(400);
@@ -389,7 +441,8 @@ describe("Text Whisp sent to a non-user phone number", () => {
 
     const senderGet = await request(app).get(`/api/text-whisps/${id}`).set(asUser(USER_A));
     expect(senderGet.status).toBe(200);
-    expect(senderGet.body.textWhisp.recipientUserId).toBeNull();
+    expect("recipientUserId" in senderGet.body.textWhisp).toBe(false);
+    expect(senderGet.body.textWhisp.viewerIsRecipient).toBe(false);
 
     await insertUser(USER_C);
     const thirdPartyGet = await request(app).get(`/api/text-whisps/${id}`).set(asUser(USER_C));
