@@ -124,6 +124,58 @@ export async function moderateWhispAsync(whisp: ModeratableWhisp): Promise<void>
   }
 }
 
+// Text Whisps (text_whisps.ts) are free-text, user-to-user messages — just
+// as capable of being used for harassment as a whisp's note/title, so they
+// get the same content-safety pass. Reuses the exact same classifier
+// (SYSTEM_PROMPT, parseVerdict, WARNING_THRESHOLD) rather than a parallel
+// implementation; only the "what am I assessing" input differs (a single
+// message, no video/title/transcript). Fire-and-forget, same posture as
+// moderateWhispAsync — never on the request's critical path. Covers both a
+// text whisp's initial messageText and any reply's replyText (see
+// routes/textWhisps.ts, which calls this after both), keeping with the
+// product ask that a reply is just as much a moderation surface as the
+// original message. Persists to the same moderation_flags table as
+// moderateWhispAsync, but with textWhispId set (and whispId left null) and
+// contentType 'text_whisp' — see that column's comment in
+// moderation_flags.ts for why the table is shared instead of split.
+export async function moderateTextWhispAsync(input: { textWhispId: string; senderId: string; text: string }): Promise<void> {
+  if (!ANTHROPIC_API_KEY) {
+    logger.warn({ textWhispId: input.textWhispId }, "ANTHROPIC_API_KEY not set; skipping content moderation pass");
+    return;
+  }
+
+  const text = input.text.trim();
+  if (!text) return;
+
+  try {
+    const response = await getClient().messages.create({
+      model: MODEL,
+      max_tokens: 200,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: "user", content: `Video title: (none)\n\nSender's note: <note>\n${text.slice(0, 500)}\n</note>\n\nVideo transcript: (unavailable)` }],
+    });
+
+    const responseText = response.content.find((block) => block.type === "text")?.text?.trim();
+    const verdict = responseText ? parseVerdict(responseText) : null;
+    if (!verdict || verdict.severity === "none") return;
+
+    await db.insert(moderationFlagsTable).values({
+      id: randomUUID(),
+      whispId: null,
+      textWhispId: input.textWhispId,
+      contentType: "text_whisp",
+      userId: input.senderId,
+      severity: verdict.severity,
+      reasoning: verdict.reason,
+      source: "ai_classifier",
+    });
+
+    await maybeWarnUser(input.senderId);
+  } catch (err) {
+    logger.warn({ err, textWhispId: input.textWhispId }, "Content moderation pass failed");
+  }
+}
+
 // Once a user crosses WARNING_THRESHOLD non-dismissed flags, send a real,
 // visible warning — not a silent log line — through the same in-app
 // notification system admins use (see routes/admin.ts's POST

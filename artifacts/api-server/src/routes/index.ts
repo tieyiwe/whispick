@@ -14,6 +14,9 @@ import whisperGroupsRouter from "./whisperGroups";
 import mediaRouter from "./media";
 import subscribeRouter from "./subscribe";
 import suggestionsRouter from "./suggestions";
+import invitesRouter from "./invites";
+import publicInvitesRouter from "./publicInvites";
+import textWhispsRouter from "./textWhisps";
 import { publicEndpointLimiter } from "../lib/rateLimit";
 
 const router: IRouter = Router();
@@ -34,6 +37,7 @@ router.use("/public", publicEndpointLimiter);
 router.use("/public", publicRouter);
 router.use("/public", circleRouter);
 router.use("/public", subscribeRouter);
+router.use("/public", publicInvitesRouter);
 router.use("/circles", circlesRouter);
 router.use("/user", userRouter);
 router.use("/credits", creditsRouter);
@@ -43,5 +47,7 @@ router.use("/admin", adminRouter);
 router.use("/whisper-groups", whisperGroupsRouter);
 router.use("/media", mediaRouter);
 router.use("/suggestions", suggestionsRouter);
+router.use("/invites", invitesRouter);
+router.use("/text-whisps", textWhispsRouter);
 
 export default router;

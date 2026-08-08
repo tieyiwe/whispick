@@ -30,6 +30,10 @@ tags:
     description: Saved contact groups for sending one whisp to several people at once, anonymously
   - name: suggestions
     description: Admin-curated + AI-discovered Suggestions Library
+  - name: invites
+    description: Anonymous invite-a-friend — inviting someone to join Blind Whisper itself, sent the same anonymous way as a whisp
+  - name: textWhisps
+    description: Text Whisps — short, text-only anonymous messages between two known, verified Blind Whisper users, delivered entirely in-app
 paths:
   /healthz:
     get:
@@ -226,6 +230,355 @@ paths:
                 $ref: "#/components/schemas/RevealResult"
         "400":
           description: No reveal was requested for this whisp
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /invites:
+    get:
+      operationId: listInvites
+      tags: [invites]
+      summary: List invites sent by the current user
+      responses:
+        "200":
+          description: List of invites
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Invite"
+    post:
+      operationId: createInvite
+      tags: [invites]
+      summary: Send an anonymous invite to join Blind Whisper
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InviteInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Invite"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /invites/claim:
+    post:
+      operationId: claimInvite
+      tags: [invites]
+      summary: Attribute the current (just signed-up) account back to the invite that brought them here
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClaimInviteInput"
+      responses:
+        "200":
+          description: Claimed (or a no-op if already claimed or self-invite)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClaimInviteResult"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /invites/{id}/reveal:
+    post:
+      operationId: requestInviteReveal
+      tags: [invites]
+      summary: Inviter requests to reveal their identity to a joined invitee
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Reveal requested
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Invite"
+        "400":
+          description: This invite hasn't been joined yet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    patch:
+      operationId: respondInviteReveal
+      tags: [invites]
+      summary: Invitee responds to reveal request
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevealResponse"
+      responses:
+        "200":
+          description: Reveal response recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevealResult"
+        "400":
+          description: No reveal was requested for this invite
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/invites/{token}:
+    get:
+      operationId: getPublicInvite
+      tags: [public]
+      summary: Public invite landing page data (no auth required)
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Public invite data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicInvite"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /text-whisps/check-recipient:
+    post:
+      operationId: checkTextWhispRecipient
+      tags: [textWhisps]
+      summary: Check whether a phone number is eligible for a Text Whisp (a known, OTP-verified Blind Whisper user) — returns only a boolean, heavily rate-limited
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckTextWhispRecipientInput"
+      responses:
+        "200":
+          description: Eligibility result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckTextWhispRecipientResult"
+        "429":
+          description: Too many eligibility checks
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /text-whisps:
+    get:
+      operationId: listTextWhisps
+      tags: [textWhisps]
+      summary: List the current user's own Text Whisps (sent and received)
+      responses:
+        "200":
+          description: List of Text Whisps
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TextWhisp"
+    post:
+      operationId: createTextWhisp
+      tags: [textWhisps]
+      summary: Send a new Text Whisp to a known, verified recipient
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TextWhispInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TextWhisp"
+        "400":
+          description: Bad request, or the recipient isn't eligible
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /text-whisps/{id}:
+    get:
+      operationId: getTextWhisp
+      tags: [textWhisps]
+      summary: Get a Text Whisp with its replies — sender or recipient only. Marks it read when the recipient opens it.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Text Whisp detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TextWhispDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      operationId: deleteTextWhisp
+      tags: [textWhisps]
+      summary: Soft delete a Text Whisp — sender only
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  /text-whisps/{id}/replies:
+    get:
+      operationId: listTextWhispReplies
+      tags: [textWhisps]
+      summary: Get replies for a Text Whisp — sender or recipient only
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Replies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TextWhispReply"
+    post:
+      operationId: createTextWhispReply
+      tags: [textWhisps]
+      summary: Reply to a Text Whisp — from either the sender or the recipient
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TextWhispReplyInput"
+      responses:
+        "201":
+          description: Reply created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TextWhispReply"
+
+  /text-whisps/{id}/reveal:
+    post:
+      operationId: requestTextWhispReveal
+      tags: [textWhisps]
+      summary: Sender requests to reveal their identity
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Reveal requested
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TextWhisp"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /text-whisps/{id}/reveal/respond:
+    post:
+      operationId: respondTextWhispReveal
+      tags: [textWhisps]
+      summary: Recipient accepts or declines a reveal request
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevealResponse"
+      responses:
+        "200":
+          description: Reveal response recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevealResult"
+        "400":
+          description: No reveal was requested for this Text Whisp
           content:
             application/json:
               schema:
@@ -2200,6 +2553,198 @@ components:
         - revealRequested
         - revealAccepted
 
+    CheckTextWhispRecipientInput:
+      type: object
+      properties:
+        phone:
+          type: string
+      required:
+        - phone
+
+    CheckTextWhispRecipientResult:
+      type: object
+      description: Deliberately only a boolean — no user id, name, or any other field. See POST /text-whisps/check-recipient's own description.
+      properties:
+        eligible:
+          type: boolean
+      required:
+        - eligible
+
+    TextWhisp:
+      type: object
+      properties:
+        id:
+          type: string
+        senderId:
+          type: string
+        recipientUserId:
+          type: string
+        senderAlias:
+          type: ["string", "null"]
+        messageText:
+          type: string
+          maxLength: 260
+        status:
+          type: string
+          description: "'sent' | 'read' | 'replied'"
+        revealRequested:
+          type: boolean
+        revealAccepted:
+          type: ["boolean", "null"]
+        readAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - senderId
+        - recipientUserId
+        - messageText
+        - status
+        - revealRequested
+        - createdAt
+
+    TextWhispInput:
+      type: object
+      properties:
+        recipientPhone:
+          type: string
+        messageText:
+          type: string
+          maxLength: 260
+        senderAlias:
+          type: ["string", "null"]
+      required:
+        - recipientPhone
+        - messageText
+
+    TextWhispDetail:
+      type: object
+      properties:
+        textWhisp:
+          $ref: "#/components/schemas/TextWhisp"
+        replies:
+          type: array
+          items:
+            $ref: "#/components/schemas/TextWhispReply"
+      required:
+        - textWhisp
+        - replies
+
+    TextWhispReply:
+      type: object
+      properties:
+        id:
+          type: string
+        textWhispId:
+          type: string
+        senderId:
+          type: string
+        replyText:
+          type: string
+          maxLength: 260
+        createdAt:
+          type: string
+      required:
+        - id
+        - textWhispId
+        - senderId
+        - replyText
+        - createdAt
+
+    TextWhispReplyInput:
+      type: object
+      properties:
+        replyText:
+          type: string
+          maxLength: 260
+      required:
+        - replyText
+
+    Invite:
+      type: object
+      properties:
+        id:
+          type: string
+        inviterUserId:
+          type: string
+        recipientEmail:
+          type: ["string", "null"]
+        recipientPhone:
+          type: ["string", "null"]
+        channel:
+          type: string
+        publicToken:
+          type: string
+        status:
+          type: string
+        signedUpUserId:
+          type: ["string", "null"]
+        signedUpAt:
+          type: ["string", "null"]
+        revealRequested:
+          type: boolean
+        revealAccepted:
+          type: ["boolean", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - inviterUserId
+        - channel
+        - publicToken
+        - status
+        - revealRequested
+        - createdAt
+
+    InviteInput:
+      type: object
+      properties:
+        recipientEmail:
+          type: ["string", "null"]
+        recipientPhone:
+          type: ["string", "null"]
+        channel:
+          type: string
+      required:
+        - channel
+
+    ClaimInviteInput:
+      type: object
+      properties:
+        token:
+          type: string
+      required:
+        - token
+
+    ClaimInviteResult:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        alreadyClaimed:
+          type: boolean
+        selfInvite:
+          type: boolean
+      required:
+        - ok
+
+    PublicInvite:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+        revealRequested:
+          type: boolean
+        revealAccepted:
+          type: ["boolean", "null"]
+      required:
+        - id
+        - status
+        - revealRequested
+
     VideoMetaRequest:
       type: object
       properties:
@@ -2699,12 +3244,22 @@ components:
         id:
           type: string
         whispId:
+          type: ["string", "null"]
+          description: Set when contentType is 'whisp'; null when it's 'text_whisp'.
+        textWhispId:
+          type: ["string", "null"]
+          description: Set when contentType is 'text_whisp'; null when it's 'whisp'.
+        contentType:
           type: string
+          description: "'whisp' | 'text_whisp'"
         userId:
           type: string
         videoTitle:
           type: ["string", "null"]
-          description: The flagged whisp's video title, denormalized for display in flag lists without a second lookup.
+          description: The flagged whisp's video title, denormalized for display in flag lists without a second lookup. Null for a text_whisp flag.
+        textWhispMessage:
+          type: ["string", "null"]
+          description: The flagged text whisp's message text, denormalized for display the same way videoTitle is. Null for a whisp flag.
         senderEmail:
           type: ["string", "null"]
         severity:
@@ -2725,8 +3280,8 @@ components:
           type: string
       required:
         - id
-        - whispId
         - userId
+        - contentType
         - severity
         - reasoning
         - source
@@ -3280,6 +3835,30 @@ components:
               type: number
               description: Percentage (0-100) of these sends that were routed in-app instead of through Twilio.
           required: [inApp, twilio, matchRate]
+        invites:
+          type: object
+          description: Anonymous invite-a-friend (routes/invites.ts) volume and how many actually converted into a real account.
+          properties:
+            sent:
+              type: integer
+            joined:
+              type: integer
+              description: Invites whose recipient actually created a Blind Whisper account via the invite link (status = 'joined').
+            conversionRate:
+              type: number
+              description: Percentage (0-100) of sent invites that converted to a joined account.
+          required: [sent, joined, conversionRate]
+        textWhisps:
+          type: object
+          description: Text Whisp (routes/textWhisps.ts) volume and how far it gets read/replied — a separate, text-only content type, not folded into the whisp funnel above.
+          properties:
+            sent:
+              type: integer
+            read:
+              type: integer
+            replied:
+              type: integer
+          required: [sent, read, replied]
       required:
         - funnel
         - deliveryByChannel
@@ -3287,6 +3866,8 @@ components:
         - circles
         - concierge
         - phoneMatchRouting
+        - invites
+        - textWhisps
 
     AdminChannelDeliveryStat:
       type: object

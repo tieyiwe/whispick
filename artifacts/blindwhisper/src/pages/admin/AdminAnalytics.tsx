@@ -193,6 +193,59 @@ export function AdminAnalytics() {
 
         <Card className="bg-card border-border/50">
           <CardHeader>
+            <CardTitle className="text-base font-serif">Invite a Friend</CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Anonymous invite-a-friend volume and how many actually converted into a real account.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {funnelLoading ? <Skeleton className="h-24 rounded-xl" /> : (
+              <>
+                <div className="flex items-center justify-between text-sm py-1.5 px-3 rounded-lg bg-muted/20">
+                  <span className="text-foreground">Invites sent</span>
+                  <span className="text-muted-foreground font-mono">{funnelStats?.invites.sent ?? 0}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm py-1.5 px-3 rounded-lg bg-muted/20">
+                  <span className="text-foreground">Joined</span>
+                  <span className="text-muted-foreground font-mono">
+                    {funnelStats?.invites.joined ?? 0} ({funnelStats?.invites.conversionRate ?? 0}%)
+                  </span>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-border/50">
+          <CardHeader>
+            <CardTitle className="text-base font-serif">Text Whisps</CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Short, text-only user-to-user messages, delivered entirely in-app. See Moderation for flagged content — Text Whisp
+              replies/messages run through the same content-safety pass as whisps.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {funnelLoading ? <Skeleton className="h-24 rounded-xl" /> : (
+              <>
+                <div className="flex items-center justify-between text-sm py-1.5 px-3 rounded-lg bg-muted/20">
+                  <span className="text-foreground">Sent</span>
+                  <span className="text-muted-foreground font-mono">{funnelStats?.textWhisps.sent ?? 0}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm py-1.5 px-3 rounded-lg bg-muted/20">
+                  <span className="text-foreground">Read</span>
+                  <span className="text-muted-foreground font-mono">{funnelStats?.textWhisps.read ?? 0}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm py-1.5 px-3 rounded-lg bg-muted/20">
+                  <span className="text-foreground">Replied</span>
+                  <span className="text-muted-foreground font-mono">{funnelStats?.textWhisps.replied ?? 0}</span>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-border/50">
+          <CardHeader>
             <CardTitle className="text-base font-serif">Most-sent video categories</CardTitle>
             <p className="text-xs text-muted-foreground">
               Ranked by weighted score — a video's #1-ranked category counts 3x, #2 counts 2x, #3 counts 1x, so this reflects which

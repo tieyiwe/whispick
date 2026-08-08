@@ -280,22 +280,35 @@ export function AdminUserDetail() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {moderationFlags.map((f) => (
-                <Link
-                  key={f.id}
-                  href={`/admin/whisps/${f.whispId}`}
-                  className={`block p-3 rounded-xl text-sm border transition-colors hover:bg-muted/30 ${f.dismissed ? "bg-muted/10 border-border/30 opacity-60" : "bg-card border-destructive/20"}`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="flex items-center gap-2">
-                      <Badge variant={f.dismissed ? "outline" : "destructive"} className="capitalize">{f.severity}</Badge>
-                      <span className="text-foreground truncate">{f.videoTitle || "Video"}</span>
-                    </span>
-                    <span className="text-xs text-muted-foreground shrink-0">{new Date(f.createdAt).toLocaleDateString()}</span>
-                  </div>
-                  <p className="text-muted-foreground text-xs">{f.reasoning}</p>
-                </Link>
-              ))}
+              {moderationFlags.map((f) => {
+                // Text Whisp flags (see moderation_flags.ts's contentType)
+                // have no admin whisp-detail page to deep-link into — shown
+                // as a static row with a short message excerpt instead of a
+                // clickable video title.
+                const isTextWhisp = f.contentType === "text_whisp";
+                const content = (
+                  <>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="flex items-center gap-2 min-w-0">
+                        <Badge variant={f.dismissed ? "outline" : "destructive"} className="capitalize shrink-0">{f.severity}</Badge>
+                        <span className="text-foreground truncate">
+                          {isTextWhisp ? `Text Whisp: "${(f.textWhispMessage ?? "").slice(0, 40)}${(f.textWhispMessage?.length ?? 0) > 40 ? "…" : ""}"` : f.videoTitle || "Video"}
+                        </span>
+                      </span>
+                      <span className="text-xs text-muted-foreground shrink-0">{new Date(f.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    <p className="text-muted-foreground text-xs">{f.reasoning}</p>
+                  </>
+                );
+                const rowClassName = `block p-3 rounded-xl text-sm border transition-colors ${isTextWhisp ? "" : "hover:bg-muted/30"} ${f.dismissed ? "bg-muted/10 border-border/30 opacity-60" : "bg-card border-destructive/20"}`;
+                return isTextWhisp ? (
+                  <div key={f.id} className={rowClassName}>{content}</div>
+                ) : (
+                  <Link key={f.id} href={`/admin/whisps/${f.whispId}`} className={rowClassName}>
+                    {content}
+                  </Link>
+                );
+              })}
             </CardContent>
           </Card>
         )}

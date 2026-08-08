@@ -10,7 +10,9 @@ import type { AdminFunnelStatsCircles } from './adminFunnelStatsCircles';
 import type { AdminFunnelStatsConcierge } from './adminFunnelStatsConcierge';
 import type { AdminFunnelStatsFunnel } from './adminFunnelStatsFunnel';
 import type { AdminFunnelStatsGhostBoost } from './adminFunnelStatsGhostBoost';
+import type { AdminFunnelStatsInvites } from './adminFunnelStatsInvites';
 import type { AdminFunnelStatsPhoneMatchRouting } from './adminFunnelStatsPhoneMatchRouting';
+import type { AdminFunnelStatsTextWhisps } from './adminFunnelStatsTextWhisps';
 
 export interface AdminFunnelStats {
   /** Sent → delivered → opened → watched → replied across every recipient-directed whisp (whisper_link, group_whisper, ghost_boost) — circle_drop is excluded since it has no single recipient to fall off for. */
@@ -22,4 +24,8 @@ export interface AdminFunnelStats {
   concierge: AdminFunnelStatsConcierge;
   /** Proof the Twilio-skip matching in lib/deliver.ts is saving money — every whisper_link/group_whisper SMS-or-WhatsApp send attempt (initial send, reminders, reveal-request, reply-to-recipient), split by whether it was routed in-app (recipient phone matched a known, OTP-verified user) or actually went through Twilio (unmatched). */
   phoneMatchRouting: AdminFunnelStatsPhoneMatchRouting;
+  /** Anonymous invite-a-friend (routes/invites.ts) volume and how many actually converted into a real account. */
+  invites: AdminFunnelStatsInvites;
+  /** Text Whisp (routes/textWhisps.ts) volume and how far it gets read/replied — a separate, text-only content type, not folded into the whisp funnel above. */
+  textWhisps: AdminFunnelStatsTextWhisps;
 }

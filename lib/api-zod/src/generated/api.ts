@@ -361,6 +361,324 @@ export const RespondRevealResponse = zod.object({
 
 
 /**
+ * @summary List invites sent by the current user
+ */
+export const ListInvitesResponseItem = zod.object({
+  "id": zod.string(),
+  "inviterUserId": zod.string(),
+  "recipientEmail": zod.string().nullish(),
+  "recipientPhone": zod.string().nullish(),
+  "channel": zod.string(),
+  "publicToken": zod.string(),
+  "status": zod.string(),
+  "signedUpUserId": zod.string().nullish(),
+  "signedUpAt": zod.string().nullish(),
+  "revealRequested": zod.boolean(),
+  "revealAccepted": zod.boolean().nullish(),
+  "createdAt": zod.string()
+})
+export const ListInvitesResponse = zod.array(ListInvitesResponseItem)
+
+
+/**
+ * @summary Send an anonymous invite to join Blind Whisper
+ */
+export const CreateInviteBody = zod.object({
+  "recipientEmail": zod.string().nullish(),
+  "recipientPhone": zod.string().nullish(),
+  "channel": zod.string()
+})
+
+export const CreateInviteResponse = zod.object({
+  "id": zod.string(),
+  "inviterUserId": zod.string(),
+  "recipientEmail": zod.string().nullish(),
+  "recipientPhone": zod.string().nullish(),
+  "channel": zod.string(),
+  "publicToken": zod.string(),
+  "status": zod.string(),
+  "signedUpUserId": zod.string().nullish(),
+  "signedUpAt": zod.string().nullish(),
+  "revealRequested": zod.boolean(),
+  "revealAccepted": zod.boolean().nullish(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Attribute the current (just signed-up) account back to the invite that brought them here
+ */
+export const ClaimInviteBody = zod.object({
+  "token": zod.string()
+})
+
+export const ClaimInviteResponse = zod.object({
+  "ok": zod.boolean(),
+  "alreadyClaimed": zod.boolean().optional(),
+  "selfInvite": zod.boolean().optional()
+})
+
+
+/**
+ * @summary Inviter requests to reveal their identity to a joined invitee
+ */
+export const RequestInviteRevealParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const RequestInviteRevealResponse = zod.object({
+  "id": zod.string(),
+  "inviterUserId": zod.string(),
+  "recipientEmail": zod.string().nullish(),
+  "recipientPhone": zod.string().nullish(),
+  "channel": zod.string(),
+  "publicToken": zod.string(),
+  "status": zod.string(),
+  "signedUpUserId": zod.string().nullish(),
+  "signedUpAt": zod.string().nullish(),
+  "revealRequested": zod.boolean(),
+  "revealAccepted": zod.boolean().nullish(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Invitee responds to reveal request
+ */
+export const RespondInviteRevealParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const RespondInviteRevealBody = zod.object({
+  "accepted": zod.boolean()
+})
+
+export const RespondInviteRevealResponse = zod.object({
+  "id": zod.string(),
+  "revealRequested": zod.boolean(),
+  "revealAccepted": zod.boolean()
+})
+
+
+/**
+ * @summary Public invite landing page data (no auth required)
+ */
+export const GetPublicInviteParams = zod.object({
+  "token": zod.coerce.string()
+})
+
+export const GetPublicInviteResponse = zod.object({
+  "id": zod.string(),
+  "status": zod.string(),
+  "revealRequested": zod.boolean(),
+  "revealAccepted": zod.boolean().nullish()
+})
+
+
+/**
+ * @summary Check whether a phone number is eligible for a Text Whisp (a known, OTP-verified Blind Whisper user) — returns only a boolean, heavily rate-limited
+ */
+export const CheckTextWhispRecipientBody = zod.object({
+  "phone": zod.string()
+})
+
+export const CheckTextWhispRecipientResponse = zod.object({
+  "eligible": zod.boolean()
+}).describe('Deliberately only a boolean — no user id, name, or any other field. See POST \/text-whisps\/check-recipient\'s own description.')
+
+
+/**
+ * @summary List the current user's own Text Whisps (sent and received)
+ */
+export const listTextWhispsResponseMessageTextMax = 260;
+
+
+
+export const ListTextWhispsResponseItem = zod.object({
+  "id": zod.string(),
+  "senderId": zod.string(),
+  "recipientUserId": zod.string(),
+  "senderAlias": zod.string().nullish(),
+  "messageText": zod.string().max(listTextWhispsResponseMessageTextMax),
+  "status": zod.string().describe('\'sent\' | \'read\' | \'replied\''),
+  "revealRequested": zod.boolean(),
+  "revealAccepted": zod.boolean().nullish(),
+  "readAt": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+export const ListTextWhispsResponse = zod.array(ListTextWhispsResponseItem)
+
+
+/**
+ * @summary Send a new Text Whisp to a known, verified recipient
+ */
+export const createTextWhispBodyMessageTextMax = 260;
+
+
+
+export const CreateTextWhispBody = zod.object({
+  "recipientPhone": zod.string(),
+  "messageText": zod.string().max(createTextWhispBodyMessageTextMax),
+  "senderAlias": zod.string().nullish()
+})
+
+export const createTextWhispResponseMessageTextMax = 260;
+
+
+
+export const CreateTextWhispResponse = zod.object({
+  "id": zod.string(),
+  "senderId": zod.string(),
+  "recipientUserId": zod.string(),
+  "senderAlias": zod.string().nullish(),
+  "messageText": zod.string().max(createTextWhispResponseMessageTextMax),
+  "status": zod.string().describe('\'sent\' | \'read\' | \'replied\''),
+  "revealRequested": zod.boolean(),
+  "revealAccepted": zod.boolean().nullish(),
+  "readAt": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Get a Text Whisp with its replies — sender or recipient only. Marks it read when the recipient opens it.
+ */
+export const GetTextWhispParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const getTextWhispResponseTextWhispMessageTextMax = 260;
+
+export const getTextWhispResponseRepliesItemReplyTextMax = 260;
+
+
+
+export const GetTextWhispResponse = zod.object({
+  "textWhisp": zod.object({
+  "id": zod.string(),
+  "senderId": zod.string(),
+  "recipientUserId": zod.string(),
+  "senderAlias": zod.string().nullish(),
+  "messageText": zod.string().max(getTextWhispResponseTextWhispMessageTextMax),
+  "status": zod.string().describe('\'sent\' | \'read\' | \'replied\''),
+  "revealRequested": zod.boolean(),
+  "revealAccepted": zod.boolean().nullish(),
+  "readAt": zod.string().nullish(),
+  "createdAt": zod.string()
+}),
+  "replies": zod.array(zod.object({
+  "id": zod.string(),
+  "textWhispId": zod.string(),
+  "senderId": zod.string(),
+  "replyText": zod.string().max(getTextWhispResponseRepliesItemReplyTextMax),
+  "createdAt": zod.string()
+}))
+})
+
+
+/**
+ * @summary Soft delete a Text Whisp — sender only
+ */
+export const DeleteTextWhispParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const DeleteTextWhispResponse = zod.void()
+
+
+/**
+ * @summary Get replies for a Text Whisp — sender or recipient only
+ */
+export const ListTextWhispRepliesParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const listTextWhispRepliesResponseReplyTextMax = 260;
+
+
+
+export const ListTextWhispRepliesResponseItem = zod.object({
+  "id": zod.string(),
+  "textWhispId": zod.string(),
+  "senderId": zod.string(),
+  "replyText": zod.string().max(listTextWhispRepliesResponseReplyTextMax),
+  "createdAt": zod.string()
+})
+export const ListTextWhispRepliesResponse = zod.array(ListTextWhispRepliesResponseItem)
+
+
+/**
+ * @summary Reply to a Text Whisp — from either the sender or the recipient
+ */
+export const CreateTextWhispReplyParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const createTextWhispReplyBodyReplyTextMax = 260;
+
+
+
+export const CreateTextWhispReplyBody = zod.object({
+  "replyText": zod.string().max(createTextWhispReplyBodyReplyTextMax)
+})
+
+export const createTextWhispReplyResponseReplyTextMax = 260;
+
+
+
+export const CreateTextWhispReplyResponse = zod.object({
+  "id": zod.string(),
+  "textWhispId": zod.string(),
+  "senderId": zod.string(),
+  "replyText": zod.string().max(createTextWhispReplyResponseReplyTextMax),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Sender requests to reveal their identity
+ */
+export const RequestTextWhispRevealParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const requestTextWhispRevealResponseMessageTextMax = 260;
+
+
+
+export const RequestTextWhispRevealResponse = zod.object({
+  "id": zod.string(),
+  "senderId": zod.string(),
+  "recipientUserId": zod.string(),
+  "senderAlias": zod.string().nullish(),
+  "messageText": zod.string().max(requestTextWhispRevealResponseMessageTextMax),
+  "status": zod.string().describe('\'sent\' | \'read\' | \'replied\''),
+  "revealRequested": zod.boolean(),
+  "revealAccepted": zod.boolean().nullish(),
+  "readAt": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Recipient accepts or declines a reveal request
+ */
+export const RespondTextWhispRevealParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const RespondTextWhispRevealBody = zod.object({
+  "accepted": zod.boolean()
+})
+
+export const RespondTextWhispRevealResponse = zod.object({
+  "id": zod.string(),
+  "revealRequested": zod.boolean(),
+  "revealAccepted": zod.boolean()
+})
+
+
+/**
  * @summary Scrape video metadata from a URL (YouTube, TikTok, Instagram, etc.)
  */
 export const ScrapeVideoMetaBody = zod.object({
@@ -855,9 +1173,12 @@ export const AdminGetUserResponse = zod.object({
   "moderationFlagCount": zod.number().describe('Non-dismissed content-safety flags across this user\'s whisps.'),
   "moderationFlags": zod.array(zod.object({
   "id": zod.string(),
-  "whispId": zod.string(),
+  "whispId": zod.string().nullish().describe('Set when contentType is \'whisp\'; null when it\'s \'text_whisp\'.'),
+  "textWhispId": zod.string().nullish().describe('Set when contentType is \'text_whisp\'; null when it\'s \'whisp\'.'),
+  "contentType": zod.string().describe('\'whisp\' | \'text_whisp\''),
   "userId": zod.string(),
-  "videoTitle": zod.string().nullish().describe('The flagged whisp\'s video title, denormalized for display in flag lists without a second lookup.'),
+  "videoTitle": zod.string().nullish().describe('The flagged whisp\'s video title, denormalized for display in flag lists without a second lookup. Null for a text_whisp flag.'),
+  "textWhispMessage": zod.string().nullish().describe('The flagged text whisp\'s message text, denormalized for display the same way videoTitle is. Null for a whisp flag.'),
   "senderEmail": zod.string().nullish(),
   "severity": zod.enum(['low', 'medium', 'high']),
   "reasoning": zod.string(),
@@ -1115,9 +1436,12 @@ export const AdminGetWhispResponse = zod.object({
 })),
   "moderationFlags": zod.array(zod.object({
   "id": zod.string(),
-  "whispId": zod.string(),
+  "whispId": zod.string().nullish().describe('Set when contentType is \'whisp\'; null when it\'s \'text_whisp\'.'),
+  "textWhispId": zod.string().nullish().describe('Set when contentType is \'text_whisp\'; null when it\'s \'whisp\'.'),
+  "contentType": zod.string().describe('\'whisp\' | \'text_whisp\''),
   "userId": zod.string(),
-  "videoTitle": zod.string().nullish().describe('The flagged whisp\'s video title, denormalized for display in flag lists without a second lookup.'),
+  "videoTitle": zod.string().nullish().describe('The flagged whisp\'s video title, denormalized for display in flag lists without a second lookup. Null for a text_whisp flag.'),
+  "textWhispMessage": zod.string().nullish().describe('The flagged text whisp\'s message text, denormalized for display the same way videoTitle is. Null for a whisp flag.'),
   "senderEmail": zod.string().nullish(),
   "severity": zod.enum(['low', 'medium', 'high']),
   "reasoning": zod.string(),
@@ -1288,7 +1612,17 @@ export const AdminGetFunnelStatsResponse = zod.object({
   "inApp": zod.number(),
   "twilio": zod.number(),
   "matchRate": zod.number().describe('Percentage (0-100) of these sends that were routed in-app instead of through Twilio.')
-}).describe('Proof the Twilio-skip matching in lib\/deliver.ts is saving money — every whisper_link\/group_whisper SMS-or-WhatsApp send attempt (initial send, reminders, reveal-request, reply-to-recipient), split by whether it was routed in-app (recipient phone matched a known, OTP-verified user) or actually went through Twilio (unmatched).')
+}).describe('Proof the Twilio-skip matching in lib\/deliver.ts is saving money — every whisper_link\/group_whisper SMS-or-WhatsApp send attempt (initial send, reminders, reveal-request, reply-to-recipient), split by whether it was routed in-app (recipient phone matched a known, OTP-verified user) or actually went through Twilio (unmatched).'),
+  "invites": zod.object({
+  "sent": zod.number(),
+  "joined": zod.number().describe('Invites whose recipient actually created a Blind Whisper account via the invite link (status = \'joined\').'),
+  "conversionRate": zod.number().describe('Percentage (0-100) of sent invites that converted to a joined account.')
+}).describe('Anonymous invite-a-friend (routes\/invites.ts) volume and how many actually converted into a real account.'),
+  "textWhisps": zod.object({
+  "sent": zod.number(),
+  "read": zod.number(),
+  "replied": zod.number()
+}).describe('Text Whisp (routes\/textWhisps.ts) volume and how far it gets read\/replied — a separate, text-only content type, not folded into the whisp funnel above.')
 })
 
 
@@ -1399,9 +1733,12 @@ export const AdminListModerationFlagsQueryParams = zod.object({
 export const AdminListModerationFlagsResponse = zod.object({
   "items": zod.array(zod.object({
   "id": zod.string(),
-  "whispId": zod.string(),
+  "whispId": zod.string().nullish().describe('Set when contentType is \'whisp\'; null when it\'s \'text_whisp\'.'),
+  "textWhispId": zod.string().nullish().describe('Set when contentType is \'text_whisp\'; null when it\'s \'whisp\'.'),
+  "contentType": zod.string().describe('\'whisp\' | \'text_whisp\''),
   "userId": zod.string(),
-  "videoTitle": zod.string().nullish().describe('The flagged whisp\'s video title, denormalized for display in flag lists without a second lookup.'),
+  "videoTitle": zod.string().nullish().describe('The flagged whisp\'s video title, denormalized for display in flag lists without a second lookup. Null for a text_whisp flag.'),
+  "textWhispMessage": zod.string().nullish().describe('The flagged text whisp\'s message text, denormalized for display the same way videoTitle is. Null for a whisp flag.'),
   "senderEmail": zod.string().nullish(),
   "severity": zod.enum(['low', 'medium', 'high']),
   "reasoning": zod.string(),
@@ -1430,9 +1767,12 @@ export const AdminUpdateModerationFlagBody = zod.object({
 
 export const AdminUpdateModerationFlagResponse = zod.object({
   "id": zod.string(),
-  "whispId": zod.string(),
+  "whispId": zod.string().nullish().describe('Set when contentType is \'whisp\'; null when it\'s \'text_whisp\'.'),
+  "textWhispId": zod.string().nullish().describe('Set when contentType is \'text_whisp\'; null when it\'s \'whisp\'.'),
+  "contentType": zod.string().describe('\'whisp\' | \'text_whisp\''),
   "userId": zod.string(),
-  "videoTitle": zod.string().nullish().describe('The flagged whisp\'s video title, denormalized for display in flag lists without a second lookup.'),
+  "videoTitle": zod.string().nullish().describe('The flagged whisp\'s video title, denormalized for display in flag lists without a second lookup. Null for a text_whisp flag.'),
+  "textWhispMessage": zod.string().nullish().describe('The flagged text whisp\'s message text, denormalized for display the same way videoTitle is. Null for a whisp flag.'),
   "senderEmail": zod.string().nullish(),
   "severity": zod.enum(['low', 'medium', 'high']),
   "reasoning": zod.string(),

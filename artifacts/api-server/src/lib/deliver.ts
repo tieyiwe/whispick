@@ -25,7 +25,12 @@ type DeliverableWhisp = {
 // (see ensureUser.ts) and must never be trusted for this. Rows written by
 // the verification flow always store `phone` pre-normalized to E.164, so
 // only the *input* needs normalizing here, not the stored column.
-async function findVerifiedRecipient(rawPhone: string): Promise<{ id: string } | null> {
+//
+// Exported so routes/textWhisps.ts's POST /check-recipient (and its
+// creation-time re-verification) can reuse the exact same lookup discipline
+// instead of duplicating it — "only phoneVerifiedAt IS NOT NULL counts" must
+// stay true everywhere this question is asked.
+export async function findVerifiedRecipient(rawPhone: string): Promise<{ id: string } | null> {
   const normalized = normalizePhoneE164(rawPhone);
   if (!normalized) return null;
 
@@ -36,36 +41,36 @@ async function findVerifiedRecipient(rawPhone: string): Promise<{ id: string } |
     .then((r) => r[0] ?? null);
 }
 
-// Delivers a matched whisp through the app's own notification system
-// instead of Twilio: a persistent in-app notification (shows in the
+// Delivers something through the app's own notification system instead of
+// Twilio/Resend: a persistent in-app notification (shows in the
 // notification bell — see routes/user.ts's GET /notifications) plus a
 // best-effort live browser push (lib/push.ts), same two-layer pattern
-// lib/moderation.ts's warning notice uses. Points at the SPA's own
-// `/w/:token` route (not the `/api/l/:token` redirect built for
-// email/SMS/WhatsApp clients) since the matched recipient already has the
-// app open. Returns whether the notification was actually persisted —
-// mirrors sendSms/sendWhatsApp's success semantics so the caller can't tell
-// which path ran from the return value alone.
-async function deliverInApp(
-  matchedUserId: string,
-  whisp: DeliverableWhisp,
-  hookLine: string,
+// lib/moderation.ts's warning notice uses. Returns whether the notification
+// was actually persisted — mirrors sendSms/sendWhatsApp's success semantics
+// so the caller can't tell which path ran from the return value alone.
+//
+// Generalized (title/body/url passed directly, not derived from a
+// DeliverableWhisp) so both the matched-whisp path below and
+// routes/textWhisps.ts's exclusively-in-app delivery share one
+// implementation instead of two near-identical copies.
+export async function deliverInApp(
+  targetUserId: string,
+  title: string,
+  body: string,
+  url: string,
   toAddress: string,
   logCtx: DeliveryLogContext,
 ): Promise<boolean> {
-  const url = `/w/${whisp.publicToken}`;
-  const title = "You have a new whisp";
-
   try {
     await db.insert(notificationsTable).values({
       id: randomUUID(),
-      targetUserId: matchedUserId,
+      targetUserId,
       title,
-      body: hookLine,
+      body,
       url,
       createdByAdminId: null,
     });
-    void notifyUser(matchedUserId, title, hookLine, url);
+    void notifyUser(targetUserId, title, body, url);
 
     await logDeliveryAttempt("in_app", toAddress, logCtx, {
       success: true,
@@ -73,7 +78,7 @@ async function deliverInApp(
     });
     return true;
   } catch (err) {
-    logger.error({ ...logCtx, err }, "Failed to deliver matched whisp in-app");
+    logger.error({ ...logCtx, err }, "Failed to deliver in-app");
     await logDeliveryAttempt("in_app", toAddress, logCtx, {
       success: false,
       errorMessage: err instanceof Error ? err.message : String(err),
@@ -135,7 +140,7 @@ export async function deliverWhisperLink(
     const matched = await findVerifiedRecipient(whisp.recipientPhone);
 
     if (matched) {
-      success = await deliverInApp(matched.id, whisp, hookLine, whisp.recipientPhone, logCtx);
+      success = await deliverInApp(matched.id, "You have a new whisp", hookLine, `/w/${whisp.publicToken}`, whisp.recipientPhone, logCtx);
     } else if (channel === "sms") {
       success = await sendSms(whisp.recipientPhone, whisperLinkSmsBody(sharedUrl, hookLine), logCtx);
     } else {

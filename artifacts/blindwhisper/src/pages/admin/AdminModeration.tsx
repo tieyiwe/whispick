@@ -94,9 +94,17 @@ export function AdminModeration() {
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-2 min-w-0">
                       <Badge variant={f.dismissed ? "outline" : "destructive"} className="capitalize shrink-0">{f.severity}</Badge>
-                      <Link href={`/admin/whisps/${f.whispId}`} className="font-medium text-foreground hover:text-primary transition-colors truncate">
-                        {f.videoTitle || "Video"}
-                      </Link>
+                      {f.contentType === "text_whisp" ? (
+                        // No admin detail page exists for a Text Whisp — show
+                        // a short excerpt instead of a dead/misleading link.
+                        <span className="font-medium text-foreground truncate">
+                          Text Whisp: "{(f.textWhispMessage ?? "").slice(0, 60)}{(f.textWhispMessage?.length ?? 0) > 60 ? "…" : ""}"
+                        </span>
+                      ) : (
+                        <Link href={`/admin/whisps/${f.whispId}`} className="font-medium text-foreground hover:text-primary transition-colors truncate">
+                          {f.videoTitle || "Video"}
+                        </Link>
+                      )}
                     </div>
                     <span className="text-xs text-muted-foreground shrink-0">{new Date(f.createdAt).toLocaleString()}</span>
                   </div>

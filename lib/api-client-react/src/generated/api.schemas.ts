@@ -183,6 +183,108 @@ export interface RevealResult {
   revealAccepted: boolean;
 }
 
+export interface CheckTextWhispRecipientInput {
+  phone: string;
+}
+
+/**
+ * Deliberately only a boolean — no user id, name, or any other field. See POST /text-whisps/check-recipient's own description.
+ */
+export interface CheckTextWhispRecipientResult {
+  eligible: boolean;
+}
+
+export interface TextWhisp {
+  id: string;
+  senderId: string;
+  recipientUserId: string;
+  /** @nullable */
+  senderAlias?: string | null;
+  /** @maxLength 260 */
+  messageText: string;
+  /** 'sent' | 'read' | 'replied' */
+  status: string;
+  revealRequested: boolean;
+  /** @nullable */
+  revealAccepted?: boolean | null;
+  /** @nullable */
+  readAt?: string | null;
+  createdAt: string;
+}
+
+export interface TextWhispInput {
+  recipientPhone: string;
+  /** @maxLength 260 */
+  messageText: string;
+  /** @nullable */
+  senderAlias?: string | null;
+}
+
+export interface TextWhispReply {
+  id: string;
+  textWhispId: string;
+  senderId: string;
+  /** @maxLength 260 */
+  replyText: string;
+  createdAt: string;
+}
+
+export interface TextWhispDetail {
+  textWhisp: TextWhisp;
+  replies: TextWhispReply[];
+}
+
+export interface TextWhispReplyInput {
+  /** @maxLength 260 */
+  replyText: string;
+}
+
+export interface Invite {
+  id: string;
+  inviterUserId: string;
+  /** @nullable */
+  recipientEmail?: string | null;
+  /** @nullable */
+  recipientPhone?: string | null;
+  channel: string;
+  publicToken: string;
+  status: string;
+  /** @nullable */
+  signedUpUserId?: string | null;
+  /** @nullable */
+  signedUpAt?: string | null;
+  revealRequested: boolean;
+  /** @nullable */
+  revealAccepted?: boolean | null;
+  createdAt: string;
+}
+
+export interface InviteInput {
+  /** @nullable */
+  recipientEmail?: string | null;
+  /** @nullable */
+  recipientPhone?: string | null;
+  channel: string;
+}
+
+export interface ClaimInviteInput {
+  token: string;
+}
+
+export interface ClaimInviteResult {
+  ok: boolean;
+  alreadyClaimed?: boolean;
+  selfInvite?: boolean;
+}
+
+export interface PublicInvite {
+  id: string;
+  status: string;
+  revealRequested: boolean;
+  /** @nullable */
+  revealAccepted?: boolean | null;
+}
+
 export interface VideoMetaRequest {
   url: string;
 }
@@ -469,13 +571,29 @@ export const ModerationFlagSeverity = {
 
 export interface ModerationFlag {
   id: string;
-  whispId: string;
+  /**
+     * Set when contentType is 'whisp'; null when it's 'text_whisp'.
+     * @nullable
+     */
+  whispId?: string | null;
+  /**
+     * Set when contentType is 'text_whisp'; null when it's 'whisp'.
+     * @nullable
+     */
+  textWhispId?: string | null;
+  /** 'whisp' | 'text_whisp' */
+  contentType: string;
   userId: string;
   /**
-     * The flagged whisp's video title, denormalized for display in flag lists without a second lookup.
+     * The flagged whisp's video title, denormalized for display in flag lists without a second lookup. Null for a text_whisp flag.
      * @nullable
      */
   videoTitle?: string | null;
+  /**
+     * The flagged text whisp's message text, denormalized for display the same way videoTitle is. Null for a whisp flag.
+     * @nullable
+     */
+  textWhispMessage?: string | null;
   /** @nullable */
   senderEmail?: string | null;
   severity: ModerationFlagSeverity;
@@ -797,6 +915,26 @@ export type AdminFunnelStatsPhoneMatchRouting = {
   matchRate: number;
 };
 
+/**
+ * Anonymous invite-a-friend (routes/invites.ts) volume and how many actually converted into a real account.
+ */
+export type AdminFunnelStatsInvites = {
+  sent: number;
+  /** Invites whose recipient actually created a Blind Whisper account via the invite link (status = 'joined'). */
+  joined: number;
+  /** Percentage (0-100) of sent invites that converted to a joined account. */
+  conversionRate: number;
+};
+
+/**
+ * Text Whisp (routes/textWhisps.ts) volume and how far it gets read/replied — a separate, text-only content type, not folded into the whisp funnel above.
+ */
+export type AdminFunnelStatsTextWhisps = {
+  sent: number;
+  read: number;
+  replied: number;
+};
+
 export interface AdminChannelDeliveryStat {
   channel: string;
   attempts: number;
@@ -815,6 +953,10 @@ export interface AdminFunnelStats {
   concierge: AdminFunnelStatsConcierge;
   /** Proof the Twilio-skip matching in lib/deliver.ts is saving money — every whisper_link/group_whisper SMS-or-WhatsApp send attempt (initial send, reminders, reveal-request, reply-to-recipient), split by whether it was routed in-app (recipient phone matched a known, OTP-verified user) or actually went through Twilio (unmatched). */
   phoneMatchRouting: AdminFunnelStatsPhoneMatchRouting;
+  /** Anonymous invite-a-friend (routes/invites.ts) volume and how many actually converted into a real account. */
+  invites: AdminFunnelStatsInvites;
+  /** Text Whisp (routes/textWhisps.ts) volume and how far it gets read/replied — a separate, text-only content type, not folded into the whisp funnel above. */
+  textWhisps: AdminFunnelStatsTextWhisps;
 }
 
 export interface Notification {

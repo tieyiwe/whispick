@@ -49,3 +49,46 @@ export function newReplyHookLine(): string {
 export function matchHookLine(): string {
   return "This matched something you said you wanted to hear about — sent anonymously 👀";
 }
+
+// Anonymous invite-a-friend (routes/invites.ts) — required, verbatim framing
+// from product: no name, no hint who sent it, ever, unless/until the
+// inviter reveals themselves post-signup (same consent-based Reveal Flow as
+// a whisp, see requestInviteReveal/respondInviteReveal). Keep in sync with
+// PublicInvitePage.tsx's lead text the same way as HOOK_LINE.
+export const INVITE_HOOK_LINE =
+  "Someone who cares about you is inviting you to install Blind Whisper — for honest conversations without the awkwardness, kept confidential and anonymous.";
+
+// Sent when an inviter clicks "Reveal Yourself" on an invite that's already
+// been joined (see routes/invites.ts POST /invites/:id/reveal) — same
+// "give away nothing" posture as revealRequestHookLine above, just worded
+// for the invite context. Delivered as an in-app notification (the invitee
+// is a real account holder by this point), not email/SMS/WhatsApp.
+export function inviteRevealRequestHookLine(): string {
+  return "Someone who invited you to Blind Whisper wants to reveal who they are... 👀";
+}
+
+// Text Whisp (routes/textWhisps.ts) notification copy — deliberately never
+// includes the actual messageText/replyText in the notification body (it
+// can appear on a lock screen, and the whole point of the tied-scroll
+// unfurl moment is that the recipient opens the app to read it, not that it
+// arrives pre-spoiled). Delivered exclusively in-app, so this is the only
+// copy path this feature has — no email/SMS equivalent exists.
+export function textWhispHookLine(): string {
+  return "Someone sent you an anonymous Text Whisp 📜";
+}
+
+export function textWhispReplyHookLine(): string {
+  return "You got a reply on your Text Whisp 💬";
+}
+
+// Same "give away nothing" posture as revealRequestHookLine, worded for the
+// Text Whisp context.
+export function textWhispRevealRequestHookLine(): string {
+  return "The person who sent you a Text Whisp wants to reveal who they are... 👀";
+}
+
+export function textWhispRevealRespondedHookLine(accepted: boolean): string {
+  return accepted
+    ? "They accepted your reveal request — you can now tell them who you are."
+    : "They declined your reveal request to stay anonymous.";
+}

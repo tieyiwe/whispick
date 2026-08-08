@@ -1,5 +1,5 @@
 import { logger } from "./logger";
-import { HOOK_LINE } from "./copy";
+import { HOOK_LINE, INVITE_HOOK_LINE } from "./copy";
 import { logDeliveryAttempt, type DeliveryLogContext } from "./deliveryLog";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
@@ -89,6 +89,22 @@ export function subscriptionVerificationEmailHtml(verifyUrl: string): string {
       </a>
     </p>
     <p style="font-size: 13px; color: #6b7280;">If you didn't request this, you can ignore this email — you won't be subscribed unless you confirm.</p>
+  </div>`;
+}
+
+// Anonymous invite-a-friend (routes/invites.ts) — same anonymous framing and
+// button structure as whisperLinkEmailHtml above, using the product's
+// required verbatim hook line (see lib/copy.ts INVITE_HOOK_LINE) instead of
+// the whisp one. No sender name/hint anywhere in this template.
+export function inviteEmailHtml(inviteUrl: string): string {
+  return `<div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a2e;">
+    <p style="font-size: 16px;">${INVITE_HOOK_LINE}</p>
+    <p>
+      <a href="${inviteUrl}" style="display:inline-block; padding: 12px 24px; background:#7C5CFC; color:#fff; border-radius: 999px; text-decoration:none; font-weight: 600;">
+        Join Blind Whisper
+      </a>
+    </p>
+    <p style="color:#888; font-size: 12px;">Sent anonymously via Blind Whisper. No inviter identity is included unless they choose to reveal it.</p>
   </div>`;
 }
 

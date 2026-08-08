@@ -9,13 +9,29 @@ import type { ModerationFlagSeverity } from './moderationFlagSeverity';
 
 export interface ModerationFlag {
   id: string;
-  whispId: string;
+  /**
+     * Set when contentType is 'whisp'; null when it's 'text_whisp'.
+     * @nullable
+     */
+  whispId?: string | null;
+  /**
+     * Set when contentType is 'text_whisp'; null when it's 'whisp'.
+     * @nullable
+     */
+  textWhispId?: string | null;
+  /** 'whisp' | 'text_whisp' */
+  contentType: string;
   userId: string;
   /**
-     * The flagged whisp's video title, denormalized for display in flag lists without a second lookup.
+     * The flagged whisp's video title, denormalized for display in flag lists without a second lookup. Null for a text_whisp flag.
      * @nullable
      */
   videoTitle?: string | null;
+  /**
+     * The flagged text whisp's message text, denormalized for display the same way videoTitle is. Null for a whisp flag.
+     * @nullable
+     */
+  textWhispMessage?: string | null;
   /** @nullable */
   senderEmail?: string | null;
   severity: ModerationFlagSeverity;

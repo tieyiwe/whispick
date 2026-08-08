@@ -15,7 +15,17 @@ export type DeliveryPurpose =
   | "subscription_verification"
   | "media_expiring"
   | "reveal_request"
-  | "reply_to_recipient";
+  | "reply_to_recipient"
+  // Anonymous invite-a-friend's initial send (routes/invites.ts) — not tied
+  // to any whisp, so whispId is always null on these rows.
+  | "invite"
+  // Text Whisps (routes/textWhisps.ts) — a parallel content type with its
+  // own id space (text_whisps.id, not whisps.id), so these also always
+  // carry whispId: null, same reasoning as "invite" above.
+  | "text_whisp"
+  | "text_whisp_reply"
+  | "text_whisp_reveal_request"
+  | "text_whisp_reveal_response";
 
 export type DeliveryLogContext = {
   // Nullable at the type level for sends that aren't about any one whisp

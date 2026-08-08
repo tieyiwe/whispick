@@ -1,5 +1,5 @@
 import { logger } from "./logger";
-import { HOOK_LINE } from "./copy";
+import { HOOK_LINE, INVITE_HOOK_LINE } from "./copy";
 import { logDeliveryAttempt, type DeliveryLogContext } from "./deliveryLog";
 
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
@@ -120,4 +120,11 @@ const COMPLIANCE_FOOTER = "Reply STOP to opt out, HELP for help. Msg & data rate
 
 export function whisperLinkSmsBody(publicUrl: string, hookLine: string = HOOK_LINE): string {
   return `${hookLine}\n${publicUrl}\n— sent anonymously via Blind Whisper\n${COMPLIANCE_FOOTER}`;
+}
+
+// Anonymous invite-a-friend (routes/invites.ts) — same structure as
+// whisperLinkSmsBody above (product's required hook line, link, compliance
+// footer), just pointed at the invite landing page instead of a whisp.
+export function inviteSmsBody(inviteUrl: string): string {
+  return `${INVITE_HOOK_LINE}\n${inviteUrl}\n— sent anonymously via Blind Whisper\n${COMPLIANCE_FOOTER}`;
 }

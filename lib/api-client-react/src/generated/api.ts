@@ -43,10 +43,14 @@ import type {
   ApiError,
   AppreciationInput,
   AppreciationResult,
+  CheckTextWhispRecipientInput,
+  CheckTextWhispRecipientResult,
   CheckoutRequest,
   CheckoutResponse,
   Circle,
   CircleFeedResponse,
+  ClaimInviteInput,
+  ClaimInviteResult,
   ConciergeInput,
   ConciergeResult,
   ConfirmPhoneVerificationInput,
@@ -57,6 +61,8 @@ import type {
   GroupWhispSendDetail,
   GroupWhispSendSummary,
   HealthStatus,
+  Invite,
+  InviteInput,
   JoinCircleInput,
   ListCircleFeedParams,
   ListSuggestionsParams,
@@ -68,6 +74,7 @@ import type {
   NoteSuggestionsResult,
   NotificationListResponse,
   PhoneVerificationResult,
+  PublicInvite,
   PublicReplyInput,
   PublicWhisp,
   PushPublicKeyResponse,
@@ -89,6 +96,11 @@ import type {
   SuggestionAgentStatus,
   SuggestionGalleryResponse,
   SuggestionListResponse,
+  TextWhisp,
+  TextWhispDetail,
+  TextWhispInput,
+  TextWhispReply,
+  TextWhispReplyInput,
   TrackingEventInput,
   TrackingResult,
   UnreadNotificationCountResponse,
@@ -886,6 +898,1094 @@ export const useRespondReveal = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getRespondRevealMutationOptions(options));
+    }
+
+export const getListInvitesUrl = () => {
+
+
+
+
+  return `/api/invites`
+}
+
+/**
+ * @summary List invites sent by the current user
+ */
+export const listInvites = async ( options?: RequestInit): Promise<Invite[]> => {
+
+  return customFetch<Invite[]>(getListInvitesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListInvitesQueryKey = () => {
+    return [
+    `/api/invites`
+    ] as const;
+    }
+
+
+export const getListInvitesQueryOptions = <TData = Awaited<ReturnType<typeof listInvites>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listInvites>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListInvitesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listInvites>>> = ({ signal }) => listInvites({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listInvites>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListInvitesQueryResult = NonNullable<Awaited<ReturnType<typeof listInvites>>>
+export type ListInvitesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List invites sent by the current user
+ */
+
+export function useListInvites<TData = Awaited<ReturnType<typeof listInvites>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listInvites>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListInvitesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateInviteUrl = () => {
+
+
+
+
+  return `/api/invites`
+}
+
+/**
+ * @summary Send an anonymous invite to join Blind Whisper
+ */
+export const createInvite = async (inviteInput: InviteInput, options?: RequestInit): Promise<Invite> => {
+
+  return customFetch<Invite>(getCreateInviteUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(inviteInput)
+  }
+);}
+
+
+
+
+export const getCreateInviteMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createInvite>>, TError,{data: BodyType<InviteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createInvite>>, TError,{data: BodyType<InviteInput>}, TContext> => {
+
+const mutationKey = ['createInvite'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createInvite>>, {data: BodyType<InviteInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createInvite(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateInviteMutationResult = NonNullable<Awaited<ReturnType<typeof createInvite>>>
+    export type CreateInviteMutationBody = BodyType<InviteInput>
+    export type CreateInviteMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Send an anonymous invite to join Blind Whisper
+ */
+export const useCreateInvite = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createInvite>>, TError,{data: BodyType<InviteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createInvite>>,
+        TError,
+        {data: BodyType<InviteInput>},
+        TContext
+      > => {
+      return useMutation(getCreateInviteMutationOptions(options));
+    }
+
+export const getClaimInviteUrl = () => {
+
+
+
+
+  return `/api/invites/claim`
+}
+
+/**
+ * @summary Attribute the current (just signed-up) account back to the invite that brought them here
+ */
+export const claimInvite = async (claimInviteInput: ClaimInviteInput, options?: RequestInit): Promise<ClaimInviteResult> => {
+
+  return customFetch<ClaimInviteResult>(getClaimInviteUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(claimInviteInput)
+  }
+);}
+
+
+
+
+export const getClaimInviteMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof claimInvite>>, TError,{data: BodyType<ClaimInviteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof claimInvite>>, TError,{data: BodyType<ClaimInviteInput>}, TContext> => {
+
+const mutationKey = ['claimInvite'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof claimInvite>>, {data: BodyType<ClaimInviteInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  claimInvite(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ClaimInviteMutationResult = NonNullable<Awaited<ReturnType<typeof claimInvite>>>
+    export type ClaimInviteMutationBody = BodyType<ClaimInviteInput>
+    export type ClaimInviteMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Attribute the current (just signed-up) account back to the invite that brought them here
+ */
+export const useClaimInvite = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof claimInvite>>, TError,{data: BodyType<ClaimInviteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof claimInvite>>,
+        TError,
+        {data: BodyType<ClaimInviteInput>},
+        TContext
+      > => {
+      return useMutation(getClaimInviteMutationOptions(options));
+    }
+
+export const getRequestInviteRevealUrl = (id: string,) => {
+
+
+
+
+  return `/api/invites/${id}/reveal`
+}
+
+/**
+ * @summary Inviter requests to reveal their identity to a joined invitee
+ */
+export const requestInviteReveal = async (id: string, options?: RequestInit): Promise<Invite> => {
+
+  return customFetch<Invite>(getRequestInviteRevealUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRequestInviteRevealMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestInviteReveal>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestInviteReveal>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['requestInviteReveal'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestInviteReveal>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  requestInviteReveal(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestInviteRevealMutationResult = NonNullable<Awaited<ReturnType<typeof requestInviteReveal>>>
+
+    export type RequestInviteRevealMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Inviter requests to reveal their identity to a joined invitee
+ */
+export const useRequestInviteReveal = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestInviteReveal>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestInviteReveal>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getRequestInviteRevealMutationOptions(options));
+    }
+
+export const getRespondInviteRevealUrl = (id: string,) => {
+
+
+
+
+  return `/api/invites/${id}/reveal`
+}
+
+/**
+ * @summary Invitee responds to reveal request
+ */
+export const respondInviteReveal = async (id: string,
+    revealResponse: RevealResponse, options?: RequestInit): Promise<RevealResult> => {
+
+  return customFetch<RevealResult>(getRespondInviteRevealUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(revealResponse)
+  }
+);}
+
+
+
+
+export const getRespondInviteRevealMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof respondInviteReveal>>, TError,{id: string;data: BodyType<RevealResponse>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof respondInviteReveal>>, TError,{id: string;data: BodyType<RevealResponse>}, TContext> => {
+
+const mutationKey = ['respondInviteReveal'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof respondInviteReveal>>, {id: string;data: BodyType<RevealResponse>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  respondInviteReveal(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RespondInviteRevealMutationResult = NonNullable<Awaited<ReturnType<typeof respondInviteReveal>>>
+    export type RespondInviteRevealMutationBody = BodyType<RevealResponse>
+    export type RespondInviteRevealMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Invitee responds to reveal request
+ */
+export const useRespondInviteReveal = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof respondInviteReveal>>, TError,{id: string;data: BodyType<RevealResponse>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof respondInviteReveal>>,
+        TError,
+        {id: string;data: BodyType<RevealResponse>},
+        TContext
+      > => {
+      return useMutation(getRespondInviteRevealMutationOptions(options));
+    }
+
+export const getGetPublicInviteUrl = (token: string,) => {
+
+
+
+
+  return `/api/public/invites/${token}`
+}
+
+/**
+ * @summary Public invite landing page data (no auth required)
+ */
+export const getPublicInvite = async (token: string, options?: RequestInit): Promise<PublicInvite> => {
+
+  return customFetch<PublicInvite>(getGetPublicInviteUrl(token),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPublicInviteQueryKey = (token: string,) => {
+    return [
+    `/api/public/invites/${token}`
+    ] as const;
+    }
+
+
+export const getGetPublicInviteQueryOptions = <TData = Awaited<ReturnType<typeof getPublicInvite>>, TError = ErrorType<ApiError>>(token: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicInvite>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPublicInviteQueryKey(token);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPublicInvite>>> = ({ signal }) => getPublicInvite(token, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: token !== null && token !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPublicInvite>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPublicInviteQueryResult = NonNullable<Awaited<ReturnType<typeof getPublicInvite>>>
+export type GetPublicInviteQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Public invite landing page data (no auth required)
+ */
+
+export function useGetPublicInvite<TData = Awaited<ReturnType<typeof getPublicInvite>>, TError = ErrorType<ApiError>>(
+ token: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicInvite>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPublicInviteQueryOptions(token,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCheckTextWhispRecipientUrl = () => {
+
+
+
+
+  return `/api/text-whisps/check-recipient`
+}
+
+/**
+ * @summary Check whether a phone number is eligible for a Text Whisp (a known, OTP-verified Blind Whisper user) — returns only a boolean, heavily rate-limited
+ */
+export const checkTextWhispRecipient = async (checkTextWhispRecipientInput: CheckTextWhispRecipientInput, options?: RequestInit): Promise<CheckTextWhispRecipientResult> => {
+
+  return customFetch<CheckTextWhispRecipientResult>(getCheckTextWhispRecipientUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(checkTextWhispRecipientInput)
+  }
+);}
+
+
+
+
+export const getCheckTextWhispRecipientMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkTextWhispRecipient>>, TError,{data: BodyType<CheckTextWhispRecipientInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof checkTextWhispRecipient>>, TError,{data: BodyType<CheckTextWhispRecipientInput>}, TContext> => {
+
+const mutationKey = ['checkTextWhispRecipient'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof checkTextWhispRecipient>>, {data: BodyType<CheckTextWhispRecipientInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  checkTextWhispRecipient(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CheckTextWhispRecipientMutationResult = NonNullable<Awaited<ReturnType<typeof checkTextWhispRecipient>>>
+    export type CheckTextWhispRecipientMutationBody = BodyType<CheckTextWhispRecipientInput>
+    export type CheckTextWhispRecipientMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Check whether a phone number is eligible for a Text Whisp (a known, OTP-verified Blind Whisper user) — returns only a boolean, heavily rate-limited
+ */
+export const useCheckTextWhispRecipient = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkTextWhispRecipient>>, TError,{data: BodyType<CheckTextWhispRecipientInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof checkTextWhispRecipient>>,
+        TError,
+        {data: BodyType<CheckTextWhispRecipientInput>},
+        TContext
+      > => {
+      return useMutation(getCheckTextWhispRecipientMutationOptions(options));
+    }
+
+export const getListTextWhispsUrl = () => {
+
+
+
+
+  return `/api/text-whisps`
+}
+
+/**
+ * @summary List the current user's own Text Whisps (sent and received)
+ */
+export const listTextWhisps = async ( options?: RequestInit): Promise<TextWhisp[]> => {
+
+  return customFetch<TextWhisp[]>(getListTextWhispsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListTextWhispsQueryKey = () => {
+    return [
+    `/api/text-whisps`
+    ] as const;
+    }
+
+
+export const getListTextWhispsQueryOptions = <TData = Awaited<ReturnType<typeof listTextWhisps>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTextWhisps>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListTextWhispsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTextWhisps>>> = ({ signal }) => listTextWhisps({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTextWhisps>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListTextWhispsQueryResult = NonNullable<Awaited<ReturnType<typeof listTextWhisps>>>
+export type ListTextWhispsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List the current user's own Text Whisps (sent and received)
+ */
+
+export function useListTextWhisps<TData = Awaited<ReturnType<typeof listTextWhisps>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTextWhisps>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListTextWhispsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateTextWhispUrl = () => {
+
+
+
+
+  return `/api/text-whisps`
+}
+
+/**
+ * @summary Send a new Text Whisp to a known, verified recipient
+ */
+export const createTextWhisp = async (textWhispInput: TextWhispInput, options?: RequestInit): Promise<TextWhisp> => {
+
+  return customFetch<TextWhisp>(getCreateTextWhispUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(textWhispInput)
+  }
+);}
+
+
+
+
+export const getCreateTextWhispMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTextWhisp>>, TError,{data: BodyType<TextWhispInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createTextWhisp>>, TError,{data: BodyType<TextWhispInput>}, TContext> => {
+
+const mutationKey = ['createTextWhisp'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createTextWhisp>>, {data: BodyType<TextWhispInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createTextWhisp(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateTextWhispMutationResult = NonNullable<Awaited<ReturnType<typeof createTextWhisp>>>
+    export type CreateTextWhispMutationBody = BodyType<TextWhispInput>
+    export type CreateTextWhispMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Send a new Text Whisp to a known, verified recipient
+ */
+export const useCreateTextWhisp = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTextWhisp>>, TError,{data: BodyType<TextWhispInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createTextWhisp>>,
+        TError,
+        {data: BodyType<TextWhispInput>},
+        TContext
+      > => {
+      return useMutation(getCreateTextWhispMutationOptions(options));
+    }
+
+export const getGetTextWhispUrl = (id: string,) => {
+
+
+
+
+  return `/api/text-whisps/${id}`
+}
+
+/**
+ * @summary Get a Text Whisp with its replies — sender or recipient only. Marks it read when the recipient opens it.
+ */
+export const getTextWhisp = async (id: string, options?: RequestInit): Promise<TextWhispDetail> => {
+
+  return customFetch<TextWhispDetail>(getGetTextWhispUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTextWhispQueryKey = (id: string,) => {
+    return [
+    `/api/text-whisps/${id}`
+    ] as const;
+    }
+
+
+export const getGetTextWhispQueryOptions = <TData = Awaited<ReturnType<typeof getTextWhisp>>, TError = ErrorType<ApiError>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTextWhisp>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTextWhispQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTextWhisp>>> = ({ signal }) => getTextWhisp(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTextWhisp>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTextWhispQueryResult = NonNullable<Awaited<ReturnType<typeof getTextWhisp>>>
+export type GetTextWhispQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Get a Text Whisp with its replies — sender or recipient only. Marks it read when the recipient opens it.
+ */
+
+export function useGetTextWhisp<TData = Awaited<ReturnType<typeof getTextWhisp>>, TError = ErrorType<ApiError>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTextWhisp>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTextWhispQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getDeleteTextWhispUrl = (id: string,) => {
+
+
+
+
+  return `/api/text-whisps/${id}`
+}
+
+/**
+ * @summary Soft delete a Text Whisp — sender only
+ */
+export const deleteTextWhisp = async (id: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteTextWhispUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteTextWhispMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTextWhisp>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteTextWhisp>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteTextWhisp'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteTextWhisp>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteTextWhisp(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteTextWhispMutationResult = NonNullable<Awaited<ReturnType<typeof deleteTextWhisp>>>
+
+    export type DeleteTextWhispMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Soft delete a Text Whisp — sender only
+ */
+export const useDeleteTextWhisp = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTextWhisp>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteTextWhisp>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getDeleteTextWhispMutationOptions(options));
+    }
+
+export const getListTextWhispRepliesUrl = (id: string,) => {
+
+
+
+
+  return `/api/text-whisps/${id}/replies`
+}
+
+/**
+ * @summary Get replies for a Text Whisp — sender or recipient only
+ */
+export const listTextWhispReplies = async (id: string, options?: RequestInit): Promise<TextWhispReply[]> => {
+
+  return customFetch<TextWhispReply[]>(getListTextWhispRepliesUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListTextWhispRepliesQueryKey = (id: string,) => {
+    return [
+    `/api/text-whisps/${id}/replies`
+    ] as const;
+    }
+
+
+export const getListTextWhispRepliesQueryOptions = <TData = Awaited<ReturnType<typeof listTextWhispReplies>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTextWhispReplies>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListTextWhispRepliesQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTextWhispReplies>>> = ({ signal }) => listTextWhispReplies(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTextWhispReplies>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListTextWhispRepliesQueryResult = NonNullable<Awaited<ReturnType<typeof listTextWhispReplies>>>
+export type ListTextWhispRepliesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get replies for a Text Whisp — sender or recipient only
+ */
+
+export function useListTextWhispReplies<TData = Awaited<ReturnType<typeof listTextWhispReplies>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTextWhispReplies>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListTextWhispRepliesQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateTextWhispReplyUrl = (id: string,) => {
+
+
+
+
+  return `/api/text-whisps/${id}/replies`
+}
+
+/**
+ * @summary Reply to a Text Whisp — from either the sender or the recipient
+ */
+export const createTextWhispReply = async (id: string,
+    textWhispReplyInput: TextWhispReplyInput, options?: RequestInit): Promise<TextWhispReply> => {
+
+  return customFetch<TextWhispReply>(getCreateTextWhispReplyUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(textWhispReplyInput)
+  }
+);}
+
+
+
+
+export const getCreateTextWhispReplyMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTextWhispReply>>, TError,{id: string;data: BodyType<TextWhispReplyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createTextWhispReply>>, TError,{id: string;data: BodyType<TextWhispReplyInput>}, TContext> => {
+
+const mutationKey = ['createTextWhispReply'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createTextWhispReply>>, {id: string;data: BodyType<TextWhispReplyInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  createTextWhispReply(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateTextWhispReplyMutationResult = NonNullable<Awaited<ReturnType<typeof createTextWhispReply>>>
+    export type CreateTextWhispReplyMutationBody = BodyType<TextWhispReplyInput>
+    export type CreateTextWhispReplyMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Reply to a Text Whisp — from either the sender or the recipient
+ */
+export const useCreateTextWhispReply = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTextWhispReply>>, TError,{id: string;data: BodyType<TextWhispReplyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createTextWhispReply>>,
+        TError,
+        {id: string;data: BodyType<TextWhispReplyInput>},
+        TContext
+      > => {
+      return useMutation(getCreateTextWhispReplyMutationOptions(options));
+    }
+
+export const getRequestTextWhispRevealUrl = (id: string,) => {
+
+
+
+
+  return `/api/text-whisps/${id}/reveal`
+}
+
+/**
+ * @summary Sender requests to reveal their identity
+ */
+export const requestTextWhispReveal = async (id: string, options?: RequestInit): Promise<TextWhisp> => {
+
+  return customFetch<TextWhisp>(getRequestTextWhispRevealUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRequestTextWhispRevealMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestTextWhispReveal>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestTextWhispReveal>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['requestTextWhispReveal'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestTextWhispReveal>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  requestTextWhispReveal(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestTextWhispRevealMutationResult = NonNullable<Awaited<ReturnType<typeof requestTextWhispReveal>>>
+
+    export type RequestTextWhispRevealMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Sender requests to reveal their identity
+ */
+export const useRequestTextWhispReveal = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestTextWhispReveal>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestTextWhispReveal>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getRequestTextWhispRevealMutationOptions(options));
+    }
+
+export const getRespondTextWhispRevealUrl = (id: string,) => {
+
+
+
+
+  return `/api/text-whisps/${id}/reveal/respond`
+}
+
+/**
+ * @summary Recipient accepts or declines a reveal request
+ */
+export const respondTextWhispReveal = async (id: string,
+    revealResponse: RevealResponse, options?: RequestInit): Promise<RevealResult> => {
+
+  return customFetch<RevealResult>(getRespondTextWhispRevealUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(revealResponse)
+  }
+);}
+
+
+
+
+export const getRespondTextWhispRevealMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof respondTextWhispReveal>>, TError,{id: string;data: BodyType<RevealResponse>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof respondTextWhispReveal>>, TError,{id: string;data: BodyType<RevealResponse>}, TContext> => {
+
+const mutationKey = ['respondTextWhispReveal'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof respondTextWhispReveal>>, {id: string;data: BodyType<RevealResponse>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  respondTextWhispReveal(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RespondTextWhispRevealMutationResult = NonNullable<Awaited<ReturnType<typeof respondTextWhispReveal>>>
+    export type RespondTextWhispRevealMutationBody = BodyType<RevealResponse>
+    export type RespondTextWhispRevealMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Recipient accepts or declines a reveal request
+ */
+export const useRespondTextWhispReveal = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof respondTextWhispReveal>>, TError,{id: string;data: BodyType<RevealResponse>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof respondTextWhispReveal>>,
+        TError,
+        {id: string;data: BodyType<RevealResponse>},
+        TContext
+      > => {
+      return useMutation(getRespondTextWhispRevealMutationOptions(options));
     }
 
 export const getScrapeVideoMetaUrl = () => {

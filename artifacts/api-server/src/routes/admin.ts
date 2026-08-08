@@ -18,6 +18,8 @@ import {
   notificationsTable,
   moderationFlagsTable,
   conciergeRequestsTable,
+  invitesTable,
+  textWhispsTable,
   type User,
 } from "@workspace/db";
 import { and, asc, count, desc, eq, gte, ilike, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
@@ -94,13 +96,19 @@ router.get("/users/:id", async (req, res): Promise<void> => {
       .innerJoin(whispsTable, eq(whispRepliesTable.whispId, whispsTable.id))
       .where(eq(whispsTable.senderId, user.id))
       .then((r) => r[0]),
-    // Every content-safety flag on this user's whisps, dismissed or not —
-    // an admin reviewing one flag can see this person's full flag history
-    // right here instead of hunting for it in the site-wide queue.
+    // Every content-safety flag on this user's whisps AND text whisps,
+    // dismissed or not — an admin reviewing one flag can see this person's
+    // full flag history right here instead of hunting for it in the
+    // site-wide queue. leftJoin (not innerJoin) on both content tables since
+    // a flag row only ever has one of whispId/textWhispId set (see
+    // moderation_flags.ts's contentType) — an innerJoin on either alone
+    // would silently drop the other content type's flags.
     db
       .select({
         id: moderationFlagsTable.id,
         whispId: moderationFlagsTable.whispId,
+        textWhispId: moderationFlagsTable.textWhispId,
+        contentType: moderationFlagsTable.contentType,
         userId: moderationFlagsTable.userId,
         severity: moderationFlagsTable.severity,
         reasoning: moderationFlagsTable.reasoning,
@@ -110,9 +118,11 @@ router.get("/users/:id", async (req, res): Promise<void> => {
         reviewedByAdminId: moderationFlagsTable.reviewedByAdminId,
         createdAt: moderationFlagsTable.createdAt,
         videoTitle: whispsTable.videoTitle,
+        textWhispMessage: textWhispsTable.messageText,
       })
       .from(moderationFlagsTable)
-      .innerJoin(whispsTable, eq(moderationFlagsTable.whispId, whispsTable.id))
+      .leftJoin(whispsTable, eq(moderationFlagsTable.whispId, whispsTable.id))
+      .leftJoin(textWhispsTable, eq(moderationFlagsTable.textWhispId, textWhispsTable.id))
       .where(eq(moderationFlagsTable.userId, user.id))
       .orderBy(desc(moderationFlagsTable.createdAt)),
   ]);
@@ -557,7 +567,7 @@ router.get("/stats/funnel", async (_req, res): Promise<void> => {
   // recipient-directed funnel below and reported separately.
   const recipientDirected = ne(whispsTable.deliveryMethod, "circle_drop");
 
-  const [funnelRow, channelRows, ghostBoostRow, circleCountRow, memberCountRow, dropsRow, conciergeRequestRow, conciergeMatchedRow, conciergeSendsRow, phoneMatchRoutingRow] = await Promise.all([
+  const [funnelRow, channelRows, ghostBoostRow, circleCountRow, memberCountRow, dropsRow, conciergeRequestRow, conciergeMatchedRow, conciergeSendsRow, phoneMatchRoutingRow, inviteRow, textWhispRow] = await Promise.all([
     db
       .select({
         sent: count(),
@@ -621,6 +631,28 @@ router.get("/stats/funnel", async (_req, res): Promise<void> => {
       .innerJoin(whispsTable, eq(deliveryAttemptsTable.whispId, whispsTable.id))
       .where(inArray(whispsTable.deliveryMethod, ["whisper_link", "group_whisper"]))
       .then((r) => r[0]!),
+    // Anonymous invite-a-friend (routes/invites.ts) — volume and how many
+    // actually converted into a real account, same lightweight
+    // add-a-field-to-the-existing-funnel-endpoint treatment as concierge
+    // above rather than a whole new admin section.
+    db
+      .select({
+        sent: count(),
+        joined: sql<number>`count(*) filter (where ${invitesTable.status} = 'joined')`.mapWith(Number),
+      })
+      .from(invitesTable)
+      .then((r) => r[0]!),
+    // Text Whisps (routes/textWhisps.ts) — a parallel, text-only content
+    // type, not folded into the whisp funnel above since it isn't a whisp:
+    // volume and how far it gets read/replied, same lightweight treatment.
+    db
+      .select({
+        sent: count(),
+        read: sql<number>`count(*) filter (where ${textWhispsTable.readAt} is not null)`.mapWith(Number),
+        replied: sql<number>`count(*) filter (where ${textWhispsTable.status} = 'replied')`.mapWith(Number),
+      })
+      .from(textWhispsTable)
+      .then((r) => r[0]!),
   ]);
 
   res.json({
@@ -654,6 +686,16 @@ router.get("/stats/funnel", async (_req, res): Promise<void> => {
         phoneMatchRoutingRow.inApp + phoneMatchRoutingRow.twilio > 0
           ? Math.round((phoneMatchRoutingRow.inApp / (phoneMatchRoutingRow.inApp + phoneMatchRoutingRow.twilio)) * 1000) / 10
           : 0,
+    },
+    invites: {
+      sent: inviteRow.sent,
+      joined: inviteRow.joined,
+      conversionRate: inviteRow.sent ? Math.round((inviteRow.joined / inviteRow.sent) * 1000) / 10 : 0,
+    },
+    textWhisps: {
+      sent: textWhispRow.sent,
+      read: textWhispRow.read,
+      replied: textWhispRow.replied,
     },
   });
 });
@@ -782,6 +824,8 @@ router.get("/moderation/flags", async (req, res): Promise<void> => {
       .select({
         id: moderationFlagsTable.id,
         whispId: moderationFlagsTable.whispId,
+        textWhispId: moderationFlagsTable.textWhispId,
+        contentType: moderationFlagsTable.contentType,
         userId: moderationFlagsTable.userId,
         severity: moderationFlagsTable.severity,
         reasoning: moderationFlagsTable.reasoning,
@@ -791,10 +835,15 @@ router.get("/moderation/flags", async (req, res): Promise<void> => {
         reviewedByAdminId: moderationFlagsTable.reviewedByAdminId,
         createdAt: moderationFlagsTable.createdAt,
         videoTitle: whispsTable.videoTitle,
+        textWhispMessage: textWhispsTable.messageText,
         senderEmail: usersTable.email,
       })
       .from(moderationFlagsTable)
-      .innerJoin(whispsTable, eq(moderationFlagsTable.whispId, whispsTable.id))
+      // leftJoin, not innerJoin — see the same comment on the
+      // /users/:id moderationFlags query above: a flag row only ever
+      // matches one of whispsTable/textWhispsTable.
+      .leftJoin(whispsTable, eq(moderationFlagsTable.whispId, whispsTable.id))
+      .leftJoin(textWhispsTable, eq(moderationFlagsTable.textWhispId, textWhispsTable.id))
       .leftJoin(usersTable, eq(moderationFlagsTable.userId, usersTable.id))
       .where(where)
       .orderBy(desc(moderationFlagsTable.createdAt))

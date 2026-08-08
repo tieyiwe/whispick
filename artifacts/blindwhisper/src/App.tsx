@@ -10,6 +10,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { LandingPage } from "@/pages/LandingPage";
 import { Dashboard } from "@/pages/Dashboard";
 import { AdminRoute } from "@/components/layout/AdminRoute";
+import { ClaimPendingInvite } from "@/components/shared/ClaimPendingInvite";
 
 // Everything below is off the critical first-load path (landing, sign-in/up,
 // and dashboard are the only pages most visits ever touch) — code-split so a
@@ -34,6 +35,11 @@ const RepliesInbox = lazy(() => import("@/pages/RepliesInbox").then((m) => ({ de
 const CreditsPage = lazy(() => import("@/pages/CreditsPage").then((m) => ({ default: m.CreditsPage })));
 const SettingsPage = lazy(() => import("@/pages/SettingsPage").then((m) => ({ default: m.SettingsPage })));
 const PublicWhispPage = lazy(() => import("@/pages/PublicWhispPage").then((m) => ({ default: m.PublicWhispPage })));
+const InvitePage = lazy(() => import("@/pages/InvitePage").then((m) => ({ default: m.InvitePage })));
+const PublicInvitePage = lazy(() => import("@/pages/PublicInvitePage").then((m) => ({ default: m.PublicInvitePage })));
+const TextWhispsList = lazy(() => import("@/pages/TextWhispsList").then((m) => ({ default: m.TextWhispsList })));
+const SendTextWhisp = lazy(() => import("@/pages/SendTextWhisp").then((m) => ({ default: m.SendTextWhisp })));
+const TextWhispDetail = lazy(() => import("@/pages/TextWhispDetail").then((m) => ({ default: m.TextWhispDetail })));
 const SubscribePage = lazy(() => import("@/pages/SubscribePage").then((m) => ({ default: m.SubscribePage })));
 const VerifySubscriptionPage = lazy(() => import("@/pages/VerifySubscriptionPage").then((m) => ({ default: m.VerifySubscriptionPage })));
 const UnsubscribeFromMatchingPage = lazy(() => import("@/pages/UnsubscribeFromMatchingPage").then((m) => ({ default: m.UnsubscribeFromMatchingPage })));
@@ -170,6 +176,7 @@ function ClerkProviderWithRoutes() {
     >
       <QueryClientProvider client={queryClient}>
         <ClerkQueryClientCacheInvalidator />
+        <ClaimPendingInvite />
         <Suspense fallback={<RouteLoadingFallback />}>
           <Switch>
             <Route path="/" component={HomeRedirect} />
@@ -191,6 +198,10 @@ function ClerkProviderWithRoutes() {
             <Route path="/replies" component={() => <ProtectedRoute component={RepliesInbox} />} />
             <Route path="/credits" component={() => <ProtectedRoute component={CreditsPage} />} />
             <Route path="/settings" component={() => <ProtectedRoute component={SettingsPage} />} />
+            <Route path="/invite" component={() => <ProtectedRoute component={InvitePage} />} />
+            <Route path="/send-text" component={() => <ProtectedRoute component={SendTextWhisp} />} />
+            <Route path="/text-whisps/:id" component={() => <ProtectedRoute component={TextWhispDetail} />} />
+            <Route path="/text-whisps" component={() => <ProtectedRoute component={TextWhispsList} />} />
 
             <Route path="/admin/users/:id" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminUserDetail} />} />} />
             <Route path="/admin/users" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminUsers} />} />} />
@@ -203,6 +214,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/admin" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminDashboard} />} />} />
 
             <Route path="/w/:token" component={PublicWhispPage} />
+            <Route path="/invite/:token" component={PublicInvitePage} />
             <Route path="/privacy" component={PrivacyPolicy} />
             <Route path="/privacy-policy" component={PrivacyPolicy} />
             <Route path="/terms" component={TermsOfService} />
