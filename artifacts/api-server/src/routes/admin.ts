@@ -855,6 +855,17 @@ router.post("/suggestions", async (req, res): Promise<void> => {
     case "blocked":
       res.status(422).json({ error: outcome.error, code: outcome.code });
       return;
+    // Unlike a sender's one-off whisp (routes/video.ts), a Suggestions
+    // Library entry is a public, curated gallery card — there's no manual
+    // title/thumbnail override in this endpoint's schema to fall back to,
+    // and publishing one with no title/thumbnail would just look broken in
+    // the gallery. Reject rather than silently create a blank-looking entry.
+    case "no_preview":
+      res.status(422).json({
+        error: `Couldn't generate a preview for this ${outcome.platform} link, so it can't be added to the library this way.`,
+        code: "video_private",
+      });
+      return;
   }
 
   const adminUser = (req as any).adminUser as User;

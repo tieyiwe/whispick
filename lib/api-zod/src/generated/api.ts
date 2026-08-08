@@ -372,7 +372,8 @@ export const ScrapeVideoMetaResponse = zod.object({
   "thumbnail": zod.string().nullish(),
   "platform": zod.string(),
   "embedUrl": zod.string().nullish(),
-  "authorName": zod.string().nullish()
+  "authorName": zod.string().nullish(),
+  "noPreview": zod.boolean().optional().describe('True when we couldn\'t scrape a real preview (currently only for Facebook\/Instagram) — the link is likely still fine, we just can\'t show what it looks like ahead of time.')
 })
 
 
