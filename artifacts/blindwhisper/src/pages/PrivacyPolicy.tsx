@@ -49,6 +49,8 @@ export function PrivacyPolicy() {
           <li><strong>Verified numbers are used only for this matching check and, if you choose, for your own sign-in.</strong> We do not use your verified phone number for marketing, sell it, or share it with Twilio or anyone else beyond what's needed to send you the one-time verification code itself.</li>
         </ul>
         <p><strong>1.8 Delayed reply notifications.</strong> When a Recipient replies to a Whisper Link, we intentionally delay the Sender's notification by a random interval (a few minutes) before sending it. This is a deliberate anonymity protection: if a Sender and Recipient happen to be physically near each other, an instant notification could let the Sender connect a Recipient's phone buzzing to their own action, undermining anonymity. The Recipient's own confirmation that their reply was sent is never delayed — only the Sender-facing notification is.</p>
+        <p><strong>1.9 Inviting a friend.</strong> You can invite someone you know to join Blind Whisper. Like a Whisper Link, an invite is anonymous by default: the invited person is never told who invited them unless you later choose to reveal yourself and they consent to the reveal, using the same two-step Reveal Flow described in Section 4. If you invite someone by email or phone number, we use that contact information solely to deliver the invite and to recognize the invited person if they later sign up through that link — it is not sold, rented, or shared with third parties for marketing purposes.</p>
+        <p><strong>1.10 Text Whisps.</strong> Text Whisps are short, anonymous text messages (up to 260 characters) that can only be sent between two people who both already have verified Blind Whisper accounts. Because eligibility depends on whether a phone number belongs to a known, verified user, sending a Text Whisp requires an eligibility check similar in kind to the in-app delivery matching described in Section 1.7: we look up whether the phone number you enter matches a verified account and tell you only "yes" or "no," never anything else about that account. This check is available only to signed-in users, and is rate-limited to prevent someone from using it to probe a large number of phone numbers looking for matches. Text Whisp content, like whisp notes, uses the same anonymous Reveal Flow — your identity is never disclosed to the other party without their consent and your own affirmative follow-up action. We remind you in the compose screen not to include identifying details in a Text Whisp unless you want to.</p>
       </LegalSection>
 
       <LegalSection heading="2. How We Use Your Information">
@@ -59,8 +61,10 @@ export function PrivacyPolicy() {
           <li>To verify phone number ownership via one-time SMS codes (Twilio Verify), and to determine whether a Whisper Link's Recipient is an existing verified Blind Whisper user so we can route delivery in-app instead of by text message, as described in Section 1.7</li>
           <li>To match Ghost Boost Whisps against our opted-in subscriber pool and deliver them</li>
           <li>To send Senders tracking notifications when Recipients open, click, or engage with their Whisper Links</li>
-          <li>To facilitate anonymous reply exchanges between Senders and Recipients within the Platform</li>
-          <li>To power the optional Reveal Flow feature, enabling consensual identity disclosure between a Sender and Recipient</li>
+          <li>To facilitate anonymous reply exchanges between Senders and Recipients within the Platform, including Text Whisps</li>
+          <li>To power the optional Reveal Flow feature, enabling consensual identity disclosure between a Sender and Recipient, or between an inviter and an invitee</li>
+          <li>To deliver anonymous invites to join Blind Whisper, and attribute a new signup back to the invite that brought them in when they choose to join through it</li>
+          <li>To check whether a phone number belongs to a verified Blind Whisper account, solely to determine Text Whisp eligibility or in-app delivery routing</li>
           <li>To generate optional AI features you use, as described in Section 3</li>
           <li>To enforce our Terms and Conditions, detect fraud, and prevent abuse</li>
           <li>To communicate with you about account updates, subscription renewals, credit balances, and product changes</li>
@@ -82,9 +86,9 @@ export function PrivacyPolicy() {
       <LegalSection heading="4. Anonymous Delivery and Sender Identity Protection">
         <p>Blind Whisper's core functionality is built on Sender anonymity. We implement the following protections:</p>
         <ul className="list-disc pl-5 space-y-1">
-          <li>Sender identities are never disclosed to Recipients through automated delivery mechanisms.</li>
-          <li>The optional Reveal Flow feature requires affirmative, two-step consent from both the Sender and Recipient before any identity is disclosed.</li>
-          <li>Whisper Link landing pages do not contain metadata linking back to the Sender's account.</li>
+          <li>Sender identities are never disclosed to Recipients through automated delivery mechanisms. The same applies to inviters and Text Whisp senders.</li>
+          <li>The optional Reveal Flow feature requires affirmative, two-step consent from both parties — Sender and Recipient, inviter and invitee, or Text Whisp sender and recipient — before any identity is disclosed.</li>
+          <li>Whisper Link landing pages do not contain metadata linking back to the Sender's account. The same applies to public invite pages.</li>
           <li>Ghost Boost matches are delivered as ordinary emails to opted-in subscribers; nothing in the delivery identifies the Sender to the Recipient.</li>
           <li>When a Whisp is routed to in-app delivery because the Recipient's number matches a verified account (Section 1.7), the Sender is never informed that this happened — the routing is invisible to them.</li>
           <li>Sender-facing notifications that a Recipient has replied are deliberately delayed by a random short interval, so a Recipient's phone notifying them cannot be used to identify the Sender through physical proximity (Section 1.8).</li>
