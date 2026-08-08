@@ -220,8 +220,9 @@ export function AdminAnalytics() {
           <CardHeader>
             <CardTitle className="text-base font-serif">Text Whisps</CardTitle>
             <p className="text-xs text-muted-foreground">
-              Short, text-only user-to-user messages, delivered entirely in-app. See Moderation for flagged content — Text Whisp
-              replies/messages run through the same content-safety pass as whisps.
+              Short, text-only anonymous messages to any phone number — in-app for existing users, a guest SMS link
+              otherwise. See Moderation for flagged content — Text Whisp replies/messages run through the same
+              content-safety pass as whisps.
             </p>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -238,6 +239,14 @@ export function AdminAnalytics() {
                 <div className="flex items-center justify-between text-sm py-1.5 px-3 rounded-lg bg-muted/20">
                   <span className="text-foreground">Replied</span>
                   <span className="text-muted-foreground font-mono">{funnelStats?.textWhisps.replied ?? 0}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm py-1.5 px-3 rounded-lg bg-muted/20">
+                  <span className="text-foreground">Delivered in-app (existing users)</span>
+                  <span className="text-muted-foreground font-mono">{funnelStats?.textWhisps.deliveredInApp ?? 0}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm py-1.5 px-3 rounded-lg bg-muted/20">
+                  <span className="text-foreground">Delivered as guest link (SMS)</span>
+                  <span className="text-muted-foreground font-mono">{funnelStats?.textWhisps.deliveredGuest ?? 0}</span>
                 </div>
               </>
             )}

@@ -644,12 +644,20 @@ router.get("/stats/funnel", async (_req, res): Promise<void> => {
       .then((r) => r[0]!),
     // Text Whisps (routes/textWhisps.ts) — a parallel, text-only content
     // type, not folded into the whisp funnel above since it isn't a whisp:
-    // volume and how far it gets read/replied, same lightweight treatment.
+    // volume and how far it gets read/replied, plus the same
+    // in-app-vs-guest split phoneMatchRouting reports for regular whisps —
+    // deliveredInApp counts rows whose recipient was already a known,
+    // verified account at send time (recipientUserId set); deliveredGuest
+    // counts rows sent to a phone number that wasn't (recipientUserId null,
+    // delivered as a public guest link instead — see
+    // lib/db/src/schema/text_whisps.ts's dual-path comment).
     db
       .select({
         sent: count(),
         read: sql<number>`count(*) filter (where ${textWhispsTable.readAt} is not null)`.mapWith(Number),
         replied: sql<number>`count(*) filter (where ${textWhispsTable.status} = 'replied')`.mapWith(Number),
+        deliveredInApp: sql<number>`count(*) filter (where ${textWhispsTable.recipientUserId} is not null)`.mapWith(Number),
+        deliveredGuest: sql<number>`count(*) filter (where ${textWhispsTable.recipientUserId} is null)`.mapWith(Number),
       })
       .from(textWhispsTable)
       .then((r) => r[0]!),
@@ -696,6 +704,8 @@ router.get("/stats/funnel", async (_req, res): Promise<void> => {
       sent: textWhispRow.sent,
       read: textWhispRow.read,
       replied: textWhispRow.replied,
+      deliveredInApp: textWhispRow.deliveredInApp,
+      deliveredGuest: textWhispRow.deliveredGuest,
     },
   });
 });

@@ -26,10 +26,10 @@ type DeliverableWhisp = {
 // the verification flow always store `phone` pre-normalized to E.164, so
 // only the *input* needs normalizing here, not the stored column.
 //
-// Exported so routes/textWhisps.ts's POST /check-recipient (and its
-// creation-time re-verification) can reuse the exact same lookup discipline
-// instead of duplicating it — "only phoneVerifiedAt IS NOT NULL counts" must
-// stay true everywhere this question is asked.
+// Exported so routes/textWhisps.ts's POST / (deciding whether a Text Whisp
+// goes in-app or out as a guest SMS link) can reuse the exact same lookup
+// discipline instead of duplicating it — "only phoneVerifiedAt IS NOT NULL
+// counts" must stay true everywhere this question is asked.
 export async function findVerifiedRecipient(rawPhone: string): Promise<{ id: string } | null> {
   const normalized = normalizePhoneE164(rawPhone);
   if (!normalized) return null;

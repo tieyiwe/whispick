@@ -8,7 +8,10 @@ import { requireAuth } from "../lib/auth";
 import { ensureUser } from "../lib/ensureUser";
 import { findVerifiedRecipient, deliverInApp } from "../lib/deliver";
 import { moderateTextWhispAsync } from "../lib/moderation";
-import { textWhispRecipientCheckLimiter, createTextWhispLimiter } from "../lib/rateLimit";
+import { createTextWhispLimiter } from "../lib/rateLimit";
+import { normalizePhoneE164 } from "../lib/phone";
+import { sendSms, textWhispGuestSmsBody } from "../lib/sms";
+import { getPublicAppUrl } from "../lib/publicUrl";
 import {
   textWhispHookLine,
   textWhispReplyHookLine,
@@ -18,12 +21,15 @@ import {
 
 const router = Router();
 
-// Text Whisps: a short, text-only anonymous message between two known,
-// verified Blind Whisper users — see lib/db/src/schema/text_whisps.ts for
-// the full rationale on why this is its own table/route instead of
-// stretching whisps.ts. Every route below is requireAuth-gated; unlike
-// whisps.ts there is no unauthenticated/public surface at all for this
-// feature, since both parties always have an account.
+// Text Whisps: a short, text-only anonymous message — see
+// lib/db/src/schema/text_whisps.ts for the full rationale on why this is its
+// own table/route instead of stretching whisps.ts, and for the dual-path
+// recipient model (known in-app user vs. any other phone number, delivered
+// as a guest link). Every route below is requireAuth-gated EXCEPT the public
+// guest-facing view, which lives in routes/publicTextWhisps.ts instead (kept
+// as its own file/router, same separation whisps.ts's public surface gets in
+// routes/public.ts, rather than mixing authed and unauthenticated routes in
+// one file).
 const MESSAGE_MAX_LENGTH = 260;
 
 // Sender-initiated soft delete — every sender-facing list/lookup excludes
@@ -46,37 +52,6 @@ async function loadTextWhispForUser(id: string, userId: string) {
   if (textWhisp.senderId === userId && textWhisp.deletedBySenderAt) return null;
   return textWhisp;
 }
-
-// POST /api/text-whisps/check-recipient — the privacy-sensitive eligibility
-// check: does this phone number belong to a known, OTP-verified Blind
-// Whisper user? Answers with ONLY a boolean, nothing else (no user id, no
-// name, no other field) — same anti-enumeration posture Signal/WhatsApp use
-// for contact discovery. This is an unavoidable trade-off given what the
-// feature does (product-accepted — see the task's own framing): the
-// response itself reveals "is this number a user," so the mitigation is
-// (a) never expose it unauthenticated, (b) return nothing beyond the
-// boolean, and (c) rate-limit heavily (see lib/rateLimit.ts's
-// textWhispRecipientCheckLimiter and its own comment for the exact number
-// and reasoning).
-const checkRecipientSchema = z.object({ phone: z.string().min(1) });
-
-router.post("/check-recipient", requireAuth, textWhispRecipientCheckLimiter, async (req, res): Promise<void> => {
-  const { userId } = getAuth(req);
-  const user = await ensureUser(userId!, req);
-
-  const parsed = checkRecipientSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-
-  const matched = await findVerifiedRecipient(parsed.data.phone);
-  // Can't send a text whisp to yourself — not eligible even though your own
-  // number is, of course, verified.
-  const eligible = !!matched && matched.id !== user.id;
-
-  res.json({ eligible });
-});
 
 // GET /api/text-whisps — the authenticated user's own text whisps, sent and
 // received, excluding ones they (as sender) soft-deleted.
@@ -118,35 +93,59 @@ router.post("/", requireAuth, createTextWhispLimiter, async (req, res): Promise<
     return;
   }
 
-  // Never trust a client-side check-recipient result alone — re-verify
-  // eligibility here, server-side, right before the row is written.
-  const matched = await findVerifiedRecipient(parsed.data.recipientPhone);
-  if (!matched || matched.id === user.id) {
-    res.status(400).json({ error: "That contact isn't available for a Text Whisp. They need to be a verified Blind Whisper user." });
+  const recipientPhone = normalizePhoneE164(parsed.data.recipientPhone);
+  if (!recipientPhone) {
+    res.status(400).json({ error: "That doesn't look like a valid phone number." });
+    return;
+  }
+
+  // Every recipient is eligible now — a phone number that doesn't match a
+  // known, verified Blind Whisper account just takes the guest-link path
+  // below instead of being rejected. The only thing still checked here is
+  // "is this the sender's own verified number" (can't send a text whisp to
+  // yourself), same self-check as before.
+  const matched = await findVerifiedRecipient(recipientPhone);
+  if (matched && matched.id === user.id) {
+    res.status(400).json({ error: "You can't send a Text Whisp to yourself." });
     return;
   }
 
   const id = randomUUID();
+  const publicToken = randomUUID().replace(/-/g, "");
   await db.insert(textWhispsTable).values({
     id,
     senderId: user.id,
-    recipientUserId: matched.id,
+    recipientUserId: matched?.id ?? null,
+    recipientPhone,
+    publicToken,
     senderAlias: parsed.data.senderAlias ?? null,
     messageText: parsed.data.messageText,
     status: "sent",
   });
 
+  // ANTI-ENUMERATION: read back and respond to the sender BEFORE the
+  // fire-and-forget delivery below runs, identical in shape/timing on both
+  // the matched (in-app) and unmatched (guest SMS) paths, so the sender's
+  // own request can never be used to infer whether recipientPhone was
+  // already a Blind Whisper account — same discipline as
+  // lib/deliver.ts's deliverWhisperLink (see its own ANTI-ENUMERATION
+  // comment) and every other caller of it. Do not await either delivery
+  // call above this line, and do not let its result or timing change what's
+  // sent back here.
   const textWhisp = await db.select().from(textWhispsTable).where(eq(textWhispsTable.id, id)).then((r) => r[0]);
   res.status(201).json(textWhisp);
 
-  // Delivered entirely in-app — see lib/deliver.ts's deliverInApp, shared
-  // with the matched-whisp path in lib/deliver.ts itself. Fire-and-forget,
-  // after the response, same posture as every notification in
-  // routes/whisps.ts.
-  void deliverInApp(matched.id, "You have a new Text Whisp", textWhispHookLine(), `/text-whisps/${id}`, parsed.data.recipientPhone, {
-    whispId: null,
-    purpose: "text_whisp",
-  });
+  const logCtx = { whispId: null, purpose: "text_whisp" as const };
+  if (matched) {
+    // Delivered entirely in-app — see lib/deliver.ts's deliverInApp, shared
+    // with the matched-whisp path in lib/deliver.ts itself.
+    void deliverInApp(matched.id, "You have a new Text Whisp", textWhispHookLine(), `/text-whisps/${id}`, recipientPhone, logCtx);
+  } else {
+    // Not a known account — deliver a guest link over SMS, same as a
+    // whisper_link's unmatched path (lib/deliver.ts's deliverWhisperLink),
+    // pointed at the public Text Whisp landing page (routes/publicTextWhisps.ts).
+    void sendSms(recipientPhone, textWhispGuestSmsBody(`${getPublicAppUrl(req)}/tw/${publicToken}`), logCtx);
+  }
 
   // Content-safety pass, same classifier whisps get — see
   // lib/moderation.ts's moderateTextWhispAsync.
@@ -267,12 +266,18 @@ router.post("/:id/replies", requireAuth, async (req, res): Promise<void> => {
   const reply = await db.select().from(textWhispRepliesTable).where(eq(textWhispRepliesTable.id, id)).then((r) => r[0]);
   res.status(201).json(reply);
 
-  // Notify whichever party didn't just send this reply.
+  // Notify whichever party didn't just send this reply. Only ever null when
+  // the sender follows up on their own Text Whisp before a guest recipient
+  // has signed up — there's no in-app account to notify yet in that case
+  // (and no other channel: guests can't reply at all, so there's nothing to
+  // "notify them of" until they've joined and have a real recipientUserId).
   const notifyUserId = isFromRecipient ? textWhisp.senderId : textWhisp.recipientUserId;
-  void deliverInApp(notifyUserId, "New reply on your Text Whisp", textWhispReplyHookLine(), `/text-whisps/${textWhisp.id}`, notifyUserId, {
-    whispId: null,
-    purpose: "text_whisp_reply",
-  });
+  if (notifyUserId) {
+    void deliverInApp(notifyUserId, "New reply on your Text Whisp", textWhispReplyHookLine(), `/text-whisps/${textWhisp.id}`, notifyUserId, {
+      whispId: null,
+      purpose: "text_whisp_reply",
+    });
+  }
 
   void moderateTextWhispAsync({ textWhispId: textWhisp.id, senderId: user.id, text: parsed.data.replyText });
 });
@@ -293,6 +298,17 @@ router.post("/:id/reveal", requireAuth, async (req, res): Promise<void> => {
 
   if (!textWhisp) {
     res.status(404).json({ error: "Text Whisp not found" });
+    return;
+  }
+
+  // Mirrors routes/invites.ts's identical gate: revealing is only
+  // meaningful once the recipient is an actual account holder — a guest who
+  // only ever saw the public link (routes/publicTextWhisps.ts) has no
+  // in-app notification to receive and nothing to accept/decline yet.
+  if (!textWhisp.recipientUserId) {
+    res.status(400).json({
+      error: "This Text Whisp hasn't been opened by a registered recipient yet — you can only reveal yourself once they've signed up.",
+    });
     return;
   }
 

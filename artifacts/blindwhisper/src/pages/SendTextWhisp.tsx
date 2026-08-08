@@ -1,11 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  useCheckTextWhispRecipient,
-  useCreateTextWhisp,
-  getListTextWhispsQueryKey,
-} from "@workspace/api-client-react";
+import { useCreateTextWhisp, getListTextWhispsQueryKey } from "@workspace/api-client-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { TextWhispScroll } from "@/components/shared/TextWhispScroll";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, ArrowRight, Phone, Loader2, CheckCircle2, XCircle, ShieldQuestion, ScrollText } from "lucide-react";
+import { ArrowLeft, ArrowRight, Phone, Loader2, ScrollText } from "lucide-react";
 
 const MESSAGE_MAX_LENGTH = 260;
 
@@ -27,22 +23,12 @@ const SENDER_ALIASES = [
   "An admirer",
 ];
 
-// Debounce length for the eligibility check while typing — long enough that
-// a normal typing cadence doesn't fire a request per keystroke (see
-// lib/rateLimit.ts's textWhispRecipientCheckLimiter, which is deliberately
-// tight), short enough that pausing mid-number still gets a timely answer.
-// A blur also checks immediately regardless of this timer.
-const CHECK_DEBOUNCE_MS = 700;
-
-type EligibilityState = "idle" | "checking" | "eligible" | "ineligible" | "error";
-
 export function SendTextWhisp() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const [phone, setPhone] = useState("");
-  const [eligibility, setEligibility] = useState<EligibilityState>("idle");
   const [messageText, setMessageText] = useState("");
   const [senderAlias, setSenderAlias] = useState(SENDER_ALIASES[0]);
   const [customAlias, setCustomAlias] = useState("");
@@ -50,41 +36,7 @@ export function SendTextWhisp() {
   const [sentId, setSentId] = useState<string | null>(null);
   const [animationDone, setAnimationDone] = useState(false);
 
-  const checkRecipient = useCheckTextWhispRecipient();
   const createTextWhisp = useCreateTextWhisp();
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastCheckedPhone = useRef<string | null>(null);
-
-  function runCheck(value: string) {
-    const trimmed = value.trim();
-    if (!trimmed) {
-      setEligibility("idle");
-      return;
-    }
-    if (lastCheckedPhone.current === trimmed && eligibility !== "idle" && eligibility !== "error") return;
-    lastCheckedPhone.current = trimmed;
-    setEligibility("checking");
-    checkRecipient.mutate(
-      { data: { phone: trimmed } },
-      {
-        onSuccess: (result) => setEligibility(result.eligible ? "eligible" : "ineligible"),
-        onError: () => setEligibility("error"),
-      },
-    );
-  }
-
-  function handlePhoneChange(value: string) {
-    setPhone(value);
-    setEligibility("idle");
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => runCheck(value), CHECK_DEBOUNCE_MS);
-  }
-
-  useEffect(() => {
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, []);
 
   function handleSend() {
     const alias = customAlias.trim() || senderAlias;
@@ -97,9 +49,6 @@ export function SendTextWhisp() {
           queryClient.invalidateQueries({ queryKey: getListTextWhispsQueryKey() });
         },
         onError: (err: any) => {
-          // The recipient could have become ineligible between the check and
-          // this submit (e.g. they never actually verified) — the server
-          // re-verifies independently and this is the honest error for that.
           toast({ title: err?.data?.error ?? "Failed to send Text Whisp", variant: "destructive" });
         },
       },
@@ -130,7 +79,6 @@ export function SendTextWhisp() {
                 setSentId(null);
                 setAnimationDone(false);
                 setPhone("");
-                setEligibility("idle");
                 setMessageText("");
                 setSenderAlias(SENDER_ALIASES[0]);
                 setCustomAlias("");
@@ -146,7 +94,7 @@ export function SendTextWhisp() {
   }
 
   const remaining = MESSAGE_MAX_LENGTH - messageText.length;
-  const canSend = eligibility === "eligible" && messageText.trim().length > 0 && remaining >= 0;
+  const canSend = phone.trim().length > 0 && messageText.trim().length > 0 && remaining >= 0;
 
   return (
     <AppLayout>
@@ -156,7 +104,7 @@ export function SendTextWhisp() {
             <ScrollText className="w-7 h-7 text-primary" /> Send a Text Whisp
           </h1>
           <p className="text-muted-foreground mt-1">
-            A short, anonymous note straight to someone who's already on Blind Whisper.
+            A short, anonymous note to any phone number — not just people already on Blind Whisper.
           </p>
         </div>
 
@@ -164,8 +112,14 @@ export function SendTextWhisp() {
           <CardContent className="p-6 space-y-5">
             <div className="space-y-2">
               <p className="text-sm font-medium text-foreground">Who's it for?</p>
+              {/* General, always-shown disclosure about how the feature
+                  works — never per-number feedback, so it can't be used to
+                  probe whether a specific number is a Blind Whisper account
+                  (see api-server's anti-enumeration posture on POST
+                  /text-whisps). */}
               <p className="text-xs text-muted-foreground">
-                Text Whisps only work between two Blind Whisper accounts — we'll check as you type.
+                If they're already on Blind Whisper, it delivers instantly in-app. If not, they'll get a text with a
+                link to read it — and can sign up to reply the same way.
               </p>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -174,36 +128,13 @@ export function SendTextWhisp() {
                   placeholder="+1 555 123 4567"
                   type="tel"
                   value={phone}
-                  onChange={(e) => handlePhoneChange(e.target.value)}
-                  onBlur={() => runCheck(phone)}
+                  onChange={(e) => setPhone(e.target.value)}
                   data-testid="input-text-whisp-recipient-phone"
                 />
               </div>
-              <div className="min-h-5 flex items-center gap-1.5 text-xs" data-testid="text-recipient-eligibility">
-                {eligibility === "checking" && (
-                  <span className="flex items-center gap-1.5 text-muted-foreground">
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" /> Checking...
-                  </span>
-                )}
-                {eligibility === "eligible" && (
-                  <span className="flex items-center gap-1.5 text-primary">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> They're on Blind Whisper — you can send a Text Whisp.
-                  </span>
-                )}
-                {eligibility === "ineligible" && (
-                  <span className="flex items-center gap-1.5 text-muted-foreground">
-                    <XCircle className="w-3.5 h-3.5" /> Not eligible yet — they'd need a verified Blind Whisper account. Try a regular Whisper Link instead.
-                  </span>
-                )}
-                {eligibility === "error" && (
-                  <span className="flex items-center gap-1.5 text-destructive">
-                    <ShieldQuestion className="w-3.5 h-3.5" /> Couldn't check that number just now — try again.
-                  </span>
-                )}
-              </div>
             </div>
 
-            {eligibility === "eligible" && (
+            {phone.trim().length > 0 && (
               <>
                 <div className="space-y-1.5">
                   <p className="text-sm font-medium text-foreground">Your message</p>

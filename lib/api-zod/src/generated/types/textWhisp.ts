@@ -9,7 +9,15 @@
 export interface TextWhisp {
   id: string;
   senderId: string;
-  recipientUserId: string;
+  /**
+     * Set only when recipientPhone matched a known, OTP-verified Blind Whisper account at send time. Null means it went out as a guest link over SMS instead — see recipientPhone and publicToken.
+     * @nullable
+     */
+  recipientUserId: string | null;
+  /** The E.164-normalized phone number provided at send time, regardless of whether it matched a user. */
+  recipientPhone: string;
+  /** Token for the public guest landing page (/tw/{publicToken}, see GET /public/text-whisps/{token}). Always set, even for a matched in-app send. */
+  publicToken: string;
   /** @nullable */
   senderAlias?: string | null;
   /** @maxLength 260 */

@@ -37,6 +37,7 @@ const SettingsPage = lazy(() => import("@/pages/SettingsPage").then((m) => ({ de
 const PublicWhispPage = lazy(() => import("@/pages/PublicWhispPage").then((m) => ({ default: m.PublicWhispPage })));
 const InvitePage = lazy(() => import("@/pages/InvitePage").then((m) => ({ default: m.InvitePage })));
 const PublicInvitePage = lazy(() => import("@/pages/PublicInvitePage").then((m) => ({ default: m.PublicInvitePage })));
+const PublicTextWhisp = lazy(() => import("@/pages/PublicTextWhisp").then((m) => ({ default: m.PublicTextWhisp })));
 const TextWhispsList = lazy(() => import("@/pages/TextWhispsList").then((m) => ({ default: m.TextWhispsList })));
 const SendTextWhisp = lazy(() => import("@/pages/SendTextWhisp").then((m) => ({ default: m.SendTextWhisp })));
 const TextWhispDetail = lazy(() => import("@/pages/TextWhispDetail").then((m) => ({ default: m.TextWhispDetail })));
@@ -215,6 +216,7 @@ function ClerkProviderWithRoutes() {
 
             <Route path="/w/:token" component={PublicWhispPage} />
             <Route path="/invite/:token" component={PublicInvitePage} />
+            <Route path="/tw/:token" component={PublicTextWhisp} />
             <Route path="/privacy" component={PrivacyPolicy} />
             <Route path="/privacy-policy" component={PrivacyPolicy} />
             <Route path="/terms" component={TermsOfService} />

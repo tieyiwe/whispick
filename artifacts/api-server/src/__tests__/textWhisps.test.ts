@@ -5,6 +5,7 @@ import app from "../app";
 import { db, usersTable, textWhispsTable, textWhispRepliesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { TEST_USER_HEADER } from "./setup";
+import { textWhispGuestSmsBody } from "../lib/sms";
 
 const USER_A = "clerk_text_whisp_a"; // sender
 const USER_B = "clerk_text_whisp_b"; // recipient — verified
@@ -40,62 +41,6 @@ async function setupSenderAndVerifiedRecipient() {
   return { senderId, recipientId };
 }
 
-describe("POST /api/text-whisps/check-recipient", () => {
-  it("rejects unauthenticated requests", async () => {
-    const res = await request(app).post("/api/text-whisps/check-recipient").send({ phone: RECIPIENT_PHONE });
-    expect(res.status).toBe(401);
-  });
-
-  it("returns eligible: true for a verified user's phone, and ONLY that field", async () => {
-    await setupSenderAndVerifiedRecipient();
-
-    const res = await request(app)
-      .post("/api/text-whisps/check-recipient")
-      .set(asUser(USER_A))
-      .send({ phone: RECIPIENT_PHONE });
-
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual({ eligible: true });
-    expect(Object.keys(res.body)).toEqual(["eligible"]);
-  });
-
-  it("returns eligible: false for a phone number with no matching verified user", async () => {
-    await insertUser(USER_A);
-
-    const res = await request(app)
-      .post("/api/text-whisps/check-recipient")
-      .set(asUser(USER_A))
-      .send({ phone: "+15550000000" });
-
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual({ eligible: false });
-  });
-
-  it("returns eligible: false for an unverified phone match (phone set but phoneVerifiedAt null)", async () => {
-    await insertUser(USER_A);
-    await insertUser(USER_B, { phone: RECIPIENT_PHONE, phoneVerifiedAt: null });
-
-    const res = await request(app)
-      .post("/api/text-whisps/check-recipient")
-      .set(asUser(USER_A))
-      .send({ phone: RECIPIENT_PHONE });
-
-    expect(res.body).toEqual({ eligible: false });
-  });
-
-  it("returns eligible: false when checking your own phone number", async () => {
-    await insertUser(USER_A, { phone: "+15551111111", phoneVerifiedAt: new Date() });
-
-    const res = await request(app)
-      .post("/api/text-whisps/check-recipient")
-      .set(asUser(USER_A))
-      .send({ phone: "+15551111111" });
-
-    expect(res.body).toEqual({ eligible: false });
-  });
-
-});
-
 describe("POST /api/text-whisps", () => {
   it("rejects unauthenticated requests", async () => {
     const res = await request(app).post("/api/text-whisps").send({ recipientPhone: RECIPIENT_PHONE, messageText: "hi" });
@@ -122,13 +67,12 @@ describe("POST /api/text-whisps", () => {
     expect(res.status).toBe(201);
   });
 
-  it("rejects when the recipient isn't a known, verified user — even if a prior check-recipient said eligible", async () => {
+  it("rejects an unparseable phone number", async () => {
     await insertUser(USER_A);
-    // No recipient user inserted at all.
     const res = await request(app)
       .post("/api/text-whisps")
       .set(asUser(USER_A))
-      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "hello" });
+      .send({ recipientPhone: "not a phone number", messageText: "hello" });
 
     expect(res.status).toBe(400);
   });
@@ -143,7 +87,7 @@ describe("POST /api/text-whisps", () => {
     expect(res.status).toBe(400);
   });
 
-  it("creates the Text Whisp and delivers it entirely in-app", async () => {
+  it("creates the Text Whisp and delivers it entirely in-app when the recipient is a known, verified user (regression)", async () => {
     const { recipientId } = await setupSenderAndVerifiedRecipient();
 
     const res = await request(app)
@@ -154,10 +98,47 @@ describe("POST /api/text-whisps", () => {
     expect(res.status).toBe(201);
     expect(res.body.status).toBe("sent");
     expect(res.body.recipientUserId).toBe(recipientId);
+    expect(res.body.recipientPhone).toBe(RECIPIENT_PHONE);
+    expect(res.body.publicToken).toBeTruthy();
     expect(res.body.messageText).toBe("You matter.");
 
     const row = await db.select().from(textWhispsTable).where(eq(textWhispsTable.id, res.body.id)).then((r) => r[0]);
     expect(row).toBeTruthy();
+    expect(row.recipientUserId).toBe(recipientId);
+  });
+
+  it("creates the Text Whisp with recipientUserId null when the phone number isn't a known, verified user, and stores the normalized phone + a public token", async () => {
+    await insertUser(USER_A);
+    // No recipient user inserted at all — an arbitrary phone number.
+    const res = await request(app)
+      .post("/api/text-whisps")
+      .set(asUser(USER_A))
+      .send({ recipientPhone: "+15550000000", messageText: "Hey there." });
+
+    expect(res.status).toBe(201);
+    expect(res.body.recipientUserId).toBeNull();
+    expect(res.body.recipientPhone).toBe("+15550000000");
+    expect(res.body.publicToken).toBeTruthy();
+    expect(typeof res.body.publicToken).toBe("string");
+
+    const row = await db.select().from(textWhispsTable).where(eq(textWhispsTable.id, res.body.id)).then((r) => r[0]);
+    expect(row).toBeTruthy();
+    expect(row.recipientUserId).toBeNull();
+    expect(row.recipientPhone).toBe("+15550000000");
+    expect(row.publicToken).toBe(res.body.publicToken);
+  });
+
+  it("does not match an unverified phone (phone set but phoneVerifiedAt null) — treated as a guest send", async () => {
+    await insertUser(USER_A);
+    await insertUser(USER_B, { phone: RECIPIENT_PHONE, phoneVerifiedAt: null });
+
+    const res = await request(app)
+      .post("/api/text-whisps")
+      .set(asUser(USER_A))
+      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "hello" });
+
+    expect(res.status).toBe(201);
+    expect(res.body.recipientUserId).toBeNull();
   });
 });
 
@@ -375,30 +356,88 @@ describe("Text Whisp reveal flow", () => {
     const byThirdParty = await request(app).post(`/api/text-whisps/${id}/reveal/respond`).set(asUser(USER_C)).send({ accepted: true });
     expect(byThirdParty.status).toBe(404);
   });
+
+  it("rejects a reveal request while the recipient hasn't joined yet (recipientUserId null)", async () => {
+    await insertUser(USER_A);
+    const create = await request(app)
+      .post("/api/text-whisps")
+      .set(asUser(USER_A))
+      .send({ recipientPhone: "+15550001111", messageText: "hi there" });
+    expect(create.body.recipientUserId).toBeNull();
+
+    const res = await request(app).post(`/api/text-whisps/${create.body.id}/reveal`).set(asUser(USER_A));
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/hasn't been opened by a registered recipient/i);
+
+    const row = await db.select().from(textWhispsTable).where(eq(textWhispsTable.id, create.body.id)).then((r) => r[0]);
+    expect(row.revealRequested).toBe(false);
+  });
 });
 
-// Kept last and isolated to its own user identity: firing 13 rapid requests
-// through the same Express app/connection pool appears to leave transient
-// state (observed as later, unrelated queries in this same process briefly
-// missing rows they should see) that only settles after a beat — a test
-// environment quirk, not a product bug, but real enough that this block
-// stays last in the file so it can't taint any test after it.
-describe("POST /api/text-whisps/check-recipient — rate limit", () => {
-  const RATE_LIMIT_USER = "clerk_text_whisp_ratelimit";
+describe("Text Whisp sent to a non-user phone number", () => {
+  async function createGuestTextWhisp() {
+    await insertUser(USER_A);
+    const res = await request(app)
+      .post("/api/text-whisps")
+      .set(asUser(USER_A))
+      .send({ recipientPhone: "+15550002222", messageText: "hi there, stranger" });
+    return res.body.id as string;
+  }
 
-  it("rate-limits the eligibility check heavily (12/hour per user)", async () => {
-    await insertUser(RATE_LIMIT_USER);
-    await insertUser(USER_B, { phone: RECIPIENT_PHONE, phoneVerifiedAt: new Date() });
+  it("is only visible to the sender via the authenticated GET /:id route — there's no authenticated recipient yet", async () => {
+    const id = await createGuestTextWhisp();
 
-    let lastStatus = 200;
-    for (let i = 0; i < 13; i++) {
-      const res = await request(app)
-        .post("/api/text-whisps/check-recipient")
-        .set(asUser(RATE_LIMIT_USER))
-        .send({ phone: RECIPIENT_PHONE });
-      lastStatus = res.status;
-    }
+    const senderGet = await request(app).get(`/api/text-whisps/${id}`).set(asUser(USER_A));
+    expect(senderGet.status).toBe(200);
+    expect(senderGet.body.textWhisp.recipientUserId).toBeNull();
 
-    expect(lastStatus).toBe(429);
+    await insertUser(USER_C);
+    const thirdPartyGet = await request(app).get(`/api/text-whisps/${id}`).set(asUser(USER_C));
+    expect(thirdPartyGet.status).toBe(404);
+  });
+});
+
+describe("GET /api/public/text-whisps/:token", () => {
+  async function createGuestTextWhisp() {
+    await insertUser(USER_A);
+    const res = await request(app)
+      .post("/api/text-whisps")
+      .set(asUser(USER_A))
+      .send({ recipientPhone: "+15550003333", messageText: "a message for a stranger", senderAlias: "A friend" });
+    return res.body as { id: string; publicToken: string };
+  }
+
+  it("returns only public-safe fields, never senderId/recipientUserId/recipientPhone", async () => {
+    const { publicToken } = await createGuestTextWhisp();
+
+    const res = await request(app).get(`/api/public/text-whisps/${publicToken}`);
+    expect(res.status).toBe(200);
+    expect(res.body.messageText).toBe("a message for a stranger");
+    expect(res.body.senderAlias).toBe("A friend");
+    expect(Object.keys(res.body).sort()).toEqual(["createdAt", "id", "messageText", "revealRequested", "senderAlias", "status"].sort());
+  });
+
+  it("marks the text whisp read on first guest view", async () => {
+    const { id, publicToken } = await createGuestTextWhisp();
+
+    const first = await request(app).get(`/api/public/text-whisps/${publicToken}`);
+    expect(first.body.status).toBe("read");
+
+    const row = await db.select().from(textWhispsTable).where(eq(textWhispsTable.id, id)).then((r) => r[0]);
+    expect(row.readAt).not.toBeNull();
+    expect(row.status).toBe("read");
+  });
+
+  it("404s on an unknown/expired token", async () => {
+    const res = await request(app).get("/api/public/text-whisps/not-a-real-token");
+    expect(res.status).toBe(404);
+  });
+});
+
+describe("textWhispGuestSmsBody", () => {
+  it("includes the guest URL and the required STOP/HELP compliance footer", () => {
+    const body = textWhispGuestSmsBody("https://blindwhisper.com/tw/abc123");
+    expect(body).toContain("https://blindwhisper.com/tw/abc123");
+    expect(body).toContain("Reply STOP to opt out, HELP for help. Msg & data rates may apply.");
   });
 });

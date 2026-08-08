@@ -383,26 +383,26 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
 
-  /text-whisps/check-recipient:
-    post:
-      operationId: checkTextWhispRecipient
-      tags: [textWhisps]
-      summary: Check whether a phone number is eligible for a Text Whisp (a known, OTP-verified Blind Whisper user) — returns only a boolean, heavily rate-limited
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CheckTextWhispRecipientInput"
+  /public/text-whisps/{token}:
+    get:
+      operationId: getPublicTextWhisp
+      tags: [public]
+      summary: Public Text Whisp guest landing page data (no auth required) — view only, marks it read on first view. There is no reply endpoint here; replying requires signing up (see POST /text-whisps/{id}/replies).
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
       responses:
         "200":
-          description: Eligibility result
+          description: Public Text Whisp data
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CheckTextWhispRecipientResult"
-        "429":
-          description: Too many eligibility checks
+                $ref: "#/components/schemas/PublicTextWhisp"
+        "404":
+          description: Not found
           content:
             application/json:
               schema:
@@ -425,7 +425,7 @@ paths:
     post:
       operationId: createTextWhisp
       tags: [textWhisps]
-      summary: Send a new Text Whisp to a known, verified recipient
+      summary: Send a new Text Whisp to any phone number — delivered in-app if it matches a known, verified Blind Whisper user, otherwise as a guest link over SMS
       requestBody:
         required: true
         content:
@@ -440,7 +440,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/TextWhisp"
         "400":
-          description: Bad request, or the recipient isn't eligible
+          description: Bad request (invalid phone number, or sending to yourself)
           content:
             application/json:
               schema:
@@ -532,7 +532,7 @@ paths:
     post:
       operationId: requestTextWhispReveal
       tags: [textWhisps]
-      summary: Sender requests to reveal their identity
+      summary: Sender requests to reveal their identity — rejected if the recipient hasn't signed up yet (recipientUserId is still null)
       parameters:
         - in: path
           name: id
@@ -546,6 +546,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TextWhisp"
+        "400":
+          description: The recipient hasn't joined yet — there's no registered account to reveal to
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
         "404":
           description: Not found
           content:
@@ -2553,23 +2559,6 @@ components:
         - revealRequested
         - revealAccepted
 
-    CheckTextWhispRecipientInput:
-      type: object
-      properties:
-        phone:
-          type: string
-      required:
-        - phone
-
-    CheckTextWhispRecipientResult:
-      type: object
-      description: Deliberately only a boolean — no user id, name, or any other field. See POST /text-whisps/check-recipient's own description.
-      properties:
-        eligible:
-          type: boolean
-      required:
-        - eligible
-
     TextWhisp:
       type: object
       properties:
@@ -2578,7 +2567,14 @@ components:
         senderId:
           type: string
         recipientUserId:
+          type: ["string", "null"]
+          description: Set only when recipientPhone matched a known, OTP-verified Blind Whisper account at send time. Null means it went out as a guest link over SMS instead — see recipientPhone and publicToken.
+        recipientPhone:
           type: string
+          description: The E.164-normalized phone number provided at send time, regardless of whether it matched a user.
+        publicToken:
+          type: string
+          description: Token for the public guest landing page (/tw/{publicToken}, see GET /public/text-whisps/{token}). Always set, even for a matched in-app send.
         senderAlias:
           type: ["string", "null"]
         messageText:
@@ -2599,6 +2595,8 @@ components:
         - id
         - senderId
         - recipientUserId
+        - recipientPhone
+        - publicToken
         - messageText
         - status
         - revealRequested
@@ -2744,6 +2742,31 @@ components:
         - id
         - status
         - revealRequested
+
+    PublicTextWhisp:
+      type: object
+      description: Public-safe fields only — never senderId, recipientUserId, or recipientPhone. See GET /public/text-whisps/{token}.
+      properties:
+        id:
+          type: string
+        messageText:
+          type: string
+          maxLength: 260
+        senderAlias:
+          type: ["string", "null"]
+        status:
+          type: string
+          description: "'sent' | 'read' | 'replied'"
+        revealRequested:
+          type: boolean
+        createdAt:
+          type: string
+      required:
+        - id
+        - messageText
+        - status
+        - revealRequested
+        - createdAt
 
     VideoMetaRequest:
       type: object
@@ -3850,7 +3873,7 @@ components:
           required: [sent, joined, conversionRate]
         textWhisps:
           type: object
-          description: Text Whisp (routes/textWhisps.ts) volume and how far it gets read/replied — a separate, text-only content type, not folded into the whisp funnel above.
+          description: Text Whisp (routes/textWhisps.ts) volume and how far it gets read/replied — a separate, text-only content type, not folded into the whisp funnel above. deliveredInApp/deliveredGuest mirror phoneMatchRouting's in-app-vs-Twilio split, one level up (recipientUserId set vs. null at send time).
           properties:
             sent:
               type: integer
@@ -3858,7 +3881,13 @@ components:
               type: integer
             replied:
               type: integer
-          required: [sent, read, replied]
+            deliveredInApp:
+              type: integer
+              description: Text Whisps whose recipient phone matched a known, verified account at send time (recipientUserId is set) — delivered entirely in-app.
+            deliveredGuest:
+              type: integer
+              description: Text Whisps sent to a phone number that wasn't a known, verified account at send time (recipientUserId is null) — delivered as a public guest link over SMS.
+          required: [sent, read, replied, deliveredInApp, deliveredGuest]
       required:
         - funnel
         - deliveryByChannel
