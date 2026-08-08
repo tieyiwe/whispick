@@ -133,6 +133,7 @@ export function SendWhisp() {
     embedUrl?: string | null;
     platform?: string;
     authorName?: string | null;
+    noPreview?: boolean;
   } | null>(null);
   const [uploadedVideoId, setUploadedVideoId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -811,7 +812,19 @@ export function SendWhisp() {
                   </div>
                 )}
                 {/* Video preview */}
-                {(videoMeta?.thumbnail || videoMeta?.title) && (
+                {videoMeta?.noPreview ? (
+                  <div className="flex gap-3 p-3 bg-muted/30 rounded-xl items-center">
+                    <div className="w-16 h-12 bg-muted rounded-lg flex items-center justify-center shrink-0">
+                      <PlatformIcon platform={videoMeta.platform} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground capitalize">{videoMeta.platform} link</p>
+                      <p className="text-xs text-muted-foreground">
+                        We can't generate a preview for {videoMeta.platform} links, but you can still send it — just double-check the link works for you.
+                      </p>
+                    </div>
+                  </div>
+                ) : (videoMeta?.thumbnail || videoMeta?.title) && (
                   <div className="flex gap-3 p-3 bg-muted/30 rounded-xl items-center">
                     {videoMeta.thumbnail ? (
                       <Thumbnail src={videoMeta.thumbnail} alt="thumbnail" className="w-16 h-12 object-cover rounded-lg" />
@@ -1305,7 +1318,17 @@ export function SendWhisp() {
               <div className="space-y-4">
                 <h2 className="text-xl font-serif font-semibold">Ready to send?</h2>
                 <div className="space-y-2 text-sm">
-                  {(videoMeta?.thumbnail || videoMeta?.title) && (
+                  {videoMeta?.noPreview ? (
+                    <div className="flex gap-3 p-3 bg-muted/30 rounded-xl items-center" data-testid="review-video-preview-card">
+                      <div className="w-20 h-14 bg-muted rounded-lg flex items-center justify-center shrink-0">
+                        <PlatformIcon platform={videoMeta.platform} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground capitalize">{videoMeta.platform} link</p>
+                        <p className="text-xs text-muted-foreground truncate">{videoUrl}</p>
+                      </div>
+                    </div>
+                  ) : (videoMeta?.thumbnail || videoMeta?.title) && (
                     <div className="flex gap-3 p-3 bg-muted/30 rounded-xl items-center" data-testid="review-video-preview-card">
                       {videoMeta.thumbnail ? (
                         <Thumbnail src={videoMeta.thumbnail} alt="thumbnail" className="w-20 h-14 object-cover rounded-lg" />

@@ -25,6 +25,21 @@ router.post("/meta", async (req, res): Promise<void> => {
     case "blocked":
       res.status(422).json({ error: outcome.error, code: outcome.code });
       return;
+    // Not an error — we just couldn't scrape a real preview (see
+    // VideoMetaOutcome's "no_preview" case). 200, not 422: the link itself
+    // is very likely fine, we just can't show what it looks like ahead of
+    // time. The frontend shows a platform icon and an explanatory note
+    // instead of a blank/broken-looking preview card.
+    case "no_preview":
+      res.json({
+        title: null,
+        thumbnail: null,
+        platform: outcome.platform,
+        embedUrl: null,
+        authorName: null,
+        noPreview: true,
+      });
+      return;
     case "ok":
       res.json({
         title: outcome.title,

@@ -81,6 +81,27 @@ export function looksPrivate(text: string | undefined): boolean {
   return PRIVATE_CONTENT_PATTERNS.some((pattern) => pattern.test(text));
 }
 
+// A bare, generic title that's just the platform's own name — "Instagram",
+// "Facebook", nothing else — is a strong signal we got a login-wall page's
+// <title> tag rather than the real post's og:title. A real post always has
+// a more specific title (even a placeholder one includes the account name
+// or caption). This is distinct from looksPrivate()'s phrase matching,
+// which only catches wording we've seen before — Meta changes this copy
+// without notice, so matching against known phrases alone is a losing game.
+// Checked with platform context (only meaningful for facebook/instagram —
+// "YouTube" isn't a suspicious title for some other site) rather than a
+// blanket pattern.
+const BARE_PLATFORM_TITLES: Record<string, RegExp> = {
+  facebook: /^facebook$/i,
+  instagram: /^instagram$/i,
+};
+
+export function looksLikeBareWallTitle(platform: string | null, title: string | undefined): boolean {
+  if (!platform || !title) return false;
+  const pattern = BARE_PLATFORM_TITLES[platform];
+  return pattern ? pattern.test(title.trim()) : false;
+}
+
 export type ScrapeResult = { status: number; title?: string; thumbnail?: string; authorName?: string };
 
 export async function scrapeOEmbed(url: string, platform: string | null): Promise<ScrapeResult | null> {
@@ -188,6 +209,15 @@ export type VideoMetaOutcome =
   | { kind: "invalid_url" }
   | { kind: "unsupported" }
   | { kind: "blocked"; error: string; code: "video_private" | "video_not_found" }
+  // Distinct from "blocked": we don't actually know whether the post itself
+  // is private — only that we (a server-side scraper, not a real logged-in
+  // browser) couldn't get a real preview for it. Telling the sender "this
+  // looks private" here would often be wrong and needlessly block a send
+  // that would work fine for the recipient opening it directly. Currently
+  // only reachable for facebook/instagram, whose anti-scraping has gotten
+  // aggressive enough that even a recognized crawler User-Agent frequently
+  // isn't sufficient — see ogScrapeUserAgent's comment.
+  | { kind: "no_preview"; platform: string }
   | { kind: "ok"; title: string | null; thumbnail: string | null; platform: string; embedUrl: string | null; authorName: string | null };
 
 // The full "given a URL, figure out if we can use it" flow — hostname
@@ -236,6 +266,16 @@ export async function resolveVideoMeta(url: string): Promise<VideoMetaOutcome> {
       error: "This looks like a private or restricted video — the recipient won't be able to open it. Double-check its sharing settings, or use a public link instead.",
       code: "video_private",
     };
+  }
+
+  // Neither a real title nor a thumbnail, or a title that's just the bare
+  // platform name — we didn't get real post data. Rather than claim "ok"
+  // with nothing useful (which the composer UI shows as if the preview
+  // silently failed) or wrongly claim it's private, say plainly that we
+  // couldn't generate a preview.
+  const noRealData = !result?.thumbnail && (!result?.title || looksLikeBareWallTitle(platform, result.title));
+  if (noRealData && (platform === "facebook" || platform === "instagram")) {
+    return { kind: "no_preview", platform };
   }
 
   return {
