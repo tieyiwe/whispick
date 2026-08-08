@@ -142,6 +142,37 @@ export function LandingPage() {
           </div>
         </section>
 
+        {/* See it in action */}
+        <section className="relative z-10 px-4 py-20 sm:py-28">
+          <div className="max-w-2xl mx-auto text-center space-y-4 mb-14">
+            <h2 className="text-3xl md:text-4xl font-serif font-bold text-foreground">
+              From link to sent, in under a minute
+            </h2>
+            <p className="text-muted-foreground text-lg">
+              Paste a video, say what you mean, and it's on its way — anonymously.
+            </p>
+          </div>
+
+          <div className="max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-6">
+            {[
+              { src: "/screenshots/send-step1-link.png", step: "1", title: "Paste any video link", desc: "YouTube, TikTok, Instagram, Facebook — or upload your own." },
+              { src: "/screenshots/send-step2-note.png", step: "2", title: "Add a note, stay anonymous", desc: "Say what you mean. They'll never know it came from you." },
+              { src: "/screenshots/send-step3-sent.png", step: "3", title: "Sent — that's it", desc: "We'll let you know the moment it's seen." },
+            ].map((shot) => (
+              <div key={shot.step} className="flex flex-col items-center text-center">
+                <div className="rounded-[2rem] border border-border/60 bg-card/40 shadow-[0_0_30px_rgba(124,92,252,0.12)] overflow-hidden w-full max-w-[220px]">
+                  <img src={shot.src} alt={shot.title} className="w-full h-auto block" loading="lazy" width={390} height={844} />
+                </div>
+                <div className="mt-5 flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-primary/15 text-primary text-xs font-semibold flex items-center justify-center shrink-0">{shot.step}</span>
+                  <h3 className="text-sm font-semibold text-foreground">{shot.title}</h3>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1.5 max-w-[220px]">{shot.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* No more awkwardness */}
         <section className="relative z-10 px-4 py-24 sm:py-32">
           <div className="max-w-4xl mx-auto text-center space-y-6">
