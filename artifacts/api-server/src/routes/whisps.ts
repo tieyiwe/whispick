@@ -25,7 +25,7 @@ import { needsDemographics } from "../lib/demographics";
 import { computeExpiresAt, MAX_SCHEDULE_DAYS } from "../lib/expiration";
 import { MAX_SCHEDULE_DAYS_WITH_UPLOAD } from "../lib/uploads";
 import { whisperLinkLimitFor, GHOST_BOOST_COST_USD } from "../lib/plans";
-import { createWhispLimiter, noteSuggestionLimiter, conciergeLimiter } from "../lib/rateLimit";
+import { createWhispLimiter, noteSuggestionLimiter, conciergeLimiter, publicEndpointLimiter } from "../lib/rateLimit";
 import { getGhostBoostMatchStats } from "../lib/matching";
 import { generateNoteSuggestions } from "../lib/noteSuggestions";
 import { runConcierge, MAX_SITUATION_LENGTH } from "../lib/concierge";
@@ -652,6 +652,16 @@ router.post("/:id/reveal", requireAuth, async (req, res): Promise<void> => {
 // shows. It must never return the full row: that would hand out senderId,
 // recipientEmail/Phone, and everything else to anyone who has (or later
 // obtains — a forwarded link, a leaked referrer, etc.) this whisp id.
+// Unauthenticated + a real DB write, same category as every route in
+// routes/public.ts — rate-limited the same way (see lib/rateLimit.ts's
+// publicEndpointLimiter) so it isn't the one unauthenticated write endpoint
+// in the app anyone can hammer without limit. Applied via a separate
+// router.use() (rather than passed inline to router.patch()) for the same
+// reason requireAuth is deliberately untyped (see lib/auth.ts's comment):
+// express-rate-limit's own explicit RequestHandler typing, mixed into the
+// same .patch() overload as the handler below, would widen this route's
+// :id param inference to the generic ParamsDictionary for the whole chain.
+router.use("/:id/reveal", publicEndpointLimiter);
 router.patch("/:id/reveal", async (req, res): Promise<void> => {
   const schema = z.object({ accepted: z.boolean() });
   const parsed = schema.safeParse(req.body);
