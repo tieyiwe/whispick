@@ -109,6 +109,15 @@ export async function sendWhatsApp(to: string, linkUrl: string, logCtx: Delivery
   );
 }
 
+// Msg&Data-rates/STOP disclosure on every SMS this app sends, not just the
+// first one to a given number — a Sender's follow-up, reminder, or reveal
+// notification (see lib/copy.ts) can be the actual first message a given
+// recipient number receives from us if an earlier send to it failed, so
+// there's no single "first message" we can safely omit this from. Required
+// for A2P 10DLC campaign approval (Twilio error 30896/30886) and standard
+// carrier compliance regardless.
+const COMPLIANCE_FOOTER = "Reply STOP to opt out, HELP for help. Msg & data rates may apply.";
+
 export function whisperLinkSmsBody(publicUrl: string, hookLine: string = HOOK_LINE): string {
-  return `${hookLine}\n${publicUrl}\n— sent anonymously via Blind Whisper`;
+  return `${hookLine}\n${publicUrl}\n— sent anonymously via Blind Whisper\n${COMPLIANCE_FOOTER}`;
 }
