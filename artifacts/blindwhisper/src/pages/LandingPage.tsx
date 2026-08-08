@@ -59,10 +59,6 @@ function MiniWhispPreview({ mood, className = "" }: { mood: string; className?: 
 export function LandingPage() {
   return (
     <div className="bg-background relative">
-      {/* Background elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] bg-secondary/10 rounded-full blur-[100px] pointer-events-none" />
-
       <header
         className="absolute top-0 w-full px-4 sm:px-6 pb-4 sm:pb-6 flex justify-between items-center z-10 gap-2"
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}
@@ -87,7 +83,14 @@ export function LandingPage() {
 
       <main className="relative overflow-hidden">
         {/* Hero */}
-        <section className="flex flex-col items-center justify-center min-h-[100dvh] px-4 text-center pt-24 sm:pt-20">
+        <section className="relative flex flex-col items-center justify-center min-h-[100dvh] px-4 text-center pt-24 sm:pt-20">
+          {/* Background elements — scoped to the hero section only (not the
+              whole, much taller page) so the browser only ever has to paint
+              these expensive blur layers for one screen's worth of scroll,
+              instead of stretching/repainting them across the entire page. */}
+          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 rounded-full blur-[120px] pointer-events-none" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] bg-secondary/10 rounded-full blur-[100px] pointer-events-none" />
+
           <div className="max-w-3xl space-y-8 relative z-10">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-sm font-medium mb-4 glow-card">
               <Sparkles className="w-4 h-4" />
