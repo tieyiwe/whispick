@@ -1,11 +1,19 @@
 import { useState } from "react";
+import { parsePhoneNumberFromString } from "libphonenumber-js/min";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { CountryPhoneInput } from "@/components/shared/CountryPhoneInput";
 import { useStartPhoneVerification, useConfirmPhoneVerification, getGetUserProfileQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Phone, ShieldCheck } from "lucide-react";
+import { Loader2, ShieldCheck } from "lucide-react";
+
+// Pretty-prints an E.164 number for display only (e.g. "+1 555 123 4567")
+// — the value sent to the server is always the raw E.164 string from
+// CountryPhoneInput, this is purely cosmetic for confirmation copy.
+function formatForDisplay(e164: string): string {
+  return parsePhoneNumberFromString(e164)?.formatInternational() ?? e164;
+}
 
 // The one real, one-time-SMS phone verification flow in the app (Twilio
 // Verify — see api-server's lib/phoneVerification.ts for why this can't be
@@ -30,7 +38,7 @@ export function PhoneVerificationFlow({ onVerified }: { onVerified?: () => void 
       {
         onSuccess: () => {
           setStep("code");
-          toast({ title: "Code sent", description: `We texted a 6-digit code to ${phone.trim()}.` });
+          toast({ title: "Code sent", description: `We texted a 6-digit code to ${formatForDisplay(phone.trim())}.` });
         },
         onError: (err: any) => {
           toast({
@@ -67,17 +75,7 @@ export function PhoneVerificationFlow({ onVerified }: { onVerified?: () => void 
   if (step === "phone") {
     return (
       <div className="space-y-3">
-        <div className="relative">
-          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            className="pl-9 bg-input/50 border-border/50 rounded-xl"
-            placeholder="+1 555 123 4567"
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            data-testid="input-phone-verification-number"
-          />
-        </div>
+        <CountryPhoneInput onChange={setPhone} disabled={startVerification.isPending} />
         <p className="text-xs text-muted-foreground">
           We'll verify your number so whisps sent to you deliver instantly if you're already on Blind Whisper — what
           you send and receive is still 100% anonymous, always.
