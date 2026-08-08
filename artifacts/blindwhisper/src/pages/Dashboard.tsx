@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { useGetWhispStats, useListSuggestions, getListSuggestionsQueryKey, useGetUserProfile } from "@workspace/api-client-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,8 +10,16 @@ import { MoodTag } from "@/components/shared/MoodTag";
 import { Thumbnail } from "@/components/shared/Thumbnail";
 import { Button } from "@/components/ui/button";
 import { hasPendingForward, savePendingForward } from "@/lib/forwardVideo";
-import { PhoneVerificationDialog } from "@/components/shared/PhoneVerificationDialog";
 import { hasDismissedPhoneVerificationDialog, dismissPhoneVerificationDialog } from "@/lib/phoneVerificationDialog";
+
+// Lazy, even though Dashboard itself deliberately isn't (see the code-split
+// comment in App.tsx): the phone verification flow pulls in libphonenumber-js
+// and the Command/cmdk combobox for its country picker, which would
+// otherwise inflate every visit's initial bundle just to support a
+// conditional, dismissible nudge most visits don't even need to render.
+const PhoneVerificationDialog = lazy(() =>
+  import("@/components/shared/PhoneVerificationDialog").then((m) => ({ default: m.PhoneVerificationDialog })),
+);
 
 const FEATURED_SUGGESTIONS_PARAMS = { featured: "true" };
 
@@ -282,14 +290,16 @@ export function Dashboard() {
         </div>
       </div>
       {profile && (
-        <PhoneVerificationDialog
-          open={showPhoneDialog}
-          onDismiss={() => {
-            dismissPhoneVerificationDialog(profile.id);
-            setShowPhoneDialog(false);
-          }}
-          onVerified={() => setShowPhoneDialog(false)}
-        />
+        <Suspense fallback={null}>
+          <PhoneVerificationDialog
+            open={showPhoneDialog}
+            onDismiss={() => {
+              dismissPhoneVerificationDialog(profile.id);
+              setShowPhoneDialog(false);
+            }}
+            onVerified={() => setShowPhoneDialog(false)}
+          />
+        </Suspense>
       )}
     </AppLayout>
   );
