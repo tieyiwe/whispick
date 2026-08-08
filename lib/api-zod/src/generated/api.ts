@@ -476,15 +476,24 @@ export const GetPublicInviteResponse = zod.object({
 
 
 /**
- * @summary Check whether a phone number is eligible for a Text Whisp (a known, OTP-verified Blind Whisper user) — returns only a boolean, heavily rate-limited
+ * @summary Public Text Whisp guest landing page data (no auth required) — view only, marks it read on first view. There is no reply endpoint here; replying requires signing up (see POST /text-whisps/{id}/replies).
  */
-export const CheckTextWhispRecipientBody = zod.object({
-  "phone": zod.string()
+export const GetPublicTextWhispParams = zod.object({
+  "token": zod.coerce.string()
 })
 
-export const CheckTextWhispRecipientResponse = zod.object({
-  "eligible": zod.boolean()
-}).describe('Deliberately only a boolean — no user id, name, or any other field. See POST \/text-whisps\/check-recipient\'s own description.')
+export const getPublicTextWhispResponseMessageTextMax = 260;
+
+
+
+export const GetPublicTextWhispResponse = zod.object({
+  "id": zod.string(),
+  "messageText": zod.string().max(getPublicTextWhispResponseMessageTextMax),
+  "senderAlias": zod.string().nullish(),
+  "status": zod.string().describe('\'sent\' | \'read\' | \'replied\''),
+  "revealRequested": zod.boolean(),
+  "createdAt": zod.string()
+}).describe('Public-safe fields only — never senderId, recipientUserId, or recipientPhone. See GET \/public\/text-whisps\/{token}.')
 
 
 /**
@@ -497,7 +506,9 @@ export const listTextWhispsResponseMessageTextMax = 260;
 export const ListTextWhispsResponseItem = zod.object({
   "id": zod.string(),
   "senderId": zod.string(),
-  "recipientUserId": zod.string(),
+  "recipientUserId": zod.string().nullable().describe('Set only when recipientPhone matched a known, OTP-verified Blind Whisper account at send time. Null means it went out as a guest link over SMS instead — see recipientPhone and publicToken.'),
+  "recipientPhone": zod.string().describe('The E.164-normalized phone number provided at send time, regardless of whether it matched a user.'),
+  "publicToken": zod.string().describe('Token for the public guest landing page (\/tw\/{publicToken}, see GET \/public\/text-whisps\/{token}). Always set, even for a matched in-app send.'),
   "senderAlias": zod.string().nullish(),
   "messageText": zod.string().max(listTextWhispsResponseMessageTextMax),
   "status": zod.string().describe('\'sent\' | \'read\' | \'replied\''),
@@ -510,7 +521,7 @@ export const ListTextWhispsResponse = zod.array(ListTextWhispsResponseItem)
 
 
 /**
- * @summary Send a new Text Whisp to a known, verified recipient
+ * @summary Send a new Text Whisp to any phone number — delivered in-app if it matches a known, verified Blind Whisper user, otherwise as a guest link over SMS
  */
 export const createTextWhispBodyMessageTextMax = 260;
 
@@ -529,7 +540,9 @@ export const createTextWhispResponseMessageTextMax = 260;
 export const CreateTextWhispResponse = zod.object({
   "id": zod.string(),
   "senderId": zod.string(),
-  "recipientUserId": zod.string(),
+  "recipientUserId": zod.string().nullable().describe('Set only when recipientPhone matched a known, OTP-verified Blind Whisper account at send time. Null means it went out as a guest link over SMS instead — see recipientPhone and publicToken.'),
+  "recipientPhone": zod.string().describe('The E.164-normalized phone number provided at send time, regardless of whether it matched a user.'),
+  "publicToken": zod.string().describe('Token for the public guest landing page (\/tw\/{publicToken}, see GET \/public\/text-whisps\/{token}). Always set, even for a matched in-app send.'),
   "senderAlias": zod.string().nullish(),
   "messageText": zod.string().max(createTextWhispResponseMessageTextMax),
   "status": zod.string().describe('\'sent\' | \'read\' | \'replied\''),
@@ -557,7 +570,9 @@ export const GetTextWhispResponse = zod.object({
   "textWhisp": zod.object({
   "id": zod.string(),
   "senderId": zod.string(),
-  "recipientUserId": zod.string(),
+  "recipientUserId": zod.string().nullable().describe('Set only when recipientPhone matched a known, OTP-verified Blind Whisper account at send time. Null means it went out as a guest link over SMS instead — see recipientPhone and publicToken.'),
+  "recipientPhone": zod.string().describe('The E.164-normalized phone number provided at send time, regardless of whether it matched a user.'),
+  "publicToken": zod.string().describe('Token for the public guest landing page (\/tw\/{publicToken}, see GET \/public\/text-whisps\/{token}). Always set, even for a matched in-app send.'),
   "senderAlias": zod.string().nullish(),
   "messageText": zod.string().max(getTextWhispResponseTextWhispMessageTextMax),
   "status": zod.string().describe('\'sent\' | \'read\' | \'replied\''),
@@ -636,7 +651,7 @@ export const CreateTextWhispReplyResponse = zod.object({
 
 
 /**
- * @summary Sender requests to reveal their identity
+ * @summary Sender requests to reveal their identity — rejected if the recipient hasn't signed up yet (recipientUserId is still null)
  */
 export const RequestTextWhispRevealParams = zod.object({
   "id": zod.coerce.string()
@@ -649,7 +664,9 @@ export const requestTextWhispRevealResponseMessageTextMax = 260;
 export const RequestTextWhispRevealResponse = zod.object({
   "id": zod.string(),
   "senderId": zod.string(),
-  "recipientUserId": zod.string(),
+  "recipientUserId": zod.string().nullable().describe('Set only when recipientPhone matched a known, OTP-verified Blind Whisper account at send time. Null means it went out as a guest link over SMS instead — see recipientPhone and publicToken.'),
+  "recipientPhone": zod.string().describe('The E.164-normalized phone number provided at send time, regardless of whether it matched a user.'),
+  "publicToken": zod.string().describe('Token for the public guest landing page (\/tw\/{publicToken}, see GET \/public\/text-whisps\/{token}). Always set, even for a matched in-app send.'),
   "senderAlias": zod.string().nullish(),
   "messageText": zod.string().max(requestTextWhispRevealResponseMessageTextMax),
   "status": zod.string().describe('\'sent\' | \'read\' | \'replied\''),
@@ -1621,8 +1638,10 @@ export const AdminGetFunnelStatsResponse = zod.object({
   "textWhisps": zod.object({
   "sent": zod.number(),
   "read": zod.number(),
-  "replied": zod.number()
-}).describe('Text Whisp (routes\/textWhisps.ts) volume and how far it gets read\/replied — a separate, text-only content type, not folded into the whisp funnel above.')
+  "replied": zod.number(),
+  "deliveredInApp": zod.number().describe('Text Whisps whose recipient phone matched a known, verified account at send time (recipientUserId is set) — delivered entirely in-app.'),
+  "deliveredGuest": zod.number().describe('Text Whisps sent to a phone number that wasn\'t a known, verified account at send time (recipientUserId is null) — delivered as a public guest link over SMS.')
+}).describe('Text Whisp (routes\/textWhisps.ts) volume and how far it gets read\/replied — a separate, text-only content type, not folded into the whisp funnel above. deliveredInApp\/deliveredGuest mirror phoneMatchRouting\'s in-app-vs-Twilio split, one level up (recipientUserId set vs. null at send time).')
 })
 
 

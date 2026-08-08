@@ -92,3 +92,14 @@ export function textWhispRevealRespondedHookLine(accepted: boolean): string {
     ? "They accepted your reveal request — you can now tell them who you are."
     : "They declined your reveal request to stay anonymous.";
 }
+
+// Guest SMS teaser for a Text Whisp sent to a phone number that wasn't a
+// verified Blind Whisper account at send time (routes/textWhisps.ts's
+// POST /, lib/sms.ts's textWhispGuestSmsBody). Deliberately its own line
+// rather than reusing textWhispHookLine above: that one is in-app
+// notification copy for an existing account holder, this is the very first
+// thing a stranger to the product sees, in an SMS inbox rather than a
+// notification bell. Keep in sync with PublicTextWhisp.tsx's lead copy by
+// hand, same as HOOK_LINE.
+export const TEXT_WHISP_GUEST_HOOK_LINE =
+  "You've received an anonymous Text Whisp on Blind Whisper — a short note just for you.";

@@ -26,6 +26,6 @@ export interface AdminFunnelStats {
   phoneMatchRouting: AdminFunnelStatsPhoneMatchRouting;
   /** Anonymous invite-a-friend (routes/invites.ts) volume and how many actually converted into a real account. */
   invites: AdminFunnelStatsInvites;
-  /** Text Whisp (routes/textWhisps.ts) volume and how far it gets read/replied — a separate, text-only content type, not folded into the whisp funnel above. */
+  /** Text Whisp (routes/textWhisps.ts) volume and how far it gets read/replied — a separate, text-only content type, not folded into the whisp funnel above. deliveredInApp/deliveredGuest mirror phoneMatchRouting's in-app-vs-Twilio split, one level up (recipientUserId set vs. null at send time). */
   textWhisps: AdminFunnelStatsTextWhisps;
 }

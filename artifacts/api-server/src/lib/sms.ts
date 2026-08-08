@@ -1,5 +1,5 @@
 import { logger } from "./logger";
-import { HOOK_LINE, INVITE_HOOK_LINE } from "./copy";
+import { HOOK_LINE, INVITE_HOOK_LINE, TEXT_WHISP_GUEST_HOOK_LINE } from "./copy";
 import { logDeliveryAttempt, type DeliveryLogContext } from "./deliveryLog";
 
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
@@ -127,4 +127,14 @@ export function whisperLinkSmsBody(publicUrl: string, hookLine: string = HOOK_LI
 // footer), just pointed at the invite landing page instead of a whisp.
 export function inviteSmsBody(inviteUrl: string): string {
   return `${INVITE_HOOK_LINE}\n${inviteUrl}\n— sent anonymously via Blind Whisper\n${COMPLIANCE_FOOTER}`;
+}
+
+// Text Whisp guest delivery (routes/textWhisps.ts) — sent when the recipient
+// phone number didn't match a known, OTP-verified Blind Whisper account at
+// send time, so there's no in-app notification to fall back to (see
+// lib/deliver.ts's findVerifiedRecipient / deliverInApp). Same
+// hook-line/link/compliance-footer shape as whisperLinkSmsBody/inviteSmsBody
+// above, pointed at the public Text Whisp landing page instead.
+export function textWhispGuestSmsBody(publicUrl: string): string {
+  return `${TEXT_WHISP_GUEST_HOOK_LINE}\n${publicUrl}\n— sent anonymously via Blind Whisper\n${COMPLIANCE_FOOTER}`;
 }

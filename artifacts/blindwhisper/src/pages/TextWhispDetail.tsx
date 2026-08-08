@@ -105,7 +105,7 @@ export function TextWhispDetail() {
           queryClient.invalidateQueries({ queryKey: getGetTextWhispQueryKey(id!) });
           toast({ title: "Reveal request sent" });
         },
-        onError: () => toast({ title: "Failed to request reveal", variant: "destructive" }),
+        onError: (err: any) => toast({ title: err?.data?.error ?? "Failed to request reveal", variant: "destructive" }),
       },
     );
   }
@@ -255,8 +255,12 @@ export function TextWhispDetail() {
               </CardContent>
             </Card>
 
-            {/* Reveal flow */}
-            {isSender && !textWhisp.revealRequested && (
+            {/* Reveal flow — only offered once the recipient is a real
+                account holder (recipientUserId set). A Text Whisp sent to a
+                phone number that hasn't signed up yet has no one to reveal
+                to (or notify) — see routes/textWhisps.ts POST /:id/reveal's
+                "hasn't joined yet" gate. */}
+            {isSender && !textWhisp.revealRequested && textWhisp.recipientUserId && (
               <Button
                 variant="outline"
                 className="w-full rounded-full border-primary/30 hover:bg-primary/10 hover:text-primary"
@@ -267,6 +271,11 @@ export function TextWhispDetail() {
                 {requestReveal.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
                 Reveal Yourself
               </Button>
+            )}
+            {isSender && !textWhisp.revealRequested && !textWhisp.recipientUserId && (
+              <p className="text-xs text-muted-foreground text-center" data-testid="text-reveal-unavailable-not-joined">
+                They haven't signed up yet — you'll be able to reveal yourself once they do.
+              </p>
             )}
             {isSender && textWhisp.revealRequested && (
               <Card className="bg-primary/10 border-primary/20">

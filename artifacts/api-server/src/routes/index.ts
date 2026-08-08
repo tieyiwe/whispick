@@ -16,6 +16,7 @@ import subscribeRouter from "./subscribe";
 import suggestionsRouter from "./suggestions";
 import invitesRouter from "./invites";
 import publicInvitesRouter from "./publicInvites";
+import publicTextWhispsRouter from "./publicTextWhisps";
 import textWhispsRouter from "./textWhisps";
 import { publicEndpointLimiter } from "../lib/rateLimit";
 
@@ -38,6 +39,7 @@ router.use("/public", publicRouter);
 router.use("/public", circleRouter);
 router.use("/public", subscribeRouter);
 router.use("/public", publicInvitesRouter);
+router.use("/public", publicTextWhispsRouter);
 router.use("/circles", circlesRouter);
 router.use("/user", userRouter);
 router.use("/credits", creditsRouter);

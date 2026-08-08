@@ -6,23 +6,56 @@ import { z } from "zod/v4";
 // counterpart to a Whisper Link, deliberately NOT stored in whisps.ts.
 // whisps.videoUrl is NOT NULL and the rest of that table is built around a
 // video being the point of the message; a pure-text note doesn't fit there
-// and retrofitting it was ruled out as out of scope. Both senderId and
-// recipientUserId are always real, known Blind Whisper accounts — unlike a
-// whisp, there's no email/SMS/anonymous-recipient path here at all (see
-// routes/textWhisps.ts's POST /check-recipient, which is the only way a
-// sender learns whether someone is even eligible before composing).
-// Delivery is exclusively in-app (lib/push.ts's notifyUser + notificationsTable
-// — see routes/textWhisps.ts), never Twilio/Resend.
+// and retrofitting it was ruled out as out of scope.
 //
-// Still fully anonymous to the recipient: senderAlias is shown, never the
-// real sender identity, unless a Reveal Flow (below) is requested and
-// accepted — and even then, mirroring whisps.ts's exact behavior, accepting
-// only grants *permission*; it doesn't itself inject the sender's real name
-// anywhere (see routes/textWhisps.ts's reveal endpoints).
+// Dual-path recipient model: a Text Whisp can be sent to ANY phone number,
+// not just an existing verified Blind Whisper account (see
+// routes/textWhisps.ts's POST /). recipientPhone always holds the
+// E.164-normalized number the sender typed, regardless of outcome.
+// recipientUserId is set only when that number matched a known,
+// OTP-verified account (lib/deliver.ts's findVerifiedRecipient) at send
+// time — delivery then goes entirely in-app, same as before. When it
+// doesn't match, recipientUserId stays null and delivery goes out over SMS
+// (lib/sms.ts's textWhispGuestSmsBody) to a public, unauthenticated landing
+// page addressed by `publicToken` (see routes/publicTextWhisps.ts) — the
+// same "Whisper Link"-style guest flow whisps.ts already has, just for text.
+//
+// The one deliberate asymmetry vs. whisps.ts: a guest can VIEW that public
+// page, but can never REPLY without creating an account. text_whisp_replies
+// records a real senderId (see text_whisp_replies.ts's own comment) — there
+// is no anonymous-recipient reply flag to attribute an unauthenticated
+// reply to, so the public page only ever offers a sign-up CTA, never a
+// working reply box. Once a guest signs up, they become a normal
+// recipientUserId-bearing user of any *future* Text Whisp, but a Text Whisp
+// already sent to their phone number before they joined keeps
+// recipientUserId null forever — it's not retroactively re-linked.
+//
+// Still fully anonymous to the recipient either way: senderAlias is shown,
+// never the real sender identity, unless a Reveal Flow (below) is requested
+// and accepted — and even then, mirroring whisps.ts's exact behavior,
+// accepting only grants *permission*; it doesn't itself inject the sender's
+// real name anywhere (see routes/textWhisps.ts's reveal endpoints). A
+// reveal request also can't be made until recipientUserId is set (i.e. the
+// guest has joined) — see routes/textWhisps.ts POST /:id/reveal's
+// "hasn't joined yet" gate, mirroring routes/invites.ts's identical gate.
 export const textWhispsTable = pgTable("text_whisps", {
   id: text("id").primaryKey(),
   senderId: text("sender_id").notNull(),
-  recipientUserId: text("recipient_user_id").notNull(),
+  // Nullable — see the dual-path comment above. Null means "sent to a phone
+  // number that wasn't a verified Blind Whisper account at send time."
+  recipientUserId: text("recipient_user_id"),
+  // Always the E.164-normalized number provided at send time, whether or not
+  // it matched a user — needed for guest SMS delivery and admin visibility
+  // (support needs to see *who this was addressed to* even when there's no
+  // account to show).
+  recipientPhone: text("recipient_phone").notNull(),
+  // Random, unguessable token for the public guest landing page URL
+  // (`/tw/:publicToken`, see routes/publicTextWhisps.ts) — same style/
+  // generation as whisps.publicToken and invites.publicToken
+  // (randomUUID().replace(/-/g, "")). Every Text Whisp gets one, even a
+  // matched in-app send, so a later admin/support lookup or a future
+  // "share the guest view" feature doesn't need a backfill.
+  publicToken: text("public_token").notNull().unique(),
   senderAlias: text("sender_alias"),
   // Max 260 chars — enforced by Zod at the route layer (see
   // routes/textWhisps.ts), not just implied by a DB constraint, so a bad
@@ -43,6 +76,8 @@ export const textWhispsTable = pgTable("text_whisps", {
 }, (table) => [
   index("text_whisps_sender_id_idx").on(table.senderId),
   index("text_whisps_recipient_user_id_idx").on(table.recipientUserId),
+  // publicToken already gets an index for free from its unique() constraint
+  // — no separate index needed, same as whisps.publicToken/invites.publicToken.
 ]);
 
 export const insertTextWhispSchema = createInsertSchema(textWhispsTable).omit({ createdAt: true });

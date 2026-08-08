@@ -59,10 +59,6 @@ function MiniWhispPreview({ mood, className = "" }: { mood: string; className?: 
 export function LandingPage() {
   return (
     <div className="bg-background relative">
-      {/* Background elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] bg-secondary/10 rounded-full blur-[100px] pointer-events-none" />
-
       <header
         className="absolute top-0 w-full px-4 sm:px-6 pb-4 sm:pb-6 flex justify-between items-center z-10 gap-2"
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}
@@ -87,7 +83,14 @@ export function LandingPage() {
 
       <main className="relative overflow-hidden">
         {/* Hero */}
-        <section className="flex flex-col items-center justify-center min-h-[100dvh] px-4 text-center pt-24 sm:pt-20">
+        <section className="relative flex flex-col items-center justify-center min-h-[100dvh] px-4 text-center pt-24 sm:pt-20">
+          {/* Background elements — scoped to the hero section only (not the
+              whole, much taller page) so the browser only ever has to paint
+              these expensive blur layers for one screen's worth of scroll,
+              instead of stretching/repainting them across the entire page. */}
+          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 rounded-full blur-[120px] pointer-events-none" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] bg-secondary/10 rounded-full blur-[100px] pointer-events-none" />
+
           <div className="max-w-3xl space-y-8 relative z-10">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-sm font-medium mb-4 glow-card">
               <Sparkles className="w-4 h-4" />
@@ -134,6 +137,37 @@ export function LandingPage() {
                 <feature.icon className="w-10 h-10 text-primary mb-6" />
                 <h3 className="text-xl font-serif font-semibold mb-3">{feature.title}</h3>
                 <p className="text-muted-foreground">{feature.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* See it in action */}
+        <section className="relative z-10 px-4 py-20 sm:py-28">
+          <div className="max-w-2xl mx-auto text-center space-y-4 mb-14">
+            <h2 className="text-3xl md:text-4xl font-serif font-bold text-foreground">
+              From link to sent, in under a minute
+            </h2>
+            <p className="text-muted-foreground text-lg">
+              Paste a video, say what you mean, and it's on its way — anonymously.
+            </p>
+          </div>
+
+          <div className="max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-6">
+            {[
+              { src: "/screenshots/send-step1-link.png", step: "1", title: "Paste any video link", desc: "YouTube, TikTok, Instagram, Facebook — or upload your own." },
+              { src: "/screenshots/send-step2-note.png", step: "2", title: "Add a note, stay anonymous", desc: "Say what you mean. They'll never know it came from you." },
+              { src: "/screenshots/send-step3-sent.png", step: "3", title: "Sent — that's it", desc: "We'll let you know the moment it's seen." },
+            ].map((shot) => (
+              <div key={shot.step} className="flex flex-col items-center text-center">
+                <div className="rounded-[2rem] border border-border/60 bg-card/40 shadow-[0_0_30px_rgba(124,92,252,0.12)] overflow-hidden w-full max-w-[220px]">
+                  <img src={shot.src} alt={shot.title} className="w-full h-auto block" loading="lazy" width={390} height={844} />
+                </div>
+                <div className="mt-5 flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-primary/15 text-primary text-xs font-semibold flex items-center justify-center shrink-0">{shot.step}</span>
+                  <h3 className="text-sm font-semibold text-foreground">{shot.title}</h3>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1.5 max-w-[220px]">{shot.desc}</p>
               </div>
             ))}
           </div>

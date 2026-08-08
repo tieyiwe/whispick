@@ -183,21 +183,18 @@ export interface RevealResult {
   revealAccepted: boolean;
 }
 
-export interface CheckTextWhispRecipientInput {
-  phone: string;
-}
-
-/**
- * Deliberately only a boolean — no user id, name, or any other field. See POST /text-whisps/check-recipient's own description.
- */
-export interface CheckTextWhispRecipientResult {
-  eligible: boolean;
-}
-
 export interface TextWhisp {
   id: string;
   senderId: string;
-  recipientUserId: string;
+  /**
+     * Set only when recipientPhone matched a known, OTP-verified Blind Whisper account at send time. Null means it went out as a guest link over SMS instead — see recipientPhone and publicToken.
+     * @nullable
+     */
+  recipientUserId: string | null;
+  /** The E.164-normalized phone number provided at send time, regardless of whether it matched a user. */
+  recipientPhone: string;
+  /** Token for the public guest landing page (/tw/{publicToken}, see GET /public/text-whisps/{token}). Always set, even for a matched in-app send. */
+  publicToken: string;
   /** @nullable */
   senderAlias?: string | null;
   /** @maxLength 260 */
@@ -283,6 +280,21 @@ export interface PublicInvite {
   revealRequested: boolean;
   /** @nullable */
   revealAccepted?: boolean | null;
+}
+
+/**
+ * Public-safe fields only — never senderId, recipientUserId, or recipientPhone. See GET /public/text-whisps/{token}.
+ */
+export interface PublicTextWhisp {
+  id: string;
+  /** @maxLength 260 */
+  messageText: string;
+  /** @nullable */
+  senderAlias?: string | null;
+  /** 'sent' | 'read' | 'replied' */
+  status: string;
+  revealRequested: boolean;
+  createdAt: string;
 }
 
 export interface VideoMetaRequest {
@@ -927,12 +939,16 @@ export type AdminFunnelStatsInvites = {
 };
 
 /**
- * Text Whisp (routes/textWhisps.ts) volume and how far it gets read/replied — a separate, text-only content type, not folded into the whisp funnel above.
+ * Text Whisp (routes/textWhisps.ts) volume and how far it gets read/replied — a separate, text-only content type, not folded into the whisp funnel above. deliveredInApp/deliveredGuest mirror phoneMatchRouting's in-app-vs-Twilio split, one level up (recipientUserId set vs. null at send time).
  */
 export type AdminFunnelStatsTextWhisps = {
   sent: number;
   read: number;
   replied: number;
+  /** Text Whisps whose recipient phone matched a known, verified account at send time (recipientUserId is set) — delivered entirely in-app. */
+  deliveredInApp: number;
+  /** Text Whisps sent to a phone number that wasn't a known, verified account at send time (recipientUserId is null) — delivered as a public guest link over SMS. */
+  deliveredGuest: number;
 };
 
 export interface AdminChannelDeliveryStat {
@@ -955,7 +971,7 @@ export interface AdminFunnelStats {
   phoneMatchRouting: AdminFunnelStatsPhoneMatchRouting;
   /** Anonymous invite-a-friend (routes/invites.ts) volume and how many actually converted into a real account. */
   invites: AdminFunnelStatsInvites;
-  /** Text Whisp (routes/textWhisps.ts) volume and how far it gets read/replied — a separate, text-only content type, not folded into the whisp funnel above. */
+  /** Text Whisp (routes/textWhisps.ts) volume and how far it gets read/replied — a separate, text-only content type, not folded into the whisp funnel above. deliveredInApp/deliveredGuest mirror phoneMatchRouting's in-app-vs-Twilio split, one level up (recipientUserId set vs. null at send time). */
   textWhisps: AdminFunnelStatsTextWhisps;
 }
 

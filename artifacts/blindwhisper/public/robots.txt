@@ -8,6 +8,7 @@ Allow: /subscribe
 Disallow: /w/
 Disallow: /invite
 Disallow: /invite/
+Disallow: /tw/
 Disallow: /dashboard
 Disallow: /send
 Disallow: /suggestions

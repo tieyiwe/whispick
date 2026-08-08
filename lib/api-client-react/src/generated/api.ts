@@ -43,8 +43,6 @@ import type {
   ApiError,
   AppreciationInput,
   AppreciationResult,
-  CheckTextWhispRecipientInput,
-  CheckTextWhispRecipientResult,
   CheckoutRequest,
   CheckoutResponse,
   Circle,
@@ -76,6 +74,7 @@ import type {
   PhoneVerificationResult,
   PublicInvite,
   PublicReplyInput,
+  PublicTextWhisp,
   PublicWhisp,
   PushPublicKeyResponse,
   PushSubscriptionDeleteInput,
@@ -1335,75 +1334,82 @@ export function useGetPublicInvite<TData = Awaited<ReturnType<typeof getPublicIn
 
 
 
-export const getCheckTextWhispRecipientUrl = () => {
+export const getGetPublicTextWhispUrl = (token: string,) => {
 
 
 
 
-  return `/api/text-whisps/check-recipient`
+  return `/api/public/text-whisps/${token}`
 }
 
 /**
- * @summary Check whether a phone number is eligible for a Text Whisp (a known, OTP-verified Blind Whisper user) — returns only a boolean, heavily rate-limited
+ * @summary Public Text Whisp guest landing page data (no auth required) — view only, marks it read on first view. There is no reply endpoint here; replying requires signing up (see POST /text-whisps/{id}/replies).
  */
-export const checkTextWhispRecipient = async (checkTextWhispRecipientInput: CheckTextWhispRecipientInput, options?: RequestInit): Promise<CheckTextWhispRecipientResult> => {
+export const getPublicTextWhisp = async (token: string, options?: RequestInit): Promise<PublicTextWhisp> => {
 
-  return customFetch<CheckTextWhispRecipientResult>(getCheckTextWhispRecipientUrl(),
+  return customFetch<PublicTextWhisp>(getGetPublicTextWhispUrl(token),
   {
     ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(checkTextWhispRecipientInput)
+    method: 'GET'
+
+
   }
 );}
 
 
 
 
-export const getCheckTextWhispRecipientMutationOptions = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkTextWhispRecipient>>, TError,{data: BodyType<CheckTextWhispRecipientInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof checkTextWhispRecipient>>, TError,{data: BodyType<CheckTextWhispRecipientInput>}, TContext> => {
 
-const mutationKey = ['checkTextWhispRecipient'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof checkTextWhispRecipient>>, {data: BodyType<CheckTextWhispRecipientInput>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  checkTextWhispRecipient(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CheckTextWhispRecipientMutationResult = NonNullable<Awaited<ReturnType<typeof checkTextWhispRecipient>>>
-    export type CheckTextWhispRecipientMutationBody = BodyType<CheckTextWhispRecipientInput>
-    export type CheckTextWhispRecipientMutationError = ErrorType<ApiError>
-
-    /**
- * @summary Check whether a phone number is eligible for a Text Whisp (a known, OTP-verified Blind Whisper user) — returns only a boolean, heavily rate-limited
- */
-export const useCheckTextWhispRecipient = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkTextWhispRecipient>>, TError,{data: BodyType<CheckTextWhispRecipientInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof checkTextWhispRecipient>>,
-        TError,
-        {data: BodyType<CheckTextWhispRecipientInput>},
-        TContext
-      > => {
-      return useMutation(getCheckTextWhispRecipientMutationOptions(options));
+export const getGetPublicTextWhispQueryKey = (token: string,) => {
+    return [
+    `/api/public/text-whisps/${token}`
+    ] as const;
     }
+
+
+export const getGetPublicTextWhispQueryOptions = <TData = Awaited<ReturnType<typeof getPublicTextWhisp>>, TError = ErrorType<ApiError>>(token: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicTextWhisp>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPublicTextWhispQueryKey(token);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPublicTextWhisp>>> = ({ signal }) => getPublicTextWhisp(token, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: token !== null && token !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPublicTextWhisp>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPublicTextWhispQueryResult = NonNullable<Awaited<ReturnType<typeof getPublicTextWhisp>>>
+export type GetPublicTextWhispQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Public Text Whisp guest landing page data (no auth required) — view only, marks it read on first view. There is no reply endpoint here; replying requires signing up (see POST /text-whisps/{id}/replies).
+ */
+
+export function useGetPublicTextWhisp<TData = Awaited<ReturnType<typeof getPublicTextWhisp>>, TError = ErrorType<ApiError>>(
+ token: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicTextWhisp>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPublicTextWhispQueryOptions(token,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getListTextWhispsUrl = () => {
 
@@ -1491,7 +1497,7 @@ export const getCreateTextWhispUrl = () => {
 }
 
 /**
- * @summary Send a new Text Whisp to a known, verified recipient
+ * @summary Send a new Text Whisp to any phone number — delivered in-app if it matches a known, verified Blind Whisper user, otherwise as a guest link over SMS
  */
 export const createTextWhisp = async (textWhispInput: TextWhispInput, options?: RequestInit): Promise<TextWhisp> => {
 
@@ -1539,7 +1545,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type CreateTextWhispMutationError = ErrorType<ApiError>
 
     /**
- * @summary Send a new Text Whisp to a known, verified recipient
+ * @summary Send a new Text Whisp to any phone number — delivered in-app if it matches a known, verified Blind Whisper user, otherwise as a guest link over SMS
  */
 export const useCreateTextWhisp = <TError = ErrorType<ApiError>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTextWhisp>>, TError,{data: BodyType<TextWhispInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -1856,7 +1862,7 @@ export const getRequestTextWhispRevealUrl = (id: string,) => {
 }
 
 /**
- * @summary Sender requests to reveal their identity
+ * @summary Sender requests to reveal their identity — rejected if the recipient hasn't signed up yet (recipientUserId is still null)
  */
 export const requestTextWhispReveal = async (id: string, options?: RequestInit): Promise<TextWhisp> => {
 
@@ -1904,7 +1910,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type RequestTextWhispRevealMutationError = ErrorType<ApiError>
 
     /**
- * @summary Sender requests to reveal their identity
+ * @summary Sender requests to reveal their identity — rejected if the recipient hasn't signed up yet (recipientUserId is still null)
  */
 export const useRequestTextWhispReveal = <TError = ErrorType<ApiError>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestTextWhispReveal>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
