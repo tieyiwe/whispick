@@ -203,4 +203,57 @@ describe("Admin: stats", () => {
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body.insights)).toBe(true);
   });
+
+  it("returns funnel stats, including the in-app-vs-Twilio phone match routing breakdown", async () => {
+    const adminHeaders = await asAdmin();
+    const res = await request(app).get("/api/admin/stats/funnel").set(adminHeaders);
+    expect(res.status).toBe(200);
+    expect(typeof res.body.funnel.sent).toBe("number");
+    expect(Array.isArray(res.body.deliveryByChannel)).toBe(true);
+    expect(typeof res.body.phoneMatchRouting.inApp).toBe("number");
+    expect(typeof res.body.phoneMatchRouting.twilio).toBe("number");
+    expect(typeof res.body.phoneMatchRouting.matchRate).toBe("number");
+  });
+
+  it("counts a matched whisper_link SMS send as in-app routing in the funnel stats", async () => {
+    const { db, usersTable, deliveryAttemptsTable, whispsTable } = await import("@workspace/db");
+    const { randomUUID } = await import("crypto");
+
+    const recipientId = randomUUID();
+    await db.insert(usersTable).values({
+      id: recipientId,
+      clerkId: `clerk_${recipientId}`,
+      email: `${recipientId}@example.com`,
+      phone: "+15559990000",
+      phoneVerifiedAt: new Date(),
+      plan: "free",
+      boostCredits: 0,
+      whisperLinksUsed: 0,
+    });
+
+    const whispId = randomUUID();
+    await db.insert(whispsTable).values({
+      id: whispId,
+      senderId: recipientId,
+      videoUrl: "https://youtu.be/x",
+      deliveryMethod: "whisper_link",
+      whisperChannel: "sms",
+      recipientPhone: "+15559990000",
+      status: "delivered",
+      publicToken: randomUUID().replace(/-/g, ""),
+    });
+    await db.insert(deliveryAttemptsTable).values({
+      id: randomUUID(),
+      whispId,
+      channel: "in_app",
+      purpose: "whisper_link",
+      toAddress: "+15559990000",
+      success: true,
+    });
+
+    const adminHeaders = await asAdmin();
+    const res = await request(app).get("/api/admin/stats/funnel").set(adminHeaders);
+    expect(res.status).toBe(200);
+    expect(res.body.phoneMatchRouting.inApp).toBeGreaterThanOrEqual(1);
+  });
 });

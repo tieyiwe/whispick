@@ -19,9 +19,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, User, Mail, Shield, Bell } from "lucide-react";
+import { Loader2, User, Mail, Shield, Bell, Phone, ShieldCheck } from "lucide-react";
 import { isPushSupported, getExistingPushSubscription, subscribeToPush, pushSubscriptionToJson } from "@/lib/push";
 import { GENDER_OPTIONS, GENDER_LABELS, AGE_RANGE_OPTIONS, AGE_RANGE_LABELS } from "@/lib/demographics";
+import { PhoneVerificationFlow } from "@/components/shared/PhoneVerificationFlow";
 
 const WHISPER_LINK_LIMITS: Record<string, number | null> = {
   free: 3,
@@ -249,6 +250,30 @@ export function SettingsPage() {
               <span className="text-sm text-muted-foreground shrink-0">Member since</span>
               <span className="text-sm text-foreground truncate min-w-0 text-right">{profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : "—"}</span>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Phone verification — anyone who skipped/dismissed the onboarding
+            dialog (PhoneVerificationDialog, shown on first Dashboard visit)
+            can still do this later. Same real, one-time Twilio Verify SMS
+            code flow either way (PhoneVerificationFlow). Once verified,
+            SMS/WhatsApp whisps sent to this number deliver in-app instead
+            of costing a real Twilio send (see api-server's lib/deliver.ts). */}
+        <Card className="bg-card border-border/50">
+          <CardHeader>
+            <CardTitle className="text-base font-serif flex items-center gap-2">
+              <Phone className="w-4 h-4 text-primary" /> Phone number
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {profile?.phoneVerifiedAt ? (
+              <div className="flex items-center gap-2 text-sm text-foreground" data-testid="text-phone-verified">
+                <ShieldCheck className="w-4 h-4 text-primary shrink-0" />
+                <span>{profile.phone} is verified.</span>
+              </div>
+            ) : (
+              <PhoneVerificationFlow />
+            )}
           </CardContent>
         </Card>
 

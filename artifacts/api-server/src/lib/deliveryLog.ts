@@ -39,7 +39,14 @@ export type DeliveryOutcome = {
 // logged this). Never throws: a logging failure must not take down the send
 // path that called it.
 export async function logDeliveryAttempt(
-  channel: "email" | "sms" | "whatsapp",
+  // 'in_app' means an sms/whatsapp whisp was routed to the recipient's own
+  // in-app notifications instead of a real Twilio send, because the
+  // recipient phone matched a known, OTP-verified Blind Whisper user — see
+  // lib/deliver.ts. Kept in this same table/type (rather than a separate log)
+  // so admins get one delivery history per whisp regardless of which path a
+  // given send took, and so routes/admin.ts's existing deliveryByChannel
+  // breakdown picks it up automatically.
+  channel: "email" | "sms" | "whatsapp" | "in_app",
   toAddress: string,
   ctx: DeliveryLogContext,
   outcome: DeliveryOutcome,

@@ -11,8 +11,21 @@ export const usersTable = pgTable("users", {
   // Synced from Clerk (sessionClaims.phone) at account creation, same
   // best-effort pattern as email/fullName in ensureUser.ts — separate from
   // whisps.recipientPhone, which is a contact this user sent TO, not their
-  // own number.
+  // own number. This value ALONE is never trustworthy proof of ownership —
+  // Clerk's sync is opportunistic and unverified. It's also overwritten by
+  // lib/phoneVerification.ts once a user completes the real OTP flow below,
+  // in E.164 form.
   phone: text("phone"),
+  // Set only by lib/phoneVerification.ts's confirm-verification route, after
+  // a real one-time SMS code (Twilio Verify) was sent to `phone` and
+  // confirmed back correctly — proof the user actually controls that SIM,
+  // not just that they typed a number in. Null means NOT verified via our
+  // own flow, regardless of whether `phone` happens to be populated from the
+  // Clerk sync above. Only `phoneVerifiedAt IS NOT NULL` may ever be used to
+  // decide "this phone number belongs to a known Blind Whisper user" (see
+  // lib/deliver.ts's SMS/WhatsApp-skip-Twilio matching) — never `phone`
+  // alone.
+  phoneVerifiedAt: timestamp("phone_verified_at", { withTimezone: true }),
   // Self-reported, optional-to-decline demographic buckets — see
   // artifacts/api-server/src/lib/demographics.ts for the fixed value sets
   // and where they're collected (a one-time gate before a user's first

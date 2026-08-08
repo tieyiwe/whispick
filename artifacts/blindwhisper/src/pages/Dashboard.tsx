@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { useGetWhispStats, useListSuggestions, getListSuggestionsQueryKey } from "@workspace/api-client-react";
+import { useEffect, useState } from "react";
+import { useGetWhispStats, useListSuggestions, getListSuggestionsQueryKey, useGetUserProfile } from "@workspace/api-client-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Send, Eye, PlayCircle, MessageSquareHeart, TrendingUp, Ghost, Sparkles, Repeat, Heart } from "lucide-react";
@@ -10,16 +10,32 @@ import { MoodTag } from "@/components/shared/MoodTag";
 import { Thumbnail } from "@/components/shared/Thumbnail";
 import { Button } from "@/components/ui/button";
 import { hasPendingForward, savePendingForward } from "@/lib/forwardVideo";
+import { PhoneVerificationDialog } from "@/components/shared/PhoneVerificationDialog";
+import { hasDismissedPhoneVerificationDialog, dismissPhoneVerificationDialog } from "@/lib/phoneVerificationDialog";
 
 const FEATURED_SUGGESTIONS_PARAMS = { featured: "true" };
 
 export function Dashboard() {
   const { data: stats, isLoading } = useGetWhispStats();
+  const { data: profile } = useGetUserProfile();
   const { data: suggestionsData } = useListSuggestions(FEATURED_SUGGESTIONS_PARAMS, {
     query: { queryKey: getListSuggestionsQueryKey(FEATURED_SUGGESTIONS_PARAMS) },
   });
   const featuredSuggestion = suggestionsData?.items[0];
   const [, setLocation] = useLocation();
+
+  // First-Dashboard-visit nudge to verify a phone number (see
+  // PhoneVerificationDialog) — same early-account-lifecycle trigger timing
+  // as the demographics gate, but dismissible: only shown while
+  // phoneVerifiedAt is still null AND this browser hasn't already dismissed
+  // it once for this account.
+  const [showPhoneDialog, setShowPhoneDialog] = useState(false);
+  useEffect(() => {
+    if (!profile) return;
+    if (profile.phoneVerifiedAt) return;
+    if (hasDismissedPhoneVerificationDialog(profile.id)) return;
+    setShowPhoneDialog(true);
+  }, [profile]);
 
   function handleWhisperFeatured() {
     if (!featuredSuggestion) return;
@@ -265,6 +281,16 @@ export function Dashboard() {
           </div>
         </div>
       </div>
+      {profile && (
+        <PhoneVerificationDialog
+          open={showPhoneDialog}
+          onDismiss={() => {
+            dismissPhoneVerificationDialog(profile.id);
+            setShowPhoneDialog(false);
+          }}
+          onVerified={() => setShowPhoneDialog(false)}
+        />
+      )}
     </AppLayout>
   );
 }

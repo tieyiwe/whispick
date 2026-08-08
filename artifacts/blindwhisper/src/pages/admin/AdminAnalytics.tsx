@@ -126,6 +126,35 @@ export function AdminAnalytics() {
 
         <Card className="bg-card border-border/50">
           <CardHeader>
+            <CardTitle className="text-base font-serif">SMS/WhatsApp cost-saving: in-app vs Twilio</CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Whisper Link / Group Whisper SMS or WhatsApp sends where the recipient's phone matched a known,
+              verified Blind Whisper user — those deliver in-app for free instead of costing a real Twilio send.
+              Covers initial sends, reminders, reveal requests, and reply notifications.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {funnelLoading ? <Skeleton className="h-24 rounded-xl" /> : (
+              <>
+                <div className="flex items-center justify-between text-sm py-1.5 px-3 rounded-lg bg-muted/20">
+                  <span className="text-foreground">Delivered in-app (matched, no Twilio cost)</span>
+                  <span className="text-muted-foreground font-mono">{funnelStats?.phoneMatchRouting.inApp ?? 0}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm py-1.5 px-3 rounded-lg bg-muted/20">
+                  <span className="text-foreground">Sent via Twilio (unmatched)</span>
+                  <span className="text-muted-foreground font-mono">{funnelStats?.phoneMatchRouting.twilio ?? 0}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm py-1.5 px-3 rounded-lg bg-muted/20">
+                  <span className="text-foreground">In-app match rate</span>
+                  <span className="text-muted-foreground font-mono">{funnelStats?.phoneMatchRouting.matchRate ?? 0}%</span>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-border/50">
+          <CardHeader>
             <CardTitle className="text-base font-serif">AI Concierge ("Not sure what to send?")</CardTitle>
             <p className="text-xs text-muted-foreground">
               Usage of the composer's situation-to-suggestion assist — how often it's used, whether it found a library video to match, and

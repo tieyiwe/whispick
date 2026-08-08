@@ -492,6 +492,68 @@ paths:
         "204":
           description: Unsubscribed
 
+  /user/phone/start-verification:
+    post:
+      operationId: startPhoneVerification
+      tags: [user]
+      summary: Send a one-time Twilio Verify SMS code to a phone number, to later confirm ownership of it
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartPhoneVerificationInput"
+      responses:
+        "200":
+          description: Verification code sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrackingResult"
+        "400":
+          description: Invalid phone number
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "502":
+          description: Twilio Verify is not configured or the send failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /user/phone/confirm-verification:
+    post:
+      operationId: confirmPhoneVerification
+      tags: [user]
+      summary: Confirm the one-time code and mark the authenticated user's phone number as OTP-verified
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfirmPhoneVerificationInput"
+      responses:
+        "200":
+          description: Phone number verified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhoneVerificationResult"
+        "400":
+          description: Invalid phone number, or the code is incorrect/expired
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /credits/transactions:
     get:
       operationId: listCreditTransactions
@@ -2287,6 +2349,9 @@ components:
           type: ["string", "null"]
         phone:
           type: ["string", "null"]
+        phoneVerifiedAt:
+          type: ["string", "null"]
+          description: Null means this phone number has NOT been confirmed via our own Twilio Verify one-time-code flow (see POST /user/phone/confirm-verification) — never trust `phone` alone as proof of ownership, even when set.
         gender:
           type: ["string", "null"]
           description: "'woman' | 'man' | 'nonbinary' | 'prefer_not_to_say' | null (not yet answered)"
@@ -2324,6 +2389,36 @@ components:
           type: ["string", "null"]
         ageRange:
           type: ["string", "null"]
+
+    StartPhoneVerificationInput:
+      type: object
+      properties:
+        phone:
+          type: string
+      required:
+        - phone
+
+    ConfirmPhoneVerificationInput:
+      type: object
+      properties:
+        phone:
+          type: string
+        code:
+          type: string
+      required:
+        - phone
+        - code
+
+    PhoneVerificationResult:
+      type: object
+      properties:
+        phone:
+          type: ["string", "null"]
+        phoneVerifiedAt:
+          type: ["string", "null"]
+      required:
+        - phone
+        - phoneVerifiedAt
 
     CreditTransaction:
       type: object
@@ -3173,12 +3268,25 @@ components:
               type: integer
               description: Whisps actually sent using a concierge request's video and/or note (whisps.conciergeRequestId is set).
           required: [totalRequests, requestsWithVideoMatch, sends]
+        phoneMatchRouting:
+          type: object
+          description: Proof the Twilio-skip matching in lib/deliver.ts is saving money — every whisper_link/group_whisper SMS-or-WhatsApp send attempt (initial send, reminders, reveal-request, reply-to-recipient), split by whether it was routed in-app (recipient phone matched a known, OTP-verified user) or actually went through Twilio (unmatched).
+          properties:
+            inApp:
+              type: integer
+            twilio:
+              type: integer
+            matchRate:
+              type: number
+              description: Percentage (0-100) of these sends that were routed in-app instead of through Twilio.
+          required: [inApp, twilio, matchRate]
       required:
         - funnel
         - deliveryByChannel
         - ghostBoost
         - circles
         - concierge
+        - phoneMatchRouting
 
     AdminChannelDeliveryStat:
       type: object

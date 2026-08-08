@@ -49,6 +49,7 @@ import type {
   CircleFeedResponse,
   ConciergeInput,
   ConciergeResult,
+  ConfirmPhoneVerificationInput,
   CreateCircleInput,
   CreateSuggestionInput,
   CreditTransaction,
@@ -66,6 +67,7 @@ import type {
   NoteSuggestionsInput,
   NoteSuggestionsResult,
   NotificationListResponse,
+  PhoneVerificationResult,
   PublicReplyInput,
   PublicWhisp,
   PushPublicKeyResponse,
@@ -80,6 +82,7 @@ import type {
   SendGroupWhispResult,
   SendNotificationInput,
   SendNotificationResult,
+  StartPhoneVerificationInput,
   SubscribeInput,
   SubscribeResult,
   SuggestedVideo,
@@ -1678,6 +1681,146 @@ export const useDeletePushSubscription = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getDeletePushSubscriptionMutationOptions(options));
+    }
+
+export const getStartPhoneVerificationUrl = () => {
+
+
+
+
+  return `/api/user/phone/start-verification`
+}
+
+/**
+ * @summary Send a one-time Twilio Verify SMS code to a phone number, to later confirm ownership of it
+ */
+export const startPhoneVerification = async (startPhoneVerificationInput: StartPhoneVerificationInput, options?: RequestInit): Promise<TrackingResult> => {
+
+  return customFetch<TrackingResult>(getStartPhoneVerificationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(startPhoneVerificationInput)
+  }
+);}
+
+
+
+
+export const getStartPhoneVerificationMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startPhoneVerification>>, TError,{data: BodyType<StartPhoneVerificationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startPhoneVerification>>, TError,{data: BodyType<StartPhoneVerificationInput>}, TContext> => {
+
+const mutationKey = ['startPhoneVerification'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startPhoneVerification>>, {data: BodyType<StartPhoneVerificationInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  startPhoneVerification(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartPhoneVerificationMutationResult = NonNullable<Awaited<ReturnType<typeof startPhoneVerification>>>
+    export type StartPhoneVerificationMutationBody = BodyType<StartPhoneVerificationInput>
+    export type StartPhoneVerificationMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Send a one-time Twilio Verify SMS code to a phone number, to later confirm ownership of it
+ */
+export const useStartPhoneVerification = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startPhoneVerification>>, TError,{data: BodyType<StartPhoneVerificationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startPhoneVerification>>,
+        TError,
+        {data: BodyType<StartPhoneVerificationInput>},
+        TContext
+      > => {
+      return useMutation(getStartPhoneVerificationMutationOptions(options));
+    }
+
+export const getConfirmPhoneVerificationUrl = () => {
+
+
+
+
+  return `/api/user/phone/confirm-verification`
+}
+
+/**
+ * @summary Confirm the one-time code and mark the authenticated user's phone number as OTP-verified
+ */
+export const confirmPhoneVerification = async (confirmPhoneVerificationInput: ConfirmPhoneVerificationInput, options?: RequestInit): Promise<PhoneVerificationResult> => {
+
+  return customFetch<PhoneVerificationResult>(getConfirmPhoneVerificationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(confirmPhoneVerificationInput)
+  }
+);}
+
+
+
+
+export const getConfirmPhoneVerificationMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmPhoneVerification>>, TError,{data: BodyType<ConfirmPhoneVerificationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof confirmPhoneVerification>>, TError,{data: BodyType<ConfirmPhoneVerificationInput>}, TContext> => {
+
+const mutationKey = ['confirmPhoneVerification'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof confirmPhoneVerification>>, {data: BodyType<ConfirmPhoneVerificationInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  confirmPhoneVerification(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ConfirmPhoneVerificationMutationResult = NonNullable<Awaited<ReturnType<typeof confirmPhoneVerification>>>
+    export type ConfirmPhoneVerificationMutationBody = BodyType<ConfirmPhoneVerificationInput>
+    export type ConfirmPhoneVerificationMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Confirm the one-time code and mark the authenticated user's phone number as OTP-verified
+ */
+export const useConfirmPhoneVerification = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmPhoneVerification>>, TError,{data: BodyType<ConfirmPhoneVerificationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof confirmPhoneVerification>>,
+        TError,
+        {data: BodyType<ConfirmPhoneVerificationInput>},
+        TContext
+      > => {
+      return useMutation(getConfirmPhoneVerificationMutationOptions(options));
     }
 
 export const getListCreditTransactionsUrl = () => {

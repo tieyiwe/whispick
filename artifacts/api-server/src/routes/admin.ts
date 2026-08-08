@@ -557,7 +557,7 @@ router.get("/stats/funnel", async (_req, res): Promise<void> => {
   // recipient-directed funnel below and reported separately.
   const recipientDirected = ne(whispsTable.deliveryMethod, "circle_drop");
 
-  const [funnelRow, channelRows, ghostBoostRow, circleCountRow, memberCountRow, dropsRow, conciergeRequestRow, conciergeMatchedRow, conciergeSendsRow] = await Promise.all([
+  const [funnelRow, channelRows, ghostBoostRow, circleCountRow, memberCountRow, dropsRow, conciergeRequestRow, conciergeMatchedRow, conciergeSendsRow, phoneMatchRoutingRow] = await Promise.all([
     db
       .select({
         sent: count(),
@@ -605,6 +605,22 @@ router.get("/stats/funnel", async (_req, res): Promise<void> => {
       .where(sql`cardinality(${conciergeRequestsTable.suggestedVideoIds}) > 0`)
       .then((r) => r[0]),
     db.select({ count: count() }).from(whispsTable).where(isNotNull(whispsTable.conciergeRequestId)).then((r) => r[0]),
+    // Proof the Twilio-skip matching in lib/deliver.ts is actually saving
+    // money: every SMS/WhatsApp send attempt tied to a whisper_link or
+    // group_whisper whisp, split by whether it went in-app (matched a known,
+    // OTP-verified recipient) or through Twilio (unmatched) — covers every
+    // purpose (initial send, reminders, reveal-request, reply-to-recipient),
+    // not just the first message, since deliverWhisperLink funnels all of
+    // them through the same matching check.
+    db
+      .select({
+        inApp: sql<number>`count(*) filter (where ${deliveryAttemptsTable.channel} = 'in_app')`.mapWith(Number),
+        twilio: sql<number>`count(*) filter (where ${deliveryAttemptsTable.channel} in ('sms', 'whatsapp'))`.mapWith(Number),
+      })
+      .from(deliveryAttemptsTable)
+      .innerJoin(whispsTable, eq(deliveryAttemptsTable.whispId, whispsTable.id))
+      .where(inArray(whispsTable.deliveryMethod, ["whisper_link", "group_whisper"]))
+      .then((r) => r[0]!),
   ]);
 
   res.json({
@@ -630,6 +646,14 @@ router.get("/stats/funnel", async (_req, res): Promise<void> => {
       totalRequests: conciergeRequestRow?.count ?? 0,
       requestsWithVideoMatch: conciergeMatchedRow?.count ?? 0,
       sends: conciergeSendsRow?.count ?? 0,
+    },
+    phoneMatchRouting: {
+      inApp: phoneMatchRoutingRow.inApp,
+      twilio: phoneMatchRoutingRow.twilio,
+      matchRate:
+        phoneMatchRoutingRow.inApp + phoneMatchRoutingRow.twilio > 0
+          ? Math.round((phoneMatchRoutingRow.inApp / (phoneMatchRoutingRow.inApp + phoneMatchRoutingRow.twilio)) * 1000) / 10
+          : 0,
     },
   });
 });

@@ -514,6 +514,7 @@ export const GetUserProfileResponse = zod.object({
   "fullName": zod.string().nullish(),
   "avatarUrl": zod.string().nullish(),
   "phone": zod.string().nullish(),
+  "phoneVerifiedAt": zod.string().nullish().describe('Null means this phone number has NOT been confirmed via our own Twilio Verify one-time-code flow (see POST \/user\/phone\/confirm-verification) — never trust `phone` alone as proof of ownership, even when set.'),
   "gender": zod.string().nullish().describe('\'woman\' | \'man\' | \'nonbinary\' | \'prefer_not_to_say\' | null (not yet answered)'),
   "ageRange": zod.string().nullish().describe('\'13-17\' | \'18-24\' | \'25-34\' | \'35-44\' | \'45-54\' | \'55-64\' | \'65+\' | \'prefer_not_to_say\' | null (not yet answered)'),
   "plan": zod.string(),
@@ -541,6 +542,7 @@ export const UpdateUserProfileResponse = zod.object({
   "fullName": zod.string().nullish(),
   "avatarUrl": zod.string().nullish(),
   "phone": zod.string().nullish(),
+  "phoneVerifiedAt": zod.string().nullish().describe('Null means this phone number has NOT been confirmed via our own Twilio Verify one-time-code flow (see POST \/user\/phone\/confirm-verification) — never trust `phone` alone as proof of ownership, even when set.'),
   "gender": zod.string().nullish().describe('\'woman\' | \'man\' | \'nonbinary\' | \'prefer_not_to_say\' | null (not yet answered)'),
   "ageRange": zod.string().nullish().describe('\'13-17\' | \'18-24\' | \'25-34\' | \'35-44\' | \'45-54\' | \'55-64\' | \'65+\' | \'prefer_not_to_say\' | null (not yet answered)'),
   "plan": zod.string(),
@@ -583,6 +585,32 @@ export const DeletePushSubscriptionBody = zod.object({
 })
 
 export const DeletePushSubscriptionResponse = zod.void()
+
+
+/**
+ * @summary Send a one-time Twilio Verify SMS code to a phone number, to later confirm ownership of it
+ */
+export const StartPhoneVerificationBody = zod.object({
+  "phone": zod.string()
+})
+
+export const StartPhoneVerificationResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+
+/**
+ * @summary Confirm the one-time code and mark the authenticated user's phone number as OTP-verified
+ */
+export const ConfirmPhoneVerificationBody = zod.object({
+  "phone": zod.string(),
+  "code": zod.string()
+})
+
+export const ConfirmPhoneVerificationResponse = zod.object({
+  "phone": zod.string().nullable(),
+  "phoneVerifiedAt": zod.string().nullable()
+})
 
 
 /**
@@ -1255,7 +1283,12 @@ export const AdminGetFunnelStatsResponse = zod.object({
   "totalRequests": zod.number(),
   "requestsWithVideoMatch": zod.number().describe('Requests where at least one Suggestions Library video was matched (as opposed to falling back to note-draft-only).'),
   "sends": zod.number().describe('Whisps actually sent using a concierge request\'s video and\/or note (whisps.conciergeRequestId is set).')
-}).describe('Usage of the \"Not sure what to send?\" AI concierge (POST \/whisps\/concierge).')
+}).describe('Usage of the \"Not sure what to send?\" AI concierge (POST \/whisps\/concierge).'),
+  "phoneMatchRouting": zod.object({
+  "inApp": zod.number(),
+  "twilio": zod.number(),
+  "matchRate": zod.number().describe('Percentage (0-100) of these sends that were routed in-app instead of through Twilio.')
+}).describe('Proof the Twilio-skip matching in lib\/deliver.ts is saving money — every whisper_link\/group_whisper SMS-or-WhatsApp send attempt (initial send, reminders, reveal-request, reply-to-recipient), split by whether it was routed in-app (recipient phone matched a known, OTP-verified user) or actually went through Twilio (unmatched).')
 })
 
 

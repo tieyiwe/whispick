@@ -58,6 +58,20 @@ export const noteSuggestionLimiter = rateLimit({
   keyGenerator: authKeyGenerator,
 });
 
+// Starting a phone-verification challenge (lib/phoneVerification.ts) sends a
+// real Twilio Verify SMS, same recurring-cost reasoning as createWhispLimiter
+// — without a limit, one account could rack up Verify sends (to their own
+// number, repeatedly, or by probing numbers they don't own) for free. A
+// user only ever needs this a handful of times (initial verification, a
+// number change, an expired-code retry), so the cap is tight.
+export const phoneVerificationLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: authKeyGenerator,
+});
+
 // The "Not sure what to send?" concierge (lib/concierge.ts) is a Claude call
 // plus a library lookup — slightly heavier than a plain note suggestion, so
 // it gets a somewhat tighter cap, same per-user keying rationale as above.

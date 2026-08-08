@@ -17,6 +17,11 @@ export interface UserProfile {
   /** @nullable */
   phone?: string | null;
   /**
+     * Null means this phone number has NOT been confirmed via our own Twilio Verify one-time-code flow (see POST /user/phone/confirm-verification) — never trust `phone` alone as proof of ownership, even when set.
+     * @nullable
+     */
+  phoneVerifiedAt?: string | null;
+  /**
      * 'woman' | 'man' | 'nonbinary' | 'prefer_not_to_say' | null (not yet answered)
      * @nullable
      */

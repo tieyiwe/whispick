@@ -9,6 +9,9 @@ import { requireAuth } from "../lib/auth";
 import { ensureUser } from "../lib/ensureUser";
 import { getVapidPublicKey } from "../lib/push";
 import { GENDER_OPTIONS, AGE_RANGE_OPTIONS } from "../lib/demographics";
+import { normalizePhoneE164 } from "../lib/phone";
+import { startPhoneVerification, checkPhoneVerification } from "../lib/phoneVerification";
+import { phoneVerificationLimiter } from "../lib/rateLimit";
 
 const router = Router();
 
@@ -23,6 +26,7 @@ router.get("/profile", requireAuth, async (req, res): Promise<void> => {
     fullName: user.fullName,
     avatarUrl: user.avatarUrl,
     phone: user.phone,
+    phoneVerifiedAt: user.phoneVerifiedAt,
     gender: user.gender,
     ageRange: user.ageRange,
     plan: user.plan,
@@ -63,6 +67,7 @@ router.patch("/profile", requireAuth, async (req, res): Promise<void> => {
     fullName: updated.fullName,
     avatarUrl: updated.avatarUrl,
     phone: updated.phone,
+    phoneVerifiedAt: updated.phoneVerifiedAt,
     gender: updated.gender,
     ageRange: updated.ageRange,
     plan: updated.plan,
@@ -134,6 +139,92 @@ router.delete("/push-subscription", requireAuth, async (req, res): Promise<void>
     .where(and(eq(pushSubscriptionsTable.userId, user.id), eq(pushSubscriptionsTable.endpoint, parsed.data.endpoint)));
 
   res.status(204).send();
+});
+
+// ---------------------------------------------------------------------------
+// Phone verification — a real, one-time Twilio Verify SMS challenge that
+// proves a user controls the phone number they claim (see
+// lib/phoneVerification.ts for why this can't be TOTP/push-based). Once
+// confirmed, lib/deliver.ts can route SMS/WhatsApp whisps addressed to this
+// number through the app's own in-app notifications instead of paying for a
+// real Twilio send — see that file's matching logic. This is entirely
+// separate from (and doesn't get satisfied by) the best-effort,
+// never-verified users.phone Clerk sync in ensureUser.ts.
+// ---------------------------------------------------------------------------
+
+const startPhoneVerificationSchema = z.object({
+  phone: z.string().min(1).max(32),
+});
+
+// POST /api/user/phone/start-verification — sends a Twilio Verify SMS code
+// to the given number. Rate-limited: each call is a real SMS cost, same
+// reasoning as createWhispLimiter.
+router.post("/phone/start-verification", requireAuth, phoneVerificationLimiter, async (req, res): Promise<void> => {
+  const { userId } = getAuth(req);
+  await ensureUser(userId!, req);
+
+  const parsed = startPhoneVerificationSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const normalized = normalizePhoneE164(parsed.data.phone);
+  if (!normalized) {
+    res.status(400).json({ error: "That doesn't look like a valid phone number" });
+    return;
+  }
+
+  const result = await startPhoneVerification(normalized);
+  if (!result.ok) {
+    res.status(502).json({ error: result.error });
+    return;
+  }
+
+  res.status(200).json({ ok: true });
+});
+
+const confirmPhoneVerificationSchema = z.object({
+  phone: z.string().min(1).max(32),
+  code: z.string().min(1).max(12),
+});
+
+// POST /api/user/phone/confirm-verification — checks the code against
+// Twilio Verify and, on success, sets users.phone (normalized) +
+// users.phoneVerifiedAt for the authenticated user. `phone` is re-sent (and
+// re-normalized) rather than trusted from any prior request, since there's
+// no server-side "verification in progress for this user" state to look up
+// otherwise — Twilio Verify itself is the source of truth for which
+// (phone, code) pairs are valid.
+router.post("/phone/confirm-verification", requireAuth, async (req, res): Promise<void> => {
+  const { userId } = getAuth(req);
+  const user = await ensureUser(userId!, req);
+
+  const parsed = confirmPhoneVerificationSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const normalized = normalizePhoneE164(parsed.data.phone);
+  if (!normalized) {
+    res.status(400).json({ error: "That doesn't look like a valid phone number" });
+    return;
+  }
+
+  const result = await checkPhoneVerification(normalized, parsed.data.code);
+  if (!result.ok) {
+    res.status(400).json({ error: result.error });
+    return;
+  }
+
+  await db
+    .update(usersTable)
+    .set({ phone: normalized, phoneVerifiedAt: new Date() })
+    .where(eq(usersTable.id, user.id));
+
+  const updated = await db.select().from(usersTable).where(eq(usersTable.id, user.id)).then((r) => r[0]!);
+  res.status(200).json({ phone: updated.phone, phoneVerifiedAt: updated.phoneVerifiedAt });
 });
 
 // ---------------------------------------------------------------------------

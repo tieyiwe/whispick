@@ -275,6 +275,11 @@ export interface UserProfile {
   /** @nullable */
   phone?: string | null;
   /**
+     * Null means this phone number has NOT been confirmed via our own Twilio Verify one-time-code flow (see POST /user/phone/confirm-verification) — never trust `phone` alone as proof of ownership, even when set.
+     * @nullable
+     */
+  phoneVerifiedAt?: string | null;
+  /**
      * 'woman' | 'man' | 'nonbinary' | 'prefer_not_to_say' | null (not yet answered)
      * @nullable
      */
@@ -300,6 +305,22 @@ export interface UserProfileUpdate {
   gender?: string | null;
   /** @nullable */
   ageRange?: string | null;
+}
+
+export interface StartPhoneVerificationInput {
+  phone: string;
+}
+
+export interface ConfirmPhoneVerificationInput {
+  phone: string;
+  code: string;
+}
+
+export interface PhoneVerificationResult {
+  /** @nullable */
+  phone: string | null;
+  /** @nullable */
+  phoneVerifiedAt: string | null;
 }
 
 export interface CreditTransaction {
@@ -766,6 +787,16 @@ export type AdminFunnelStatsConcierge = {
   sends: number;
 };
 
+/**
+ * Proof the Twilio-skip matching in lib/deliver.ts is saving money — every whisper_link/group_whisper SMS-or-WhatsApp send attempt (initial send, reminders, reveal-request, reply-to-recipient), split by whether it was routed in-app (recipient phone matched a known, OTP-verified user) or actually went through Twilio (unmatched).
+ */
+export type AdminFunnelStatsPhoneMatchRouting = {
+  inApp: number;
+  twilio: number;
+  /** Percentage (0-100) of these sends that were routed in-app instead of through Twilio. */
+  matchRate: number;
+};
+
 export interface AdminChannelDeliveryStat {
   channel: string;
   attempts: number;
@@ -782,6 +813,8 @@ export interface AdminFunnelStats {
   circles: AdminFunnelStatsCircles;
   /** Usage of the "Not sure what to send?" AI concierge (POST /whisps/concierge). */
   concierge: AdminFunnelStatsConcierge;
+  /** Proof the Twilio-skip matching in lib/deliver.ts is saving money — every whisper_link/group_whisper SMS-or-WhatsApp send attempt (initial send, reminders, reveal-request, reply-to-recipient), split by whether it was routed in-app (recipient phone matched a known, OTP-verified user) or actually went through Twilio (unmatched). */
+  phoneMatchRouting: AdminFunnelStatsPhoneMatchRouting;
 }
 
 export interface Notification {

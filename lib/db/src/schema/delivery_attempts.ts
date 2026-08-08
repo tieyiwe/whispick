@@ -16,7 +16,7 @@ import { z } from "zod/v4";
 export const deliveryAttemptsTable = pgTable("delivery_attempts", {
   id: text("id").primaryKey(),
   whispId: text("whisp_id"),
-  channel: text("channel").notNull(), // 'email' | 'sms' | 'whatsapp'
+  channel: text("channel").notNull(), // 'email' | 'sms' | 'whatsapp' | 'in_app' (matched-recipient sms/whatsapp routed in-app instead of Twilio — see lib/deliver.ts)
   // What this send was FOR, not just which whisp it's attached to — the same
   // whisp can have several attempts across its life (initial send, one per
   // reminder), and some purposes aren't the recipient-facing link at all
