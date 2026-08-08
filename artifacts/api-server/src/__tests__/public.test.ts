@@ -113,4 +113,25 @@ describe("POST /api/public/w/:token/reply", () => {
     const res = await request(app).post(`/api/public/w/${whisp.publicToken}/reply`).send({});
     expect(res.status).toBe(400);
   });
+
+  // The Sender's "you got a reply" notification is deliberately deferred
+  // (see lib/replyNotificationScheduler.ts) so an instant phone-buzz can't
+  // reveal the Sender's identity if they're physically with the Recipient.
+  // We can't intercept the real outbound email/push here (this codebase
+  // doesn't mock those network calls elsewhere either) — instead we assert
+  // the scheduling state the route is responsible for: nothing has fired
+  // yet, and it's queued for one of the three allowed delays.
+  it("schedules the sender notification for later instead of firing immediately", async () => {
+    const whisp = await createWhisp();
+    const before = Date.now();
+
+    const res = await request(app).post(`/api/public/w/${whisp.publicToken}/reply`).send({ replyText: "thank you" });
+    expect(res.status).toBe(201);
+    expect(res.body.senderNotifiedAt).toBeNull();
+    expect(res.body.notifySenderAt).not.toBeNull();
+
+    const notifyAt = new Date(res.body.notifySenderAt).getTime();
+    const deltaMinutes = Math.round((notifyAt - before) / 60_000);
+    expect([3, 5, 9]).toContain(deltaMinutes);
+  });
 });

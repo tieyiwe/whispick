@@ -10,7 +10,7 @@ import {
 import { eq, count } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { z } from "zod";
-import { sendEmail, replyNotificationEmailHtml, appreciationNotificationEmailHtml } from "../lib/email";
+import { sendEmail, appreciationNotificationEmailHtml } from "../lib/email";
 import { notifyUser } from "../lib/push";
 import { getPublicAppUrl } from "../lib/publicUrl";
 import { isExpired, MAX_REMINDERS } from "../lib/expiration";
@@ -28,6 +28,17 @@ const router = Router();
 // could be used to look up that one subscriber's own reply/interaction.
 function isMatchedFanout(whisp: { deliveryMethod: string; groupSendId: string | null }): boolean {
   return whisp.deliveryMethod === "ghost_boost" && !!whisp.groupSendId;
+}
+
+// One of 3, 5, or 9 minutes out, chosen at random each time — a discrete
+// choice (not a continuous range) per the anti-correlation design: enough
+// spread that a Sender's phone buzzing can't be tied to a Recipient who just
+// hit send while physically next to them. See notifySenderAt's schema
+// comment and lib/replyNotificationScheduler.ts.
+const NOTIFY_DELAY_MINUTES_OPTIONS = [3, 5, 9] as const;
+function randomNotifyDelay(): Date {
+  const minutes = NOTIFY_DELAY_MINUTES_OPTIONS[Math.floor(Math.random() * NOTIFY_DELAY_MINUTES_OPTIONS.length)];
+  return new Date(Date.now() + minutes * 60_000);
 }
 
 // GET /api/public/w/:token — public recipient page
@@ -250,6 +261,12 @@ router.post("/w/:token/reply", async (req, res): Promise<void> => {
   }
 
   const id = randomUUID();
+  // Delayed by a random 3/5/9 minutes so the Sender's notification doesn't
+  // fire in this same request — see notifySenderAt's comment in the schema
+  // and lib/replyNotificationScheduler.ts, which dispatches it once due.
+  // Only meaningful for this recipient-authored direction (fromRecipient:
+  // true); sender-authored follow-ups inserted elsewhere leave it null.
+  const notifySenderAt = isMatchedFanout(whisp) ? null : randomNotifyDelay();
   await db.insert(whispRepliesTable).values({
     id,
     whispId: whisp.id,
@@ -261,26 +278,11 @@ router.post("/w/:token/reply", async (req, res): Promise<void> => {
     videoEmbedUrl: parsed.data.videoEmbedUrl ?? null,
     videoPlatform: parsed.data.videoPlatform ?? null,
     moodTag: parsed.data.moodTag ?? null,
+    notifySenderAt,
   });
 
   // Update whisp status to replied
   await db.update(whispsTable).set({ status: "replied" }).where(eq(whispsTable.id, whisp.id));
-
-  if (!isMatchedFanout(whisp)) {
-    const sender = await db.select().from(usersTable).where(eq(usersTable.id, whisp.senderId)).then(r => r[0]);
-    if (sender?.email) {
-      void sendEmail(sender.email, "Someone replied to your whisp", replyNotificationEmailHtml(whisp.videoTitle), {
-        whispId: whisp.id,
-        purpose: "reply_notification",
-      });
-    }
-    void notifyUser(
-      whisp.senderId,
-      "You got a reply 💬",
-      parsed.data.videoUrl ? "Someone whisped a video back to you." : "Someone replied anonymously to your whisp.",
-      `${getPublicAppUrl(req)}/whisps/${whisp.id}`,
-    );
-  }
 
   const reply = await db.select().from(whispRepliesTable).where(eq(whispRepliesTable.id, id)).then(r => r[0]);
   res.status(201).json(reply);

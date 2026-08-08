@@ -16,8 +16,20 @@ export const whispRepliesTable = pgTable("whisp_replies", {
   videoPlatform: text("video_platform"),
   moodTag: text("mood_tag"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  // Deferred sender notification (see routes/public.ts's /reply handler and
+  // lib/replyNotificationScheduler.ts): if the Sender and Recipient are
+  // physically together, an instant "you got a reply" push would visibly
+  // buzz the Sender's phone the moment the Recipient hits send, revealing
+  // who the Sender is. notifySenderAt is set (only for fromRecipient=true
+  // rows — sender-authored follow-ups inserted elsewhere don't use this) to
+  // a random 3/5/9 minutes out at insert time to break that timing
+  // correlation; senderNotifiedAt stays null until the scheduler actually
+  // fires the deferred email + push, so null means "still pending".
+  notifySenderAt: timestamp("notify_sender_at", { withTimezone: true }),
+  senderNotifiedAt: timestamp("sender_notified_at", { withTimezone: true }),
 }, (table) => [
   index("whisp_replies_whisp_id_idx").on(table.whispId),
+  index("whisp_replies_notify_sender_at_idx").on(table.notifySenderAt),
 ]);
 
 export const insertWhispReplySchema = createInsertSchema(whispRepliesTable).omit({ createdAt: true });

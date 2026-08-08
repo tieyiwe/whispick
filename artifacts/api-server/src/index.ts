@@ -2,6 +2,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { startScheduledWhispDispatcher } from "./lib/scheduler";
 import { startReminderDispatcher } from "./lib/reminderScheduler";
+import { startReplyNotificationScheduler } from "./lib/replyNotificationScheduler";
 import { startMediaRetentionScheduler } from "./lib/mediaRetentionScheduler";
 import { startTakeawayScheduler } from "./lib/takeawayScheduler";
 import { startMatchScheduler } from "./lib/matchScheduler";
@@ -32,6 +33,7 @@ app.listen(port, (err) => {
 
 startScheduledWhispDispatcher();
 startReminderDispatcher();
+startReplyNotificationScheduler();
 startMediaRetentionScheduler();
 startTakeawayScheduler();
 startMatchScheduler();
