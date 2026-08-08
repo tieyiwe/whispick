@@ -4,7 +4,7 @@ const PRIVACY_EMAIL = "privacy@blindwhisper.com";
 
 export function PrivacyPolicy() {
   return (
-    <LegalLayout title="Privacy Policy" updatedDate="August 7, 2026">
+    <LegalLayout title="Privacy Policy" updatedDate="August 8, 2026">
       <p className="text-sm text-muted-foreground">A product of TIBLOGICS, a sub-entity of TILO GROUP, LLC.</p>
       <p>
         Welcome to Blind Whisper ("Blind Whisper," "we," "us," or "our"), a product of TIBLOGICS, which is a
@@ -26,7 +26,8 @@ export function PrivacyPolicy() {
         <p><strong>1.1 Information you provide directly.</strong></p>
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>Account registration information:</strong> name and email address, plus authentication data handled by our identity provider, Clerk. We do not directly collect or store your password — Clerk manages credentials on our behalf under its own security and privacy practices.</li>
-          <li><strong>Profile information:</strong> display name and optional avatar image.</li>
+          <li><strong>Profile information:</strong> display name, optional avatar image, and optional demographic details (gender, age range) used to help tailor recommendations and reporting.</li>
+          <li><strong>Phone number:</strong> if you choose to add and verify a phone number, we send a one-time verification code to that number via Twilio Verify, a purpose-built phone-verification service, and confirm the code you enter matches. We only store the number as "verified" once this succeeds — this proves you actually control that phone number, the same way any SMS one-time-passcode flow does. See Section 1.7 for what we use a verified number for.</li>
           <li><strong>Payment information:</strong> billing details submitted through our payment processor, Stripe, Inc. Blind Whisper does not directly collect, store, or process credit card numbers or other sensitive financial information — all payment data is handled by Stripe under its own privacy policy and PCI-DSS compliance standards. We retain a Stripe customer/subscription identifier and a record of the transaction.</li>
           <li><strong>Content you submit:</strong> video URLs or uploaded video files, anonymous notes, sender alias selections, mood tags, trim points, and scheduled delivery preferences.</li>
           <li><strong>Recipient contact information:</strong> the email address or phone number of a person you choose to send a Whisper Link to. That person hasn't created an account and hasn't directly given us their information — you have, by choosing to send them something. We use this solely to deliver your message, track delivery/read status, and — where the recipient opts in — let them reply anonymously or manage reminders. It is not sold, rented, or shared with third parties for marketing purposes.</li>
@@ -42,13 +43,20 @@ export function PrivacyPolicy() {
           <li><strong>Push notification data:</strong> if you opt in, we store a device/browser push subscription endpoint so we can notify you when something you sent is opened, watched, or replied to.</li>
         </ul>
         <p><strong>1.6 Information from third parties.</strong> If you sign in using a supported social login provider through Clerk, we receive your name, email address, and profile photo from that provider in accordance with your account permissions there. We also receive transaction confirmations and subscription status from Stripe.</p>
+        <p><strong>1.7 Phone number verification and in-app delivery matching.</strong> A verified phone number lets us do one additional thing: when a Sender addresses a Whisper Link to a phone number by SMS or WhatsApp, we check — privately, on our servers only — whether that number matches a verified Blind Whisper account. If it does, we deliver the Whisp inside the app as an in-app notification instead of sending it as a text message through Twilio. This is purely a delivery-routing decision: the content, anonymity protections, and Reveal Flow all work identically either way, and it can meaningfully reduce our SMS/WhatsApp costs and get the Whisp to the Recipient faster. Two things we want to be explicit about:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><strong>The Sender is never told which path was used.</strong> Nothing in the Sender's experience — timing, confirmation text, or any other signal — reveals whether their Whisp was delivered by text message or in-app. This is a deliberate design choice: telling a Sender "this number already has an account" would let them use Blind Whisper to check whether a specific phone number belongs to someone they know, which we consider a privacy risk to Recipients and refuse to expose.</li>
+          <li><strong>Verified numbers are used only for this matching check and, if you choose, for your own sign-in.</strong> We do not use your verified phone number for marketing, sell it, or share it with Twilio or anyone else beyond what's needed to send you the one-time verification code itself.</li>
+        </ul>
+        <p><strong>1.8 Delayed reply notifications.</strong> When a Recipient replies to a Whisper Link, we intentionally delay the Sender's notification by a random interval (a few minutes) before sending it. This is a deliberate anonymity protection: if a Sender and Recipient happen to be physically near each other, an instant notification could let the Sender connect a Recipient's phone buzzing to their own action, undermining anonymity. The Recipient's own confirmation that their reply was sent is never delayed — only the Sender-facing notification is.</p>
       </LegalSection>
 
       <LegalSection heading="2. How We Use Your Information">
         <ul className="list-disc pl-5 space-y-1">
           <li>To provide, operate, and maintain the Platform and all its features</li>
           <li>To process transactions, manage subscriptions, and fulfill Ghost Boost credit purchases through Stripe</li>
-          <li>To deliver Whisper Links via SMS/WhatsApp (Twilio) and email (Resend) on behalf of Senders</li>
+          <li>To deliver Whisper Links via SMS/WhatsApp (Twilio), in-app notification, or email (Resend) on behalf of Senders</li>
+          <li>To verify phone number ownership via one-time SMS codes (Twilio Verify), and to determine whether a Whisper Link's Recipient is an existing verified Blind Whisper user so we can route delivery in-app instead of by text message, as described in Section 1.7</li>
           <li>To match Ghost Boost Whisps against our opted-in subscriber pool and deliver them</li>
           <li>To send Senders tracking notifications when Recipients open, click, or engage with their Whisper Links</li>
           <li>To facilitate anonymous reply exchanges between Senders and Recipients within the Platform</li>
@@ -78,6 +86,8 @@ export function PrivacyPolicy() {
           <li>The optional Reveal Flow feature requires affirmative, two-step consent from both the Sender and Recipient before any identity is disclosed.</li>
           <li>Whisper Link landing pages do not contain metadata linking back to the Sender's account.</li>
           <li>Ghost Boost matches are delivered as ordinary emails to opted-in subscribers; nothing in the delivery identifies the Sender to the Recipient.</li>
+          <li>When a Whisp is routed to in-app delivery because the Recipient's number matches a verified account (Section 1.7), the Sender is never informed that this happened — the routing is invisible to them.</li>
+          <li>Sender-facing notifications that a Recipient has replied are deliberately delayed by a random short interval, so a Recipient's phone notifying them cannot be used to identify the Sender through physical proximity (Section 1.8).</li>
         </ul>
         <p>
           <strong>Circle is different.</strong> The Sender's identity is never attached to a Circle post, but Circle
@@ -101,7 +111,7 @@ export function PrivacyPolicy() {
         <ul className="list-disc pl-5 space-y-1">
           <li>Clerk — account authentication</li>
           <li>Stripe, Inc. — payment processing and subscription management</li>
-          <li>Twilio Inc. — SMS/WhatsApp delivery for Whisper Links</li>
+          <li>Twilio Inc. — SMS/WhatsApp delivery for Whisper Links, and phone number verification via Twilio Verify</li>
           <li>Resend — transactional and match-delivery email</li>
           <li>Anthropic — optional AI-generated content, as described in Section 3</li>
           <li>Our hosting and database infrastructure providers — running the Platform and storing uploaded video files</li>
@@ -139,7 +149,7 @@ export function PrivacyPolicy() {
 
       <LegalSection heading="8. Your Rights and Choices">
         <ul className="list-disc pl-5 space-y-1">
-          <li>You can access, correct, or update your account information at any time through your account settings.</li>
+          <li>You can access, correct, or update your account information at any time through your account settings, including adding, changing, or removing your verified phone number.</li>
           <li>You can request deletion of your account by contacting us at <a href={`mailto:${PRIVACY_EMAIL}`} className="text-primary hover:underline">{PRIVACY_EMAIL}</a>.</li>
           <li>You can reply STOP to any text message to opt out of future SMS from us, or HELP for assistance.</li>
           <li>You can unsubscribe from Ghost Boost match emails with a one-click link in every such email, no account required.</li>
