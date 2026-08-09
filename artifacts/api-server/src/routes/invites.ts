@@ -11,7 +11,7 @@ import { sendEmail, inviteEmailHtml } from "../lib/email";
 import { sendSms, sendWhatsApp, inviteSmsBody } from "../lib/sms";
 import { logDeliveryAttempt } from "../lib/deliveryLog";
 import { inviteRevealRequestHookLine } from "../lib/copy";
-import { inviteLimiter } from "../lib/rateLimit";
+import { inviteLimiter, publicEndpointLimiter } from "../lib/rateLimit";
 import { notifyUser } from "../lib/push";
 import { logger } from "../lib/logger";
 
@@ -233,7 +233,15 @@ router.post("/:id/reveal", requireAuth, async (req, res): Promise<void> => {
 // that page already shows. It must never return the full row: that would
 // hand out inviterUserId, recipientEmail/Phone, and everything else to
 // anyone who has (or later obtains) this invite id — same discipline as
-// PATCH /whisps/:id/reveal.
+// PATCH /whisps/:id/reveal. Unauthenticated + a real DB write, same category
+// as every route in routes/public.ts — rate-limited the same way (see
+// lib/rateLimit.ts's publicEndpointLimiter) rather than left as the one
+// unauthenticated write endpoint anyone can hammer without limit. Applied
+// via a separate router.use() rather than passed inline to router.patch()
+// — see the identical comment on routes/whisps.ts's PATCH /:id/reveal for
+// why (express-rate-limit's explicit RequestHandler typing would otherwise
+// widen this route's own :id param inference).
+router.use("/:id/reveal", publicEndpointLimiter);
 router.patch("/:id/reveal", async (req, res): Promise<void> => {
   const schema = z.object({ accepted: z.boolean() });
   const parsed = schema.safeParse(req.body);

@@ -15,7 +15,7 @@ export function TextWhispsList() {
   const { data: textWhisps, isLoading } = useListTextWhisps();
 
   const sent = (textWhisps ?? []).filter((t) => t.senderId === profile?.id);
-  const received = (textWhisps ?? []).filter((t) => t.recipientUserId === profile?.id);
+  const received = (textWhisps ?? []).filter((t) => t.viewerIsRecipient);
 
   return (
     <AppLayout>

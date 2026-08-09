@@ -49,14 +49,16 @@ import {
   Upload,
   FolderOpen,
   Video,
+  Camera,
   Sparkles,
   RefreshCw,
 } from "lucide-react";
 import { SiWhatsapp } from "react-icons/si";
 import { PlatformIcon } from "@/components/shared/PlatformIcon";
 import { isContactPickerSupported, pickContact } from "@/lib/contactPicker";
-import { uploadMedia, UploadValidationError } from "@/lib/uploadMedia";
+import { uploadMedia, UploadValidationError, type UploadedVideoResult } from "@/lib/uploadMedia";
 import { Thumbnail } from "@/components/shared/Thumbnail";
+import { CameraCapture } from "@/components/shared/CameraCapture";
 import { takePendingForward } from "@/lib/forwardVideo";
 import { DemographicsGateDialog } from "@/components/shared/DemographicsGateDialog";
 import { needsDemographics } from "@/lib/demographics";
@@ -125,7 +127,7 @@ const step5Schema = z.object({
 
 export function SendWhisp() {
   const [step, setStep] = useState(1);
-  const [videoSource, setVideoSource] = useState<"url" | "upload" | "library" | "concierge">("url");
+  const [videoSource, setVideoSource] = useState<"url" | "upload" | "camera" | "library" | "concierge">("url");
   const [videoUrl, setVideoUrl] = useState("");
   const [videoMeta, setVideoMeta] = useState<{
     title?: string | null;
@@ -276,6 +278,17 @@ export function SendWhisp() {
     } finally {
       setIsUploading(false);
     }
+  }
+
+  // Camera capture (photo or video) — CameraCapture already ran the result
+  // through uploadMedia.ts's exact same pipeline a file picked via "Upload"
+  // goes through, so from here on a camera capture is indistinguishable
+  // from an upload: same uploadedVideoId, same retention, same playback.
+  function handleCameraUploaded(result: UploadedVideoResult) {
+    setUploadedVideoId(result.id);
+    setVideoUrl("");
+    setVideoMeta({ title: result.originalFilename, thumbnail: `/api/media/${result.id}/thumbnail`, platform: "upload" });
+    setStep(2);
   }
 
   function handleLibrarySelect(item: { id: string; originalFilename: string; status: string }) {
@@ -588,6 +601,7 @@ export function SendWhisp() {
                     { key: "concierge" as const, label: "Not sure? Describe it", icon: Sparkles },
                     { key: "url" as const, label: "Paste a link", icon: Link2 },
                     { key: "upload" as const, label: "Upload", icon: Upload },
+                    { key: "camera" as const, label: "Camera", icon: Camera },
                     { key: "library" as const, label: "My library", icon: FolderOpen },
                   ]).map((tab) => (
                     <button
@@ -662,6 +676,16 @@ export function SendWhisp() {
                       />
                     </label>
                     {uploadError && <p className="text-sm text-destructive">{uploadError}</p>}
+                  </>
+                )}
+
+                {videoSource === "camera" && (
+                  <>
+                    <h2 className="text-xl font-serif font-semibold">Use your camera</h2>
+                    <p className="text-sm text-muted-foreground">
+                      Take a photo or record a video (under 2 minutes) right here — no need to leave the app.
+                    </p>
+                    <CameraCapture onUploaded={handleCameraUploaded} />
                   </>
                 )}
 

@@ -105,6 +105,13 @@ router.get("/w/:token", async (req, res): Promise<void> => {
 async function loadWhispUpload(token: string) {
   const whisp = await db.select().from(whispsTable).where(eq(whispsTable.publicToken, token)).then((r) => r[0]);
   if (!whisp?.uploadedVideoId) return { status: 404 as const };
+  // GET /w/:token already reports `expired` and the frontend stops rendering
+  // the video player once it's true, but that's a client-side-only gate —
+  // without this check the raw bytes stayed fetchable forever via a direct
+  // request to this endpoint, past the 48-hour window whisps.expiresAt (and
+  // the countdown/reminder UI) advertise to the recipient as the whole
+  // point of "this expires."
+  if (isExpired(whisp.expiresAt)) return { status: 410 as const };
 
   const media = await db
     .select()

@@ -110,6 +110,58 @@ export function SendTextWhisp() {
 
         <Card className="bg-card border-border/50">
           <CardContent className="p-6 space-y-5">
+            <div className="space-y-1.5">
+              <p className="text-sm font-medium text-foreground">Your message</p>
+              {/* Required privacy reminder — visible right next to the
+                  compose textarea, not just implied by "anonymous" copy
+                  elsewhere. */}
+              <p className="text-xs text-muted-foreground bg-muted/30 rounded-lg px-3 py-2 border border-border/40">
+                Avoid sharing anything that could identify you, unless you want to — this stays anonymous unless you choose to reveal yourself.
+              </p>
+              <div className="relative">
+                <Textarea
+                  className="bg-input/50 border-border/50 rounded-xl min-h-[100px] resize-none"
+                  placeholder="Write something kind, honest, or brave..."
+                  maxLength={MESSAGE_MAX_LENGTH}
+                  value={messageText}
+                  onChange={(e) => setMessageText(e.target.value)}
+                  autoFocus
+                  data-testid="textarea-text-whisp-message"
+                />
+                <span className={`absolute bottom-2 right-3 text-xs ${remaining < 0 ? "text-destructive" : "text-muted-foreground"}`}>
+                  {messageText.length}/{MESSAGE_MAX_LENGTH}
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-muted-foreground">Sign as:</p>
+              <div className="grid grid-cols-2 gap-2">
+                {SENDER_ALIASES.map((alias) => (
+                  <button
+                    key={alias}
+                    type="button"
+                    onClick={() => { setSenderAlias(alias); setCustomAlias(""); }}
+                    data-testid={`text-whisp-alias-${alias.replace(/\s+/g, "-").toLowerCase()}`}
+                    className={`p-2 rounded-xl text-xs text-left border transition-all ${
+                      senderAlias === alias && !customAlias
+                        ? "border-primary bg-primary/10 text-foreground"
+                        : "border-border/50 text-muted-foreground hover:border-border"
+                    }`}
+                  >
+                    {alias}
+                  </button>
+                ))}
+              </div>
+              <Input
+                placeholder="Or type a custom alias..."
+                className="bg-input/50 border-border/50 rounded-xl text-sm"
+                value={customAlias}
+                onChange={(e) => setCustomAlias(e.target.value)}
+                data-testid="input-text-whisp-custom-alias"
+              />
+            </div>
+
             <div className="space-y-2">
               <p className="text-sm font-medium text-foreground">Who's it for?</p>
               {/* General, always-shown disclosure about how the feature
@@ -134,70 +186,15 @@ export function SendTextWhisp() {
               </div>
             </div>
 
-            {phone.trim().length > 0 && (
-              <>
-                <div className="space-y-1.5">
-                  <p className="text-sm font-medium text-foreground">Your message</p>
-                  {/* Required privacy reminder — visible right next to the
-                      compose textarea, not just implied by "anonymous" copy
-                      elsewhere. */}
-                  <p className="text-xs text-muted-foreground bg-muted/30 rounded-lg px-3 py-2 border border-border/40">
-                    Avoid sharing anything that could identify you, unless you want to — this stays anonymous unless you choose to reveal yourself.
-                  </p>
-                  <div className="relative">
-                    <Textarea
-                      className="bg-input/50 border-border/50 rounded-xl min-h-[100px] resize-none"
-                      placeholder="Write something kind, honest, or brave..."
-                      maxLength={MESSAGE_MAX_LENGTH}
-                      value={messageText}
-                      onChange={(e) => setMessageText(e.target.value)}
-                      data-testid="textarea-text-whisp-message"
-                    />
-                    <span className={`absolute bottom-2 right-3 text-xs ${remaining < 0 ? "text-destructive" : "text-muted-foreground"}`}>
-                      {messageText.length}/{MESSAGE_MAX_LENGTH}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Sign as:</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {SENDER_ALIASES.map((alias) => (
-                      <button
-                        key={alias}
-                        type="button"
-                        onClick={() => { setSenderAlias(alias); setCustomAlias(""); }}
-                        data-testid={`text-whisp-alias-${alias.replace(/\s+/g, "-").toLowerCase()}`}
-                        className={`p-2 rounded-xl text-xs text-left border transition-all ${
-                          senderAlias === alias && !customAlias
-                            ? "border-primary bg-primary/10 text-foreground"
-                            : "border-border/50 text-muted-foreground hover:border-border"
-                        }`}
-                      >
-                        {alias}
-                      </button>
-                    ))}
-                  </div>
-                  <Input
-                    placeholder="Or type a custom alias..."
-                    className="bg-input/50 border-border/50 rounded-xl text-sm"
-                    value={customAlias}
-                    onChange={(e) => setCustomAlias(e.target.value)}
-                    data-testid="input-text-whisp-custom-alias"
-                  />
-                </div>
-
-                <Button
-                  onClick={handleSend}
-                  disabled={!canSend || createTextWhisp.isPending}
-                  className="w-full rounded-full shadow-[0_0_15px_rgba(124,92,252,0.3)]"
-                  data-testid="button-send-text-whisp"
-                >
-                  {createTextWhisp.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ArrowRight className="w-4 h-4 mr-2" />}
-                  Send Text Whisp
-                </Button>
-              </>
-            )}
+            <Button
+              onClick={handleSend}
+              disabled={!canSend || createTextWhisp.isPending}
+              className="w-full rounded-full shadow-[0_0_15px_rgba(124,92,252,0.3)]"
+              data-testid="button-send-text-whisp"
+            >
+              {createTextWhisp.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ArrowRight className="w-4 h-4 mr-2" />}
+              Send Text Whisp
+            </Button>
           </CardContent>
         </Card>
 

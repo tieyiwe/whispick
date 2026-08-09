@@ -6,7 +6,7 @@ const BILLING_EMAIL = "billing@blindwhisper.com";
 
 export function TermsOfService() {
   return (
-    <LegalLayout title="Terms and Conditions of Use" updatedDate="August 7, 2026">
+    <LegalLayout title="Terms and Conditions of Use" updatedDate="August 8, 2026">
       <p className="text-sm text-muted-foreground">A product of TIBLOGICS, a sub-entity of TILO GROUP, LLC.</p>
       <p>
         PLEASE READ THESE TERMS AND CONDITIONS CAREFULLY BEFORE USING BLIND WHISPER. BY CREATING AN ACCOUNT,
@@ -22,7 +22,7 @@ export function TermsOfService() {
           Whisper platform, including its website, mobile experience, and all related services, features, and
           content (collectively, the "Platform").
         </p>
-        <p>In these Terms: "Sender" means any User who initiates delivery of a video recommendation through the Platform; "Recipient" means any individual who receives a Whisper Link, Whisper Group, or Ghost Boost delivery; "Whisp" means a single anonymous video recommendation delivery; "Whisper Link" means an anonymous SMS, WhatsApp, or email delivery of a Whisp to a specific Recipient chosen by the Sender, which expires 48 hours after delivery; "Whisper Group" means a Whisp sent by a Sender to multiple saved Recipients at once, each delivered and governed the same way as a Whisper Link; "Ghost Boost" means the delivery of a Whisp to a member of Blind Whisper's own opted-in subscriber pool, matched by mood or topic preference — Ghost Boost does not involve targeting any specific individual chosen by the Sender, and does not run through any third-party advertising platform; "Ghost Boost Credit" means a prepaid unit entitling the Sender to one Ghost Boost delivery; "Circle" means a public or invite-only feed to which a Sender may post a Whisp for anyone with access to that feed to view, rather than delivering it privately to one chosen Recipient.</p>
+        <p>In these Terms: "Sender" means any User who initiates delivery of a video recommendation, Text Whisp, or Invite through the Platform; "Recipient" means any individual who receives a Whisper Link, Whisper Group, Text Whisp, Ghost Boost delivery, or Invite; "Whisp" means a single anonymous video recommendation delivery; "Whisper Link" means an anonymous SMS, WhatsApp, or email delivery of a Whisp to a specific Recipient chosen by the Sender, which expires 48 hours after delivery; "Whisper Group" means a Whisp sent by a Sender to multiple saved Recipients at once, each delivered and governed the same way as a Whisper Link; "Text Whisp" means a short, text-only anonymous message (up to 260 characters) sent through the Platform to a Recipient's phone number, delivered instantly within the Platform if that number belongs to a verified Blind Whisper account, or otherwise by SMS to a Platform web page where the Recipient can read it and, if they choose, create an account to reply the same way; "Ghost Boost" means the delivery of a Whisp to a member of Blind Whisper's own opted-in subscriber pool, matched by mood or topic preference — Ghost Boost does not involve targeting any specific individual chosen by the Sender, and does not run through any third-party advertising platform; "Ghost Boost Credit" means a prepaid unit entitling the Sender to one Ghost Boost delivery; "Circle" means a public or invite-only feed to which a Sender may post a Whisp for anyone with access to that feed to view, rather than delivering it privately to one chosen Recipient; "Invite" means an anonymous message, delivered by SMS, WhatsApp, or email, inviting a Recipient to create a Blind Whisper account.</p>
       </LegalSection>
 
       <LegalSection heading="2. Eligibility">
@@ -43,10 +43,11 @@ export function TermsOfService() {
           <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a> of any unauthorized use or security breach; and log out at the end of each session on shared or public devices. We won't be liable for loss or damage arising from your failure to maintain account security, and you may be held liable for losses we or others incur due to unauthorized use of your account.
         </p>
         <p><strong>3.3 One account per user.</strong> You may only maintain one active account. Creating multiple accounts to circumvent restrictions, suspensions, or bans is prohibited and will result in termination of all associated accounts.</p>
+        <p><strong>3.4 Phone number verification.</strong> You may optionally add and verify a phone number via a one-time SMS code. You represent that any phone number you verify is your own. A verified number is used to route Whisps and Text Whisps addressed to it directly within the Platform instead of by SMS, and, if you choose, to sign in — see our Privacy Policy for details. Attempting to verify a phone number that isn't yours is a violation of these Terms.</p>
       </LegalSection>
 
       <LegalSection heading="4. Acceptable Use Policy">
-        <p><strong>4.1 Permitted uses.</strong> The Platform is designed for anonymously recommending video content — whether privately to a specific person via a Whisper Link or Whisper Group, to Blind Whisper's opted-in subscriber pool via Ghost Boost, or to a public or shared feed via Circle — for lawful purposes, including facilitating difficult conversations, sharing educational content, expressing care or concern, relationship communication, and general video discovery/discussion through Circle.</p>
+        <p><strong>4.1 Permitted uses.</strong> The Platform is designed for anonymously recommending video content and sending short anonymous messages — whether privately to a specific person via a Whisper Link, Whisper Group, or Text Whisp, to Blind Whisper's opted-in subscriber pool via Ghost Boost, to a public or shared feed via Circle, or inviting someone to join via an Invite — for lawful purposes, including facilitating difficult conversations, sharing educational content, expressing care or concern, relationship communication, and general video discovery/discussion through Circle.</p>
         <p><strong>4.2 Strictly prohibited conduct.</strong> The following will result in account termination, forfeiture of credits and subscription fees, and may result in civil and criminal liability:</p>
         <ul className="list-disc pl-5 space-y-1">
           <li>Sending a Whisp to a Recipient who hasn't consented to receiving communications from unknown parties, or who has explicitly requested no contact from you</li>
@@ -64,13 +65,13 @@ export function TermsOfService() {
           <li>Interfering with or disrupting the integrity or performance of the Platform or its infrastructure</li>
           <li>Using the Platform in any manner that could expose TILO GROUP, LLC, TIBLOGICS, or Blind Whisper to legal liability</li>
         </ul>
-        <p><strong>4.3 Content standards.</strong> All video URLs or files submitted through the Platform must be lawful and, if linked, publicly accessible. You represent and warrant that: (a) you have the right to share and recommend the content; (b) it doesn't infringe any third-party intellectual property rights; (c) it complies with applicable law; and (d) it doesn't violate the terms of service of the originating platform (YouTube, TikTok, Instagram, Facebook, etc.).</p>
+        <p><strong>4.3 Content standards.</strong> All video URLs or files submitted through the Platform must be lawful and, if linked, publicly accessible. You represent and warrant that: (a) you have the right to share and recommend the content; (b) it doesn't infringe any third-party intellectual property rights; (c) it complies with applicable law; and (d) it doesn't violate the terms of service of the originating platform (YouTube, TikTok, Instagram, Facebook, etc.). The same standards, and the prohibited conduct in Section 4.2, apply in full to the free-text content of a Text Whisp — it isn't held to a lower standard just because it's text instead of a video.</p>
       </LegalSection>
 
       <LegalSection heading="5. Sender Responsibilities and Representations">
         <p>As a Sender, you represent, warrant, and covenant that:</p>
         <ul className="list-disc pl-5 space-y-1">
-          <li>For Whisper Links and Whisper Groups, you'll only send to individuals with whom you have a genuine pre-existing personal, familial, or professional relationship, and you have a good-faith basis for believing they'd benefit from or want to receive the recommended content.</li>
+          <li>For Whisper Links, Whisper Groups, Text Whisps, and Invites, you'll only send to individuals with whom you have a genuine pre-existing personal, familial, or professional relationship, and you have a good-faith basis for believing they'd benefit from or want to receive it.</li>
           <li>For Circle, you understand your post is visible to anyone with access to that feed, not just one chosen person, and you'll only post content appropriate for that audience.</li>
           <li>You accept sole and full responsibility for the content of everything you send or post, including any consequences arising from a Recipient's or viewer's exposure to it.</li>
           <li>You won't use the anonymous nature of the Platform to engage in conduct that would otherwise be prohibited by applicable law or these Terms.</li>
@@ -90,10 +91,11 @@ export function TermsOfService() {
 
       <LegalSection heading="7. Message Delivery and SMS/WhatsApp Consent">
         <p>
-          We use third-party providers, including telecom carriers, to deliver Whisper Links and Whisper Groups by
-          SMS, WhatsApp, or email. Delivery is best-effort — we do not guarantee that any message will be delivered,
-          delivered on time, or delivered at all, since carriers may filter, delay, or block messages for reasons
-          outside our control.
+          We use third-party providers, including telecom carriers, to deliver Whisper Links, Whisper Groups,
+          Invites, and — when the Recipient's number isn't already a verified Blind Whisper account — Text Whisps,
+          by SMS, WhatsApp, or email. Delivery is best-effort — we do not guarantee that any message will be
+          delivered, delivered on time, or delivered at all, since carriers may filter, delay, or block messages for
+          reasons outside our control.
         </p>
         <p>
           If you provide a phone number for delivery, message and data rates may apply from the recipient's carrier.
@@ -107,7 +109,7 @@ export function TermsOfService() {
       <LegalSection heading="8. Anonymity, Reveal Flow, and Consent">
         <p><strong>8.1 Anonymity protections.</strong> The Platform is designed to protect Sender anonymity in standard use, and we implement technical measures to prevent automated delivery mechanisms from revealing a Sender's identity to a Recipient. As stated in our Privacy Policy, anonymity may be compromised in response to valid legal process or to protect safety.</p>
         <p><strong>8.2 Circle is not private delivery.</strong> Content posted via Circle is visible to anyone with access to that feed — the public, for a public Circle post, or all members of a private Circle. The Sender's identity is still not attached to the post, but the content itself is not delivered privately the way a Whisper Link is. Don't use Circle for anything you only want one specific person to see.</p>
-        <p><strong>8.3 Reveal Flow.</strong> The optional Reveal Flow feature lets a Sender initiate a consensual identity disclosure process. By initiating a Reveal Flow: (a) you acknowledge your identity may be disclosed to the Recipient if they consent; (b) you agree the Recipient's decision to accept or decline is final and binding through the Platform; (c) you won't attempt to coerce or pressure a Recipient into accepting a reveal; and (d) a Recipient's decision to decline doesn't entitle you to a refund.</p>
+        <p><strong>8.3 Reveal Flow.</strong> The optional Reveal Flow feature — available for Whisps, Text Whisps, and Invites — lets a Sender initiate a consensual identity disclosure process once the Recipient has an account. By initiating a Reveal Flow: (a) you acknowledge your identity may be disclosed to the Recipient if they consent; (b) you agree the Recipient's decision to accept or decline is final and binding through the Platform; (c) you won't attempt to coerce or pressure a Recipient into accepting a reveal; and (d) a Recipient's decision to decline doesn't entitle you to a refund.</p>
         <p><strong>8.4 Anonymous replies.</strong> The anonymous reply feature lets Recipients respond to Whisps without disclosing their identity. You agree not to use it for harassment, threats, or any conduct prohibited by Section 4.</p>
       </LegalSection>
 

@@ -1,11 +1,18 @@
 import { Router } from "express";
 import { z } from "zod";
 import { resolveVideoMeta } from "../lib/videoMeta";
+import { publicEndpointLimiter } from "../lib/rateLimit";
 
 const router = Router();
 
-// POST /api/video/meta
-router.post("/meta", async (req, res): Promise<void> => {
+// POST /api/video/meta — entirely unauthenticated (the composer calls this
+// before a whisp/account necessarily exists) and each call makes a real
+// outbound oEmbed/OpenGraph fetch (lib/videoMeta.ts) with its own multi-
+// second timeout — without a limit, anyone could drive unbounded outbound
+// requests through this server for free. Same reasoning/limiter as every
+// other unauthenticated route with a real side effect (see
+// lib/rateLimit.ts's publicEndpointLimiter).
+router.post("/meta", publicEndpointLimiter, async (req, res): Promise<void> => {
   const schema = z.object({ url: z.string().url() });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) {
