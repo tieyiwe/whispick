@@ -189,7 +189,7 @@ export function SendTextWhisp() {
             <Button
               onClick={handleSend}
               disabled={!canSend || createTextWhisp.isPending}
-              className="w-full rounded-full shadow-[0_0_15px_rgba(124,92,252,0.3)]"
+              className="w-full rounded-full shadow-[0_0_15px_rgba(123, 97, 255,0.3)]"
               data-testid="button-send-text-whisp"
             >
               {createTextWhisp.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ArrowRight className="w-4 h-4 mr-2" />}

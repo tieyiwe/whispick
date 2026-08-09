@@ -74,7 +74,9 @@ function TimelineStep({
       </div>
       <div>
         <p className={`text-sm font-medium ${done ? "text-foreground" : "text-muted-foreground"}`}>{label}</p>
-        {time && <p className="text-xs text-muted-foreground mt-0.5">{new Date(time).toLocaleString()}</p>}
+        {/* Timestamps in the tracking timeline use JetBrains Mono — the
+            one place in the app monospace shows up, per the design spec. */}
+        {time && <p className="text-xs font-mono text-tertiary-foreground mt-0.5">{new Date(time).toLocaleString()}</p>}
         {!time && !done && <p className="text-xs text-muted-foreground mt-0.5">Waiting...</p>}
       </div>
     </div>
@@ -283,7 +285,7 @@ export function WhispDetail() {
             )}
             {whisp.aiTakeawayStatus === "ready" && whisp.aiTakeaway && (
               <div className="mt-3 rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-1">
-                <p className="text-xs font-semibold tracking-wide text-primary uppercase flex items-center gap-1.5">
+                <p className="text-xs font-semibold tracking-[0.08em] text-primary uppercase flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5" /> Takeaway they got
                 </p>
                 <p className="text-sm text-foreground font-serif leading-relaxed">{whisp.aiTakeaway}</p>

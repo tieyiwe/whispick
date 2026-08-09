@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { MoodTag } from "@/components/shared/MoodTag";
 import { Thumbnail } from "@/components/shared/Thumbnail";
 import { Button } from "@/components/ui/button";
+import { FadeUp } from "@/components/shared/FadeUp";
 import { hasPendingForward, savePendingForward } from "@/lib/forwardVideo";
 import { hasDismissedPhoneVerificationDialog, dismissPhoneVerificationDialog } from "@/lib/phoneVerificationDialog";
 
@@ -103,15 +104,53 @@ export function Dashboard() {
     );
   }
 
+  // Each stat glows in its own status color — "instruments glowing in the
+  // dark" rather than flat data — using the same color a whisp's
+  // StatusBadge dot would use for that stage of its journey.
   const statCards = [
-    { title: "Sent Whisps", value: stats?.totalSent || 0, icon: Send, color: "text-primary", bg: "bg-primary/10" },
-    { title: "Open Rate", value: `${Math.round(stats?.openRate || 0)}%`, icon: Eye, color: "text-blue-400", bg: "bg-blue-500/10" },
-    { title: "Videos Watched", value: stats?.totalWatched || 0, icon: PlayCircle, color: "text-secondary", bg: "bg-secondary/10" },
-    { title: "Replies Received", value: stats?.totalReplied || 0, icon: MessageSquareHeart, color: "text-amber-400", bg: "bg-amber-500/10" },
+    {
+      title: "Sent Whisps",
+      value: stats?.totalSent || 0,
+      icon: Send,
+      color: "text-primary",
+      bg: "bg-primary/10",
+      glow: "rgba(123,97,255,0.5)",
+    },
+    {
+      title: "Open Rate",
+      value: `${Math.round(stats?.openRate || 0)}%`,
+      icon: Eye,
+      color: "text-warning",
+      bg: "bg-warning/10",
+      glow: "rgba(245,166,35,0.5)",
+    },
+    {
+      title: "Videos Watched",
+      value: stats?.totalWatched || 0,
+      icon: PlayCircle,
+      color: "text-success",
+      bg: "bg-success/10",
+      glow: "rgba(76,175,136,0.5)",
+    },
+    {
+      title: "Replies Received",
+      value: stats?.totalReplied || 0,
+      icon: MessageSquareHeart,
+      color: "text-secondary",
+      bg: "bg-secondary/10",
+      glow: "rgba(255,123,123,0.5)",
+    },
     // The recipient's own "was this something you needed to hear?" signal,
     // rolled up — previously visible only one whisp at a time, buried on
     // each individual detail page, with no sense of overall impact.
-    { title: "Whisps That Helped", value: stats?.totalAppreciated || 0, icon: Heart, color: "text-rose-400", bg: "bg-rose-500/10" },
+    {
+      title: "Whisps That Helped",
+      value: stats?.totalAppreciated || 0,
+      icon: Heart,
+      color: "text-secondary",
+      bg: "bg-secondary/10",
+      glow: "rgba(255,123,123,0.5)",
+    },
   ];
 
   return (
@@ -123,7 +162,7 @@ export function Dashboard() {
             <p className="text-muted-foreground mt-1">Here's how your whisps are performing.</p>
           </div>
           <Link href="/send">
-            <Button className="rounded-full shadow-[0_0_15px_rgba(124,92,252,0.3)]">
+            <Button className="rounded-full shadow-[0_0_15px_rgba(123, 97, 255,0.3)]">
               <Send className="w-4 h-4 mr-2" /> Send New Whisp
             </Button>
           </Link>
@@ -131,20 +170,27 @@ export function Dashboard() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {statCards.map((stat, i) => (
-            <Card key={i} className="bg-card border-border/50 shadow-sm overflow-hidden relative">
-              <div className={`absolute top-0 right-0 w-24 h-24 rounded-full ${stat.bg} blur-2xl -mr-10 -mt-10 pointer-events-none`} />
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
-                    <h3 className="text-3xl font-bold text-foreground mt-2">{stat.value}</h3>
+            <FadeUp key={i} index={i}>
+              <Card className="bg-card border-border/50 shadow-sm overflow-hidden relative">
+                <div className={`absolute top-0 right-0 w-24 h-24 rounded-full ${stat.bg} blur-2xl -mr-10 -mt-10 pointer-events-none`} />
+                <CardContent className="p-6">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
+                      <h3
+                        className="font-sans font-bold text-foreground mt-2 text-4xl"
+                        style={{ textShadow: `0 0 20px ${stat.glow}` }}
+                      >
+                        {stat.value}
+                      </h3>
+                    </div>
+                    <div className={`p-3 rounded-xl ${stat.bg}`}>
+                      <stat.icon className={`w-5 h-5 ${stat.color}`} />
+                    </div>
                   </div>
-                  <div className={`p-3 rounded-xl ${stat.bg}`}>
-                    <stat.icon className={`w-5 h-5 ${stat.color}`} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </FadeUp>
           ))}
         </div>
 
@@ -157,53 +203,59 @@ export function Dashboard() {
             
             <div className="space-y-3">
               {stats?.recentWhisps && stats.recentWhisps.length > 0 ? (
-                stats.recentWhisps.map((whisp) => (
-                  <Link key={whisp.id} href={`/whisps/${whisp.id}`}>
-                    <Card className="bg-card hover:bg-card/80 transition-colors border-border/50 cursor-pointer overflow-hidden group">
-                      <div className="flex flex-col sm:flex-row h-full">
-                        {whisp.videoThumbnail ? (
-                          <div className="w-full sm:w-40 h-32 sm:h-auto shrink-0 relative">
-                            <img src={whisp.videoThumbnail} alt={whisp.videoTitle || "Video"} className="w-full h-full object-cover" />
-                            <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                              <PlayCircle className="w-8 h-8 text-white opacity-80" />
+                stats.recentWhisps.map((whisp, i) => {
+                  const recipientAlias =
+                    whisp.recipientEmail || whisp.recipientPhone ||
+                    (whisp.deliveryMethod === "circle_drop" ? "Circle feed" : "Ghost Boost audience");
+                  return (
+                  <FadeUp key={whisp.id} index={i}>
+                    <Link href={`/whisps/${whisp.id}`}>
+                      <Card className="bg-card hover:bg-card/80 transition-colors border-border/50 cursor-pointer overflow-hidden group">
+                        <div className="flex flex-col sm:flex-row gap-3 p-3">
+                          {/* Mini-card thumbnail: inset and rounded on its
+                              own (12px) rather than bleeding to the card's
+                              edge. */}
+                          {whisp.videoThumbnail ? (
+                            <div className="w-full sm:w-36 h-28 sm:h-24 shrink-0 relative rounded-xl overflow-hidden">
+                              <img src={whisp.videoThumbnail} alt={whisp.videoTitle || "Video"} className="w-full h-full object-cover" />
+                              <div className="absolute inset-0 bg-background/40 group-hover:bg-background/20 transition-colors flex items-center justify-center">
+                                <PlayCircle className="w-8 h-8 text-primary-foreground opacity-80" />
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="w-full sm:w-36 h-28 sm:h-24 shrink-0 rounded-xl bg-muted flex items-center justify-center">
+                              <PlayCircle className="w-8 h-8 text-muted-foreground" />
+                            </div>
+                          )}
+                          <div className="flex-1 flex flex-col justify-center min-w-0 py-1">
+                            <div className="flex items-start justify-between gap-4 mb-1">
+                              <h4 className="font-medium text-foreground truncate">{whisp.videoTitle || "Video Link"}</h4>
+                              <StatusBadge status={whisp.status} />
+                            </div>
+                            <p className="text-sm text-muted-foreground truncate mb-3">
+                              To {recipientAlias} · {new Date(whisp.createdAt).toLocaleDateString()}
+                            </p>
+                            <div className="flex items-center justify-between gap-3">
+                              {whisp.moodTag ? <MoodTag mood={whisp.moodTag} className="scale-90 origin-left self-start" /> : <span />}
+                              {whisp.videoPlatform !== "upload" && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="rounded-full shrink-0"
+                                  onClick={(e) => handleWhispAgain(e, whisp)}
+                                  data-testid={`button-whisp-again-${whisp.id}`}
+                                >
+                                  <Repeat className="w-3.5 h-3.5 mr-1.5" /> Whisp to someone else
+                                </Button>
+                              )}
                             </div>
                           </div>
-                        ) : (
-                          <div className="w-full sm:w-40 h-32 sm:h-auto shrink-0 bg-muted flex items-center justify-center">
-                            <PlayCircle className="w-8 h-8 text-muted-foreground" />
-                          </div>
-                        )}
-                        <div className="p-4 flex-1 flex flex-col justify-center min-w-0">
-                          <div className="flex items-start justify-between gap-4 mb-2">
-                            <h4 className="font-medium text-foreground truncate">{whisp.videoTitle || "Video Link"}</h4>
-                            <StatusBadge status={whisp.status} />
-                          </div>
-                          <div className="flex items-center text-sm text-muted-foreground mb-3">
-                            <span className="truncate">
-                              Sent to {whisp.recipientEmail || whisp.recipientPhone || (whisp.deliveryMethod === "circle_drop" ? "Circle feed" : "Ghost Boost audience")}
-                            </span>
-                            <span className="mx-2">•</span>
-                            <span>{new Date(whisp.createdAt).toLocaleDateString()}</span>
-                          </div>
-                          <div className="flex items-center justify-between gap-3">
-                            {whisp.moodTag ? <MoodTag mood={whisp.moodTag} className="scale-90 origin-left self-start" /> : <span />}
-                            {whisp.videoPlatform !== "upload" && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="rounded-full shrink-0"
-                                onClick={(e) => handleWhispAgain(e, whisp)}
-                                data-testid={`button-whisp-again-${whisp.id}`}
-                              >
-                                <Repeat className="w-3.5 h-3.5 mr-1.5" /> Whisp to someone else
-                              </Button>
-                            )}
-                          </div>
                         </div>
-                      </div>
-                    </Card>
-                  </Link>
-                ))
+                      </Card>
+                    </Link>
+                  </FadeUp>
+                  );
+                })
               ) : (
                 <Card className="bg-card/50 border-dashed border-border py-12 text-center">
                   <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">

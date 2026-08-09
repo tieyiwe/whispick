@@ -59,7 +59,7 @@ export function TextWhispsList() {
                     >
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-sm text-foreground truncate">{truncate(t.messageText, 60)}</p>
-                        {t.status === "sent" && <span className="text-[10px] uppercase tracking-wide text-primary shrink-0">New</span>}
+                        {t.status === "sent" && <span className="text-[10px] uppercase tracking-[0.08em] text-primary shrink-0">New</span>}
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">{new Date(t.createdAt).toLocaleDateString()}</p>
                     </Card>
@@ -80,7 +80,7 @@ export function TextWhispsList() {
                     <Card className="p-3.5 bg-card border-border/50 hover:border-primary/40 transition-colors cursor-pointer" data-testid={`text-whisp-sent-${t.id}`}>
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-sm text-foreground truncate">{truncate(t.messageText, 60)}</p>
-                        <span className="text-[10px] uppercase tracking-wide text-muted-foreground shrink-0 capitalize">{t.status}</span>
+                        <span className="text-[10px] uppercase tracking-[0.08em] text-muted-foreground shrink-0 capitalize">{t.status}</span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">{new Date(t.createdAt).toLocaleDateString()}</p>
                     </Card>

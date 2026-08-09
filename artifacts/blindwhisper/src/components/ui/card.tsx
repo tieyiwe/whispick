@@ -9,7 +9,11 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-xl border bg-card text-card-foreground shadow",
+      // Depth-based separation over a hard line: a soft ambient shadow
+      // plus a barely-there border (so the edge still reads on a solid
+      // background) rather than a bright structural line. `bg-card`
+      // resolves to the Surface token (#13132A) via index.css.
+      "rounded-[20px] border border-border/40 bg-card text-card-foreground shadow-[0_1px_0_rgba(255,255,255,0.02),0_8px_24px_-12px_rgba(0,0,0,0.5)]",
       className
     )}
     {...props}
@@ -35,7 +39,7 @@ const CardTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("font-semibold leading-none tracking-tight", className)}
+    className={cn("font-bold leading-none tracking-tight", className)}
     {...props}
   />
 ))

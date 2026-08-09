@@ -215,7 +215,7 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
         x: (rect.left + rect.width / 2) / window.innerWidth,
         y: (rect.top + rect.height / 2) / window.innerHeight,
       },
-      colors: ["#7C5CFC", "#FF6B6B", "#a78bfa", "#F5F0E8"],
+      colors: ["#7B61FF", "#FF7B7B", "#a78bfa", "#F5F0E8"],
       disableForReducedMotion: true,
     });
 
@@ -227,6 +227,8 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
     }
   }
 
+  // A single "Watch Now" pill is the one call-to-action on the thumbnail —
+  // no separate icon-only play button competing for attention.
   return thumbnail && !thumbnailFailed ? (
     <div className="relative">
       <img
@@ -235,13 +237,14 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
         className="w-full object-cover max-h-64"
         onError={() => setThumbnailFailed(true)}
       />
-      <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+      <div className="absolute inset-0 bg-background/40 flex items-center justify-center">
         <button
           onClick={handlePlayClick}
-          className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 active:scale-95 transition-all"
+          className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,hsl(var(--primary))_0%,hsl(var(--primary-hover))_100%)] text-primary-foreground text-sm font-semibold pl-4 pr-5 py-3 shadow-[0_4px_20px_rgba(123,97,255,0.4)] hover:scale-[1.02] hover:shadow-[0_6px_28px_rgba(123,97,255,0.5)] active:scale-[0.98] transition-all duration-200 ease-out"
           data-testid="button-watch-video"
         >
-          <PlayCircle className="w-9 h-9 text-white" />
+          <PlayCircle className="w-5 h-5" />
+          Watch Now
         </button>
       </div>
     </div>
@@ -251,8 +254,10 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
       className="w-full h-36 bg-muted flex flex-col items-center justify-center gap-2 hover:bg-muted/80 transition-colors"
       data-testid="button-watch-video-no-thumb"
     >
-      <PlayCircle className="w-10 h-10 text-primary" />
-      <span className="text-sm text-muted-foreground">Watch the video</span>
+      <span className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,hsl(var(--primary))_0%,hsl(var(--primary-hover))_100%)] text-primary-foreground text-sm font-semibold pl-4 pr-5 py-3 shadow-[0_4px_20px_rgba(123,97,255,0.4)]">
+        <PlayCircle className="w-5 h-5" />
+        Watch Now
+      </span>
     </button>
   );
 }

@@ -175,7 +175,7 @@ export function CreditsPage() {
                         isCurrent
                           ? "opacity-60 cursor-not-allowed"
                           : plan.popular
-                          ? "shadow-[0_0_15px_rgba(124,92,252,0.3)]"
+                          ? "shadow-[0_0_15px_rgba(123, 97, 255,0.3)]"
                           : ""
                       }`}
                       disabled={isCurrent || checkout.isPending}

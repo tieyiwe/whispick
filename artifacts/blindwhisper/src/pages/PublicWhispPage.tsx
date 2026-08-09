@@ -21,20 +21,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { MoodTag, MOOD_CONFIG } from "@/components/shared/MoodTag";
 import { useToast } from "@/hooks/use-toast";
 import { Send, Loader2, Video, X, Link2, HeartHandshake, Clock, BellRing, Sparkles, UserCircle2, PlayCircle } from "lucide-react";
-import { Logo } from "@/components/ui/logo";
 import { VideoPlayer } from "@/components/shared/VideoPlayer";
 import { QUICK_REPLIES } from "@/lib/quickReplies";
 import { REMINDER_PRESETS, MAX_REMINDERS } from "@/lib/reminderPresets";
 import { savePendingForward } from "@/lib/forwardVideo";
-
-function BlindWhisperLogoMark() {
-  return (
-    <div className="flex items-center gap-2">
-      <Logo className="w-6 h-6 text-primary" />
-      <span className="font-serif text-xl font-bold text-foreground tracking-tight">Blind Whisper</span>
-    </div>
-  );
-}
 
 function splitSentences(text: string): string[] {
   return text.split(/(?<=[.!?])\s+/).filter(Boolean);
@@ -49,7 +39,7 @@ function TakeawayCard({ text }: { text: string }) {
       transition={{ duration: 0.4 }}
       className="relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card p-5 space-y-2.5"
     >
-      <div className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-primary uppercase">
+      <div className="flex items-center gap-1.5 text-xs font-semibold tracking-[0.08em] text-primary uppercase">
         <Sparkles className="w-3.5 h-3.5" /> Takeaway
       </div>
       <div className="space-y-2">
@@ -83,6 +73,13 @@ export function PublicWhispPage() {
   const [reminderScheduled, setReminderScheduled] = useState<{ nextReminderAt: string; isFinal: boolean } | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [justWatched, setJustWatched] = useState(false);
+  // Visual-layer behavior change (see design-refresh report): the reply
+  // box used to always be visible. It now only appears once the recipient
+  // has actually started the video — reusing the "clicked" watch event
+  // that already fires the instant Watch Now is pressed (or, for
+  // non-embeddable platforms that open in a new tab, the instant they
+  // leave to watch it) rather than adding any new tracking.
+  const [hasWatched, setHasWatched] = useState(false);
 
   // This is a private, single-recipient page — never indexable, even if a
   // link to it ends up publicly posted somewhere. robots.txt disallows /w/
@@ -186,6 +183,7 @@ export function PublicWhispPage() {
 
   function handleWatchEvent(eventType: "clicked" | "watched_10s" | "watched_50pct" | "watched_complete") {
     trackEvent.mutate({ token: token!, data: { eventType } });
+    if (eventType === "clicked") setHasWatched(true);
     if (eventType === "watched_complete") setJustWatched(true);
   }
 
@@ -249,8 +247,14 @@ export function PublicWhispPage() {
     submitReply(replyText.trim(), video ? { url: video, meta: replyVideoMeta } : undefined);
   }
 
-  const moodColor = (whisp?.moodTag && MOOD_CONFIG[whisp.moodTag]?.color) || "#7C5CFC";
+  const moodColor = (whisp?.moodTag && MOOD_CONFIG[whisp.moodTag]?.color) || "#7B61FF";
   const appreciationResponse = localAppreciation ?? whisp?.appreciationResponse ?? null;
+  // A returning visitor who already replied or answered the appreciation
+  // prompt has obviously already watched, even though `hasWatched` itself
+  // is local state that resets on a fresh page load — don't re-hide the
+  // reply box on them.
+  const canShowReplyBox =
+    hasWatched || appreciationResponse !== null || !!whisp?.replies.some((r) => r.fromRecipient);
 
   const expired = whisp?.expired ?? false;
   const expiresAtMs = whisp?.expiresAt ? new Date(whisp.expiresAt).getTime() : null;
@@ -263,32 +267,27 @@ export function PublicWhispPage() {
 
   return (
     <div className="min-h-[100dvh] bg-background flex flex-col relative overflow-hidden">
-      {/* Ambient background, tinted by the whisp's mood */}
+      {/* Ambient background, tinted by the whisp's mood — a very subtle
+          (4-6% opacity) wash across the page when a mood tag is set,
+          rather than a decorative accent. */}
       <div
         className="absolute top-[-15%] left-[-15%] w-[70%] h-[45%] rounded-full blur-[110px] pointer-events-none transition-colors duration-700"
-        style={{ backgroundColor: moodColor, opacity: 0.16 }}
+        style={{ backgroundColor: moodColor, opacity: whisp?.moodTag ? 0.06 : 0.03 }}
       />
       <div
         className="absolute bottom-[-10%] right-[-15%] w-[55%] h-[35%] rounded-full blur-[100px] pointer-events-none transition-colors duration-700"
-        style={{ backgroundColor: moodColor, opacity: 0.1 }}
+        style={{ backgroundColor: moodColor, opacity: whisp?.moodTag ? 0.045 : 0.02 }}
       />
 
-      {/* Header */}
-      <header
-        className="px-5 pb-5 flex items-center justify-between border-b border-border/30 relative z-10"
-        style={{ paddingTop: "calc(env(safe-area-inset-top) + 1.25rem)" }}
-      >
-        <BlindWhisperLogoMark />
-        <a
-          href="/sign-up"
-          className="text-xs text-muted-foreground hover:text-primary transition-colors py-2"
-        >
-          Become a Whisperer
-        </a>
-      </header>
+      {/* No nav chrome / branding on this page by design — a recipient
+          lands here from a single link with nothing to navigate to. The
+          only Blind Whisper mark is the tiny wordmark in the footer. */}
 
       {/* Content */}
-      <main className="flex-1 max-w-lg mx-auto w-full px-5 py-10 space-y-7 relative z-10">
+      <main
+        className="flex-1 max-w-lg mx-auto w-full px-5 pb-10 space-y-7 relative z-10"
+        style={{ paddingTop: "calc(env(safe-area-inset-top) + 2.5rem)" }}
+      >
         {isLoading ? (
           <div className="space-y-4">
             <Skeleton className="h-6 w-48 mx-auto" />
@@ -301,12 +300,40 @@ export function PublicWhispPage() {
           </div>
         ) : (
           <>
-            {/* Lead text — keep in sync with api-server's lib/copy.ts HOOK_LINE/groupHookLine */}
-            <p className="text-center text-xl font-serif text-foreground leading-snug">
-              {whisp.groupSize
-                ? `Someone in your circle sent this anonymously — you're one of ${whisp.groupSize} people who got it 👀`
-                : "Someone who cares about you thought you needed to see this 👀"}
-            </p>
+            {/* Mood tag badge, centered, if the sender set one */}
+            {whisp.moodTag && (
+              <div className="flex justify-center">
+                <MoodTag mood={whisp.moodTag} />
+              </div>
+            )}
+
+            {/* The anonymous note is the emotional headline of this page when
+                present — Playfair Display italic, sized up, centered. The
+                generic hook line (kept in sync with api-server's
+                lib/copy.ts HOOK_LINE/groupHookLine) sits above it, smaller,
+                for context (group size etc.); when there's no personal
+                note, the hook line itself carries that prominent spot. */}
+            {whisp.anonymousNote ? (
+              <div className="space-y-3">
+                <p className="text-center text-sm text-muted-foreground">
+                  {whisp.groupSize
+                    ? `Someone in your circle sent this anonymously — you're one of ${whisp.groupSize} people who got it 👀`
+                    : "Someone who cares about you thought you needed to see this 👀"}
+                </p>
+                <p className="text-center font-serif italic text-foreground text-[26px] leading-snug max-w-[480px] mx-auto">
+                  "{whisp.anonymousNote}"
+                </p>
+                {whisp.senderAlias && (
+                  <p className="text-center text-xs text-muted-foreground">— {whisp.senderAlias}</p>
+                )}
+              </div>
+            ) : (
+              <p className="text-center font-serif italic text-foreground text-2xl leading-snug max-w-[480px] mx-auto">
+                {whisp.groupSize
+                  ? `Someone in your circle sent this anonymously — you're one of ${whisp.groupSize} people who got it 👀`
+                  : "Someone who cares about you thought you needed to see this 👀"}
+              </p>
+            )}
 
             {expired ? (
               <div className="rounded-2xl bg-card border border-border/50 p-8 text-center space-y-3">
@@ -331,8 +358,9 @@ export function PublicWhispPage() {
               </div>
             )}
 
-            {/* Video card */}
-            <div className="rounded-2xl overflow-hidden bg-card border border-border/50 glow-card">
+            {/* Video card — the visual centerpiece: large, rounded, with a
+                soft accent glow border. */}
+            <div className="rounded-[20px] overflow-hidden bg-card border border-primary/15 glow-card">
               <VideoPlayer
                 platform={whisp.videoPlatform}
                 embedUrl={whisp.videoEmbedUrl}
@@ -345,22 +373,14 @@ export function PublicWhispPage() {
                 onWatchEvent={handleWatchEvent}
               />
 
-              <div className="p-5 space-y-3">
-                {whisp.videoTitle && (
-                  <p className="font-medium text-foreground">{whisp.videoTitle}</p>
-                )}
-
-                {whisp.moodTag && <MoodTag mood={whisp.moodTag} />}
-
-                {whisp.anonymousNote && (
-                  <div className="border-l-2 border-primary/40 pl-4">
-                    <p className="text-foreground italic text-sm leading-relaxed">"{whisp.anonymousNote}"</p>
-                    {whisp.senderAlias && (
-                      <p className="text-xs text-muted-foreground mt-2">— {whisp.senderAlias}</p>
-                    )}
-                  </div>
-                )}
-              </div>
+              {/* Mood tag and anonymous note now live above, near the top
+                  of the page — this caption is just the video's own title,
+                  so it isn't repeated here. */}
+              {whisp.videoTitle && (
+                <div className="p-4">
+                  <p className="font-medium text-foreground text-sm">{whisp.videoTitle}</p>
+                </div>
+              )}
             </div>
 
             {whisp.aiTakeawayStatus === "ready" && whisp.aiTakeaway && <TakeawayCard text={whisp.aiTakeaway} />}
@@ -475,6 +495,16 @@ export function PublicWhispPage() {
                   return (
                     <p className="text-xs text-muted-foreground text-center py-2">
                       This whisp has expired, so you can't reply anymore.
+                    </p>
+                  );
+                }
+                // The compose box only appears once the recipient has
+                // actually started the video — see the `canShowReplyBox`
+                // comment above for what already counts as "watched."
+                if (!canShowReplyBox) {
+                  return (
+                    <p className="text-xs text-muted-foreground text-center py-2" data-testid="text-reply-locked">
+                      Watch the video to reply anonymously.
                     </p>
                   );
                 }
@@ -715,16 +745,15 @@ export function PublicWhispPage() {
         )}
       </main>
 
-      {/* Footer */}
+      {/* Footer — tiny, low-opacity wordmark; no chrome, just an
+          almost-invisible attribution link. */}
       <footer
-        className="p-5 text-center border-t border-border/30 relative z-10"
+        className="px-5 pt-2 text-center relative z-10"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1.25rem)" }}
       >
-        <p className="text-xs text-muted-foreground">
-          Powered by{" "}
-          <a href="/" className="text-primary hover:underline">Blind Whisper</a>
-          {" "}— send what matters, without the awkward part.
-        </p>
+        <a href="/" className="text-[10px] text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+          Powered by Blind Whisper
+        </a>
       </footer>
     </div>
   );

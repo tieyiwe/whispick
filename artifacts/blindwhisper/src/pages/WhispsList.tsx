@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { deliveryLabel } from "@/lib/deliveryMethod";
 import { savePendingForward, type ForwardVideo } from "@/lib/forwardVideo";
+import { FadeUp } from "@/components/shared/FadeUp";
 
 export function WhispsList() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -86,15 +87,16 @@ export function WhispsList() {
           </div>
         ) : filteredWhisps?.length ? (
           <div className="space-y-4">
-            {filteredWhisps.map((whisp) => (
-              <Link key={whisp.id} href={`/whisps/${whisp.id}`}>
+            {filteredWhisps.map((whisp, i) => (
+              <FadeUp key={whisp.id} index={i}>
+              <Link href={`/whisps/${whisp.id}`}>
                 <Card className="bg-card hover:bg-card/80 transition-colors border-border/50 cursor-pointer overflow-hidden group">
                   <div className="flex flex-col sm:flex-row h-full">
                     {whisp.videoThumbnail ? (
                       <div className="w-full sm:w-48 h-36 sm:h-auto shrink-0 relative">
                         <img src={whisp.videoThumbnail} alt={whisp.videoTitle || "Video"} className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                          <PlayCircle className="w-10 h-10 text-white opacity-80" />
+                        <div className="absolute inset-0 bg-background/40 group-hover:bg-background/20 transition-colors flex items-center justify-center">
+                          <PlayCircle className="w-10 h-10 text-primary-foreground opacity-80" />
                         </div>
                       </div>
                     ) : (
@@ -107,7 +109,7 @@ export function WhispsList() {
                         <h3 className="font-semibold text-foreground text-lg truncate">{whisp.videoTitle || "Video Link"}</h3>
                         <div className="flex items-center gap-2 shrink-0">
                           {whisp.appreciationResponse === "yes" && (
-                            <Heart className="w-4 h-4 text-rose-400 fill-rose-400" data-testid={`icon-appreciated-${whisp.id}`} />
+                            <Heart className="w-4 h-4 text-secondary fill-secondary" data-testid={`icon-appreciated-${whisp.id}`} />
                           )}
                           <StatusBadge status={whisp.status} />
                         </div>
@@ -139,6 +141,7 @@ export function WhispsList() {
                   </div>
                 </Card>
               </Link>
+              </FadeUp>
             ))}
           </div>
         ) : (
@@ -151,7 +154,7 @@ export function WhispsList() {
             </p>
             {(!searchQuery && statusFilter === "all") && (
               <Link href="/send">
-                <Button className="rounded-full shadow-[0_0_15px_rgba(124,92,252,0.3)]">
+                <Button className="rounded-full shadow-[0_0_15px_rgba(123, 97, 255,0.3)]">
                   Send Your First Whisp
                 </Button>
               </Link>

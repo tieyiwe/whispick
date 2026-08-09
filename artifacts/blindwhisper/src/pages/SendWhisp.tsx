@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
+import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -62,6 +63,9 @@ import { CameraCapture } from "@/components/shared/CameraCapture";
 import { takePendingForward } from "@/lib/forwardVideo";
 import { DemographicsGateDialog } from "@/components/shared/DemographicsGateDialog";
 import { needsDemographics } from "@/lib/demographics";
+import { ParticleDrift } from "@/components/shared/ParticleDrift";
+import { FadeUp } from "@/components/shared/FadeUp";
+import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion";
 
 const WHISPER_CHANNELS = [
   { key: "email", label: "Email", icon: Mail },
@@ -82,27 +86,10 @@ const SENDER_ALIASES = [
   "An admirer",
 ];
 
-function ParticleAnimation() {
-  return (
-    <div className="relative h-32 flex items-center justify-center pointer-events-none overflow-hidden">
-      {Array.from({ length: 8 }).map((_, i) => (
-        <div
-          key={i}
-          className="particle absolute w-3 h-3 rounded-full bg-primary/80 blur-[2px]"
-          style={{
-            left: `${15 + i * 10}%`,
-            bottom: "0",
-            animationDelay: `${i * 0.25}s`,
-            animationDuration: `${2.5 + (i % 3) * 0.5}s`,
-            width: `${8 + (i % 3) * 4}px`,
-            height: `${8 + (i % 3) * 4}px`,
-            background: i % 3 === 0 ? "#7C5CFC" : i % 3 === 1 ? "#FF6B6B" : "#a78bfa",
-          }}
-        />
-      ))}
-    </div>
-  );
-}
+// The send-confirmation particle effect now lives in
+// components/shared/ParticleDrift.tsx — 8 orbs drifting in randomized
+// upward arcs (rather than straight lines) with staggered starts, and a
+// prefers-reduced-motion fallback. See it below in the `sent` view.
 
 function parseTimestampToSeconds(value: string): number | null {
   const trimmed = value.trim();
@@ -182,6 +169,7 @@ export function SendWhisp() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
+  const reducedMotion = usePrefersReducedMotion();
 
   const { data: profile } = useGetUserProfile();
   const scrapeMeta = useScrapeVideoMeta();
@@ -492,7 +480,7 @@ export function SendWhisp() {
     return (
       <AppLayout>
         <div className="max-w-xl mx-auto text-center py-16 space-y-6">
-          <ParticleAnimation />
+          <ParticleDrift />
           <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center mx-auto glow-card">
             <Check className="w-10 h-10 text-primary" />
           </div>
@@ -513,7 +501,7 @@ export function SendWhisp() {
               Track this whisp
             </Button>
             <Button
-              className="rounded-full shadow-[0_0_15px_rgba(124,92,252,0.3)]"
+              className="rounded-full shadow-[0_0_15px_rgba(123, 97, 255,0.3)]"
               onClick={() => {
                 setSent(false);
                 setStep(1);
@@ -573,22 +561,18 @@ export function SendWhisp() {
           <p className="text-muted-foreground mt-1">Share a video anonymously with someone you care about.</p>
         </div>
 
-        {/* Step indicators */}
-        <div className="flex items-center gap-1">
-          {steps.map((s, i) => (
-            <div key={i} className="flex items-center gap-1">
-              <div
-                className={`w-2 h-2 rounded-full transition-all ${
-                  i + 1 < step
-                    ? "bg-primary"
-                    : i + 1 === step
-                    ? "w-6 bg-primary"
-                    : "bg-border"
-                }`}
-              />
-            </div>
-          ))}
-          <span className="ml-2 text-xs text-muted-foreground">Step {step} of {steps.length}</span>
+        {/* Progress: a thin violet line rather than step dots — a line
+            reads as a journey, dots read as a form. */}
+        <div className="space-y-1.5">
+          <div className="h-1 w-full rounded-full bg-border/40 overflow-hidden">
+            <motion.div
+              className="h-full rounded-full bg-primary"
+              initial={false}
+              animate={{ width: `${(step / steps.length) * 100}%` }}
+              transition={{ duration: reducedMotion ? 0 : 0.3, ease: "easeOut" }}
+            />
+          </div>
+          <span className="text-xs text-muted-foreground">Step {step} of {steps.length} — {steps[step - 1]}</span>
         </div>
 
         <Card className="bg-card border-border/50 overflow-hidden">
@@ -849,20 +833,23 @@ export function SendWhisp() {
                     </div>
                   </div>
                 ) : (videoMeta?.thumbnail || videoMeta?.title) && (
-                  <div className="flex gap-3 p-3 bg-muted/30 rounded-xl items-center">
-                    {videoMeta.thumbnail ? (
-                      <Thumbnail src={videoMeta.thumbnail} alt="thumbnail" className="w-16 h-12 object-cover rounded-lg" />
-                    ) : (
-                      <div className="w-16 h-12 bg-muted rounded-lg flex items-center justify-center">
-                        <PlayCircle className="w-5 h-5 text-muted-foreground" />
+                  <div className="flex gap-3 p-3 bg-muted/30 rounded-xl items-center" data-testid="video-preview-card">
+                    <div className="relative w-16 h-12 shrink-0">
+                      {videoMeta.thumbnail ? (
+                        <Thumbnail src={videoMeta.thumbnail} alt="thumbnail" className="w-16 h-12 object-cover rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.25)]" />
+                      ) : (
+                        <div className="w-16 h-12 bg-muted rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.25)] flex items-center justify-center">
+                          <PlayCircle className="w-5 h-5 text-muted-foreground" />
+                        </div>
+                      )}
+                      {/* Platform icon overlay, bottom corner */}
+                      <div className="absolute -bottom-1.5 -right-1.5 w-5 h-5 rounded-full bg-card border border-border/50 flex items-center justify-center shadow-sm">
+                        <PlatformIcon platform={videoMeta.platform} className="w-3 h-3" />
                       </div>
-                    )}
+                    </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <PlatformIcon platform={videoMeta.platform} />
-                        <span className="text-xs text-muted-foreground capitalize">{videoMeta.platform}</span>
-                      </div>
                       <p className="text-sm font-medium text-foreground truncate">{videoMeta.title || "Video"}</p>
+                      <span className="text-xs text-muted-foreground capitalize">{videoMeta.platform}</span>
                     </div>
                   </div>
                 )}
@@ -900,21 +887,22 @@ export function SendWhisp() {
                 <h2 className="text-xl font-serif font-semibold">Choose a mood tag</h2>
                 <p className="text-sm text-muted-foreground">Optional — sets the emotional tone for the recipient.</p>
                 <div className="grid grid-cols-2 gap-2">
-                  {MOOD_TAGS.map((m) => (
-                    <button
-                      key={m.key}
-                      type="button"
-                      onClick={() => setMoodTag(moodTag === m.key ? null : m.key)}
-                      data-testid={`mood-tag-${m.key}`}
-                      className={`flex items-center gap-2 p-3 rounded-xl border transition-all text-left text-sm font-medium ${
-                        moodTag === m.key
-                          ? "border-primary bg-primary/10 text-foreground"
-                          : "border-border/50 hover:border-border text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: m.color }} />
-                      {m.label}
-                    </button>
+                  {MOOD_TAGS.map((m, i) => (
+                    <FadeUp key={m.key} index={i}>
+                      <button
+                        type="button"
+                        onClick={() => setMoodTag(moodTag === m.key ? null : m.key)}
+                        data-testid={`mood-tag-${m.key}`}
+                        className={`w-full flex items-center gap-2 p-3 rounded-xl border transition-all text-left text-sm font-medium ${
+                          moodTag === m.key
+                            ? "border-primary bg-primary/10 text-foreground"
+                            : "border-border/50 hover:border-border text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: m.color }} />
+                        {m.label}
+                      </button>
+                    </FadeUp>
                   ))}
                 </div>
                 <div className="flex justify-between pt-2">
@@ -1354,19 +1342,22 @@ export function SendWhisp() {
                     </div>
                   ) : (videoMeta?.thumbnail || videoMeta?.title) && (
                     <div className="flex gap-3 p-3 bg-muted/30 rounded-xl items-center" data-testid="review-video-preview-card">
-                      {videoMeta.thumbnail ? (
-                        <Thumbnail src={videoMeta.thumbnail} alt="thumbnail" className="w-20 h-14 object-cover rounded-lg" />
-                      ) : (
-                        <div className="w-20 h-14 bg-muted rounded-lg flex items-center justify-center shrink-0">
-                          <PlayCircle className="w-5 h-5 text-muted-foreground" />
+                      <div className="relative w-20 h-14 shrink-0">
+                        {videoMeta.thumbnail ? (
+                          <Thumbnail src={videoMeta.thumbnail} alt="thumbnail" className="w-20 h-14 object-cover rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.25)]" />
+                        ) : (
+                          <div className="w-20 h-14 bg-muted rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.25)] flex items-center justify-center">
+                            <PlayCircle className="w-5 h-5 text-muted-foreground" />
+                          </div>
+                        )}
+                        {/* Platform icon overlay, bottom corner */}
+                        <div className="absolute -bottom-1.5 -right-1.5 w-5 h-5 rounded-full bg-card border border-border/50 flex items-center justify-center shadow-sm">
+                          <PlatformIcon platform={videoMeta.platform} className="w-3 h-3" />
                         </div>
-                      )}
+                      </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <PlatformIcon platform={videoMeta.platform} />
-                          <span className="text-xs text-muted-foreground capitalize">{videoMeta.platform}</span>
-                        </div>
                         <p className="text-sm font-medium text-foreground truncate">{videoMeta.title || videoUrl}</p>
+                        <span className="text-xs text-muted-foreground capitalize">{videoMeta.platform}</span>
                       </div>
                     </div>
                   )}
@@ -1450,7 +1441,7 @@ export function SendWhisp() {
                   <Button
                     onClick={handleSend}
                     disabled={createWhisp.isPending || sendGroupWhisp.isPending}
-                    className="rounded-full shadow-[0_0_15px_rgba(124,92,252,0.3)] px-6"
+                    className="rounded-full shadow-[0_0_15px_rgba(123, 97, 255,0.3)] px-6"
                     data-testid="button-send-whisp"
                   >
                     {createWhisp.isPending || sendGroupWhisp.isPending ? (

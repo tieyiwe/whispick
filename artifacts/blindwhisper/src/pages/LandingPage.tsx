@@ -74,7 +74,7 @@ export function LandingPage() {
             </Button>
           </Link>
           <Link href="/sign-up">
-            <Button size="sm" className="rounded-full shadow-[0_0_20px_rgba(124,92,252,0.3)] hover:shadow-[0_0_30px_rgba(124,92,252,0.5)] transition-all px-3 sm:px-4">
+            <Button size="sm" className="rounded-full shadow-[0_0_20px_rgba(123, 97, 255,0.3)] hover:shadow-[0_0_30px_rgba(123, 97, 255,0.5)] transition-all px-3 sm:px-4">
               Get Started
             </Button>
           </Link>
@@ -108,7 +108,7 @@ export function LandingPage() {
 
             <div className="pt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link href="/sign-up">
-                <Button size="lg" className="rounded-full h-14 px-8 text-lg font-medium shadow-[0_0_24px_rgba(124,92,252,0.4)] hover:shadow-[0_0_40px_rgba(124,92,252,0.6)] transition-all">
+                <Button size="lg" className="rounded-full h-14 px-8 text-lg font-medium shadow-[0_0_24px_rgba(123, 97, 255,0.4)] hover:shadow-[0_0_40px_rgba(123, 97, 255,0.6)] transition-all">
                   <Send className="w-5 h-5 mr-2" /> Start Sending Whisps
                 </Button>
               </Link>
@@ -160,7 +160,7 @@ export function LandingPage() {
               { src: "/screenshots/send-step3-sent.png", step: "3", title: "Sent — that's it", desc: "We'll let you know the moment it's seen." },
             ].map((shot) => (
               <div key={shot.step} className="flex flex-col items-center text-center">
-                <div className="rounded-[2rem] border border-border/60 bg-card/40 shadow-[0_0_30px_rgba(124,92,252,0.12)] overflow-hidden w-full max-w-[220px]">
+                <div className="rounded-[2rem] border border-border/60 bg-card/40 shadow-[0_0_30px_rgba(123, 97, 255,0.12)] overflow-hidden w-full max-w-[220px]">
                   <img src={shot.src} alt={shot.title} className="w-full h-auto block" loading="lazy" width={390} height={844} />
                 </div>
                 <div className="mt-5 flex items-center gap-2">
@@ -257,7 +257,7 @@ export function LandingPage() {
             </p>
             <div className="pt-4">
               <Link href="/sign-up">
-                <Button size="lg" className="rounded-full h-14 px-8 text-lg font-medium shadow-[0_0_24px_rgba(124,92,252,0.4)] hover:shadow-[0_0_40px_rgba(124,92,252,0.6)] transition-all">
+                <Button size="lg" className="rounded-full h-14 px-8 text-lg font-medium shadow-[0_0_24px_rgba(123, 97, 255,0.4)] hover:shadow-[0_0_40px_rgba(123, 97, 255,0.6)] transition-all">
                   <Send className="w-5 h-5 mr-2" /> Start Sending Whisps
                 </Button>
               </Link>

@@ -8,7 +8,7 @@ export function PlatformIcon({ platform, className }: { platform?: string | null
     case "tiktok": return <SiTiktok className={cls} />;
     case "instagram": return <SiInstagram className={cls} style={{ color: "#E1306C" }} />;
     case "facebook": return <SiFacebook className={cls} style={{ color: "#1877F2" }} />;
-    case "upload": return <Video className={cls} style={{ color: "#7C5CFC" }} />;
+    case "upload": return <Video className={cls} style={{ color: "#7B61FF" }} />;
     default: return <PlayCircle className={cls} />;
   }
 }

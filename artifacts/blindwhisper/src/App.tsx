@@ -90,16 +90,17 @@ const clerkAppearance = {
     logoLinkUrl: basePath || "/",
   },
   variables: {
-    colorPrimary: "#7C5CFC",
-    colorBackground: "#2D2A45",
-    colorInputBackground: "#1e1b35",
-    colorNeutral: "#9c95c0",
+    colorPrimary: "#7B61FF",
+    // Surface Elevated — same token the app uses for modals/nav.
+    colorBackground: "#1A1A35",
+    colorInputBackground: "#13132A",
+    colorNeutral: "#9090B8",
     fontFamily: "'Inter', sans-serif",
     borderRadius: "16px",
   },
   elements: {
     rootBox: "w-full flex justify-center",
-    cardBox: "bg-[#2D2A45] rounded-2xl w-[440px] max-w-full overflow-hidden shadow-[0_0_24px_rgba(124,92,252,0.15)]",
+    cardBox: "bg-[#1A1A35] rounded-2xl w-[440px] max-w-full overflow-hidden shadow-[0_0_32px_rgba(123,97,255,0.15)]",
     card: "!shadow-none !border-0 !bg-transparent",
     footer: "!shadow-none !border-0 !bg-transparent",
   },
