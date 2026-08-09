@@ -1,4 +1,4 @@
-import { useEffect, useState, lazy, Suspense } from "react";
+import { useEffect, useState, lazy, Suspense, type CSSProperties } from "react";
 import { useGetWhispStats, useListSuggestions, getListSuggestionsQueryKey, useGetUserProfile } from "@workspace/api-client-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +9,6 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { MoodTag } from "@/components/shared/MoodTag";
 import { Thumbnail } from "@/components/shared/Thumbnail";
 import { Button } from "@/components/ui/button";
-import { FadeUp } from "@/components/shared/FadeUp";
 import { hasPendingForward, savePendingForward } from "@/lib/forwardVideo";
 import { hasDismissedPhoneVerificationDialog, dismissPhoneVerificationDialog } from "@/lib/phoneVerificationDialog";
 
@@ -170,7 +169,7 @@ export function Dashboard() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {statCards.map((stat, i) => (
-            <FadeUp key={i} index={i}>
+            <div key={i} className="fade-up-in" style={{ "--fade-up-index": Math.min(i, 8) } as CSSProperties}>
               <Card className="bg-card border-border/50 shadow-sm overflow-hidden relative">
                 <div className={`absolute top-0 right-0 w-24 h-24 rounded-full ${stat.bg} blur-2xl -mr-10 -mt-10 pointer-events-none`} />
                 <CardContent className="p-6">
@@ -190,7 +189,7 @@ export function Dashboard() {
                   </div>
                 </CardContent>
               </Card>
-            </FadeUp>
+            </div>
           ))}
         </div>
 
@@ -208,7 +207,7 @@ export function Dashboard() {
                     whisp.recipientEmail || whisp.recipientPhone ||
                     (whisp.deliveryMethod === "circle_drop" ? "Circle feed" : "Ghost Boost audience");
                   return (
-                  <FadeUp key={whisp.id} index={i}>
+                  <div key={whisp.id} className="fade-up-in" style={{ "--fade-up-index": Math.min(i, 8) } as CSSProperties}>
                     <Link href={`/whisps/${whisp.id}`}>
                       <Card className="bg-card hover:bg-card/80 transition-colors border-border/50 cursor-pointer overflow-hidden group">
                         <div className="flex flex-col sm:flex-row gap-3 p-3">
@@ -253,7 +252,7 @@ export function Dashboard() {
                         </div>
                       </Card>
                     </Link>
-                  </FadeUp>
+                  </div>
                   );
                 })
               ) : (

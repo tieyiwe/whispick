@@ -211,9 +211,29 @@
   animation: status-pulse 2s ease-in-out infinite;
 }
 
+@keyframes fade-up-in {
+  0% { opacity: 0; transform: translateY(16px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Pure-CSS equivalent of FadeUp.tsx (components/shared/FadeUp.tsx)'s
+   framer-motion entrance, for use ONLY from Dashboard.tsx — Dashboard is
+   deliberately kept out of App.tsx's route-level code-splitting (it's one
+   of the few pages most visits touch), so importing framer-motion there
+   directly would pull the whole library into the main bundle for every
+   visit, not just Dashboard's. Every other page that wants this same
+   entrance and IS already lazy-loaded should use the FadeUp component
+   instead, where framer-motion is free (already split into that page's own
+   chunk). Same visual result, index-based stagger via --fade-up-index. */
+.fade-up-in {
+  animation: fade-up-in 0.4s ease-out both;
+  animation-delay: calc(var(--fade-up-index, 0) * 50ms);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .glow-pulse,
-  .status-dot-pulse {
+  .status-dot-pulse,
+  .fade-up-in {
     animation: none;
   }
   .particle {
