@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import {
   useGetMyNotifications,
@@ -10,6 +10,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Bell, Check } from "lucide-react";
+import { triggerHaptic } from "@/lib/haptics";
 
 // The persistent, in-app counterpart to push notifications (see
 // lib/push.ts server-side) — a bell with an unread badge, shown in both the
@@ -27,6 +28,20 @@ export function NotificationBell() {
   const markAllRead = useMarkAllNotificationsRead();
 
   const unreadCount = data?.unreadCount ?? 0;
+
+  // A short pulse the moment a genuinely new notification shows up while
+  // the app is open (unread count rising between polls) — the one clear
+  // "reply received" in-app moment this component has. Guarded against
+  // firing on the very first fetch (prevCount starts undefined) so opening
+  // the app with existing unread notifications doesn't buzz on load.
+  const prevUnreadCountRef = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    if (data?.unreadCount == null) return;
+    if (prevUnreadCountRef.current !== undefined && data.unreadCount > prevUnreadCountRef.current) {
+      triggerHaptic();
+    }
+    prevUnreadCountRef.current = data.unreadCount;
+  }, [data?.unreadCount]);
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: getGetMyNotificationsQueryKey() });

@@ -66,6 +66,7 @@ import { needsDemographics } from "@/lib/demographics";
 import { ParticleDrift } from "@/components/shared/ParticleDrift";
 import { FadeUp } from "@/components/shared/FadeUp";
 import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion";
+import { triggerHaptic } from "@/lib/haptics";
 
 const WHISPER_CHANNELS = [
   { key: "email", label: "Email", icon: Mail },
@@ -393,6 +394,7 @@ export function SendWhisp() {
           onSuccess: (result) => {
             setSentGroupSendId(result.groupSendId);
             setSent(true);
+            triggerHaptic();
             if (result.skippedMembers.length) {
               toast({
                 title: `${result.skippedMembers.length} member${result.skippedMembers.length > 1 ? "s" : ""} skipped`,
@@ -441,6 +443,7 @@ export function SendWhisp() {
         onSuccess: (whisp) => {
           setSentWhispId(whisp.id);
           setSent(true);
+          triggerHaptic();
           queryClient.invalidateQueries({ queryKey: getGetWhispStatsQueryKey() });
           queryClient.invalidateQueries({ queryKey: getListWhispsQueryKey() });
         },

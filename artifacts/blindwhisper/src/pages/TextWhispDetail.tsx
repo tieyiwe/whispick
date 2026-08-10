@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { TextWhispScroll } from "@/components/shared/TextWhispScroll";
 import { useToast } from "@/hooks/use-toast";
+import { triggerHaptic } from "@/lib/haptics";
 import { ArrowLeft, Eye, Loader2, Send, MessageSquare, Trash2, UserCircle2, Check, X } from "lucide-react";
 
 const REPLY_MAX_LENGTH = 260;
@@ -117,6 +118,7 @@ export function TextWhispDetail() {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetTextWhispQueryKey(id!) });
           toast({ title: accepted ? "You accepted the reveal request" : "You declined the reveal request" });
+          if (accepted) triggerHaptic();
         },
         onError: () => toast({ title: "Failed to respond", variant: "destructive" }),
       },

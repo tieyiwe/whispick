@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { TextWhispScroll } from "@/components/shared/TextWhispScroll";
 import { useToast } from "@/hooks/use-toast";
+import { triggerHaptic } from "@/lib/haptics";
 import { ArrowLeft, ArrowRight, Phone, Loader2, ScrollText } from "lucide-react";
 
 const MESSAGE_MAX_LENGTH = 260;
@@ -46,6 +47,7 @@ export function SendTextWhisp() {
         onSuccess: (result) => {
           setSentId(result.id);
           setSent(true);
+          triggerHaptic();
           queryClient.invalidateQueries({ queryKey: getListTextWhispsQueryKey() });
         },
         onError: (err: any) => {

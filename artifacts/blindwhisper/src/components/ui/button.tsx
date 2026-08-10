@@ -8,7 +8,9 @@ const buttonVariants = cva(
   // Calm, precise motion only — no bounce/elastic easing anywhere. Every
   // variant is pill-shaped (rounded-full) per the design spec; sizes below
   // no longer override that with a sharper radius.
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-semibold transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0" +
+  // select-none: buttons are interactive chrome, never text a user should
+  // be able to long-press-select — matches native-app tap behavior.
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-semibold transition-all duration-200 ease-out select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0" +
 " hover:scale-[1.02] active:scale-[0.98]",
   {
     variants: {
@@ -33,7 +35,10 @@ const buttonVariants = cva(
         default: "min-h-9 px-5 py-2",
         sm: "min-h-8 px-4 text-xs",
         lg: "min-h-11 px-8",
-        icon: "h-9 w-9",
+        // 44x44 — the native-app-standard minimum touch target. Was 36x36
+        // (h-9 w-9); icon-only buttons have no text label to widen their
+        // effective hit area, so this one needs to hit the real minimum.
+        icon: "h-11 w-11",
       },
     },
     defaultVariants: {

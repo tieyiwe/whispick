@@ -55,7 +55,7 @@ function MobileTabLink({ href, label, icon: Icon, isActive }: { href: string; la
   return (
     <Link
       href={href}
-      className={`flex flex-col items-center justify-center gap-0.5 min-w-11 min-h-11 px-2 py-1.5 rounded-xl transition-colors ${
+      className={`flex flex-col items-center justify-center gap-0.5 min-w-11 min-h-11 px-2 py-1.5 rounded-xl select-none transition-colors ${
         isActive ? "text-primary" : "text-muted-foreground"
       }`}
     >
@@ -83,7 +83,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
     <div className="min-h-[100dvh] bg-background flex flex-col md:flex-row">
       <aside className="w-full md:w-64 border-r border-border bg-surface-2/60 backdrop-blur-xl flex flex-col hidden md:flex h-screen sticky top-0">
         <div className="p-6 flex items-center justify-between gap-2">
-          <Link href="/dashboard" className="flex items-center gap-3 text-primary hover:opacity-80 transition-opacity min-w-0">
+          <Link href="/dashboard" className="flex items-center gap-3 text-primary hover:opacity-80 transition-opacity min-w-0 select-none">
             <Logo className="w-8 h-8 text-primary shrink-0" />
             <span className="font-serif text-2xl font-bold tracking-tight text-foreground truncate">Blind Whisper</span>
           </Link>
@@ -99,7 +99,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl select-none transition-all ${
                   isActive
                     ? "bg-primary/10 text-primary font-medium glow-card"
                     : "text-muted-foreground hover:text-foreground hover:bg-card"
@@ -140,10 +140,18 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
       {/* Mobile header */}
       <header
-        className="md:hidden border-b border-border bg-surface-2/80 backdrop-blur flex items-center justify-between sticky top-0 z-50 px-4"
-        style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.75rem)", paddingBottom: "0.75rem" }}
+        className="md:hidden border-b border-border bg-surface-2/80 backdrop-blur flex items-center justify-between sticky top-0 z-50"
+        style={{
+          paddingTop: "calc(env(safe-area-inset-top) + 0.75rem)",
+          paddingBottom: "0.75rem",
+          // max(1rem, ...) so portrait use (no inset) keeps the normal
+          // px-4 gutter, and landscape on a notched phone clears the notch
+          // instead of tucking content behind it.
+          paddingLeft: "max(1rem, env(safe-area-inset-left))",
+          paddingRight: "max(1rem, env(safe-area-inset-right))",
+        }}
       >
-        <Link href="/dashboard" className="flex items-center gap-2 min-h-11">
+        <Link href="/dashboard" className="flex items-center gap-2 min-h-11 select-none">
           <Logo className="w-6 h-6 text-primary" />
           <span className="font-serif text-xl font-bold">Blind Whisper</span>
         </Link>
@@ -169,15 +177,19 @@ export function AppLayout({ children }: { children: ReactNode }) {
           stuck flush to them, elevated with a real shadow so it visibly
           sits above the page. */}
       <div
-        className="md:hidden fixed bottom-0 inset-x-0 z-50 px-4"
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)" }}
+        className="md:hidden fixed bottom-0 inset-x-0 z-50"
+        style={{
+          paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)",
+          paddingLeft: "max(1rem, env(safe-area-inset-left))",
+          paddingRight: "max(1rem, env(safe-area-inset-right))",
+        }}
       >
         <nav className="relative mx-auto max-w-md flex items-center justify-around px-1 py-1.5 rounded-[24px] border border-border/40 bg-surface-2/95 backdrop-blur-xl shadow-[0_8px_32px_-8px_rgba(0,0,0,0.5)]">
           {MOBILE_TAB_ITEMS_LEFT.map((item) => (
             <MobileTabLink key={item.href} {...item} isActive={location === item.href} />
           ))}
 
-          <Link href="/send" className="flex flex-col items-center -mt-6" data-testid="link-send-mobile">
+          <Link href="/send" className="flex flex-col items-center -mt-6 select-none" data-testid="link-send-mobile">
             <div className="w-14 h-14 rounded-full bg-[linear-gradient(135deg,hsl(var(--primary))_0%,hsl(var(--primary-hover))_100%)] flex items-center justify-center shadow-[0_0_20px_rgba(123,97,255,0.5)] active:scale-95 transition-transform border-4 border-surface-2">
               <Send className="w-6 h-6 text-primary-foreground" />
             </div>

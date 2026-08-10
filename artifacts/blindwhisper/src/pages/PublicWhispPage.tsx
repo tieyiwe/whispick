@@ -25,6 +25,7 @@ import { VideoPlayer } from "@/components/shared/VideoPlayer";
 import { QUICK_REPLIES } from "@/lib/quickReplies";
 import { REMINDER_PRESETS, MAX_REMINDERS } from "@/lib/reminderPresets";
 import { savePendingForward } from "@/lib/forwardVideo";
+import { triggerHaptic } from "@/lib/haptics";
 
 function splitSentences(text: string): string[] {
   return text.split(/(?<=[.!?])\s+/).filter(Boolean);
@@ -169,7 +170,10 @@ export function PublicWhispPage() {
     respondReveal.mutate(
       { id: whisp.id, data: { accepted } },
       {
-        onSuccess: () => setRevealResponse(accepted ? "accepted" : "declined"),
+        onSuccess: () => {
+          setRevealResponse(accepted ? "accepted" : "declined");
+          if (accepted) triggerHaptic();
+        },
         onError: () => toast({ title: "Something went wrong", variant: "destructive" }),
       }
     );
