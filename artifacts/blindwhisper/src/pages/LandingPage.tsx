@@ -2,7 +2,8 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
 import { MoodTag } from "@/components/shared/MoodTag";
-import { Send, Heart, Shield, Sparkles, PlayCircle, Users2, Users, Briefcase, UserRound, X, Check } from "lucide-react";
+import { FAQ_ITEMS } from "@/lib/faqContent";
+import { Send, Heart, Shield, Sparkles, PlayCircle, Users2, Users, Briefcase, UserRound, X, Check, ChevronDown } from "lucide-react";
 
 const USE_CASES = [
   {
@@ -135,7 +136,10 @@ export function LandingPage() {
             ].map((feature, i) => (
               <div key={i} className="p-8 rounded-3xl bg-card/40 border border-border backdrop-blur hover:bg-card/60 transition-colors">
                 <feature.icon className="w-10 h-10 text-primary mb-6" />
-                <h3 className="text-xl font-serif font-semibold mb-3">{feature.title}</h3>
+                {/* h2, not h3: these three cards sit directly under the
+                    page's single h1 with no section h2 of their own, so h3
+                    here would skip a heading level. */}
+                <h2 className="text-xl font-serif font-semibold mb-3">{feature.title}</h2>
                 <p className="text-muted-foreground">{feature.desc}</p>
               </div>
             ))}
@@ -244,6 +248,36 @@ export function LandingPage() {
           <p className="text-center text-xs text-muted-foreground mt-10 max-w-lg mx-auto">
             Illustrative examples of how people use Blind Whisper, not verified customer reviews.
           </p>
+        </section>
+
+        {/* FAQ */}
+        <section className="relative z-10 px-4 py-24 sm:py-32">
+          <div className="max-w-2xl mx-auto text-center space-y-4 mb-14">
+            <h2 className="text-3xl md:text-4xl font-serif font-bold text-foreground">
+              Frequently asked questions
+            </h2>
+            <p className="text-muted-foreground text-lg">
+              Everything people usually want to know before sending their first Whisp.
+            </p>
+          </div>
+
+          {/* Plain <details>/<summary> instead of the Radix accordion
+              primitive: browsers keep a closed <details>'s content in the
+              DOM at all times (just CSS-hidden), so the full answer text is
+              always present for crawlers and in the prerendered HTML — no
+              JS, no lazy-render-on-click, and no risk of a Presence/forceMount
+              edge case silently dropping collapsed answers from the markup. */}
+          <div className="max-w-2xl mx-auto divide-y divide-border">
+            {FAQ_ITEMS.map((item, i) => (
+              <details key={i} className="group py-4">
+                <summary className="flex items-center justify-between gap-4 cursor-pointer list-none text-left text-base font-serif font-semibold text-foreground hover:text-primary transition-colors [&::-webkit-details-marker]:hidden">
+                  {item.question}
+                  <ChevronDown className="w-4 h-4 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-180" />
+                </summary>
+                <p className="mt-3 text-muted-foreground leading-relaxed">{item.answer}</p>
+              </details>
+            ))}
+          </div>
         </section>
 
         {/* Closing CTA */}
