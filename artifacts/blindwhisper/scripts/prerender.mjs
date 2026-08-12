@@ -125,6 +125,16 @@ async function main() {
     );
   }
 
+  // Production's SPA fallback (artifact.toml's rewrite rule) needs a plain,
+  // content-free shell to fall back to for every authenticated app route
+  // (/dashboard, /send, etc.) — NOT the prerendered marketing homepage that
+  // index.html becomes below. Without this, a hard refresh on any app route
+  // would briefly flash the public landing page before client JS mounts the
+  // real page. Written from the untouched template, before index.html gets
+  // overwritten with real content, so it's always the original empty shell.
+  await writeFile(path.join(distDir, "app-shell.html"), template, "utf-8");
+  console.log(`[prerender] wrote dist/public/app-shell.html (SPA fallback shell, ${template.length} bytes)`);
+
   const server = await createServer({
     root: projectRoot,
     configFile: path.join(projectRoot, "vite.config.ts"),
