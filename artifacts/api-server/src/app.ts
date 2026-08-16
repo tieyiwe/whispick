@@ -61,10 +61,18 @@ app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 // where it hasn't been set. Instead, allow an Origin whose host matches the
 // Host header this request actually arrived on (genuinely same-origin),
 // plus an explicit allowlist for legitimately cross-origin dev setups.
+// The localhost dev origins are only allowed outside production — in a real
+// deployment nothing should be making credentialed cross-origin requests
+// from a loopback address, and leaving them in the allowlist would let a
+// malicious app bound to that port on a victim's machine ride the victim's
+// Clerk session cookie. In production the same-origin check (isSameOrigin)
+// plus an explicit PUBLIC_APP_URL is the whole allowlist.
+const isProduction = process.env.NODE_ENV === "production";
 const explicitAllowedOrigins = new Set(
-  [process.env.PUBLIC_APP_URL, "http://localhost:22964", "http://127.0.0.1:22964"].filter(
-    (v): v is string => !!v,
-  ),
+  [
+    process.env.PUBLIC_APP_URL,
+    ...(isProduction ? [] : ["http://localhost:22964", "http://127.0.0.1:22964"]),
+  ].filter((v): v is string => !!v),
 );
 
 function isSameOrigin(origin: string, req: import("express").Request): boolean {

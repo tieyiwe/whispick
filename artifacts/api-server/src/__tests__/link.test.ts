@@ -10,8 +10,11 @@ async function createWhisp() {
     .post("/api/whisps")
     .set(TEST_USER_HEADER, USER_A)
     .send({
-      videoUrl: "https://youtu.be/x",
+      videoUrl: "https://youtu.be/dQw4w9WgXcQ",
       videoTitle: "A Really Good Video",
+      // Deliberately an attacker-style off-platform thumbnail: the server
+      // derives the real thumbnail from the URL and must IGNORE this, so it
+      // should never reach the OG card (see the assertion below).
       videoThumbnail: "https://example.com/thumb.jpg",
       deliveryMethod: "circle_drop",
     });
@@ -38,7 +41,9 @@ describe("GET /api/l/:token", () => {
     expect(res.status).toBe(200);
     expect(res.headers["content-type"]).toContain("text/html");
     expect(res.text).toContain("A Really Good Video");
-    expect(res.text).toContain("https://example.com/thumb.jpg");
+    // The server-derived YouTube thumbnail, not the client-supplied one.
+    expect(res.text).toContain("https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg");
+    expect(res.text).not.toContain("https://example.com/thumb.jpg");
     expect(res.text).toContain(`/w/${whisp.publicToken}`);
   });
 

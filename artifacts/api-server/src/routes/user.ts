@@ -11,7 +11,7 @@ import { getVapidPublicKey } from "../lib/push";
 import { GENDER_OPTIONS, AGE_RANGE_OPTIONS } from "../lib/demographics";
 import { normalizePhoneE164 } from "../lib/phone";
 import { startPhoneVerification, checkPhoneVerification } from "../lib/phoneVerification";
-import { phoneVerificationLimiter } from "../lib/rateLimit";
+import { phoneVerificationLimiter, confirmPhoneVerificationLimiter } from "../lib/rateLimit";
 
 const router = Router();
 
@@ -196,7 +196,7 @@ const confirmPhoneVerificationSchema = z.object({
 // no server-side "verification in progress for this user" state to look up
 // otherwise — Twilio Verify itself is the source of truth for which
 // (phone, code) pairs are valid.
-router.post("/phone/confirm-verification", requireAuth, async (req, res): Promise<void> => {
+router.post("/phone/confirm-verification", requireAuth, confirmPhoneVerificationLimiter, async (req, res): Promise<void> => {
   const { userId } = getAuth(req);
   const user = await ensureUser(userId!, req);
 

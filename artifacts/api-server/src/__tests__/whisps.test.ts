@@ -455,3 +455,54 @@ describe("GET /api/public/circle", () => {
     expect(res.body.items[0]).not.toHaveProperty("recipientEmail");
   });
 });
+
+describe("POST /api/whisps — video field security", () => {
+  const USER_SEC = "clerk_user_sec_whisps";
+
+  it("rejects a javascript: video URL (stored-XSS guard)", async () => {
+    const res = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_SEC))
+      .send({ videoUrl: "javascript:alert(document.cookie)", deliveryMethod: "circle_drop" });
+    expect(res.status).toBe(400);
+  });
+
+  it("ignores client-supplied embed/thumbnail/platform and derives them from the URL", async () => {
+    const res = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_SEC))
+      .send({
+        videoUrl: "https://youtu.be/dQw4w9WgXcQ",
+        videoEmbedUrl: "https://attacker.example/phish",
+        videoThumbnail: "https://attacker.example/track.gif",
+        videoPlatform: "youtube",
+        deliveryMethod: "circle_drop",
+      });
+    expect(res.status).toBe(201);
+    expect(res.body.videoEmbedUrl).toBe("https://www.youtube.com/embed/dQw4w9WgXcQ?enablejsapi=1");
+    expect(res.body.videoThumbnail).toBe("https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg");
+    expect(res.body.videoEmbedUrl).not.toContain("attacker.example");
+    expect(res.body.videoThumbnail).not.toContain("attacker.example");
+  });
+
+  it("enforces the free-plan Whisper Link limit even under repeated sends", async () => {
+    const USER_LIMIT = "clerk_user_limit_whisps";
+    const send = () =>
+      request(app)
+        .post("/api/whisps")
+        .set(asUser(USER_LIMIT))
+        .send({
+          videoUrl: "https://youtu.be/dQw4w9WgXcQ",
+          deliveryMethod: "whisper_link",
+          whisperChannel: "email",
+          recipientEmail: "friend@example.com",
+        });
+
+    // Free plan allows 3 Whisper Links per rolling window.
+    expect((await send()).status).toBe(201);
+    expect((await send()).status).toBe(201);
+    expect((await send()).status).toBe(201);
+    const fourth = await send();
+    expect(fourth.status).toBe(402);
+  });
+});

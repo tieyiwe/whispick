@@ -4,6 +4,7 @@ import { whispsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { getPublicAppUrl } from "../lib/publicUrl";
 import { HOOK_LINE } from "../lib/copy";
+import { escapeHtml } from "../lib/escapeHtml";
 
 const router = Router();
 
@@ -11,15 +12,6 @@ const router = Router();
 // don't match these, so they fall through to the redirect below.
 const CRAWLER_UA_PATTERN =
   /facebookexternalhit|Facebot|WhatsApp|Twitterbot|Slackbot|TelegramBot|Discordbot|LinkedInBot|SkypeUriPreview|Applebot|Googlebot|redditbot|vkShare|W3C_Validator/i;
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
 
 // GET /l/:token — the URL actually shared via email/SMS/WhatsApp. Crawlers
 // get a small server-rendered page with real Open Graph tags for that

@@ -57,6 +57,49 @@ export function buildEmbedUrl(url: string, platform: string): string | null {
   return null;
 }
 
+// A deterministic, platform-hosted thumbnail URL derived purely from the
+// video id — no network call, and critically no chance of returning an
+// attacker-chosen host. Only YouTube exposes a stable, guessable thumbnail
+// URL; every other platform needs an API/oEmbed call to discover its CDN
+// path, so we return null for them rather than trust a client-supplied
+// thumbnail. See deriveVideoFields for why that matters: a thumbnail is
+// auto-loaded by the *other* party's browser (recipient loads the sender's,
+// sender loads the recipient's reply), so an attacker-controlled thumbnail
+// URL is a silent IP/geo deanonymization channel between two parties the
+// whole app exists to keep anonymous from each other. i.ytimg.com is
+// Google, not the counterparty, so it leaks nothing about either party to
+// the other (they already load it when the video itself plays).
+export function buildThumbnailUrl(url: string, platform: string): string | null {
+  if (platform === "youtube") {
+    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\/))([\w-]{11})/);
+    return match ? `https://i.ytimg.com/vi/${match[1]}/hqdefault.jpg` : null;
+  }
+  return null;
+}
+
+// The single trusted source of a whisp/reply's platform, embed URL, and
+// thumbnail. Everything here is derived server-side from the one field we
+// can meaningfully validate — the pasted videoUrl — with the client's own
+// videoPlatform/videoEmbedUrl/videoThumbnail deliberately ignored. Accepting
+// those from the client was a stored-XSS/iframe-injection sink (a chosen
+// embed URL renders in an <iframe> in the viewer's session) and, for the
+// thumbnail, the deanonymization channel described above. detectPlatform and
+// buildEmbedUrl/buildThumbnailUrl are all pure (no network), so this stays a
+// cheap synchronous transform on the send path.
+export function deriveVideoFields(videoUrl: string): {
+  platform: string | null;
+  embedUrl: string | null;
+  thumbnail: string | null;
+} {
+  const platform = detectPlatform(videoUrl);
+  if (!platform) return { platform: null, embedUrl: null, thumbnail: null };
+  return {
+    platform,
+    embedUrl: buildEmbedUrl(videoUrl, platform),
+    thumbnail: buildThumbnailUrl(videoUrl, platform),
+  };
+}
+
 // Text that shows up in place of real content when a video/post is private,
 // restricted to an audience the recipient won't be logged in as, age-gated,
 // or deleted — checked against whatever oEmbed/OG scraping actually returned,

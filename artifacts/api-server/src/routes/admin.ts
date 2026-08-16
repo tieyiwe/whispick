@@ -30,6 +30,7 @@ import { resolveVideoMeta } from "../lib/videoMeta";
 import { generateSuggestionSummaryAsync } from "../lib/suggestionSummary";
 import { runSuggestionDiscoveryAgent } from "../lib/suggestionAgent";
 import { notifyUser, notifyAllUsers } from "../lib/push";
+import { httpUrlString, isHttpUrlOrAppPath } from "../lib/safeUrl";
 
 const router = Router();
 
@@ -722,7 +723,9 @@ const sendNotificationSchema = z
   .object({
     title: z.string().trim().min(1).max(200),
     body: z.string().trim().min(1).max(2000),
-    url: z.string().min(1).nullable().optional(),
+    // In-app path ("/whisps/abc") or absolute http(s) only — this renders as
+    // a clickable href in every recipient's NotificationBell.
+    url: z.string().min(1).max(2048).refine(isHttpUrlOrAppPath, { message: "Must be an app path or http(s) URL" }).nullable().optional(),
     audience: z.enum(["all", "users"]),
     userIds: z.array(z.string()).optional(),
   })
@@ -898,7 +901,9 @@ router.patch("/moderation/flags/:id", async (req, res): Promise<void> => {
 const VALID_SUGGESTION_CATEGORY_KEYS = new Set<string>(VIDEO_CATEGORIES.map((c) => c.key));
 
 const createSuggestionSchema = z.object({
-  videoUrl: z.string().url(),
+  // Not plain .url(): "javascript:alert(1)" passes z.string().url() — the
+  // http(s)-protocol check is what actually matters for the href sink.
+  videoUrl: httpUrlString,
   categories: z
     .array(z.string())
     .min(1)

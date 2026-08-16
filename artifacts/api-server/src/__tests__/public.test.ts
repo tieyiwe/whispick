@@ -134,4 +134,50 @@ describe("POST /api/public/w/:token/reply", () => {
     const deltaMinutes = Math.round((notifyAt - before) / 60_000);
     expect([3, 5, 9]).toContain(deltaMinutes);
   });
+
+  // Security: a reply's thumbnail/embed are auto-loaded in the SENDER's
+  // browser, so an attacker-controlled URL there would silently leak the
+  // sender's IP/geo to the recipient (a break of the core anonymity model),
+  // and a javascript: URL would be stored XSS. Both are prevented by
+  // validating videoUrl as http(s) and deriving the rest server-side.
+  it("rejects a javascript: video URL in a reply", async () => {
+    const whisp = await createWhisp();
+
+    const res = await request(app)
+      .post(`/api/public/w/${whisp.publicToken}/reply`)
+      .send({ videoUrl: "javascript:alert(document.cookie)" });
+    expect(res.status).toBe(400);
+  });
+
+  it("ignores a client-supplied reply thumbnail/embed and derives them server-side (anti-deanonymization)", async () => {
+    const whisp = await createWhisp();
+
+    const res = await request(app).post(`/api/public/w/${whisp.publicToken}/reply`).send({
+      videoUrl: "https://youtu.be/dQw4w9WgXcQ",
+      videoThumbnail: "https://attacker.example/track.gif?whisp=leak",
+      videoEmbedUrl: "https://attacker.example/phish",
+      videoPlatform: "youtube",
+    });
+    expect(res.status).toBe(201);
+    // The attacker URLs never made it into storage...
+    expect(res.body.videoThumbnail).not.toContain("attacker.example");
+    expect(res.body.videoEmbedUrl ?? "").not.toContain("attacker.example");
+    // ...they were replaced by the server-derived, platform-hosted values.
+    expect(res.body.videoThumbnail).toBe("https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg");
+    expect(res.body.videoEmbedUrl).toBe("https://www.youtube.com/embed/dQw4w9WgXcQ?enablejsapi=1");
+  });
+
+  it("drops a non-YouTube reply thumbnail rather than trusting the client (no attacker host reaches the sender's browser)", async () => {
+    const whisp = await createWhisp();
+
+    const res = await request(app).post(`/api/public/w/${whisp.publicToken}/reply`).send({
+      videoUrl: "https://www.tiktok.com/@a/video/123",
+      videoThumbnail: "https://attacker.example/track.gif",
+    });
+    expect(res.status).toBe(201);
+    expect(res.body.videoPlatform).toBe("tiktok");
+    // No deterministic safe thumbnail for TikTok, so it's null — never the
+    // attacker-supplied one.
+    expect(res.body.videoThumbnail).toBeNull();
+  });
 });

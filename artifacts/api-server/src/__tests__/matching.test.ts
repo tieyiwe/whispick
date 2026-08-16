@@ -268,7 +268,11 @@ describe("POST /api/public/subscribe", () => {
       .post("/api/public/subscribe")
       .send({ email: "repeat@example.com", categories: ["travel"] });
 
-    expect(res.body).toEqual({ ok: true, alreadyVerified: true });
+    // alreadyVerified is now deliberately always false in the response to
+    // avoid an email-membership enumeration oracle — the categories still
+    // update, and the internal "don't re-email a confirmed subscriber" logic
+    // still runs, but the response no longer reveals prior-verification state.
+    expect(res.body).toEqual({ ok: true, alreadyVerified: false });
     const updated = await db
       .select()
       .from(matchSubscribersTable)

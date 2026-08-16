@@ -44,7 +44,10 @@ beforeEach(() => {
 
 describe("generateTakeawayAsync", () => {
   it("marks the whisp unavailable when no transcript can be found", async () => {
-    const whisp = await createWhisp({ videoPlatform: "tiktok" });
+    // videoPlatform is now derived server-side from the URL host (the client
+    // value is ignored), so use a genuinely-TikTok URL to get a non-youtube
+    // platform and thus a null transcript.
+    const whisp = await createWhisp({ videoUrl: "https://www.tiktok.com/@a/video/123", videoPlatform: "tiktok" });
 
     await generateTakeawayAsync(whisp.id);
 

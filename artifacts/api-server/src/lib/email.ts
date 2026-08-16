@@ -2,6 +2,7 @@ import nodemailer from "nodemailer";
 import { logger } from "./logger";
 import { HOOK_LINE, INVITE_HOOK_LINE } from "./copy";
 import { logDeliveryAttempt, type DeliveryLogContext } from "./deliveryLog";
+import { escapeHtml } from "./escapeHtml";
 
 // Primary transport: SMTP through the Titan mailbox (sender@blindwhisper.com).
 // Titan is a mailbox provider, not an email API, so delivery goes over
@@ -132,7 +133,10 @@ export function whisperLinkEmailHtml(publicUrl: string, hookLine: string = HOOK_
 }
 
 export function replyNotificationEmailHtml(videoTitle: string | null): string {
-  const subject = videoTitle ? `your whisp "${videoTitle}"` : "your whisp";
+  // videoTitle can originate from a third-party page's scraped og:title, so
+  // escape it before it lands in this HTML string (it isn't rendered through
+  // React here) — otherwise it's a content-injection vector into the inbox.
+  const subject = videoTitle ? `your whisp "${escapeHtml(videoTitle)}"` : "your whisp";
   return `<div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a2e;">
     <p>Someone replied anonymously to ${subject}. Log in to Blind Whisper to read it.</p>
     ${complianceFooter()}
@@ -140,7 +144,7 @@ export function replyNotificationEmailHtml(videoTitle: string | null): string {
 }
 
 export function appreciationNotificationEmailHtml(videoTitle: string | null): string {
-  const subject = videoTitle ? `"${videoTitle}"` : "your whisp";
+  const subject = videoTitle ? `"${escapeHtml(videoTitle)}"` : "your whisp";
   return `<div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a2e;">
     <p>Good news — the person you sent ${subject} to said it was something they needed to hear. 💜</p>
     ${complianceFooter()}
@@ -149,8 +153,10 @@ export function appreciationNotificationEmailHtml(videoTitle: string | null): st
 
 export function mediaExpiringEmailHtml(filename: string, expiresAt: Date): string {
   const when = expiresAt.toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" });
+  // filename is the user's own uploaded filename — escape it so a crafted
+  // name can't inject markup into this HTML email.
   return `<div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a2e;">
-    <p>Your uploaded video "${filename}" will be removed from Blind Whisper on ${when} — save a copy now if you still need it.</p>
+    <p>Your uploaded video "${escapeHtml(filename)}" will be removed from Blind Whisper on ${when} — save a copy now if you still need it.</p>
     <p style="font-size: 13px; color: #6b7280;">Whisps that already used it aren't affected as long as the recipient opened them in time.</p>
     ${complianceFooter()}
   </div>`;

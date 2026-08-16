@@ -72,6 +72,19 @@ export const phoneVerificationLimiter = rateLimit({
   keyGenerator: authKeyGenerator,
 });
 
+// Confirming a phone-verification code (routes/user.ts). Twilio Verify
+// already enforces its own per-code attempt lockout and expiry server-side,
+// but this adds our own defense-in-depth cap so the confirm endpoint can't be
+// hammered independent of Twilio's limits. Looser than the send limiter,
+// since a legitimate user may retype a code a few times.
+export const confirmPhoneVerificationLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: authKeyGenerator,
+});
+
 // The "Not sure what to send?" concierge (lib/concierge.ts) is a Claude call
 // plus a library lookup — slightly heavier than a plain note suggestion, so
 // it gets a somewhat tighter cap, same per-user keying rationale as above.
