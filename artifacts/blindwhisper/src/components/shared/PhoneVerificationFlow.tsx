@@ -2,6 +2,7 @@ import { useState } from "react";
 import { parsePhoneNumberFromString } from "libphonenumber-js/min";
 import { Button } from "@/components/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { CountryPhoneInput } from "@/components/shared/CountryPhoneInput";
 import { useStartPhoneVerification, useConfirmPhoneVerification, getGetUserProfileQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -96,7 +97,22 @@ export function PhoneVerificationFlow({ onVerified }: { onVerified?: () => void 
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">Enter the 6-digit code we texted to {phone.trim()}.</p>
-      <InputOTP maxLength={6} value={code} onChange={setCode} data-testid="input-verification-code">
+      {/* inputMode/pattern get mobile browsers to show a numeric keypad
+          instead of a full keyboard; autoComplete="one-time-code" is what
+          actually lets iOS/Android offer a tap-to-fill suggestion from the
+          just-received SMS instead of making someone type all 6 digits by
+          hand — without it this field is real but noticeably clunky on a
+          phone. autoFocus saves the extra tap into the field on arrival. */}
+      <InputOTP
+        maxLength={6}
+        value={code}
+        onChange={setCode}
+        inputMode="numeric"
+        pattern={REGEXP_ONLY_DIGITS}
+        autoComplete="one-time-code"
+        autoFocus
+        data-testid="input-verification-code"
+      >
         <InputOTPGroup>
           {Array.from({ length: 6 }, (_, i) => (
             <InputOTPSlot key={i} index={i} />
