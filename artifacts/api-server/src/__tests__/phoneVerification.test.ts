@@ -123,4 +123,31 @@ describe("POST /api/user/phone/confirm-verification", () => {
     expect(res.status).toBe(400);
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it("clears a recycled number from any other account when a new holder verifies it", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(200, { status: "approved" })));
+
+    // First person verifies the number.
+    await request(app)
+      .post("/api/user/phone/confirm-verification")
+      .set(asUser("clerk_recycle_old"))
+      .send({ phone: "+15557654321", code: "123456" });
+
+    // Later, the number is recycled and a different person verifies it.
+    const res = await request(app)
+      .post("/api/user/phone/confirm-verification")
+      .set(asUser("clerk_recycle_new"))
+      .send({ phone: "+15557654321", code: "123456" });
+    expect(res.status).toBe(200);
+
+    // The old account no longer claims the number as verified, so in-app
+    // routing can't mis-deliver to it.
+    const oldRow = await db.select().from(usersTable).where(eq(usersTable.clerkId, "clerk_recycle_old")).then((r) => r[0]);
+    expect(oldRow?.phone).toBeNull();
+    expect(oldRow?.phoneVerifiedAt).toBeNull();
+
+    const newRow = await db.select().from(usersTable).where(eq(usersTable.clerkId, "clerk_recycle_new")).then((r) => r[0]);
+    expect(newRow?.phone).toBe("+15557654321");
+    expect(newRow?.phoneVerifiedAt).not.toBeNull();
+  });
 });

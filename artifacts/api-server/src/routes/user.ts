@@ -2,7 +2,7 @@ import { Router } from "express";
 import { getAuth } from "@clerk/express";
 import { db } from "@workspace/db";
 import { usersTable, pushSubscriptionsTable, notificationsTable, notificationReadsTable } from "@workspace/db";
-import { eq, and, or, isNull, desc, count, notInArray } from "drizzle-orm";
+import { eq, and, or, ne, isNull, desc, count, notInArray } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { z } from "zod";
 import { requireAuth } from "../lib/auth";
@@ -217,6 +217,19 @@ router.post("/phone/confirm-verification", requireAuth, confirmPhoneVerification
     res.status(400).json({ error: result.error });
     return;
   }
+
+  // A phone number is the routing key for in-app whisp delivery
+  // (findVerifiedRecipient in lib/deliver.ts), so it must map to exactly one
+  // verified account. Phone numbers get recycled between people, and the
+  // person now holding this SIM just proved control of it — so clear any
+  // OTHER account still claiming it as verified. Without this, a recycled
+  // number could resolve to a stranger's old account and an anonymized whisp
+  // meant for the current holder would land in that stranger's in-app inbox
+  // instead of being texted to the right person.
+  await db
+    .update(usersTable)
+    .set({ phone: null, phoneVerifiedAt: null })
+    .where(and(eq(usersTable.phone, normalized), ne(usersTable.id, user.id)));
 
   await db
     .update(usersTable)
