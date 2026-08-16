@@ -12,7 +12,7 @@ An anonymous video recommendation platform — paste a video URL, add a mood tag
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - Required env: `DATABASE_URL` — Postgres connection string
 - Required env: `CLERK_SECRET_KEY`, `VITE_CLERK_PUBLISHABLE_KEY` — Clerk auth
-- Optional env: `RESEND_API_KEY`, `EMAIL_FROM` — Whisper Link email channel + reply notification emails (skipped with a log warning if unset)
+- Optional env: `SMTP_USER`, `SMTP_PASS` — Whisper Link email channel + reply notification emails, sent over SMTP through the Titan mailbox (host/port default to `smtp.titan.email:465`, overridable via `SMTP_HOST`/`SMTP_PORT`; `EMAIL_FROM` defaults to the SMTP user). Legacy fallback: `RESEND_API_KEY`. Skipped with a log warning if neither is set. Also `COMPANY_MAILING_ADDRESS` — physical postal address appended to every email's CAN-SPAM compliance footer
 - Optional env: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` — Whisper Link SMS channel (skipped with a log warning if unset)
 - Optional env: `TWILIO_WHATSAPP_FROM`, `TWILIO_WHATSAPP_CONTENT_SID` — Whisper Link WhatsApp channel. Requires a Twilio-enabled WhatsApp sender AND a Meta-approved Content Template with a single `{{1}}` variable for the link (build it in the Twilio Console's Content Template Builder) — WhatsApp business-initiated messages can't use free-form text for a first contact. Skipped with a log warning if unset.
 - Optional env: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` — Credits & Plan checkout (returns 503 if unset)

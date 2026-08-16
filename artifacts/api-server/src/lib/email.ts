@@ -1,9 +1,41 @@
+import nodemailer from "nodemailer";
 import { logger } from "./logger";
 import { HOOK_LINE, INVITE_HOOK_LINE } from "./copy";
 import { logDeliveryAttempt, type DeliveryLogContext } from "./deliveryLog";
 
+// Primary transport: SMTP through the Titan mailbox (sender@blindwhisper.com).
+// Titan is a mailbox provider, not an email API, so delivery goes over
+// authenticated SMTP — host/port default to Titan's but stay overridable in
+// case the mailbox ever moves providers. Resend is kept below only as a
+// legacy fallback for environments that still have RESEND_API_KEY set.
+const SMTP_HOST = process.env.SMTP_HOST ?? "smtp.titan.email";
+const SMTP_PORT = Number(process.env.SMTP_PORT ?? 465);
+const SMTP_USER = process.env.SMTP_USER;
+const SMTP_PASS = process.env.SMTP_PASS;
+
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const EMAIL_FROM = process.env.EMAIL_FROM ?? "Blind Whisper <whispers@blindwhisper.com>";
+
+// With SMTP the From address must match (or be authorized for) the
+// authenticated mailbox, or Titan rejects the message — so when EMAIL_FROM
+// isn't set explicitly, derive it from the SMTP account rather than
+// defaulting to an address the mailbox can't send as.
+const EMAIL_FROM =
+  process.env.EMAIL_FROM ?? (SMTP_USER ? `Blind Whisper <${SMTP_USER}>` : "Blind Whisper <whispers@blindwhisper.com>");
+
+// Lazily created so simply importing this module (tests, workers that never
+// email) doesn't open an SMTP pool.
+let smtpTransport: nodemailer.Transporter | null = null;
+function getSmtpTransport(): nodemailer.Transporter {
+  if (!smtpTransport) {
+    smtpTransport = nodemailer.createTransport({
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      secure: SMTP_PORT === 465,
+      auth: { user: SMTP_USER!, pass: SMTP_PASS! },
+    });
+  }
+  return smtpTransport;
+}
 // CAN-SPAM (15 U.S.C. § 7704(a)(5)) requires a valid physical postal
 // address on commercial email — same reasoning that put the STOP/HELP
 // footer on every SMS (see lib/sms.ts's COMPLIANCE_FOOTER). "Wheaton,
@@ -31,9 +63,24 @@ function complianceFooter(): string {
 }
 
 export async function sendEmail(to: string, subject: string, html: string, logCtx: DeliveryLogContext): Promise<boolean> {
+  if (SMTP_USER && SMTP_PASS) {
+    try {
+      const info = await getSmtpTransport().sendMail({ from: EMAIL_FROM, to, subject, html });
+      await logDeliveryAttempt("email", to, logCtx, { success: true, providerMessageId: info.messageId ?? null });
+      return true;
+    } catch (err) {
+      logger.error({ to, err }, "Error sending email via SMTP");
+      await logDeliveryAttempt("email", to, logCtx, {
+        success: false,
+        errorMessage: err instanceof Error ? err.message : String(err),
+      });
+      return false;
+    }
+  }
+
   if (!RESEND_API_KEY) {
-    logger.warn({ to }, "RESEND_API_KEY not set; skipping email send");
-    await logDeliveryAttempt("email", to, logCtx, { success: false, errorMessage: "RESEND_API_KEY is not set" });
+    logger.warn({ to }, "No email transport configured (SMTP_USER/SMTP_PASS or RESEND_API_KEY); skipping email send");
+    await logDeliveryAttempt("email", to, logCtx, { success: false, errorMessage: "No email transport configured" });
     return false;
   }
 

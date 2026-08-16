@@ -72,7 +72,7 @@ export function AdminAnalytics() {
           <Card className="bg-card border-border/50">
             <CardHeader>
               <CardTitle className="text-base font-serif">Delivery success rate by channel</CardTitle>
-              <p className="text-xs text-muted-foreground">Every Twilio/Resend send attempt (initial sends and reminders), not just the first try.</p>
+              <p className="text-xs text-muted-foreground">Every Twilio/email send attempt (initial sends and reminders), not just the first try.</p>
             </CardHeader>
             <CardContent className="space-y-2">
               {funnelLoading ? <Skeleton className="h-32 rounded-xl" /> : funnelStats?.deliveryByChannel.length ? (

@@ -57,7 +57,7 @@ export function PrivacyPolicy() {
         <ul className="list-disc pl-5 space-y-1">
           <li>To provide, operate, and maintain the Platform and all its features</li>
           <li>To process transactions, manage subscriptions, and fulfill Ghost Boost credit purchases through Stripe</li>
-          <li>To deliver Whisper Links via SMS/WhatsApp (Twilio), in-app notification, or email (Resend) on behalf of Senders</li>
+          <li>To deliver Whisper Links via SMS/WhatsApp (Twilio), in-app notification, or email (Titan) on behalf of Senders</li>
           <li>To verify phone number ownership via one-time SMS codes (Twilio Verify), and to determine whether a Whisper Link's Recipient is an existing verified Blind Whisper user so we can route delivery in-app instead of by text message, as described in Section 1.7</li>
           <li>To match Ghost Boost Whisps against our opted-in subscriber pool and deliver them</li>
           <li>To send Senders tracking notifications when Recipients open, click, or engage with their Whisper Links</li>
@@ -116,7 +116,7 @@ export function PrivacyPolicy() {
           <li>Clerk — account authentication</li>
           <li>Stripe, Inc. — payment processing and subscription management</li>
           <li>Twilio Inc. — SMS/WhatsApp delivery for Whisper Links, and phone number verification via Twilio Verify</li>
-          <li>Resend — transactional and match-delivery email</li>
+          <li>Titan (Flock Inc.) — transactional and match-delivery email</li>
           <li>Anthropic — optional AI-generated content, as described in Section 3</li>
           <li>Our hosting and database infrastructure providers — running the Platform and storing uploaded video files</li>
         </ul>
