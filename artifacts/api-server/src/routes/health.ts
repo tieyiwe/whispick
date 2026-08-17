@@ -6,11 +6,12 @@ const router: IRouter = Router();
 
 router.get("/healthz", (_req, res) => {
   const data = HealthCheckResponse.parse({ status: "ok" });
-  // TEMPORARY: diagnosing a Clerk auth misconfiguration (backend falling
-  // back to a host-derived publishable key instead of the real one — see
-  // app.ts's CLERK_BACKEND_PUBLISHABLE_KEY comment). Exposes only booleans
-  // and an 8-char key prefix, never a real secret value, so it's safe to
-  // leave reachable while diagnosing — but this block should be removed
+  // TEMPORARY: diagnosing a Clerk auth misconfiguration. Exposes the full
+  // configured publishable key value — safe to expose (it's the same
+  // "publishable" key already shipped in the public frontend JS bundle, not
+  // a secret) — specifically so it can be compared byte-for-byte against
+  // what's baked into the currently-deployed frontend build, in case the
+  // two were set at different times and have since drifted apart. Remove
   // once the fix is confirmed live and working.
   const key = process.env.CLERK_PUBLISHABLE_KEY ?? process.env.VITE_CLERK_PUBLISHABLE_KEY ?? "";
   res.json({
@@ -18,7 +19,7 @@ router.get("/healthz", (_req, res) => {
     debug: {
       clerkPublishableKeyConfigured: !!process.env.CLERK_PUBLISHABLE_KEY,
       viteClerkPublishableKeyConfigured: !!process.env.VITE_CLERK_PUBLISHABLE_KEY,
-      clerkPublishableKeyPrefix: key ? key.slice(0, 8) : null,
+      backendResolvedPublishableKey: key || null,
       nodeEnv: process.env.NODE_ENV ?? null,
     },
   });
