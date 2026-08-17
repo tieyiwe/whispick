@@ -1,14 +1,87 @@
+import nodemailer from "nodemailer";
 import { logger } from "./logger";
 import { HOOK_LINE, INVITE_HOOK_LINE } from "./copy";
 import { logDeliveryAttempt, type DeliveryLogContext } from "./deliveryLog";
+import { escapeHtml } from "./escapeHtml";
+
+// Primary transport: SMTP through the Titan mailbox (sender@blindwhisper.com).
+// Titan is a mailbox provider, not an email API, so delivery goes over
+// authenticated SMTP — host/port default to Titan's but stay overridable in
+// case the mailbox ever moves providers. Resend is kept below only as a
+// legacy fallback for environments that still have RESEND_API_KEY set.
+const SMTP_HOST = process.env.SMTP_HOST ?? "smtp.titan.email";
+const SMTP_PORT = Number(process.env.SMTP_PORT ?? 465);
+const SMTP_USER = process.env.SMTP_USER;
+const SMTP_PASS = process.env.SMTP_PASS;
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const EMAIL_FROM = process.env.EMAIL_FROM ?? "Blind Whisper <whispers@blindwhisper.com>";
+
+// With SMTP the From address must match (or be authorized for) the
+// authenticated mailbox, or Titan rejects the message — so when EMAIL_FROM
+// isn't set explicitly, derive it from the SMTP account rather than
+// defaulting to an address the mailbox can't send as.
+const EMAIL_FROM =
+  process.env.EMAIL_FROM ?? (SMTP_USER ? `Blind Whisper <${SMTP_USER}>` : "Blind Whisper <whispers@blindwhisper.com>");
+
+// Lazily created so simply importing this module (tests, workers that never
+// email) doesn't open an SMTP pool.
+let smtpTransport: nodemailer.Transporter | null = null;
+function getSmtpTransport(): nodemailer.Transporter {
+  if (!smtpTransport) {
+    smtpTransport = nodemailer.createTransport({
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      secure: SMTP_PORT === 465,
+      auth: { user: SMTP_USER!, pass: SMTP_PASS! },
+    });
+  }
+  return smtpTransport;
+}
+// CAN-SPAM (15 U.S.C. § 7704(a)(5)) requires a valid physical postal
+// address on commercial email — same reasoning that put the STOP/HELP
+// footer on every SMS (see lib/sms.ts's COMPLIANCE_FOOTER). "Wheaton,
+// Maryland" alone (the only address currently in the Privacy
+// Policy/Terms) isn't a specific enough postal address to satisfy this;
+// a real street address, PO Box, or registered CMRA mailbox needs to go
+// here before real production volume, via an env var so it can be set/
+// corrected without a code change.
+const COMPANY_MAILING_ADDRESS = process.env.COMPANY_MAILING_ADDRESS ?? null;
+
+// Appended to every outbound email — company identification plus the
+// physical address CAN-SPAM requires, once COMPANY_MAILING_ADDRESS is set.
+// Deliberately included on every message (not just plainly "commercial"
+// ones) rather than trying to classify each template as transactional vs.
+// commercial — same "every message, not just the first" posture the SMS
+// compliance footer already takes, for the same reason: simpler and safer
+// than relying on a legal classification being right in every case.
+function complianceFooter(): string {
+  const addressLine = COMPANY_MAILING_ADDRESS
+    ? `<br />${COMPANY_MAILING_ADDRESS}`
+    : "";
+  return `<p style="color:#9ca3af; font-size: 11px; margin-top: 24px; border-top: 1px solid #e5e7eb; padding-top: 12px;">
+    TIBLOGICS, a sub-entity of TILO GROUP, LLC${addressLine}
+  </p>`;
+}
 
 export async function sendEmail(to: string, subject: string, html: string, logCtx: DeliveryLogContext): Promise<boolean> {
+  if (SMTP_USER && SMTP_PASS) {
+    try {
+      const info = await getSmtpTransport().sendMail({ from: EMAIL_FROM, to, subject, html });
+      await logDeliveryAttempt("email", to, logCtx, { success: true, providerMessageId: info.messageId ?? null });
+      return true;
+    } catch (err) {
+      logger.error({ to, err }, "Error sending email via SMTP");
+      await logDeliveryAttempt("email", to, logCtx, {
+        success: false,
+        errorMessage: err instanceof Error ? err.message : String(err),
+      });
+      return false;
+    }
+  }
+
   if (!RESEND_API_KEY) {
-    logger.warn({ to }, "RESEND_API_KEY not set; skipping email send");
-    await logDeliveryAttempt("email", to, logCtx, { success: false, errorMessage: "RESEND_API_KEY is not set" });
+    logger.warn({ to }, "No email transport configured (SMTP_USER/SMTP_PASS or RESEND_API_KEY); skipping email send");
+    await logDeliveryAttempt("email", to, logCtx, { success: false, errorMessage: "No email transport configured" });
     return false;
   }
 
@@ -55,28 +128,37 @@ export function whisperLinkEmailHtml(publicUrl: string, hookLine: string = HOOK_
       </a>
     </p>
     <p style="color:#888; font-size: 12px;">Sent anonymously via Blind Whisper. No sender identity is included unless they choose to reveal it.</p>
+    ${complianceFooter()}
   </div>`;
 }
 
 export function replyNotificationEmailHtml(videoTitle: string | null): string {
-  const subject = videoTitle ? `your whisp "${videoTitle}"` : "your whisp";
+  // videoTitle can originate from a third-party page's scraped og:title, so
+  // escape it before it lands in this HTML string (it isn't rendered through
+  // React here) — otherwise it's a content-injection vector into the inbox.
+  const subject = videoTitle ? `your whisp "${escapeHtml(videoTitle)}"` : "your whisp";
   return `<div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a2e;">
     <p>Someone replied anonymously to ${subject}. Log in to Blind Whisper to read it.</p>
+    ${complianceFooter()}
   </div>`;
 }
 
 export function appreciationNotificationEmailHtml(videoTitle: string | null): string {
-  const subject = videoTitle ? `"${videoTitle}"` : "your whisp";
+  const subject = videoTitle ? `"${escapeHtml(videoTitle)}"` : "your whisp";
   return `<div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a2e;">
     <p>Good news — the person you sent ${subject} to said it was something they needed to hear. 💜</p>
+    ${complianceFooter()}
   </div>`;
 }
 
 export function mediaExpiringEmailHtml(filename: string, expiresAt: Date): string {
   const when = expiresAt.toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" });
+  // filename is the user's own uploaded filename — escape it so a crafted
+  // name can't inject markup into this HTML email.
   return `<div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a2e;">
-    <p>Your uploaded video "${filename}" will be removed from Blind Whisper on ${when} — save a copy now if you still need it.</p>
+    <p>Your uploaded video "${escapeHtml(filename)}" will be removed from Blind Whisper on ${when} — save a copy now if you still need it.</p>
     <p style="font-size: 13px; color: #6b7280;">Whisps that already used it aren't affected as long as the recipient opened them in time.</p>
+    ${complianceFooter()}
   </div>`;
 }
 
@@ -89,6 +171,7 @@ export function subscriptionVerificationEmailHtml(verifyUrl: string): string {
       </a>
     </p>
     <p style="font-size: 13px; color: #6b7280;">If you didn't request this, you can ignore this email — you won't be subscribed unless you confirm.</p>
+    ${complianceFooter()}
   </div>`;
 }
 
@@ -105,6 +188,7 @@ export function inviteEmailHtml(inviteUrl: string): string {
       </a>
     </p>
     <p style="color:#888; font-size: 12px;">Sent anonymously via Blind Whisper. No inviter identity is included unless they choose to reveal it.</p>
+    ${complianceFooter()}
   </div>`;
 }
 

@@ -2,7 +2,7 @@ import { Router } from "express";
 import { getAuth } from "@clerk/express";
 import { db } from "@workspace/db";
 import { usersTable, pushSubscriptionsTable, notificationsTable, notificationReadsTable } from "@workspace/db";
-import { eq, and, or, isNull, desc, count, notInArray } from "drizzle-orm";
+import { eq, and, or, ne, isNull, desc, count, notInArray } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { z } from "zod";
 import { requireAuth } from "../lib/auth";
@@ -11,7 +11,7 @@ import { getVapidPublicKey } from "../lib/push";
 import { GENDER_OPTIONS, AGE_RANGE_OPTIONS } from "../lib/demographics";
 import { normalizePhoneE164 } from "../lib/phone";
 import { startPhoneVerification, checkPhoneVerification } from "../lib/phoneVerification";
-import { phoneVerificationLimiter } from "../lib/rateLimit";
+import { phoneVerificationLimiter, confirmPhoneVerificationLimiter } from "../lib/rateLimit";
 
 const router = Router();
 
@@ -196,7 +196,7 @@ const confirmPhoneVerificationSchema = z.object({
 // no server-side "verification in progress for this user" state to look up
 // otherwise — Twilio Verify itself is the source of truth for which
 // (phone, code) pairs are valid.
-router.post("/phone/confirm-verification", requireAuth, async (req, res): Promise<void> => {
+router.post("/phone/confirm-verification", requireAuth, confirmPhoneVerificationLimiter, async (req, res): Promise<void> => {
   const { userId } = getAuth(req);
   const user = await ensureUser(userId!, req);
 
@@ -217,6 +217,19 @@ router.post("/phone/confirm-verification", requireAuth, async (req, res): Promis
     res.status(400).json({ error: result.error });
     return;
   }
+
+  // A phone number is the routing key for in-app whisp delivery
+  // (findVerifiedRecipient in lib/deliver.ts), so it must map to exactly one
+  // verified account. Phone numbers get recycled between people, and the
+  // person now holding this SIM just proved control of it — so clear any
+  // OTHER account still claiming it as verified. Without this, a recycled
+  // number could resolve to a stranger's old account and an anonymized whisp
+  // meant for the current holder would land in that stranger's in-app inbox
+  // instead of being texted to the right person.
+  await db
+    .update(usersTable)
+    .set({ phone: null, phoneVerifiedAt: null })
+    .where(and(eq(usersTable.phone, normalized), ne(usersTable.id, user.id)));
 
   await db
     .update(usersTable)

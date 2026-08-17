@@ -24,6 +24,8 @@ import { whisperLinkLimitFor } from "../lib/plans";
 import { createWhispLimiter } from "../lib/rateLimit";
 import { computeExpiresAt, MAX_SCHEDULE_DAYS } from "../lib/expiration";
 import { MAX_SCHEDULE_DAYS_WITH_UPLOAD } from "../lib/uploads";
+import { httpUrlString } from "../lib/safeUrl";
+import { deriveVideoFields } from "../lib/videoMeta";
 
 const router = Router();
 
@@ -293,10 +295,12 @@ router.delete("/:id/members/:memberId", requireAuth, async (req, res): Promise<v
 
 const sendSchema = z
   .object({
-    videoUrl: z.string().min(1).nullable().optional(),
-    videoTitle: z.string().nullable().optional(),
-    videoThumbnail: z.string().nullable().optional(),
-    videoEmbedUrl: z.string().nullable().optional(),
+    // httpUrlString, not plain string — same stored-XSS guard as the single
+    // whisp composer (see routes/whisps.ts).
+    videoUrl: httpUrlString.nullable().optional(),
+    videoTitle: z.string().max(300).nullable().optional(),
+    videoThumbnail: httpUrlString.nullable().optional(),
+    videoEmbedUrl: httpUrlString.nullable().optional(),
     videoStartSeconds: z.number().int().min(0).max(86400).nullable().optional(),
     // min(1), not min(0): an end trim of 0 seconds is meaningless (no clip
     // has zero length) and the falsy 0 would otherwise slip past a
@@ -393,24 +397,40 @@ router.post("/:id/send", requireAuth, createWhispLimiter, async (req, res): Prom
 
   // Free-plan Whisper Link monthly limit applies the same way to a group
   // send as to any other Whisper Link — each member delivered counts as one.
+  // Like the single-send path (routes/whisps.ts), the check-and-increment is
+  // one atomic UPDATE so concurrent group sends can't each pass a stale
+  // under-limit read and collectively blow past the cap.
   const limit = whisperLinkLimitFor(user.plan);
   const now = new Date();
   const resetDue = !user.whisperLinksResetAt || user.whisperLinksResetAt <= now;
   const usedThisPeriod = resetDue ? 0 : user.whisperLinksUsed;
 
-  if (limit !== null && usedThisPeriod + deliverable.length > limit) {
-    const remaining = Math.max(0, limit - usedThisPeriod);
-    res.status(402).json({
-      error: `Sending to this group would use ${deliverable.length} Whisper Links, but you only have ${remaining} left this month on the ${user.plan} plan. Upgrade to send to larger groups.`,
-    });
-    return;
-  }
-
   if (resetDue) {
+    // First send of a fresh window — the running count is 0, but the limit
+    // still applies to this send's own size.
+    if (limit !== null && deliverable.length > limit) {
+      res.status(402).json({
+        error: `Sending to this group would use ${deliverable.length} Whisper Links, but the ${user.plan} plan allows ${limit} per month. Upgrade to send to larger groups.`,
+      });
+      return;
+    }
     const nextReset = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
     await db.update(usersTable).set({ whisperLinksUsed: deliverable.length, whisperLinksResetAt: nextReset }).where(eq(usersTable.id, user.id));
-  } else {
+  } else if (limit === null) {
     await db.update(usersTable).set({ whisperLinksUsed: sql`${usersTable.whisperLinksUsed} + ${deliverable.length}` }).where(eq(usersTable.id, user.id));
+  } else {
+    const incremented = await db
+      .update(usersTable)
+      .set({ whisperLinksUsed: sql`${usersTable.whisperLinksUsed} + ${deliverable.length}` })
+      .where(and(eq(usersTable.id, user.id), sql`${usersTable.whisperLinksUsed} + ${deliverable.length} <= ${limit}`))
+      .returning({ id: usersTable.id });
+    if (incremented.length === 0) {
+      const remaining = Math.max(0, limit - usedThisPeriod);
+      res.status(402).json({
+        error: `Sending to this group would use ${deliverable.length} Whisper Links, but you only have ${remaining} left this month on the ${user.plan} plan. Upgrade to send to larger groups.`,
+      });
+      return;
+    }
   }
 
   const groupSendId = randomUUID();
@@ -421,7 +441,12 @@ router.post("/:id/send", requireAuth, createWhispLimiter, async (req, res): Prom
 
   const effectiveVideoUrl = uploadedVideo ? `upload:${uploadedVideo.id}` : data.videoUrl!;
   const effectiveVideoTitle = data.videoTitle ?? uploadedVideo?.originalFilename ?? null;
-  const effectiveVideoPlatform = uploadedVideo ? "upload" : data.videoPlatform ?? null;
+  // Derived server-side, not taken from the client — see routes/whisps.ts and
+  // lib/videoMeta.ts deriveVideoFields for why the thumbnail/embed/platform
+  // must never be attacker-controlled.
+  const derived = uploadedVideo ? null : deriveVideoFields(data.videoUrl!);
+  const effectiveVideoEmbedUrl = uploadedVideo ? null : derived!.embedUrl;
+  const effectiveVideoPlatform = uploadedVideo ? "upload" : derived!.platform;
 
   const whispIds: string[] = [];
   for (const member of deliverable) {
@@ -436,7 +461,7 @@ router.post("/:id/send", requireAuth, createWhispLimiter, async (req, res): Prom
       ? uploadedVideo.thumbnailObjectKey
         ? `/api/public/w/${publicToken}/media/thumbnail`
         : null
-      : data.videoThumbnail ?? null;
+      : derived!.thumbnail;
 
     await db.insert(whispsTable).values({
       id,
@@ -444,7 +469,7 @@ router.post("/:id/send", requireAuth, createWhispLimiter, async (req, res): Prom
       videoUrl: effectiveVideoUrl,
       videoTitle: effectiveVideoTitle,
       videoThumbnail: effectiveVideoThumbnail,
-      videoEmbedUrl: uploadedVideo ? null : data.videoEmbedUrl ?? null,
+      videoEmbedUrl: effectiveVideoEmbedUrl,
       videoStartSeconds: data.videoStartSeconds ?? null,
       videoEndSeconds: data.videoEndSeconds ?? null,
       videoPlatform: effectiveVideoPlatform,

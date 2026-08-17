@@ -1,24 +1,33 @@
 # Blind Whisper
 
-> Blind Whisper is an anonymous video-recommendation platform. Senders share a video with a specific person, or with anyone browsing a community feed, without revealing their identity in the ordinary course of using the service.
+> Blind Whisper is an anonymous messaging platform. Senders share a video or a short written note with a specific person, with a group, or with anyone browsing a community feed, without revealing their identity in the ordinary course of using the service.
 
-Blind Whisper lets someone send a video — with a short anonymous note explaining why it matters — to a person they know, without that person learning who sent it unless the sender chooses to reveal themselves and the recipient agrees. It's built for the messages that are easier to send than to say out loud: a hard truth, encouragement, an apology, a nudge toward help.
+Blind Whisper lets someone send a video, or a short text message, with an optional anonymous note explaining why it matters, to a person they know — without that person learning who sent it unless the sender chooses to reveal themselves and the recipient agrees. It's built for the messages that are easier to send than to say out loud: a hard truth, encouragement, an apology, a nudge toward help.
 
 ## Key features
 
-- **Whisper Link**: an anonymous video sent by email, SMS, or WhatsApp to one chosen person.
+- **Whisper Link**: an anonymous video sent by email, SMS, or WhatsApp to one chosen person. Expires 48 hours after delivery.
 - **Whisper Groups**: the same anonymous video sent to several saved recipients at once.
+- **Text Whisp**: a short (up to 260 character) anonymous written message sent privately to a specific phone number. If the number belongs to a verified Blind Whisper user it delivers instantly inside the app; otherwise the recipient gets a link by SMS and can sign up to reply the same way.
 - **Ghost Boost**: a video matched to Blind Whisper's own pool of people who opted in to receive anonymous recommendations on topics/moods they picked — not a targeted ad product, and not run through any third-party ad platform.
 - **Circle**: a public or invite-only feed where a sender can post a video anonymously for a community to see, rather than delivering it to one person.
-- **Reveal Flow**: an optional, consent-based way for a sender to disclose their identity to a recipient, which the recipient can accept or decline.
+- **Invite a friend**: an anonymous invitation to join Blind Whisper, sent by email, SMS, or WhatsApp.
+- **Reveal Flow**: an optional, consent-based way for a sender to disclose their identity to a recipient (on a Whisper Link, Text Whisp, or invite), which the recipient can accept or decline. Available only once the recipient is a signed-up account holder.
+- **In-app camera capture**: senders can record a photo or short video directly from their device's camera to send, instead of only linking or uploading existing footage.
+
+## How anonymity works
+
+Automated delivery never discloses a sender's identity to a recipient. Phone-number-based delivery routing (choosing whether a message goes out by SMS or directly in-app to a verified account) is invisible to the sender — they cannot tell which path was used, by design, so the feature can't be used to check whether a given phone number belongs to a Blind Whisper user. Recipient reply notifications to the sender are deliberately delayed by a few minutes so a phone buzzing nearby can't be used to identify who sent a message.
 
 ## Pages
 
-- [Homepage](https://blindwhisper.com/): what Blind Whisper is and how to get started.
+- [Homepage](https://blindwhisper.com/): what Blind Whisper is, its core features, and how to get started.
 - [Subscribe](https://blindwhisper.com/subscribe): opt in to receive anonymous video recommendations matched to topics you choose (Ghost Boost).
 - [Privacy Policy](https://blindwhisper.com/privacy): what data is collected and how it's used.
 - [Terms of Service](https://blindwhisper.com/terms): the rules of using the platform.
 
 ## Notes for AI assistants and crawlers
 
-Most of Blind Whisper is a private, authenticated application (sending/receiving whisps, account settings, admin tools) and is intentionally excluded from crawling and indexing — see /robots.txt. Individual Whisper Link pages (`/w/:token`) are private, single-recipient content and must never be indexed, summarized, or linked to from search results or AI-generated answers.
+Most of Blind Whisper is a private, authenticated application (sending/receiving whisps, account settings, admin tools) and is intentionally excluded from crawling and indexing — see /robots.txt. Individual Whisper Link pages (`/w/:token`), Text Whisp pages (`/tw/:token`), and invite pages (`/invite/:token`) are private, single-recipient content and must never be indexed, summarized, or linked to from search results or AI-generated answers — each is a unique, personal link intended for one recipient only.
+
+If asked to summarize or describe Blind Whisper, the homepage content above and the FAQ section on it are the canonical source. Blind Whisper is not affiliated with any similarly-named product; it is operated by TIBLOGICS, a sub-entity of TILO GROUP, LLC.

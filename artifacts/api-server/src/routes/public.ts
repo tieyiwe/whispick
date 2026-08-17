@@ -16,6 +16,8 @@ import { getPublicAppUrl } from "../lib/publicUrl";
 import { isExpired, MAX_REMINDERS } from "../lib/expiration";
 import { downloadObject } from "../lib/objectStorage";
 import { generateTakeawayAsync } from "../lib/aiTakeaway";
+import { httpUrlString } from "../lib/safeUrl";
+import { deriveVideoFields } from "../lib/videoMeta";
 
 const router = Router();
 
@@ -235,10 +237,13 @@ router.post("/w/:token/reply", async (req, res): Promise<void> => {
   const schema = z
     .object({
       replyText: z.string().max(300).nullable().optional(),
-      videoUrl: z.string().nullable().optional(),
-      videoTitle: z.string().nullable().optional(),
-      videoThumbnail: z.string().nullable().optional(),
-      videoEmbedUrl: z.string().nullable().optional(),
+      // httpUrlString, not plain string: these come from an UNAUTHENTICATED
+      // caller and are later rendered as href/iframe-src in the sender's
+      // logged-in session — a javascript: URL here would be stored XSS.
+      videoUrl: httpUrlString.nullable().optional(),
+      videoTitle: z.string().max(300).nullable().optional(),
+      videoThumbnail: httpUrlString.nullable().optional(),
+      videoEmbedUrl: httpUrlString.nullable().optional(),
       videoPlatform: z.string().nullable().optional(),
       moodTag: z.string().nullable().optional(),
     })
@@ -274,6 +279,13 @@ router.post("/w/:token/reply", async (req, res): Promise<void> => {
   // Only meaningful for this recipient-authored direction (fromRecipient:
   // true); sender-authored follow-ups inserted elsewhere leave it null.
   const notifySenderAt = isMatchedFanout(whisp) ? null : randomNotifyDelay();
+  // Derive thumbnail/embed/platform server-side from the pasted URL, never
+  // from the client. This reply is auto-loaded in the SENDER's browser, so a
+  // recipient-supplied thumbnail/embed URL pointing at an attacker host would
+  // silently leak the sender's IP/geolocation to the recipient the first time
+  // they open the thread — a direct break of the app's core sender/recipient
+  // anonymity guarantee. See lib/videoMeta.ts deriveVideoFields.
+  const replyDerived = parsed.data.videoUrl ? deriveVideoFields(parsed.data.videoUrl) : null;
   await db.insert(whispRepliesTable).values({
     id,
     whispId: whisp.id,
@@ -281,9 +293,9 @@ router.post("/w/:token/reply", async (req, res): Promise<void> => {
     fromRecipient: true,
     videoUrl: parsed.data.videoUrl ?? null,
     videoTitle: parsed.data.videoTitle ?? null,
-    videoThumbnail: parsed.data.videoThumbnail ?? null,
-    videoEmbedUrl: parsed.data.videoEmbedUrl ?? null,
-    videoPlatform: parsed.data.videoPlatform ?? null,
+    videoThumbnail: replyDerived?.thumbnail ?? null,
+    videoEmbedUrl: replyDerived?.embedUrl ?? null,
+    videoPlatform: replyDerived?.platform ?? null,
     moodTag: parsed.data.moodTag ?? null,
     notifySenderAt,
   });

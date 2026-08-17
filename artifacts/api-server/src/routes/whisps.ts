@@ -11,7 +11,7 @@ import {
   uploadedVideosTable,
   conciergeRequestsTable,
 } from "@workspace/db";
-import { eq, and, sql, isNull, or } from "drizzle-orm";
+import { eq, and, sql, isNull, or, lt, gte } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { z } from "zod";
 import { requireAuth } from "../lib/auth";
@@ -28,6 +28,8 @@ import { whisperLinkLimitFor, GHOST_BOOST_COST_USD } from "../lib/plans";
 import { createWhispLimiter, noteSuggestionLimiter, conciergeLimiter, publicEndpointLimiter } from "../lib/rateLimit";
 import { getGhostBoostMatchStats } from "../lib/matching";
 import { generateNoteSuggestions } from "../lib/noteSuggestions";
+import { httpUrlString } from "../lib/safeUrl";
+import { deriveVideoFields } from "../lib/videoMeta";
 import { runConcierge, MAX_SITUATION_LENGTH } from "../lib/concierge";
 
 const router = Router();
@@ -153,10 +155,13 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
 
   const schema = z
     .object({
-      videoUrl: z.string().min(1).nullable().optional(),
-      videoTitle: z.string().nullable().optional(),
-      videoThumbnail: z.string().nullable().optional(),
-      videoEmbedUrl: z.string().nullable().optional(),
+      // httpUrlString, not plain string: these end up as href/iframe-src in
+      // the recipient's public page and the admin panel — a javascript: URL
+      // here would be stored XSS in those viewers' sessions.
+      videoUrl: httpUrlString.nullable().optional(),
+      videoTitle: z.string().max(300).nullable().optional(),
+      videoThumbnail: httpUrlString.nullable().optional(),
+      videoEmbedUrl: httpUrlString.nullable().optional(),
       videoStartSeconds: z.number().int().min(0).max(86400).nullable().optional(),
       // min(1), not min(0): an end trim of 0 seconds is meaningless (no
       // clip has zero length) and the falsy 0 would otherwise slip past a
@@ -261,17 +266,15 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
     }
   }
 
-  // Free-plan Whisper Link monthly limit, reset on a rolling 30-day window
+  // Free-plan Whisper Link monthly limit, reset on a rolling 30-day window.
+  // The check-and-increment must be a single atomic UPDATE, not a read
+  // followed by a separate write: otherwise several concurrent sends all read
+  // the same under-limit value, all pass the check, and all increment — a
+  // free user fires N requests at once and blows past the cap.
   if (data.deliveryMethod === "whisper_link") {
     const limit = whisperLinkLimitFor(user.plan);
     const now = new Date();
     const resetDue = !user.whisperLinksResetAt || user.whisperLinksResetAt <= now;
-    const usedThisPeriod = resetDue ? 0 : user.whisperLinksUsed;
-
-    if (limit !== null && usedThisPeriod >= limit) {
-      res.status(402).json({ error: `Whisper Link limit reached for the ${user.plan} plan. Upgrade to send more.` });
-      return;
-    }
 
     if (resetDue) {
       const nextReset = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
@@ -279,25 +282,45 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
         .update(usersTable)
         .set({ whisperLinksUsed: 1, whisperLinksResetAt: nextReset })
         .where(eq(usersTable.id, user.id));
-    } else {
+    } else if (limit === null) {
       await db
         .update(usersTable)
         .set({ whisperLinksUsed: sql`${usersTable.whisperLinksUsed} + 1` })
         .where(eq(usersTable.id, user.id));
+    } else {
+      // Atomic guarded increment: the `whisperLinksUsed < limit` predicate is
+      // evaluated by the database as part of the same statement that does the
+      // increment, so two concurrent requests can't both pass. Zero rows
+      // affected ⇒ already at the cap.
+      const incremented = await db
+        .update(usersTable)
+        .set({ whisperLinksUsed: sql`${usersTable.whisperLinksUsed} + 1` })
+        .where(and(eq(usersTable.id, user.id), lt(usersTable.whisperLinksUsed, limit)))
+        .returning({ id: usersTable.id });
+      if (incremented.length === 0) {
+        res.status(402).json({ error: `Whisper Link limit reached for the ${user.plan} plan. Upgrade to send more.` });
+        return;
+      }
     }
   }
 
   // Ghost Boost spends a credit up front; there's no live ad-platform
-  // integration, so the whisp is queued rather than marked delivered.
+  // integration, so the whisp is queued rather than marked delivered. Same
+  // atomicity requirement as the link limit above — a plain read-then-write
+  // would let concurrent sends each see boostCredits >= 1 and both decrement,
+  // driving the balance negative (this one spends real money, so it matters
+  // more). The guarded UPDATE decrements only when the balance is still
+  // sufficient, in one statement.
   if (data.deliveryMethod === "ghost_boost") {
-    if (user.boostCredits < 1) {
+    const spent = await db
+      .update(usersTable)
+      .set({ boostCredits: sql`${usersTable.boostCredits} - 1` })
+      .where(and(eq(usersTable.id, user.id), gte(usersTable.boostCredits, 1)))
+      .returning({ id: usersTable.id });
+    if (spent.length === 0) {
       res.status(402).json({ error: "Insufficient Ghost Boost credits. Purchase more from Credits & Plan." });
       return;
     }
-    await db
-      .update(usersTable)
-      .set({ boostCredits: sql`${usersTable.boostCredits} - 1` })
-      .where(eq(usersTable.id, user.id));
   }
 
   if (data.deliveryMethod === "circle_drop" && data.circleId) {
@@ -325,12 +348,18 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
   // admin — not just the sender. The Media Library's own owner-only
   // /api/media/:id/thumbnail is for browsing uploads before they're
   // attached to a whisp (no token exists yet).
+  // Never trust the client's videoThumbnail/videoEmbedUrl/videoPlatform —
+  // they render as auto-loaded <img>/<iframe> in the recipient's (and
+  // admin's) browser. Derive them server-side from the pasted URL instead
+  // (see lib/videoMeta.ts deriveVideoFields).
+  const derived = uploadedVideo ? null : deriveVideoFields(data.videoUrl!);
   const effectiveVideoThumbnail = uploadedVideo
     ? uploadedVideo.thumbnailObjectKey
       ? `/api/public/w/${publicToken}/media/thumbnail`
       : null
-    : data.videoThumbnail ?? null;
-  const effectiveVideoPlatform = uploadedVideo ? "upload" : data.videoPlatform ?? null;
+    : derived!.thumbnail;
+  const effectiveVideoEmbedUrl = uploadedVideo ? null : derived!.embedUrl;
+  const effectiveVideoPlatform = uploadedVideo ? "upload" : derived!.platform;
 
   await db.insert(whispsTable).values({
     id,
@@ -338,7 +367,7 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
     videoUrl: effectiveVideoUrl,
     videoTitle: effectiveVideoTitle,
     videoThumbnail: effectiveVideoThumbnail,
-    videoEmbedUrl: uploadedVideo ? null : data.videoEmbedUrl ?? null,
+    videoEmbedUrl: effectiveVideoEmbedUrl,
     videoStartSeconds: data.videoStartSeconds ?? null,
     videoEndSeconds: data.videoEndSeconds ?? null,
     videoPlatform: effectiveVideoPlatform,

@@ -23,6 +23,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { NotificationBell } from "@/components/shared/NotificationBell";
 
 const NAV_ITEMS = [
@@ -65,6 +73,59 @@ function MobileTabLink({ href, label, icon: Icon, isActive }: { href: string; la
   );
 }
 
+// Top-right account dropdown — Settings + Sign Out, reachable from the same
+// avatar in both the mobile header and the desktop sidebar's top bar. Fixes
+// two real gaps: on mobile, the avatar previously just linked straight to
+// /settings with no sign-out anywhere in reach (the desktop sidebar's own
+// account block at the bottom is `hidden md:flex`, invisible on mobile); on
+// desktop, there was no account control in the top-right corner at all —
+// only at the very bottom of the sidebar. This doesn't replace that bottom
+// block (it still works and stays), it just gives both layouts a working,
+// consistently-placed account menu where people actually expect one.
+function AccountMenu({
+  avatarClassName = "w-8 h-8 border border-border",
+  triggerClassName = "",
+}: {
+  avatarClassName?: string;
+  triggerClassName?: string;
+}) {
+  const { user } = useUser();
+  const { signOut } = useClerk();
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        className={`flex items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring ${triggerClassName}`}
+        data-testid="button-account-menu"
+      >
+        <Avatar className={avatarClassName}>
+          <AvatarImage src={user?.imageUrl} />
+          <AvatarFallback className="text-xs">{user?.firstName?.charAt(0) || "U"}</AvatarFallback>
+        </Avatar>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuLabel>
+          <p className="text-sm font-medium text-foreground truncate">{user?.fullName}</p>
+          <p className="text-xs font-normal text-muted-foreground truncate">{user?.primaryEmailAddress?.emailAddress}</p>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/settings" className="cursor-pointer" data-testid="link-account-menu-settings">
+            <Settings className="w-4 h-4 mr-2" /> Settings
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => signOut({ redirectUrl: "/" })}
+          className="cursor-pointer text-destructive focus:text-destructive"
+          data-testid="button-account-menu-signout"
+        >
+          <LogOut className="w-4 h-4 mr-2" /> Sign Out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export function AppLayout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   const { user } = useUser();
@@ -84,7 +145,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <Logo className="w-8 h-8 text-primary shrink-0" />
             <span className="font-serif text-2xl font-bold tracking-tight text-foreground truncate">Blind Whisper</span>
           </Link>
-          <NotificationBell />
+          <div className="flex items-center gap-1 shrink-0">
+            <NotificationBell />
+            <AccountMenu />
+          </div>
         </div>
 
         <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
@@ -143,12 +207,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
         </Link>
         <div className="flex items-center gap-1">
           <NotificationBell />
-          <Link href="/settings" className="flex items-center justify-center w-11 h-11 -mr-2 text-muted-foreground" data-testid="link-settings-mobile">
-            <Avatar className="w-8 h-8 border border-border">
-              <AvatarImage src={user?.imageUrl} />
-              <AvatarFallback className="text-xs">{user?.firstName?.charAt(0) || "U"}</AvatarFallback>
-            </Avatar>
-          </Link>
+          <AccountMenu triggerClassName="w-11 h-11 -mr-2" />
         </div>
       </header>
 
