@@ -24,7 +24,7 @@ import { moderateWhispAsync } from "../lib/moderation";
 import { needsDemographics } from "../lib/demographics";
 import { computeExpiresAt, MAX_SCHEDULE_DAYS } from "../lib/expiration";
 import { MAX_SCHEDULE_DAYS_WITH_UPLOAD } from "../lib/uploads";
-import { whisperLinkLimitFor, GHOST_BOOST_COST_USD } from "../lib/plans";
+import { whisperLinkLimitFor, GHOST_BOOST_COST_USD, recipientReplyAllowance } from "../lib/plans";
 import { createWhispLimiter, noteSuggestionLimiter, conciergeLimiter, publicEndpointLimiter } from "../lib/rateLimit";
 import { getGhostBoostMatchStats } from "../lib/matching";
 import { generateNoteSuggestions } from "../lib/noteSuggestions";
@@ -509,7 +509,20 @@ router.get("/:id", requireAuth, async (req, res): Promise<void> => {
     .where(eq(whispRepliesTable.whispId, whisp.id))
     .orderBy(sql`${whispRepliesTable.createdAt} ASC`);
 
-  res.json({ whisp, trackingEvents, replies });
+  // recipientRepliesRemaining lets the sender see their recipient is about to
+  // run out (and be offered more) BEFORE the thread goes quiet — otherwise the
+  // first sign of the cap is a reply that simply never arrives, which reads as
+  // the recipient losing interest rather than hitting a wall.
+  const recipientAllowance = recipientReplyAllowance(whisp.replyCreditsPurchased);
+  res.json({
+    whisp,
+    trackingEvents,
+    replies,
+    recipientRepliesRemaining:
+      recipientAllowance === null
+        ? null
+        : Math.max(0, recipientAllowance - replies.filter((r) => r.fromRecipient).length),
+  });
 });
 
 // GET /api/whisps/:id/matches — aggregate-only Ghost Boost reach stats.

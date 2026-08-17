@@ -7,7 +7,8 @@ import {
   usersTable,
   uploadedVideosTable,
 } from "@workspace/db";
-import { eq, count } from "drizzle-orm";
+import { eq, and, count } from "drizzle-orm";
+import { getAuth } from "@clerk/express";
 import { randomUUID } from "crypto";
 import { z } from "zod";
 import { sendEmail, appreciationNotificationEmailHtml } from "../lib/email";
@@ -18,6 +19,7 @@ import { downloadObject } from "../lib/objectStorage";
 import { generateTakeawayAsync } from "../lib/aiTakeaway";
 import { httpUrlString } from "../lib/safeUrl";
 import { deriveVideoFields } from "../lib/videoMeta";
+import { recipientReplyAllowance } from "../lib/plans";
 
 const router = Router();
 
@@ -101,6 +103,17 @@ router.get("/w/:token", async (req, res): Promise<void> => {
     aiTakeaway: whisp.aiTakeaway,
     aiTakeawayStatus: whisp.aiTakeawayStatus,
     replies,
+    // How many anonymous replies this recipient has left, so the page can
+    // warn them before they hit the wall rather than only after a rejected
+    // send. Null means uncapped. Purely a count of their OWN replies — it
+    // says nothing about the sender, so it leaks nothing across the
+    // anonymity boundary.
+    recipientRepliesRemaining: (() => {
+      const allowance = recipientReplyAllowance(whisp.replyCreditsPurchased);
+      if (allowance === null) return null;
+      const used = replies.filter((r) => r.fromRecipient).length;
+      return Math.max(0, allowance - used);
+    })(),
   });
 });
 
@@ -214,7 +227,7 @@ router.post("/w/:token/track", async (req, res): Promise<void> => {
   if (eventType === "opened" && !whisp.openedAt) {
     await db.update(whispsTable).set({ status: "opened", openedAt: new Date() }).where(eq(whispsTable.id, whisp.id));
     if (!isMatchedFanout(whisp)) {
-      void notifyUserPersisted(whisp.senderId, "Your whisp was opened 👀", "Someone just opened the link you sent.", whispUrl);
+      void notifyUserPersisted(whisp.senderId, "Your whisp was opened 👀", "Someone just opened the link you sent.", whispUrl, "opened");
     }
   } else if (eventType === "watched_complete" && !whisp.watchedAt) {
     await db
@@ -222,7 +235,7 @@ router.post("/w/:token/track", async (req, res): Promise<void> => {
       .set({ watchedAt: new Date(), ...(whisp.status === "replied" ? {} : { status: "watched" }) })
       .where(eq(whispsTable.id, whisp.id));
     if (!isMatchedFanout(whisp)) {
-      void notifyUserPersisted(whisp.senderId, "They watched it 🎬", "Your whisp was watched all the way through.", whispUrl);
+      void notifyUserPersisted(whisp.senderId, "They watched it 🎬", "Your whisp was watched all the way through.", whispUrl, "watched");
     }
     void generateTakeawayAsync(whisp.id);
   }
@@ -270,6 +283,45 @@ router.post("/w/:token/reply", async (req, res): Promise<void> => {
   if (isExpired(whisp.expiresAt)) {
     res.status(410).json({ error: "This whisp has expired" });
     return;
+  }
+
+  // Anonymous replies are capped per whisp; signing up lifts the cap
+  // entirely. getAuth works here even though this route is unauthenticated —
+  // clerkMiddleware runs globally (app.ts) — so a recipient who's created an
+  // account and is signed in simply isn't subject to this at all.
+  const { userId: replierClerkId } = getAuth(req);
+  if (!replierClerkId) {
+    const allowance = recipientReplyAllowance(whisp.replyCreditsPurchased);
+    if (allowance !== null) {
+      const used = await db
+        .select({ count: count() })
+        .from(whispRepliesTable)
+        .where(and(eq(whispRepliesTable.whispId, whisp.id), eq(whispRepliesTable.fromRecipient, true)))
+        .then((r) => r[0]?.count ?? 0);
+
+      if (used >= allowance) {
+        // 403 with an explicit code so the page can show the real reason
+        // ("this conversation is full") instead of a generic failure, and
+        // offer signing up as the way to keep going.
+        res.status(403).json({
+          error: "You've used all the anonymous replies on this whisp. Sign up to keep the conversation going.",
+          code: "reply_limit_reached",
+        });
+        // Tell the sender their recipient has hit the wall, once — a repeat
+        // attempt shouldn't re-notify. Fire-and-forget, same as every other
+        // sender notification on this route.
+        if (used === allowance && !isMatchedFanout(whisp)) {
+          void notifyUserPersisted(
+            whisp.senderId,
+            "They've run out of replies 🔒",
+            "The person you whisped can't reply again unless you add more replies, or they sign up.",
+            `${getPublicAppUrl(req)}/whisps/${whisp.id}`,
+            "reply_limit",
+          );
+        }
+        return;
+      }
+    }
   }
 
   const id = randomUUID();
@@ -357,6 +409,7 @@ router.post("/w/:token/appreciation", async (req, res): Promise<void> => {
       "They appreciated it 💜",
       "The person you sent your whisp to said it was something they needed to hear.",
       `${getPublicAppUrl(req)}/whisps/${whisp.id}`,
+      "appreciation",
     );
   }
 

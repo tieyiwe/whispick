@@ -22,6 +22,32 @@ export const PLAN_LIMITS: Record<string, { whisperLinksPerMonth: number | null; 
 
 export const GHOST_BOOST_COST_USD = 6.99;
 
+// How many times an ANONYMOUS recipient can reply to a single whisp before
+// the thread closes and the sender is offered more (whisps.
+// replyCreditsPurchased). Overridable via RECIPIENT_FREE_REPLIES; set it to
+// "unlimited" to disable the cap entirely.
+//
+// This only ever applies to anonymous recipients. Someone who signs up is
+// never capped — the limit exists to make an unlimited anonymous back-and-
+// forth a deliberate purchase (or a reason to join), not to ration
+// conversation between members.
+const RECIPIENT_FREE_REPLIES_DEFAULT = 3;
+
+export function recipientFreeReplies(): number | null {
+  const raw = process.env.RECIPIENT_FREE_REPLIES?.trim();
+  if (!raw) return RECIPIENT_FREE_REPLIES_DEFAULT;
+  if (raw.toLowerCase() === "unlimited") return null;
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : RECIPIENT_FREE_REPLIES_DEFAULT;
+}
+
+// Total anonymous replies allowed on a whisp: the free allowance plus
+// whatever the sender bought for it. Null means uncapped.
+export function recipientReplyAllowance(replyCreditsPurchased: number): number | null {
+  const free = recipientFreeReplies();
+  return free === null ? null : free + replyCreditsPurchased;
+}
+
 export function whisperLinkLimitFor(plan: string): number | null {
   return (PLAN_LIMITS[plan] ?? PLAN_LIMITS.free).whisperLinksPerMonth;
 }

@@ -43,4 +43,9 @@ export interface PublicWhisp {
   /** @nullable */
   aiTakeawayStatus?: string | null;
   replies: WhispReply[];
+  /**
+     * Anonymous replies this recipient has left on this whisp. Null means uncapped. Signing up removes the cap entirely.
+     * @nullable
+     */
+  recipientRepliesRemaining?: number | null;
 }

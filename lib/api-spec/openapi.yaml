@@ -2453,6 +2453,12 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/WhispReply"
+        recipientRepliesRemaining:
+          type: ["integer", "null"]
+          description: >-
+            Anonymous replies the recipient has left on this whisp. Null means
+            uncapped. 0 means they can't reply again unless the sender adds
+            more replies or the recipient signs up.
       required:
         - whisp
         - trackingEvents
@@ -2843,6 +2849,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/WhispReply"
+        recipientRepliesRemaining:
+          type: ["integer", "null"]
+          description: >-
+            Anonymous replies this recipient has left on this whisp. Null
+            means uncapped. Signing up removes the cap entirely.
       required:
         - id
         - videoUrl
@@ -3933,6 +3944,12 @@ components:
           type: string
         url:
           type: ["string", "null"]
+        kind:
+          type: ["string", "null"]
+          description: >-
+            What produced this notification ("reply", "opened", "watched",
+            "appreciation", ...). Null for admin-composed notifications and
+            for rows predating this field.
         createdByAdminId:
           type: ["string", "null"]
           description: Null means system-generated (e.g. a repeated content-flag warning), not composed by an admin.
@@ -4025,8 +4042,15 @@ components:
       properties:
         unreadCount:
           type: integer
+        unreadReplyCount:
+          type: integer
+          description: >-
+            Unread notifications of kind "reply" only — lets the Replies tab
+            badge mean "someone replied" rather than lighting up for any
+            unread notification.
       required:
         - unreadCount
+        - unreadReplyCount
 
     WhisperGroup:
       type: object

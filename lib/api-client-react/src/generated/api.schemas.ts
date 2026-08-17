@@ -153,6 +153,11 @@ export interface WhispDetail {
   whisp: Whisp;
   trackingEvents: TrackingEvent[];
   replies: WhispReply[];
+  /**
+     * Anonymous replies the recipient has left on this whisp. Null means uncapped. 0 means they can't reply again unless the sender adds more replies or the recipient signs up.
+     * @nullable
+     */
+  recipientRepliesRemaining?: number | null;
 }
 
 export interface WhispStats {
@@ -348,6 +353,11 @@ export interface PublicWhisp {
   /** @nullable */
   aiTakeawayStatus?: string | null;
   replies: WhispReply[];
+  /**
+     * Anonymous replies this recipient has left on this whisp. Null means uncapped. Signing up removes the cap entirely.
+     * @nullable
+     */
+  recipientRepliesRemaining?: number | null;
 }
 
 export interface TrackingEventInput {
@@ -983,6 +993,11 @@ export interface Notification {
   /** @nullable */
   url?: string | null;
   /**
+     * What produced this notification ("reply", "opened", "watched", "appreciation", ...). Null for admin-composed notifications and for rows predating this field.
+     * @nullable
+     */
+  kind?: string | null;
+  /**
      * Null means system-generated (e.g. a repeated content-flag warning), not composed by an admin.
      * @nullable
      */
@@ -1041,6 +1056,8 @@ export interface NotificationListResponse {
 
 export interface UnreadNotificationCountResponse {
   unreadCount: number;
+  /** Unread notifications of kind "reply" only — lets the Replies tab badge mean "someone replied" rather than lighting up for any unread notification. */
+  unreadReplyCount: number;
 }
 
 export interface WhisperGroup {

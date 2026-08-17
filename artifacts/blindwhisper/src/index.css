@@ -147,6 +147,35 @@
   50% { box-shadow: 0 0 40px rgba(124,92,252,0.3); }
 }
 
+/* Reply-thread message entrance. The overshoot easing (a soft
+   ease-out-back) is what makes a new bubble feel like it "settles" into
+   place rather than snapping in — the difference between a chat that feels
+   mechanical and one that feels alive. Staggered per-message via
+   --message-index so a thread renders as a cascade instead of all at once. */
+@keyframes message-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.message-in {
+  animation: message-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--message-index, 0) * 50ms);
+}
+
+/* Anyone who's asked their OS to reduce motion gets the end state
+   immediately — no travel, no stagger. */
+@media (prefers-reduced-motion: reduce) {
+  .message-in {
+    animation: none;
+  }
+}
+
 .particle {
   animation: float-up 3s ease-out forwards;
 }

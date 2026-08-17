@@ -71,6 +71,15 @@ export const whispsTable = pgTable("whisps", {
   nextReminderAt: timestamp("next_reminder_at", { withTimezone: true }),
   lastReminderAt: timestamp("last_reminder_at", { withTimezone: true }),
   boostSpendUsd: numeric("boost_spend_usd", { precision: 6, scale: 2 }),
+  // Extra anonymous replies the SENDER has bought for this specific whisp, on
+  // top of the free allowance (see lib/plans.ts recipientReplyAllowance). An
+  // anonymous recipient can only reply so many times before the thread closes
+  // — the sender is then offered more. Deliberately per-whisp rather than a
+  // per-user balance: the purchase is about keeping one particular
+  // conversation alive, and a shared pool would let one runaway thread drain
+  // credits meant for another. Never a cap on a recipient who signs up —
+  // membership removes the limit entirely.
+  replyCreditsPurchased: integer("reply_credits_purchased").notNull().default(0),
   // A short, therapist-toned "takeaway" of the video's message, generated for
   // the RECIPIENT (not the sender) once they finish watching, or proactively
   // if they haven't watched after a while so the gist is there whenever they

@@ -83,6 +83,7 @@ export function startReplyNotificationScheduler(): void {
           "You got a reply 💬",
           reply.videoUrl ? "Someone whisped a video back to you." : "Someone replied anonymously to your whisp.",
           `${appUrl}/whisps/${whisp.id}`,
+          "reply",
         );
 
         await db

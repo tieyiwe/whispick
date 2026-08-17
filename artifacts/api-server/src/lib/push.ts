@@ -59,6 +59,7 @@ export async function notifyUserPersisted(
   title: string,
   body: string,
   url: string,
+  kind?: string,
 ): Promise<void> {
   try {
     await db.insert(notificationsTable).values({
@@ -67,6 +68,7 @@ export async function notifyUserPersisted(
       title,
       body,
       url: url || null,
+      kind: kind ?? null,
       // Not admin-composed — see the notifications schema comment.
       createdByAdminId: null,
     });
