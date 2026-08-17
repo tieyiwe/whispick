@@ -56,6 +56,7 @@ import {
 import { SiWhatsapp } from "react-icons/si";
 import { PlatformIcon } from "@/components/shared/PlatformIcon";
 import { isContactPickerSupported, pickContact } from "@/lib/contactPicker";
+import { parseRecipients } from "@/lib/recipients";
 import { uploadMedia, UploadValidationError, type UploadedVideoResult } from "@/lib/uploadMedia";
 import { Thumbnail } from "@/components/shared/Thumbnail";
 import { CameraCapture } from "@/components/shared/CameraCapture";
@@ -168,6 +169,14 @@ export function SendWhisp() {
   const [whisperChannel, setWhisperChannel] = useState<"email" | "sms" | "whatsapp">("email");
   const [recipientEmail, setRecipientEmail] = useState("");
   const [recipientPhone, setRecipientPhone] = useState("");
+  // Whisper Link's single recipient box: emails and phone numbers together,
+  // comma-separated, channel derived per entry. (whisperChannel above is
+  // still used by Group Whisper, which picks one channel for the whole
+  // group rather than per member.)
+  const [recipientsInput, setRecipientsInput] = useState("");
+  const [preferWhatsApp, setPreferWhatsApp] = useState(false);
+  const [sendingBatch, setSendingBatch] = useState(false);
+  const [sentCount, setSentCount] = useState(1);
   const [startTimestamp, setStartTimestamp] = useState("");
   const [endTimestamp, setEndTimestamp] = useState("");
   const [scheduleEnabled, setScheduleEnabled] = useState(false);
@@ -426,65 +435,135 @@ export function SendWhisp() {
       return;
     }
 
-    createWhisp.mutate(
-      {
-        data: {
-          videoUrl: uploadedVideoId ? null : videoUrl,
-          videoTitle: videoMeta?.title ?? null,
-          videoThumbnail: videoMeta?.thumbnail ?? null,
-          videoEmbedUrl: uploadedVideoId ? null : videoMeta?.embedUrl ?? null,
-          videoPlatform: videoMeta?.platform ?? null,
-          uploadedVideoId,
-          videoStartSeconds: parseTimestampToSeconds(startTimestamp),
-          videoEndSeconds: parseTimestampToSeconds(endTimestamp),
-          deliveryMethod,
-          whisperChannel: deliveryMethod === "whisper_link" ? whisperChannel : null,
-          recipientEmail: deliveryMethod === "whisper_link" && whisperChannel === "email" ? recipientEmail || null : null,
-          recipientPhone: deliveryMethod === "whisper_link" && whisperChannel !== "email" ? recipientPhone || null : null,
-          circleId: deliveryMethod === "circle_drop" ? circleId : null,
-          anonymousNote: anonymousNote || null,
-          senderAlias: alias,
-          moodTag: moodTag,
-          scheduledAt: isScheduling ? new Date(scheduledAtValue).toISOString() : null,
-          conciergeRequestId,
+    const sharedPayload = {
+      videoUrl: uploadedVideoId ? null : videoUrl,
+      videoTitle: videoMeta?.title ?? null,
+      videoThumbnail: videoMeta?.thumbnail ?? null,
+      videoEmbedUrl: uploadedVideoId ? null : videoMeta?.embedUrl ?? null,
+      videoPlatform: videoMeta?.platform ?? null,
+      uploadedVideoId,
+      videoStartSeconds: parseTimestampToSeconds(startTimestamp),
+      videoEndSeconds: parseTimestampToSeconds(endTimestamp),
+      deliveryMethod,
+      circleId: deliveryMethod === "circle_drop" ? circleId : null,
+      anonymousNote: anonymousNote || null,
+      senderAlias: alias,
+      moodTag: moodTag,
+      scheduledAt: isScheduling ? new Date(scheduledAtValue).toISOString() : null,
+      conciergeRequestId,
+    };
+
+    // For anything that isn't a Whisper Link (Circle Drop, Ghost Boost)
+    // there's no per-recipient contact at all — one send, unchanged.
+    if (deliveryMethod !== "whisper_link") {
+      createWhisp.mutate(
+        { data: { ...sharedPayload, whisperChannel: null, recipientEmail: null, recipientPhone: null } },
+        {
+          onSuccess: (whisp) => {
+            setSentWhispId(whisp.id);
+            setSent(true);
+            queryClient.invalidateQueries({ queryKey: getGetWhispStatsQueryKey() });
+            queryClient.invalidateQueries({ queryKey: getListWhispsQueryKey() });
+          },
+          onError: (err: any) => {
+            if (err?.status === 428) {
+              setShowDemographicsGate(true);
+              return;
+            }
+            toast({ title: "Failed to send whisp", variant: "destructive" });
+          },
         },
-      },
-      {
-        onSuccess: (whisp) => {
-          setSentWhispId(whisp.id);
-          setSent(true);
-          queryClient.invalidateQueries({ queryKey: getGetWhispStatsQueryKey() });
-          queryClient.invalidateQueries({ queryKey: getListWhispsQueryKey() });
-        },
-        onError: (err: any) => {
-          if (err?.status === 428) {
-            setShowDemographicsGate(true);
-            return;
-          }
-          toast({ title: "Failed to send whisp", variant: "destructive" });
-        },
+      );
+      return;
+    }
+
+    // One whisp per recipient, sent sequentially rather than as one request
+    // carrying a list. That's deliberate: each recipient gets their own
+    // publicToken (so two people never land in the same thread and see each
+    // other's replies), each send debits the plan honestly, and a failure
+    // part-way through — hitting the monthly cap on recipient 3 of 5 — is
+    // reportable per recipient instead of silently succeeding or rolling the
+    // whole batch back. Sequential, not parallel, so the server's own
+    // plan-limit check sees a consistent count rather than a burst racing it.
+    setSendingBatch(true);
+    const succeeded: string[] = [];
+    const failed: { contact: string; message: string }[] = [];
+    let gated = false;
+
+    for (const recipient of parsedRecipients.recipients) {
+      try {
+        const whisp = await createWhisp.mutateAsync({
+          data: {
+            ...sharedPayload,
+            // Auto-derived from what they typed — a phone number goes over
+            // WhatsApp only if they explicitly asked for it, otherwise SMS.
+            whisperChannel: recipient.kind === "email" ? "email" : preferWhatsApp ? "whatsapp" : "sms",
+            recipientEmail: recipient.kind === "email" ? recipient.raw : null,
+            recipientPhone: recipient.kind === "phone" ? recipient.raw : null,
+          },
+        });
+        succeeded.push(whisp.id);
+      } catch (err: any) {
+        if (err?.status === 428) {
+          gated = true;
+          break;
+        }
+        failed.push({ contact: recipient.raw, message: err?.data?.error ?? "Failed to send" });
       }
-    );
+    }
+    setSendingBatch(false);
+
+    queryClient.invalidateQueries({ queryKey: getGetWhispStatsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getListWhispsQueryKey() });
+
+    if (gated) {
+      setShowDemographicsGate(true);
+      return;
+    }
+
+    if (succeeded.length === 0) {
+      toast({
+        title: failed[0]?.message ?? "Failed to send whisp",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Partial success is reported plainly rather than shown as a clean win —
+    // a sender who thinks all five went out when two didn't has no way to
+    // notice.
+    if (failed.length > 0) {
+      toast({
+        title: `Sent to ${succeeded.length}, couldn't reach ${failed.length}`,
+        description: failed.map((f) => f.contact).join(", "),
+        variant: "destructive",
+      });
+    }
+
+    setSentWhispId(succeeded[0]);
+    setSentCount(succeeded.length);
+    setSent(true);
   }
 
   async function handlePickContact() {
     const contact = await pickContact();
     if (!contact) return;
 
-    if (whisperChannel === "email") {
-      if (!contact.email) {
-        toast({ title: "That contact has no email address on file", variant: "destructive" });
-        return;
-      }
-      setRecipientEmail(contact.email);
-    } else {
-      if (!contact.tel) {
-        toast({ title: "That contact has no phone number on file", variant: "destructive" });
-        return;
-      }
-      setRecipientPhone(contact.tel);
+    // Whichever detail the contact actually has — email first, since it's the
+    // channel that always works. Appends rather than replaces, so picking
+    // several contacts in a row builds up the list.
+    const picked = contact.email || contact.tel;
+    if (!picked) {
+      toast({ title: "That contact has no email or phone number on file", variant: "destructive" });
+      return;
     }
+    setRecipientsInput((current) => (current.trim() ? `${current.replace(/,\s*$/, "")}, ${picked}` : picked));
   }
+
+  const parsedRecipients = parseRecipients(recipientsInput);
+  const hasPhoneRecipient = parsedRecipients.recipients.some((r) => r.kind === "phone");
+  const canContinueFromRecipients =
+    parsedRecipients.recipients.length > 0 && parsedRecipients.invalid.length === 0;
 
   const steps = ["Video", "Mood", "Note", "Delivery", "Recipient", "Send"];
 
@@ -496,21 +575,29 @@ export function SendWhisp() {
           <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center mx-auto glow-card">
             <Check className="w-10 h-10 text-primary" />
           </div>
-          <h1 className="text-4xl font-serif font-bold text-foreground">Your whisp is on its way</h1>
+          <h1 className="text-4xl font-serif font-bold text-foreground">
+            {sentCount > 1 ? "Your whisps are on their way" : "Your whisp is on its way"}
+          </h1>
           <p className="text-muted-foreground text-lg">
-            It's been sent. We'll let you know when it's seen.
+            {sentCount > 1
+              ? `Sent to ${sentCount} people. We'll let you know as each one is seen.`
+              : "It's been sent. We'll let you know when it's seen."}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
             <Button
               variant="outline"
               className="rounded-full"
               onClick={() => {
+                // A multi-recipient send is N separate whisps, each with its
+                // own thread — the list is the honest destination, not one
+                // arbitrary recipient's page.
                 if (sentGroupSendId) setLocation(`/whisper-groups/sends/${sentGroupSendId}`);
+                else if (sentCount > 1) setLocation("/whisps");
                 else if (sentWhispId) setLocation(`/whisps/${sentWhispId}`);
               }}
               data-testid="button-track-whisp"
             >
-              Track this whisp
+              {sentCount > 1 ? "Track these whisps" : "Track this whisp"}
             </Button>
             <Button
               className="rounded-full shadow-[0_0_15px_rgba(124,92,252,0.3)]"
@@ -527,6 +614,9 @@ export function SendWhisp() {
                 setWhisperChannel("email");
                 setRecipientEmail("");
                 setRecipientPhone("");
+                setRecipientsInput("");
+                setPreferWhatsApp(false);
+                setSentCount(1);
                 setStartTimestamp("");
                 setScheduleEnabled(false);
                 setScheduledAtValue("");
@@ -1051,7 +1141,13 @@ export function SendWhisp() {
                     </div>
                   </button>
 
-                  {(deliveryMethod === "whisper_link" || deliveryMethod === "group_whisper") && (
+                  {/* Group Whisper only. A Whisper Link derives its channel
+                      from the recipient itself (see step 5), so asking for it
+                      up front was a question the sender shouldn't have to
+                      answer — and one they could get wrong, picking "Email"
+                      then typing a phone number. A group send picks a single
+                      channel for everyone, so the choice still belongs there. */}
+                  {deliveryMethod === "group_whisper" && (
                     <div className="pl-2 pr-1 -mt-1 grid grid-cols-3 gap-2">
                       {WHISPER_CHANNELS.map((ch) => {
                         const Icon = ch.icon;
@@ -1270,38 +1366,57 @@ export function SendWhisp() {
               <div className="space-y-4">
                 <h2 className="text-xl font-serif font-semibold">Who should receive it?</h2>
                 <p className="text-sm text-muted-foreground">
-                  {whisperChannel === "email"
-                    ? "Enter their email address."
-                    : whisperChannel === "sms"
-                    ? "Enter their phone number, in international format (e.g. +1 555 123 4567)."
-                    : "Enter their WhatsApp number, in international format (e.g. +1 555 123 4567)."}
+                  Enter an email address or a phone number (in international format, e.g. +1 555 123 4567).
+                  Separate multiple people with commas — we'll work out how to reach each of them.
                 </p>
                 <div className="space-y-3">
-                  {whisperChannel === "email" ? (
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        className="pl-9 bg-input/50 border-border/50 rounded-xl"
-                        placeholder="Email address"
-                        type="email"
-                        value={recipientEmail}
-                        onChange={(e) => setRecipientEmail(e.target.value)}
-                        data-testid="input-recipient-email"
-                      />
-                    </div>
-                  ) : (
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        className="pl-9 bg-input/50 border-border/50 rounded-xl"
-                        placeholder="+1 555 123 4567"
-                        type="tel"
-                        value={recipientPhone}
-                        onChange={(e) => setRecipientPhone(e.target.value)}
-                        data-testid="input-recipient-phone"
-                      />
+                  <Textarea
+                    className="bg-input/50 border-border/50 rounded-xl resize-none min-h-[80px]"
+                    placeholder="sam@example.com, +1 555 123 4567"
+                    value={recipientsInput}
+                    onChange={(e) => setRecipientsInput(e.target.value)}
+                    data-testid="input-recipients"
+                  />
+
+                  {/* Live read-back of how each entry was understood. Without
+                      it, auto-detection is invisible — a typo'd address just
+                      fails at send time with no clue which one was wrong. */}
+                  {parsedRecipients.recipients.length > 0 && (
+                    <div className="flex flex-wrap gap-2" data-testid="recipient-chips">
+                      {parsedRecipients.recipients.map((r) => (
+                        <span
+                          key={r.raw}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/25 text-xs text-foreground"
+                        >
+                          {r.kind === "email" ? <Mail className="w-3 h-3 text-primary" /> : <Phone className="w-3 h-3 text-primary" />}
+                          {r.raw}
+                        </span>
+                      ))}
                     </div>
                   )}
+
+                  {parsedRecipients.invalid.length > 0 && (
+                    <p className="text-xs text-destructive" data-testid="text-invalid-recipients">
+                      Not a valid email or phone number: {parsedRecipients.invalid.join(", ")}
+                    </p>
+                  )}
+
+                  {/* Only meaningful once a phone number is actually in the
+                      list — a phone number could be reached either way, and
+                      that's the one thing detection genuinely can't infer. */}
+                  {hasPhoneRecipient && (
+                    <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={preferWhatsApp}
+                        onChange={(e) => setPreferWhatsApp(e.target.checked)}
+                        className="rounded border-border/50"
+                        data-testid="checkbox-prefer-whatsapp"
+                      />
+                      Send to phone numbers on WhatsApp instead of SMS
+                    </label>
+                  )}
+
                   {isContactPickerSupported() && (
                     <>
                       <div className="flex items-center gap-2">
@@ -1327,7 +1442,7 @@ export function SendWhisp() {
                   </Button>
                   <Button
                     onClick={() => setStep(6)}
-                    disabled={whisperChannel === "email" ? !recipientEmail : !recipientPhone}
+                    disabled={!canContinueFromRecipients}
                     className="rounded-xl"
                     data-testid="button-next-step5"
                   >
@@ -1384,8 +1499,10 @@ export function SendWhisp() {
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Delivery</span>
                       <span className="text-foreground capitalize">
-                        {deliveryMethod === "whisper_link" || deliveryMethod === "group_whisper"
-                          ? `${deliveryMethod === "group_whisper" ? "Group Whisper" : "Whisper Link"} (${WHISPER_CHANNELS.find((c) => c.key === whisperChannel)?.label})`
+                        {deliveryMethod === "group_whisper"
+                          ? `Group Whisper (${WHISPER_CHANNELS.find((c) => c.key === whisperChannel)?.label})`
+                          : deliveryMethod === "whisper_link"
+                          ? `Whisper Link${hasPhoneRecipient && preferWhatsApp ? " (WhatsApp)" : ""}`
                           : deliveryMethod.replace("_", " ")}
                       </span>
                     </div>
@@ -1403,9 +1520,7 @@ export function SendWhisp() {
                               const g = myWhisperGroups?.find((g) => g.id === whisperGroupId);
                               return g ? `${g.name} (${g.memberCount} member${g.memberCount === 1 ? "" : "s"})` : "Group";
                             })()
-                          : whisperChannel === "email"
-                          ? recipientEmail
-                          : recipientPhone}
+                          : parsedRecipients.recipients.map((r) => r.raw).join(", ")}
                       </span>
                     </div>
                     {startTimestamp && parsedStartSeconds !== null && (
@@ -1449,11 +1564,11 @@ export function SendWhisp() {
                   </Button>
                   <Button
                     onClick={handleSend}
-                    disabled={createWhisp.isPending || sendGroupWhisp.isPending}
+                    disabled={createWhisp.isPending || sendGroupWhisp.isPending || sendingBatch}
                     className="rounded-full shadow-[0_0_15px_rgba(124,92,252,0.3)] px-6"
                     data-testid="button-send-whisp"
                   >
-                    {createWhisp.isPending || sendGroupWhisp.isPending ? (
+                    {createWhisp.isPending || sendGroupWhisp.isPending || sendingBatch ? (
                       <Loader2 className="w-4 h-4 animate-spin mr-2" />
                     ) : (
                       <Send className="w-4 h-4 mr-2" />
