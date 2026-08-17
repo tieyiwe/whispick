@@ -98,11 +98,26 @@ app.post("/api/billing/webhook", express.raw({ type: "application/json" }), hand
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// publishableKeyFromHost needs the SAME publishable key the frontend uses
+// (falls back to a synthetic host-derived key — a different Clerk identity —
+// whenever the key it's given is missing or not a dev-mode key). The
+// frontend only ever gets VITE_CLERK_PUBLISHABLE_KEY (Vite bakes VITE_* vars
+// into the client bundle; a plain, unprefixed var isn't visible there). If
+// only that var was ever set and this bare CLERK_PUBLISHABLE_KEY wasn't,
+// this fell through to the host-derived key — silently authenticating
+// against a different instance than the one that issued the browser's
+// session, so every request looked unauthenticated no matter how many times
+// a user signed in. Falling back to VITE_CLERK_PUBLISHABLE_KEY here means a
+// single configured secret is enough; CLERK_PUBLISHABLE_KEY still wins if
+// it's ever set explicitly (e.g. to a different key than the client build).
+const CLERK_BACKEND_PUBLISHABLE_KEY =
+  process.env.CLERK_PUBLISHABLE_KEY ?? process.env.VITE_CLERK_PUBLISHABLE_KEY;
+
 app.use(
   clerkMiddleware((req) => ({
     publishableKey: publishableKeyFromHost(
       getClerkProxyHost(req) ?? "",
-      process.env.CLERK_PUBLISHABLE_KEY,
+      CLERK_BACKEND_PUBLISHABLE_KEY,
     ),
   })),
 );
