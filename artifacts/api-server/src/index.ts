@@ -1,5 +1,12 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { startScheduledWhispDispatcher } from "./lib/scheduler";
+import { startReminderDispatcher } from "./lib/reminderScheduler";
+import { startReplyNotificationScheduler } from "./lib/replyNotificationScheduler";
+import { startMediaRetentionScheduler } from "./lib/mediaRetentionScheduler";
+import { startTakeawayScheduler } from "./lib/takeawayScheduler";
+import { startMatchScheduler } from "./lib/matchScheduler";
+import { startSuggestionAgentScheduler } from "./lib/suggestionAgentScheduler";
 
 const rawPort = process.env["PORT"];
 
@@ -23,3 +30,11 @@ app.listen(port, (err) => {
 
   logger.info({ port }, "Server listening");
 });
+
+startScheduledWhispDispatcher();
+startReminderDispatcher();
+startReplyNotificationScheduler();
+startMediaRetentionScheduler();
+startTakeawayScheduler();
+startMatchScheduler();
+startSuggestionAgentScheduler();

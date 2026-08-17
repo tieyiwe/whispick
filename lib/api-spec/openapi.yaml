@@ -3,7 +3,7 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: Whispr API — anonymous video recommendation platform
+  description: Blind Whisper API — anonymous video recommendation platform
 servers:
   - url: /api
     description: Base API path
@@ -20,6 +20,20 @@ tags:
     description: User profile
   - name: credits
     description: Credit & plan management
+  - name: billing
+    description: Stripe checkout
+  - name: circles
+    description: Private invite-only circles
+  - name: admin
+    description: App-owner admin panel — user/content management and analytics
+  - name: whisperGroups
+    description: Saved contact groups for sending one whisp to several people at once, anonymously
+  - name: suggestions
+    description: Admin-curated + AI-discovered Suggestions Library
+  - name: invites
+    description: Anonymous invite-a-friend — inviting someone to join Blind Whisper itself, sent the same anonymous way as a whisp
+  - name: textWhisps
+    description: Text Whisps — short, text-only anonymous messages between two known, verified Blind Whisper users, delivered entirely in-app
 paths:
   /healthz:
     get:
@@ -213,7 +227,368 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Whisp"
+                $ref: "#/components/schemas/RevealResult"
+        "400":
+          description: No reveal was requested for this whisp
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /invites:
+    get:
+      operationId: listInvites
+      tags: [invites]
+      summary: List invites sent by the current user
+      responses:
+        "200":
+          description: List of invites
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Invite"
+    post:
+      operationId: createInvite
+      tags: [invites]
+      summary: Send an anonymous invite to join Blind Whisper
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InviteInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Invite"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /invites/claim:
+    post:
+      operationId: claimInvite
+      tags: [invites]
+      summary: Attribute the current (just signed-up) account back to the invite that brought them here
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClaimInviteInput"
+      responses:
+        "200":
+          description: Claimed (or a no-op if already claimed or self-invite)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClaimInviteResult"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /invites/{id}/reveal:
+    post:
+      operationId: requestInviteReveal
+      tags: [invites]
+      summary: Inviter requests to reveal their identity to a joined invitee
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Reveal requested
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Invite"
+        "400":
+          description: This invite hasn't been joined yet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    patch:
+      operationId: respondInviteReveal
+      tags: [invites]
+      summary: Invitee responds to reveal request
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevealResponse"
+      responses:
+        "200":
+          description: Reveal response recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevealResult"
+        "400":
+          description: No reveal was requested for this invite
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/invites/{token}:
+    get:
+      operationId: getPublicInvite
+      tags: [public]
+      summary: Public invite landing page data (no auth required)
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Public invite data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicInvite"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/text-whisps/{token}:
+    get:
+      operationId: getPublicTextWhisp
+      tags: [public]
+      summary: Public Text Whisp guest landing page data (no auth required) — view only, marks it read on first view. There is no reply endpoint here; replying requires signing up (see POST /text-whisps/{id}/replies).
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Public Text Whisp data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicTextWhisp"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /text-whisps:
+    get:
+      operationId: listTextWhisps
+      tags: [textWhisps]
+      summary: List the current user's own Text Whisps (sent and received)
+      responses:
+        "200":
+          description: List of Text Whisps
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TextWhisp"
+    post:
+      operationId: createTextWhisp
+      tags: [textWhisps]
+      summary: Send a new Text Whisp to any phone number — delivered in-app if it matches a known, verified Blind Whisper user, otherwise as a guest link over SMS
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TextWhispInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TextWhisp"
+        "400":
+          description: Bad request (invalid phone number, or sending to yourself)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /text-whisps/{id}:
+    get:
+      operationId: getTextWhisp
+      tags: [textWhisps]
+      summary: Get a Text Whisp with its replies — sender or recipient only. Marks it read when the recipient opens it.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Text Whisp detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TextWhispDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      operationId: deleteTextWhisp
+      tags: [textWhisps]
+      summary: Soft delete a Text Whisp — sender only
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  /text-whisps/{id}/replies:
+    get:
+      operationId: listTextWhispReplies
+      tags: [textWhisps]
+      summary: Get replies for a Text Whisp — sender or recipient only
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Replies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TextWhispReply"
+    post:
+      operationId: createTextWhispReply
+      tags: [textWhisps]
+      summary: Reply to a Text Whisp — from either the sender or the recipient
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TextWhispReplyInput"
+      responses:
+        "201":
+          description: Reply created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TextWhispReply"
+
+  /text-whisps/{id}/reveal:
+    post:
+      operationId: requestTextWhispReveal
+      tags: [textWhisps]
+      summary: Sender requests to reveal their identity — rejected if the recipient hasn't signed up yet (recipientUserId is still null)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Reveal requested
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TextWhisp"
+        "400":
+          description: The recipient hasn't joined yet — there's no registered account to reveal to
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /text-whisps/{id}/reveal/respond:
+    post:
+      operationId: respondTextWhispReveal
+      tags: [textWhisps]
+      summary: Recipient accepts or declines a reveal request
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevealResponse"
+      responses:
+        "200":
+          description: Reveal response recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevealResult"
+        "400":
+          description: No reveal was requested for this Text Whisp
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
 
   /video/meta:
     post:
@@ -235,6 +610,12 @@ paths:
                 $ref: "#/components/schemas/VideoMeta"
         "400":
           description: Could not scrape URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "422":
+          description: Video is private, restricted, or no longer exists — the recipient wouldn't be able to open it
           content:
             application/json:
               schema:
@@ -315,6 +696,80 @@ paths:
               schema:
                 $ref: "#/components/schemas/WhispReply"
 
+  /public/w/{token}/appreciation:
+    post:
+      operationId: submitAppreciation
+      tags: [public]
+      summary: Recipient answers "was this something you needed to hear?"
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppreciationInput"
+      responses:
+        "200":
+          description: Recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppreciationResult"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/w/{token}/remind-me:
+    post:
+      operationId: requestWhispReminder
+      tags: [public]
+      summary: Recipient schedules a "remind me later" nudge (max 2 total, must land before expiry)
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RemindMeInput"
+      responses:
+        "200":
+          description: Reminder scheduled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemindMeResult"
+        "400":
+          description: Reminder not available (expired, out of reminders, or time out of range)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "410":
+          description: Whisp has expired
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /user/profile:
     get:
       operationId: getUserProfile
@@ -345,6 +800,119 @@ paths:
               schema:
                 $ref: "#/components/schemas/UserProfile"
 
+  /user/push-public-key:
+    get:
+      operationId: getPushPublicKey
+      tags: [user]
+      summary: Get the VAPID public key used to subscribe to push notifications
+      responses:
+        "200":
+          description: Public key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PushPublicKeyResponse"
+        "503":
+          description: Push notifications are not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /user/push-subscription:
+    post:
+      operationId: createPushSubscription
+      tags: [user]
+      summary: Register a browser push subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PushSubscriptionInput"
+      responses:
+        "201":
+          description: Subscribed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrackingResult"
+    delete:
+      operationId: deletePushSubscription
+      tags: [user]
+      summary: Remove a browser push subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PushSubscriptionDeleteInput"
+      responses:
+        "204":
+          description: Unsubscribed
+
+  /user/phone/start-verification:
+    post:
+      operationId: startPhoneVerification
+      tags: [user]
+      summary: Send a one-time Twilio Verify SMS code to a phone number, to later confirm ownership of it
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartPhoneVerificationInput"
+      responses:
+        "200":
+          description: Verification code sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrackingResult"
+        "400":
+          description: Invalid phone number
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "502":
+          description: Twilio Verify is not configured or the send failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /user/phone/confirm-verification:
+    post:
+      operationId: confirmPhoneVerification
+      tags: [user]
+      summary: Confirm the one-time code and mark the authenticated user's phone number as OTP-verified
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfirmPhoneVerificationInput"
+      responses:
+        "200":
+          description: Phone number verified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhoneVerificationResult"
+        "400":
+          description: Invalid phone number, or the code is incorrect/expired
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /credits/transactions:
     get:
       operationId: listCreditTransactions
@@ -360,6 +928,1374 @@ paths:
                 items:
                   $ref: "#/components/schemas/CreditTransaction"
 
+  /circles:
+    get:
+      operationId: listMyCircles
+      tags: [circles]
+      summary: List private circles the current user belongs to
+      responses:
+        "200":
+          description: Circles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Circle"
+    post:
+      operationId: createCircle
+      tags: [circles]
+      summary: Create a new private circle (creator becomes the first member)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCircleInput"
+      responses:
+        "201":
+          description: Circle created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Circle"
+
+  /circles/join:
+    post:
+      operationId: joinCircle
+      tags: [circles]
+      summary: Join a private circle using its invite code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JoinCircleInput"
+      responses:
+        "200":
+          description: Joined
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Circle"
+        "404":
+          description: Invalid invite code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /circles/{id}/feed:
+    get:
+      operationId: getCircleWhisps
+      tags: [circles]
+      summary: Feed of whisps dropped into this circle (members only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Circle feed page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CircleFeedResponse"
+        "403":
+          description: Not a member of this circle
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/circle:
+    get:
+      operationId: listCircleFeed
+      tags: [public]
+      summary: Community discovery feed of Circle Drop whisps (no auth required)
+      parameters:
+        - in: query
+          name: cursor
+          schema:
+            type: string
+          required: false
+      responses:
+        "200":
+          description: Circle feed page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CircleFeedResponse"
+
+  /billing/checkout:
+    post:
+      operationId: createCheckoutSession
+      tags: [billing]
+      summary: Create a Stripe Checkout session for a credit pack or plan upgrade
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckoutRequest"
+      responses:
+        "200":
+          description: Checkout session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "402":
+          description: Payment required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "503":
+          description: Billing not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/users:
+    get:
+      operationId: adminListUsers
+      tags: [admin]
+      summary: List users (admin only)
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: plan
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: role
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: banned
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: page
+          schema:
+            type: integer
+          required: false
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+          required: false
+      responses:
+        "200":
+          description: Users page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserListResponse"
+        "403":
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/users/{id}:
+    get:
+      operationId: adminGetUser
+      tags: [admin]
+      summary: Get a user's full profile and recent activity (admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    patch:
+      operationId: adminUpdateUser
+      tags: [admin]
+      summary: Update a user's role, plan, credits, or banned status (admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAdminUserInput"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      operationId: adminDeleteUser
+      tags: [admin]
+      summary: Delete a user and all of their data (admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/users/{id}/whisps:
+    get:
+      operationId: adminListUserWhisps
+      tags: [admin]
+      summary: Every whisp a user sent, across all delivery methods — the full per-user activity timeline (admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: status
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: deliveryMethod
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: page
+          schema:
+            type: integer
+          required: false
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+          required: false
+      responses:
+        "200":
+          description: The user's whisps
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminWhispListResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/whisps:
+    get:
+      operationId: adminListWhisps
+      tags: [admin]
+      summary: List all whisps across all users (admin only)
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: recipient
+          schema:
+            type: string
+          required: false
+          description: Matches against recipientEmail or recipientPhone — find every whisp sent to a contact (e.g. "I never got my link").
+        - in: query
+          name: status
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: deliveryMethod
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: category
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: page
+          schema:
+            type: integer
+          required: false
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+          required: false
+      responses:
+        "200":
+          description: Whisps page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminWhispListResponse"
+
+  /admin/whisps/{id}:
+    get:
+      operationId: adminGetWhisp
+      tags: [admin]
+      summary: Get full detail on any whisp (admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Whisp detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminWhispDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      operationId: adminDeleteWhisp
+      tags: [admin]
+      summary: Remove a whisp (moderation) (admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/stats/overview:
+    get:
+      operationId: adminGetOverviewStats
+      tags: [admin]
+      summary: App-wide overview stats (admin only)
+      responses:
+        "200":
+          description: Overview stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOverviewStats"
+
+  /admin/stats/categories:
+    get:
+      operationId: adminGetCategoryStats
+      tags: [admin]
+      summary: Video category rankings across all sent whisps (admin only)
+      responses:
+        "200":
+          description: Category stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminCategoryStatsResponse"
+
+  /admin/stats/delivery-methods:
+    get:
+      operationId: adminGetDeliveryMethodStats
+      tags: [admin]
+      summary: Delivery method usage breakdown (admin only)
+      responses:
+        "200":
+          description: Delivery method stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDeliveryMethodStatsResponse"
+
+  /admin/stats/locations:
+    get:
+      operationId: adminGetLocationStats
+      tags: [admin]
+      summary: User geography breakdown (admin only)
+      responses:
+        "200":
+          description: Location stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminLocationStatsResponse"
+
+  /admin/stats/demographics:
+    get:
+      operationId: adminGetDemographicStats
+      tags: [admin]
+      summary: Self-reported gender/age-range breakdown — "who is Whispering the most" (admin only)
+      responses:
+        "200":
+          description: Demographic stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDemographicStatsResponse"
+
+  /admin/stats/opportunities:
+    get:
+      operationId: adminGetOpportunities
+      tags: [admin]
+      summary: Smart analytics — computed growth/quality opportunities (admin only)
+      responses:
+        "200":
+          description: Opportunities
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOpportunitiesResponse"
+
+  /admin/stats/funnel:
+    get:
+      operationId: adminGetFunnelStats
+      tags: [admin]
+      summary: Delivery success rate by channel, sent→delivered→opened→watched→replied funnel, Ghost Boost match volume, and Circle activity (admin only)
+      responses:
+        "200":
+          description: Funnel and delivery-health stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminFunnelStats"
+
+  /admin/notifications:
+    get:
+      operationId: adminListNotifications
+      tags: [admin]
+      summary: Audit log of notifications sent to users (admin only)
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+          required: false
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+          required: false
+      responses:
+        "200":
+          description: Notifications page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminNotificationListResponse"
+    post:
+      operationId: adminSendNotification
+      tags: [admin]
+      summary: Send an in-app (plus best-effort push) notification to all users or specific ones (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendNotificationInput"
+      responses:
+        "201":
+          description: Sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SendNotificationResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /user/notifications:
+    get:
+      operationId: getMyNotifications
+      tags: [user]
+      summary: This user's notifications (broadcasts + ones sent specifically to them), most recent first
+      responses:
+        "200":
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationListResponse"
+
+  /user/notifications/unread-count:
+    get:
+      operationId: getMyUnreadNotificationCount
+      tags: [user]
+      summary: Lightweight unread count for a nav badge, without fetching the full list
+      responses:
+        "200":
+          description: Unread count
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnreadNotificationCountResponse"
+
+  /user/notifications/{id}/read:
+    post:
+      operationId: markNotificationRead
+      tags: [user]
+      summary: Mark one notification as read
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Marked read
+
+  /user/notifications/read-all:
+    post:
+      operationId: markAllNotificationsRead
+      tags: [user]
+      summary: Mark every one of this user's notifications as read
+      responses:
+        "204":
+          description: Marked read
+
+  /admin/moderation/flags:
+    get:
+      operationId: adminListModerationFlags
+      tags: [admin]
+      summary: Content-safety flag queue — whisps an automated pass flagged as possibly sexual/explicit content, for review (admin only)
+      parameters:
+        - in: query
+          name: dismissed
+          schema:
+            type: string
+          required: false
+          description: Filter to "true" (already-reviewed false positives) or "false" (still needs review, the default view).
+        - in: query
+          name: severity
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: page
+          schema:
+            type: integer
+          required: false
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+          required: false
+      responses:
+        "200":
+          description: Flags page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModerationFlagListResponse"
+
+  /admin/moderation/flags/{id}:
+    patch:
+      operationId: adminUpdateModerationFlag
+      tags: [admin]
+      summary: Dismiss a flag as a false positive, or un-dismiss it (admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateModerationFlagInput"
+      responses:
+        "200":
+          description: Updated flag
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModerationFlag"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/suggestions:
+    get:
+      operationId: adminListSuggestions
+      tags: [admin, suggestions]
+      summary: List Suggestions Library videos, including pending AI-agent finds (admin only)
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: status
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: source
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: category
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: featured
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: page
+          schema:
+            type: integer
+          required: false
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+          required: false
+      responses:
+        "200":
+          description: Suggestions page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuggestionListResponse"
+        "403":
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    post:
+      operationId: adminCreateSuggestion
+      tags: [admin, suggestions]
+      summary: Add a video to the Suggestions Library (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSuggestionInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuggestedVideo"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "422":
+          description: Video is private, restricted, or otherwise unusable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/suggestions/agent-status:
+    get:
+      operationId: adminGetSuggestionAgentStatus
+      tags: [admin, suggestions]
+      summary: Get the AI discovery agent's last run outcome, including whether it looks blocked by a low Anthropic credit balance (admin only)
+      responses:
+        "200":
+          description: Agent status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuggestionAgentStatus"
+
+  /admin/suggestions/run-agent:
+    post:
+      operationId: adminRunSuggestionAgent
+      tags: [admin, suggestions]
+      summary: Trigger an AI discovery sweep immediately instead of waiting for the daily schedule (admin only)
+      responses:
+        "200":
+          description: Run result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunSuggestionAgentResult"
+
+  /admin/suggestions/{id}:
+    get:
+      operationId: adminGetSuggestion
+      tags: [admin, suggestions]
+      summary: Get a single Suggestions Library entry (admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Suggestion detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuggestedVideo"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    patch:
+      operationId: adminUpdateSuggestion
+      tags: [admin, suggestions]
+      summary: Approve, edit, or archive a Suggestions Library entry (admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSuggestionInput"
+      responses:
+        "200":
+          description: Updated suggestion
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuggestedVideo"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      operationId: adminDeleteSuggestion
+      tags: [admin, suggestions]
+      summary: Remove a Suggestions Library entry (admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /suggestions:
+    get:
+      operationId: listSuggestions
+      tags: [suggestions]
+      summary: Browse the published Suggestions Library gallery
+      parameters:
+        - in: query
+          name: category
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: featured
+          schema:
+            type: string
+          required: false
+      responses:
+        "200":
+          description: Published suggestions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuggestionGalleryResponse"
+
+  /suggestions/{id}:
+    get:
+      operationId: getSuggestion
+      tags: [suggestions]
+      summary: Get a single published suggestion (for the "Whisper this" flow)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Suggestion detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuggestedVideo"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /whisper-groups:
+    get:
+      operationId: listWhisperGroups
+      tags: [whisperGroups]
+      summary: List the current user's saved whisper groups
+      responses:
+        "200":
+          description: Groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WhisperGroupSummary"
+    post:
+      operationId: createWhisperGroup
+      tags: [whisperGroups]
+      summary: Create a new whisper group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WhisperGroupNameInput"
+      responses:
+        "201":
+          description: Group created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhisperGroupSummary"
+
+  /whisper-groups/sends:
+    get:
+      operationId: listGroupWhispSends
+      tags: [whisperGroups]
+      summary: List past group whisper sends, aggregated per send
+      responses:
+        "200":
+          description: Group sends
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GroupWhispSendSummary"
+
+  /whisper-groups/sends/{groupSendId}:
+    get:
+      operationId: getGroupWhispSend
+      tags: [whisperGroups]
+      summary: Per-member breakdown of one past group whisper send
+      parameters:
+        - in: path
+          name: groupSendId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Group send detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupWhispSendDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /whisper-groups/{id}:
+    get:
+      operationId: getWhisperGroup
+      tags: [whisperGroups]
+      summary: Get a whisper group and its members
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Group detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhisperGroupDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    patch:
+      operationId: renameWhisperGroup
+      tags: [whisperGroups]
+      summary: Rename a whisper group
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WhisperGroupNameInput"
+      responses:
+        "200":
+          description: Renamed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhisperGroup"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      operationId: deleteWhisperGroup
+      tags: [whisperGroups]
+      summary: Delete a whisper group and its saved member list
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /whisper-groups/{id}/members:
+    post:
+      operationId: addWhisperGroupMembers
+      tags: [whisperGroups]
+      summary: Add one or more members to a whisper group (manual entry or a Contact Picker batch)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddWhisperGroupMembersInput"
+      responses:
+        "201":
+          description: Updated member list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WhisperGroupMember"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /whisper-groups/{id}/members/{memberId}:
+    delete:
+      operationId: removeWhisperGroupMember
+      tags: [whisperGroups]
+      summary: Remove a member from a whisper group
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: memberId
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Removed
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /whisper-groups/{id}/send:
+    post:
+      operationId: sendGroupWhisp
+      tags: [whisperGroups]
+      summary: Send a whisp to every deliverable member of a whisper group, anonymously
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendGroupWhispInput"
+      responses:
+        "201":
+          description: Sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SendGroupWhispResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "402":
+          description: Payment required — Whisper Link plan limit reached
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  # POST /media/upload (multipart/form-data video+thumbnail+durationSeconds
+  # → UploadedVideo | 400 | 503 ApiError) is intentionally not modeled here:
+  # a `format: binary` request body generates `File`/`Blob`-typed Zod schemas
+  # that don't compile in lib/api-zod's Node-only (no DOM lib) project, and
+  # this endpoint is called via a hand-written fetch from the frontend
+  # anyway (multipart isn't a great fit for the generated JSON client) — see
+  # artifacts/blindwhisper/src/lib/uploadMedia.ts.
+
+  /media:
+    get:
+      operationId: listMedia
+      tags: [media]
+      summary: The sender's Media Library — their own uploaded clips, with a per-clip usage count
+      responses:
+        "200":
+          description: Uploaded videos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UploadedVideo"
+
+  /media/{id}:
+    delete:
+      operationId: deleteMedia
+      tags: [media]
+      summary: Remove an uploaded video ahead of its automatic retention deadline
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/subscribe:
+    post:
+      operationId: subscribeToMatching
+      tags: [matching]
+      summary: Opt in to receive anonymous Ghost Boost whisps on chosen topics (no account needed)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubscribeInput"
+      responses:
+        "200":
+          description: Subscribed — a verification email was sent unless already verified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscribeResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/subscribe/verify:
+    get:
+      operationId: verifySubscription
+      tags: [matching]
+      summary: Confirm a subscription via the emailed verification link
+      parameters:
+        - in: query
+          name: token
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Verified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/subscribe/unsubscribe:
+    get:
+      operationId: unsubscribeFromMatching
+      tags: [matching]
+      summary: One-click unsubscribe via the emailed link
+      parameters:
+        - in: query
+          name: token
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Unsubscribed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /whisps/note-suggestions:
+    post:
+      operationId: getNoteSuggestions
+      tags: [whisps]
+      summary: AI-suggested anonymous note options for the composer's "help me find the words" button
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NoteSuggestionsInput"
+      responses:
+        "200":
+          description: Suggested note options (may be empty if generation is unavailable)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NoteSuggestionsResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /whisps/concierge:
+    post:
+      operationId: getConciergeSuggestions
+      tags: [whisps]
+      summary: >-
+        "Not sure what to send?" — the sender describes their situation in a
+        sentence or two and gets back up to a few Suggestions Library videos
+        that fit, plus a drafted anonymous note. Matches only against the
+        existing curated library, never a live discovery.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConciergeInput"
+      responses:
+        "200":
+          description: Matched video suggestions (may be empty) and a drafted note (may be null)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConciergeResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /whisps/{id}/matches:
+    get:
+      operationId: getGhostBoostMatches
+      tags: [whisps]
+      summary: Aggregate-only reach stats for a Ghost Boost whisp (never a per-subscriber breakdown)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Match stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchStats"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
 components:
   schemas:
     HealthStatus:
@@ -374,6 +2310,8 @@ components:
       type: object
       properties:
         error:
+          type: string
+        code:
           type: string
       required:
         - error
@@ -391,10 +2329,24 @@ components:
           type: ["string", "null"]
         videoThumbnail:
           type: ["string", "null"]
+        videoEmbedUrl:
+          type: ["string", "null"]
+        videoStartSeconds:
+          type: ["integer", "null"]
+        videoEndSeconds:
+          type: ["integer", "null"]
         videoPlatform:
+          type: ["string", "null"]
+        videoTranscript:
+          type: ["string", "null"]
+        uploadedVideoId:
           type: ["string", "null"]
         deliveryMethod:
           type: string
+        whisperChannel:
+          type: ["string", "null"]
+        circleId:
+          type: ["string", "null"]
         recipientEmail:
           type: ["string", "null"]
         recipientPhone:
@@ -406,6 +2358,8 @@ components:
         moodTag:
           type: ["string", "null"]
         status:
+          type: string
+        publicToken:
           type: string
         scheduledAt:
           type: ["string", "null"]
@@ -419,6 +2373,17 @@ components:
           type: boolean
         revealAccepted:
           type: ["boolean", "null"]
+        appreciationResponse:
+          type: ["string", "null"]
+        appreciationRespondedAt:
+          type: ["string", "null"]
+        aiTakeaway:
+          type: ["string", "null"]
+        aiTakeawayStatus:
+          type: ["string", "null"]
+        conciergeRequestId:
+          type: ["string", "null"]
+          description: Set when this whisp's video and/or note came from the "Not sure what to send?" AI concierge (see POST /whisps/concierge)
         createdAt:
           type: string
       required:
@@ -427,6 +2392,7 @@ components:
         - videoUrl
         - deliveryMethod
         - status
+        - publicToken
         - revealRequested
         - createdAt
 
@@ -434,15 +2400,28 @@ components:
       type: object
       properties:
         videoUrl:
-          type: string
+          type: ["string", "null"]
         videoTitle:
           type: ["string", "null"]
         videoThumbnail:
           type: ["string", "null"]
+        videoEmbedUrl:
+          type: ["string", "null"]
+        videoStartSeconds:
+          type: ["integer", "null"]
+        videoEndSeconds:
+          type: ["integer", "null"]
         videoPlatform:
           type: ["string", "null"]
+        uploadedVideoId:
+          type: ["string", "null"]
+          description: An id from the sender's Media Library — an alternative to videoUrl. One of the two is required.
         deliveryMethod:
           type: string
+        whisperChannel:
+          type: ["string", "null"]
+        circleId:
+          type: ["string", "null"]
         recipientEmail:
           type: ["string", "null"]
         recipientPhone:
@@ -455,8 +2434,10 @@ components:
           type: ["string", "null"]
         scheduledAt:
           type: ["string", "null"]
+        conciergeRequestId:
+          type: ["string", "null"]
+          description: The requestId from a prior POST /whisps/concierge call, if this send used its video suggestion and/or note draft
       required:
-        - videoUrl
         - deliveryMethod
 
     WhispDetail:
@@ -488,6 +2469,8 @@ components:
           type: integer
         totalReplied:
           type: integer
+        totalAppreciated:
+          type: integer
         deliveryRate:
           type: number
         openRate:
@@ -505,6 +2488,7 @@ components:
         - totalOpened
         - totalWatched
         - totalReplied
+        - totalAppreciated
         - deliveryRate
         - openRate
         - boostCredits
@@ -522,6 +2506,18 @@ components:
           type: string
         fromRecipient:
           type: boolean
+        videoUrl:
+          type: ["string", "null"]
+        videoTitle:
+          type: ["string", "null"]
+        videoThumbnail:
+          type: ["string", "null"]
+        videoEmbedUrl:
+          type: ["string", "null"]
+        videoPlatform:
+          type: ["string", "null"]
+        moodTag:
+          type: ["string", "null"]
         createdAt:
           type: string
       required:
@@ -549,6 +2545,229 @@ components:
       required:
         - accepted
 
+    RevealResult:
+      type: object
+      properties:
+        id:
+          type: string
+        revealRequested:
+          type: boolean
+        revealAccepted:
+          type: boolean
+      required:
+        - id
+        - revealRequested
+        - revealAccepted
+
+    TextWhisp:
+      type: object
+      properties:
+        id:
+          type: string
+        senderId:
+          type: string
+        viewerIsRecipient:
+          type: boolean
+          description: True only if the authenticated caller IS this Text Whisp's recipient. Deliberately caller-relative and self-referential (safe for a sender to see, since it's always false for their own sent messages) rather than exposing the underlying recipientUserId, which would let a sender learn whether an arbitrary phone number belongs to a verified Blind Whisper account.
+        recipientPhone:
+          type: string
+          description: The E.164-normalized phone number provided at send time, regardless of whether it matched a user.
+        publicToken:
+          type: string
+          description: Token for the public guest landing page (/tw/{publicToken}, see GET /public/text-whisps/{token}). Always set, even for a matched in-app send.
+        senderAlias:
+          type: ["string", "null"]
+        messageText:
+          type: string
+          maxLength: 260
+        status:
+          type: string
+          description: "'sent' | 'read' | 'replied'"
+        revealRequested:
+          type: boolean
+        revealAccepted:
+          type: ["boolean", "null"]
+        readAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - senderId
+        - viewerIsRecipient
+        - recipientPhone
+        - publicToken
+        - messageText
+        - status
+        - revealRequested
+        - createdAt
+
+    TextWhispInput:
+      type: object
+      properties:
+        recipientPhone:
+          type: string
+        messageText:
+          type: string
+          maxLength: 260
+        senderAlias:
+          type: ["string", "null"]
+      required:
+        - recipientPhone
+        - messageText
+
+    TextWhispDetail:
+      type: object
+      properties:
+        textWhisp:
+          $ref: "#/components/schemas/TextWhisp"
+        replies:
+          type: array
+          items:
+            $ref: "#/components/schemas/TextWhispReply"
+      required:
+        - textWhisp
+        - replies
+
+    TextWhispReply:
+      type: object
+      properties:
+        id:
+          type: string
+        textWhispId:
+          type: string
+        senderId:
+          type: string
+        replyText:
+          type: string
+          maxLength: 260
+        createdAt:
+          type: string
+      required:
+        - id
+        - textWhispId
+        - senderId
+        - replyText
+        - createdAt
+
+    TextWhispReplyInput:
+      type: object
+      properties:
+        replyText:
+          type: string
+          maxLength: 260
+      required:
+        - replyText
+
+    Invite:
+      type: object
+      properties:
+        id:
+          type: string
+        inviterUserId:
+          type: string
+        recipientEmail:
+          type: ["string", "null"]
+        recipientPhone:
+          type: ["string", "null"]
+        channel:
+          type: string
+        publicToken:
+          type: string
+        status:
+          type: string
+        signedUpUserId:
+          type: ["string", "null"]
+        signedUpAt:
+          type: ["string", "null"]
+        revealRequested:
+          type: boolean
+        revealAccepted:
+          type: ["boolean", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - inviterUserId
+        - channel
+        - publicToken
+        - status
+        - revealRequested
+        - createdAt
+
+    InviteInput:
+      type: object
+      properties:
+        recipientEmail:
+          type: ["string", "null"]
+        recipientPhone:
+          type: ["string", "null"]
+        channel:
+          type: string
+      required:
+        - channel
+
+    ClaimInviteInput:
+      type: object
+      properties:
+        token:
+          type: string
+      required:
+        - token
+
+    ClaimInviteResult:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        alreadyClaimed:
+          type: boolean
+        selfInvite:
+          type: boolean
+      required:
+        - ok
+
+    PublicInvite:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+        revealRequested:
+          type: boolean
+        revealAccepted:
+          type: ["boolean", "null"]
+      required:
+        - id
+        - status
+        - revealRequested
+
+    PublicTextWhisp:
+      type: object
+      description: Public-safe fields only — never senderId, recipientUserId, or recipientPhone. See GET /public/text-whisps/{token}.
+      properties:
+        id:
+          type: string
+        messageText:
+          type: string
+          maxLength: 260
+        senderAlias:
+          type: ["string", "null"]
+        status:
+          type: string
+          description: "'sent' | 'read' | 'replied'"
+        revealRequested:
+          type: boolean
+        createdAt:
+          type: string
+      required:
+        - id
+        - messageText
+        - status
+        - revealRequested
+        - createdAt
+
     VideoMetaRequest:
       type: object
       properties:
@@ -570,6 +2789,9 @@ components:
           type: ["string", "null"]
         authorName:
           type: ["string", "null"]
+        noPreview:
+          type: boolean
+          description: True when we couldn't scrape a real preview (currently only for Facebook/Instagram) — the link is likely still fine, we just can't show what it looks like ahead of time.
       required:
         - platform
 
@@ -584,6 +2806,12 @@ components:
           type: ["string", "null"]
         videoThumbnail:
           type: ["string", "null"]
+        videoEmbedUrl:
+          type: ["string", "null"]
+        videoStartSeconds:
+          type: ["integer", "null"]
+        videoEndSeconds:
+          type: ["integer", "null"]
         videoPlatform:
           type: ["string", "null"]
         anonymousNote:
@@ -594,10 +2822,34 @@ components:
           type: ["string", "null"]
         revealRequested:
           type: boolean
+        groupSize:
+          type: ["integer", "null"]
+        appreciationResponse:
+          type: ["string", "null"]
+        expiresAt:
+          type: ["string", "null"]
+          format: date-time
+        reminderCount:
+          type: integer
+        expired:
+          type: boolean
+        hasUpload:
+          type: boolean
+        aiTakeaway:
+          type: ["string", "null"]
+        aiTakeawayStatus:
+          type: ["string", "null"]
+        replies:
+          type: array
+          items:
+            $ref: "#/components/schemas/WhispReply"
       required:
         - id
         - videoUrl
         - revealRequested
+        - expired
+        - hasUpload
+        - replies
 
     TrackingEvent:
       type: object
@@ -636,9 +2888,19 @@ components:
       type: object
       properties:
         replyText:
-          type: string
-      required:
-        - replyText
+          type: ["string", "null"]
+        videoUrl:
+          type: ["string", "null"]
+        videoTitle:
+          type: ["string", "null"]
+        videoThumbnail:
+          type: ["string", "null"]
+        videoEmbedUrl:
+          type: ["string", "null"]
+        videoPlatform:
+          type: ["string", "null"]
+        moodTag:
+          type: ["string", "null"]
 
     UserProfile:
       type: object
@@ -653,12 +2915,25 @@ components:
           type: ["string", "null"]
         avatarUrl:
           type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        phoneVerifiedAt:
+          type: ["string", "null"]
+          description: Null means this phone number has NOT been confirmed via our own Twilio Verify one-time-code flow (see POST /user/phone/confirm-verification) — never trust `phone` alone as proof of ownership, even when set.
+        gender:
+          type: ["string", "null"]
+          description: "'woman' | 'man' | 'nonbinary' | 'prefer_not_to_say' | null (not yet answered)"
+        ageRange:
+          type: ["string", "null"]
+          description: "'13-17' | '18-24' | '25-34' | '35-44' | '45-54' | '55-64' | '65+' | 'prefer_not_to_say' | null (not yet answered)"
         plan:
           type: string
         boostCredits:
           type: integer
         whisperLinksUsed:
           type: integer
+        role:
+          type: string
         createdAt:
           type: string
       required:
@@ -668,6 +2943,7 @@ components:
         - plan
         - boostCredits
         - whisperLinksUsed
+        - role
         - createdAt
 
     UserProfileUpdate:
@@ -677,6 +2953,40 @@ components:
           type: ["string", "null"]
         avatarUrl:
           type: ["string", "null"]
+        gender:
+          type: ["string", "null"]
+        ageRange:
+          type: ["string", "null"]
+
+    StartPhoneVerificationInput:
+      type: object
+      properties:
+        phone:
+          type: string
+      required:
+        - phone
+
+    ConfirmPhoneVerificationInput:
+      type: object
+      properties:
+        phone:
+          type: string
+        code:
+          type: string
+      required:
+        - phone
+        - code
+
+    PhoneVerificationResult:
+      type: object
+      properties:
+        phone:
+          type: ["string", "null"]
+        phoneVerifiedAt:
+          type: ["string", "null"]
+      required:
+        - phone
+        - phoneVerifiedAt
 
     CreditTransaction:
       type: object
@@ -699,3 +3009,1635 @@ components:
         - type
         - amount
         - createdAt
+
+    CircleFeedItem:
+      type: object
+      properties:
+        id:
+          type: string
+        videoUrl:
+          type: string
+        videoTitle:
+          type: ["string", "null"]
+        videoThumbnail:
+          type: ["string", "null"]
+        videoPlatform:
+          type: ["string", "null"]
+        anonymousNote:
+          type: ["string", "null"]
+        senderAlias:
+          type: ["string", "null"]
+        moodTag:
+          type: ["string", "null"]
+        publicToken:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - videoUrl
+        - publicToken
+        - createdAt
+
+    CircleFeedResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CircleFeedItem"
+        nextCursor:
+          type: ["string", "null"]
+      required:
+        - items
+        - nextCursor
+
+    Circle:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        ownerId:
+          type: string
+        inviteCode:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - ownerId
+        - inviteCode
+        - createdAt
+
+    CreateCircleInput:
+      type: object
+      properties:
+        name:
+          type: string
+      required:
+        - name
+
+    JoinCircleInput:
+      type: object
+      properties:
+        inviteCode:
+          type: string
+      required:
+        - inviteCode
+
+    PushPublicKeyResponse:
+      type: object
+      properties:
+        publicKey:
+          type: string
+      required:
+        - publicKey
+
+    PushSubscriptionKeys:
+      type: object
+      properties:
+        p256dh:
+          type: string
+        auth:
+          type: string
+      required:
+        - p256dh
+        - auth
+
+    PushSubscriptionInput:
+      type: object
+      properties:
+        endpoint:
+          type: string
+        keys:
+          $ref: "#/components/schemas/PushSubscriptionKeys"
+      required:
+        - endpoint
+        - keys
+
+    PushSubscriptionDeleteInput:
+      type: object
+      properties:
+        endpoint:
+          type: string
+      required:
+        - endpoint
+
+    CheckoutRequest:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum: [credit_pack, plan]
+        id:
+          type: string
+      required:
+        - kind
+        - id
+
+    CheckoutResponse:
+      type: object
+      properties:
+        url:
+          type: ["string", "null"]
+      required:
+        - url
+
+    AdminUser:
+      type: object
+      properties:
+        id:
+          type: string
+        clerkId:
+          type: string
+        email:
+          type: string
+        fullName:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        gender:
+          type: ["string", "null"]
+        ageRange:
+          type: ["string", "null"]
+        plan:
+          type: string
+        boostCredits:
+          type: integer
+        whisperLinksUsed:
+          type: integer
+        whisperLinksResetAt:
+          type: ["string", "null"]
+        stripeCustomerId:
+          type: ["string", "null"]
+        stripeSubscriptionId:
+          type: ["string", "null"]
+        role:
+          type: string
+        banned:
+          type: boolean
+        country:
+          type: ["string", "null"]
+        region:
+          type: ["string", "null"]
+        city:
+          type: ["string", "null"]
+        lastSeenAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - clerkId
+        - email
+        - plan
+        - boostCredits
+        - whisperLinksUsed
+        - role
+        - banned
+        - createdAt
+
+    AdminUserListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminUser"
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+      required:
+        - items
+        - total
+        - page
+        - pageSize
+
+    AdminUserDetail:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/AdminUser"
+        recentWhisps:
+          type: array
+          items:
+            $ref: "#/components/schemas/Whisp"
+        totalWhisps:
+          type: integer
+        creditTransactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/CreditTransaction"
+        statusCounts:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Whisp count by status ('delivered', 'failed', 'opened', 'watched', 'replied', 'pending', 'scheduled') across ALL of this user's whisps, not just recentWhisps.
+        totalReplies:
+          type: integer
+          description: Replies received across all whisps this user sent.
+        moderationFlagCount:
+          type: integer
+          description: Non-dismissed content-safety flags across this user's whisps.
+        moderationFlags:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModerationFlag"
+      required:
+        - user
+        - recentWhisps
+        - totalWhisps
+        - creditTransactions
+        - statusCounts
+        - totalReplies
+        - moderationFlagCount
+        - moderationFlags
+
+    ModerationFlag:
+      type: object
+      properties:
+        id:
+          type: string
+        whispId:
+          type: ["string", "null"]
+          description: Set when contentType is 'whisp'; null when it's 'text_whisp'.
+        textWhispId:
+          type: ["string", "null"]
+          description: Set when contentType is 'text_whisp'; null when it's 'whisp'.
+        contentType:
+          type: string
+          description: "'whisp' | 'text_whisp'"
+        userId:
+          type: string
+        videoTitle:
+          type: ["string", "null"]
+          description: The flagged whisp's video title, denormalized for display in flag lists without a second lookup. Null for a text_whisp flag.
+        textWhispMessage:
+          type: ["string", "null"]
+          description: The flagged text whisp's message text, denormalized for display the same way videoTitle is. Null for a whisp flag.
+        senderEmail:
+          type: ["string", "null"]
+        severity:
+          type: string
+          enum: [low, medium, high]
+        reasoning:
+          type: string
+        source:
+          type: string
+          description: "'ai_classifier' | 'admin_manual'"
+        dismissed:
+          type: boolean
+        reviewedAt:
+          type: ["string", "null"]
+        reviewedByAdminId:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - userId
+        - contentType
+        - severity
+        - reasoning
+        - source
+        - dismissed
+        - createdAt
+
+    ModerationFlagListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModerationFlag"
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+      required:
+        - items
+        - total
+        - page
+        - pageSize
+
+    UpdateModerationFlagInput:
+      type: object
+      properties:
+        dismissed:
+          type: boolean
+      required:
+        - dismissed
+
+    UpdateAdminUserInput:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [user, admin]
+        plan:
+          type: string
+          enum: [free, spark, ember]
+        boostCredits:
+          type: integer
+        banned:
+          type: boolean
+
+    WhispCategory:
+      type: object
+      properties:
+        id:
+          type: string
+        whispId:
+          type: string
+        category:
+          type: string
+        rank:
+          type: integer
+        score:
+          type: integer
+        createdAt:
+          type: string
+      required:
+        - id
+        - whispId
+        - category
+        - rank
+        - score
+        - createdAt
+
+    AdminWhispListItem:
+      type: object
+      properties:
+        id:
+          type: string
+        senderId:
+          type: string
+        senderEmail:
+          type: ["string", "null"]
+        videoUrl:
+          type: string
+        videoTitle:
+          type: ["string", "null"]
+        videoThumbnail:
+          type: ["string", "null"]
+        videoPlatform:
+          type: ["string", "null"]
+        deliveryMethod:
+          type: string
+        whisperChannel:
+          type: ["string", "null"]
+        circleId:
+          type: ["string", "null"]
+        recipientEmail:
+          type: ["string", "null"]
+        recipientPhone:
+          type: ["string", "null"]
+        status:
+          type: string
+        scheduledAt:
+          type: ["string", "null"]
+        deliveredAt:
+          type: ["string", "null"]
+        openedAt:
+          type: ["string", "null"]
+        watchedAt:
+          type: ["string", "null"]
+        revealRequested:
+          type: boolean
+        revealAccepted:
+          type: ["boolean", "null"]
+        appreciationResponse:
+          type: ["string", "null"]
+        moodTag:
+          type: ["string", "null"]
+        boostSpendUsd:
+          type: ["string", "null"]
+        replyCount:
+          type: integer
+        categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/WhispCategory"
+        createdAt:
+          type: string
+      required:
+        - id
+        - senderId
+        - videoUrl
+        - deliveryMethod
+        - status
+        - revealRequested
+        - replyCount
+        - categories
+        - createdAt
+
+    AdminWhispListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminWhispListItem"
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+      required:
+        - items
+        - total
+        - page
+        - pageSize
+
+    AdminWhispDetail:
+      type: object
+      properties:
+        whisp:
+          $ref: "#/components/schemas/Whisp"
+        senderId:
+          type: ["string", "null"]
+        senderEmail:
+          type: ["string", "null"]
+        senderFullName:
+          type: ["string", "null"]
+        trackingEvents:
+          type: array
+          items:
+            $ref: "#/components/schemas/TrackingEvent"
+        replies:
+          type: array
+          items:
+            $ref: "#/components/schemas/WhispReply"
+        categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/WhispCategory"
+        deliveryAttempts:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeliveryAttempt"
+        moderationFlags:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModerationFlag"
+      required:
+        - whisp
+        - trackingEvents
+        - replies
+        - categories
+        - deliveryAttempts
+        - moderationFlags
+
+    DeliveryAttempt:
+      type: object
+      properties:
+        id:
+          type: string
+        whispId:
+          type: ["string", "null"]
+        channel:
+          type: string
+          description: "'email' | 'sms' | 'whatsapp'"
+        purpose:
+          type: string
+          description: "'whisper_link' | 'reminder' | 'ghost_boost_match' | 'reply_notification' | 'appreciation_notification' | 'subscription_verification' | 'media_expiring'"
+        toAddress:
+          type: string
+        success:
+          type: boolean
+        providerMessageId:
+          type: ["string", "null"]
+        providerStatus:
+          type: ["string", "null"]
+        errorMessage:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - channel
+        - purpose
+        - toAddress
+        - success
+        - createdAt
+
+    AdminTrendPoint:
+      type: object
+      properties:
+        day:
+          type: string
+        count:
+          type: integer
+      required:
+        - day
+        - count
+
+    AdminOverviewStats:
+      type: object
+      properties:
+        totalUsers:
+          type: integer
+        totalWhisps:
+          type: integer
+        bannedUsers:
+          type: integer
+        activeUsersLast7Days:
+          type: integer
+        newUsersLast30Days:
+          type: integer
+        creditPackPurchases:
+          type: integer
+        planGrants:
+          type: integer
+        usersByPlan:
+          type: object
+          additionalProperties:
+            type: integer
+        signupTrend:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminTrendPoint"
+        whispTrend:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminTrendPoint"
+      required:
+        - totalUsers
+        - totalWhisps
+        - bannedUsers
+        - activeUsersLast7Days
+        - newUsersLast30Days
+        - creditPackPurchases
+        - planGrants
+        - usersByPlan
+        - signupTrend
+        - whispTrend
+
+    AdminCategoryStat:
+      type: object
+      properties:
+        category:
+          type: string
+        label:
+          type: string
+        totalTags:
+          type: integer
+        primaryCount:
+          type: integer
+        secondaryCount:
+          type: integer
+        tertiaryCount:
+          type: integer
+        weightedScore:
+          type: integer
+      required:
+        - category
+        - label
+        - totalTags
+        - primaryCount
+        - secondaryCount
+        - tertiaryCount
+        - weightedScore
+
+    AdminCategoryStatsResponse:
+      type: object
+      properties:
+        categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminCategoryStat"
+      required:
+        - categories
+
+    AdminDeliveryMethodStat:
+      type: object
+      properties:
+        method:
+          type: string
+        count:
+          type: integer
+        percentage:
+          type: number
+      required:
+        - method
+        - count
+        - percentage
+
+    AdminChannelStat:
+      type: object
+      properties:
+        channel:
+          type: ["string", "null"]
+        count:
+          type: integer
+      required:
+        - channel
+        - count
+
+    AdminDeliveryMethodStatsResponse:
+      type: object
+      properties:
+        methods:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminDeliveryMethodStat"
+        whisperLinkChannels:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminChannelStat"
+      required:
+        - methods
+        - whisperLinkChannels
+
+    AdminCountryStat:
+      type: object
+      properties:
+        country:
+          type: ["string", "null"]
+        count:
+          type: integer
+      required:
+        - country
+        - count
+
+    AdminCityStat:
+      type: object
+      properties:
+        city:
+          type: ["string", "null"]
+        country:
+          type: ["string", "null"]
+        count:
+          type: integer
+      required:
+        - city
+        - count
+
+    AdminRegionStat:
+      type: object
+      properties:
+        region:
+          type: ["string", "null"]
+        country:
+          type: ["string", "null"]
+        count:
+          type: integer
+      required:
+        - region
+        - count
+
+    AdminDemographicStat:
+      type: object
+      properties:
+        value:
+          type: ["string", "null"]
+        count:
+          type: integer
+      required:
+        - value
+        - count
+
+    AdminDemographicStatsResponse:
+      type: object
+      properties:
+        byGender:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminDemographicStat"
+        byAgeRange:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminDemographicStat"
+        unansweredUsers:
+          type: integer
+          description: Users who haven't been asked yet (gender and ageRange both null) — they haven't sent a first whisp, or answered "prefer not to say," which is itself counted under its own bucket, not here.
+        totalUsers:
+          type: integer
+      required:
+        - byGender
+        - byAgeRange
+        - unansweredUsers
+        - totalUsers
+
+    AdminLocationStatsResponse:
+      type: object
+      properties:
+        byCountry:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminCountryStat"
+        byRegion:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminRegionStat"
+        byCity:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminCityStat"
+        unknownLocationUsers:
+          type: integer
+        totalUsers:
+          type: integer
+      required:
+        - byCountry
+        - byRegion
+        - byCity
+        - unknownLocationUsers
+        - totalUsers
+
+    AdminOpportunity:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        severity:
+          type: string
+          enum: [opportunity, warning, info]
+        metric:
+          type: ["string", "null"]
+      required:
+        - id
+        - title
+        - description
+        - severity
+
+    AdminOpportunitiesResponse:
+      type: object
+      properties:
+        insights:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminOpportunity"
+      required:
+        - insights
+
+    AdminFunnelStats:
+      type: object
+      properties:
+        funnel:
+          type: object
+          description: Sent → delivered → opened → watched → replied across every recipient-directed whisp (whisper_link, group_whisper, ghost_boost) — circle_drop is excluded since it has no single recipient to fall off for.
+          properties:
+            sent:
+              type: integer
+            delivered:
+              type: integer
+            failed:
+              type: integer
+            opened:
+              type: integer
+            watched:
+              type: integer
+            replied:
+              type: integer
+            appreciated:
+              type: integer
+              description: Recipients who answered "yes" to "was this something you needed to hear?"
+          required: [sent, delivered, failed, opened, watched, replied, appreciated]
+        deliveryByChannel:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminChannelDeliveryStat"
+        ghostBoost:
+          type: object
+          properties:
+            campaigns:
+              type: integer
+            totalMatched:
+              type: integer
+            avgMatchedPerCampaign:
+              type: number
+          required: [campaigns, totalMatched, avgMatchedPerCampaign]
+        circles:
+          type: object
+          properties:
+            totalCircles:
+              type: integer
+            totalMembers:
+              type: integer
+            totalDrops:
+              type: integer
+          required: [totalCircles, totalMembers, totalDrops]
+        concierge:
+          type: object
+          description: Usage of the "Not sure what to send?" AI concierge (POST /whisps/concierge).
+          properties:
+            totalRequests:
+              type: integer
+            requestsWithVideoMatch:
+              type: integer
+              description: Requests where at least one Suggestions Library video was matched (as opposed to falling back to note-draft-only).
+            sends:
+              type: integer
+              description: Whisps actually sent using a concierge request's video and/or note (whisps.conciergeRequestId is set).
+          required: [totalRequests, requestsWithVideoMatch, sends]
+        phoneMatchRouting:
+          type: object
+          description: Proof the Twilio-skip matching in lib/deliver.ts is saving money — every whisper_link/group_whisper SMS-or-WhatsApp send attempt (initial send, reminders, reveal-request, reply-to-recipient), split by whether it was routed in-app (recipient phone matched a known, OTP-verified user) or actually went through Twilio (unmatched).
+          properties:
+            inApp:
+              type: integer
+            twilio:
+              type: integer
+            matchRate:
+              type: number
+              description: Percentage (0-100) of these sends that were routed in-app instead of through Twilio.
+          required: [inApp, twilio, matchRate]
+        invites:
+          type: object
+          description: Anonymous invite-a-friend (routes/invites.ts) volume and how many actually converted into a real account.
+          properties:
+            sent:
+              type: integer
+            joined:
+              type: integer
+              description: Invites whose recipient actually created a Blind Whisper account via the invite link (status = 'joined').
+            conversionRate:
+              type: number
+              description: Percentage (0-100) of sent invites that converted to a joined account.
+          required: [sent, joined, conversionRate]
+        textWhisps:
+          type: object
+          description: Text Whisp (routes/textWhisps.ts) volume and how far it gets read/replied — a separate, text-only content type, not folded into the whisp funnel above. deliveredInApp/deliveredGuest mirror phoneMatchRouting's in-app-vs-Twilio split, one level up (recipientUserId set vs. null at send time).
+          properties:
+            sent:
+              type: integer
+            read:
+              type: integer
+            replied:
+              type: integer
+            deliveredInApp:
+              type: integer
+              description: Text Whisps whose recipient phone matched a known, verified account at send time (recipientUserId is set) — delivered entirely in-app.
+            deliveredGuest:
+              type: integer
+              description: Text Whisps sent to a phone number that wasn't a known, verified account at send time (recipientUserId is null) — delivered as a public guest link over SMS.
+          required: [sent, read, replied, deliveredInApp, deliveredGuest]
+      required:
+        - funnel
+        - deliveryByChannel
+        - ghostBoost
+        - circles
+        - concierge
+        - phoneMatchRouting
+        - invites
+        - textWhisps
+
+    AdminChannelDeliveryStat:
+      type: object
+      properties:
+        channel:
+          type: string
+        attempts:
+          type: integer
+        succeeded:
+          type: integer
+        failed:
+          type: integer
+        successRate:
+          type: number
+      required:
+        - channel
+        - attempts
+        - succeeded
+        - failed
+        - successRate
+
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+        targetUserId:
+          type: ["string", "null"]
+        targetUserEmail:
+          type: ["string", "null"]
+        title:
+          type: string
+        body:
+          type: string
+        url:
+          type: ["string", "null"]
+        createdByAdminId:
+          type: ["string", "null"]
+          description: Null means system-generated (e.g. a repeated content-flag warning), not composed by an admin.
+        createdByAdminEmail:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        read:
+          type: boolean
+          description: Only populated for the current user's own notification list (GET /user/notifications) — omitted from the admin audit list, which has no single "reader".
+      required:
+        - id
+        - title
+        - body
+        - createdAt
+
+    SendNotificationInput:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        body:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        url:
+          type: ["string", "null"]
+        audience:
+          type: string
+          enum: [all, users]
+        userIds:
+          type: array
+          items:
+            type: string
+          description: Required (non-empty) when audience is 'users'; ignored for 'all'.
+      required:
+        - title
+        - body
+        - audience
+
+    SendNotificationResult:
+      type: object
+      properties:
+        recipientCount:
+          type: integer
+          description: Number of users this notification was created for — total user count for 'all', or userIds.length for 'users'.
+        pushDelivered:
+          type: integer
+          description: How many active push subscriptions were actually notified live (best-effort; recipients without one still see it in-app).
+      required:
+        - recipientCount
+        - pushDelivered
+
+    AdminNotificationListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Notification"
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+      required:
+        - items
+        - total
+        - page
+        - pageSize
+
+    NotificationListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Notification"
+        unreadCount:
+          type: integer
+      required:
+        - items
+        - unreadCount
+
+    UnreadNotificationCountResponse:
+      type: object
+      properties:
+        unreadCount:
+          type: integer
+      required:
+        - unreadCount
+
+    WhisperGroup:
+      type: object
+      properties:
+        id:
+          type: string
+        ownerId:
+          type: string
+        name:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - ownerId
+        - name
+        - createdAt
+
+    WhisperGroupSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        ownerId:
+          type: string
+        name:
+          type: string
+        createdAt:
+          type: string
+        memberCount:
+          type: integer
+      required:
+        - id
+        - ownerId
+        - name
+        - createdAt
+        - memberCount
+
+    WhisperGroupMember:
+      type: object
+      properties:
+        id:
+          type: string
+        groupId:
+          type: string
+        name:
+          type: ["string", "null"]
+        email:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - groupId
+        - createdAt
+
+    WhisperGroupDetail:
+      type: object
+      properties:
+        id:
+          type: string
+        ownerId:
+          type: string
+        name:
+          type: string
+        createdAt:
+          type: string
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/WhisperGroupMember"
+      required:
+        - id
+        - ownerId
+        - name
+        - createdAt
+        - members
+
+    WhisperGroupNameInput:
+      type: object
+      properties:
+        name:
+          type: string
+      required:
+        - name
+
+    GroupMemberInput:
+      type: object
+      properties:
+        name:
+          type: ["string", "null"]
+        email:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+
+    AddWhisperGroupMembersInput:
+      type: object
+      properties:
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/GroupMemberInput"
+      required:
+        - members
+
+    SendGroupWhispInput:
+      type: object
+      properties:
+        videoUrl:
+          type: ["string", "null"]
+        videoTitle:
+          type: ["string", "null"]
+        videoThumbnail:
+          type: ["string", "null"]
+        videoEmbedUrl:
+          type: ["string", "null"]
+        videoStartSeconds:
+          type: ["integer", "null"]
+        videoEndSeconds:
+          type: ["integer", "null"]
+        videoPlatform:
+          type: ["string", "null"]
+        uploadedVideoId:
+          type: ["string", "null"]
+          description: An id from the sender's Media Library — an alternative to videoUrl. One of the two is required.
+        whisperChannel:
+          type: string
+          enum: [email, sms, whatsapp]
+        anonymousNote:
+          type: ["string", "null"]
+        senderAlias:
+          type: ["string", "null"]
+        moodTag:
+          type: ["string", "null"]
+        scheduledAt:
+          type: ["string", "null"]
+      required:
+        - whisperChannel
+
+    SkippedGroupMember:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: ["string", "null"]
+        reason:
+          type: string
+      required:
+        - id
+        - reason
+
+    SendGroupWhispResult:
+      type: object
+      properties:
+        groupSendId:
+          type: string
+        memberCount:
+          type: integer
+        skippedMembers:
+          type: array
+          items:
+            $ref: "#/components/schemas/SkippedGroupMember"
+      required:
+        - groupSendId
+        - memberCount
+        - skippedMembers
+
+    GroupWhispSendSummary:
+      type: object
+      properties:
+        groupSendId:
+          type: ["string", "null"]
+        whisperGroupId:
+          type: ["string", "null"]
+        groupName:
+          type: ["string", "null"]
+        videoUrl:
+          type: string
+        videoTitle:
+          type: ["string", "null"]
+        videoThumbnail:
+          type: ["string", "null"]
+        whisperChannel:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        memberCount:
+          type: integer
+        openedCount:
+          type: integer
+        watchedCount:
+          type: integer
+        repliedCount:
+          type: integer
+        scheduledCount:
+          type: integer
+      required:
+        - videoUrl
+        - createdAt
+        - memberCount
+        - openedCount
+        - watchedCount
+        - repliedCount
+        - scheduledCount
+
+    GroupWhispSendMember:
+      type: object
+      properties:
+        whispId:
+          type: string
+        recipientEmail:
+          type: ["string", "null"]
+        recipientPhone:
+          type: ["string", "null"]
+        status:
+          type: string
+        deliveredAt:
+          type: ["string", "null"]
+        openedAt:
+          type: ["string", "null"]
+        watchedAt:
+          type: ["string", "null"]
+        revealRequested:
+          type: boolean
+        revealAccepted:
+          type: ["boolean", "null"]
+        appreciationResponse:
+          type: ["string", "null"]
+        replies:
+          type: array
+          items:
+            $ref: "#/components/schemas/WhispReply"
+      required:
+        - whispId
+        - status
+        - revealRequested
+        - replies
+
+    GroupWhispSendVideo:
+      type: object
+      properties:
+        videoUrl:
+          type: string
+        videoTitle:
+          type: ["string", "null"]
+        videoThumbnail:
+          type: ["string", "null"]
+        videoPlatform:
+          type: ["string", "null"]
+        uploadedVideoId:
+          type: ["string", "null"]
+      required:
+        - videoUrl
+
+    GroupWhispSendDetail:
+      type: object
+      properties:
+        groupSendId:
+          type: string
+        groupName:
+          type: ["string", "null"]
+        video:
+          $ref: "#/components/schemas/GroupWhispSendVideo"
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/GroupWhispSendMember"
+      required:
+        - groupSendId
+        - video
+        - members
+
+    AppreciationInput:
+      type: object
+      properties:
+        appreciated:
+          type: boolean
+      required:
+        - appreciated
+
+    AppreciationResult:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        appreciationResponse:
+          type: string
+      required:
+        - ok
+        - appreciationResponse
+
+    RemindMeInput:
+      type: object
+      properties:
+        minutes:
+          type: integer
+          description: Minutes from now to send the reminder
+      required:
+        - minutes
+
+    RemindMeResult:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        nextReminderAt:
+          type: string
+          format: date-time
+        isFinal:
+          type: boolean
+          description: True if this will be the recipient's last available reminder
+      required:
+        - ok
+        - nextReminderAt
+        - isFinal
+
+    UploadedVideo:
+      type: object
+      properties:
+        id:
+          type: string
+        originalFilename:
+          type: string
+        mimeType:
+          type: string
+        sizeBytes:
+          type: integer
+        durationSeconds:
+          type: ["integer", "null"]
+        status:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        deletionWarnedAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+        usageCount:
+          type: integer
+          description: Number of whisps sent using this clip
+      required:
+        - id
+        - originalFilename
+        - mimeType
+        - sizeBytes
+        - status
+        - expiresAt
+        - createdAt
+        - usageCount
+
+    SubscribeInput:
+      type: object
+      properties:
+        email:
+          type: string
+        categories:
+          type: array
+          items:
+            type: string
+          description: Category keys from the taxonomy (see VIDEO_CATEGORY_LABELS on the frontend)
+      required:
+        - email
+        - categories
+
+    SubscribeResult:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        alreadyVerified:
+          type: boolean
+      required:
+        - ok
+        - alreadyVerified
+
+    MatchStats:
+      type: object
+      properties:
+        matchedCount:
+          type: integer
+        openedCount:
+          type: integer
+        watchedCount:
+          type: integer
+        repliedCount:
+          type: integer
+        appreciatedCount:
+          type: integer
+      required:
+        - matchedCount
+        - openedCount
+        - watchedCount
+        - repliedCount
+        - appreciatedCount
+
+    NoteSuggestionsInput:
+      type: object
+      properties:
+        videoTitle:
+          type: ["string", "null"]
+        moodTag:
+          type: ["string", "null"]
+
+    NoteSuggestionsResult:
+      type: object
+      properties:
+        suggestions:
+          type: array
+          items:
+            type: string
+          description: 0-3 suggested note options — may be empty if generation is unavailable
+      required:
+        - suggestions
+
+    ConciergeInput:
+      type: object
+      properties:
+        situation:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: The sender's own free-text description of who this is for and why, e.g. "my friend is going through a rough breakup"
+      required:
+        - situation
+
+    ConciergeResult:
+      type: object
+      properties:
+        requestId:
+          type: string
+          description: concierge_requests id — pass back as conciergeRequestId on POST /whisps if the sender goes on to send using this request's suggestions
+        videoSuggestions:
+          type: array
+          items:
+            $ref: "#/components/schemas/SuggestedVideo"
+          description: 0-3 Suggestions Library videos matched to the situation, ranked best-first — empty when nothing in the library fit well
+        noteDraft:
+          type: ["string", "null"]
+          description: A single drafted anonymous note the sender can use as-is or edit — null if generation was unavailable
+        matchedCategories:
+          type: array
+          items:
+            type: string
+          description: The fixed taxonomy category keys (see the categories field on GET /suggestions) the model matched from the situation text
+      required:
+        - requestId
+        - videoSuggestions
+        - noteDraft
+        - matchedCategories
+
+    SuggestedVideo:
+      type: object
+      properties:
+        id:
+          type: string
+        videoUrl:
+          type: string
+        videoTitle:
+          type: ["string", "null"]
+        videoThumbnail:
+          type: ["string", "null"]
+        videoEmbedUrl:
+          type: ["string", "null"]
+        videoPlatform:
+          type: ["string", "null"]
+        authorName:
+          type: ["string", "null"]
+        categories:
+          type: array
+          items:
+            type: string
+        aiSummary:
+          type: ["string", "null"]
+        aiSummaryStatus:
+          type: ["string", "null"]
+          description: "null | 'pending' | 'ready' | 'unavailable'"
+        featured:
+          type: boolean
+        status:
+          type: string
+          description: "'pending' | 'published' | 'archived'"
+        source:
+          type: string
+          description: "'admin' | 'ai_agent'"
+        addedByUserId:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        publishedAt:
+          type: ["string", "null"]
+      required:
+        - id
+        - videoUrl
+        - categories
+        - featured
+        - status
+        - source
+        - createdAt
+
+    SuggestionListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SuggestedVideo"
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+      required:
+        - items
+        - total
+        - page
+        - pageSize
+
+    SuggestionCategory:
+      type: object
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+      required:
+        - key
+        - label
+
+    SuggestionGalleryResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SuggestedVideo"
+        categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/SuggestionCategory"
+      required:
+        - items
+        - categories
+
+    CreateSuggestionInput:
+      type: object
+      properties:
+        videoUrl:
+          type: string
+        categories:
+          type: array
+          items:
+            type: string
+        featured:
+          type: boolean
+      required:
+        - videoUrl
+        - categories
+
+    UpdateSuggestionInput:
+      type: object
+      properties:
+        categories:
+          type: array
+          items:
+            type: string
+        featured:
+          type: boolean
+        status:
+          type: string
+          description: "'pending' | 'published' | 'archived'"
+        aiSummary:
+          type: ["string", "null"]
+
+    SuggestionAgentStatus:
+      type: object
+      properties:
+        id:
+          type: string
+        lastRunAt:
+          type: ["string", "null"]
+        lastRunOk:
+          type: boolean
+        lastErrorMessage:
+          type: ["string", "null"]
+        lowCreditSuspected:
+          type: boolean
+          description: Best-effort heuristic match on the last error's message text — true when it looks like the Anthropic account's credit balance is too low
+        consecutiveFailures:
+          type: integer
+      required:
+        - id
+        - lastRunOk
+        - lowCreditSuspected
+        - consecutiveFailures
+
+    RunSuggestionAgentResult:
+      type: object
+      properties:
+        inserted:
+          type: integer
+        skipped:
+          type: integer
+        status:
+          $ref: "#/components/schemas/SuggestionAgentStatus"
+      required:
+        - inserted
+        - skipped

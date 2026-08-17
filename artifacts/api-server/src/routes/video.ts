@@ -1,69 +1,18 @@
 import { Router } from "express";
 import { z } from "zod";
+import { resolveVideoMeta } from "../lib/videoMeta";
+import { publicEndpointLimiter } from "../lib/rateLimit";
 
 const router = Router();
 
-function detectPlatform(url: string): string {
-  if (url.includes("youtube.com") || url.includes("youtu.be")) return "youtube";
-  if (url.includes("tiktok.com")) return "tiktok";
-  if (url.includes("instagram.com")) return "instagram";
-  if (url.includes("facebook.com") || url.includes("fb.com") || url.includes("fb.watch")) return "facebook";
-  if (url.includes("vimeo.com")) return "vimeo";
-  if (url.includes("twitter.com") || url.includes("x.com")) return "twitter";
-  return "other";
-}
-
-async function scrapeOEmbed(url: string): Promise<{ title?: string; thumbnail?: string; authorName?: string; embedUrl?: string } | null> {
-  const endpoints: Record<string, string> = {
-    youtube: `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`,
-    vimeo: `https://vimeo.com/api/oembed.json?url=${encodeURIComponent(url)}`,
-  };
-
-  const platform = detectPlatform(url);
-  const endpoint = endpoints[platform];
-  if (!endpoint) return null;
-
-  try {
-    const res = await fetch(endpoint, { signal: AbortSignal.timeout(5000) });
-    if (!res.ok) return null;
-    const data = await res.json() as any;
-    return {
-      title: data.title,
-      thumbnail: data.thumbnail_url,
-      authorName: data.author_name,
-    };
-  } catch {
-    return null;
-  }
-}
-
-async function scrapeOpenGraph(url: string): Promise<{ title?: string; thumbnail?: string } | null> {
-  try {
-    const res = await fetch(url, {
-      signal: AbortSignal.timeout(8000),
-      headers: { "User-Agent": "WhisprBot/1.0" },
-    });
-    if (!res.ok) return null;
-    const html = await res.text();
-
-    const ogTitle = html.match(/<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i)?.[1]
-      ?? html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:title["']/i)?.[1]
-      ?? html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1];
-
-    const ogImage = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i)?.[1]
-      ?? html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i)?.[1];
-
-    return {
-      title: ogTitle?.trim(),
-      thumbnail: ogImage?.trim(),
-    };
-  } catch {
-    return null;
-  }
-}
-
-// POST /api/video/meta
-router.post("/meta", async (req, res): Promise<void> => {
+// POST /api/video/meta — entirely unauthenticated (the composer calls this
+// before a whisp/account necessarily exists) and each call makes a real
+// outbound oEmbed/OpenGraph fetch (lib/videoMeta.ts) with its own multi-
+// second timeout — without a limit, anyone could drive unbounded outbound
+// requests through this server for free. Same reasoning/limiter as every
+// other unauthenticated route with a real side effect (see
+// lib/rateLimit.ts's publicEndpointLimiter).
+router.post("/meta", publicEndpointLimiter, async (req, res): Promise<void> => {
   const schema = z.object({ url: z.string().url() });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) {
@@ -71,22 +20,43 @@ router.post("/meta", async (req, res): Promise<void> => {
     return;
   }
 
-  const { url } = parsed.data;
-  const platform = detectPlatform(url);
+  const outcome = await resolveVideoMeta(parsed.data.url);
 
-  // Try oEmbed first, then OG scraping
-  const oembed = await scrapeOEmbed(url);
-  const og = oembed ? null : await scrapeOpenGraph(url);
-
-  const meta = oembed ?? og;
-
-  res.json({
-    title: meta?.title ?? null,
-    thumbnail: meta?.thumbnail ?? null,
-    platform,
-    embedUrl: null,
-    authorName: (oembed as any)?.authorName ?? null,
-  });
+  switch (outcome.kind) {
+    case "invalid_url":
+      res.status(400).json({ error: "Only http/https URLs are supported" });
+      return;
+    case "unsupported":
+      res.status(400).json({ error: "Unsupported video URL. Only YouTube, TikTok, Instagram, Facebook, Vimeo, and X/Twitter links are supported." });
+      return;
+    case "blocked":
+      res.status(422).json({ error: outcome.error, code: outcome.code });
+      return;
+    // Not an error — we just couldn't scrape a real preview (see
+    // VideoMetaOutcome's "no_preview" case). 200, not 422: the link itself
+    // is very likely fine, we just can't show what it looks like ahead of
+    // time. The frontend shows a platform icon and an explanatory note
+    // instead of a blank/broken-looking preview card.
+    case "no_preview":
+      res.json({
+        title: null,
+        thumbnail: null,
+        platform: outcome.platform,
+        embedUrl: null,
+        authorName: null,
+        noPreview: true,
+      });
+      return;
+    case "ok":
+      res.json({
+        title: outcome.title,
+        thumbnail: outcome.thumbnail,
+        platform: outcome.platform,
+        embedUrl: outcome.embedUrl,
+        authorName: outcome.authorName,
+      });
+      return;
+  }
 });
 
 export default router;
