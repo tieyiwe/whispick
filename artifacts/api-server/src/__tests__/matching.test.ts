@@ -17,11 +17,17 @@ vi.mock("../lib/categorizeWhisp", () => ({
   categorizeWhispsAsync: async () => {},
 }));
 
-// notifyUser is a no-op without VAPID keys (unset in tests) either way, so
-// mocking it here is the only way to distinguish "the ghost_boost fan-out
-// guard skipped the call" from "it was called and silently no-opped."
+// Sender-facing notifications go through notifyUserPersisted (persists an
+// in-app notification, then fires a best-effort push). Mocking it is the only
+// way to distinguish "the ghost_boost fan-out guard skipped the call" from
+// "it was called and silently no-opped" — the underlying push is a no-op
+// without VAPID keys (unset in tests) either way. notifyUser is stubbed too
+// since the real module exports both.
 const notifyUserMock = vi.hoisted(() => vi.fn(async () => {}));
-vi.mock("../lib/push", () => ({ notifyUser: notifyUserMock }));
+vi.mock("../lib/push", () => ({
+  notifyUser: vi.fn(async () => {}),
+  notifyUserPersisted: notifyUserMock,
+}));
 
 function asUser(userId: string) {
   return { [TEST_USER_HEADER]: userId };

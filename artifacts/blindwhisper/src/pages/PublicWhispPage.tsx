@@ -24,6 +24,8 @@ import { Send, Loader2, Video, X, Link2, HeartHandshake, Clock, BellRing, Sparkl
 import { Logo } from "@/components/ui/logo";
 import { VideoPlayer } from "@/components/shared/VideoPlayer";
 import { QUICK_REPLIES } from "@/lib/quickReplies";
+import { ReplyThread } from "@/components/shared/ReplyThread";
+import { PullToRefresh } from "@/components/shared/PullToRefresh";
 import { REMINDER_PRESETS, MAX_REMINDERS } from "@/lib/reminderPresets";
 import { savePendingForward } from "@/lib/forwardVideo";
 
@@ -107,13 +109,21 @@ export function PublicWhispPage() {
   } | null>(null);
   const [replyVideoError, setReplyVideoError] = useState<string | null>(null);
 
-  const { data: whisp, isLoading } = useGetPublicWhisp(token!, {
+  const { data: whisp, isLoading, refetch } = useGetPublicWhisp(token!, {
     query: {
       enabled: !!token,
       queryKey: getGetPublicWhispQueryKey(token!),
-      // The takeaway generates asynchronously after watched_complete fires —
-      // poll briefly to pick it up once it lands, then stop.
-      refetchInterval: (query) => (justWatched && !query.state.data?.aiTakeawayStatus ? 3000 : false),
+      // Two independent reasons to poll:
+      //  - the takeaway generates asynchronously after watched_complete
+      //    fires, so poll fast until it lands, then stop;
+      //  - a sender's follow-up should appear in the thread while the
+      //    recipient still has the page open, so keep a slower poll running
+      //    for the life of the page once a conversation exists.
+      refetchInterval: (query) => {
+        if (justWatched && !query.state.data?.aiTakeawayStatus) return 3000;
+        return query.state.data?.replies?.length ? 15_000 : false;
+      },
+      refetchIntervalInBackground: false,
     },
   });
 
@@ -262,6 +272,7 @@ export function PublicWhispPage() {
     : [];
 
   return (
+    <PullToRefresh onRefresh={() => refetch()}>
     <div className="min-h-[100dvh] bg-background flex flex-col relative overflow-hidden">
       {/* Ambient background, tinted by the whisp's mood */}
       <div
@@ -427,46 +438,11 @@ export function PublicWhispPage() {
               </div>
 
               {whisp.replies.length > 0 && (
-                <div className="space-y-2">
-                  {whisp.replies.map((reply) => (
-                    <div
-                      key={reply.id}
-                      data-testid={`reply-${reply.id}`}
-                      className={`p-3 rounded-xl text-sm ${
-                        reply.fromRecipient
-                          ? "bg-primary/10 border border-primary/20"
-                          : "bg-muted/30 border border-border/50 mr-8"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 mb-1">
-                        <UserCircle2 className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">
-                          {reply.fromRecipient ? "You" : whisp.senderAlias || "The sender"} ·{" "}
-                          {new Date(reply.createdAt).toLocaleString()}
-                        </span>
-                      </div>
-                      {reply.replyText && <p className="text-foreground">{reply.replyText}</p>}
-                      {reply.videoUrl && (
-                        <a
-                          href={reply.videoUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          data-testid={`reply-video-${reply.id}`}
-                          className={`flex gap-2 items-center bg-card rounded-lg p-2 hover:bg-card/70 transition-colors ${reply.replyText ? "mt-2" : ""}`}
-                        >
-                          {reply.videoThumbnail ? (
-                            <img src={reply.videoThumbnail} className="w-16 h-12 object-cover rounded" alt="Video reply thumbnail" />
-                          ) : (
-                            <div className="w-16 h-12 bg-muted rounded flex items-center justify-center shrink-0">
-                              <PlayCircle className="w-5 h-5 text-muted-foreground" />
-                            </div>
-                          )}
-                          <span className="text-xs text-foreground truncate">{reply.videoTitle || "Whisped a video back"}</span>
-                        </a>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                <ReplyThread
+                  replies={whisp.replies}
+                  viewerIsRecipient
+                  otherLabel={whisp.senderAlias || "The sender"}
+                />
               )}
 
               {(() => {
@@ -476,6 +452,24 @@ export function PublicWhispPage() {
                     <p className="text-xs text-muted-foreground text-center py-2">
                       This whisp has expired, so you can't reply anymore.
                     </p>
+                  );
+                }
+                // Out of anonymous replies: signing up is the way to keep
+                // going, so lead with that rather than a dead end. (The
+                // sender can also add more — but that's their decision to
+                // make, not something to promise the recipient here.)
+                const remaining = whisp.recipientRepliesRemaining;
+                if (remaining === 0) {
+                  return (
+                    <div className="rounded-2xl border border-primary/25 bg-primary/5 p-4 text-center space-y-2" data-testid="reply-limit-reached">
+                      <p className="text-sm text-foreground">You've used all your anonymous replies here.</p>
+                      <p className="text-xs text-muted-foreground">
+                        Create a free account to keep this conversation going — you'll still be anonymous to them.
+                      </p>
+                      <Button size="sm" className="rounded-full" onClick={() => setLocation("/sign-up")} data-testid="button-signup-for-replies">
+                        Sign up to keep replying
+                      </Button>
+                    </div>
                   );
                 }
                 return (
@@ -576,6 +570,18 @@ export function PublicWhispPage() {
                         </div>
                       )}
                     </div>
+                  )}
+
+                  {/* Warn only when they're nearly out — showing a counter
+                      from the very first reply would make an anonymous note
+                      feel metered when there's no reason to think about it
+                      yet. */}
+                  {typeof remaining === "number" && remaining > 0 && remaining <= 2 && (
+                    <p className="text-xs text-muted-foreground text-center" data-testid="text-replies-remaining">
+                      {remaining === 1
+                        ? "This is your last anonymous reply — sign up free to keep going."
+                        : `${remaining} anonymous replies left.`}
+                    </p>
                   )}
 
                   <div className="flex items-center justify-between">
@@ -727,5 +733,6 @@ export function PublicWhispPage() {
         </p>
       </footer>
     </div>
+    </PullToRefresh>
   );
 }

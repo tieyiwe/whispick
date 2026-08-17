@@ -1,4 +1,12 @@
-import { useListWhisps } from "@workspace/api-client-react";
+import { useEffect, useRef } from "react";
+import {
+  useListWhisps,
+  useGetMyNotifications,
+  useMarkNotificationRead,
+  getGetMyNotificationsQueryKey,
+  getGetMyUnreadNotificationCountQueryKey,
+} from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -7,6 +15,35 @@ import { MessageSquareHeart, ArrowRight, UserCircle2 } from "lucide-react";
 
 export function RepliesInbox() {
   const { data: whisps, isLoading } = useListWhisps({ status: "replied" });
+  const queryClient = useQueryClient();
+  const { data: notifications } = useGetMyNotifications({
+    query: { queryKey: getGetMyNotificationsQueryKey() },
+  });
+  const markRead = useMarkNotificationRead();
+  // Opening this page IS reading the replies, so clear their unread badge —
+  // otherwise it would stay lit until the user separately opened the
+  // notification bell, pointing them back at a page they're already on.
+  // Guarded by a ref so a re-render (or the list refetching) can't fire the
+  // same mutations twice.
+  const clearedRef = useRef(false);
+
+  useEffect(() => {
+    if (clearedRef.current || !notifications?.items) return;
+    const unreadReplies = notifications.items.filter((n) => n.kind === "reply" && !n.read);
+    if (unreadReplies.length === 0) return;
+
+    clearedRef.current = true;
+    Promise.all(unreadReplies.map((n) => markRead.mutateAsync({ id: n.id })))
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey: getGetMyNotificationsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetMyUnreadNotificationCountQueryKey() });
+      })
+      // A failed mark-read just means the badge stays up — not worth
+      // surfacing an error toast over, but allow a later retry.
+      .catch(() => {
+        clearedRef.current = false;
+      });
+  }, [notifications, markRead, queryClient]);
 
   if (isLoading) {
     return (

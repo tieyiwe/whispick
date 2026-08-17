@@ -15,6 +15,14 @@ export const notificationsTable = pgTable("notifications", {
   title: text("title").notNull(),
   body: text("body").notNull(),
   url: text("url"), // optional in-app link the notification points at
+  // What produced this notification ("reply", "opened", "watched",
+  // "appreciation", ...). Nullable because rows predating this column (and
+  // admin-composed ones, which have no single event behind them) have no
+  // meaningful kind. Lets a specific surface count only what belongs to it —
+  // e.g. the Replies tab badge counts unread "reply" notifications rather
+  // than every unread notification, which would light it up for an
+  // open/watch event that has nothing to do with replies.
+  kind: text("kind"),
   // Null means system-generated (e.g. lib/moderation.ts's repeated-flag
   // warning) rather than composed by an admin through POST
   // /admin/notifications — kept distinct from "attribute it to some admin"

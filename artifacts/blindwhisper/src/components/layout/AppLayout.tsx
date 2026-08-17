@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { Logo } from "@/components/ui/logo";
 import { useUser, useClerk } from "@clerk/react";
-import { useGetUserProfile } from "@workspace/api-client-react";
+import { useGetUserProfile, useGetMyUnreadNotificationCount, getGetMyUnreadNotificationCountQueryKey } from "@workspace/api-client-react";
 import {
   LayoutDashboard,
   Send,
@@ -32,6 +32,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { NotificationBell } from "@/components/shared/NotificationBell";
+import { PullToRefresh } from "@/components/shared/PullToRefresh";
+import { useQueryClient } from "@tanstack/react-query";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -59,15 +61,37 @@ const MOBILE_TAB_ITEMS_RIGHT = [
   { href: "/replies", label: "Replies", icon: MessageSquareHeart },
 ];
 
-function MobileTabLink({ href, label, icon: Icon, isActive }: { href: string; label: string; icon: typeof LayoutDashboard; isActive: boolean }) {
+function MobileTabLink({
+  href,
+  label,
+  icon: Icon,
+  isActive,
+  badgeCount = 0,
+}: {
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  isActive: boolean;
+  badgeCount?: number;
+}) {
   return (
     <Link
       href={href}
-      className={`flex flex-col items-center justify-center gap-0.5 min-w-11 min-h-11 px-2 py-1.5 rounded-xl transition-colors ${
+      className={`relative flex flex-col items-center justify-center gap-0.5 min-w-11 min-h-11 px-2 py-1.5 rounded-xl transition-colors ${
         isActive ? "text-primary" : "text-muted-foreground"
       }`}
     >
-      <Icon className="w-6 h-6" />
+      <div className="relative">
+        <Icon className="w-6 h-6" />
+        {badgeCount > 0 && (
+          <span
+            className="absolute -top-1 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-secondary text-[10px] font-semibold text-secondary-foreground flex items-center justify-center"
+            data-testid={`badge-mobile-${label.toLowerCase()}`}
+          >
+            {badgeCount > 9 ? "9+" : badgeCount}
+          </span>
+        )}
+      </div>
       <span className="text-[10px] font-medium leading-none">{label}</span>
     </Link>
   );
@@ -132,6 +156,21 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const { signOut } = useClerk();
   const { data: profile } = useGetUserProfile();
   const isAdmin = profile?.role === "admin";
+  const queryClient = useQueryClient();
+
+  // Drives the Replies badge. Polled (no websockets anywhere in this app —
+  // see NotificationBell's note) on the same 60s cadence as the bell, so a
+  // reply that lands while the sender is using the app surfaces on its own
+  // rather than only on a manual reload. Counts unread REPLY notifications
+  // specifically, not every unread notification.
+  const { data: unread } = useGetMyUnreadNotificationCount({
+    query: {
+      queryKey: getGetMyUnreadNotificationCountQueryKey(),
+      refetchInterval: 60_000,
+      refetchIntervalInBackground: false,
+    },
+  });
+  const unreadReplyCount = unread?.unreadReplyCount ?? 0;
 
   const navItems = isAdmin
     ? [...NAV_ITEMS, { href: "/admin", label: "Admin", icon: ShieldCheck }]
@@ -167,7 +206,15 @@ export function AppLayout({ children }: { children: ReactNode }) {
                 }`}
               >
                 <Icon className="w-5 h-5" />
-                {item.label}
+                <span className="flex-1">{item.label}</span>
+                {item.href === "/replies" && unreadReplyCount > 0 && (
+                  <span
+                    className="min-w-[20px] h-5 px-1.5 rounded-full bg-secondary text-xs font-semibold text-secondary-foreground flex items-center justify-center"
+                    data-testid="badge-unread-replies"
+                  >
+                    {unreadReplyCount > 9 ? "9+" : unreadReplyCount}
+                  </span>
+                )}
               </Link>
             );
           })}
@@ -212,9 +259,16 @@ export function AppLayout({ children }: { children: ReactNode }) {
       </header>
 
       <main className="flex-1 overflow-x-hidden md:min-h-screen pb-24 md:pb-0">
-        <div className="max-w-5xl mx-auto p-4 md:p-8 lg:p-10">
-          {children}
-        </div>
+        {/* Restores a swipe-down refresh on mobile: index.css sets
+            overscroll-behavior-y: contain (so the page doesn't rubber-band
+            against the fixed header/bottom nav), which also disables the
+            browser's own pull-to-refresh. Refetches every active query
+            rather than any one endpoint, since this wraps every page. */}
+        <PullToRefresh onRefresh={() => queryClient.refetchQueries({ type: "active" })}>
+          <div className="max-w-5xl mx-auto p-4 md:p-8 lg:p-10">
+            {children}
+          </div>
+        </PullToRefresh>
       </main>
 
       {/* Mobile bottom tab bar with a raised Send action, native-app style */}
@@ -234,7 +288,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </Link>
 
           {MOBILE_TAB_ITEMS_RIGHT.map((item) => (
-            <MobileTabLink key={item.href} {...item} isActive={location === item.href} />
+            <MobileTabLink
+              key={item.href}
+              {...item}
+              isActive={location === item.href}
+              badgeCount={item.href === "/replies" ? unreadReplyCount : 0}
+            />
           ))}
         </div>
       </nav>

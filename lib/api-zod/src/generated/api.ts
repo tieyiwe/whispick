@@ -234,7 +234,8 @@ export const GetWhispResponse = zod.object({
   "videoPlatform": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
   "createdAt": zod.string()
-}))
+})),
+  "recipientRepliesRemaining": zod.number().nullish().describe('Anonymous replies the recipient has left on this whisp. Null means uncapped. 0 means they can\'t reply again unless the sender adds more replies or the recipient signs up.')
 })
 
 
@@ -752,7 +753,8 @@ export const GetPublicWhispResponse = zod.object({
   "videoPlatform": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
   "createdAt": zod.string()
-}))
+})),
+  "recipientRepliesRemaining": zod.number().nullish().describe('Anonymous replies this recipient has left on this whisp. Null means uncapped. Signing up removes the cap entirely.')
 })
 
 
@@ -1661,6 +1663,7 @@ export const AdminListNotificationsResponse = zod.object({
   "title": zod.string(),
   "body": zod.string(),
   "url": zod.string().nullish(),
+  "kind": zod.string().nullish().describe('What produced this notification (\"reply\", \"opened\", \"watched\", \"appreciation\", ...). Null for admin-composed notifications and for rows predating this field.'),
   "createdByAdminId": zod.string().nullish().describe('Null means system-generated (e.g. a repeated content-flag warning), not composed by an admin.'),
   "createdByAdminEmail": zod.string().nullish(),
   "createdAt": zod.string(),
@@ -1706,6 +1709,7 @@ export const GetMyNotificationsResponse = zod.object({
   "title": zod.string(),
   "body": zod.string(),
   "url": zod.string().nullish(),
+  "kind": zod.string().nullish().describe('What produced this notification (\"reply\", \"opened\", \"watched\", \"appreciation\", ...). Null for admin-composed notifications and for rows predating this field.'),
   "createdByAdminId": zod.string().nullish().describe('Null means system-generated (e.g. a repeated content-flag warning), not composed by an admin.'),
   "createdByAdminEmail": zod.string().nullish(),
   "createdAt": zod.string(),
@@ -1719,7 +1723,8 @@ export const GetMyNotificationsResponse = zod.object({
  * @summary Lightweight unread count for a nav badge, without fetching the full list
  */
 export const GetMyUnreadNotificationCountResponse = zod.object({
-  "unreadCount": zod.number()
+  "unreadCount": zod.number(),
+  "unreadReplyCount": zod.number().describe('Unread notifications of kind \"reply\" only — lets the Replies tab badge mean \"someone replied\" rather than lighting up for any unread notification.')
 })
 
 

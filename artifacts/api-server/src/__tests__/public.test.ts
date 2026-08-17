@@ -181,3 +181,51 @@ describe("POST /api/public/w/:token/reply", () => {
     expect(res.body.videoThumbnail).toBeNull();
   });
 });
+
+describe("anonymous recipient reply cap", () => {
+  // Default free allowance is 3 (lib/plans.ts recipientFreeReplies).
+  it("blocks an anonymous recipient once they've used their free replies", async () => {
+    const whisp = await createWhisp();
+
+    for (let i = 0; i < 3; i++) {
+      const ok = await request(app).post(`/api/public/w/${whisp.publicToken}/reply`).send({ replyText: `reply ${i}` });
+      expect(ok.status).toBe(201);
+    }
+
+    const blocked = await request(app).post(`/api/public/w/${whisp.publicToken}/reply`).send({ replyText: "one too many" });
+    expect(blocked.status).toBe(403);
+    expect(blocked.body.code).toBe("reply_limit_reached");
+  });
+
+  it("reports how many anonymous replies are left, and 0 once exhausted", async () => {
+    const whisp = await createWhisp();
+
+    const fresh = await request(app).get(`/api/public/w/${whisp.publicToken}`);
+    expect(fresh.body.recipientRepliesRemaining).toBe(3);
+
+    await request(app).post(`/api/public/w/${whisp.publicToken}/reply`).send({ replyText: "one" });
+    const afterOne = await request(app).get(`/api/public/w/${whisp.publicToken}`);
+    expect(afterOne.body.recipientRepliesRemaining).toBe(2);
+
+    await request(app).post(`/api/public/w/${whisp.publicToken}/reply`).send({ replyText: "two" });
+    await request(app).post(`/api/public/w/${whisp.publicToken}/reply`).send({ replyText: "three" });
+    const exhausted = await request(app).get(`/api/public/w/${whisp.publicToken}`);
+    expect(exhausted.body.recipientRepliesRemaining).toBe(0);
+  });
+
+  // The sender's own follow-ups go through the authenticated route and are
+  // fromRecipient:false, so they must not consume the recipient's allowance.
+  it("doesn't count the sender's follow-ups against the recipient's allowance", async () => {
+    const whisp = await createWhisp();
+
+    for (let i = 0; i < 3; i++) {
+      await request(app)
+        .post(`/api/whisps/${whisp.id}/replies`)
+        .set(TEST_USER_HEADER, USER_A)
+        .send({ replyText: `sender follow-up ${i}` });
+    }
+
+    const stillAllowed = await request(app).post(`/api/public/w/${whisp.publicToken}/reply`).send({ replyText: "mine" });
+    expect(stillAllowed.status).toBe(201);
+  });
+});

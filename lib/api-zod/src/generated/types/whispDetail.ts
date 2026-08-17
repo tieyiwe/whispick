@@ -13,4 +13,9 @@ export interface WhispDetail {
   whisp: Whisp;
   trackingEvents: TrackingEvent[];
   replies: WhispReply[];
+  /**
+     * Anonymous replies the recipient has left on this whisp. Null means uncapped. 0 means they can't reply again unless the sender adds more replies or the recipient signs up.
+     * @nullable
+     */
+  recipientRepliesRemaining?: number | null;
 }

@@ -4,7 +4,7 @@ import { eq, and, lte, count } from "drizzle-orm";
 import { deliverWhisperLink } from "./deliver";
 import { groupHookLine } from "./copy";
 import { computeExpiresAt } from "./expiration";
-import { notifyUser } from "./push";
+import { notifyUserPersisted } from "./push";
 import { logger } from "./logger";
 
 const POLL_INTERVAL_MS = 60_000;
@@ -50,7 +50,7 @@ export function startScheduledWhispDispatcher(): void {
 
           if (!media || media.status !== "ready") {
             await db.update(whispsTable).set({ status: "failed" }).where(eq(whispsTable.id, whisp.id));
-            void notifyUser(
+            void notifyUserPersisted(
               whisp.senderId,
               "A scheduled whisp couldn't be sent",
               "The video you uploaded is no longer available, so this scheduled whisp wasn't delivered.",

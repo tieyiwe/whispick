@@ -29,6 +29,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { MoodTag } from "@/components/shared/MoodTag";
+import { ReplyThread, ThreadComposer } from "@/components/shared/ReplyThread";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import {
@@ -45,6 +46,7 @@ import {
   HeartHandshake,
   Sparkles,
   Users,
+  Lock,
 } from "lucide-react";
 import { deliveryLabel } from "@/lib/deliveryMethod";
 
@@ -88,8 +90,19 @@ export function WhispDetail() {
   const queryClient = useQueryClient();
   const [replyText, setReplyText] = useState("");
 
+  // Polled so a reply arriving while this page is open shows up on its own.
+  // 15s is a deliberate middle ground: the sender's notification is already
+  // delayed by minutes (see replyNotificationScheduler), so sub-second
+  // latency buys nothing, while a slower poll would leave someone staring at
+  // a thread that looks stalled. Pauses when the tab is hidden rather than
+  // polling a page nobody's looking at.
   const { data, isLoading } = useGetWhisp(id!, {
-    query: { enabled: !!id, queryKey: getGetWhispQueryKey(id!) },
+    query: {
+      enabled: !!id,
+      queryKey: getGetWhispQueryKey(id!),
+      refetchInterval: 15_000,
+      refetchIntervalInBackground: false,
+    },
   });
 
   const isGhostBoost = data?.whisp.deliveryMethod === "ghost_boost";
@@ -126,7 +139,7 @@ export function WhispDetail() {
     );
   }
 
-  const { whisp, trackingEvents, replies } = data;
+  const { whisp, trackingEvents, replies, recipientRepliesRemaining } = data;
 
   function handleSendFollowUp() {
     if (!replyText.trim()) return;
@@ -330,88 +343,74 @@ export function WhispDetail() {
         </Card>
         )}
 
-        {/* Replies */}
-        {!isGhostBoost && replies.length > 0 && (
+        {/* The anonymous conversation — thread and composer in one card, so
+            replying happens inside the conversation instead of in a separate
+            box further down the page. Doesn't apply to a Ghost Boost campaign,
+            which is fanned out to many anonymous subscribers rather than one
+            known recipient. */}
+        {!isGhostBoost && (
           <Card className="bg-card border-border/50">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-serif flex items-center gap-2">
                 <MessageSquare className="w-4 h-4 text-primary" />
-                Anonymous Replies
+                Anonymous conversation
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {replies.map((reply) => (
+            <CardContent>
+              {/* Surfaces the cap BEFORE the thread goes quiet — without
+                  this, a recipient hitting the wall is indistinguishable
+                  from them losing interest. */}
+              {recipientRepliesRemaining === 0 && (
                 <div
-                  key={reply.id}
-                  data-testid={`reply-${reply.id}`}
-                  className={`p-3 rounded-xl text-sm ${
-                    reply.fromRecipient
-                      ? "bg-primary/10 border border-primary/20"
-                      : "bg-muted/30 border border-border/50 ml-8"
-                  }`}
+                  className="mb-3 rounded-xl border border-secondary/30 bg-secondary/5 p-3 space-y-2"
+                  data-testid="notice-recipient-out-of-replies"
                 >
-                  <div className="flex items-center gap-2 mb-1">
-                    <UserCircle2 className="w-3.5 h-3.5 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">
-                      {reply.fromRecipient ? "Recipient" : "You"} · {new Date(reply.createdAt).toLocaleString()}
-                    </span>
-                  </div>
-                  {reply.replyText && <p className="text-foreground">{reply.replyText}</p>}
-                  {reply.videoUrl && (
-                    <a
-                      href={reply.videoUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      data-testid={`reply-video-${reply.id}`}
-                      className={`flex gap-2 items-center bg-card rounded-lg p-2 hover:bg-card/70 transition-colors ${reply.replyText ? "mt-2" : ""}`}
-                    >
-                      {reply.videoThumbnail ? (
-                        <img src={reply.videoThumbnail} className="w-16 h-12 object-cover rounded" alt="Video reply thumbnail" />
-                      ) : (
-                        <div className="w-16 h-12 bg-muted rounded flex items-center justify-center shrink-0">
-                          <PlayCircle className="w-5 h-5 text-muted-foreground" />
-                        </div>
-                      )}
-                      <span className="text-xs text-foreground truncate">{reply.videoTitle || "Whisped a video back"}</span>
-                    </a>
-                  )}
+                  <p className="text-sm text-foreground flex items-center gap-2">
+                    <Lock className="w-3.5 h-3.5 text-secondary shrink-0" />
+                    They've used all their anonymous replies.
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    They can't reply again unless you add more replies, or they create a free account. You can still
+                    send follow-ups.
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-full"
+                    disabled
+                    data-testid="button-buy-more-replies"
+                  >
+                    Add more replies (coming soon)
+                  </Button>
                 </div>
-              ))}
+              )}
+              {typeof recipientRepliesRemaining === "number" && recipientRepliesRemaining === 1 && (
+                <p className="mb-3 text-xs text-muted-foreground" data-testid="text-recipient-replies-remaining">
+                  They have 1 anonymous reply left.
+                </p>
+              )}
+              <ReplyThread
+                replies={replies}
+                viewerIsRecipient={false}
+                otherLabel="Recipient"
+                emptyState={
+                  <p className="text-xs text-muted-foreground text-center py-3">
+                    No replies yet. You can send another anonymous message below.
+                  </p>
+                }
+                composer={
+                  <ThreadComposer
+                    value={replyText}
+                    onChange={setReplyText}
+                    onSend={handleSendFollowUp}
+                    sending={createReply.isPending}
+                    placeholder="Send another anonymous message..."
+                    testIdPrefix="follow-up"
+                  />
+                }
+              />
             </CardContent>
           </Card>
-        )}
-
-        {/* Send follow-up — needs a single known recipient, so it doesn't apply
-            to a Ghost Boost campaign fanned out to many anonymous subscribers */}
-        {!isGhostBoost && (
-        <Card className="bg-card border-border/50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-serif">Send a follow-up</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Textarea
-              className="bg-input/50 border-border/50 rounded-xl resize-none min-h-[80px]"
-              placeholder="Send another anonymous message..."
-              maxLength={300}
-              value={replyText}
-              onChange={(e) => setReplyText(e.target.value)}
-              data-testid="textarea-follow-up"
-            />
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-muted-foreground">{replyText.length}/300</span>
-              <Button
-                onClick={handleSendFollowUp}
-                disabled={!replyText.trim() || createReply.isPending}
-                className="rounded-full"
-                size="sm"
-                data-testid="button-send-follow-up"
-              >
-                {createReply.isPending ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Send className="w-3 h-3 mr-1" />}
-                Send
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
         )}
 
         {/* Reveal flow */}

@@ -264,6 +264,7 @@ router.get("/notifications", requireAuth, async (req, res): Promise<void> => {
       title: notificationsTable.title,
       body: notificationsTable.body,
       url: notificationsTable.url,
+      kind: notificationsTable.kind,
       createdByAdminId: notificationsTable.createdByAdminId,
       createdAt: notificationsTable.createdAt,
       readAt: notificationReadsTable.readAt,
@@ -286,22 +287,39 @@ router.get("/notifications", requireAuth, async (req, res): Promise<void> => {
 });
 
 // GET /api/user/notifications/unread-count — a lightweight poll target for
-// a nav badge, without pulling the full list every time.
+// a nav badge, without pulling the full list every time. Also breaks out
+// unread REPLY notifications separately, so the Replies tab can show a badge
+// that means "someone replied" specifically — an open/watch notification
+// lighting up the Replies tab would send the user looking for a message
+// that isn't there.
 router.get("/notifications/unread-count", requireAuth, async (req, res): Promise<void> => {
   const { userId } = getAuth(req);
   const user = await ensureUser(userId!, req);
 
-  const row = await db
-    .select({ count: count() })
-    .from(notificationsTable)
-    .leftJoin(
-      notificationReadsTable,
-      and(eq(notificationReadsTable.notificationId, notificationsTable.id), eq(notificationReadsTable.userId, user.id)),
-    )
-    .where(and(visibleToUser(user.id), isNull(notificationReadsTable.id)))
-    .then((r) => r[0]);
+  const unreadOnly = and(visibleToUser(user.id), isNull(notificationReadsTable.id));
 
-  res.json({ unreadCount: row?.count ?? 0 });
+  const [row, replyRow] = await Promise.all([
+    db
+      .select({ count: count() })
+      .from(notificationsTable)
+      .leftJoin(
+        notificationReadsTable,
+        and(eq(notificationReadsTable.notificationId, notificationsTable.id), eq(notificationReadsTable.userId, user.id)),
+      )
+      .where(unreadOnly)
+      .then((r) => r[0]),
+    db
+      .select({ count: count() })
+      .from(notificationsTable)
+      .leftJoin(
+        notificationReadsTable,
+        and(eq(notificationReadsTable.notificationId, notificationsTable.id), eq(notificationReadsTable.userId, user.id)),
+      )
+      .where(and(unreadOnly, eq(notificationsTable.kind, "reply")))
+      .then((r) => r[0]),
+  ]);
+
+  res.json({ unreadCount: row?.count ?? 0, unreadReplyCount: replyRow?.count ?? 0 });
 });
 
 // POST /api/user/notifications/:id/read

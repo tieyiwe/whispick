@@ -2,7 +2,7 @@ import { db } from "@workspace/db";
 import { whispRepliesTable, whispsTable, usersTable } from "@workspace/db";
 import { eq, and, lte, isNull, isNotNull } from "drizzle-orm";
 import { sendEmail, replyNotificationEmailHtml } from "./email";
-import { notifyUser } from "./push";
+import { notifyUserPersisted } from "./push";
 import { logger } from "./logger";
 
 const POLL_INTERVAL_MS = 60_000;
@@ -74,11 +74,16 @@ export function startReplyNotificationScheduler(): void {
             purpose: "reply_notification",
           });
         }
-        void notifyUser(
+        // Persisted, not push-only: a reply is the single most important
+        // thing a sender comes back for, and a push they never received (no
+        // permission granted, offline at the time) would otherwise leave no
+        // trace in the app at all.
+        await notifyUserPersisted(
           whisp.senderId,
           "You got a reply 💬",
           reply.videoUrl ? "Someone whisped a video back to you." : "Someone replied anonymously to your whisp.",
           `${appUrl}/whisps/${whisp.id}`,
+          "reply",
         );
 
         await db
