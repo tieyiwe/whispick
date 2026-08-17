@@ -1,3 +1,5 @@
+import { getAuthToken } from "@workspace/api-client-react";
+
 // Mirrors artifacts/api-server/src/lib/uploads.ts — keep both in sync if the
 // caps ever change. The server re-enforces these; this is purely so a
 // sender finds out their clip is too long/large before spending time on an
@@ -98,7 +100,18 @@ export async function uploadMedia(file: File): Promise<UploadedVideoResult> {
   formData.append("durationSeconds", String(durationSeconds));
   if (thumbnail) formData.append("thumbnail", thumbnail, "thumbnail.jpg");
 
-  const res = await fetch("/api/media/upload", { method: "POST", body: formData });
+  // This is a hand-built multipart request rather than a generated
+  // customFetch call, so it doesn't pick up the Authorization header
+  // automatically — and /api/media/upload is requireAuth-gated. Attach the
+  // same bearer token every other call sends, or uploads 401 wherever cookie
+  // auth isn't the working credential (which is why the app moved to header
+  // auth in the first place — see App.tsx's ClerkAuthTokenBridge).
+  const token = await getAuthToken();
+  const res = await fetch("/api/media/upload", {
+    method: "POST",
+    body: formData,
+    headers: token ? { authorization: `Bearer ${token}` } : undefined,
+  });
   const data = await res.json().catch(() => null);
 
   if (!res.ok) {

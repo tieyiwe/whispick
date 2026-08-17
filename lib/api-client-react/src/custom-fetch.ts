@@ -44,6 +44,20 @@ export function setAuthTokenGetter(getter: AuthTokenGetter | null): void {
   _authTokenGetter = getter;
 }
 
+/**
+ * Resolves the currently-registered auth token, or null when none is set.
+ *
+ * For the handful of requests that can't go through `customFetch` — a
+ * multipart upload built by hand, for instance — so they can still send the
+ * same `Authorization` header every generated call does. Without this, any
+ * such request falls back to cookie-only auth and 401s wherever cookies
+ * aren't the working credential.
+ */
+export async function getAuthToken(): Promise<string | null> {
+  if (!_authTokenGetter) return null;
+  return (await _authTokenGetter()) ?? null;
+}
+
 function isRequest(input: RequestInfo | URL): input is Request {
   return typeof Request !== "undefined" && input instanceof Request;
 }
