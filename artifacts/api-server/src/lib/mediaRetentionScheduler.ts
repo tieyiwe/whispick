@@ -2,7 +2,7 @@ import { db, uploadedVideosTable, usersTable } from "@workspace/db";
 import { eq, and, lte, isNull } from "drizzle-orm";
 import { deleteObject } from "./objectStorage";
 import { sendEmail, mediaExpiringEmailHtml } from "./email";
-import { notifyUser } from "./push";
+import { notifyUserPersisted } from "./push";
 import { UPLOAD_DELETION_WARNING_DAYS } from "./uploads";
 import { logger } from "./logger";
 
@@ -54,7 +54,7 @@ async function warnUpcomingDeletions(): Promise<void> {
       );
     }
     if (owner && appUrl) {
-      void notifyUser(
+      void notifyUserPersisted(
         owner.id,
         "Video expiring soon",
         `"${media.originalFilename}" will be removed from your Media Library soon.`,

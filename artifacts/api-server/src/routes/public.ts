@@ -11,7 +11,7 @@ import { eq, count } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { z } from "zod";
 import { sendEmail, appreciationNotificationEmailHtml } from "../lib/email";
-import { notifyUser } from "../lib/push";
+import { notifyUserPersisted } from "../lib/push";
 import { getPublicAppUrl } from "../lib/publicUrl";
 import { isExpired, MAX_REMINDERS } from "../lib/expiration";
 import { downloadObject } from "../lib/objectStorage";
@@ -214,7 +214,7 @@ router.post("/w/:token/track", async (req, res): Promise<void> => {
   if (eventType === "opened" && !whisp.openedAt) {
     await db.update(whispsTable).set({ status: "opened", openedAt: new Date() }).where(eq(whispsTable.id, whisp.id));
     if (!isMatchedFanout(whisp)) {
-      void notifyUser(whisp.senderId, "Your whisp was opened 👀", "Someone just opened the link you sent.", whispUrl);
+      void notifyUserPersisted(whisp.senderId, "Your whisp was opened 👀", "Someone just opened the link you sent.", whispUrl);
     }
   } else if (eventType === "watched_complete" && !whisp.watchedAt) {
     await db
@@ -222,7 +222,7 @@ router.post("/w/:token/track", async (req, res): Promise<void> => {
       .set({ watchedAt: new Date(), ...(whisp.status === "replied" ? {} : { status: "watched" }) })
       .where(eq(whispsTable.id, whisp.id));
     if (!isMatchedFanout(whisp)) {
-      void notifyUser(whisp.senderId, "They watched it 🎬", "Your whisp was watched all the way through.", whispUrl);
+      void notifyUserPersisted(whisp.senderId, "They watched it 🎬", "Your whisp was watched all the way through.", whispUrl);
     }
     void generateTakeawayAsync(whisp.id);
   }
@@ -352,7 +352,7 @@ router.post("/w/:token/appreciation", async (req, res): Promise<void> => {
         purpose: "appreciation_notification",
       });
     }
-    void notifyUser(
+    void notifyUserPersisted(
       whisp.senderId,
       "They appreciated it 💜",
       "The person you sent your whisp to said it was something they needed to hear.",
