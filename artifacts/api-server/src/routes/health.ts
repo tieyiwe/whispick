@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { getAuth } from "@clerk/express";
 import { HealthCheckResponse } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -93,6 +94,26 @@ router.get("/debug/clerk-auth", (req, res) => {
     clientUatValues,
     sessionTokens,
     comparisons,
+  });
+});
+
+// TEMPORARY — the previous /debug/clerk-auth reimplements @clerk/backend's
+// comparison by hand from the raw Cookie header, which risks missing
+// something the real SDK does differently (e.g. its own cookie-suffix
+// resolution). This one instead calls getAuth(req) directly — clerkMiddleware
+// already ran on this request (mounted globally in app.ts), so this reads
+// the REAL, already-computed result of the real SDK's real logic, no
+// reimplementation involved. auth.debug() surfaces Clerk's own internal
+// reason/message even when signed out. Remove alongside the other temporary
+// debug routes once this investigation is resolved.
+router.get("/debug/clerk-auth-real", (req, res) => {
+  const auth = getAuth(req);
+  const debugData = typeof auth.debug === "function" ? auth.debug() : null;
+  res.json({
+    userId: auth.userId,
+    sessionId: auth.sessionId,
+    isAuthenticated: "isAuthenticated" in auth ? auth.isAuthenticated : null,
+    debug: debugData,
   });
 });
 
