@@ -43,13 +43,25 @@ export const GHOST_BOOST_COST_USD = 6.99;
 // never capped — the limit exists to make an unlimited anonymous back-and-
 // forth a deliberate purchase (or a reason to join), not to ration
 // conversation between members.
-const RECIPIENT_FREE_REPLIES_DEFAULT = 3;
+// TODO(payment): flip this back to 3 once the "buy more replies" purchase
+// flow exists. The cap is OFF by default until then — deliberately, not by
+// oversight. Capping recipients before there's any way to lift the cap
+// leaves a sender staring at a dead thread with a disabled "coming soon"
+// button, and it would keep interrupting testing. All the enforcement below
+// (and the sender/recipient UI) is built and tested; it's a one-line change
+// plus a redeploy when billing lands.
+//
+// Note this also parks a design question worth revisiting then: because the
+// cap is skipped for signed-in callers, a sender who watches replies keep
+// arriving past the allowance can infer their recipient created an account.
+// Harmless while uncapped (no allowance is ever shown or enforced).
+const RECIPIENT_FREE_REPLIES_DEFAULT = null;
 
 export function recipientFreeReplies(): number | null {
   const raw = process.env.RECIPIENT_FREE_REPLIES?.trim();
   if (!raw) return RECIPIENT_FREE_REPLIES_DEFAULT;
   if (raw.toLowerCase() === "unlimited") return null;
-  return parsePositiveIntOr(raw, RECIPIENT_FREE_REPLIES_DEFAULT);
+  return parsePositiveIntOr(raw, RECIPIENT_FREE_REPLIES_DEFAULT ?? 3);
 }
 
 // Total anonymous replies allowed on a whisp: the free allowance plus
