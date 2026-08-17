@@ -506,3 +506,74 @@ describe("POST /api/whisps — video field security", () => {
     expect(fourth.status).toBe(402);
   });
 });
+
+describe("POST /api/whisps — recipient contact validation", () => {
+  const USER_CONTACT = "clerk_user_contact_validation";
+
+  // nodemailer parses `to` as an ADDRESS LIST, so an unvalidated
+  // comma-separated value delivered one whisp to every address in it —
+  // fanning a single Whisper Link out to arbitrarily many strangers and
+  // sending real mail from the app's own domain on demand.
+  it("rejects a comma-separated recipient email (multi-recipient injection)", async () => {
+    const res = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_CONTACT))
+      .send({
+        videoUrl: "https://youtu.be/dQw4w9WgXcQ",
+        deliveryMethod: "whisper_link",
+        whisperChannel: "email",
+        recipientEmail: "victim@example.com, attacker@evil.com",
+      });
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects a recipient email carrying CRLF (header-injection shaped)", async () => {
+    const res = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_CONTACT))
+      .send({
+        videoUrl: "https://youtu.be/dQw4w9WgXcQ",
+        deliveryMethod: "whisper_link",
+        whisperChannel: "email",
+        recipientEmail: "victim@example.com\r\nBcc: attacker@evil.com",
+      });
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects a non-phone-shaped recipient phone", async () => {
+    const res = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_CONTACT))
+      .send({
+        videoUrl: "https://youtu.be/dQw4w9WgXcQ",
+        deliveryMethod: "whisper_link",
+        whisperChannel: "sms",
+        recipientPhone: "+15551234567, +15559999999",
+      });
+    expect(res.status).toBe(400);
+  });
+
+  it("still accepts a single ordinary email and phone", async () => {
+    const email = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_CONTACT))
+      .send({
+        videoUrl: "https://youtu.be/dQw4w9WgXcQ",
+        deliveryMethod: "whisper_link",
+        whisperChannel: "email",
+        recipientEmail: "friend@example.com",
+      });
+    expect(email.status).toBe(201);
+
+    const sms = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_CONTACT))
+      .send({
+        videoUrl: "https://youtu.be/dQw4w9WgXcQ",
+        deliveryMethod: "whisper_link",
+        whisperChannel: "sms",
+        recipientPhone: "+1 (555) 123-4567",
+      });
+    expect(sms.status).toBe(201);
+  });
+});
