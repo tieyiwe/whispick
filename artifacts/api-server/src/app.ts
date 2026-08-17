@@ -3,11 +3,9 @@ import cors from "cors";
 import compression from "compression";
 import pinoHttp from "pino-http";
 import { clerkMiddleware } from "@clerk/express";
-import { publishableKeyFromHost } from "@clerk/shared/keys";
 import {
   CLERK_PROXY_PATH,
   clerkProxyMiddleware,
-  getClerkProxyHost,
 } from "./middlewares/clerkProxyMiddleware";
 import { getPublicAppUrl } from "./lib/publicUrl";
 import router from "./routes";
@@ -98,27 +96,33 @@ app.post("/api/billing/webhook", express.raw({ type: "application/json" }), hand
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// publishableKeyFromHost needs the SAME publishable key the frontend uses
-// (falls back to a synthetic host-derived key — a different Clerk identity —
-// whenever the key it's given is missing or not a dev-mode key). The
-// frontend only ever gets VITE_CLERK_PUBLISHABLE_KEY (Vite bakes VITE_* vars
-// into the client bundle; a plain, unprefixed var isn't visible there). If
-// only that var was ever set and this bare CLERK_PUBLISHABLE_KEY wasn't,
-// this fell through to the host-derived key — silently authenticating
-// against a different instance than the one that issued the browser's
-// session, so every request looked unauthenticated no matter how many times
-// a user signed in. Falling back to VITE_CLERK_PUBLISHABLE_KEY here means a
-// single configured secret is enough; CLERK_PUBLISHABLE_KEY still wins if
-// it's ever set explicitly (e.g. to a different key than the client build).
+// Must be the exact same publishable key the frontend uses (App.tsx's
+// clerkPubKey) — NOT run through @clerk/shared's publishableKeyFromHost.
+// That helper only returns a literal key as-is for development-mode
+// (pk_test_) keys; for a production (pk_live_) key it unconditionally
+// derives a synthetic host-based key instead (`clerk.<hostname>`), ignoring
+// whatever real key is configured. This app's custom domain support comes
+// entirely from the frontend's proxyUrl (VITE_CLERK_PROXY_URL, routed
+// through clerkProxyMiddleware below) — the frontend already gets a
+// correctly-issued, correctly-scoped token for this exact domain via that
+// proxy, with no host-derivation needed. Wrapping the BACKEND's key in
+// publishableKeyFromHost made it verify against a synthetic identity Clerk
+// has never issued anything for, instead of the real instance the frontend
+// is actually using: every request looked unauthenticated
+// (x-clerk-auth-reason: session-token-iat-before-client-uat) no matter how
+// many times a user signed in, on every domain, since it wasn't a session
+// problem — the two sides were never even checking the same instance.
+//
+// The frontend only ever gets VITE_CLERK_PUBLISHABLE_KEY (Vite bakes VITE_*
+// vars into the client bundle; a plain, unprefixed var isn't visible there),
+// so fall back to it here if a separate backend-only CLERK_PUBLISHABLE_KEY
+// isn't set — one configured secret is then enough for both sides to agree.
 const CLERK_BACKEND_PUBLISHABLE_KEY =
   process.env.CLERK_PUBLISHABLE_KEY ?? process.env.VITE_CLERK_PUBLISHABLE_KEY;
 
 app.use(
-  clerkMiddleware((req) => ({
-    publishableKey: publishableKeyFromHost(
-      getClerkProxyHost(req) ?? "",
-      CLERK_BACKEND_PUBLISHABLE_KEY,
-    ),
+  clerkMiddleware(() => ({
+    publishableKey: CLERK_BACKEND_PUBLISHABLE_KEY,
   })),
 );
 
