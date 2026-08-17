@@ -113,12 +113,23 @@ router.get("/debug/clerk-auth", (req, res) => {
 // takes, not just the more forgiving navigation path.
 router.all("/debug/clerk-auth-real", (req, res) => {
   const auth = getAuth(req);
-  const debugData = typeof auth.debug === "function" ? auth.debug() : null;
+  // Only the fields, not the full raw request/cookie dump auth.debug()
+  // includes — that payload is large enough (duplicated JWTs across
+  // headers/cookies) to get truncated by console logging or copy-paste.
+  const full = (typeof auth.debug === "function" ? auth.debug() : {}) as Record<string, unknown>;
   res.json({
     userId: auth.userId,
     sessionId: auth.sessionId,
     isAuthenticated: "isAuthenticated" in auth ? auth.isAuthenticated : null,
-    debug: debugData,
+    reason: full.reason ?? null,
+    message: full.message ?? null,
+    cookieSuffix: full.cookieSuffix ?? null,
+    clientUat: full.clientUat ?? null,
+    hasSessionTokenInCookie: !!full.sessionTokenInCookie,
+    hasRefreshTokenInCookie: !!full.refreshTokenInCookie,
+    hasHandshakeToken: !!full.handshakeToken,
+    secFetchDest: (full.secFetchDest as string | undefined) ?? null,
+    method: (full.method as string | undefined) ?? null,
   });
 });
 
