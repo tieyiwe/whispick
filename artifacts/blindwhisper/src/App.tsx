@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useRef } from "react";
-import { ClerkProvider, SignIn, SignUp, Show, useClerk } from '@clerk/react';
+import { ClerkProvider, SignIn, SignUp, Show, useClerk, useAuth } from '@clerk/react';
+import { setAuthTokenGetter } from "@workspace/api-client-react";
 import { dark } from '@clerk/themes';
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from 'wouter';
 import { Loader2 } from "lucide-react";
@@ -144,6 +145,28 @@ function ClerkQueryClientCacheInvalidator() {
   return null;
 }
 
+// Cookie-based auth (the customFetch default — see its own doc comment)
+// depends on the browser's __session/__client_uat cookies staying in sync
+// under a suffix @clerk/backend derives from the publishable key. On this
+// deployment's exact custom-domain + Frontend-API-proxy combination, the
+// browser's Clerk client ends up refreshing a DIFFERENT cookie suffix family
+// than the one @clerk/backend computes for the same (confirmed byte-
+// identical) key — every request looked signed-out no matter how many times
+// a user signed in, sitewide, regardless of caching/cookie state. Explicitly
+// sending the session token as a Bearer header sidesteps that whole
+// cookie-suffix mechanism: @clerk/backend's header-auth path verifies the
+// token directly and never touches __client_uat at all.
+function ClerkAuthTokenBridge() {
+  const { getToken } = useAuth();
+
+  useEffect(() => {
+    setAuthTokenGetter(() => getToken());
+    return () => setAuthTokenGetter(null);
+  }, [getToken]);
+
+  return null;
+}
+
 function HomeRedirect() {
   return (
     <>
@@ -176,6 +199,7 @@ function ClerkProviderWithRoutes() {
       routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
     >
       <QueryClientProvider client={queryClient}>
+        <ClerkAuthTokenBridge />
         <ClerkQueryClientCacheInvalidator />
         <ClaimPendingInvite />
         <Suspense fallback={<RouteLoadingFallback />}>
