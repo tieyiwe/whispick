@@ -105,8 +105,13 @@ router.get("/debug/clerk-auth", (req, res) => {
 // the REAL, already-computed result of the real SDK's real logic, no
 // reimplementation involved. auth.debug() surfaces Clerk's own internal
 // reason/message even when signed out. Remove alongside the other temporary
-// debug routes once this investigation is resolved.
-router.get("/debug/clerk-auth-real", (req, res) => {
+// debug routes once this investigation is resolved. router.all (not .get):
+// a plain browser-navigation GET gets Clerk's handshake-recovery handling
+// (only applies when Sec-Fetch-Dest is "document"), which a background
+// fetch() — like the real app's POST /api/whisps — does NOT get. Accepting
+// POST here lets us reproduce the exact code path the real failing request
+// takes, not just the more forgiving navigation path.
+router.all("/debug/clerk-auth-real", (req, res) => {
   const auth = getAuth(req);
   const debugData = typeof auth.debug === "function" ? auth.debug() : null;
   res.json({
