@@ -2,9 +2,11 @@ import { useState } from "react";
 import { Link } from "wouter";
 import {
   useGetMyNotifications,
+  useGetMyUnreadNotificationCount,
   useMarkNotificationRead,
   useMarkAllNotificationsRead,
   getGetMyNotificationsQueryKey,
+  getGetMyUnreadNotificationCountQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -23,13 +25,29 @@ export function NotificationBell() {
   const { data } = useGetMyNotifications({
     query: { queryKey: getGetMyNotificationsQueryKey(), refetchInterval: 60_000 },
   });
+  // The dot comes from the dedicated count endpoint, NOT from the list's own
+  // unreadCount. That one is computed by filtering the rows it returns, and
+  // that query is capped at 50 — so a user whose 50 newest notifications were
+  // all read got a count of zero while older unread ones sat there, and the
+  // bell showed nothing. This endpoint counts across every row.
+  const { data: unread } = useGetMyUnreadNotificationCount({
+    query: {
+      queryKey: getGetMyUnreadNotificationCountQueryKey(),
+      refetchInterval: 60_000,
+      refetchIntervalInBackground: false,
+    },
+  });
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllNotificationsRead();
 
-  const unreadCount = data?.unreadCount ?? 0;
+  const unreadCount = unread?.unreadCount ?? 0;
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: getGetMyNotificationsQueryKey() });
+    // Without this the dot survived its own dismissal — marking everything
+    // read refreshed the list but left the separately-cached count stale
+    // until the next poll, up to a minute of a red dot over an empty bell.
+    queryClient.invalidateQueries({ queryKey: getGetMyUnreadNotificationCountQueryKey() });
   }
 
   function handleOpenChange(next: boolean) {
@@ -45,7 +63,16 @@ export function NotificationBell() {
         <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-foreground" data-testid="button-notification-bell">
           <Bell className="w-5 h-5" />
           {unreadCount > 0 && (
-            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-primary" data-testid="badge-unread-notifications" />
+            // Red, not the primary purple it used to be: on a purple-themed
+            // app a purple dot on a purple-tinted header is close to
+            // invisible, which defeats the one job it has. The ring in the
+            // surrounding surface colour keeps it legible where it overlaps
+            // the bell itself.
+            <span
+              className="absolute top-1 right-1 h-2.5 w-2.5 rounded-full bg-destructive ring-2 ring-background"
+              aria-label={`${unreadCount} unread notifications`}
+              data-testid="badge-unread-notifications"
+            />
           )}
         </Button>
       </PopoverTrigger>
