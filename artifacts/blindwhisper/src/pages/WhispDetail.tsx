@@ -42,7 +42,6 @@ import {
   MessageSquare,
   Loader2,
   Trash2,
-  UserCircle2,
   HeartHandshake,
   Sparkles,
   Users,

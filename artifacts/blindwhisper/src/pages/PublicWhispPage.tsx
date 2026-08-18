@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MoodTag, MOOD_CONFIG } from "@/components/shared/MoodTag";
 import { useToast } from "@/hooks/use-toast";
-import { Send, Loader2, Video, X, Link2, HeartHandshake, Clock, BellRing, Sparkles, UserCircle2, PlayCircle, PenLine, Lock } from "lucide-react";
+import { Send, Loader2, Video, X, Link2, HeartHandshake, Clock, BellRing, Sparkles, PlayCircle, PenLine, Lock } from "lucide-react";
 import { LogoLockup } from "@/components/ui/logo";
 import { VideoPlayer } from "@/components/shared/VideoPlayer";
 import { QUICK_REPLIES } from "@/lib/quickReplies";
