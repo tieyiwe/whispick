@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef } from "react";
-import { PlayCircle, Loader2, Send, Reply as ReplyIcon, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { PlayCircle, Loader2, Send, Reply as ReplyIcon, X, ArrowDown } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 
@@ -189,47 +189,117 @@ export function ReplyThread({
   onReplyTo?: (reply: ThreadReply | null) => void;
 }) {
   const endRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const previousCountRef = useRef(replies.length);
+  // Whether the reader is parked at the newest message. Drives two things: a
+  // new arrival only yanks the view down if they were already at the bottom
+  // (scrolling someone away from the message they're reading is the rudest
+  // thing a live-updating thread can do), and the jump-to-latest button only
+  // appears when they aren't.
+  const [atBottom, setAtBottom] = useState(true);
+  const [missedCount, setMissedCount] = useState(0);
 
   const byId = useMemo(() => new Map(replies.map((r) => [r.id, r])), [replies]);
   const labelFor = (reply: ThreadReply) =>
     (viewerIsRecipient ? reply.fromRecipient : !reply.fromRecipient) ? ownLabel : otherLabel;
 
-  // Scroll only when a message actually arrives — not on first paint (which
-  // would yank a page the reader hasn't looked at yet) and not on unrelated
-  // re-renders. Live polling means new messages can land while reading, and
-  // this is what makes them feel like they've "come in".
+  function scrollToLatest(behavior: ScrollBehavior = "smooth") {
+    const el = scrollRef.current;
+    if (!el) return;
+    // Setting scrollTop on the container directly, rather than
+    // scrollIntoView: the latter walks up and scrolls every scrollable
+    // ancestor, which would move the whole page — the exact thing this
+    // container exists to prevent.
+    el.scrollTo({ top: el.scrollHeight, behavior });
+    setMissedCount(0);
+  }
+
+  function handleScroll() {
+    const el = scrollRef.current;
+    if (!el) return;
+    // A few px of slack: sub-pixel layout and momentum scrolling mean
+    // scrollTop rarely lands exactly on the maximum.
+    const bottom = el.scrollHeight - el.scrollTop - el.clientHeight < 24;
+    setAtBottom(bottom);
+    if (bottom) setMissedCount(0);
+  }
+
+  // Open on the newest message. Safe to do on first paint now that scrolling
+  // is confined to this container — it moves the thread, not the page, so the
+  // reader still lands at the top of the whisp itself.
   useEffect(() => {
-    if (replies.length > previousCountRef.current) {
-      endRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    }
+    scrollToLatest("auto");
+    // Deliberately mount-only: re-running would fight the reader.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // A message arriving while reading follows them down only if they're at the
+  // bottom; otherwise it's counted and offered via the jump button.
+  useEffect(() => {
+    const arrived = replies.length - previousCountRef.current;
     previousCountRef.current = replies.length;
+    if (arrived <= 0) return;
+    if (atBottom) scrollToLatest("smooth");
+    else setMissedCount((n) => n + arrived);
+    // atBottom is read as a snapshot at arrival time, not a trigger.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [replies.length]);
 
   return (
     <div className="space-y-3">
-      {replies.length === 0
-        ? emptyState
-        : replies.map((reply, i) => {
-            const isOwn = viewerIsRecipient ? reply.fromRecipient : !reply.fromRecipient;
-            // Undefined when the parent has been deleted or simply isn't in
-            // this page of the thread — the quote is an enhancement, so a
-            // missing one degrades to a plain message rather than an error.
-            const parent = reply.parentReplyId ? byId.get(reply.parentReplyId) : undefined;
-            return (
-              <MessageBubble
-                key={reply.id}
-                reply={reply}
-                isOwn={isOwn}
-                authorLabel={isOwn ? ownLabel : otherLabel}
-                index={i}
-                parent={parent}
-                parentAuthorLabel={parent && labelFor(parent)}
-                onReply={onReplyTo}
-              />
-            );
-          })}
-      <div ref={endRef} />
+      {replies.length === 0 ? (
+        emptyState
+      ) : (
+        <div className="relative">
+          {/* The thread scrolls in its own box rather than growing the page.
+              A long exchange otherwise pushes the composer — and everything
+              below the whisp — arbitrarily far down, so reaching one message
+              means scrolling the entire app. max-height, not a fixed height,
+              so a two-message thread still renders at its natural size. */}
+          <div
+            ref={scrollRef}
+            onScroll={handleScroll}
+            data-testid="thread-scroll"
+            className="thread-scroll max-h-[min(60vh,30rem)] overflow-y-auto overscroll-contain space-y-3 pr-1"
+          >
+            {replies.map((reply, i) => {
+              const isOwn = viewerIsRecipient ? reply.fromRecipient : !reply.fromRecipient;
+              // Undefined when the parent has been deleted or simply isn't in
+              // this page of the thread — the quote is an enhancement, so a
+              // missing one degrades to a plain message rather than an error.
+              const parent = reply.parentReplyId ? byId.get(reply.parentReplyId) : undefined;
+              return (
+                <MessageBubble
+                  key={reply.id}
+                  reply={reply}
+                  isOwn={isOwn}
+                  authorLabel={isOwn ? ownLabel : otherLabel}
+                  index={i}
+                  parent={parent}
+                  parentAuthorLabel={parent && labelFor(parent)}
+                  onReply={onReplyTo}
+                />
+              );
+            })}
+            <div ref={endRef} />
+          </div>
+          {/* Only while scrolled away from the newest message, so it never
+              covers the thread when it has nothing to offer. */}
+          {!atBottom && (
+            <button
+              type="button"
+              onClick={() => scrollToLatest("smooth")}
+              data-testid="thread-jump-latest"
+              className="absolute bottom-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-card/95 px-3 py-1.5 text-[11px] font-medium text-foreground shadow-lg backdrop-blur transition-colors hover:bg-card"
+            >
+              <ArrowDown className="w-3 h-3" />
+              {missedCount > 0
+                ? `${missedCount} new ${missedCount === 1 ? "message" : "messages"}`
+                : "Jump to latest"}
+            </button>
+          )}
+        </div>
+      )}
       {replyingTo && onReplyTo && (
         <div
           className="flex items-start gap-2 rounded-xl border-l-2 border-primary/60 bg-primary/5 px-3 py-2"
