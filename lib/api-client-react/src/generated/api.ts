@@ -262,7 +262,7 @@ export const getListWhispsUrl = (params?: ListWhispsParams,) => {
 }
 
 /**
- * @summary List all whisps sent by the current user
+ * @summary List whisps sent by the current user (default), or received by them
  */
 export const listWhisps = async (params?: ListWhispsParams, options?: RequestInit): Promise<Whisp[]> => {
 
@@ -309,7 +309,7 @@ export type ListWhispsQueryError = ErrorType<unknown>
 
 
 /**
- * @summary List all whisps sent by the current user
+ * @summary List whisps sent by the current user (default), or received by them
  */
 
 export function useListWhisps<TData = Awaited<ReturnType<typeof listWhisps>>, TError = ErrorType<unknown>>(

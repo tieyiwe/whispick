@@ -54,13 +54,20 @@ paths:
     get:
       operationId: listWhisps
       tags: [whisps]
-      summary: List all whisps sent by the current user
+      summary: List whisps sent by the current user (default), or received by them
       parameters:
         - in: query
           name: status
           schema:
             type: string
           required: false
+        - in: query
+          name: box
+          schema:
+            type: string
+            enum: [sent, received]
+          required: false
+          description: "'sent' (default): whisps this user sent. 'received': whisps another Whisperer sent TO this user (matched at send time — see whisps.recipientUserId)."
       responses:
         "200":
           description: List of whisps
@@ -2715,6 +2722,9 @@ components:
           description: Set when this whisp's video and/or note came from the "Not sure what to send?" AI concierge (see POST /whisps/concierge)
         createdAt:
           type: string
+        viewerIsRecipient:
+          type: boolean
+          description: True only when the caller is themselves this whisp's matched recipient (see GET /whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email/phone belongs to a verified account.
       required:
         - id
         - senderId
@@ -2724,6 +2734,7 @@ components:
         - publicToken
         - revealRequested
         - createdAt
+        - viewerIsRecipient
 
     WhispInput:
       type: object
@@ -3270,8 +3281,18 @@ components:
           description: >-
             Whether this whisp was already marked watched (whisps.watchedAt)
             BEFORE this request — true only on a reopen, never on the load
-            that itself does the watching. Drives whether the appreciation
-            prompt starts expanded or collapsed.
+            that itself does the watching.
+        hasOpenedBefore:
+          type: boolean
+          description: >-
+            Whether this whisp was already opened (whisps.openedAt) BEFORE
+            this request — true only on a reopen, never on a true first
+            visit. This, not hasWatched, drives whether the appreciation
+            prompt starts expanded (first-ever open — visible right under
+            the video) or collapsed (any reopen, still one tap away):
+            watchedAt gets set the moment someone taps Play, before they've
+            actually watched anything, so it would spring the prompt open
+            too early; openedAt never does.
         deliveryMethod:
           type: string
           description: "'whisper_link' | 'ghost_boost' | 'circle_drop' | 'group_whisper' | 'circle_dm'"
@@ -3386,6 +3407,9 @@ components:
           type: integer
         role:
           type: string
+        emailNotificationsEnabled:
+          type: boolean
+          description: Whether this Whisperer wants the "you have a new whisp" email in addition to the in-app notification. On by default — see PATCH /user/profile to change it.
         createdAt:
           type: string
       required:
@@ -3396,6 +3420,7 @@ components:
         - boostCredits
         - whisperLinksUsed
         - role
+        - emailNotificationsEnabled
         - createdAt
 
     UserProfileUpdate:
@@ -3409,6 +3434,8 @@ components:
           type: ["string", "null"]
         ageRange:
           type: ["string", "null"]
+        emailNotificationsEnabled:
+          type: boolean
 
     StartPhoneVerificationInput:
       type: object

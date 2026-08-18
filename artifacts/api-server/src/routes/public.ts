@@ -238,9 +238,17 @@ router.get("/w/:token", async (req, res): Promise<void> => {
     // True only when watchedAt was ALREADY set before this request — i.e.
     // this is a reopen of a whisp they watched on some earlier visit, never
     // the visit that itself does the watching (that happens client-side,
-    // after this response has already gone out). Drives whether the
-    // appreciation prompt starts expanded or collapsed on the recipient page.
+    // after this response has already gone out).
     hasWatched: !!whisp.watchedAt,
+    // Same "already true before this request" timing as hasWatched above,
+    // but keyed off openedAt (set by the "opened" tracking event — see POST
+    // /w/:token/track below) rather than watchedAt. This is what the
+    // recipient page actually uses to decide whether the appreciation
+    // prompt starts expanded (a true first-ever open) or collapsed (any
+    // reopen) — openedAt, unlike watchedAt, is never set early by a mere tap
+    // on Play, so it can't spring the prompt open before the video's even
+    // been watched.
+    hasOpenedBefore: !!whisp.openedAt,
     aiTakeaway: whisp.aiTakeaway,
     aiTakeawayStatus: whisp.aiTakeawayStatus,
     replies,

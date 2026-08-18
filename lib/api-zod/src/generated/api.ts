@@ -17,10 +17,11 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
- * @summary List all whisps sent by the current user
+ * @summary List whisps sent by the current user (default), or received by them
  */
 export const ListWhispsQueryParams = zod.object({
-  "status": zod.coerce.string().optional()
+  "status": zod.coerce.string().optional(),
+  "box": zod.enum(['sent', 'received']).optional().describe('\'sent\' (default): whisps this user sent. \'received\': whisps another Whisperer sent TO this user (matched at send time — see whisps.recipientUserId).')
 })
 
 export const ListWhispsResponseItem = zod.object({
@@ -56,7 +57,8 @@ export const ListWhispsResponseItem = zod.object({
   "aiTakeaway": zod.string().nullish(),
   "aiTakeawayStatus": zod.string().nullish(),
   "conciergeRequestId": zod.string().nullish().describe('Set when this whisp\'s video and\/or note came from the \"Not sure what to send?\" AI concierge (see POST \/whisps\/concierge)'),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "viewerIsRecipient": zod.boolean().describe('True only when the caller is themselves this whisp\'s matched recipient (see GET \/whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email\/phone belongs to a verified account.')
 })
 export const ListWhispsResponse = zod.array(ListWhispsResponseItem)
 
@@ -118,7 +120,8 @@ export const CreateWhispResponse = zod.object({
   "aiTakeaway": zod.string().nullish(),
   "aiTakeawayStatus": zod.string().nullish(),
   "conciergeRequestId": zod.string().nullish().describe('Set when this whisp\'s video and\/or note came from the \"Not sure what to send?\" AI concierge (see POST \/whisps\/concierge)'),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "viewerIsRecipient": zod.boolean().describe('True only when the caller is themselves this whisp\'s matched recipient (see GET \/whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email\/phone belongs to a verified account.')
 })
 
 
@@ -168,7 +171,8 @@ export const GetWhispStatsResponse = zod.object({
   "aiTakeaway": zod.string().nullish(),
   "aiTakeawayStatus": zod.string().nullish(),
   "conciergeRequestId": zod.string().nullish().describe('Set when this whisp\'s video and\/or note came from the \"Not sure what to send?\" AI concierge (see POST \/whisps\/concierge)'),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "viewerIsRecipient": zod.boolean().describe('True only when the caller is themselves this whisp\'s matched recipient (see GET \/whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email\/phone belongs to a verified account.')
 }))
 })
 
@@ -214,7 +218,8 @@ export const GetWhispResponse = zod.object({
   "aiTakeaway": zod.string().nullish(),
   "aiTakeawayStatus": zod.string().nullish(),
   "conciergeRequestId": zod.string().nullish().describe('Set when this whisp\'s video and\/or note came from the \"Not sure what to send?\" AI concierge (see POST \/whisps\/concierge)'),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "viewerIsRecipient": zod.boolean().describe('True only when the caller is themselves this whisp\'s matched recipient (see GET \/whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email\/phone belongs to a verified account.')
 }),
   "trackingEvents": zod.array(zod.object({
   "id": zod.string(),
@@ -360,7 +365,8 @@ export const RequestRevealResponse = zod.object({
   "aiTakeaway": zod.string().nullish(),
   "aiTakeawayStatus": zod.string().nullish(),
   "conciergeRequestId": zod.string().nullish().describe('Set when this whisp\'s video and\/or note came from the \"Not sure what to send?\" AI concierge (see POST \/whisps\/concierge)'),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "viewerIsRecipient": zod.boolean().describe('True only when the caller is themselves this whisp\'s matched recipient (see GET \/whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email\/phone belongs to a verified account.')
 })
 
 
@@ -783,7 +789,8 @@ export const GetPublicWhispResponse = zod.object({
 })),
   "recipientRepliesRemaining": zod.number().nullish().describe('Anonymous replies this recipient has left on this whisp. Null means uncapped. Signing up removes the cap entirely.'),
   "videoRepliesAllowed": zod.boolean().optional().describe('Whether this viewer may whisp a VIDEO back. Text replies stay open to anonymous recipients up to their allowance; a video reply needs either an account or reply credit the sender bought for this whisp.'),
-  "hasWatched": zod.boolean().optional().describe('Whether this whisp was already marked watched (whisps.watchedAt) BEFORE this request — true only on a reopen, never on the load that itself does the watching. Drives whether the appreciation prompt starts expanded or collapsed.'),
+  "hasWatched": zod.boolean().optional().describe('Whether this whisp was already marked watched (whisps.watchedAt) BEFORE this request — true only on a reopen, never on the load that itself does the watching.'),
+  "hasOpenedBefore": zod.boolean().optional().describe('Whether this whisp was already opened (whisps.openedAt) BEFORE this request — true only on a reopen, never on a true first visit. This, not hasWatched, drives whether the appreciation prompt starts expanded (first-ever open — visible right under the video) or collapsed (any reopen, still one tap away): watchedAt gets set the moment someone taps Play, before they\'ve actually watched anything, so it would spring the prompt open too early; openedAt never does.'),
   "deliveryMethod": zod.string().describe('\'whisper_link\' | \'ghost_boost\' | \'circle_drop\' | \'group_whisper\' | \'circle_dm\''),
   "likeCount": zod.number().describe('Blind Circle posts only (0 otherwise).'),
   "viewerHasLiked": zod.boolean().describe('Whether the visitorId passed as a query param has already liked this post. False (not just \"unknown\") when no visitorId is given.'),
@@ -964,6 +971,7 @@ export const GetUserProfileResponse = zod.object({
   "boostCredits": zod.number(),
   "whisperLinksUsed": zod.number(),
   "role": zod.string(),
+  "emailNotificationsEnabled": zod.boolean().describe('Whether this Whisperer wants the \"you have a new whisp\" email in addition to the in-app notification. On by default — see PATCH \/user\/profile to change it.'),
   "createdAt": zod.string()
 })
 
@@ -975,7 +983,8 @@ export const UpdateUserProfileBody = zod.object({
   "fullName": zod.string().nullish(),
   "avatarUrl": zod.string().nullish(),
   "gender": zod.string().nullish(),
-  "ageRange": zod.string().nullish()
+  "ageRange": zod.string().nullish(),
+  "emailNotificationsEnabled": zod.boolean().optional()
 })
 
 export const UpdateUserProfileResponse = zod.object({
@@ -992,6 +1001,7 @@ export const UpdateUserProfileResponse = zod.object({
   "boostCredits": zod.number(),
   "whisperLinksUsed": zod.number(),
   "role": zod.string(),
+  "emailNotificationsEnabled": zod.boolean().describe('Whether this Whisperer wants the \"you have a new whisp\" email in addition to the in-app notification. On by default — see PATCH \/user\/profile to change it.'),
   "createdAt": zod.string()
 })
 
@@ -1370,7 +1380,8 @@ export const AdminGetUserResponse = zod.object({
   "aiTakeaway": zod.string().nullish(),
   "aiTakeawayStatus": zod.string().nullish(),
   "conciergeRequestId": zod.string().nullish().describe('Set when this whisp\'s video and\/or note came from the \"Not sure what to send?\" AI concierge (see POST \/whisps\/concierge)'),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "viewerIsRecipient": zod.boolean().describe('True only when the caller is themselves this whisp\'s matched recipient (see GET \/whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email\/phone belongs to a verified account.')
 })),
   "totalWhisps": zod.number(),
   "creditTransactions": zod.array(zod.object({
@@ -1609,7 +1620,8 @@ export const AdminGetWhispResponse = zod.object({
   "aiTakeaway": zod.string().nullish(),
   "aiTakeawayStatus": zod.string().nullish(),
   "conciergeRequestId": zod.string().nullish().describe('Set when this whisp\'s video and\/or note came from the \"Not sure what to send?\" AI concierge (see POST \/whisps\/concierge)'),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "viewerIsRecipient": zod.boolean().describe('True only when the caller is themselves this whisp\'s matched recipient (see GET \/whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email\/phone belongs to a verified account.')
 }),
   "senderId": zod.string().nullish(),
   "senderEmail": zod.string().nullish(),

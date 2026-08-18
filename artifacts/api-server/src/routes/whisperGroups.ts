@@ -15,7 +15,7 @@ import { z } from "zod";
 import { requireAuth } from "../lib/auth";
 import { ensureUser } from "../lib/ensureUser";
 import { getPublicAppUrl } from "../lib/publicUrl";
-import { deliverWhisperLink } from "../lib/deliver";
+import { deliverWhisperLink, findVerifiedRecipient, findVerifiedRecipientByEmail } from "../lib/deliver";
 import { categorizeWhispsAsync } from "../lib/categorizeWhisp";
 import { moderateWhispAsync } from "../lib/moderation";
 import { needsDemographics } from "../lib/demographics";
@@ -487,6 +487,16 @@ router.post("/:id/send", requireAuth, createWhispLimiter, async (req, res): Prom
         : null
       : derived!.thumbnail;
 
+    // Same insert-time match as routes/whisps.ts's single-send POST / — see
+    // whisps.recipientUserId's own comment for why this is looked up once
+    // here rather than left to deliverWhisperLink's internal (delivery-time
+    // only, never persisted) matching.
+    // Non-null assertions are safe here: `deliverable` (above) already
+    // filtered to members that have the field this channel needs.
+    const recipientUserId = needsEmail
+      ? (await findVerifiedRecipientByEmail(member.email!))?.id ?? null
+      : (await findVerifiedRecipient(member.phone!))?.id ?? null;
+
     await db.insert(whispsTable).values({
       id,
       senderId: user.id,
@@ -504,6 +514,7 @@ router.post("/:id/send", requireAuth, createWhispLimiter, async (req, res): Prom
       whisperGroupId: group.id,
       recipientEmail: needsEmail ? member.email : null,
       recipientPhone: needsEmail ? null : member.phone,
+      recipientUserId,
       anonymousNote: data.anonymousNote ?? null,
       senderAlias: data.senderAlias ?? null,
       moodTag: data.moodTag ?? null,

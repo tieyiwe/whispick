@@ -25,7 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MoodTag, MOOD_CONFIG } from "@/components/shared/MoodTag";
 import { useToast } from "@/hooks/use-toast";
-import { Send, Loader2, Video, X, Link2, HeartHandshake, Clock, BellRing, Sparkles, PlayCircle, PenLine, Lock, ChevronDown, Heart, MessageCircle } from "lucide-react";
+import { Send, Loader2, Video, X, Link2, HeartHandshake, Clock, BellRing, Sparkles, PlayCircle, PenLine, Lock, ChevronDown, ChevronLeft, Heart, MessageCircle } from "lucide-react";
 import { LogoLockup } from "@/components/ui/logo";
 import { VideoPlayer } from "@/components/shared/VideoPlayer";
 import { QUICK_REPLIES } from "@/lib/quickReplies";
@@ -118,18 +118,28 @@ export function PublicWhispPage() {
   const [now, setNow] = useState(() => Date.now());
   const [justWatched, setJustWatched] = useState(false);
 
-  // The "Was this something you needed to hear?" card starts collapsed —
-  // right after the video card and takeaway, it was crowding the screen
-  // before there was anything to react to yet. Two things open it back up:
-  // finishing the video just now (justWatched, below), or — the case this
-  // ref exists for — this being a REOPEN of a whisp already watched on some
-  // earlier visit, where leading with the prompt is exactly what makes
-  // sense. hasWatchedOnLoadRef captures whisp.hasWatched only once, the
-  // first moment it's available, so a later poll returning hasWatched=true
-  // (because THIS visit just watched it) can't retroactively re-trigger it —
-  // that case is already covered by the justWatched effect below.
+  // The "Was this something you needed to hear?" card is visible (expanded)
+  // by default the FIRST time anyone ever opens this whisp — placed right
+  // under the video, not overlaying or gating it, just an ordinary section
+  // someone can see without hunting for it. From a REOPEN onward it starts
+  // collapsed instead (still one tap away via the chevron below), since by
+  // then it's already been seen once and shouldn't have to be dismissed all
+  // over again on every future visit.
+  //
+  // "First time" is driven by whisp.hasOpenedBefore — false only when nobody
+  // has ever opened this whisp before (see routes/public.ts's GET
+  // /w/:token; the "opened" tracking event that flips it fires via a
+  // separate POST after this page's own data has already loaded, so a true
+  // first visit's GET response still reflects it as false). Deliberately NOT
+  // whisp.hasWatched/watchedAt — that flips to true the instant someone taps
+  // Play, even on a platform where completion can't be observed (see
+  // VideoPlayer.tsx's handlePlayClick comment), which used to spring this
+  // open on a reload after a single tap, before the video was even watched.
+  // hasOpenedOnLoadRef captures it only once — the first render `whisp`
+  // exists at all — so a later poll (which will by then show openedAt set,
+  // since THIS visit's own open just got tracked) can't flip it back.
   const [reactionExpanded, setReactionExpanded] = useState(false);
-  const hasWatchedOnLoadRef = useRef(false);
+  const hasOpenedOnLoadRef = useRef(false);
 
   // This is a private, single-recipient page — never indexable, even if a
   // link to it ends up publicly posted somewhere. robots.txt disallows /w/
@@ -198,13 +208,10 @@ export function PublicWhispPage() {
     // expired/limit-reached ones, which are shorter).
   }, [showVideoReply, replyVideoMeta, whisp?.recipientRepliesRemaining, whisp?.expired]);
 
-  // Captures whisp.hasWatched exactly once — the first render where `whisp`
-  // exists at all, i.e. the very first load's response, before any poll
-  // triggered by this session's own watching could change it.
   useEffect(() => {
-    if (hasWatchedOnLoadRef.current || !whisp) return;
-    hasWatchedOnLoadRef.current = true;
-    if (whisp.hasWatched) setReactionExpanded(true);
+    if (hasOpenedOnLoadRef.current || !whisp) return;
+    hasOpenedOnLoadRef.current = true;
+    if (!whisp.hasOpenedBefore) setReactionExpanded(true);
   }, [whisp]);
 
   useEffect(() => {
@@ -471,12 +478,27 @@ export function PublicWhispPage() {
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 1.25rem)" }}
       >
         <BlindWhisperLogoMark />
-        <a
-          href="/sign-up"
-          className="text-xs text-muted-foreground hover:text-primary transition-colors py-2"
-        >
-          Become a Whisperer
-        </a>
+        {isSignedIn ? (
+          // A signed-in Whisperer landing here (their own Received tab, a
+          // notification, a link someone sent them) has an app to go back
+          // to — unlike an anonymous recipient, for whom this page IS the
+          // whole experience and a dashboard link would just be a dead end.
+          <button
+            type="button"
+            onClick={() => setLocation("/dashboard")}
+            data-testid="button-back-to-dashboard"
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors py-2"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" /> Dashboard
+          </button>
+        ) : (
+          <a
+            href="/sign-up"
+            className="text-xs text-muted-foreground hover:text-primary transition-colors py-2"
+          >
+            Become a Whisperer
+          </a>
+        )}
       </header>
 
       {/* Content */}
@@ -591,11 +613,11 @@ export function PublicWhispPage() {
             {whisp.aiTakeawayStatus === "ready" && whisp.aiTakeaway && <TakeawayCard text={whisp.aiTakeaway} />}
 
             {/* Appreciation prompt — collapsible so it doesn't crowd the
-                video/takeaway on a fresh visit before there's anything to
-                react to yet. Opens itself (see the two effects near
-                justWatched/hasWatchedOnLoadRef above) the moment they finish
-                watching, or immediately on a reopen of a whisp already
-                watched on some earlier visit. */}
+                video/takeaway before there's anything to react to yet, and
+                stays collapsed until they actually finish watching in THIS
+                visit (see the justWatched effect above) — never just because
+                the server says it was watched before, which used to spring
+                this open on reload after a single tap. */}
             <div className="bg-card border border-border/50 rounded-2xl overflow-hidden">
               <button
                 type="button"

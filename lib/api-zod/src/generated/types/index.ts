@@ -86,6 +86,7 @@ export * from './joinCircleInput';
 export * from './listCircleFeedParams';
 export * from './listDebateTopicsParams';
 export * from './listSuggestionsParams';
+export * from './listWhispsBox';
 export * from './listWhispsParams';
 export * from './matchStats';
 export * from './moderationFlag';

@@ -19,7 +19,7 @@ import { z } from "zod";
 import { requireAuth } from "../lib/auth";
 import { ensureUser } from "../lib/ensureUser";
 import { getPublicAppUrl } from "../lib/publicUrl";
-import { deliverWhisperLink } from "../lib/deliver";
+import { deliverWhisperLink, findVerifiedRecipient, findVerifiedRecipientByEmail } from "../lib/deliver";
 import { revealRequestHookLine, newReplyHookLine } from "../lib/copy";
 import { categorizeWhispAsync } from "../lib/categorizeWhisp";
 import { moderateWhispAsync } from "../lib/moderation";
@@ -121,24 +121,45 @@ router.post("/concierge", requireAuth, conciergeLimiter, async (req, res): Promi
   });
 });
 
-// GET /api/whisps
+// ANTI-ENUMERATION: strips recipientUserId from every response — same
+// reasoning as routes/textWhisps.ts's toResponse, which this mirrors. A
+// sender reading recipientUserId straight off their own sent whisps would
+// learn whether an arbitrary email/phone belongs to a verified Blind
+// Whisper account for free; viewerIsRecipient only ever reveals a fact
+// about the CALLER themselves.
+function toWhispResponse(whisp: typeof whispsTable.$inferSelect, viewerId: string) {
+  const { recipientUserId, ...rest } = whisp;
+  return { ...rest, viewerIsRecipient: recipientUserId === viewerId };
+}
+
+// GET /api/whisps — ?box=sent (default) is what this sender sent; ?box=received
+// is what other Whisperers have sent TO this user (see whisps.recipientUserId).
+// Received items are never affected by the sender's own soft-delete
+// (excludeDeleted() only ever applies to the box this user sent), and Ghost
+// Boost's stranger-matched deliveries never appear as "received" — a
+// recipientUserId is only ever set for a whisper_link/group_whisper send.
 router.get("/", requireAuth, async (req, res): Promise<void> => {
   const { userId } = getAuth(req);
   const user = await ensureUser(userId!, req);
 
   const statusFilter = req.query.status as string | undefined;
+  const box = req.query.box === "received" ? "received" : "sent";
 
   const whisps = await db
     .select()
     .from(whispsTable)
     .where(
-      statusFilter
-        ? and(eq(whispsTable.senderId, user.id), eq(whispsTable.status, statusFilter), excludeMatchDeliveries(), excludeDeleted())
-        : and(eq(whispsTable.senderId, user.id), excludeMatchDeliveries(), excludeDeleted()),
+      box === "received"
+        ? statusFilter
+          ? and(eq(whispsTable.recipientUserId, user.id), eq(whispsTable.status, statusFilter))
+          : eq(whispsTable.recipientUserId, user.id)
+        : statusFilter
+          ? and(eq(whispsTable.senderId, user.id), eq(whispsTable.status, statusFilter), excludeMatchDeliveries(), excludeDeleted())
+          : and(eq(whispsTable.senderId, user.id), excludeMatchDeliveries(), excludeDeleted()),
     )
     .orderBy(sql`${whispsTable.createdAt} DESC`);
 
-  res.json(whisps);
+  res.json(whisps.map((w) => toWhispResponse(w, user.id)));
 });
 
 // POST /api/whisps
@@ -348,6 +369,25 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
     }
   }
 
+  // Matched BEFORE insert (not just at delivery time) so recipientUserId is
+  // persisted on the row itself — that's what lets a signed-in recipient see
+  // this whisp in their own "Received" list (GET /?box=received) rather than
+  // only ever being reachable via the delivered link. Only meaningful for a
+  // whisper_link addressed to a specific person; circle_drop/ghost_boost
+  // have no single recipient identity to match. lib/deliver.ts's
+  // deliverWhisperLink does its own equivalent lookup at send time for
+  // delivery routing — this is a second, cheap indexed lookup, not a shared
+  // code path, since that function also serves scheduled/reminder callers
+  // that already have a persisted whisp row and don't need to recompute it.
+  let recipientUserId: string | null = null;
+  if (data.deliveryMethod === "whisper_link") {
+    if (data.whisperChannel === "email" && data.recipientEmail) {
+      recipientUserId = (await findVerifiedRecipientByEmail(data.recipientEmail))?.id ?? null;
+    } else if ((data.whisperChannel === "sms" || data.whisperChannel === "whatsapp") && data.recipientPhone) {
+      recipientUserId = (await findVerifiedRecipient(data.recipientPhone))?.id ?? null;
+    }
+  }
+
   const id = randomUUID();
   const publicToken = randomUUID().replace(/-/g, "");
 
@@ -390,6 +430,7 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
     circleId: data.deliveryMethod === "circle_drop" ? data.circleId ?? null : null,
     recipientEmail: data.recipientEmail ?? null,
     recipientPhone: data.recipientPhone ?? null,
+    recipientUserId,
     anonymousNote: data.anonymousNote ?? null,
     senderAlias: data.senderAlias ?? null,
     moodTag: data.moodTag ?? null,
@@ -419,8 +460,8 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
   // reflects the whisp as inserted (status 'delivered' = "attempted
   // delivery"); a transport failure discovered moments later is visible via
   // GET, not this response, same as the scheduled-send and reminder paths.
-  const whisp = await db.select().from(whispsTable).where(eq(whispsTable.id, id)).then(r => r[0]);
-  res.status(201).json(whisp);
+  const whisp = await db.select().from(whispsTable).where(eq(whispsTable.id, id)).then(r => r[0]!);
+  res.status(201).json(toWhispResponse(whisp, user.id));
 
   // The shared link goes through /l/:token (server-rendered) rather than
   // straight to /w/:token (the SPA) so link-preview crawlers in
@@ -591,11 +632,19 @@ router.get("/:id", requireAuth, async (req, res): Promise<void> => {
       .orderBy(desc(whispsTable.createdAt));
   }
 
+  // recipientUserId is stripped for the same anti-enumeration reason
+  // toWhispResponse strips it in GET / — a sender reading it straight off
+  // their own whisp's detail page would learn whether the email/phone they
+  // sent to belongs to a verified Blind Whisper account. This route is
+  // already scoped to the sender (never the recipient), so there's no
+  // matching viewerIsRecipient to add here.
+  const { recipientUserId: _recipientUserId, ...senderSafeWhisp } = whisp;
+
   res.json({
     // Same read-time embed fill-in as the public page (see routes/public.ts),
     // so the sender previewing their own whisp sees exactly what the
     // recipient will.
-    whisp: { ...whisp, videoEmbedUrl: whisp.videoEmbedUrl ?? embedUrlFor(whisp.videoUrl, whisp.videoPlatform) },
+    whisp: { ...senderSafeWhisp, videoEmbedUrl: whisp.videoEmbedUrl ?? embedUrlFor(whisp.videoUrl, whisp.videoPlatform) },
     trackingEvents,
     replies,
     recipientRepliesRemaining:

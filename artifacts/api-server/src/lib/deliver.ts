@@ -2,7 +2,7 @@ import { sendEmail, whisperLinkEmailHtml } from "./email";
 import { sendSms, sendWhatsApp, whisperLinkSmsBody } from "./sms";
 import { HOOK_LINE } from "./copy";
 import { db, whispsTable, usersTable, notificationsTable } from "@workspace/db";
-import { eq, and, isNotNull } from "drizzle-orm";
+import { eq, and, isNotNull, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import type { DeliveryPurpose, DeliveryLogContext } from "./deliveryLog";
 import { logDeliveryAttempt } from "./deliveryLog";
@@ -38,6 +38,27 @@ export async function findVerifiedRecipient(rawPhone: string): Promise<{ id: str
     .select({ id: usersTable.id })
     .from(usersTable)
     .where(and(eq(usersTable.phone, normalized), isNotNull(usersTable.phoneVerifiedAt)))
+    .then((r) => r[0] ?? null);
+}
+
+// Email equivalent of findVerifiedRecipient above — the "skip the redundant
+// inbox nag, deliver in-app too" match for the email channel. Unlike phone,
+// there's no separate app-side verification step to require: users.email
+// is Clerk's own primary address (see ensureUser.ts), which Clerk requires
+// to be verified before it can be primary, so a plain match is trustworthy
+// here. Matched case-insensitively — email addresses aren't meaningfully
+// case-sensitive in practice, and a sender who types the recipient's address
+// in different casing than they signed up with shouldn't miss the match.
+export async function findVerifiedRecipientByEmail(
+  rawEmail: string,
+): Promise<{ id: string; emailNotificationsEnabled: boolean } | null> {
+  const email = rawEmail.trim().toLowerCase();
+  if (!email) return null;
+
+  return db
+    .select({ id: usersTable.id, emailNotificationsEnabled: usersTable.emailNotificationsEnabled })
+    .from(usersTable)
+    .where(sql`lower(${usersTable.email}) = ${email}`)
     .then((r) => r[0] ?? null);
 }
 
@@ -134,7 +155,21 @@ export async function deliverWhisperLink(
 
   let success: boolean;
   if (whisp.whisperChannel === "email" && whisp.recipientEmail) {
-    success = await sendEmail(whisp.recipientEmail, hookLine, whisperLinkEmailHtml(sharedUrl, hookLine), logCtx);
+    // Unlike the SMS/WhatsApp branch below, a matched email recipient gets
+    // BOTH: the in-app notification (so they see it without leaving the
+    // app) AND — unless they've turned it off in Settings — the email too.
+    // Email is the default/most common channel, and unlike a Twilio SMS it
+    // costs nothing to also send, so there's no reason to make it either/or
+    // the way the SMS path does.
+    const matched = await findVerifiedRecipientByEmail(whisp.recipientEmail);
+    const inAppOk = matched
+      ? await deliverInApp(matched.id, "You have a new whisp", hookLine, `/w/${whisp.publicToken}`, whisp.recipientEmail, logCtx)
+      : true;
+    const shouldEmail = !matched || matched.emailNotificationsEnabled;
+    const emailOk = shouldEmail
+      ? await sendEmail(whisp.recipientEmail, hookLine, whisperLinkEmailHtml(sharedUrl, hookLine), logCtx)
+      : true;
+    success = inAppOk && emailOk;
   } else if ((whisp.whisperChannel === "sms" || whisp.whisperChannel === "whatsapp") && whisp.recipientPhone) {
     const channel = whisp.whisperChannel;
     const matched = await findVerifiedRecipient(whisp.recipientPhone);

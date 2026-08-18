@@ -40,6 +40,7 @@ router.get("/profile", requireAuth, async (req, res): Promise<void> => {
     boostCredits: user.boostCredits,
     whisperLinksUsed: user.whisperLinksUsed,
     role: user.role,
+    emailNotificationsEnabled: user.emailNotificationsEnabled,
     createdAt: user.createdAt,
   });
 });
@@ -56,6 +57,7 @@ router.patch("/profile", requireAuth, async (req, res): Promise<void> => {
     avatarUrl: z.string().nullable().optional(),
     gender: z.enum(GENDER_OPTIONS).nullable().optional(),
     ageRange: z.enum(AGE_RANGE_OPTIONS).nullable().optional(),
+    emailNotificationsEnabled: z.boolean().optional(),
   });
 
   const parsed = schema.safeParse(req.body);
@@ -80,6 +82,7 @@ router.patch("/profile", requireAuth, async (req, res): Promise<void> => {
     plan: updated.plan,
     boostCredits: updated.boostCredits,
     whisperLinksUsed: updated.whisperLinksUsed,
+    emailNotificationsEnabled: updated.emailNotificationsEnabled,
     createdAt: updated.createdAt,
   });
 });

@@ -56,6 +56,19 @@ export const whispsTable = pgTable("whisps", {
   whisperGroupId: text("whisper_group_id"),
   recipientEmail: text("recipient_email"),
   recipientPhone: text("recipient_phone"),
+  // Set only when recipientEmail/recipientPhone matched a known, verified
+  // Blind Whisper account at send time (see lib/deliver.ts's
+  // findVerifiedRecipient/findVerifiedRecipientByEmail) — same dual-path
+  // recipient model as text_whisps.ts's own recipientUserId, applied here
+  // for 'whisper_link' and 'group_whisper' sends only. Null for every other
+  // delivery method (a circle_drop has no single addressed recipient;
+  // ghost_boost's recipients are deliberately hidden strangers, never the
+  // sender's to know) and for a whisper_link/group_whisper recipient who
+  // wasn't yet a member at send time. Lets a signed-in recipient see this
+  // whisp in their own "Received" list (routes/whisps.ts GET / with
+  // ?box=received) and get an in-app notification instead of only an email/
+  // SMS they'd have to leave the app to read.
+  recipientUserId: text("recipient_user_id"),
   anonymousNote: text("anonymous_note"),
   senderAlias: text("sender_alias"),
   moodTag: text("mood_tag"),
@@ -139,6 +152,7 @@ export const whispsTable = pgTable("whisps", {
   index("whisps_status_idx").on(table.status),
   index("whisps_recipient_email_idx").on(table.recipientEmail),
   index("whisps_recipient_phone_idx").on(table.recipientPhone),
+  index("whisps_recipient_user_id_idx").on(table.recipientUserId),
   index("whisps_concierge_request_id_idx").on(table.conciergeRequestId),
   index("whisps_origin_circle_whisp_id_idx").on(table.originCircleWhispId),
   // Same FK-shaped-column-with-no-index gap whisp_categories.ts's comment

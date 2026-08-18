@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { useListWhisps } from "@workspace/api-client-react";
+import { useListWhisps, getListWhispsQueryKey } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import { Link, useLocation } from "wouter";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { MoodTag } from "@/components/shared/MoodTag";
-import { PlayCircle, Search, Filter, Repeat, Heart } from "lucide-react";
+import { PlayCircle, Search, Filter, Repeat, Heart, Send, Inbox, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -14,13 +14,34 @@ import { deliveryLabel } from "@/lib/deliveryMethod";
 import { savePendingForward, type ForwardVideo } from "@/lib/forwardVideo";
 
 export function WhispsList() {
+  const [box, setBox] = useState<"sent" | "received">("sent");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [, setLocation] = useLocation();
 
-  const { data: whisps, isLoading } = useListWhisps(
-    statusFilter !== "all" ? { status: statusFilter } : undefined
-  );
+  // Polled, not just fetched once — same 60s cadence and background-pause
+  // behavior as NotificationBell.tsx, so a whisp someone else sends while
+  // this Whisperer is sitting on the page (either tab) shows up on its own,
+  // the same way the notification bell already does, instead of needing a
+  // manual refresh to notice it.
+  const listParams = {
+    ...(box === "received" ? { box: "received" as const } : {}),
+    ...(statusFilter !== "all" ? { status: statusFilter } : {}),
+  };
+  const { data: whisps, isLoading } = useListWhisps(listParams, {
+    query: { queryKey: getListWhispsQueryKey(listParams), refetchInterval: 60_000, refetchIntervalInBackground: false },
+  });
+
+  // A lightweight always-on fetch (separate from the tab's own query above,
+  // but sharing its cache entry once the Received tab is actually opened —
+  // same params, same query key) purely to badge the tab itself with how
+  // many arrived unopened, so a Whisperer notices new ones without having to
+  // switch tabs first.
+  const receivedBadgeParams = { box: "received" as const };
+  const { data: receivedForBadge } = useListWhisps(receivedBadgeParams, {
+    query: { queryKey: getListWhispsQueryKey(receivedBadgeParams), refetchInterval: 60_000, refetchIntervalInBackground: false },
+  });
+  const newReceivedCount = receivedForBadge?.filter((w) => !w.openedAt).length ?? 0;
 
   function handleWhispAgain(e: React.MouseEvent, whisp: ForwardVideo & { videoPlatform?: string | null }) {
     e.preventDefault();
@@ -38,11 +59,12 @@ export function WhispsList() {
     setLocation("/send");
   }
 
-  const filteredWhisps = whisps?.filter(w => 
-    !searchQuery || 
+  const filteredWhisps = whisps?.filter(w =>
+    !searchQuery ||
     w.videoTitle?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    w.recipientEmail?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    w.recipientPhone?.toLowerCase().includes(searchQuery.toLowerCase())
+    (box === "sent" && w.recipientEmail?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (box === "sent" && w.recipientPhone?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (box === "received" && w.senderAlias?.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   return (
@@ -50,14 +72,52 @@ export function WhispsList() {
       <div className="space-y-8">
         <div>
           <h1 className="text-3xl font-serif font-bold text-foreground">My Whisps</h1>
-          <p className="text-muted-foreground mt-1">Track the videos you've sent.</p>
+          <p className="text-muted-foreground mt-1">Everything you've sent, and everything sent to you.</p>
+        </div>
+
+        {/* Sent / Received — two clearly different collections (what you
+            chose to send vs. what an anonymous someone chose to send you),
+            so this is a real tab switch rather than a filter dropdown value,
+            with its own badge so a new arrival is noticeable without having
+            to open the tab first. */}
+        <div className="inline-flex items-center gap-1 rounded-full bg-card border border-border/50 p-1">
+          <button
+            type="button"
+            onClick={() => setBox("sent")}
+            data-testid="tab-whisps-sent"
+            className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+              box === "sent" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Send className="w-3.5 h-3.5" /> Sent
+          </button>
+          <button
+            type="button"
+            onClick={() => setBox("received")}
+            data-testid="tab-whisps-received"
+            className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors relative ${
+              box === "received" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Inbox className="w-3.5 h-3.5" /> Received
+            {newReceivedCount > 0 && (
+              <span
+                className={`ml-0.5 inline-flex items-center justify-center rounded-full text-[10px] font-semibold min-w-[18px] h-[18px] px-1 ${
+                  box === "received" ? "bg-primary-foreground/25 text-primary-foreground" : "bg-primary text-primary-foreground"
+                }`}
+                data-testid="badge-new-received-count"
+              >
+                {newReceivedCount}
+              </span>
+            )}
+          </button>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input 
-              placeholder="Search by title or recipient..." 
+            <Input
+              placeholder={box === "sent" ? "Search by title or recipient..." : "Search by title..."}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9 bg-card border-border/50 rounded-full"
@@ -86,9 +146,27 @@ export function WhispsList() {
           </div>
         ) : filteredWhisps?.length ? (
           <div className="space-y-4">
-            {filteredWhisps.map((whisp) => (
-              <Link key={whisp.id} href={`/whisps/${whisp.id}`}>
-                <Card className="bg-card hover:bg-card/80 transition-colors border-border/50 cursor-pointer overflow-hidden group">
+            {filteredWhisps.map((whisp) => {
+              const isReceived = box === "received";
+              const isNew = isReceived && !whisp.openedAt;
+              return (
+              <Link key={whisp.id} href={isReceived ? `/w/${whisp.publicToken}` : `/whisps/${whisp.id}`}>
+                {/* Received cards get their own identity, not just the sent
+                    card reused with different text: a left accent bar (gold
+                    for a genuinely new/unopened one, a quieter primary tint
+                    once it's been seen) and a Received pill, so a glance at
+                    the list — not just the tab you're on — tells you which
+                    kind of card this is. */}
+                <Card
+                  className={`bg-card hover:bg-card/80 transition-colors cursor-pointer overflow-hidden group ${
+                    isReceived
+                      ? isNew
+                        ? "border-gilded/50 border-l-4 border-l-gilded shadow-[0_0_16px_rgba(212,175,55,0.12)]"
+                        : "border-primary/25 border-l-4 border-l-primary/40"
+                      : "border-border/50"
+                  }`}
+                  data-testid={`card-whisp-${whisp.id}`}
+                >
                   <div className="flex flex-col sm:flex-row h-full">
                     {whisp.videoThumbnail ? (
                       <div className="w-full sm:w-48 h-36 sm:h-auto shrink-0 relative">
@@ -106,6 +184,14 @@ export function WhispsList() {
                       <div className="flex items-start justify-between gap-4 mb-2">
                         <h3 className="font-semibold text-foreground text-lg truncate">{whisp.videoTitle || "Video Link"}</h3>
                         <div className="flex items-center gap-2 shrink-0">
+                          {isNew && (
+                            <span
+                              className="inline-flex items-center gap-1 rounded-full bg-gilded/15 text-gilded text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5"
+                              data-testid={`badge-new-${whisp.id}`}
+                            >
+                              <Sparkles className="w-2.5 h-2.5" /> New
+                            </span>
+                          )}
                           {whisp.appreciationResponse === "yes" && (
                             <Heart className="w-4 h-4 text-rose-400 fill-rose-400" data-testid={`icon-appreciated-${whisp.id}`} />
                           )}
@@ -113,15 +199,22 @@ export function WhispsList() {
                         </div>
                       </div>
                       <div className="flex items-center text-sm text-muted-foreground mb-4">
-                        <span className="truncate">
-                          To: {whisp.recipientEmail || whisp.recipientPhone || (
-                            whisp.deliveryMethod === "circle_drop"
-                              ? "Blind Circle feed"
-                              : whisp.deliveryMethod === "circle_dm"
-                                ? "An anonymous Circle visitor"
-                                : "Ghost Boost audience"
-                          )}
-                        </span>
+                        {isReceived ? (
+                          <span className="truncate flex items-center gap-1.5">
+                            <Inbox className="w-3.5 h-3.5 text-primary/70 shrink-0" />
+                            From: {whisp.senderAlias || "Someone anonymous"}
+                          </span>
+                        ) : (
+                          <span className="truncate">
+                            To: {whisp.recipientEmail || whisp.recipientPhone || (
+                              whisp.deliveryMethod === "circle_drop"
+                                ? "Blind Circle feed"
+                                : whisp.deliveryMethod === "circle_dm"
+                                  ? "An anonymous Circle visitor"
+                                  : "Ghost Boost audience"
+                            )}
+                          </span>
+                        )}
                         <span className="mx-2">•</span>
                         <span>{new Date(whisp.createdAt).toLocaleDateString()}</span>
                         <span className="mx-2">•</span>
@@ -129,7 +222,7 @@ export function WhispsList() {
                       </div>
                       <div className="mt-auto flex items-center justify-between gap-3">
                         {whisp.moodTag ? <MoodTag mood={whisp.moodTag} className="scale-90 origin-left" /> : <span />}
-                        {whisp.videoPlatform !== "upload" && (
+                        {!isReceived && whisp.videoPlatform !== "upload" && (
                           <Button
                             variant="outline"
                             size="sm"
@@ -145,17 +238,20 @@ export function WhispsList() {
                   </div>
                 </Card>
               </Link>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <Card className="bg-card/50 border-dashed border-border py-16 text-center">
             <h3 className="text-xl font-medium text-foreground mb-2">No whisps found</h3>
             <p className="text-muted-foreground max-w-md mx-auto mb-6">
-              {searchQuery || statusFilter !== "all" 
-                ? "Try adjusting your filters to find what you're looking for." 
-                : "You haven't sent any whisps yet."}
+              {searchQuery || statusFilter !== "all"
+                ? "Try adjusting your filters to find what you're looking for."
+                : box === "received"
+                  ? "Nothing's landed in your inbox yet — when a fellow Whisperer sends you something, it'll show up here."
+                  : "You haven't sent any whisps yet."}
             </p>
-            {(!searchQuery && statusFilter === "all") && (
+            {!searchQuery && statusFilter === "all" && box === "sent" && (
               <Link href="/send">
                 <Button className="rounded-full shadow-[0_0_15px_rgba(124,92,252,0.3)]">
                   Send Your First Whisp

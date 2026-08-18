@@ -48,6 +48,14 @@ export const usersTable = pgTable("users", {
   region: text("region"),
   city: text("city"),
   lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
+  // Opt-out, on by default: whether this Whisperer wants a "you have a new
+  // whisp" email in addition to the in-app notification when someone
+  // whisps them (see lib/deliver.ts's deliverWhisperLink). Never gates the
+  // in-app notification itself — only the extra inbox email. Defaults to
+  // true so existing rows (backfilled by the migration) and every new
+  // signup keep getting email unless they explicitly turn it off in
+  // Settings.
+  emailNotificationsEnabled: boolean("email_notifications_enabled").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

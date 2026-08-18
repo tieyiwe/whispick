@@ -76,6 +76,8 @@ export interface Whisp {
      */
   conciergeRequestId?: string | null;
   createdAt: string;
+  /** True only when the caller is themselves this whisp's matched recipient (see GET /whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email/phone belongs to a verified account. */
+  viewerIsRecipient: boolean;
 }
 
 export interface WhispInput {
@@ -405,8 +407,10 @@ export interface PublicWhisp {
   recipientRepliesRemaining?: number | null;
   /** Whether this viewer may whisp a VIDEO back. Text replies stay open to anonymous recipients up to their allowance; a video reply needs either an account or reply credit the sender bought for this whisp. */
   videoRepliesAllowed?: boolean;
-  /** Whether this whisp was already marked watched (whisps.watchedAt) BEFORE this request — true only on a reopen, never on the load that itself does the watching. Drives whether the appreciation prompt starts expanded or collapsed. */
+  /** Whether this whisp was already marked watched (whisps.watchedAt) BEFORE this request — true only on a reopen, never on the load that itself does the watching. */
   hasWatched?: boolean;
+  /** Whether this whisp was already opened (whisps.openedAt) BEFORE this request — true only on a reopen, never on a true first visit. This, not hasWatched, drives whether the appreciation prompt starts expanded (first-ever open — visible right under the video) or collapsed (any reopen, still one tap away): watchedAt gets set the moment someone taps Play, before they've actually watched anything, so it would spring the prompt open too early; openedAt never does. */
+  hasOpenedBefore?: boolean;
   /** 'whisper_link' | 'ghost_boost' | 'circle_drop' | 'group_whisper' | 'circle_dm' */
   deliveryMethod: string;
   /** Blind Circle posts only (0 otherwise). */
@@ -476,6 +480,8 @@ export interface UserProfile {
   boostCredits: number;
   whisperLinksUsed: number;
   role: string;
+  /** Whether this Whisperer wants the "you have a new whisp" email in addition to the in-app notification. On by default — see PATCH /user/profile to change it. */
+  emailNotificationsEnabled: boolean;
   createdAt: string;
 }
 
@@ -488,6 +494,7 @@ export interface UserProfileUpdate {
   gender?: string | null;
   /** @nullable */
   ageRange?: string | null;
+  emailNotificationsEnabled?: boolean;
 }
 
 export interface StartPhoneVerificationInput {
@@ -1572,7 +1579,19 @@ export interface RunSuggestionAgentResult {
 
 export type ListWhispsParams = {
 status?: string;
+/**
+ * 'sent' (default): whisps this user sent. 'received': whisps another Whisperer sent TO this user (matched at send time — see whisps.recipientUserId).
+ */
+box?: ListWhispsBox;
 };
+
+export type ListWhispsBox = typeof ListWhispsBox[keyof typeof ListWhispsBox];
+
+
+export const ListWhispsBox = {
+  sent: 'sent',
+  received: 'received',
+} as const;
 
 export type GetPublicWhispParams = {
 /**

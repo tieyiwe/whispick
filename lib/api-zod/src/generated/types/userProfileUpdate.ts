@@ -15,4 +15,5 @@ export interface UserProfileUpdate {
   gender?: string | null;
   /** @nullable */
   ageRange?: string | null;
+  emailNotificationsEnabled?: boolean;
 }

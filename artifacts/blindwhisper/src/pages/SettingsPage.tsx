@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, User, Mail, Shield, Bell, Phone, ShieldCheck } from "lucide-react";
 import { isPushSupported, getExistingPushSubscription, subscribeToPush, pushSubscriptionToJson } from "@/lib/push";
@@ -110,6 +111,19 @@ export function SettingsPage() {
     } finally {
       setPushLoading(false);
     }
+  }
+
+  function handleToggleEmailNotifications(enabled: boolean) {
+    updateProfile.mutate(
+      { data: { emailNotificationsEnabled: enabled } },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetUserProfileQueryKey() });
+          toast({ title: enabled ? "Email notifications turned on" : "Email notifications turned off" });
+        },
+        onError: () => toast({ title: "Couldn't update that", variant: "destructive" }),
+      }
+    );
   }
 
   function handleSave() {
@@ -277,15 +291,15 @@ export function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Push notifications */}
-        {isPushSupported() && (
-          <Card className="bg-card border-border/50">
-            <CardHeader>
-              <CardTitle className="text-base font-serif flex items-center gap-2">
-                <Bell className="w-4 h-4 text-primary" /> Notifications
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+        {/* Notifications */}
+        <Card className="bg-card border-border/50">
+          <CardHeader>
+            <CardTitle className="text-base font-serif flex items-center gap-2">
+              <Bell className="w-4 h-4 text-primary" /> Notifications
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {isPushSupported() && (
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="text-sm font-medium text-foreground">Push notifications</p>
@@ -305,9 +319,24 @@ export function SettingsPage() {
                   {pushEnabled ? "Disable" : "Enable"}
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-        )}
+            )}
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-foreground">Email notifications</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Get an email when someone whisps you. You'll always see it in the app either way — this only
+                  controls the extra email.
+                </p>
+              </div>
+              <Switch
+                checked={profile?.emailNotificationsEnabled ?? true}
+                onCheckedChange={handleToggleEmailNotifications}
+                disabled={updateProfile.isPending}
+                data-testid="switch-email-notifications"
+              />
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Privacy */}
         <Card className="bg-card border-border/50">

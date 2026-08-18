@@ -35,5 +35,7 @@ export interface UserProfile {
   boostCredits: number;
   whisperLinksUsed: number;
   role: string;
+  /** Whether this Whisperer wants the "you have a new whisp" email in addition to the in-app notification. On by default — see PATCH /user/profile to change it. */
+  emailNotificationsEnabled: boolean;
   createdAt: string;
 }
