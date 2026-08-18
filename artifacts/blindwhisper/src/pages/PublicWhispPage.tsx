@@ -21,7 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { MoodTag, MOOD_CONFIG } from "@/components/shared/MoodTag";
 import { useToast } from "@/hooks/use-toast";
 import { Send, Loader2, Video, X, Link2, HeartHandshake, Clock, BellRing, Sparkles, UserCircle2, PlayCircle, PenLine } from "lucide-react";
-import { Logo } from "@/components/ui/logo";
+import { LogoLockup } from "@/components/ui/logo";
 import { VideoPlayer } from "@/components/shared/VideoPlayer";
 import { QUICK_REPLIES } from "@/lib/quickReplies";
 import { ReplyThread, type ThreadReply } from "@/components/shared/ReplyThread";
@@ -31,10 +31,9 @@ import { savePendingForward } from "@/lib/forwardVideo";
 
 function BlindWhisperLogoMark() {
   return (
-    <div className="flex items-center gap-2">
-      <Logo className="w-6 h-6 text-primary" />
-      <span className="font-serif text-xl font-bold text-foreground tracking-tight">Blind Whisper</span>
-    </div>
+    // A recipient's first and often only sight of the brand, so the lockup
+    // gets its full form here — mark at a real size, with the strapline.
+    <LogoLockup tagline />
   );
 }
 

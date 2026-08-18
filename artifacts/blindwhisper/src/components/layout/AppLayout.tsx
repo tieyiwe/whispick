@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
-import { Logo } from "@/components/ui/logo";
+import { LogoLockup } from "@/components/ui/logo";
 import { useUser, useClerk } from "@clerk/react";
 import { useGetUserProfile, useGetMyUnreadNotificationCount, getGetMyUnreadNotificationCountQueryKey } from "@workspace/api-client-react";
 import {
@@ -192,9 +192,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
     <div className="min-h-[100dvh] md:h-[100dvh] md:overflow-hidden bg-background flex flex-col md:flex-row">
       <aside className="w-full md:w-64 border-r border-border bg-card/50 backdrop-blur-xl flex-col hidden md:flex md:h-full md:shrink-0">
         <div className="p-6 flex items-center justify-between gap-2">
-          <Link href="/dashboard" className="flex items-center gap-3 text-primary hover:opacity-80 transition-opacity min-w-0">
-            <Logo className="w-8 h-8 text-primary shrink-0" />
-            <span className="font-serif text-2xl font-bold tracking-tight text-foreground truncate">Blind Whisper</span>
+          <Link href="/dashboard" className="hover:opacity-80 transition-opacity min-w-0">
+            <LogoLockup />
           </Link>
           <div className="flex items-center gap-1 shrink-0">
             <NotificationBell />
@@ -260,9 +259,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
         className="md:hidden border-b border-border bg-card/80 backdrop-blur flex items-center justify-between sticky top-0 z-50 px-4"
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.75rem)", paddingBottom: "0.75rem" }}
       >
-        <Link href="/dashboard" className="flex items-center gap-2 min-h-11">
-          <Logo className="w-6 h-6 text-primary" />
-          <span className="font-serif text-xl font-bold">Blind Whisper</span>
+        {/* Was a 24px mark beside 20px text — two-thirds the height of the
+            word next to it, which reads as a bullet rather than a logo. */}
+        <Link href="/dashboard" className="flex items-center min-h-11 min-w-0">
+          <LogoLockup />
         </Link>
         <div className="flex items-center gap-1">
           <NotificationBell />

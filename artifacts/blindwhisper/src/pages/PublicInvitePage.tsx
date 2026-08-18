@@ -5,15 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, Sparkles, ShieldCheck } from "lucide-react";
-import { Logo } from "@/components/ui/logo";
+import { LogoLockup } from "@/components/ui/logo";
 import { savePendingInvite } from "@/lib/pendingInvite";
 
 function BlindWhisperLogoMark() {
   return (
-    <div className="flex items-center gap-2">
-      <Logo className="w-6 h-6 text-primary" />
-      <span className="font-serif text-xl font-bold text-foreground tracking-tight">Blind Whisper</span>
-    </div>
+    // A recipient's first and often only sight of the brand, so the lockup
+    // gets its full form here — mark at a real size, with the strapline.
+    <LogoLockup tagline />
   );
 }
 

@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Logo } from "@/components/ui/logo";
+import { LogoLockup } from "@/components/ui/logo";
 import { MoodTag } from "@/components/shared/MoodTag";
 import { FAQ_ITEMS } from "@/lib/faqContent";
 import { Send, Heart, Shield, Sparkles, PlayCircle, Users2, Users, Briefcase, UserRound, X, Check, ChevronDown } from "lucide-react";
@@ -64,10 +64,7 @@ export function LandingPage() {
         className="absolute top-0 w-full px-4 sm:px-6 pb-4 sm:pb-6 flex justify-between items-center z-10 gap-2"
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}
       >
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-          <Logo className="w-7 h-7 sm:w-8 sm:h-8 text-primary shrink-0" />
-          <span className="font-serif text-lg sm:text-2xl font-bold tracking-tight truncate">Blind Whisper</span>
-        </div>
+        <LogoLockup />
         <div className="flex items-center gap-2 sm:gap-4 shrink-0">
           <Link href="/sign-in">
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground rounded-full px-3 sm:px-4">
