@@ -5,6 +5,7 @@
  * Blind Whisper API — anonymous video recommendation platform
  * OpenAPI spec version: 0.1.0
  */
+import type { CircleComment } from './circleComment';
 import type { WhispReply } from './whispReply';
 
 export interface PublicWhisp {
@@ -52,4 +53,12 @@ export interface PublicWhisp {
   videoRepliesAllowed?: boolean;
   /** Whether this whisp was already marked watched (whisps.watchedAt) BEFORE this request — true only on a reopen, never on the load that itself does the watching. Drives whether the appreciation prompt starts expanded or collapsed. */
   hasWatched?: boolean;
+  /** 'whisper_link' | 'ghost_boost' | 'circle_drop' | 'group_whisper' | 'circle_dm' */
+  deliveryMethod: string;
+  /** Blind Circle posts only (0 otherwise). */
+  likeCount: number;
+  /** Whether the visitorId passed as a query param has already liked this post. False (not just "unknown") when no visitorId is given. */
+  viewerHasLiked: boolean;
+  /** Blind Circle posts only (empty otherwise). */
+  comments: CircleComment[];
 }

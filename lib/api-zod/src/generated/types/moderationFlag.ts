@@ -10,28 +10,42 @@ import type { ModerationFlagSeverity } from './moderationFlagSeverity';
 export interface ModerationFlag {
   id: string;
   /**
-     * Set when contentType is 'whisp'; null when it's 'text_whisp'.
+     * Set when contentType is 'whisp'; null otherwise.
      * @nullable
      */
   whispId?: string | null;
   /**
-     * Set when contentType is 'text_whisp'; null when it's 'whisp'.
+     * Set when contentType is 'text_whisp'; null otherwise.
      * @nullable
      */
   textWhispId?: string | null;
-  /** 'whisp' | 'text_whisp' */
-  contentType: string;
-  userId: string;
   /**
-     * The flagged whisp's video title, denormalized for display in flag lists without a second lookup. Null for a text_whisp flag.
+     * Set when contentType is 'circle_comment'; null otherwise.
+     * @nullable
+     */
+  circleCommentId?: string | null;
+  /** 'whisp' | 'text_whisp' | 'circle_comment' */
+  contentType: string;
+  /**
+     * Null only for contentType='circle_comment' from a fully anonymous, no-account commenter — there's no account to attribute the flag to.
+     * @nullable
+     */
+  userId?: string | null;
+  /**
+     * The flagged whisp's video title, denormalized for display in flag lists without a second lookup. Null unless contentType is 'whisp'.
      * @nullable
      */
   videoTitle?: string | null;
   /**
-     * The flagged text whisp's message text, denormalized for display the same way videoTitle is. Null for a whisp flag.
+     * The flagged text whisp's message text, denormalized for display the same way videoTitle is. Null unless contentType is 'text_whisp'.
      * @nullable
      */
   textWhispMessage?: string | null;
+  /**
+     * The flagged comment's text, denormalized the same way. Null unless contentType is 'circle_comment'.
+     * @nullable
+     */
+  circleCommentText?: string | null;
   /** @nullable */
   senderEmail?: string | null;
   severity: ModerationFlagSeverity;

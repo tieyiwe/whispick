@@ -632,6 +632,16 @@ paths:
           required: true
           schema:
             type: string
+        - in: query
+          name: visitorId
+          required: false
+          schema:
+            type: string
+          description: >-
+            The anonymous, client-generated, localStorage-persisted id this
+            device uses for Circle likes/comments — only affects whether the
+            response's viewerHasLiked reflects this visitor. Omit for a
+            Whisper Link/circle_dm, where it's meaningless.
       responses:
         "200":
           description: Public whisp data
@@ -741,6 +751,152 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AppreciationResult"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/w/{token}/like:
+    post:
+      operationId: toggleCircleLike
+      tags: [public]
+      summary: Anonymous, idempotent like toggle — Blind Circle posts only
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                visitorId:
+                  type: string
+              required: [visitorId]
+      responses:
+        "200":
+          description: Toggled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  liked:
+                    type: boolean
+                  likeCount:
+                    type: integer
+                required: [liked, likeCount]
+        "400":
+          description: Not a Blind Circle post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/w/{token}/comments:
+    post:
+      operationId: postCircleComment
+      tags: [public]
+      summary: Post a public comment on a Blind Circle post
+      description: >-
+        Anonymous by default, rate-limited to a handful per rolling 24h
+        window per visitor (see lib/plans.ts's canPostAnonymousComment) —
+        signing in removes the limit entirely, same as the anonymous reply
+        cap elsewhere. isPoster on the response is set automatically when the
+        caller is signed in and is this whisp's own sender.
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                commentText:
+                  type: string
+                visitorId:
+                  type: string
+                parentCommentId:
+                  type: ["string", "null"]
+              required: [commentText, visitorId]
+      responses:
+        "201":
+          description: Comment posted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CircleComment"
+        "400":
+          description: Not a Blind Circle post, or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Anonymous comment limit reached (code "comment_limit_reached")
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/w/{token}/circle-dm/start:
+    post:
+      operationId: startCircleDm
+      tags: [public]
+      summary: Start (or is idempotently expected to be reused for) a private anonymous conversation with a Blind Circle post's poster
+      description: >-
+        Mints a new whisp (deliveryMethod='circle_dm') the caller can now
+        message the poster through via the ordinary POST /w/{token}/reply on
+        the RETURNED token, exactly like a Whisper Link. The frontend is
+        responsible for remembering the returned token per origin post
+        (localStorage) so a repeat visitor resumes the same conversation
+        instead of starting a new one on every click.
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+      responses:
+        "201":
+          description: Conversation started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  publicToken:
+                    type: string
+                required: [publicToken]
+        "400":
+          description: Not a Blind Circle post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
         "404":
           description: Not found
           content:
@@ -2497,10 +2653,64 @@ components:
             Anonymous replies the recipient has left on this whisp. Null means
             uncapped. 0 means they can't reply again unless the sender adds
             more replies or the recipient signs up.
+        viewCount:
+          type: integer
+          description: >-
+            Blind Circle posts only (0 otherwise) — how many times this post
+            was opened, across every anonymous viewer.
+        likeCount:
+          type: integer
+          description: Blind Circle posts only (0 otherwise).
+        comments:
+          type: array
+          items:
+            $ref: "#/components/schemas/CircleComment"
+          description: Blind Circle posts only (empty otherwise).
+        circleConversations:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              publicToken:
+                type: string
+              createdAt:
+                type: string
+                format: date-time
+            required: [id, publicToken, createdAt]
+          description: >-
+            Private 1:1 conversations anonymous viewers started from this
+            Blind Circle post (see POST /w/{token}/circle-dm/start). Empty
+            for every other delivery method, including a circle_dm thread
+            itself — a conversation can't spawn another conversation.
       required:
         - whisp
         - trackingEvents
         - replies
+
+    CircleComment:
+      type: object
+      description: A public comment on a Blind Circle post. Never carries a visitor identifier — see circle_comments.ts's schema comment for why.
+      properties:
+        id:
+          type: string
+        commentText:
+          type: string
+        parentCommentId:
+          type: ["string", "null"]
+          description: The comment this one replies to, if any — same flat quote-reference model as WhispReply.parentReplyId.
+        isPoster:
+          type: boolean
+          description: True when this comment came from the post's own (signed-in) sender — a role badge, never an identity.
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - commentText
+        - isPoster
+        - createdAt
 
     WhispStats:
       type: object
@@ -2923,6 +3133,22 @@ components:
             BEFORE this request — true only on a reopen, never on the load
             that itself does the watching. Drives whether the appreciation
             prompt starts expanded or collapsed.
+        deliveryMethod:
+          type: string
+          description: "'whisper_link' | 'ghost_boost' | 'circle_drop' | 'group_whisper' | 'circle_dm'"
+        likeCount:
+          type: integer
+          description: Blind Circle posts only (0 otherwise).
+        viewerHasLiked:
+          type: boolean
+          description: >-
+            Whether the visitorId passed as a query param has already liked
+            this post. False (not just "unknown") when no visitorId is given.
+        comments:
+          type: array
+          items:
+            $ref: "#/components/schemas/CircleComment"
+          description: Blind Circle posts only (empty otherwise).
       required:
         - id
         - videoUrl
@@ -2930,6 +3156,10 @@ components:
         - expired
         - hasUpload
         - replies
+        - deliveryMethod
+        - likeCount
+        - viewerHasLiked
+        - comments
 
     TrackingEvent:
       type: object
@@ -3351,21 +3581,31 @@ components:
           type: string
         whispId:
           type: ["string", "null"]
-          description: Set when contentType is 'whisp'; null when it's 'text_whisp'.
+          description: Set when contentType is 'whisp'; null otherwise.
         textWhispId:
           type: ["string", "null"]
-          description: Set when contentType is 'text_whisp'; null when it's 'whisp'.
+          description: Set when contentType is 'text_whisp'; null otherwise.
+        circleCommentId:
+          type: ["string", "null"]
+          description: Set when contentType is 'circle_comment'; null otherwise.
         contentType:
           type: string
-          description: "'whisp' | 'text_whisp'"
+          description: "'whisp' | 'text_whisp' | 'circle_comment'"
         userId:
-          type: string
+          type: ["string", "null"]
+          description: >-
+            Null only for contentType='circle_comment' from a fully
+            anonymous, no-account commenter — there's no account to
+            attribute the flag to.
         videoTitle:
           type: ["string", "null"]
-          description: The flagged whisp's video title, denormalized for display in flag lists without a second lookup. Null for a text_whisp flag.
+          description: The flagged whisp's video title, denormalized for display in flag lists without a second lookup. Null unless contentType is 'whisp'.
         textWhispMessage:
           type: ["string", "null"]
-          description: The flagged text whisp's message text, denormalized for display the same way videoTitle is. Null for a whisp flag.
+          description: The flagged text whisp's message text, denormalized for display the same way videoTitle is. Null unless contentType is 'text_whisp'.
+        circleCommentText:
+          type: ["string", "null"]
+          description: The flagged comment's text, denormalized the same way. Null unless contentType is 'circle_comment'.
         senderEmail:
           type: ["string", "null"]
         severity:
@@ -3386,7 +3626,6 @@ components:
           type: string
       required:
         - id
-        - userId
         - contentType
         - severity
         - reasoning

@@ -10,8 +10,10 @@ import {
   circleMembersTable,
   uploadedVideosTable,
   conciergeRequestsTable,
+  circleCommentsTable,
+  circlePostLikesTable,
 } from "@workspace/db";
-import { eq, and, sql, isNull, or, lt, gte } from "drizzle-orm";
+import { eq, and, sql, isNull, or, lt, gte, count, desc } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { z } from "zod";
 import { requireAuth } from "../lib/auth";
@@ -542,6 +544,53 @@ router.get("/:id", requireAuth, async (req, res): Promise<void> => {
   // first sign of the cap is a reply that simply never arrives, which reads as
   // the recipient losing interest rather than hitting a wall.
   const recipientAllowance = recipientReplyAllowance(whisp.replyCreditsPurchased);
+
+  // Engagement data a poster can otherwise never see: how many anonymous
+  // circle viewers watched/liked/commented on their post, and every private
+  // conversation started from it (see routes/public.ts's POST
+  // /w/:token/circle-dm/start). Skipped for every other delivery method —
+  // "how many people watched" only makes sense for a post with more than
+  // one possible viewer.
+  let viewCount = 0;
+  let likeCount = 0;
+  let comments: Array<{
+    id: string;
+    commentText: string;
+    parentCommentId: string | null;
+    isPoster: boolean;
+    createdAt: Date;
+  }> = [];
+  let circleConversations: Array<{ id: string; publicToken: string; createdAt: Date }> = [];
+  if (whisp.deliveryMethod === "circle_drop") {
+    // "opened" fires once per real page load (see PublicWhispPage.tsx's
+    // hasTrackedOpen), so counting those events is the same "how many
+    // separate visits" proxy views everywhere else on the internet use —
+    // not a count of unique people (nothing here tracks visitor identity),
+    // but a real, honest engagement signal all the same.
+    viewCount = trackingEvents.filter((e) => e.eventType === "opened").length;
+
+    const [likeRow] = await db.select({ count: count() }).from(circlePostLikesTable).where(eq(circlePostLikesTable.whispId, whisp.id));
+    likeCount = likeRow?.count ?? 0;
+
+    comments = await db
+      .select({
+        id: circleCommentsTable.id,
+        commentText: circleCommentsTable.commentText,
+        parentCommentId: circleCommentsTable.parentCommentId,
+        isPoster: circleCommentsTable.isPoster,
+        createdAt: circleCommentsTable.createdAt,
+      })
+      .from(circleCommentsTable)
+      .where(eq(circleCommentsTable.whispId, whisp.id))
+      .orderBy(circleCommentsTable.createdAt);
+
+    circleConversations = await db
+      .select({ id: whispsTable.id, publicToken: whispsTable.publicToken, createdAt: whispsTable.createdAt })
+      .from(whispsTable)
+      .where(and(eq(whispsTable.originCircleWhispId, whisp.id), eq(whispsTable.senderId, user.id)))
+      .orderBy(desc(whispsTable.createdAt));
+  }
+
   res.json({
     // Same read-time embed fill-in as the public page (see routes/public.ts),
     // so the sender previewing their own whisp sees exactly what the
@@ -553,6 +602,10 @@ router.get("/:id", requireAuth, async (req, res): Promise<void> => {
       recipientAllowance === null
         ? null
         : Math.max(0, recipientAllowance - replies.filter((r) => r.fromRecipient).length),
+    viewCount,
+    likeCount,
+    comments,
+    circleConversations,
   });
 });
 

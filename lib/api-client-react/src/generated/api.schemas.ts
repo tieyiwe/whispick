@@ -122,6 +122,12 @@ export interface WhispInput {
   conciergeRequestId?: string | null;
 }
 
+export type WhispDetailCircleConversationsItem = {
+  id: string;
+  publicToken: string;
+  createdAt: string;
+};
+
 export interface TrackingEvent {
   id: string;
   whispId: string;
@@ -159,6 +165,22 @@ export interface WhispReply {
   readAt?: string | null;
 }
 
+/**
+ * A public comment on a Blind Circle post. Never carries a visitor identifier — see circle_comments.ts's schema comment for why.
+ */
+export interface CircleComment {
+  id: string;
+  commentText: string;
+  /**
+     * The comment this one replies to, if any — same flat quote-reference model as WhispReply.parentReplyId.
+     * @nullable
+     */
+  parentCommentId?: string | null;
+  /** True when this comment came from the post's own (signed-in) sender — a role badge, never an identity. */
+  isPoster: boolean;
+  createdAt: string;
+}
+
 export interface WhispDetail {
   whisp: Whisp;
   trackingEvents: TrackingEvent[];
@@ -168,6 +190,14 @@ export interface WhispDetail {
      * @nullable
      */
   recipientRepliesRemaining?: number | null;
+  /** Blind Circle posts only (0 otherwise) — how many times this post was opened, across every anonymous viewer. */
+  viewCount?: number;
+  /** Blind Circle posts only (0 otherwise). */
+  likeCount?: number;
+  /** Blind Circle posts only (empty otherwise). */
+  comments?: CircleComment[];
+  /** Private 1:1 conversations anonymous viewers started from this Blind Circle post (see POST /w/{token}/circle-dm/start). Empty for every other delivery method, including a circle_dm thread itself — a conversation can't spawn another conversation. */
+  circleConversations?: WhispDetailCircleConversationsItem[];
 }
 
 export interface WhispStats {
@@ -377,6 +407,14 @@ export interface PublicWhisp {
   videoRepliesAllowed?: boolean;
   /** Whether this whisp was already marked watched (whisps.watchedAt) BEFORE this request — true only on a reopen, never on the load that itself does the watching. Drives whether the appreciation prompt starts expanded or collapsed. */
   hasWatched?: boolean;
+  /** 'whisper_link' | 'ghost_boost' | 'circle_drop' | 'group_whisper' | 'circle_dm' */
+  deliveryMethod: string;
+  /** Blind Circle posts only (0 otherwise). */
+  likeCount: number;
+  /** Whether the visitorId passed as a query param has already liked this post. False (not just "unknown") when no visitorId is given. */
+  viewerHasLiked: boolean;
+  /** Blind Circle posts only (empty otherwise). */
+  comments: CircleComment[];
 }
 
 export interface TrackingEventInput {
@@ -615,28 +653,42 @@ export const ModerationFlagSeverity = {
 export interface ModerationFlag {
   id: string;
   /**
-     * Set when contentType is 'whisp'; null when it's 'text_whisp'.
+     * Set when contentType is 'whisp'; null otherwise.
      * @nullable
      */
   whispId?: string | null;
   /**
-     * Set when contentType is 'text_whisp'; null when it's 'whisp'.
+     * Set when contentType is 'text_whisp'; null otherwise.
      * @nullable
      */
   textWhispId?: string | null;
-  /** 'whisp' | 'text_whisp' */
-  contentType: string;
-  userId: string;
   /**
-     * The flagged whisp's video title, denormalized for display in flag lists without a second lookup. Null for a text_whisp flag.
+     * Set when contentType is 'circle_comment'; null otherwise.
+     * @nullable
+     */
+  circleCommentId?: string | null;
+  /** 'whisp' | 'text_whisp' | 'circle_comment' */
+  contentType: string;
+  /**
+     * Null only for contentType='circle_comment' from a fully anonymous, no-account commenter — there's no account to attribute the flag to.
+     * @nullable
+     */
+  userId?: string | null;
+  /**
+     * The flagged whisp's video title, denormalized for display in flag lists without a second lookup. Null unless contentType is 'whisp'.
      * @nullable
      */
   videoTitle?: string | null;
   /**
-     * The flagged text whisp's message text, denormalized for display the same way videoTitle is. Null for a whisp flag.
+     * The flagged text whisp's message text, denormalized for display the same way videoTitle is. Null unless contentType is 'text_whisp'.
      * @nullable
      */
   textWhispMessage?: string | null;
+  /**
+     * The flagged comment's text, denormalized the same way. Null unless contentType is 'circle_comment'.
+     * @nullable
+     */
+  circleCommentText?: string | null;
   /** @nullable */
   senderEmail?: string | null;
   severity: ModerationFlagSeverity;
@@ -1449,6 +1501,33 @@ export interface RunSuggestionAgentResult {
 
 export type ListWhispsParams = {
 status?: string;
+};
+
+export type GetPublicWhispParams = {
+/**
+ * The anonymous, client-generated, localStorage-persisted id this device uses for Circle likes/comments — only affects whether the response's viewerHasLiked reflects this visitor. Omit for a Whisper Link/circle_dm, where it's meaningless.
+ */
+visitorId?: string;
+};
+
+export type ToggleCircleLikeBody = {
+  visitorId: string;
+};
+
+export type ToggleCircleLike200 = {
+  liked: boolean;
+  likeCount: number;
+};
+
+export type PostCircleCommentBody = {
+  commentText: string;
+  visitorId: string;
+  /** @nullable */
+  parentCommentId?: string | null;
+};
+
+export type StartCircleDm201 = {
+  publicToken: string;
 };
 
 export type ListCircleFeedParams = {

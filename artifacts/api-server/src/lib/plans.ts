@@ -92,3 +92,37 @@ export function canRecipientWhispVideoBack(isSignedIn: boolean, replyCreditsPurc
 export function whisperLinkLimitFor(plan: string): number | null {
   return (PLAN_LIMITS[plan] ?? PLAN_LIMITS.free).whisperLinksPerMonth;
 }
+
+// How many public comments an ANONYMOUS (no account) visitor can post on
+// Blind Circle content within a rolling window, before being asked to sign
+// up or wait it out. Unlike recipientFreeReplies above, this ships enabled
+// by default — Circle comments are a brand-new, always-public surface with
+// no existing "buy more" purchase flow to eventually gate it behind, so
+// there's no reason to launch it uncapped the way the reply cap currently
+// is. Overridable via ANONYMOUS_COMMENT_LIMIT ("unlimited" disables it),
+// same pattern as every other configurable limit in this file.
+const ANONYMOUS_COMMENT_LIMIT_DEFAULT = 3;
+export const COMMENT_LIMIT_WINDOW_HOURS = 24;
+
+export function anonymousCommentLimit(): number | null {
+  const raw = process.env.ANONYMOUS_COMMENT_LIMIT?.trim();
+  if (!raw) return ANONYMOUS_COMMENT_LIMIT_DEFAULT;
+  if (raw.toLowerCase() === "unlimited") return null;
+  return parsePositiveIntOr(raw, ANONYMOUS_COMMENT_LIMIT_DEFAULT);
+}
+
+/**
+ * Whether this visitor may post another Circle comment right now.
+ *
+ * A signed-in caller is never capped — creating a free account ("becoming a
+ * Whisperer") is exactly the way around this limit, same as the anonymous
+ * reply cap's own signed-in exemption elsewhere in this file.
+ * `recentCommentCount` is the caller's count of comments in the trailing
+ * COMMENT_LIMIT_WINDOW_HOURS window (see routes/public.ts), not a lifetime
+ * total — the limit resets on a rolling 24h basis, not a hard one-time wall.
+ */
+export function canPostAnonymousComment(isSignedIn: boolean, recentCommentCount: number): boolean {
+  if (isSignedIn) return true;
+  const limit = anonymousCommentLimit();
+  return limit === null || recentCommentCount < limit;
+}

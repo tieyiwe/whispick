@@ -30,6 +30,8 @@ import { ReplyThread, type ThreadReply } from "@/components/shared/ReplyThread";
 import { PullToRefresh } from "@/components/shared/PullToRefresh";
 import { REMINDER_PRESETS, MAX_REMINDERS } from "@/lib/reminderPresets";
 import { savePendingForward } from "@/lib/forwardVideo";
+import { getVisitorId } from "@/lib/anonymousVisitor";
+import { getSavedCircleDmToken, saveCircleDmToken } from "@/lib/circleDm";
 
 function BlindWhisperLogoMark() {
   return (
@@ -147,10 +149,15 @@ export function PublicWhispPage() {
   } | null>(null);
   const [replyVideoError, setReplyVideoError] = useState<string | null>(null);
 
-  const { data: whisp, isLoading, refetch } = useGetPublicWhisp(token!, {
+  // Sent as a query param purely so a circle_drop response's viewerHasLiked
+  // reflects this device — meaningless (and ignored server-side) for every
+  // other delivery method.
+  const visitorIdParams = { visitorId: getVisitorId() };
+
+  const { data: whisp, isLoading, refetch } = useGetPublicWhisp(token!, visitorIdParams, {
     query: {
       enabled: !!token,
-      queryKey: getGetPublicWhispQueryKey(token!),
+      queryKey: getGetPublicWhispQueryKey(token!, visitorIdParams),
       // Two independent reasons to poll:
       //  - the takeaway generates asynchronously after watched_complete
       //    fires, so poll fast until it lands, then stop;

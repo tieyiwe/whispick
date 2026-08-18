@@ -59,7 +59,8 @@ export function AdminModeration() {
             <ShieldAlert className="w-7 h-7 text-destructive" /> Content Moderation
           </h1>
           <p className="text-muted-foreground mt-1">
-            Whisps an automated pass flagged as possibly sexual/explicit content — a signal worth a look, not a verdict.
+            Content an automated pass flagged as possibly sexual/explicit, or — for Blind Circle comments —
+            dangerous/harmful language. A signal worth a look, not a verdict.
             {data ? ` ${data.total} matching this filter.` : ""}
           </p>
         </div>
@@ -100,6 +101,13 @@ export function AdminModeration() {
                         <span className="font-medium text-foreground truncate">
                           Text Whisp: "{(f.textWhispMessage ?? "").slice(0, 60)}{(f.textWhispMessage?.length ?? 0) > 60 ? "…" : ""}"
                         </span>
+                      ) : f.contentType === "circle_comment" ? (
+                        // Same reasoning as Text Whisp above — no dedicated
+                        // detail page for a single comment, so show the
+                        // excerpt instead of linking anywhere.
+                        <span className="font-medium text-foreground truncate">
+                          Circle comment: "{(f.circleCommentText ?? "").slice(0, 60)}{(f.circleCommentText?.length ?? 0) > 60 ? "…" : ""}"
+                        </span>
                       ) : (
                         <Link href={`/admin/whisps/${f.whispId}`} className="font-medium text-foreground hover:text-primary transition-colors truncate">
                           {f.videoTitle || "Video"}
@@ -110,9 +118,16 @@ export function AdminModeration() {
                   </div>
                   <p className="text-sm text-muted-foreground">{f.reasoning}</p>
                   <div className="flex items-center justify-between gap-2 flex-wrap pt-1">
-                    <Link href={`/admin/users/${f.userId}`} className="text-xs text-muted-foreground hover:text-primary transition-colors">
-                      Sender: {f.senderEmail ?? f.userId}
-                    </Link>
+                    {f.userId ? (
+                      <Link href={`/admin/users/${f.userId}`} className="text-xs text-muted-foreground hover:text-primary transition-colors">
+                        Sender: {f.senderEmail ?? f.userId}
+                      </Link>
+                    ) : (
+                      // A circle_comment flag from a fully anonymous, no-account
+                      // visitor has no userId to link — nothing here identifies
+                      // them beyond that, by design (see moderation_flags.ts).
+                      <span className="text-xs text-muted-foreground">Anonymous visitor</span>
+                    )}
                     <div className="flex items-center gap-1">
                       {f.dismissed ? (
                         <Button size="sm" variant="outline" className="rounded-full" onClick={() => setFlagDismissed(f.id, false)} disabled={updateFlag.isPending}>

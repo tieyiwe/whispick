@@ -46,6 +46,7 @@ import type {
   CheckoutRequest,
   CheckoutResponse,
   Circle,
+  CircleComment,
   CircleFeedResponse,
   ClaimInviteInput,
   ClaimInviteResult,
@@ -56,6 +57,7 @@ import type {
   CreateSuggestionInput,
   CreditTransaction,
   DeleteMedia200,
+  GetPublicWhispParams,
   GroupWhispSendDetail,
   GroupWhispSendSummary,
   HealthStatus,
@@ -72,6 +74,7 @@ import type {
   NoteSuggestionsResult,
   NotificationListResponse,
   PhoneVerificationResult,
+  PostCircleCommentBody,
   PublicInvite,
   PublicReplyInput,
   PublicTextWhisp,
@@ -89,6 +92,7 @@ import type {
   SendGroupWhispResult,
   SendNotificationInput,
   SendNotificationResult,
+  StartCircleDm201,
   StartPhoneVerificationInput,
   SubscribeInput,
   SubscribeResult,
@@ -101,6 +105,8 @@ import type {
   TextWhispInput,
   TextWhispReply,
   TextWhispReplyInput,
+  ToggleCircleLike200,
+  ToggleCircleLikeBody,
   TrackingEventInput,
   TrackingResult,
   UnreadNotificationCountResponse,
@@ -2065,20 +2071,29 @@ export const useScrapeVideoMeta = <TError = ErrorType<ApiError>,
       return useMutation(getScrapeVideoMetaMutationOptions(options));
     }
 
-export const getGetPublicWhispUrl = (token: string,) => {
+export const getGetPublicWhispUrl = (token: string,
+    params?: GetPublicWhispParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/public/w/${token}`
+  return stringifiedParams.length > 0 ? `/api/public/w/${token}?${stringifiedParams}` : `/api/public/w/${token}`
 }
 
 /**
  * @summary Public recipient landing page data (no auth required)
  */
-export const getPublicWhisp = async (token: string, options?: RequestInit): Promise<PublicWhisp> => {
+export const getPublicWhisp = async (token: string,
+    params?: GetPublicWhispParams, options?: RequestInit): Promise<PublicWhisp> => {
 
-  return customFetch<PublicWhisp>(getGetPublicWhispUrl(token),
+  return customFetch<PublicWhisp>(getGetPublicWhispUrl(token,params),
   {
     ...options,
     method: 'GET'
@@ -2091,23 +2106,25 @@ export const getPublicWhisp = async (token: string, options?: RequestInit): Prom
 
 
 
-export const getGetPublicWhispQueryKey = (token: string,) => {
+export const getGetPublicWhispQueryKey = (token: string,
+    params?: GetPublicWhispParams,) => {
     return [
-    `/api/public/w/${token}`
+    `/api/public/w/${token}`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetPublicWhispQueryOptions = <TData = Awaited<ReturnType<typeof getPublicWhisp>>, TError = ErrorType<ApiError>>(token: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicWhisp>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetPublicWhispQueryOptions = <TData = Awaited<ReturnType<typeof getPublicWhisp>>, TError = ErrorType<ApiError>>(token: string,
+    params?: GetPublicWhispParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicWhisp>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetPublicWhispQueryKey(token);
+  const queryKey =  queryOptions?.queryKey ?? getGetPublicWhispQueryKey(token,params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPublicWhisp>>> = ({ signal }) => getPublicWhisp(token, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPublicWhisp>>> = ({ signal }) => getPublicWhisp(token,params, { signal, ...requestOptions });
 
 
 
@@ -2125,11 +2142,12 @@ export type GetPublicWhispQueryError = ErrorType<ApiError>
  */
 
 export function useGetPublicWhisp<TData = Awaited<ReturnType<typeof getPublicWhisp>>, TError = ErrorType<ApiError>>(
- token: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicWhisp>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ token: string,
+    params?: GetPublicWhispParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicWhisp>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetPublicWhispQueryOptions(token,options)
+  const queryOptions = getGetPublicWhispQueryOptions(token,params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -2424,6 +2442,220 @@ export const useSubmitAppreciation = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getSubmitAppreciationMutationOptions(options));
+    }
+
+export const getToggleCircleLikeUrl = (token: string,) => {
+
+
+
+
+  return `/api/public/w/${token}/like`
+}
+
+/**
+ * @summary Anonymous, idempotent like toggle — Blind Circle posts only
+ */
+export const toggleCircleLike = async (token: string,
+    toggleCircleLikeBody: ToggleCircleLikeBody, options?: RequestInit): Promise<ToggleCircleLike200> => {
+
+  return customFetch<ToggleCircleLike200>(getToggleCircleLikeUrl(token),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(toggleCircleLikeBody)
+  }
+);}
+
+
+
+
+export const getToggleCircleLikeMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleCircleLike>>, TError,{token: string;data: BodyType<ToggleCircleLikeBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof toggleCircleLike>>, TError,{token: string;data: BodyType<ToggleCircleLikeBody>}, TContext> => {
+
+const mutationKey = ['toggleCircleLike'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof toggleCircleLike>>, {token: string;data: BodyType<ToggleCircleLikeBody>}> = (props) => {
+          const {token,data} = props ?? {};
+
+          return  toggleCircleLike(token,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ToggleCircleLikeMutationResult = NonNullable<Awaited<ReturnType<typeof toggleCircleLike>>>
+    export type ToggleCircleLikeMutationBody = BodyType<ToggleCircleLikeBody>
+    export type ToggleCircleLikeMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Anonymous, idempotent like toggle — Blind Circle posts only
+ */
+export const useToggleCircleLike = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleCircleLike>>, TError,{token: string;data: BodyType<ToggleCircleLikeBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof toggleCircleLike>>,
+        TError,
+        {token: string;data: BodyType<ToggleCircleLikeBody>},
+        TContext
+      > => {
+      return useMutation(getToggleCircleLikeMutationOptions(options));
+    }
+
+export const getPostCircleCommentUrl = (token: string,) => {
+
+
+
+
+  return `/api/public/w/${token}/comments`
+}
+
+/**
+ * Anonymous by default, rate-limited to a handful per rolling 24h window per visitor (see lib/plans.ts's canPostAnonymousComment) — signing in removes the limit entirely, same as the anonymous reply cap elsewhere. isPoster on the response is set automatically when the caller is signed in and is this whisp's own sender.
+ * @summary Post a public comment on a Blind Circle post
+ */
+export const postCircleComment = async (token: string,
+    postCircleCommentBody: PostCircleCommentBody, options?: RequestInit): Promise<CircleComment> => {
+
+  return customFetch<CircleComment>(getPostCircleCommentUrl(token),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(postCircleCommentBody)
+  }
+);}
+
+
+
+
+export const getPostCircleCommentMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postCircleComment>>, TError,{token: string;data: BodyType<PostCircleCommentBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof postCircleComment>>, TError,{token: string;data: BodyType<PostCircleCommentBody>}, TContext> => {
+
+const mutationKey = ['postCircleComment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postCircleComment>>, {token: string;data: BodyType<PostCircleCommentBody>}> = (props) => {
+          const {token,data} = props ?? {};
+
+          return  postCircleComment(token,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostCircleCommentMutationResult = NonNullable<Awaited<ReturnType<typeof postCircleComment>>>
+    export type PostCircleCommentMutationBody = BodyType<PostCircleCommentBody>
+    export type PostCircleCommentMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Post a public comment on a Blind Circle post
+ */
+export const usePostCircleComment = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postCircleComment>>, TError,{token: string;data: BodyType<PostCircleCommentBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postCircleComment>>,
+        TError,
+        {token: string;data: BodyType<PostCircleCommentBody>},
+        TContext
+      > => {
+      return useMutation(getPostCircleCommentMutationOptions(options));
+    }
+
+export const getStartCircleDmUrl = (token: string,) => {
+
+
+
+
+  return `/api/public/w/${token}/circle-dm/start`
+}
+
+/**
+ * Mints a new whisp (deliveryMethod='circle_dm') the caller can now message the poster through via the ordinary POST /w/{token}/reply on the RETURNED token, exactly like a Whisper Link. The frontend is responsible for remembering the returned token per origin post (localStorage) so a repeat visitor resumes the same conversation instead of starting a new one on every click.
+ * @summary Start (or is idempotently expected to be reused for) a private anonymous conversation with a Blind Circle post's poster
+ */
+export const startCircleDm = async (token: string, options?: RequestInit): Promise<StartCircleDm201> => {
+
+  return customFetch<StartCircleDm201>(getStartCircleDmUrl(token),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getStartCircleDmMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startCircleDm>>, TError,{token: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startCircleDm>>, TError,{token: string}, TContext> => {
+
+const mutationKey = ['startCircleDm'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startCircleDm>>, {token: string}> = (props) => {
+          const {token} = props ?? {};
+
+          return  startCircleDm(token,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartCircleDmMutationResult = NonNullable<Awaited<ReturnType<typeof startCircleDm>>>
+
+    export type StartCircleDmMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Start (or is idempotently expected to be reused for) a private anonymous conversation with a Blind Circle post's poster
+ */
+export const useStartCircleDm = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startCircleDm>>, TError,{token: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startCircleDm>>,
+        TError,
+        {token: string},
+        TContext
+      > => {
+      return useMutation(getStartCircleDmMutationOptions(options));
     }
 
 export const getRequestWhispReminderUrl = (token: string,) => {

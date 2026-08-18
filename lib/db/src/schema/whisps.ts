@@ -29,9 +29,23 @@ export const whispsTable = pgTable("whisps", {
   // category tags (see lib/categorize.ts). Only ever populated for platforms
   // we can scrape captions from (currently YouTube); null otherwise.
   videoTranscript: text("video_transcript"),
-  deliveryMethod: text("delivery_method").notNull(), // 'whisper_link' | 'ghost_boost' | 'circle_drop' | 'group_whisper'
+  deliveryMethod: text("delivery_method").notNull(), // 'whisper_link' | 'ghost_boost' | 'circle_drop' | 'group_whisper' | 'circle_dm'
   whisperChannel: text("whisper_channel"), // 'email' | 'sms' | 'whatsapp' — set when deliveryMethod is 'whisper_link' or 'group_whisper'
   circleId: text("circle_id"), // set for circle_drop whisps posted to a private Circle instead of the public feed
+  // Set only for deliveryMethod='circle_dm' — points back to the circle_drop
+  // whisp this private conversation was started from (see routes/public.ts's
+  // POST /w/:token/circle-dm/start). senderId on a circle_dm row is the
+  // ORIGINAL POSTER, not whoever clicked "message the poster" — this reuses
+  // the exact same sender/recipient shape as a Whisper Link (one identified
+  // sender, one anonymous token-holding recipient), just with the recipient
+  // being an anonymous circle viewer instead of someone the poster chose.
+  // That's what lets it reuse whisp_replies, WhispDetail, and
+  // PublicWhispPage entirely unmodified: from the data model's point of
+  // view it already IS a normal whisp, just spawned by a viewer's click
+  // instead of a compose form. No expiresAt is set (see routes/public.ts) —
+  // an ongoing "get to know them" conversation shouldn't die on the same
+  // 48-hour clock a one-shot video link does.
+  originCircleWhispId: text("origin_circle_whisp_id"),
   // A group_whisper send fans out to one whisp row per group member (each
   // gets its own token/tracking/reply thread, same as a normal Whisper
   // Link) — groupSendId ties all of them back together as one logical send
@@ -126,6 +140,7 @@ export const whispsTable = pgTable("whisps", {
   index("whisps_recipient_email_idx").on(table.recipientEmail),
   index("whisps_recipient_phone_idx").on(table.recipientPhone),
   index("whisps_concierge_request_id_idx").on(table.conciergeRequestId),
+  index("whisps_origin_circle_whisp_id_idx").on(table.originCircleWhispId),
 ]);
 
 export const insertWhispSchema = createInsertSchema(whispsTable).omit({ createdAt: true });

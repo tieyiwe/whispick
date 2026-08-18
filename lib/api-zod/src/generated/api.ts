@@ -237,7 +237,21 @@ export const GetWhispResponse = zod.object({
   "createdAt": zod.string(),
   "readAt": zod.string().nullish().describe('When the other party in the conversation (whichever one didn\'t author this message) is known to have viewed it — set the moment they load a view containing it. Null means unread. Drives the WhatsApp-style single\/double checkmark next to a message the current viewer sent themselves; never rendered on a message you received.')
 })),
-  "recipientRepliesRemaining": zod.number().nullish().describe('Anonymous replies the recipient has left on this whisp. Null means uncapped. 0 means they can\'t reply again unless the sender adds more replies or the recipient signs up.')
+  "recipientRepliesRemaining": zod.number().nullish().describe('Anonymous replies the recipient has left on this whisp. Null means uncapped. 0 means they can\'t reply again unless the sender adds more replies or the recipient signs up.'),
+  "viewCount": zod.number().optional().describe('Blind Circle posts only (0 otherwise) — how many times this post was opened, across every anonymous viewer.'),
+  "likeCount": zod.number().optional().describe('Blind Circle posts only (0 otherwise).'),
+  "comments": zod.array(zod.object({
+  "id": zod.string(),
+  "commentText": zod.string(),
+  "parentCommentId": zod.string().nullish().describe('The comment this one replies to, if any — same flat quote-reference model as WhispReply.parentReplyId.'),
+  "isPoster": zod.boolean().describe('True when this comment came from the post\'s own (signed-in) sender — a role badge, never an identity.'),
+  "createdAt": zod.coerce.date()
+}).describe('A public comment on a Blind Circle post. Never carries a visitor identifier — see circle_comments.ts\'s schema comment for why.')).optional().describe('Blind Circle posts only (empty otherwise).'),
+  "circleConversations": zod.array(zod.object({
+  "id": zod.string(),
+  "publicToken": zod.string(),
+  "createdAt": zod.coerce.date()
+})).optional().describe('Private 1:1 conversations anonymous viewers started from this Blind Circle post (see POST \/w\/{token}\/circle-dm\/start). Empty for every other delivery method, including a circle_dm thread itself — a conversation can\'t spawn another conversation.')
 })
 
 
@@ -727,6 +741,10 @@ export const GetPublicWhispParams = zod.object({
   "token": zod.coerce.string()
 })
 
+export const GetPublicWhispQueryParams = zod.object({
+  "visitorId": zod.coerce.string().optional().describe('The anonymous, client-generated, localStorage-persisted id this device uses for Circle likes\/comments — only affects whether the response\'s viewerHasLiked reflects this visitor. Omit for a Whisper Link\/circle_dm, where it\'s meaningless.')
+})
+
 export const GetPublicWhispResponse = zod.object({
   "id": zod.string(),
   "videoUrl": zod.string(),
@@ -765,7 +783,17 @@ export const GetPublicWhispResponse = zod.object({
 })),
   "recipientRepliesRemaining": zod.number().nullish().describe('Anonymous replies this recipient has left on this whisp. Null means uncapped. Signing up removes the cap entirely.'),
   "videoRepliesAllowed": zod.boolean().optional().describe('Whether this viewer may whisp a VIDEO back. Text replies stay open to anonymous recipients up to their allowance; a video reply needs either an account or reply credit the sender bought for this whisp.'),
-  "hasWatched": zod.boolean().optional().describe('Whether this whisp was already marked watched (whisps.watchedAt) BEFORE this request — true only on a reopen, never on the load that itself does the watching. Drives whether the appreciation prompt starts expanded or collapsed.')
+  "hasWatched": zod.boolean().optional().describe('Whether this whisp was already marked watched (whisps.watchedAt) BEFORE this request — true only on a reopen, never on the load that itself does the watching. Drives whether the appreciation prompt starts expanded or collapsed.'),
+  "deliveryMethod": zod.string().describe('\'whisper_link\' | \'ghost_boost\' | \'circle_drop\' | \'group_whisper\' | \'circle_dm\''),
+  "likeCount": zod.number().describe('Blind Circle posts only (0 otherwise).'),
+  "viewerHasLiked": zod.boolean().describe('Whether the visitorId passed as a query param has already liked this post. False (not just \"unknown\") when no visitorId is given.'),
+  "comments": zod.array(zod.object({
+  "id": zod.string(),
+  "commentText": zod.string(),
+  "parentCommentId": zod.string().nullish().describe('The comment this one replies to, if any — same flat quote-reference model as WhispReply.parentReplyId.'),
+  "isPoster": zod.boolean().describe('True when this comment came from the post\'s own (signed-in) sender — a role badge, never an identity.'),
+  "createdAt": zod.coerce.date()
+}).describe('A public comment on a Blind Circle post. Never carries a visitor identifier — see circle_comments.ts\'s schema comment for why.')).describe('Blind Circle posts only (empty otherwise).')
 })
 
 
@@ -845,6 +873,59 @@ export const SubmitAppreciationBody = zod.object({
 export const SubmitAppreciationResponse = zod.object({
   "ok": zod.boolean(),
   "appreciationResponse": zod.string()
+})
+
+
+/**
+ * @summary Anonymous, idempotent like toggle — Blind Circle posts only
+ */
+export const ToggleCircleLikeParams = zod.object({
+  "token": zod.coerce.string()
+})
+
+export const ToggleCircleLikeBody = zod.object({
+  "visitorId": zod.string()
+})
+
+export const ToggleCircleLikeResponse = zod.object({
+  "liked": zod.boolean(),
+  "likeCount": zod.number()
+})
+
+
+/**
+ * Anonymous by default, rate-limited to a handful per rolling 24h window per visitor (see lib/plans.ts's canPostAnonymousComment) — signing in removes the limit entirely, same as the anonymous reply cap elsewhere. isPoster on the response is set automatically when the caller is signed in and is this whisp's own sender.
+ * @summary Post a public comment on a Blind Circle post
+ */
+export const PostCircleCommentParams = zod.object({
+  "token": zod.coerce.string()
+})
+
+export const PostCircleCommentBody = zod.object({
+  "commentText": zod.string(),
+  "visitorId": zod.string(),
+  "parentCommentId": zod.string().nullish()
+})
+
+export const PostCircleCommentResponse = zod.object({
+  "id": zod.string(),
+  "commentText": zod.string(),
+  "parentCommentId": zod.string().nullish().describe('The comment this one replies to, if any — same flat quote-reference model as WhispReply.parentReplyId.'),
+  "isPoster": zod.boolean().describe('True when this comment came from the post\'s own (signed-in) sender — a role badge, never an identity.'),
+  "createdAt": zod.coerce.date()
+}).describe('A public comment on a Blind Circle post. Never carries a visitor identifier — see circle_comments.ts\'s schema comment for why.')
+
+
+/**
+ * Mints a new whisp (deliveryMethod='circle_dm') the caller can now message the poster through via the ordinary POST /w/{token}/reply on the RETURNED token, exactly like a Whisper Link. The frontend is responsible for remembering the returned token per origin post (localStorage) so a repeat visitor resumes the same conversation instead of starting a new one on every click.
+ * @summary Start (or is idempotently expected to be reused for) a private anonymous conversation with a Blind Circle post's poster
+ */
+export const StartCircleDmParams = zod.object({
+  "token": zod.coerce.string()
+})
+
+export const StartCircleDmResponse = zod.object({
+  "publicToken": zod.string()
 })
 
 
@@ -1217,12 +1298,14 @@ export const AdminGetUserResponse = zod.object({
   "moderationFlagCount": zod.number().describe('Non-dismissed content-safety flags across this user\'s whisps.'),
   "moderationFlags": zod.array(zod.object({
   "id": zod.string(),
-  "whispId": zod.string().nullish().describe('Set when contentType is \'whisp\'; null when it\'s \'text_whisp\'.'),
-  "textWhispId": zod.string().nullish().describe('Set when contentType is \'text_whisp\'; null when it\'s \'whisp\'.'),
-  "contentType": zod.string().describe('\'whisp\' | \'text_whisp\''),
-  "userId": zod.string(),
-  "videoTitle": zod.string().nullish().describe('The flagged whisp\'s video title, denormalized for display in flag lists without a second lookup. Null for a text_whisp flag.'),
-  "textWhispMessage": zod.string().nullish().describe('The flagged text whisp\'s message text, denormalized for display the same way videoTitle is. Null for a whisp flag.'),
+  "whispId": zod.string().nullish().describe('Set when contentType is \'whisp\'; null otherwise.'),
+  "textWhispId": zod.string().nullish().describe('Set when contentType is \'text_whisp\'; null otherwise.'),
+  "circleCommentId": zod.string().nullish().describe('Set when contentType is \'circle_comment\'; null otherwise.'),
+  "contentType": zod.string().describe('\'whisp\' | \'text_whisp\' | \'circle_comment\''),
+  "userId": zod.string().nullish().describe('Null only for contentType=\'circle_comment\' from a fully anonymous, no-account commenter — there\'s no account to attribute the flag to.'),
+  "videoTitle": zod.string().nullish().describe('The flagged whisp\'s video title, denormalized for display in flag lists without a second lookup. Null unless contentType is \'whisp\'.'),
+  "textWhispMessage": zod.string().nullish().describe('The flagged text whisp\'s message text, denormalized for display the same way videoTitle is. Null unless contentType is \'text_whisp\'.'),
+  "circleCommentText": zod.string().nullish().describe('The flagged comment\'s text, denormalized the same way. Null unless contentType is \'circle_comment\'.'),
   "senderEmail": zod.string().nullish(),
   "severity": zod.enum(['low', 'medium', 'high']),
   "reasoning": zod.string(),
@@ -1482,12 +1565,14 @@ export const AdminGetWhispResponse = zod.object({
 })),
   "moderationFlags": zod.array(zod.object({
   "id": zod.string(),
-  "whispId": zod.string().nullish().describe('Set when contentType is \'whisp\'; null when it\'s \'text_whisp\'.'),
-  "textWhispId": zod.string().nullish().describe('Set when contentType is \'text_whisp\'; null when it\'s \'whisp\'.'),
-  "contentType": zod.string().describe('\'whisp\' | \'text_whisp\''),
-  "userId": zod.string(),
-  "videoTitle": zod.string().nullish().describe('The flagged whisp\'s video title, denormalized for display in flag lists without a second lookup. Null for a text_whisp flag.'),
-  "textWhispMessage": zod.string().nullish().describe('The flagged text whisp\'s message text, denormalized for display the same way videoTitle is. Null for a whisp flag.'),
+  "whispId": zod.string().nullish().describe('Set when contentType is \'whisp\'; null otherwise.'),
+  "textWhispId": zod.string().nullish().describe('Set when contentType is \'text_whisp\'; null otherwise.'),
+  "circleCommentId": zod.string().nullish().describe('Set when contentType is \'circle_comment\'; null otherwise.'),
+  "contentType": zod.string().describe('\'whisp\' | \'text_whisp\' | \'circle_comment\''),
+  "userId": zod.string().nullish().describe('Null only for contentType=\'circle_comment\' from a fully anonymous, no-account commenter — there\'s no account to attribute the flag to.'),
+  "videoTitle": zod.string().nullish().describe('The flagged whisp\'s video title, denormalized for display in flag lists without a second lookup. Null unless contentType is \'whisp\'.'),
+  "textWhispMessage": zod.string().nullish().describe('The flagged text whisp\'s message text, denormalized for display the same way videoTitle is. Null unless contentType is \'text_whisp\'.'),
+  "circleCommentText": zod.string().nullish().describe('The flagged comment\'s text, denormalized the same way. Null unless contentType is \'circle_comment\'.'),
   "senderEmail": zod.string().nullish(),
   "severity": zod.enum(['low', 'medium', 'high']),
   "reasoning": zod.string(),
@@ -1798,12 +1883,14 @@ export const AdminListModerationFlagsQueryParams = zod.object({
 export const AdminListModerationFlagsResponse = zod.object({
   "items": zod.array(zod.object({
   "id": zod.string(),
-  "whispId": zod.string().nullish().describe('Set when contentType is \'whisp\'; null when it\'s \'text_whisp\'.'),
-  "textWhispId": zod.string().nullish().describe('Set when contentType is \'text_whisp\'; null when it\'s \'whisp\'.'),
-  "contentType": zod.string().describe('\'whisp\' | \'text_whisp\''),
-  "userId": zod.string(),
-  "videoTitle": zod.string().nullish().describe('The flagged whisp\'s video title, denormalized for display in flag lists without a second lookup. Null for a text_whisp flag.'),
-  "textWhispMessage": zod.string().nullish().describe('The flagged text whisp\'s message text, denormalized for display the same way videoTitle is. Null for a whisp flag.'),
+  "whispId": zod.string().nullish().describe('Set when contentType is \'whisp\'; null otherwise.'),
+  "textWhispId": zod.string().nullish().describe('Set when contentType is \'text_whisp\'; null otherwise.'),
+  "circleCommentId": zod.string().nullish().describe('Set when contentType is \'circle_comment\'; null otherwise.'),
+  "contentType": zod.string().describe('\'whisp\' | \'text_whisp\' | \'circle_comment\''),
+  "userId": zod.string().nullish().describe('Null only for contentType=\'circle_comment\' from a fully anonymous, no-account commenter — there\'s no account to attribute the flag to.'),
+  "videoTitle": zod.string().nullish().describe('The flagged whisp\'s video title, denormalized for display in flag lists without a second lookup. Null unless contentType is \'whisp\'.'),
+  "textWhispMessage": zod.string().nullish().describe('The flagged text whisp\'s message text, denormalized for display the same way videoTitle is. Null unless contentType is \'text_whisp\'.'),
+  "circleCommentText": zod.string().nullish().describe('The flagged comment\'s text, denormalized the same way. Null unless contentType is \'circle_comment\'.'),
   "senderEmail": zod.string().nullish(),
   "severity": zod.enum(['low', 'medium', 'high']),
   "reasoning": zod.string(),
@@ -1832,12 +1919,14 @@ export const AdminUpdateModerationFlagBody = zod.object({
 
 export const AdminUpdateModerationFlagResponse = zod.object({
   "id": zod.string(),
-  "whispId": zod.string().nullish().describe('Set when contentType is \'whisp\'; null when it\'s \'text_whisp\'.'),
-  "textWhispId": zod.string().nullish().describe('Set when contentType is \'text_whisp\'; null when it\'s \'whisp\'.'),
-  "contentType": zod.string().describe('\'whisp\' | \'text_whisp\''),
-  "userId": zod.string(),
-  "videoTitle": zod.string().nullish().describe('The flagged whisp\'s video title, denormalized for display in flag lists without a second lookup. Null for a text_whisp flag.'),
-  "textWhispMessage": zod.string().nullish().describe('The flagged text whisp\'s message text, denormalized for display the same way videoTitle is. Null for a whisp flag.'),
+  "whispId": zod.string().nullish().describe('Set when contentType is \'whisp\'; null otherwise.'),
+  "textWhispId": zod.string().nullish().describe('Set when contentType is \'text_whisp\'; null otherwise.'),
+  "circleCommentId": zod.string().nullish().describe('Set when contentType is \'circle_comment\'; null otherwise.'),
+  "contentType": zod.string().describe('\'whisp\' | \'text_whisp\' | \'circle_comment\''),
+  "userId": zod.string().nullish().describe('Null only for contentType=\'circle_comment\' from a fully anonymous, no-account commenter — there\'s no account to attribute the flag to.'),
+  "videoTitle": zod.string().nullish().describe('The flagged whisp\'s video title, denormalized for display in flag lists without a second lookup. Null unless contentType is \'whisp\'.'),
+  "textWhispMessage": zod.string().nullish().describe('The flagged text whisp\'s message text, denormalized for display the same way videoTitle is. Null unless contentType is \'text_whisp\'.'),
+  "circleCommentText": zod.string().nullish().describe('The flagged comment\'s text, denormalized the same way. Null unless contentType is \'circle_comment\'.'),
   "senderEmail": zod.string().nullish(),
   "severity": zod.enum(['low', 'medium', 'high']),
   "reasoning": zod.string(),

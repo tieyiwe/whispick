@@ -6,8 +6,10 @@ import {
   trackingEventsTable,
   usersTable,
   uploadedVideosTable,
+  circleCommentsTable,
+  circlePostLikesTable,
 } from "@workspace/db";
-import { eq, and, count, isNull } from "drizzle-orm";
+import { eq, and, count, isNull, desc, gt } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
 import { randomUUID } from "crypto";
 import { z } from "zod";
@@ -19,7 +21,9 @@ import { downloadObject } from "../lib/objectStorage";
 import { generateTakeawayAsync } from "../lib/aiTakeaway";
 import { httpUrlString } from "../lib/safeUrl";
 import { deriveVideoFields, detectPlatform, embedUrlFor } from "../lib/videoMeta";
-import { recipientReplyAllowance, canRecipientWhispVideoBack } from "../lib/plans";
+import { recipientReplyAllowance, canRecipientWhispVideoBack, canPostAnonymousComment, COMMENT_LIMIT_WINDOW_HOURS } from "../lib/plans";
+import { moderateCircleCommentAsync } from "../lib/moderation";
+import { ensureUser } from "../lib/ensureUser";
 
 const router = Router();
 
@@ -147,9 +151,63 @@ router.get("/w/:token", async (req, res): Promise<void> => {
     .where(eq(whispRepliesTable.whispId, whisp.id))
     .orderBy(whispRepliesTable.createdAt);
 
+  // Likes/comments only apply to a Blind Circle post — a Whisper Link (or a
+  // circle_dm thread spawned from one, see POST /w/:token/circle-dm/start)
+  // has exactly one anonymous party, for whom "how many people liked this"
+  // is a meaningless question. Skipping the queries entirely for every other
+  // delivery method, not just hiding the fields, keeps this endpoint's cost
+  // unchanged for the (much more common) non-Circle case.
+  let likeCount = 0;
+  let viewerHasLiked = false;
+  let comments: Array<{
+    id: string;
+    commentText: string;
+    parentCommentId: string | null;
+    isPoster: boolean;
+    createdAt: Date;
+  }> = [];
+  if (whisp.deliveryMethod === "circle_drop") {
+    const [likeRow] = await db
+      .select({ count: count() })
+      .from(circlePostLikesTable)
+      .where(eq(circlePostLikesTable.whispId, whisp.id));
+    likeCount = likeRow?.count ?? 0;
+
+    const visitorId = typeof req.query.visitorId === "string" ? req.query.visitorId : undefined;
+    if (visitorId) {
+      const existingLike = await db
+        .select({ id: circlePostLikesTable.id })
+        .from(circlePostLikesTable)
+        .where(and(eq(circlePostLikesTable.whispId, whisp.id), eq(circlePostLikesTable.visitorId, visitorId)))
+        .then((r) => r[0]);
+      viewerHasLiked = !!existingLike;
+    }
+
+    // visitorId is deliberately excluded — it's how a comment's OWN author
+    // recognizes it client-side (matched against the visitorId stored in
+    // their own localStorage), not something any other viewer should ever
+    // receive. Nothing here identifies who posted a comment beyond isPoster,
+    // which reveals a ROLE (the whisp's own sender), never an identity.
+    comments = await db
+      .select({
+        id: circleCommentsTable.id,
+        commentText: circleCommentsTable.commentText,
+        parentCommentId: circleCommentsTable.parentCommentId,
+        isPoster: circleCommentsTable.isPoster,
+        createdAt: circleCommentsTable.createdAt,
+      })
+      .from(circleCommentsTable)
+      .where(eq(circleCommentsTable.whispId, whisp.id))
+      .orderBy(circleCommentsTable.createdAt);
+  }
+
   // Return only public-safe fields
   res.json({
     id: whisp.id,
+    deliveryMethod: whisp.deliveryMethod,
+    likeCount,
+    viewerHasLiked,
+    comments,
     videoUrl: whisp.videoUrl,
     videoTitle: whisp.videoTitle,
     videoThumbnail: whisp.videoThumbnail,
@@ -198,6 +256,202 @@ router.get("/w/:token", async (req, res): Promise<void> => {
       return Math.max(0, allowance - used);
     })(),
   });
+});
+
+// POST /api/public/w/:token/like — anonymous, idempotent toggle. Circle
+// posts only (see the 400 below) — a Whisper Link/circle_dm has exactly one
+// anonymous party, for whom "liked" is meaningless.
+router.post("/w/:token/like", async (req, res): Promise<void> => {
+  const parsed = z.object({ visitorId: z.string().min(1).max(100) }).safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request" });
+    return;
+  }
+
+  const whisp = await db.select().from(whispsTable).where(eq(whispsTable.publicToken, req.params.token)).then((r) => r[0]);
+  if (!whisp) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  if (whisp.deliveryMethod !== "circle_drop") {
+    res.status(400).json({ error: "Likes only apply to Blind Circle posts" });
+    return;
+  }
+
+  const existing = await db
+    .select({ id: circlePostLikesTable.id })
+    .from(circlePostLikesTable)
+    .where(and(eq(circlePostLikesTable.whispId, whisp.id), eq(circlePostLikesTable.visitorId, parsed.data.visitorId)))
+    .then((r) => r[0]);
+
+  let liked: boolean;
+  if (existing) {
+    await db.delete(circlePostLikesTable).where(eq(circlePostLikesTable.id, existing.id));
+    liked = false;
+  } else {
+    try {
+      await db.insert(circlePostLikesTable).values({ id: randomUUID(), whispId: whisp.id, visitorId: parsed.data.visitorId });
+      liked = true;
+    } catch {
+      // The unique constraint on (whispId, visitorId) is the real guard
+      // against a double-like race (two rapid taps, or a retried request);
+      // this catch just means someone else's insert (or a duplicate of this
+      // same one) won the race. Either way "liked" ends up true, same as if
+      // this request had won outright.
+      liked = true;
+    }
+  }
+
+  const [likeRow] = await db.select({ count: count() }).from(circlePostLikesTable).where(eq(circlePostLikesTable.whispId, whisp.id));
+  res.json({ liked, likeCount: likeRow?.count ?? 0 });
+});
+
+// POST /api/public/w/:token/comments — anonymous by default (see
+// canPostAnonymousComment's rate limit below); isPoster is set only when the
+// caller is signed in AND is this whisp's own sender, which happens to work
+// even on this "unauthenticated" router because clerkMiddleware runs
+// globally (app.ts) — same trick the reply cap's signed-in exemption uses.
+router.post("/w/:token/comments", async (req, res): Promise<void> => {
+  const parsed = z
+    .object({
+      commentText: z.string().trim().min(1).max(500),
+      visitorId: z.string().min(1).max(100),
+      parentCommentId: z.string().nullish(),
+    })
+    .safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request" });
+    return;
+  }
+
+  const whisp = await db.select().from(whispsTable).where(eq(whispsTable.publicToken, req.params.token)).then((r) => r[0]);
+  if (!whisp) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  if (whisp.deliveryMethod !== "circle_drop") {
+    res.status(400).json({ error: "Comments only apply to Blind Circle posts" });
+    return;
+  }
+
+  const { userId: clerkId } = getAuth(req);
+  let isPoster = false;
+  if (clerkId) {
+    const user = await ensureUser(clerkId, req);
+    isPoster = user.id === whisp.senderId;
+  }
+
+  // The poster commenting on their own post is exempt, same spirit as the
+  // reply cap's signed-in exemption — they're not the audience this limit
+  // is aimed at.
+  if (!isPoster) {
+    const windowStart = new Date(Date.now() - COMMENT_LIMIT_WINDOW_HOURS * 60 * 60 * 1000);
+    const [recentRow] = await db
+      .select({ count: count() })
+      .from(circleCommentsTable)
+      .where(and(eq(circleCommentsTable.visitorId, parsed.data.visitorId), gt(circleCommentsTable.createdAt, windowStart)));
+    if (!canPostAnonymousComment(!!clerkId, recentRow?.count ?? 0)) {
+      res.status(403).json({
+        error: "You've used your free comments for now — sign up to comment anytime, or check back in 24 hours.",
+        code: "comment_limit_reached",
+      });
+      return;
+    }
+  }
+
+  // Same-whisp check as whisp_replies' parentReplyId — an unvalidated parent
+  // id would let a comment quote one from a different post's thread.
+  let parentCommentId: string | null = null;
+  if (parsed.data.parentCommentId) {
+    const parent = await db
+      .select({ id: circleCommentsTable.id })
+      .from(circleCommentsTable)
+      .where(and(eq(circleCommentsTable.id, parsed.data.parentCommentId), eq(circleCommentsTable.whispId, whisp.id)))
+      .then((r) => r[0]);
+    parentCommentId = parent?.id ?? null;
+  }
+
+  const id = randomUUID();
+  await db.insert(circleCommentsTable).values({
+    id,
+    whispId: whisp.id,
+    visitorId: parsed.data.visitorId,
+    commentText: parsed.data.commentText,
+    parentCommentId,
+    isPoster,
+  });
+
+  void moderateCircleCommentAsync({
+    circleCommentId: id,
+    senderId: isPoster ? whisp.senderId : null,
+    text: parsed.data.commentText,
+  });
+
+  const comment = await db
+    .select({
+      id: circleCommentsTable.id,
+      commentText: circleCommentsTable.commentText,
+      parentCommentId: circleCommentsTable.parentCommentId,
+      isPoster: circleCommentsTable.isPoster,
+      createdAt: circleCommentsTable.createdAt,
+    })
+    .from(circleCommentsTable)
+    .where(eq(circleCommentsTable.id, id))
+    .then((r) => r[0]);
+
+  res.status(201).json(comment);
+});
+
+// POST /api/public/w/:token/circle-dm/start — an anonymous Circle viewer
+// asking to talk to the poster privately. Mints a NEW whisp row rather than
+// reusing the circle post's own: a circle_drop whisp has no single
+// recipient (it's a public feed item), so there's nowhere to hang a private
+// 1:1 thread on it — and multiple different viewers may each want their own
+// separate conversation with the same poster. The new row reuses the exact
+// sender/anonymous-recipient shape a Whisper Link already has (senderId =
+// the ORIGINAL poster, a fresh publicToken for the viewer), which is what
+// lets it work with whisp_replies, WhispDetail, and PublicWhispPage
+// completely unmodified — no expiresAt, so this ongoing conversation
+// doesn't die on the 48-hour clock a one-shot video link does. Called once
+// per visitor per circle post; the frontend remembers the returned token
+// (localStorage, see lib/circleDm.ts) so a repeat visitor resumes the SAME
+// thread instead of minting a new one every time.
+router.post("/w/:token/circle-dm/start", async (req, res): Promise<void> => {
+  const whisp = await db.select().from(whispsTable).where(eq(whispsTable.publicToken, req.params.token)).then((r) => r[0]);
+  if (!whisp) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  if (whisp.deliveryMethod !== "circle_drop") {
+    res.status(400).json({ error: "Private messages only apply to Blind Circle posts" });
+    return;
+  }
+
+  const id = randomUUID();
+  const publicToken = randomUUID().replace(/-/g, "");
+
+  await db.insert(whispsTable).values({
+    id,
+    senderId: whisp.senderId,
+    videoUrl: whisp.videoUrl,
+    videoTitle: whisp.videoTitle,
+    videoThumbnail: whisp.videoThumbnail,
+    videoEmbedUrl: whisp.videoEmbedUrl,
+    videoStartSeconds: whisp.videoStartSeconds,
+    videoEndSeconds: whisp.videoEndSeconds,
+    videoPlatform: whisp.videoPlatform,
+    uploadedVideoId: whisp.uploadedVideoId,
+    deliveryMethod: "circle_dm",
+    originCircleWhispId: whisp.id,
+    senderAlias: whisp.senderAlias,
+    moodTag: whisp.moodTag,
+    status: "delivered",
+    publicToken,
+    deliveredAt: new Date(),
+    expiresAt: null,
+  });
+
+  res.status(201).json({ publicToken });
 });
 
 async function loadWhispUpload(token: string) {

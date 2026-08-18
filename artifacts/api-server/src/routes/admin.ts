@@ -20,6 +20,7 @@ import {
   conciergeRequestsTable,
   invitesTable,
   textWhispsTable,
+  circleCommentsTable,
   type User,
 } from "@workspace/db";
 import { and, asc, count, desc, eq, gte, ilike, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
@@ -120,10 +121,12 @@ router.get("/users/:id", async (req, res): Promise<void> => {
         createdAt: moderationFlagsTable.createdAt,
         videoTitle: whispsTable.videoTitle,
         textWhispMessage: textWhispsTable.messageText,
+        circleCommentText: circleCommentsTable.commentText,
       })
       .from(moderationFlagsTable)
       .leftJoin(whispsTable, eq(moderationFlagsTable.whispId, whispsTable.id))
       .leftJoin(textWhispsTable, eq(moderationFlagsTable.textWhispId, textWhispsTable.id))
+      .leftJoin(circleCommentsTable, eq(moderationFlagsTable.circleCommentId, circleCommentsTable.id))
       .where(eq(moderationFlagsTable.userId, user.id))
       .orderBy(desc(moderationFlagsTable.createdAt)),
   ]);
@@ -849,14 +852,18 @@ router.get("/moderation/flags", async (req, res): Promise<void> => {
         createdAt: moderationFlagsTable.createdAt,
         videoTitle: whispsTable.videoTitle,
         textWhispMessage: textWhispsTable.messageText,
+        circleCommentText: circleCommentsTable.commentText,
         senderEmail: usersTable.email,
       })
       .from(moderationFlagsTable)
-      // leftJoin, not innerJoin — see the same comment on the
-      // /users/:id moderationFlags query above: a flag row only ever
-      // matches one of whispsTable/textWhispsTable.
+      // leftJoin, not innerJoin — a flag row only ever matches one of
+      // whispsTable/textWhispsTable/circleCommentsTable, per contentType.
+      // usersTable is also a leftJoin, not inner: a circle_comment flag from
+      // an anonymous (no-account) commenter has userId=null and should
+      // still show up here, just without a "Sender:" link to follow.
       .leftJoin(whispsTable, eq(moderationFlagsTable.whispId, whispsTable.id))
       .leftJoin(textWhispsTable, eq(moderationFlagsTable.textWhispId, textWhispsTable.id))
+      .leftJoin(circleCommentsTable, eq(moderationFlagsTable.circleCommentId, circleCommentsTable.id))
       .leftJoin(usersTable, eq(moderationFlagsTable.userId, usersTable.id))
       .where(where)
       .orderBy(desc(moderationFlagsTable.createdAt))

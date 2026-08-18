@@ -18,3 +18,5 @@ export * from "./concierge_requests";
 export * from "./invites";
 export * from "./text_whisps";
 export * from "./text_whisp_replies";
+export * from "./circle_comments";
+export * from "./circle_post_likes";
