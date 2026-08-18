@@ -1,6 +1,17 @@
 import { useEffect, useRef, useState } from "react";
-import { PlayCircle } from "lucide-react";
+import { PlayCircle, ExternalLink } from "lucide-react";
 import confetti from "canvas-confetti";
+
+// Proper capitalisation for the "open on ..." link — the stored platform slug
+// is lowercase, and "Open on tiktok" looks like a bug.
+const PLATFORM_LABELS: Record<string, string> = {
+  youtube: "YouTube",
+  vimeo: "Vimeo",
+  tiktok: "TikTok",
+  instagram: "Instagram",
+  facebook: "Facebook",
+  twitter: "X",
+};
 
 type Props = {
   platform?: string | null;
@@ -154,8 +165,15 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playing, platform]);
 
-  const isEmbeddable = !!embedUrl && (platform === "youtube" || platform === "vimeo");
+  // Anything the server could build an embed for plays here. That's the whole
+  // point of a whisp arriving on its own page — being thrown out to the
+  // Facebook app mid-moment breaks it, and the recipient may not even be
+  // logged in over there.
+  const isEmbeddable = !!embedUrl;
   const isNativeVideo = platform === "upload" && !!uploadSrc;
+  // ...but only YouTube and Vimeo report progress back, so only those can be
+  // *measured* as watched. The rest are embedded blind.
+  const hasProgressApi = platform === "youtube" || platform === "vimeo";
 
   if (isNativeVideo && playing) {
     return (
@@ -191,16 +209,46 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
     // reliably fire watched_complete) since not every platform supports a
     // native trim param the same way.
     const endParam = endSeconds != null && platform === "youtube" ? `&end=${endSeconds}` : "";
+    // Only appended where it's actually honoured. TikTok and Instagram ignore
+    // it, and Facebook's plugin spells it differently — passing it anyway
+    // would just be noise in the URL.
+    const autoplayParam = hasProgressApi ? "autoplay=1" : "";
+    const src = `${embedUrl}${autoplayParam || startParam || endParam ? (embedUrl!.includes("?") ? "&" : "?") : ""}${autoplayParam}${startParam}${endParam}`;
+
+    // TikTok and Instagram are portrait-first; forcing them into 16:9 would
+    // letterbox the video into a thin strip with black either side.
+    const frameClass =
+      platform === "tiktok"
+        ? "relative mx-auto w-full max-w-[325px] aspect-[9/16] max-h-[70vh] bg-black"
+        : platform === "instagram"
+        ? "relative mx-auto w-full max-w-[400px] h-[540px] max-h-[75vh] bg-black"
+        : "relative aspect-video w-full bg-black";
+
     return (
-      <div className="relative aspect-video w-full bg-black">
+      <div className={frameClass}>
         <iframe
           ref={iframeRef}
-          src={`${embedUrl}${embedUrl!.includes("?") ? "&" : "?"}autoplay=1${startParam}${endParam}`}
+          src={src}
           title={title ?? "Video"}
           className="absolute inset-0 w-full h-full"
           allow="autoplay; encrypted-media; picture-in-picture"
           allowFullScreen
         />
+        {/* Always reachable, never a fallback that only appears on failure:
+            these embeds render public content only, so a restricted or
+            login-walled video loads to an empty frame with nothing to click.
+            This is also the answer for anyone who'd simply rather watch in
+            the app they already use. */}
+        <a
+          href={videoUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-testid="link-open-on-platform"
+          className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/60 px-2.5 py-1 text-[11px] text-white/90 backdrop-blur transition-colors hover:bg-black/80 hover:text-white"
+        >
+          <ExternalLink className="w-3 h-3" />
+          {platform ? `Open on ${PLATFORM_LABELS[platform] ?? platform}` : "Open original"}
+        </a>
       </div>
     );
   }
@@ -221,10 +269,17 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
 
     onWatchEvent("clicked");
     if (isEmbeddable || isNativeVideo) {
-      // Real playback happens in a player we can observe, so watched_complete
-      // is left to the progress checks above — an accurate signal beats an
-      // assumed one.
       setPlaying(true);
+      // Playing in an embed we can't observe (TikTok, Instagram, Facebook) is
+      // the same evidentiary position as opening the link in a new tab: the
+      // deliberate tap is the best signal available, and better than a
+      // permanent "not watched" that reads to the sender as being ignored.
+      // YouTube/Vimeo/uploads are left to the real progress checks above,
+      // because a measured signal beats an assumed one.
+      if (!hasProgressApi && !isNativeVideo && !firedRef.current.complete) {
+        firedRef.current.complete = true;
+        onWatchEvent("watched_complete");
+      }
     } else {
       // Everything else (TikTok, Instagram, Facebook, X, a bare link) opens
       // in a new tab, where we can never see playback at all. Previously that

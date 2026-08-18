@@ -29,7 +29,7 @@ import { createWhispLimiter, noteSuggestionLimiter, conciergeLimiter, publicEndp
 import { getGhostBoostMatchStats } from "../lib/matching";
 import { generateNoteSuggestions } from "../lib/noteSuggestions";
 import { httpUrlString } from "../lib/safeUrl";
-import { deriveVideoFields } from "../lib/videoMeta";
+import { deriveVideoFields, embedUrlFor } from "../lib/videoMeta";
 import { runConcierge, MAX_SITUATION_LENGTH } from "../lib/concierge";
 
 const router = Router();
@@ -526,7 +526,10 @@ router.get("/:id", requireAuth, async (req, res): Promise<void> => {
   // the recipient losing interest rather than hitting a wall.
   const recipientAllowance = recipientReplyAllowance(whisp.replyCreditsPurchased);
   res.json({
-    whisp,
+    // Same read-time embed fill-in as the public page (see routes/public.ts),
+    // so the sender previewing their own whisp sees exactly what the
+    // recipient will.
+    whisp: { ...whisp, videoEmbedUrl: whisp.videoEmbedUrl ?? embedUrlFor(whisp.videoUrl, whisp.videoPlatform) },
     trackingEvents,
     replies,
     recipientRepliesRemaining:

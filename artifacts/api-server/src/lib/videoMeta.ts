@@ -42,9 +42,21 @@ export function detectPlatform(url: string): string | null {
   }
 }
 
-// Only YouTube and Vimeo expose an embeddable player with a JS API we can use
-// to detect real watch progress — every other platform requires opening the
-// original link, where we have no visibility into playback.
+// Platforms whose embedded player also exposes a JS API we can watch, so
+// "watched" is measured rather than assumed. The rest embed fine but play
+// behind an opaque iframe — see VideoPlayer for how that difference is
+// handled.
+export const PLATFORMS_WITH_PROGRESS_API = new Set(["youtube", "vimeo"]);
+
+// An in-page player for everything we can build one for, so a whisp opens
+// where it was sent instead of throwing the recipient out to another app
+// mid-moment. Returns null when the URL doesn't carry the id its platform's
+// embed needs, and for platforms with no embeddable player at all — the
+// caller falls back to opening the original link.
+//
+// Every one of these renders only PUBLIC content. A restricted or
+// login-walled video yields an iframe that loads to nothing, which is why
+// the player always keeps an "open on <platform>" escape hatch alongside it.
 export function buildEmbedUrl(url: string, platform: string): string | null {
   if (platform === "youtube") {
     const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\/))([\w-]{11})/);
@@ -54,7 +66,40 @@ export function buildEmbedUrl(url: string, platform: string): string | null {
     const match = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
     return match ? `https://player.vimeo.com/video/${match[1]}` : null;
   }
+  if (platform === "tiktok") {
+    const match = url.match(/tiktok\.com\/(?:@[\w.-]+\/video\/|v\/)(\d{6,25})/);
+    return match ? `https://www.tiktok.com/embed/v2/${match[1]}` : null;
+  }
+  if (platform === "instagram") {
+    // Posts, reels and IGTV all embed through the /p/ path.
+    const match = url.match(/instagram\.com\/(?:p|reel|reels|tv)\/([A-Za-z0-9_-]{5,20})/);
+    return match ? `https://www.instagram.com/p/${match[1]}/embed/` : null;
+  }
+  if (platform === "facebook") {
+    // Facebook's plugin takes the whole watch URL rather than an extracted
+    // id, which is what makes fb.watch short links and the several
+    // /watch/?v= | /video.php | /reel/ shapes all work without parsing each.
+    // encodeURIComponent is what keeps the caller's URL a value here and not
+    // a way to append plugin parameters of their own — and detectPlatform has
+    // already established the host is Facebook's.
+    return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=false`;
+  }
+  // Twitter/X has no supported iframe embed — its widget needs a script we
+  // won't load into a page that renders anonymous content.
   return null;
+}
+
+/**
+ * Embed URL for a stored whisp, tolerating the nulls a row can carry.
+ *
+ * Read paths use this to fill in an embed for rows written before their
+ * platform was embeddable — the value is a pure function of the video URL, so
+ * deriving it on read is equivalent to having stored it, without a migration.
+ */
+export function embedUrlFor(videoUrl: string | null, platform: string | null): string | null {
+  if (!videoUrl) return null;
+  const resolved = platform ?? detectPlatform(videoUrl);
+  return resolved ? buildEmbedUrl(videoUrl, resolved) : null;
 }
 
 // A deterministic, platform-hosted thumbnail URL derived purely from the

@@ -18,7 +18,7 @@ import { isExpired, MAX_REMINDERS } from "../lib/expiration";
 import { downloadObject } from "../lib/objectStorage";
 import { generateTakeawayAsync } from "../lib/aiTakeaway";
 import { httpUrlString } from "../lib/safeUrl";
-import { deriveVideoFields, detectPlatform } from "../lib/videoMeta";
+import { deriveVideoFields, detectPlatform, embedUrlFor } from "../lib/videoMeta";
 import { recipientReplyAllowance } from "../lib/plans";
 
 const router = Router();
@@ -111,7 +111,12 @@ router.get("/w/:token", async (req, res): Promise<void> => {
     videoUrl: whisp.videoUrl,
     videoTitle: whisp.videoTitle,
     videoThumbnail: whisp.videoThumbnail,
-    videoEmbedUrl: whisp.videoEmbedUrl,
+    // Computed on read when the stored value is null. Embed URLs are a pure
+    // function of the video URL, and whisps written before a platform became
+    // embeddable have nothing stored — without this they'd keep bouncing the
+    // recipient out to the original app forever. Cheap, and it self-heals
+    // rather than needing a backfill.
+    videoEmbedUrl: whisp.videoEmbedUrl ?? embedUrlFor(whisp.videoUrl, whisp.videoPlatform),
     videoStartSeconds: whisp.videoStartSeconds,
     videoEndSeconds: whisp.videoEndSeconds,
     videoPlatform: whisp.videoPlatform,
