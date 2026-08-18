@@ -8,6 +8,8 @@ import {
   shouldStayQuiet,
   rememberInstalled,
   rememberDismissed,
+  onInstallPromptAvailable,
+  clearDeferredInstallPrompt,
   type BeforeInstallPromptEvent,
 } from "@/lib/installApp";
 
@@ -37,25 +39,17 @@ export function InstallAppPrompt() {
   useEffect(() => {
     if (shouldStayQuiet()) return;
 
-    // Chrome fires this when the app meets the install criteria. Capturing it
-    // (and preventing the default mini-infobar) is what lets us offer the
-    // install inside our own UI at a moment that makes sense, rather than
-    // whenever the browser decides.
-    function onBeforeInstallPrompt(e: Event) {
-      e.preventDefault();
-      deferredRef.current = e as BeforeInstallPromptEvent;
-      setVisible(true);
-    }
-
-    // Fires on a successful install, including one done through the browser's
-    // own menu rather than our button.
-    function onInstalled() {
-      rememberInstalled();
-      setVisible(false);
-    }
-
-    window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
-    window.addEventListener("appinstalled", onInstalled);
+    // Subscribes to the module-level capture in lib/installApp.ts rather than
+    // attaching a beforeinstallprompt listener here directly. That event
+    // fires once per page load, often before sign-in — before this
+    // component, which only exists inside AppLayout, has ever mounted — so a
+    // listener attached at this point would reliably miss it. Subscribing
+    // instead delivers whatever was already captured immediately (the
+    // common case) and anything that arrives later (the rare one).
+    const unsubscribe = onInstallPromptAvailable((event) => {
+      deferredRef.current = event;
+      setVisible(event !== null);
+    });
 
     // iOS never fires beforeinstallprompt, so there is nothing to wait for —
     // show the instructions on a timer instead. Safari only: an iPhone using
@@ -69,8 +63,7 @@ export function InstallAppPrompt() {
     }
 
     return () => {
-      window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
-      window.removeEventListener("appinstalled", onInstalled);
+      unsubscribe();
       if (timer) clearTimeout(timer);
     };
   }, [ios]);
@@ -107,8 +100,11 @@ export function InstallAppPrompt() {
     } finally {
       setInstalling(false);
       // A prompt can only be used once; Chrome issues a fresh event if the
-      // app still qualifies.
+      // app still qualifies. Cleared in the shared store too, or the next
+      // mount (a different tab, or this one after a route change) would read
+      // back an already-spent event.
       deferredRef.current = null;
+      clearDeferredInstallPrompt();
     }
   }
 

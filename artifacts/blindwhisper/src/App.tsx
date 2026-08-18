@@ -1,6 +1,15 @@
 import { lazy, Suspense, useEffect, useRef } from "react";
 import { ClerkProvider, SignIn, SignUp, Show, useClerk, useAuth } from '@clerk/react';
 import { registerServiceWorker } from "@/lib/push";
+// Imported for its module-level side effect: capturing beforeinstallprompt
+// from the moment this script evaluates, not from whenever the install UI
+// happens to mount. That UI lives inside AppLayout, which is pulled in by a
+// lazily-loaded route chunk that only loads once auth has resolved and
+// routing has landed somewhere — by which point the one-shot event may
+// already have fired into a page with nothing listening. This file sits in
+// App.tsx's own eager bundle specifically so the listener is live before any
+// of that.
+import "@/lib/installApp";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
 import { dark } from '@clerk/themes';
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from 'wouter';

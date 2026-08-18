@@ -82,3 +82,60 @@ export interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
+
+// `beforeinstallprompt` fires once per page load, often within the first
+// second — well before a user has had the chance to sign in. The install UI
+// only exists inside AppLayout, which doesn't render until AFTER sign-in, so
+// a listener attached there is reliably too late: by the time it mounts, the
+// one-shot event already fired into a page with nobody listening, and the
+// browser does not re-fire it later in that same page's lifetime. Chrome's
+// own developer docs call this out explicitly as the standard mistake.
+//
+// The fix is a module-level capture that starts the moment this file is
+// first imported — which happens from App.tsx's top level, before any
+// auth-gated component exists — so the event is caught regardless of what's
+// mounted when it happens to arrive. Components read the already-captured
+// value on mount instead of racing to attach their own listener in time.
+let deferredPrompt: BeforeInstallPromptEvent | null = null;
+type Listener = (event: BeforeInstallPromptEvent | null) => void;
+const listeners = new Set<Listener>();
+
+if (typeof window !== "undefined") {
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredPrompt = e as BeforeInstallPromptEvent;
+    for (const listener of listeners) listener(deferredPrompt);
+  });
+
+  // Captured at module scope for the same reason as beforeinstallprompt
+  // above: this can fire (an install completed through the browser's own
+  // menu, not our button) whether or not the prompt UI happens to be
+  // mounted right now.
+  window.addEventListener("appinstalled", () => {
+    rememberInstalled();
+    deferredPrompt = null;
+    for (const listener of listeners) listener(null);
+  });
+}
+
+/** Whatever beforeinstallprompt event has been captured so far, if any. */
+export function getDeferredInstallPrompt(): BeforeInstallPromptEvent | null {
+  return deferredPrompt;
+}
+
+/** Consumes the captured event — a prompt can only be shown once. */
+export function clearDeferredInstallPrompt(): void {
+  deferredPrompt = null;
+}
+
+/**
+ * Notifies `listener` immediately with whatever's already captured (which
+ * covers the common case: the event arrived before this component mounted),
+ * and again if one arrives later while still subscribed. Returns the
+ * unsubscribe function.
+ */
+export function onInstallPromptAvailable(listener: Listener): () => void {
+  listener(deferredPrompt);
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}

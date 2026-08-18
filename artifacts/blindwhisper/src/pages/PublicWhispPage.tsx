@@ -1,5 +1,5 @@
 import { useParams, useLocation } from "wouter";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useUser } from "@clerk/react";
 import {
@@ -25,6 +25,7 @@ import { Send, Loader2, Video, X, Link2, HeartHandshake, Clock, BellRing, Sparkl
 import { LogoLockup } from "@/components/ui/logo";
 import { VideoPlayer } from "@/components/shared/VideoPlayer";
 import { QUICK_REPLIES } from "@/lib/quickReplies";
+import { Thumbnail } from "@/components/shared/Thumbnail";
 import { ReplyThread, type ThreadReply } from "@/components/shared/ReplyThread";
 import { PullToRefresh } from "@/components/shared/PullToRefresh";
 import { REMINDER_PRESETS, MAX_REMINDERS } from "@/lib/reminderPresets";
@@ -79,6 +80,22 @@ export function PublicWhispPage() {
   const { isSignedIn } = useUser();
   const [replyText, setReplyText] = useState("");
   const [replyingTo, setReplyingTo] = useState<ThreadReply | null>(null);
+
+  // The fixed header's real rendered height, so the content below it knows
+  // how much space to reserve. Measured rather than a guessed constant
+  // because it varies with env(safe-area-inset-top) — different on every
+  // device with a notch/dynamic island — and again if the logo lockup ever
+  // wraps to two lines on a narrow screen.
+  const headerRef = useRef<HTMLElement>(null);
+  const [headerHeight, setHeaderHeight] = useState(0);
+
+  useLayoutEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => setHeaderHeight(entry.contentRect.height));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
   const [hasTrackedOpen, setHasTrackedOpen] = useState(false);
   const [revealResponse, setRevealResponse] = useState<"accepted" | "declined" | null>(null);
   const [localAppreciation, setLocalAppreciation] = useState<"yes" | "no" | null>(null);
@@ -310,9 +327,18 @@ export function PublicWhispPage() {
         style={{ backgroundColor: moodColor, opacity: 0.1 }}
       />
 
-      {/* Header */}
+      {/* Header — fixed, not sticky. index.css sets overflow-x: hidden on both
+          html and body, which (per AppLayout's own fix earlier) turns them
+          into scroll containers and defeats `sticky` almost entirely.
+          `position: fixed` isn't subject to that: it resolves against the
+          viewport regardless, confirmed empirically the same way the AppLayout
+          fix was. Pulling it out of flow means the content below needs
+          compensating top space equal to its real rendered height — which
+          varies with safe-area-inset-top per device — so it's measured rather
+          than guessed. */}
       <header
-        className="px-5 pb-5 flex items-center justify-between border-b border-border/30 relative z-10"
+        ref={headerRef}
+        className="fixed top-0 inset-x-0 z-20 px-5 pb-5 flex items-center justify-between border-b border-border/30 bg-background/95 backdrop-blur"
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 1.25rem)" }}
       >
         <BlindWhisperLogoMark />
@@ -325,7 +351,10 @@ export function PublicWhispPage() {
       </header>
 
       {/* Content */}
-      <main className="flex-1 max-w-lg mx-auto w-full px-5 py-10 space-y-7 relative z-10">
+      <main
+        className="flex-1 max-w-lg mx-auto w-full px-5 py-10 space-y-7 relative z-10"
+        style={{ paddingTop: `calc(${headerHeight}px + 2.5rem)` }}
+      >
         {isLoading ? (
           <div className="space-y-4">
             <Skeleton className="h-6 w-48 mx-auto" />
@@ -529,6 +558,31 @@ export function PublicWhispPage() {
                 }
                 return (
                 <div className="space-y-3">
+                  {/* A reminder of what they're actually replying to. By the
+                      time someone scrolls this far down — past the takeaway
+                      card and the appreciation prompt — the video card up top
+                      is long gone, and there's nothing on screen saying which
+                      video this reply is even about. */}
+                  <div
+                    className="flex items-center gap-2.5 rounded-xl border border-border/40 bg-muted/20 px-3 py-2"
+                    data-testid="reply-context-card"
+                  >
+                    {whisp.videoThumbnail || whisp.videoPlatform === "upload" ? (
+                      <Thumbnail
+                        src={whisp.videoPlatform === "upload" ? `/api/public/w/${token}/media/thumbnail` : whisp.videoThumbnail!}
+                        alt=""
+                        className="h-9 w-14 shrink-0 rounded-lg object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-9 w-14 shrink-0 items-center justify-center rounded-lg bg-muted">
+                        <PlayCircle className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    )}
+                    <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+                      Replying to <span className="text-foreground">{whisp.videoTitle || "this video"}</span>
+                    </p>
+                  </div>
+
                   {whisp.replies.length === 0 && (
                   <div className="flex flex-wrap gap-2 justify-center">
                     {QUICK_REPLIES.map((qr) => (
