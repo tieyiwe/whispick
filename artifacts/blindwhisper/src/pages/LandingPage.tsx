@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { LogoLockup } from "@/components/ui/logo";
 import { MoodTag } from "@/components/shared/MoodTag";
 import { FAQ_ITEMS } from "@/lib/faqContent";
+import { InstallAppPrompt } from "@/components/shared/InstallAppPrompt";
 import { Send, Heart, Shield, Sparkles, PlayCircle, Users2, Users, Briefcase, UserRound, X, Check, ChevronDown } from "lucide-react";
 
 const USE_CASES = [
@@ -308,6 +309,12 @@ export function LandingPage() {
         <span className="text-border">•</span>
         <Link href="/terms" className="hover:text-primary transition-colors">Terms of Service</Link>
       </footer>
+
+      {/* This is a signed-out visitor's only chance to see an install nudge
+          outside of AppLayout (see InstallAppPrompt's own docs) — someone who
+          already has the app, or a returning user browsing signed out, lands
+          here rather than mid-task inside the product. */}
+      <InstallAppPrompt />
     </div>
   );
 }

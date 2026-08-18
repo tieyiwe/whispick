@@ -32,9 +32,15 @@ const REFRESH_APPEAR_DELAY_MS = 3000;
 /**
  * Offers to install Blind Whisper to the home screen, once.
  *
- * Rendered inside AppLayout, so it only ever appears to a signed-in user —
- * asking a stranger on a public whisp page to install an app they have no
- * account for would be the wrong moment entirely.
+ * Rendered in two places: inside AppLayout, so it appears to a signed-in
+ * user going about the product, and on the public LandingPage, so a
+ * signed-out visitor — someone who already has an account and is just
+ * browsing signed out, or a brand-new visitor checking the product out —
+ * gets the same nudge at their own front door. Deliberately NOT rendered on
+ * a public whisp/invite/Text Whisp landing page: a Recipient who followed a
+ * link they didn't ask for has no relationship to the app yet, and asking
+ * them to install one they have no account for would be the wrong moment
+ * entirely.
  *
  * "Installed" is captured from three independent signals because no single one
  * is reliable: the `appinstalled` event (missed if the tab is closed during
