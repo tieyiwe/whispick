@@ -58,9 +58,26 @@ export function PullToRefresh({
   const startYRef = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Mirror state into refs so the effect below can read current values
+  // without needing them in its dependency array — see the comment on that
+  // dependency array for why that matters here.
+  const pullDistanceRef = useRef(pullDistance);
+  const refreshingRef = useRef(refreshing);
+  const onRefreshRef = useRef(onRefresh);
   useEffect(() => {
-    const node = containerRef.current;
-    if (!node || disabled) return;
+    pullDistanceRef.current = pullDistance;
+    refreshingRef.current = refreshing;
+    onRefreshRef.current = onRefresh;
+  }, [pullDistance, refreshing, onRefresh]);
+
+  useEffect(() => {
+    const maybeNode = containerRef.current;
+    if (!maybeNode || disabled) return;
+    // A plain re-binding, not a cast: TypeScript's closure-narrowing doesn't
+    // reliably carry `maybeNode`'s non-null type into the several mutually-
+    // referencing function declarations below, so `node` exists purely to
+    // give them all a type it can track — its runtime value never changes.
+    const node: HTMLDivElement = maybeNode;
 
     // "At the top" is not the same question as `window.scrollY === 0`.
     // AppLayout scrolls <main> internally at every width so the sidebar and
@@ -79,16 +96,6 @@ export function PullToRefresh({
       return true;
     }
 
-    function handleTouchStart(e: TouchEvent) {
-      // Only start a pull from a genuine top-of-page rest state. Starting one
-      // mid-scroll would hijack ordinary upward scrolling.
-      if (!isAtTop() || refreshing) {
-        startYRef.current = null;
-        return;
-      }
-      startYRef.current = e.touches[0].clientY;
-    }
-
     // True when the touch began inside something that scrolls itself and
     // isn't already at its own top — a long draft in the reply composer's
     // textarea, for instance. preventDefault-ing those drags would stop
@@ -102,11 +109,38 @@ export function PullToRefresh({
       return false;
     }
 
-    function handleTouchMove(e: TouchEvent) {
-      if (startYRef.current === null || refreshing) return;
-      if (startedInScrolledChild(e.target)) {
+    // A non-passive touchmove listener anywhere in a touch's target chain
+    // forces the browser to run it — and wait for the result — on every
+    // single frame of that touch before committing to scroll, whether or not
+    // it ever calls preventDefault. Keeping one attached for the component's
+    // entire lifetime made ordinary scrolling janky everywhere except right
+    // at the screen edge, where the OS's own swipe-back gesture intercepts
+    // the touch before it ever reaches the DOM. The fix: attach handleTouchMove
+    // only for the span of a touch that might actually be a pull (started at
+    // the very top of the page) and detach it the instant that stops being
+    // true, so a scroll starting anywhere else — which is most scrolling —
+    // never has a non-passive listener in its path at all.
+    function endPull() {
+      node.removeEventListener("touchmove", handleTouchMove);
+      startYRef.current = null;
+      setPullDistance(0);
+    }
+
+    function handleTouchStart(e: TouchEvent) {
+      // Only start a pull from a genuine top-of-page rest state. Starting one
+      // mid-scroll would hijack ordinary upward scrolling.
+      if (!isAtTop() || refreshingRef.current) {
         startYRef.current = null;
-        setPullDistance(0);
+        return;
+      }
+      startYRef.current = e.touches[0].clientY;
+      node.addEventListener("touchmove", handleTouchMove, { passive: false });
+    }
+
+    function handleTouchMove(e: TouchEvent) {
+      if (startYRef.current === null || refreshingRef.current) return;
+      if (startedInScrolledChild(e.target)) {
+        endPull();
         return;
       }
       const delta = e.touches[0].clientY - startYRef.current;
@@ -114,25 +148,24 @@ export function PullToRefresh({
       // Upward movement means they're scrolling the page, not pulling —
       // release the gesture entirely rather than tracking a negative pull.
       if (delta <= 0) {
-        startYRef.current = null;
-        setPullDistance(0);
+        endPull();
         return;
       }
 
       // Only take over the gesture once it's unambiguously a downward pull
       // (a few pixels of slop), so a slightly-imperfect vertical scroll isn't
       // stolen. preventDefault stops the page scrolling underneath the
-      // indicator — it needs a non-passive listener, hence the explicit
-      // { passive: false } below.
+      // indicator — it needs the non-passive listener attached above.
       if (delta > 5 && e.cancelable) e.preventDefault();
       setPullDistance(Math.min(delta * DRAG_RESISTANCE, MAX_PULL));
     }
 
     async function handleTouchEnd() {
       if (startYRef.current === null) return;
+      node.removeEventListener("touchmove", handleTouchMove);
       startYRef.current = null;
 
-      if (pullDistance < TRIGGER_DISTANCE) {
+      if (pullDistanceRef.current < TRIGGER_DISTANCE) {
         setPullDistance(0);
         return;
       }
@@ -147,7 +180,7 @@ export function PullToRefresh({
         // on "Refreshing..." and — because `refreshing` gates touchstart —
         // disable pull-to-refresh for the rest of the page's life.
         await Promise.race([
-          onRefresh(),
+          onRefreshRef.current(),
           new Promise((resolve) => setTimeout(resolve, REFRESH_TIMEOUT_MS)),
         ]);
       } finally {
@@ -157,7 +190,6 @@ export function PullToRefresh({
     }
 
     node.addEventListener("touchstart", handleTouchStart, { passive: true });
-    node.addEventListener("touchmove", handleTouchMove, { passive: false });
     node.addEventListener("touchend", handleTouchEnd);
     node.addEventListener("touchcancel", handleTouchEnd);
     return () => {
@@ -166,7 +198,11 @@ export function PullToRefresh({
       node.removeEventListener("touchend", handleTouchEnd);
       node.removeEventListener("touchcancel", handleTouchEnd);
     };
-  }, [onRefresh, pullDistance, refreshing, disabled]);
+    // Mount-once: pullDistance/refreshing/onRefresh are deliberately left out
+    // and read via the refs synced above instead, so this effect doesn't
+    // tear down and recreate the DOM listeners on every pull-distance update
+    // (which happens on every touchmove frame of an active pull).
+  }, [disabled]);
 
   const ready = pullDistance >= TRIGGER_DISTANCE;
 
