@@ -23,5 +23,10 @@ export interface WhispReply {
   videoPlatform?: string | null;
   /** @nullable */
   moodTag?: string | null;
+  /**
+     * The message this one answers, when it replies to a specific earlier message rather than the thread as a whole. Always a reply on the same whisp.
+     * @nullable
+     */
+  parentReplyId?: string | null;
   createdAt: string;
 }

@@ -233,6 +233,7 @@ export const GetWhispResponse = zod.object({
   "videoEmbedUrl": zod.string().nullish(),
   "videoPlatform": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
+  "parentReplyId": zod.string().nullish().describe('The message this one answers, when it replies to a specific earlier message rather than the thread as a whole. Always a reply on the same whisp.'),
   "createdAt": zod.string()
 })),
   "recipientRepliesRemaining": zod.number().nullish().describe('Anonymous replies the recipient has left on this whisp. Null means uncapped. 0 means they can\'t reply again unless the sender adds more replies or the recipient signs up.')
@@ -267,6 +268,7 @@ export const ListWhispRepliesResponseItem = zod.object({
   "videoEmbedUrl": zod.string().nullish(),
   "videoPlatform": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
+  "parentReplyId": zod.string().nullish().describe('The message this one answers, when it replies to a specific earlier message rather than the thread as a whole. Always a reply on the same whisp.'),
   "createdAt": zod.string()
 })
 export const ListWhispRepliesResponse = zod.array(ListWhispRepliesResponseItem)
@@ -281,7 +283,8 @@ export const CreateWhispReplyParams = zod.object({
 
 export const CreateWhispReplyBody = zod.object({
   "replyText": zod.string(),
-  "fromRecipient": zod.boolean().optional()
+  "fromRecipient": zod.boolean().optional(),
+  "parentReplyId": zod.string().nullish().describe('Reply to a specific earlier message on the same whisp.')
 })
 
 export const CreateWhispReplyResponse = zod.object({
@@ -295,6 +298,7 @@ export const CreateWhispReplyResponse = zod.object({
   "videoEmbedUrl": zod.string().nullish(),
   "videoPlatform": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
+  "parentReplyId": zod.string().nullish().describe('The message this one answers, when it replies to a specific earlier message rather than the thread as a whole. Always a reply on the same whisp.'),
   "createdAt": zod.string()
 })
 
@@ -752,6 +756,7 @@ export const GetPublicWhispResponse = zod.object({
   "videoEmbedUrl": zod.string().nullish(),
   "videoPlatform": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
+  "parentReplyId": zod.string().nullish().describe('The message this one answers, when it replies to a specific earlier message rather than the thread as a whole. Always a reply on the same whisp.'),
   "createdAt": zod.string()
 })),
   "recipientRepliesRemaining": zod.number().nullish().describe('Anonymous replies this recipient has left on this whisp. Null means uncapped. Signing up removes the cap entirely.')
@@ -788,7 +793,8 @@ export const PublicReplyBody = zod.object({
   "videoThumbnail": zod.string().nullish(),
   "videoEmbedUrl": zod.string().nullish(),
   "videoPlatform": zod.string().nullish(),
-  "moodTag": zod.string().nullish()
+  "moodTag": zod.string().nullish(),
+  "parentReplyId": zod.string().nullish().describe('Reply to a specific earlier message on the same whisp.')
 })
 
 export const PublicReplyResponse = zod.object({
@@ -802,6 +808,7 @@ export const PublicReplyResponse = zod.object({
   "videoEmbedUrl": zod.string().nullish(),
   "videoPlatform": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
+  "parentReplyId": zod.string().nullish().describe('The message this one answers, when it replies to a specific earlier message rather than the thread as a whole. Always a reply on the same whisp.'),
   "createdAt": zod.string()
 })
 
@@ -1431,6 +1438,7 @@ export const AdminGetWhispResponse = zod.object({
   "videoEmbedUrl": zod.string().nullish(),
   "videoPlatform": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
+  "parentReplyId": zod.string().nullish().describe('The message this one answers, when it replies to a specific earlier message rather than the thread as a whole. Always a reply on the same whisp.'),
   "createdAt": zod.string()
 })),
   "categories": zod.array(zod.object({
@@ -2126,6 +2134,7 @@ export const GetGroupWhispSendResponse = zod.object({
   "videoEmbedUrl": zod.string().nullish(),
   "videoPlatform": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
+  "parentReplyId": zod.string().nullish().describe('The message this one answers, when it replies to a specific earlier message rather than the thread as a whole. Always a reply on the same whisp.'),
   "createdAt": zod.string()
 }))
 }))

@@ -12,6 +12,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
 import { MessageSquareHeart, ArrowRight, UserCircle2 } from "lucide-react";
+import { recipientLabel } from "@/lib/recipients";
+
+// Reply notifications point at the whisp they belong to. Reading the id back
+// out is what lets a card show when the reply landed instead of when the
+// whisp was created — on a Replies page, "3 days ago" meaning the whisp's
+// birthday rather than the reply's is actively misleading.
+function whispIdFromNotificationUrl(url: string | null | undefined): string | null {
+  const match = /^\/whisps\/([^/?#]+)$/.exec(url ?? "");
+  return match ? match[1] : null;
+}
 
 export function RepliesInbox() {
   const { data: whisps, isLoading } = useListWhisps({ status: "replied" });
@@ -66,6 +76,15 @@ export function RepliesInbox() {
 
   const repliedWhisps = whisps?.filter((w) => w.status === "replied") ?? [];
 
+  // Latest reply notification per whisp. Notifications come newest-first, so
+  // the first one seen for a whisp is the one to keep.
+  const lastReplyAt = new Map<string, string>();
+  for (const n of notifications?.items ?? []) {
+    if (n.kind !== "reply") continue;
+    const whispId = whispIdFromNotificationUrl(n.url);
+    if (whispId && !lastReplyAt.has(whispId)) lastReplyAt.set(whispId, n.createdAt);
+  }
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -86,7 +105,10 @@ export function RepliesInbox() {
           </Card>
         ) : (
           <div className="space-y-3">
-            {repliedWhisps.map((whisp) => (
+            {repliedWhisps.map((whisp) => {
+              const who = recipientLabel(whisp);
+              const when = lastReplyAt.get(whisp.id) ?? whisp.createdAt;
+              return (
               <Link key={whisp.id} href={`/whisps/${whisp.id}`}>
                 <Card className="bg-card hover:bg-card/80 transition-colors border-border/50 cursor-pointer group" data-testid={`reply-card-${whisp.id}`}>
                   <CardContent className="p-4">
@@ -103,12 +125,24 @@ export function RepliesInbox() {
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-foreground truncate">{whisp.videoTitle || "Video"}</p>
+                        {/* Who replied leads, because that is what the page is
+                            scanned for — which of my whisps got an answer, and
+                            from whom. The video title is the supporting detail,
+                            not the headline. */}
+                        <p className="font-medium text-foreground truncate" data-testid={`reply-from-${whisp.id}`}>
+                          {who ? (
+                            <>
+                              <span className="text-gilded">{who}</span> replied
+                            </>
+                          ) : (
+                            "Someone replied anonymously"
+                          )}
+                        </p>
                         <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                          <UserCircle2 className="w-3 h-3" />
-                          <span>Someone replied anonymously</span>
+                          <UserCircle2 className="w-3 h-3 flex-shrink-0" />
+                          <span className="truncate">{whisp.videoTitle || "Video"}</span>
                           <span>·</span>
-                          <span>{new Date(whisp.createdAt).toLocaleDateString()}</span>
+                          <span className="flex-shrink-0">{new Date(when).toLocaleDateString()}</span>
                         </div>
                       </div>
                       <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0 mt-1" />
@@ -116,7 +150,8 @@ export function RepliesInbox() {
                   </CardContent>
                 </Card>
               </Link>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

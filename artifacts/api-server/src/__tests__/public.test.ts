@@ -214,6 +214,75 @@ describe("POST /api/public/w/:token/reply", () => {
   });
 });
 
+// Per-message replying: the client sends the id of the message being
+// answered so the thread can quote it. That id is attacker-controlled (this
+// route is unauthenticated), so the only thing standing between it and a
+// cross-thread leak is the same-whisp check.
+describe("threaded replies (parentReplyId)", () => {
+  it("keeps the parent reference when it points at a message on the same whisp", async () => {
+    const whisp = await createWhisp();
+    const first = await request(app)
+      .post(`/api/whisps/${whisp.id}/replies`)
+      .set(TEST_USER_HEADER, USER_A)
+      .send({ replyText: "how are you?" });
+
+    const answer = await request(app)
+      .post(`/api/public/w/${whisp.publicToken}/reply`)
+      .send({ replyText: "better now", parentReplyId: first.body.id });
+
+    expect(answer.status).toBe(201);
+    expect(answer.body.parentReplyId).toBe(first.body.id);
+
+    const page = await request(app).get(`/api/public/w/${whisp.publicToken}`);
+    expect(page.body.replies.find((r: any) => r.id === answer.body.id).parentReplyId).toBe(first.body.id);
+  });
+
+  it("drops a parent id belonging to a different whisp instead of quoting across threads", async () => {
+    const mine = await createWhisp();
+    const theirs = await createWhisp();
+    const foreign = await request(app)
+      .post(`/api/public/w/${theirs.publicToken}/reply`)
+      .send({ replyText: "a secret from another thread" });
+
+    const res = await request(app)
+      .post(`/api/public/w/${mine.publicToken}/reply`)
+      .send({ replyText: "probing", parentReplyId: foreign.body.id });
+
+    // Accepted as an ordinary message — the reference is silently dropped
+    // rather than 400'd, since a stale id (parent deleted while typing) is a
+    // normal race, not an attack worth surfacing to the user.
+    expect(res.status).toBe(201);
+    expect(res.body.parentReplyId).toBeNull();
+  });
+
+  it("drops a parent id that doesn't exist at all", async () => {
+    const whisp = await createWhisp();
+
+    const res = await request(app)
+      .post(`/api/public/w/${whisp.publicToken}/reply`)
+      .send({ replyText: "hello", parentReplyId: "no-such-reply" });
+
+    expect(res.status).toBe(201);
+    expect(res.body.parentReplyId).toBeNull();
+  });
+
+  it("applies the same-whisp rule to the sender's own replies", async () => {
+    const mine = await createWhisp();
+    const theirs = await createWhisp();
+    const foreign = await request(app)
+      .post(`/api/public/w/${theirs.publicToken}/reply`)
+      .send({ replyText: "elsewhere" });
+
+    const res = await request(app)
+      .post(`/api/whisps/${mine.id}/replies`)
+      .set(TEST_USER_HEADER, USER_A)
+      .send({ replyText: "probing", parentReplyId: foreign.body.id });
+
+    expect(res.status).toBe(201);
+    expect(res.body.parentReplyId).toBeNull();
+  });
+});
+
 describe("anonymous recipient reply cap", () => {
   // The cap ships OFF by default until billing exists (see plans.ts's
   // TODO(payment)), so these pin it on explicitly rather than relying on the

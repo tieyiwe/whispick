@@ -2524,6 +2524,12 @@ components:
           type: ["string", "null"]
         moodTag:
           type: ["string", "null"]
+        parentReplyId:
+          type: ["string", "null"]
+          description: >-
+            The message this one answers, when it replies to a specific
+            earlier message rather than the thread as a whole. Always a reply
+            on the same whisp.
         createdAt:
           type: string
       required:
@@ -2540,6 +2546,9 @@ components:
           type: string
         fromRecipient:
           type: boolean
+        parentReplyId:
+          type: ["string", "null"]
+          description: Reply to a specific earlier message on the same whisp.
       required:
         - replyText
 
@@ -2912,6 +2921,9 @@ components:
           type: ["string", "null"]
         moodTag:
           type: ["string", "null"]
+        parentReplyId:
+          type: ["string", "null"]
+          description: Reply to a specific earlier message on the same whisp.
 
     UserProfile:
       type: object

@@ -47,6 +47,7 @@ const RECIPIENT_SAFE_REPLY_COLUMNS = {
   videoEmbedUrl: whispRepliesTable.videoEmbedUrl,
   videoPlatform: whispRepliesTable.videoPlatform,
   moodTag: whispRepliesTable.moodTag,
+  parentReplyId: whispRepliesTable.parentReplyId,
   createdAt: whispRepliesTable.createdAt,
 } as const;
 
@@ -303,6 +304,7 @@ router.post("/w/:token/reply", async (req, res): Promise<void> => {
       // limit) per reply.
       videoPlatform: z.string().max(50).nullable().optional(),
       moodTag: z.string().max(50).nullable().optional(),
+      parentReplyId: z.string().max(64).nullable().optional(),
     })
     .refine((data) => !!data.replyText?.trim() || !!data.videoUrl, {
       message: "Reply must include text or a video",
@@ -343,6 +345,23 @@ router.post("/w/:token/reply", async (req, res): Promise<void> => {
   // they open the thread — a direct break of the app's core sender/recipient
   // anonymity guarantee. See lib/videoMeta.ts deriveVideoFields.
   const replyDerived = parsed.data.videoUrl ? deriveVideoFields(parsed.data.videoUrl, parsed.data.videoThumbnail) : null;
+
+  // A parent must be a real message on THIS whisp. Storing an unchecked id
+  // would let a caller point a reply at a message in someone else's thread,
+  // and the quoted text is rendered to whoever opens this one — so an
+  // unvalidated reference is a way to pull another conversation's content
+  // into this page. Silently dropped rather than rejected: a stale parent
+  // (the message was deleted with the whisp) should still post as an
+  // ordinary reply instead of failing the send.
+  let parentReplyId: string | null = null;
+  if (parsed.data.parentReplyId) {
+    const parent = await db
+      .select({ id: whispRepliesTable.id })
+      .from(whispRepliesTable)
+      .where(and(eq(whispRepliesTable.id, parsed.data.parentReplyId), eq(whispRepliesTable.whispId, whisp.id)))
+      .then((r) => r[0]);
+    parentReplyId = parent?.id ?? null;
+  }
 
   // Anonymous replies are capped per whisp; signing up lifts the cap
   // entirely. getAuth works here even though this route is unauthenticated —
@@ -397,6 +416,7 @@ router.post("/w/:token/reply", async (req, res): Promise<void> => {
       videoEmbedUrl: replyDerived?.embedUrl ?? null,
       videoPlatform: replyDerived?.platform ?? null,
       moodTag: parsed.data.moodTag ?? null,
+      parentReplyId,
       notifySenderAt,
     });
 

@@ -85,3 +85,21 @@ export function parseRecipients(input: string): RecipientParseResult {
 
   return { recipients, invalid };
 }
+
+/**
+ * How a whisp's recipient should be named back to its own sender.
+ *
+ * Only ever shown to the sender, and only their own data — they typed this
+ * address themselves. Nothing here reveals whether that address belongs to a
+ * registered account, which is the fact the anti-enumeration rules protect.
+ *
+ * Returns null for the broadcast-style deliveries that have no one recipient
+ * (circle drops, Ghost Boost), so callers can fall back to their own wording
+ * instead of printing a placeholder.
+ */
+export function recipientLabel(whisp: {
+  recipientEmail?: string | null;
+  recipientPhone?: string | null;
+}): string | null {
+  return whisp.recipientEmail?.trim() || whisp.recipientPhone?.trim() || null;
+}

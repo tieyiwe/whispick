@@ -29,7 +29,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { MoodTag } from "@/components/shared/MoodTag";
-import { ReplyThread, ThreadComposer } from "@/components/shared/ReplyThread";
+import { ReplyThread, ThreadComposer, type ThreadReply } from "@/components/shared/ReplyThread";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import {
@@ -89,6 +89,7 @@ export function WhispDetail() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [replyText, setReplyText] = useState("");
+  const [replyingTo, setReplyingTo] = useState<ThreadReply | null>(null);
 
   // Polled so a reply arriving while this page is open shows up on its own.
   // 15s is a deliberate middle ground: the sender's notification is already
@@ -144,10 +145,18 @@ export function WhispDetail() {
   function handleSendFollowUp() {
     if (!replyText.trim()) return;
     createReply.mutate(
-      { id: whisp.id, data: { replyText: replyText.trim(), fromRecipient: false } },
+      {
+        id: whisp.id,
+        data: {
+          replyText: replyText.trim(),
+          fromRecipient: false,
+          ...(replyingTo ? { parentReplyId: replyingTo.id } : {}),
+        },
+      },
       {
         onSuccess: () => {
           setReplyText("");
+          setReplyingTo(null);
           queryClient.invalidateQueries({ queryKey: getGetWhispQueryKey(id!) });
           toast({ title: "Follow-up sent" });
         },
@@ -407,6 +416,8 @@ export function WhispDetail() {
                 replies={replies}
                 viewerIsRecipient={false}
                 otherLabel="Recipient"
+                replyingTo={replyingTo}
+                onReplyTo={setReplyingTo}
                 emptyState={
                   <p className="text-xs text-muted-foreground text-center py-3">
                     No replies yet. You can send another anonymous message below.

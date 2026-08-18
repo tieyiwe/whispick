@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import { PlayCircle, Loader2, Send } from "lucide-react";
+import { useEffect, useMemo, useRef } from "react";
+import { PlayCircle, Loader2, Send, Reply as ReplyIcon, X } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 
@@ -21,8 +21,38 @@ export type ThreadReply = {
   videoUrl?: string | null;
   videoTitle?: string | null;
   videoThumbnail?: string | null;
+  parentReplyId?: string | null;
   createdAt: string;
 };
+
+// One line of the message being answered, shown inside the reply that
+// answers it. A quote rather than indentation: the thread stays one
+// chronological column (no nesting depth to reason about, nothing pushed
+// off-screen on a phone) while "which message is this about" is answered
+// right where you read the answer.
+function QuotedParent({
+  parent,
+  authorLabel,
+  isOwn,
+}: {
+  parent: ThreadReply;
+  authorLabel: string;
+  isOwn: boolean;
+}) {
+  const preview = parent.replyText?.trim() || (parent.videoUrl ? "a video" : "a message");
+  return (
+    <div
+      className={`mb-1.5 rounded-lg border-l-2 pl-2 pr-2 py-1 text-[11px] ${
+        isOwn ? "border-white/40 bg-black/15 text-primary-foreground/75" : "border-primary/40 bg-primary/5 text-muted-foreground"
+      }`}
+    >
+      <span className="font-medium">{authorLabel}</span>
+      <span className="mx-1">·</span>
+      {/* Clamped so quoting a long message doesn't bury the actual reply. */}
+      <span className="line-clamp-2">{preview}</span>
+    </div>
+  );
+}
 
 // Belt-and-braces scheme check before rendering a stored URL as a clickable
 // href. The write paths validate this server-side (lib/safeUrl.ts), but that
@@ -53,16 +83,22 @@ function MessageBubble({
   isOwn,
   authorLabel,
   index,
+  parent,
+  parentAuthorLabel,
+  onReply,
 }: {
   reply: ThreadReply;
   isOwn: boolean;
   authorLabel: string;
   index: number;
+  parent?: ThreadReply;
+  parentAuthorLabel?: string;
+  onReply?: (reply: ThreadReply) => void;
 }) {
   return (
     <div
       data-testid={`reply-${reply.id}`}
-      className={`flex flex-col message-in ${isOwn ? "items-end" : "items-start"}`}
+      className={`group flex flex-col message-in ${isOwn ? "items-end" : "items-start"}`}
       // Clamped: the stagger is a 50ms-per-message delay with `both` fill, so
       // an unclamped index leaves message #40 invisible for two seconds.
       style={{ ["--message-index" as string]: String(Math.min(index, 10)) }}
@@ -81,6 +117,7 @@ function MessageBubble({
             : "rounded-2xl rounded-bl-md bg-card border border-secondary/30 text-foreground",
         ].join(" ")}
       >
+        {parent && <QuotedParent parent={parent} authorLabel={parentAuthorLabel ?? ""} isOwn={isOwn} />}
         {reply.replyText && <p className="whitespace-pre-wrap break-words">{reply.replyText}</p>}
         {reply.videoUrl && isHttpUrl(reply.videoUrl) && (
           <a
@@ -107,6 +144,21 @@ function MessageBubble({
           </a>
         )}
       </div>
+      {onReply && (
+        // Always rendered rather than hover-only: half the readers are on a
+        // phone, where there is no hover and an affordance that only appears
+        // on one is an affordance that doesn't exist. Kept faint until
+        // hover/focus so it doesn't compete with the message itself.
+        <button
+          type="button"
+          onClick={() => onReply(reply)}
+          data-testid={`reply-to-${reply.id}`}
+          className="mt-1 px-2 inline-flex items-center gap-1 text-[11px] text-muted-foreground opacity-60 group-hover:opacity-100 focus-visible:opacity-100 hover:text-foreground transition-opacity"
+        >
+          <ReplyIcon className="w-3 h-3" />
+          Reply
+        </button>
+      )}
     </div>
   );
 }
@@ -118,6 +170,8 @@ export function ReplyThread({
   otherLabel,
   emptyState,
   composer,
+  replyingTo,
+  onReplyTo,
 }: {
   replies: ThreadReply[];
   viewerIsRecipient: boolean;
@@ -127,9 +181,19 @@ export function ReplyThread({
   /** Rendered inline at the end of the thread, so replying happens in the
    *  conversation rather than in a detached box somewhere else on the page. */
   composer?: React.ReactNode;
+  /** The message the composer is currently answering, if any. Controlled by
+   *  the page rather than held here, because the page is what has to send
+   *  `parentReplyId` and clear the target once the send succeeds. Passing
+   *  `onReplyTo` is what turns the per-message Reply affordance on at all. */
+  replyingTo?: ThreadReply | null;
+  onReplyTo?: (reply: ThreadReply | null) => void;
 }) {
   const endRef = useRef<HTMLDivElement>(null);
   const previousCountRef = useRef(replies.length);
+
+  const byId = useMemo(() => new Map(replies.map((r) => [r.id, r])), [replies]);
+  const labelFor = (reply: ThreadReply) =>
+    (viewerIsRecipient ? reply.fromRecipient : !reply.fromRecipient) ? ownLabel : otherLabel;
 
   // Scroll only when a message actually arrives — not on first paint (which
   // would yank a page the reader hasn't looked at yet) and not on unrelated
@@ -148,6 +212,10 @@ export function ReplyThread({
         ? emptyState
         : replies.map((reply, i) => {
             const isOwn = viewerIsRecipient ? reply.fromRecipient : !reply.fromRecipient;
+            // Undefined when the parent has been deleted or simply isn't in
+            // this page of the thread — the quote is an enhancement, so a
+            // missing one degrades to a plain message rather than an error.
+            const parent = reply.parentReplyId ? byId.get(reply.parentReplyId) : undefined;
             return (
               <MessageBubble
                 key={reply.id}
@@ -155,10 +223,35 @@ export function ReplyThread({
                 isOwn={isOwn}
                 authorLabel={isOwn ? ownLabel : otherLabel}
                 index={i}
+                parent={parent}
+                parentAuthorLabel={parent && labelFor(parent)}
+                onReply={onReplyTo}
               />
             );
           })}
       <div ref={endRef} />
+      {replyingTo && onReplyTo && (
+        <div
+          className="flex items-start gap-2 rounded-xl border-l-2 border-primary/60 bg-primary/5 px-3 py-2"
+          data-testid="thread-replying-to"
+        >
+          <div className="min-w-0 flex-1 text-[11px]">
+            <span className="font-medium text-primary">Replying to {labelFor(replyingTo)}</span>
+            <p className="line-clamp-1 text-muted-foreground">
+              {replyingTo.replyText?.trim() || (replyingTo.videoUrl ? "a video" : "a message")}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => onReplyTo(null)}
+            aria-label="Cancel reply"
+            data-testid="thread-replying-to-cancel"
+            className="shrink-0 rounded-full p-1 text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
       {composer}
     </div>
   );

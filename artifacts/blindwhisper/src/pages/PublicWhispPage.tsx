@@ -24,7 +24,7 @@ import { Send, Loader2, Video, X, Link2, HeartHandshake, Clock, BellRing, Sparkl
 import { Logo } from "@/components/ui/logo";
 import { VideoPlayer } from "@/components/shared/VideoPlayer";
 import { QUICK_REPLIES } from "@/lib/quickReplies";
-import { ReplyThread } from "@/components/shared/ReplyThread";
+import { ReplyThread, type ThreadReply } from "@/components/shared/ReplyThread";
 import { PullToRefresh } from "@/components/shared/PullToRefresh";
 import { REMINDER_PRESETS, MAX_REMINDERS } from "@/lib/reminderPresets";
 import { savePendingForward } from "@/lib/forwardVideo";
@@ -78,6 +78,7 @@ export function PublicWhispPage() {
   const [, setLocation] = useLocation();
   const { isSignedIn } = useUser();
   const [replyText, setReplyText] = useState("");
+  const [replyingTo, setReplyingTo] = useState<ThreadReply | null>(null);
   const [hasTrackedOpen, setHasTrackedOpen] = useState(false);
   const [revealResponse, setRevealResponse] = useState<"accepted" | "declined" | null>(null);
   const [localAppreciation, setLocalAppreciation] = useState<"yes" | "no" | null>(null);
@@ -210,11 +211,13 @@ export function PublicWhispPage() {
           videoThumbnail: video?.meta?.thumbnail ?? null,
           videoEmbedUrl: video?.meta?.embedUrl ?? null,
           videoPlatform: video?.meta?.platform ?? null,
+          ...(replyingTo ? { parentReplyId: replyingTo.id } : {}),
         },
       },
       {
         onSuccess: () => {
           setReplyText("");
+          setReplyingTo(null);
           setShowVideoReply(false);
           setReplyVideoUrl("");
           setReplyVideoMeta(null);
@@ -463,6 +466,14 @@ export function PublicWhispPage() {
                   replies={whisp.replies}
                   viewerIsRecipient
                   otherLabel={whisp.senderAlias || "The sender"}
+                  replyingTo={replyingTo}
+                  // No per-message Reply affordance when the composer below
+                  // isn't going to be there — offering to answer a message
+                  // and then showing an expired/out-of-replies notice instead
+                  // is worse than not offering.
+                  onReplyTo={
+                    whisp.expired || whisp.recipientRepliesRemaining === 0 ? undefined : setReplyingTo
+                  }
                 />
               )}
 

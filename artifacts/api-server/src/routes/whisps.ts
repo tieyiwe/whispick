@@ -628,6 +628,7 @@ router.post("/:id/replies", requireAuth, async (req, res): Promise<void> => {
 
   const schema = z.object({
     replyText: z.string().min(1).max(300),
+    parentReplyId: z.string().max(64).nullable().optional(),
   });
 
   const parsed = schema.safeParse(req.body);
@@ -636,11 +637,26 @@ router.post("/:id/replies", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
+  // Same-whisp check as the public reply route: an unvalidated parent id
+  // would let a reply quote a message from a different thread, and the quoted
+  // text renders to whoever opens this one. A stale id degrades to an
+  // ordinary reply rather than failing the send.
+  let parentReplyId: string | null = null;
+  if (parsed.data.parentReplyId) {
+    const parent = await db
+      .select({ id: whispRepliesTable.id })
+      .from(whispRepliesTable)
+      .where(and(eq(whispRepliesTable.id, parsed.data.parentReplyId), eq(whispRepliesTable.whispId, whisp.id)))
+      .then((r) => r[0]);
+    parentReplyId = parent?.id ?? null;
+  }
+
   const id = randomUUID();
   await db.insert(whispRepliesTable).values({
     id,
     whispId: whisp.id,
     replyText: parsed.data.replyText,
+    parentReplyId,
     // This route is requireAuth-gated to the whisp's own sender — the
     // caller IS the sender, full stop, so fromRecipient is never
     // client-controlled here (it used to accept an optional override,

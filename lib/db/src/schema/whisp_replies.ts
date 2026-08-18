@@ -15,6 +15,18 @@ export const whispRepliesTable = pgTable("whisp_replies", {
   videoEmbedUrl: text("video_embed_url"),
   videoPlatform: text("video_platform"),
   moodTag: text("mood_tag"),
+  // The message this one is answering, when it's a reply to a specific
+  // earlier message rather than to the thread as a whole. Null for ordinary
+  // messages, which is every row written before this existed.
+  //
+  // Deliberately a flat quote-reference, not a nested tree: the UI shows the
+  // parent quoted above the reply and keeps one chronological thread. Real
+  // nesting would need indentation rules, collapse states, and an answer for
+  // deep chains — all of it overhead for a two-person conversation, where
+  // "which message is this about" is the only question worth answering.
+  // Constrained to a reply on the SAME whisp at write time (see routes),
+  // since a reference across whisps would leak one thread into another.
+  parentReplyId: text("parent_reply_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   // Deferred sender notification (see routes/public.ts's /reply handler and
   // lib/replyNotificationScheduler.ts): if the Sender and Recipient are
