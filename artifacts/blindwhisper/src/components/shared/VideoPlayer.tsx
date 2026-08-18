@@ -267,32 +267,23 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
       disableForReducedMotion: true,
     });
 
+    // "clicked" is what marks the whisp watched now, on every path — pressing
+    // play in an embed, and following a link out to the platform (see
+    // routes/public.ts's track handler). That's why neither branch below fakes
+    // a completion any more.
+    //
+    // They used to. When a platform we can't observe was treated as "watched
+    // all the way through" on the tap, it was the only way those whisps ever
+    // registered at all. Now that a click is enough, claiming completion would
+    // be asserting something we never saw — and it would make the sender's
+    // timeline read "Watched all" for a TikTok that was opened and closed a
+    // second later. watched_complete is left to the players that actually
+    // report it: YouTube, Vimeo, and native uploads, via the progress checks
+    // above.
     onWatchEvent("clicked");
     if (isEmbeddable || isNativeVideo) {
       setPlaying(true);
-      // Playing in an embed we can't observe (TikTok, Instagram, Facebook) is
-      // the same evidentiary position as opening the link in a new tab: the
-      // deliberate tap is the best signal available, and better than a
-      // permanent "not watched" that reads to the sender as being ignored.
-      // YouTube/Vimeo/uploads are left to the real progress checks above,
-      // because a measured signal beats an assumed one.
-      if (!hasProgressApi && !isNativeVideo && !firedRef.current.complete) {
-        firedRef.current.complete = true;
-        onWatchEvent("watched_complete");
-      }
     } else {
-      // Everything else (TikTok, Instagram, Facebook, X, a bare link) opens
-      // in a new tab, where we can never see playback at all. Previously that
-      // meant those whisps could NEVER register as watched — the sender's
-      // "Watched" timeline step and the Videos Watched stat stayed empty
-      // forever no matter what the recipient did, which reads as "they
-      // ignored it" rather than "we couldn't tell". Treating the deliberate
-      // tap-to-open as watched is the best evidence available on this path,
-      // and a truer answer than a permanent no.
-      if (!firedRef.current.complete) {
-        firedRef.current.complete = true;
-        onWatchEvent("watched_complete");
-      }
       window.open(videoUrl, "_blank", "noopener,noreferrer");
     }
   }

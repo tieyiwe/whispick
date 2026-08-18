@@ -236,6 +236,10 @@ export function WhispDetail() {
 
   const eventTypes = trackingEvents.map((e) => e.eventType);
   const recipientReplied = replies.some((r) => r.fromRecipient);
+  // Only YouTube/Vimeo/native uploads can report completion; everything else
+  // stops at "started". Derived from the raw event rather than a column, since
+  // watched_complete already means exactly this and is already on the page.
+  const watchedInFull = eventTypes.includes("watched_complete");
 
   const timelineSteps: TimelineStepData[] = [
     { label: "Sent", time: whisp.createdAt, done: true },
@@ -247,19 +251,19 @@ export function WhispDetail() {
       active: !!whisp.deliveredAt && !whisp.openedAt,
     },
     {
-      // Shortened from "Clicked video": six labels have to share the width of
-      // a phone screen, and the full wording is on the step's title.
-      label: "Clicked",
-      fullLabel: "Clicked video",
-      time: trackingEvents.find((e) => e.eventType === "clicked")?.createdAt,
-      done: eventTypes.includes("clicked"),
-      active: !!whisp.openedAt && !eventTypes.includes("clicked"),
-    },
-    {
-      label: "Watched",
+      // One step, not two. Pressing play is now what marks a whisp watched, so
+      // a separate "Clicked" step would render the same signal at the same
+      // timestamp — the step upgrades instead.
+      //
+      // "Watched" means they started it, which is all most platforms can ever
+      // tell us. Only YouTube, Vimeo and native uploads report completion, and
+      // when one does the label says so rather than adding a stage that stays
+      // permanently grey for everything else.
+      label: watchedInFull ? "Watched all" : "Watched",
+      fullLabel: watchedInFull ? "Watched all the way through" : "Started watching",
       time: whisp.watchedAt,
       done: !!whisp.watchedAt,
-      active: eventTypes.includes("clicked") && !whisp.watchedAt,
+      active: !!whisp.openedAt && !whisp.watchedAt,
     },
     {
       label: "Replied",

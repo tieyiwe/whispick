@@ -293,6 +293,44 @@ function ogScrapeUserAgent(platform: string | null): string {
   return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 }
 
+const NAMED_ENTITIES: Record<string, string> = {
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  quot: '"',
+  apos: "'",
+  nbsp: " ",
+  "#39": "'",
+};
+
+/**
+ * Decodes the entities an HTML attribute value is required to carry.
+ *
+ * Not cosmetic. An og:image is an attribute value, so its query string arrives
+ * with every `&` written as `&amp;` — and Facebook's image URLs are signed,
+ * with the signature spread across several query parameters. Storing the raw
+ * value left `...?oh=x&amp;oe=y`, which Facebook reads as one parameter named
+ * "oh" and a broken signature, so every Facebook thumbnail 403'd and rendered
+ * as a broken image. Titles had the visible half of the same bug: "15M views
+ * &#xb7; 299K reactions" instead of "15M views · 299K reactions".
+ *
+ * Numeric forms are handled too because that is what real pages use for
+ * punctuation and emoji — &#183;, &#xb7; and &#x1F600; all appear in the wild.
+ */
+export function decodeHtmlEntities(value: string): string {
+  return value.replace(/&(#[xX][0-9a-fA-F]+|#\d+|[a-zA-Z]+);/g, (match, entity: string) => {
+    if (entity.startsWith("#x") || entity.startsWith("#X")) {
+      const code = Number.parseInt(entity.slice(2), 16);
+      return Number.isFinite(code) ? String.fromCodePoint(code) : match;
+    }
+    if (entity.startsWith("#")) {
+      const code = Number.parseInt(entity.slice(1), 10);
+      return Number.isFinite(code) ? String.fromCodePoint(code) : match;
+    }
+    return NAMED_ENTITIES[entity.toLowerCase()] ?? match;
+  });
+}
+
 export async function scrapeOpenGraph(url: string, platform: string | null = null): Promise<ScrapeResult | null> {
   try {
     const res = await fetch(url, {
@@ -314,10 +352,11 @@ export async function scrapeOpenGraph(url: string, platform: string | null = nul
     // description is worth checking too even when we don't return it.
     const ogDescription = html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["']/i)?.[1];
 
+    const rawTitle = ogTitle ?? ogDescription;
     return {
       status: res.status,
-      title: (ogTitle ?? ogDescription)?.trim(),
-      thumbnail: ogImage?.trim(),
+      title: rawTitle ? decodeHtmlEntities(rawTitle).trim() : undefined,
+      thumbnail: ogImage ? decodeHtmlEntities(ogImage).trim() : undefined,
     };
   } catch {
     return null;

@@ -322,14 +322,39 @@ router.post("/w/:token/track", async (req, res): Promise<void> => {
     if (!isMatchedFanout(whisp)) {
       void notifyUserPersisted(whisp.senderId, "Your whisp was opened 👀", "Someone just opened the link you sent.", whispUrl, "opened");
     }
-  } else if (eventType === "watched_complete" && !whisp.watchedAt) {
+    // Pressing play — or following the link out to the platform — is what
+    // marks a whisp watched, on every platform. Only YouTube, Vimeo and native
+    // uploads expose a player API that can report completion, so gating this
+    // on watched_complete left a TikTok, Instagram, Facebook or X whisp
+    // stuck at "opened" forever no matter what the recipient actually did.
+    //
+    // A watched_complete arriving later upgrades what the sender's timeline
+    // says (it reads the raw tracking events) without touching the status, so
+    // whichever event lands first owns the transition and the sender gets
+    // exactly one "they watched it" notification rather than two buzzes for
+    // one video.
+  } else if ((eventType === "clicked" || eventType === "watched_complete") && !whisp.watchedAt) {
     await db
       .update(whispsTable)
       .set({ watchedAt: new Date(), ...(whisp.status === "replied" ? {} : { status: "watched" }) })
       .where(eq(whispsTable.id, whisp.id));
     if (!isMatchedFanout(whisp)) {
-      void notifyUserPersisted(whisp.senderId, "They watched it 🎬", "Your whisp was watched all the way through.", whispUrl, "watched");
+      void notifyUserPersisted(
+        whisp.senderId,
+        "They watched it 🎬",
+        eventType === "watched_complete"
+          ? "Your whisp was watched all the way through."
+          : "Someone just played the video you sent.",
+        whispUrl,
+        "watched",
+      );
     }
+    // On the first watch signal rather than only on completion, because most
+    // platforms can never report completion — and the unwatched-nudge sweep
+    // (lib/takeawayScheduler.ts) skips anything with watchedAt set, so nothing
+    // else would ever generate a takeaway for those whisps. Safe on both
+    // events: it claims the whisp with a conditional UPDATE, so a second call
+    // is a no-op (see lib/aiTakeaway.ts).
     void generateTakeawayAsync(whisp.id);
   }
 

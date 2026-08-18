@@ -73,6 +73,56 @@ describe("POST /api/public/w/:token/track", () => {
     expect(detail.body.whisp.openedAt).not.toBeNull();
     expect(detail.body.whisp.watchedAt).not.toBeNull();
   });
+
+  it("marks the whisp watched on a click alone, for a platform that can't report progress", async () => {
+    // A TikTok/Instagram/Facebook/X whisp has no player API to tell us it
+    // finished. Before, gating on watched_complete left those stuck at
+    // "opened" forever regardless of what the recipient actually did.
+    const whisp = await createWhisp();
+
+    await request(app).post(`/api/public/w/${whisp.publicToken}/track`).send({ eventType: "clicked" });
+
+    const detail = await request(app).get(`/api/whisps/${whisp.id}`).set(TEST_USER_HEADER, USER_A);
+    expect(detail.body.whisp.status).toBe("watched");
+    expect(detail.body.whisp.watchedAt).not.toBeNull();
+  });
+
+  it("keeps the original watch time when a completion follows the click", async () => {
+    const whisp = await createWhisp();
+
+    await request(app).post(`/api/public/w/${whisp.publicToken}/track`).send({ eventType: "clicked" });
+    const afterClick = await request(app).get(`/api/whisps/${whisp.id}`).set(TEST_USER_HEADER, USER_A);
+    const firstWatchedAt = afterClick.body.whisp.watchedAt;
+
+    await request(app).post(`/api/public/w/${whisp.publicToken}/track`).send({ eventType: "watched_complete" });
+    const afterComplete = await request(app).get(`/api/whisps/${whisp.id}`).set(TEST_USER_HEADER, USER_A);
+
+    // The completion upgrades what the timeline SAYS (it reads the raw
+    // events) without re-stamping when watching began, and without a second
+    // notification — one video, one buzz.
+    expect(afterComplete.body.whisp.watchedAt).toBe(firstWatchedAt);
+    expect(afterComplete.body.trackingEvents.map((e: any) => e.eventType)).toEqual(["clicked", "watched_complete"]);
+  });
+
+  it("does not mark a whisp watched on an unrelated event", async () => {
+    const whisp = await createWhisp();
+
+    await request(app).post(`/api/public/w/${whisp.publicToken}/track`).send({ eventType: "watched_10s" });
+
+    const detail = await request(app).get(`/api/whisps/${whisp.id}`).set(TEST_USER_HEADER, USER_A);
+    expect(detail.body.whisp.watchedAt).toBeNull();
+  });
+
+  it("keeps status as replied even if the video is played afterwards", async () => {
+    const whisp = await createWhisp();
+
+    await request(app).post(`/api/public/w/${whisp.publicToken}/reply`).send({ replyText: "thanks!" });
+    await request(app).post(`/api/public/w/${whisp.publicToken}/track`).send({ eventType: "clicked" });
+
+    const detail = await request(app).get(`/api/whisps/${whisp.id}`).set(TEST_USER_HEADER, USER_A);
+    expect(detail.body.whisp.status).toBe("replied");
+    expect(detail.body.whisp.watchedAt).not.toBeNull();
+  });
 });
 
 describe("POST /api/public/w/:token/reply", () => {
