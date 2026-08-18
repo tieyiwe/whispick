@@ -96,6 +96,13 @@ export function PublicWhispPage() {
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
+
+  // The reply composer is fixed to the bottom of the viewport — see the
+  // effect below (placed after `whisp` and the composer's own state are
+  // declared) for the full reasoning and the height it measures.
+  const composerRef = useRef<HTMLDivElement>(null);
+  const [composerHeight, setComposerHeight] = useState(0);
+
   const [hasTrackedOpen, setHasTrackedOpen] = useState(false);
   const [revealResponse, setRevealResponse] = useState<"accepted" | "declined" | null>(null);
   const [localAppreciation, setLocalAppreciation] = useState<"yes" | "no" | null>(null);
@@ -144,6 +151,27 @@ export function PublicWhispPage() {
       refetchIntervalInBackground: false,
     },
   });
+
+  // The composer's real rendered height, so content above it (and the page's
+  // own bottom padding) knows how much space to reserve — same measured
+  // technique as the header, since a guessed constant would drift the moment
+  // the video-reply form or the "N replies remaining" line appears.
+  useLayoutEffect(() => {
+    const el = composerRef.current;
+    if (!el) {
+      // Nothing pinned right now (whisp still loading, or not found) — stop
+      // reserving space for a bar that isn't there.
+      setComposerHeight(0);
+      return;
+    }
+    const observer = new ResizeObserver(([entry]) => setComposerHeight(entry.contentRect.height));
+    observer.observe(el);
+    return () => observer.disconnect();
+    // Re-runs whenever the composer's actual content changes — the video-reply
+    // form and the "N replies remaining" line change the bar's real height,
+    // and the ref itself only exists in some render branches (not the
+    // expired/limit-reached ones, which are shorter).
+  }, [showVideoReply, replyVideoMeta, whisp?.recipientRepliesRemaining, whisp?.expired]);
 
   const trackEvent = useTrackWhispEvent();
   const publicReply = usePublicReply();
@@ -353,7 +381,16 @@ export function PublicWhispPage() {
       {/* Content */}
       <main
         className="flex-1 max-w-lg mx-auto w-full px-5 py-10 space-y-7 relative z-10"
-        style={{ paddingTop: `calc(${headerHeight}px + 2.5rem)` }}
+        style={{
+          paddingTop: `calc(${headerHeight}px + 2.5rem)`,
+          // Reserves space for the fixed composer the same way the top
+          // padding reserves space for the fixed header — without it, the
+          // reveal section, reminder picker, both CTAs and the footer would
+          // render partly hidden underneath the bar. 0 while it isn't
+          // rendered at all (loading/not-found), so nothing is reserved for
+          // a bar that isn't there.
+          paddingBottom: composerHeight ? `calc(${composerHeight}px + 2rem)` : undefined,
+        }}
       >
         {isLoading ? (
           <div className="space-y-4">
@@ -529,6 +566,19 @@ export function PublicWhispPage() {
                 />
               )}
 
+              {/* Pinned to the bottom of the viewport rather than left in
+                  normal flow, same treatment and same reasoning as the fixed
+                  header: reachable from wherever on the page you've scrolled
+                  to, the way a chat app's input bar always is. Every branch
+                  below (the live composer, the expired notice, the
+                  out-of-replies card) renders into this same fixed slot for
+                  consistency — whichever is active, it's the page's one
+                  "reply status" area, and should live in the same place. */}
+              <div
+                ref={composerRef}
+                className="fixed bottom-0 inset-x-0 z-20 border-t border-border/30 bg-background/95 px-5 pt-3 backdrop-blur"
+                style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.75rem)" }}
+              >
               {(() => {
                 const disabled = whisp.expired;
                 if (disabled) {
@@ -733,6 +783,7 @@ export function PublicWhispPage() {
                 </div>
                 );
               })()}
+              </div>
             </div>
 
             {/* Reveal section */}
