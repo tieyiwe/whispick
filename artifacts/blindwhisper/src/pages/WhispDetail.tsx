@@ -288,12 +288,26 @@ export function WhispDetail() {
                 "{whisp.anonymousNote}"
               </p>
             )}
-            {whisp.appreciationResponse && (
-              <p className={`text-sm flex items-center gap-1.5 ${whisp.appreciationResponse === "yes" ? "text-primary" : "text-muted-foreground"}`}>
+            {/* A 'yes' here is the best news this page can carry — the whole
+                point of having sent anything — so it's given the gilded
+                accent and its own surface instead of reading like one more
+                status line. A 'no' stays deliberately quiet. */}
+            {whisp.appreciationResponse === "yes" ? (
+              <div
+                className="mt-1 flex items-center gap-2.5 rounded-xl border border-gilded/30 bg-gilded/[0.07] px-3.5 py-2.5"
+                data-testid="notice-appreciated"
+              >
+                <span className="flex items-center justify-center w-7 h-7 rounded-full bg-gilded/15 shrink-0">
+                  <HeartHandshake className="w-4 h-4 text-gilded" />
+                </span>
+                <p className="text-sm text-foreground">They said this was something they needed to hear</p>
+              </div>
+            ) : whisp.appreciationResponse ? (
+              <p className="text-sm flex items-center gap-1.5 text-muted-foreground">
                 <HeartHandshake className="w-4 h-4" />
-                {whisp.appreciationResponse === "yes" ? "They said this was something they needed to hear" : "They said this wasn't quite what they needed"}
+                They said this wasn't quite what they needed
               </p>
-            )}
+            ) : null}
             {whisp.aiTakeawayStatus === "ready" && whisp.aiTakeaway && (
               <div className="mt-3 rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-1">
                 <p className="text-xs font-semibold tracking-wide text-primary uppercase flex items-center gap-1.5">

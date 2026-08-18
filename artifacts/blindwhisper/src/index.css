@@ -27,6 +27,9 @@
   --color-secondary: hsl(var(--secondary));
   --color-secondary-foreground: hsl(var(--secondary-foreground));
 
+  --color-gilded: hsl(var(--gilded));
+  --color-gilded-foreground: hsl(var(--gilded-foreground));
+
   --color-muted: hsl(var(--muted));
   --color-muted-foreground: hsl(var(--muted-foreground));
 
@@ -70,6 +73,18 @@
   /* Ember: #FF6B6B */
   --secondary: 360 100% 71%;
   --secondary-foreground: 0 0% 100%;
+
+  /* Gilded: #E8C86E — a warm gold used sparingly as the app's accent.
+     Deliberately a third hue rather than more violet: on a Midnight
+     background, violet-on-violet flattens (everything "important" ends up
+     the same colour as everything else), while gold is the classic
+     complement to deep violet — it reads as considered rather than loud,
+     and it's warm where the rest of the palette is cool, so a single gold
+     element draws the eye without shouting. Reserved for moments worth
+     marking (a sender's signature, a delivered milestone), never for
+     ordinary UI chrome — an accent used everywhere stops being an accent. */
+  --gilded: 43 73% 67%;
+  --gilded-foreground: 240 33% 8%;
 
   --muted: 247 24% 30%;
   --muted-foreground: 252 20% 75%;
