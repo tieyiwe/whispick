@@ -120,7 +120,7 @@ export function AdminWhisps() {
               <SelectItem value="all">All delivery methods</SelectItem>
               <SelectItem value="whisper_link">Whisper Link</SelectItem>
               <SelectItem value="ghost_boost">Ghost Boost</SelectItem>
-              <SelectItem value="circle_drop">Circle Drop</SelectItem>
+              <SelectItem value="circle_drop">Blind Circle</SelectItem>
             </SelectContent>
           </Select>
           <Select value={category} onValueChange={(v) => { setCategory(v); setPage(1); }}>

@@ -36,7 +36,7 @@ export function MyCircles() {
         onSuccess: () => {
           setNewCircleName("");
           queryClient.invalidateQueries({ queryKey: getListMyCirclesQueryKey() });
-          toast({ title: "Circle created" });
+          toast({ title: "Blind Circle created" });
         },
         onError: () => toast({ title: "Failed to create circle", variant: "destructive" }),
       }
@@ -68,7 +68,7 @@ export function MyCircles() {
       <div className="space-y-8">
         <div>
           <h1 className="text-3xl font-serif font-bold text-foreground flex items-center gap-3">
-            <Lock className="w-7 h-7 text-primary" /> My Circles
+            <Lock className="w-7 h-7 text-primary" /> My Blind Circles
           </h1>
           <p className="text-muted-foreground mt-1">
             Small, invite-only groups for whisps you only want a few people to see.

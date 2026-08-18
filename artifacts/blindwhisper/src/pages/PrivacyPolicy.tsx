@@ -11,7 +11,7 @@ export function PrivacyPolicy() {
         sub-entity of TILO GROUP, LLC, a limited liability company organized under the laws of the State of
         Maryland, United States of America. Blind Whisper is an anonymous video-recommendation platform that lets
         users ("Senders") share video content with recipients ("Recipients") through anonymous delivery methods,
-        including Whisper Links, Whisper Groups, Ghost Boosts, and Circle. This Privacy Policy governs how we collect, use, store, share, and
+        including Whisper Links, Whisper Groups, Ghost Boosts, and Blind Circle. This Privacy Policy governs how we collect, use, store, share, and
         protect information in connection with our website, mobile experience, and all related services
         (collectively, the "Platform"). It applies to everyone who interacts with Blind Whisper — including people
         who never create an account, because our service is built around sending things to people who haven't
@@ -33,7 +33,7 @@ export function PrivacyPolicy() {
           <li><strong>Recipient contact information:</strong> the email address or phone number of a person you choose to send a Whisper Link to. That person hasn't created an account and hasn't directly given us their information — you have, by choosing to send them something. We use this solely to deliver your message, track delivery/read status, and — where the recipient opts in — let them reply anonymously or manage reminders. It is not sold, rented, or shared with third parties for marketing purposes.</li>
         </ul>
         <p><strong>1.2 Ghost Boost delivery.</strong> Ghost Boost is not a targeted-advertising product and does not involve any third-party ad platform. When a Sender uses Ghost Boost, we do not collect a specific Recipient's contact information at all — instead, the Sender's Whisp is matched against Blind Whisper's own pool of subscribers who have separately, affirmatively opted in (via double opt-in email confirmation) to receive anonymous video recommendations matching their stated mood or topic preferences. Delivery happens entirely through Blind Whisper's own email and notification systems. Subscribers can unsubscribe at any time via a one-click link in every match email, no account required.</p>
-        <p><strong>1.3 Circle.</strong> Circle is a different kind of delivery: instead of sending to one chosen Recipient, a Sender can post a Whisp to a public, community discovery feed that anyone can browse without an account, or to a private Circle that only its invited members can see. Content posted to Circle — the video, note, and mood tag — is visible to whoever can see that feed; it is not delivered privately the way a Whisper Link is. The Sender's identity is still not attached to the post, but the content itself is not private in the way a one-to-one Whisper Link is.</p>
+        <p><strong>1.3 Blind Circle.</strong> Blind Circle is a different kind of delivery: instead of sending to one chosen Recipient, a Sender can post a Whisp to a public, community discovery feed that anyone can browse without an account, or to a private Blind Circle that only its invited members can see. Content posted to Blind Circle — the video, note, and mood tag — is visible to whoever can see that feed; it is not delivered privately the way a Whisper Link is. The Sender's identity is still not attached to the post, but the content itself is not private in the way a one-to-one Whisper Link is.</p>
         <p><strong>1.4 Whisper Groups.</strong> A Sender can also send a single Whisp to multiple saved recipients at once ("Whisper Groups"). Each recipient receives it the same way as an individual Whisper Link, and the same delivery/tracking practices in this Policy apply to each of them.</p>
         <p><strong>1.5 Information collected automatically.</strong></p>
         <ul className="list-disc pl-5 space-y-1">
@@ -94,9 +94,9 @@ export function PrivacyPolicy() {
           <li>Sender-facing notifications that a Recipient has replied are deliberately delayed by a random short interval, so a Recipient's phone notifying them cannot be used to identify the Sender through physical proximity (Section 1.8).</li>
         </ul>
         <p>
-          <strong>Circle is different.</strong> The Sender's identity is never attached to a Circle post, but Circle
+          <strong>Blind Circle is different.</strong> The Sender's identity is never attached to a Blind Circle post, but Blind Circle
           content itself is posted to a public or shared feed rather than delivered privately to one Recipient —
-          anyone who can see that feed can see the content. Don't use Circle for anything you'd only want one
+          anyone who can see that feed can see the content. Don't use Blind Circle for anything you'd only want one
           specific person to see.
         </p>
         <p>

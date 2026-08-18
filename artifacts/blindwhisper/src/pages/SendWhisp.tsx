@@ -6,7 +6,6 @@ import { z } from "zod";
 import {
   useScrapeVideoMeta,
   useCreateWhisp,
-  useListMyCircles,
   useListWhisperGroups,
   useCreateWhisperGroup,
   useAddWhisperGroupMembers,
@@ -16,7 +15,6 @@ import {
   useGetConciergeSuggestions,
   useGetUserProfile,
   useGetMyRecentRecipients,
-  getListMyCirclesQueryKey,
   getListWhisperGroupsQueryKey,
   getGetWhispStatsQueryKey,
   getListWhispsQueryKey,
@@ -169,7 +167,7 @@ export function SendWhisp() {
   const [conciergeRequestId, setConciergeRequestId] = useState<string | null>(null);
   const [senderAlias, setSenderAlias] = useState(SENDER_ALIASES[0]);
   const [customAlias, setCustomAlias] = useState("");
-  const [deliveryMethod, setDeliveryMethod] = useState<"whisper_link" | "ghost_boost" | "circle_drop" | "group_whisper">("whisper_link");
+  const [deliveryMethod, setDeliveryMethod] = useState<"whisper_link" | "ghost_boost" | "group_whisper">("whisper_link");
   const [whisperChannel, setWhisperChannel] = useState<"email" | "sms" | "whatsapp">("email");
   const [recipientEmail, setRecipientEmail] = useState("");
   const [recipientPhone, setRecipientPhone] = useState("");
@@ -189,7 +187,6 @@ export function SendWhisp() {
   const [endTimestamp, setEndTimestamp] = useState("");
   const [scheduleEnabled, setScheduleEnabled] = useState(false);
   const [scheduledAtValue, setScheduledAtValue] = useState("");
-  const [circleId, setCircleId] = useState<string | null>(null);
   const [whisperGroupId, setWhisperGroupId] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
   const [sentWhispId, setSentWhispId] = useState<string | null>(null);
@@ -208,9 +205,6 @@ export function SendWhisp() {
   const addWhisperGroupMembers = useAddWhisperGroupMembers();
   const noteSuggestionsMutation = useGetNoteSuggestions();
   const conciergeMutation = useGetConciergeSuggestions();
-  const { data: myCircles } = useListMyCircles({
-    query: { enabled: deliveryMethod === "circle_drop", queryKey: getListMyCirclesQueryKey() },
-  });
   const { data: myWhisperGroups } = useListWhisperGroups({
     query: { enabled: deliveryMethod === "group_whisper", queryKey: getListWhisperGroupsQueryKey() },
   });
@@ -455,7 +449,8 @@ export function SendWhisp() {
       videoStartSeconds: parseTimestampToSeconds(startTimestamp),
       videoEndSeconds: parseTimestampToSeconds(endTimestamp),
       deliveryMethod,
-      circleId: deliveryMethod === "circle_drop" ? circleId : null,
+      // Blind Circle posts are composed on the Blind Circle page, not here.
+      circleId: null,
       anonymousNote: anonymousNote || null,
       senderAlias: alias,
       moodTag: moodTag,
@@ -463,7 +458,7 @@ export function SendWhisp() {
       conciergeRequestId,
     };
 
-    // For anything that isn't a Whisper Link (Circle Drop, Ghost Boost)
+    // For anything that isn't a Whisper Link (Blind Circle, Ghost Boost)
     // there's no per-recipient contact at all — one send, unchanged.
     if (deliveryMethod !== "whisper_link") {
       createWhisp.mutate(
@@ -695,7 +690,6 @@ export function SendWhisp() {
                 setStartTimestamp("");
                 setScheduleEnabled(false);
                 setScheduledAtValue("");
-                setCircleId(null);
                 setWhisperGroupId(null);
                 setSentWhispId(null);
                 setSentGroupSendId(null);
@@ -1324,62 +1318,11 @@ export function SendWhisp() {
                       </div>
                     </div>
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setDeliveryMethod("circle_drop")}
-                    data-testid="delivery-circle-drop"
-                    className={`p-4 rounded-xl border text-left transition-all ${
-                      deliveryMethod === "circle_drop"
-                        ? "border-primary bg-primary/10"
-                        : "border-border/50 hover:border-border"
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={`p-2 rounded-xl ${deliveryMethod === "circle_drop" ? "bg-primary/20" : "bg-muted/40"}`}>
-                        <Users className="w-5 h-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-foreground">Circle Drop</p>
-                        <p className="text-sm text-muted-foreground mt-0.5">Post it to the community feed — no specific recipient, organic discovery</p>
-                        <p className="text-xs text-primary mt-1 font-medium">Free</p>
-                      </div>
-                    </div>
-                  </button>
-
-                  {deliveryMethod === "circle_drop" && (
-                    <div className="pl-2 pr-1 -mt-1 space-y-2">
-                      <p className="text-xs font-medium text-muted-foreground">Which circle?</p>
-                      <div className="grid grid-cols-1 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setCircleId(null)}
-                          data-testid="circle-option-public"
-                          className={`flex items-center gap-2 p-2.5 rounded-xl border text-sm font-medium transition-all ${
-                            circleId === null
-                              ? "border-primary bg-primary/10 text-foreground"
-                              : "border-border/50 text-muted-foreground hover:border-border"
-                          }`}
-                        >
-                          <Globe className="w-4 h-4" /> Public Circle feed
-                        </button>
-                        {(myCircles ?? []).map((c) => (
-                          <button
-                            key={c.id}
-                            type="button"
-                            onClick={() => setCircleId(c.id)}
-                            data-testid={`circle-option-${c.id}`}
-                            className={`flex items-center gap-2 p-2.5 rounded-xl border text-sm font-medium transition-all ${
-                              circleId === c.id
-                                ? "border-primary bg-primary/10 text-foreground"
-                                : "border-border/50 text-muted-foreground hover:border-border"
-                            }`}
-                          >
-                            <Users className="w-4 h-4" /> {c.name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  {/* Blind Circle used to be a fourth option here. Posting to a
+                      community feed has no recipient at all, so asking people to
+                      start a choose-a-recipient wizard in order to do it was
+                      backwards — it now lives on the Blind Circle page itself,
+                      which is also where the feed it posts to is. */}
                 </div>
 
                 {deliveryMethod !== "ghost_boost" && (
@@ -1648,11 +1591,7 @@ export function SendWhisp() {
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">To</span>
                       <span className="text-foreground">
-                        {deliveryMethod === "circle_drop"
-                          ? circleId
-                            ? myCircles?.find((c) => c.id === circleId)?.name ?? "Private circle"
-                            : "Anyone in the Circle feed"
-                          : deliveryMethod === "ghost_boost"
+                        {deliveryMethod === "ghost_boost"
                           ? "Matched subscribers interested in this topic"
                           : deliveryMethod === "group_whisper"
                           ? (() => {

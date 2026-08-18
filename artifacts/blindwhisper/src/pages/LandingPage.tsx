@@ -128,7 +128,7 @@ export function LandingPage() {
               {
                 icon: Send,
                 title: "Your Choice of Delivery",
-                desc: "Send a private anonymous link straight to them, or drop it into Circle for organic community discovery."
+                desc: "Send a private anonymous link straight to them, or drop it into Blind Circle for organic community discovery."
               }
             ].map((feature, i) => (
               <div key={i} className="p-8 rounded-3xl bg-card/40 border border-border backdrop-blur hover:bg-card/60 transition-colors">

@@ -18,8 +18,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { uploadMedia, UploadValidationError } from "@/lib/uploadMedia";
+import { CirclePostComposer } from "@/components/shared/CirclePostComposer";
 import { Thumbnail } from "@/components/shared/Thumbnail";
-import { Clapperboard, Upload, Loader2, Send, Trash2, Clock } from "lucide-react";
+import { Clapperboard, Upload, Loader2, Send, Trash2, Clock, Users } from "lucide-react";
 
 function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
@@ -138,9 +139,28 @@ export function MediaLibrary() {
                     {item.status === "ready" && (
                       <Link href="/send" className="flex-1">
                         <Button size="sm" variant="outline" className="w-full rounded-full" data-testid={`button-use-${item.id}`}>
-                          <Send className="w-3.5 h-3.5 mr-1" /> Use
+                          <Send className="w-3.5 h-3.5 mr-1" /> Send
                         </Button>
                       </Link>
+                    )}
+                    {/* Posts this exact upload to the community feed without
+                        re-uploading it — the composer takes the existing media
+                        id, so the file, its retention and its usage count are
+                        the same ones already here. */}
+                    {item.status === "ready" && (
+                      <CirclePostComposer
+                        presetUpload={{ id: item.id, title: item.originalFilename }}
+                        trigger={
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 w-full rounded-full"
+                            data-testid={`button-post-circle-${item.id}`}
+                          >
+                            <Users className="w-3.5 h-3.5 mr-1" /> Blind Circle
+                          </Button>
+                        }
+                      />
                     )}
                     <Button
                       size="sm"

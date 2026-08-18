@@ -40,8 +40,8 @@ const NAV_ITEMS = [
   { href: "/whisps", label: "My Whisps", icon: ListVideo },
   { href: "/text-whisps", label: "Text Whisps", icon: ScrollText },
   { href: "/suggestions", label: "Suggestions", icon: Sparkles },
-  { href: "/circle", label: "Circle", icon: Users },
-  { href: "/circles", label: "My Circles", icon: Lock },
+  { href: "/circle", label: "Blind Circle", icon: Users },
+  { href: "/circles", label: "My Blind Circles", icon: Lock },
   { href: "/whisper-groups", label: "Whisper Groups", icon: UsersRound },
   { href: "/media-library", label: "Media Library", icon: Clapperboard },
   { href: "/replies", label: "Replies", icon: MessageSquareHeart },
@@ -56,7 +56,7 @@ const MOBILE_TAB_ITEMS_LEFT = [
 ];
 
 const MOBILE_TAB_ITEMS_RIGHT = [
-  { href: "/circle", label: "Circle", icon: Users },
+  { href: "/circle", label: "Blind Circle", icon: Users },
   { href: "/replies", label: "Replies", icon: MessageSquareHeart },
 ];
 

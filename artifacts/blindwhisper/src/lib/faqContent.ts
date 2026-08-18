@@ -42,9 +42,9 @@ export const FAQ_ITEMS: FaqItem[] = [
       "Ghost Boost matches your video to people who have separately opted in to receive anonymous recommendations on topics or moods they picked themselves. It's not advertising, and it's not sent through any third-party ad platform.",
   },
   {
-    question: "What is Circle?",
+    question: "What is Blind Circle?",
     answer:
-      "Circle is a public or invite-only feed where you can post a video anonymously for a community to discover, instead of sending it privately to one person.",
+      "Blind Circle is a public or invite-only feed where you can post a video anonymously for a community to discover, instead of sending it privately to one person.",
   },
   {
     question: "Can I find out if someone read what I sent?",

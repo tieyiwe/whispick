@@ -196,7 +196,7 @@ export function Dashboard() {
                           </div>
                           <div className="flex items-center text-sm text-muted-foreground mb-3">
                             <span className="truncate">
-                              Sent to {whisp.recipientEmail || whisp.recipientPhone || (whisp.deliveryMethod === "circle_drop" ? "Circle feed" : "Ghost Boost audience")}
+                              Sent to {whisp.recipientEmail || whisp.recipientPhone || (whisp.deliveryMethod === "circle_drop" ? "Blind Circle feed" : "Ghost Boost audience")}
                             </span>
                             <span className="mx-2">•</span>
                             <span>{new Date(whisp.createdAt).toLocaleDateString()}</span>

@@ -343,7 +343,7 @@ export function WhispDetail() {
                       : whisp.status === "failed"
                       ? "No matching subscribers were found in time"
                       : "Looking for a match among subscribers..."
-                    : `Sent to ${whisp.recipientEmail || whisp.recipientPhone || (whisp.deliveryMethod === "circle_drop" ? "Circle feed" : "recipient")}`}
+                    : `Sent to ${whisp.recipientEmail || whisp.recipientPhone || (whisp.deliveryMethod === "circle_drop" ? "Blind Circle feed" : "recipient")}`}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   Via {deliveryLabel(whisp.deliveryMethod, whisp.whisperChannel)} · {new Date(whisp.createdAt).toLocaleDateString()}

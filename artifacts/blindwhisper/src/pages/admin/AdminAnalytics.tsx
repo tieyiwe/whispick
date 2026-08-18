@@ -58,7 +58,7 @@ export function AdminAnalytics() {
           <CardHeader>
             <CardTitle className="text-base font-serif">Sent → delivered → opened → watched → replied</CardTitle>
             <p className="text-xs text-muted-foreground">
-              Every recipient-directed whisp (Whisper Link, Group Whisper, Ghost Boost matches) — Circle Drop is excluded since it has no
+              Every recipient-directed whisp (Whisper Link, Group Whisper, Ghost Boost matches) — Blind Circle is excluded since it has no
               single recipient to fall off for.
               {funnelStats && funnelStats.funnel.failed > 0 ? ` ${funnelStats.funnel.failed} failed to send outright.` : ""}
             </p>
@@ -93,7 +93,7 @@ export function AdminAnalytics() {
 
           <Card className="bg-card border-border/50">
             <CardHeader>
-              <CardTitle className="text-base font-serif">Ghost Boost & Circles</CardTitle>
+              <CardTitle className="text-base font-serif">Ghost Boost & Blind Circles</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               {funnelLoading ? <Skeleton className="h-32 rounded-xl" /> : (
@@ -109,13 +109,13 @@ export function AdminAnalytics() {
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-sm py-1.5 px-3 rounded-lg bg-muted/20">
-                    <span className="text-foreground">Circles / members</span>
+                    <span className="text-foreground">Blind Circles / members</span>
                     <span className="text-muted-foreground font-mono">
                       {funnelStats?.circles.totalCircles ?? 0} / {funnelStats?.circles.totalMembers ?? 0}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-sm py-1.5 px-3 rounded-lg bg-muted/20">
-                    <span className="text-foreground">Circle Drops posted</span>
+                    <span className="text-foreground">Blind Circle posts</span>
                     <span className="text-muted-foreground font-mono">{funnelStats?.circles.totalDrops ?? 0}</span>
                   </div>
                 </>
