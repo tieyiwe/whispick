@@ -18,6 +18,7 @@ import invitesRouter from "./invites";
 import publicInvitesRouter from "./publicInvites";
 import publicTextWhispsRouter from "./publicTextWhisps";
 import textWhispsRouter from "./textWhisps";
+import debateTopicsRouter from "./debateTopics";
 import { publicEndpointLimiter } from "../lib/rateLimit";
 
 const router: IRouter = Router();
@@ -40,6 +41,12 @@ router.use("/public", circleRouter);
 router.use("/public", subscribeRouter);
 router.use("/public", publicInvitesRouter);
 router.use("/public", publicTextWhispsRouter);
+// No prefix: debateTopicsRouter defines its own full paths (both the
+// authenticated "/debate-topics" create/delete and the public
+// "/public/debate-topics..." routes), same pattern healthRouter uses above.
+// Mounted after the "/public" limiter registration so requests to its
+// public routes still pass through publicEndpointLimiter first.
+router.use(debateTopicsRouter);
 router.use("/circles", circlesRouter);
 router.use("/user", userRouter);
 router.use("/credits", creditsRouter);

@@ -6,6 +6,11 @@ import { notifyUserPersisted } from "./push";
 import { logger } from "./logger";
 
 const POLL_INTERVAL_MS = 60_000;
+// Same bounded-sweep reasoning as lib/scheduler.ts's BATCH_LIMIT — this loop
+// awaits a real email send per row sequentially, so an unbounded due-count
+// shouldn't be allowed to make one sweep run indefinitely. Leftover rows are
+// picked up on the next poll, still only 60s away.
+const BATCH_LIMIT = 100;
 
 // Pulled out of startReplyNotificationScheduler so the due-row selection
 // logic (the part that matters for correctness — matching the codebase's
@@ -28,7 +33,8 @@ export async function getDueVideoReplyRequests() {
         lte(whispsTable.videoReplyRequestNotifyAt, new Date()),
         isNull(whispsTable.videoReplyRequestNotifiedAt),
       ),
-    );
+    )
+    .limit(BATCH_LIMIT);
 }
 
 export async function getDueReplyNotifications() {
@@ -41,7 +47,8 @@ export async function getDueReplyNotifications() {
         lte(whispRepliesTable.notifySenderAt, new Date()),
         isNull(whispRepliesTable.senderNotifiedAt),
       ),
-    );
+    )
+    .limit(BATCH_LIMIT);
 }
 
 // Dispatches the Sender-facing "you got a reply" email + push that

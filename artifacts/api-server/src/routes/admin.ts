@@ -21,6 +21,8 @@ import {
   invitesTable,
   textWhispsTable,
   circleCommentsTable,
+  debateTopicsTable,
+  debateTopicCommentsTable,
   type User,
 } from "@workspace/db";
 import { and, asc, count, desc, eq, gte, ilike, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
@@ -98,18 +100,22 @@ router.get("/users/:id", async (req, res): Promise<void> => {
       .innerJoin(whispsTable, eq(whispRepliesTable.whispId, whispsTable.id))
       .where(eq(whispsTable.senderId, user.id))
       .then((r) => r[0]),
-    // Every content-safety flag on this user's whisps AND text whisps,
+    // Every content-safety flag on this user's whisps, text whisps, circle
+    // comments, and debate topics/comments they posted while signed in,
     // dismissed or not — an admin reviewing one flag can see this person's
     // full flag history right here instead of hunting for it in the
-    // site-wide queue. leftJoin (not innerJoin) on both content tables since
-    // a flag row only ever has one of whispId/textWhispId set (see
-    // moderation_flags.ts's contentType) — an innerJoin on either alone
-    // would silently drop the other content type's flags.
+    // site-wide queue. leftJoin (not innerJoin) on every content table since
+    // a flag row only ever has one of whispId/textWhispId/circleCommentId/
+    // debateTopicId/debateTopicCommentId set (see moderation_flags.ts's
+    // contentType) — an innerJoin on any one alone would silently drop the
+    // other content types' flags.
     db
       .select({
         id: moderationFlagsTable.id,
         whispId: moderationFlagsTable.whispId,
         textWhispId: moderationFlagsTable.textWhispId,
+        debateTopicId: moderationFlagsTable.debateTopicId,
+        debateTopicCommentId: moderationFlagsTable.debateTopicCommentId,
         contentType: moderationFlagsTable.contentType,
         userId: moderationFlagsTable.userId,
         severity: moderationFlagsTable.severity,
@@ -122,11 +128,15 @@ router.get("/users/:id", async (req, res): Promise<void> => {
         videoTitle: whispsTable.videoTitle,
         textWhispMessage: textWhispsTable.messageText,
         circleCommentText: circleCommentsTable.commentText,
+        debateTopicText: debateTopicsTable.topicText,
+        debateTopicCommentText: debateTopicCommentsTable.commentText,
       })
       .from(moderationFlagsTable)
       .leftJoin(whispsTable, eq(moderationFlagsTable.whispId, whispsTable.id))
       .leftJoin(textWhispsTable, eq(moderationFlagsTable.textWhispId, textWhispsTable.id))
       .leftJoin(circleCommentsTable, eq(moderationFlagsTable.circleCommentId, circleCommentsTable.id))
+      .leftJoin(debateTopicsTable, eq(moderationFlagsTable.debateTopicId, debateTopicsTable.id))
+      .leftJoin(debateTopicCommentsTable, eq(moderationFlagsTable.debateTopicCommentId, debateTopicCommentsTable.id))
       .where(eq(moderationFlagsTable.userId, user.id))
       .orderBy(desc(moderationFlagsTable.createdAt)),
   ]);
@@ -841,6 +851,8 @@ router.get("/moderation/flags", async (req, res): Promise<void> => {
         id: moderationFlagsTable.id,
         whispId: moderationFlagsTable.whispId,
         textWhispId: moderationFlagsTable.textWhispId,
+        debateTopicId: moderationFlagsTable.debateTopicId,
+        debateTopicCommentId: moderationFlagsTable.debateTopicCommentId,
         contentType: moderationFlagsTable.contentType,
         userId: moderationFlagsTable.userId,
         severity: moderationFlagsTable.severity,
@@ -853,17 +865,22 @@ router.get("/moderation/flags", async (req, res): Promise<void> => {
         videoTitle: whispsTable.videoTitle,
         textWhispMessage: textWhispsTable.messageText,
         circleCommentText: circleCommentsTable.commentText,
+        debateTopicText: debateTopicsTable.topicText,
+        debateTopicCommentText: debateTopicCommentsTable.commentText,
         senderEmail: usersTable.email,
       })
       .from(moderationFlagsTable)
       // leftJoin, not innerJoin — a flag row only ever matches one of
-      // whispsTable/textWhispsTable/circleCommentsTable, per contentType.
-      // usersTable is also a leftJoin, not inner: a circle_comment flag from
-      // an anonymous (no-account) commenter has userId=null and should
+      // whispsTable/textWhispsTable/circleCommentsTable/debateTopicsTable/
+      // debateTopicCommentsTable, per contentType. usersTable is also a
+      // leftJoin, not inner: a circle_comment or debate_topic_comment flag
+      // from an anonymous (no-account) commenter has userId=null and should
       // still show up here, just without a "Sender:" link to follow.
       .leftJoin(whispsTable, eq(moderationFlagsTable.whispId, whispsTable.id))
       .leftJoin(textWhispsTable, eq(moderationFlagsTable.textWhispId, textWhispsTable.id))
       .leftJoin(circleCommentsTable, eq(moderationFlagsTable.circleCommentId, circleCommentsTable.id))
+      .leftJoin(debateTopicsTable, eq(moderationFlagsTable.debateTopicId, debateTopicsTable.id))
+      .leftJoin(debateTopicCommentsTable, eq(moderationFlagsTable.debateTopicCommentId, debateTopicCommentsTable.id))
       .leftJoin(usersTable, eq(moderationFlagsTable.userId, usersTable.id))
       .where(where)
       .orderBy(desc(moderationFlagsTable.createdAt))

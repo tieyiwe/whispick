@@ -93,14 +93,17 @@ export function whisperLinkLimitFor(plan: string): number | null {
   return (PLAN_LIMITS[plan] ?? PLAN_LIMITS.free).whisperLinksPerMonth;
 }
 
-// How many public comments an ANONYMOUS (no account) visitor can post on
-// Blind Circle content within a rolling window, before being asked to sign
+// How many public comments an ANONYMOUS (no account) visitor can post on an
+// open, anonymous public comment thread — Blind Circle content and Debate
+// Topics both use this same shared limit, and any future anonymous comment
+// surface should call these same functions rather than growing a parallel
+// rate-limit system — within a rolling window, before being asked to sign
 // up or wait it out. Unlike recipientFreeReplies above, this ships enabled
-// by default — Circle comments are a brand-new, always-public surface with
-// no existing "buy more" purchase flow to eventually gate it behind, so
-// there's no reason to launch it uncapped the way the reply cap currently
-// is. Overridable via ANONYMOUS_COMMENT_LIMIT ("unlimited" disables it),
-// same pattern as every other configurable limit in this file.
+// by default: these are brand-new, always-public surfaces with no existing
+// "buy more" purchase flow to eventually gate behind, so there's no reason
+// to launch uncapped the way the reply cap currently is. Overridable via
+// ANONYMOUS_COMMENT_LIMIT ("unlimited" disables it), same pattern as every
+// other configurable limit in this file.
 const ANONYMOUS_COMMENT_LIMIT_DEFAULT = 3;
 export const COMMENT_LIMIT_WINDOW_HOURS = 24;
 

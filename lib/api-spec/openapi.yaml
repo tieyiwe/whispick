@@ -34,6 +34,8 @@ tags:
     description: Anonymous invite-a-friend — inviting someone to join Blind Whisper itself, sent the same anonymous way as a whisp
   - name: textWhisps
     description: Text Whisps — short, text-only anonymous messages between two known, verified Blind Whisper users, delivered entirely in-app
+  - name: debateTopics
+    description: Debate Topics — short, title-length debate prompts a Whisperer posts anonymously to a public feed anyone can browse and comment on, no account required to read or comment
 paths:
   /healthz:
     get:
@@ -1205,6 +1207,139 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CircleFeedResponse"
+
+  /debate-topics:
+    post:
+      operationId: createDebateTopic
+      tags: [debateTopics]
+      summary: Post a new debate topic (signed in, anonymous to other viewers)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DebateTopicInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DebateTopicFeedItem"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /debate-topics/{id}:
+    delete:
+      operationId: deleteDebateTopic
+      tags: [debateTopics]
+      summary: Retract a debate topic you posted — removes it from the public feed and detail lookup
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Retracted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/debate-topics:
+    get:
+      operationId: listDebateTopics
+      tags: [debateTopics]
+      summary: Public Debate Topics feed (no auth required)
+      parameters:
+        - in: query
+          name: cursor
+          schema:
+            type: string
+          required: false
+      responses:
+        "200":
+          description: Debate Topics feed page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DebateTopicFeedResponse"
+
+  /public/debate-topics/{id}:
+    get:
+      operationId: getDebateTopic
+      tags: [debateTopics]
+      summary: A single debate topic with its full public comment thread (no auth required)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Debate topic detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DebateTopicDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/debate-topics/{id}/comments:
+    post:
+      operationId: postDebateTopicComment
+      tags: [debateTopics]
+      summary: Post an anonymous (or signed-in) comment on a debate topic (no auth required)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DebateTopicCommentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DebateTopicComment"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Anonymous comment limit reached
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
 
   /billing/checkout:
     post:
@@ -3369,6 +3504,107 @@ components:
         - items
         - nextCursor
 
+    DebateTopicInput:
+      type: object
+      properties:
+        topicText:
+          type: string
+          description: Title/subtitle length by design — a debate topic is a headline to react to, capped server-side at 200 characters.
+      required:
+        - topicText
+
+    DebateTopicFeedItem:
+      type: object
+      description: authorId is deliberately never included — a debate topic is posted anonymously, same as every other posting surface in this app.
+      properties:
+        id:
+          type: string
+        topicText:
+          type: string
+        commentCount:
+          type: integer
+        createdAt:
+          type: string
+      required:
+        - id
+        - topicText
+        - commentCount
+        - createdAt
+
+    DebateTopicFeedResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DebateTopicFeedItem"
+        nextCursor:
+          type: ["string", "null"]
+      required:
+        - items
+        - nextCursor
+
+    DebateTopicComment:
+      type: object
+      description: visitorId is deliberately never included — see debate_topic_comments.ts. isPoster reveals a ROLE (the topic's own author), never an identity.
+      properties:
+        id:
+          type: string
+        commentText:
+          type: string
+        parentCommentId:
+          type: ["string", "null"]
+        isPoster:
+          type: boolean
+        createdAt:
+          type: string
+      required:
+        - id
+        - commentText
+        - parentCommentId
+        - isPoster
+        - createdAt
+
+    DebateTopicCommentInput:
+      type: object
+      properties:
+        commentText:
+          type: string
+        visitorId:
+          type: string
+          description: Anonymous, client-generated id from lib/anonymousVisitor.ts — never linked to a real identity.
+        parentCommentId:
+          type: ["string", "null"]
+      required:
+        - commentText
+        - visitorId
+
+    DebateTopicDetail:
+      type: object
+      properties:
+        id:
+          type: string
+        topicText:
+          type: string
+        createdAt:
+          type: string
+        isOwnTopic:
+          type: boolean
+          description: True only when the caller is signed in and is this topic's own author — lets the author see a "Retract" control without revealing anything to anyone else.
+        commentCount:
+          type: integer
+        comments:
+          type: array
+          items:
+            $ref: "#/components/schemas/DebateTopicComment"
+      required:
+        - id
+        - topicText
+        - createdAt
+        - isOwnTopic
+        - commentCount
+        - comments
+
     Circle:
       type: object
       properties:
@@ -3592,15 +3828,22 @@ components:
         circleCommentId:
           type: ["string", "null"]
           description: Set when contentType is 'circle_comment'; null otherwise.
+        debateTopicId:
+          type: ["string", "null"]
+          description: Set when contentType is 'debate_topic'; null otherwise.
+        debateTopicCommentId:
+          type: ["string", "null"]
+          description: Set when contentType is 'debate_topic_comment'; null otherwise.
         contentType:
           type: string
-          description: "'whisp' | 'text_whisp' | 'circle_comment'"
+          description: "'whisp' | 'text_whisp' | 'circle_comment' | 'debate_topic' | 'debate_topic_comment'"
         userId:
           type: ["string", "null"]
           description: >-
-            Null only for contentType='circle_comment' from a fully
-            anonymous, no-account commenter — there's no account to
-            attribute the flag to.
+            Null only for contentType='circle_comment' or
+            contentType='debate_topic_comment' from a fully anonymous,
+            no-account commenter — there's no account to attribute the
+            flag to.
         videoTitle:
           type: ["string", "null"]
           description: The flagged whisp's video title, denormalized for display in flag lists without a second lookup. Null unless contentType is 'whisp'.
@@ -3610,6 +3853,12 @@ components:
         circleCommentText:
           type: ["string", "null"]
           description: The flagged comment's text, denormalized the same way. Null unless contentType is 'circle_comment'.
+        debateTopicText:
+          type: ["string", "null"]
+          description: The flagged debate topic's own text, denormalized the same way. Null unless contentType is 'debate_topic'.
+        debateTopicCommentText:
+          type: ["string", "null"]
+          description: The flagged debate topic comment's text, denormalized the same way. Null unless contentType is 'debate_topic_comment'.
         senderEmail:
           type: ["string", "null"]
         severity:

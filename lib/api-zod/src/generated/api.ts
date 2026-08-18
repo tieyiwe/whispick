@@ -1164,6 +1164,94 @@ export const ListCircleFeedResponse = zod.object({
 
 
 /**
+ * @summary Post a new debate topic (signed in, anonymous to other viewers)
+ */
+export const CreateDebateTopicBody = zod.object({
+  "topicText": zod.string().describe('Title\/subtitle length by design — a debate topic is a headline to react to, capped server-side at 200 characters.')
+})
+
+export const CreateDebateTopicResponse = zod.object({
+  "id": zod.string(),
+  "topicText": zod.string(),
+  "commentCount": zod.number(),
+  "createdAt": zod.string()
+}).describe('authorId is deliberately never included — a debate topic is posted anonymously, same as every other posting surface in this app.')
+
+
+/**
+ * @summary Retract a debate topic you posted — removes it from the public feed and detail lookup
+ */
+export const DeleteDebateTopicParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const DeleteDebateTopicResponse = zod.void()
+
+
+/**
+ * @summary Public Debate Topics feed (no auth required)
+ */
+export const ListDebateTopicsQueryParams = zod.object({
+  "cursor": zod.coerce.string().optional()
+})
+
+export const ListDebateTopicsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "topicText": zod.string(),
+  "commentCount": zod.number(),
+  "createdAt": zod.string()
+}).describe('authorId is deliberately never included — a debate topic is posted anonymously, same as every other posting surface in this app.')),
+  "nextCursor": zod.string().nullable()
+})
+
+
+/**
+ * @summary A single debate topic with its full public comment thread (no auth required)
+ */
+export const GetDebateTopicParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetDebateTopicResponse = zod.object({
+  "id": zod.string(),
+  "topicText": zod.string(),
+  "createdAt": zod.string(),
+  "isOwnTopic": zod.boolean().describe('True only when the caller is signed in and is this topic\'s own author — lets the author see a \"Retract\" control without revealing anything to anyone else.'),
+  "commentCount": zod.number(),
+  "comments": zod.array(zod.object({
+  "id": zod.string(),
+  "commentText": zod.string(),
+  "parentCommentId": zod.string().nullable(),
+  "isPoster": zod.boolean(),
+  "createdAt": zod.string()
+}).describe('visitorId is deliberately never included — see debate_topic_comments.ts. isPoster reveals a ROLE (the topic\'s own author), never an identity.'))
+})
+
+
+/**
+ * @summary Post an anonymous (or signed-in) comment on a debate topic (no auth required)
+ */
+export const PostDebateTopicCommentParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const PostDebateTopicCommentBody = zod.object({
+  "commentText": zod.string(),
+  "visitorId": zod.string().describe('Anonymous, client-generated id from lib\/anonymousVisitor.ts — never linked to a real identity.'),
+  "parentCommentId": zod.string().nullish()
+})
+
+export const PostDebateTopicCommentResponse = zod.object({
+  "id": zod.string(),
+  "commentText": zod.string(),
+  "parentCommentId": zod.string().nullable(),
+  "isPoster": zod.boolean(),
+  "createdAt": zod.string()
+}).describe('visitorId is deliberately never included — see debate_topic_comments.ts. isPoster reveals a ROLE (the topic\'s own author), never an identity.')
+
+
+/**
  * @summary Create a Stripe Checkout session for a credit pack or plan upgrade
  */
 export const CreateCheckoutSessionBody = zod.object({
@@ -1301,11 +1389,15 @@ export const AdminGetUserResponse = zod.object({
   "whispId": zod.string().nullish().describe('Set when contentType is \'whisp\'; null otherwise.'),
   "textWhispId": zod.string().nullish().describe('Set when contentType is \'text_whisp\'; null otherwise.'),
   "circleCommentId": zod.string().nullish().describe('Set when contentType is \'circle_comment\'; null otherwise.'),
-  "contentType": zod.string().describe('\'whisp\' | \'text_whisp\' | \'circle_comment\''),
-  "userId": zod.string().nullish().describe('Null only for contentType=\'circle_comment\' from a fully anonymous, no-account commenter — there\'s no account to attribute the flag to.'),
+  "debateTopicId": zod.string().nullish().describe('Set when contentType is \'debate_topic\'; null otherwise.'),
+  "debateTopicCommentId": zod.string().nullish().describe('Set when contentType is \'debate_topic_comment\'; null otherwise.'),
+  "contentType": zod.string().describe('\'whisp\' | \'text_whisp\' | \'circle_comment\' | \'debate_topic\' | \'debate_topic_comment\''),
+  "userId": zod.string().nullish().describe('Null only for contentType=\'circle_comment\' or contentType=\'debate_topic_comment\' from a fully anonymous, no-account commenter — there\'s no account to attribute the flag to.'),
   "videoTitle": zod.string().nullish().describe('The flagged whisp\'s video title, denormalized for display in flag lists without a second lookup. Null unless contentType is \'whisp\'.'),
   "textWhispMessage": zod.string().nullish().describe('The flagged text whisp\'s message text, denormalized for display the same way videoTitle is. Null unless contentType is \'text_whisp\'.'),
   "circleCommentText": zod.string().nullish().describe('The flagged comment\'s text, denormalized the same way. Null unless contentType is \'circle_comment\'.'),
+  "debateTopicText": zod.string().nullish().describe('The flagged debate topic\'s own text, denormalized the same way. Null unless contentType is \'debate_topic\'.'),
+  "debateTopicCommentText": zod.string().nullish().describe('The flagged debate topic comment\'s text, denormalized the same way. Null unless contentType is \'debate_topic_comment\'.'),
   "senderEmail": zod.string().nullish(),
   "severity": zod.enum(['low', 'medium', 'high']),
   "reasoning": zod.string(),
@@ -1568,11 +1660,15 @@ export const AdminGetWhispResponse = zod.object({
   "whispId": zod.string().nullish().describe('Set when contentType is \'whisp\'; null otherwise.'),
   "textWhispId": zod.string().nullish().describe('Set when contentType is \'text_whisp\'; null otherwise.'),
   "circleCommentId": zod.string().nullish().describe('Set when contentType is \'circle_comment\'; null otherwise.'),
-  "contentType": zod.string().describe('\'whisp\' | \'text_whisp\' | \'circle_comment\''),
-  "userId": zod.string().nullish().describe('Null only for contentType=\'circle_comment\' from a fully anonymous, no-account commenter — there\'s no account to attribute the flag to.'),
+  "debateTopicId": zod.string().nullish().describe('Set when contentType is \'debate_topic\'; null otherwise.'),
+  "debateTopicCommentId": zod.string().nullish().describe('Set when contentType is \'debate_topic_comment\'; null otherwise.'),
+  "contentType": zod.string().describe('\'whisp\' | \'text_whisp\' | \'circle_comment\' | \'debate_topic\' | \'debate_topic_comment\''),
+  "userId": zod.string().nullish().describe('Null only for contentType=\'circle_comment\' or contentType=\'debate_topic_comment\' from a fully anonymous, no-account commenter — there\'s no account to attribute the flag to.'),
   "videoTitle": zod.string().nullish().describe('The flagged whisp\'s video title, denormalized for display in flag lists without a second lookup. Null unless contentType is \'whisp\'.'),
   "textWhispMessage": zod.string().nullish().describe('The flagged text whisp\'s message text, denormalized for display the same way videoTitle is. Null unless contentType is \'text_whisp\'.'),
   "circleCommentText": zod.string().nullish().describe('The flagged comment\'s text, denormalized the same way. Null unless contentType is \'circle_comment\'.'),
+  "debateTopicText": zod.string().nullish().describe('The flagged debate topic\'s own text, denormalized the same way. Null unless contentType is \'debate_topic\'.'),
+  "debateTopicCommentText": zod.string().nullish().describe('The flagged debate topic comment\'s text, denormalized the same way. Null unless contentType is \'debate_topic_comment\'.'),
   "senderEmail": zod.string().nullish(),
   "severity": zod.enum(['low', 'medium', 'high']),
   "reasoning": zod.string(),
@@ -1886,11 +1982,15 @@ export const AdminListModerationFlagsResponse = zod.object({
   "whispId": zod.string().nullish().describe('Set when contentType is \'whisp\'; null otherwise.'),
   "textWhispId": zod.string().nullish().describe('Set when contentType is \'text_whisp\'; null otherwise.'),
   "circleCommentId": zod.string().nullish().describe('Set when contentType is \'circle_comment\'; null otherwise.'),
-  "contentType": zod.string().describe('\'whisp\' | \'text_whisp\' | \'circle_comment\''),
-  "userId": zod.string().nullish().describe('Null only for contentType=\'circle_comment\' from a fully anonymous, no-account commenter — there\'s no account to attribute the flag to.'),
+  "debateTopicId": zod.string().nullish().describe('Set when contentType is \'debate_topic\'; null otherwise.'),
+  "debateTopicCommentId": zod.string().nullish().describe('Set when contentType is \'debate_topic_comment\'; null otherwise.'),
+  "contentType": zod.string().describe('\'whisp\' | \'text_whisp\' | \'circle_comment\' | \'debate_topic\' | \'debate_topic_comment\''),
+  "userId": zod.string().nullish().describe('Null only for contentType=\'circle_comment\' or contentType=\'debate_topic_comment\' from a fully anonymous, no-account commenter — there\'s no account to attribute the flag to.'),
   "videoTitle": zod.string().nullish().describe('The flagged whisp\'s video title, denormalized for display in flag lists without a second lookup. Null unless contentType is \'whisp\'.'),
   "textWhispMessage": zod.string().nullish().describe('The flagged text whisp\'s message text, denormalized for display the same way videoTitle is. Null unless contentType is \'text_whisp\'.'),
   "circleCommentText": zod.string().nullish().describe('The flagged comment\'s text, denormalized the same way. Null unless contentType is \'circle_comment\'.'),
+  "debateTopicText": zod.string().nullish().describe('The flagged debate topic\'s own text, denormalized the same way. Null unless contentType is \'debate_topic\'.'),
+  "debateTopicCommentText": zod.string().nullish().describe('The flagged debate topic comment\'s text, denormalized the same way. Null unless contentType is \'debate_topic_comment\'.'),
   "senderEmail": zod.string().nullish(),
   "severity": zod.enum(['low', 'medium', 'high']),
   "reasoning": zod.string(),
@@ -1922,11 +2022,15 @@ export const AdminUpdateModerationFlagResponse = zod.object({
   "whispId": zod.string().nullish().describe('Set when contentType is \'whisp\'; null otherwise.'),
   "textWhispId": zod.string().nullish().describe('Set when contentType is \'text_whisp\'; null otherwise.'),
   "circleCommentId": zod.string().nullish().describe('Set when contentType is \'circle_comment\'; null otherwise.'),
-  "contentType": zod.string().describe('\'whisp\' | \'text_whisp\' | \'circle_comment\''),
-  "userId": zod.string().nullish().describe('Null only for contentType=\'circle_comment\' from a fully anonymous, no-account commenter — there\'s no account to attribute the flag to.'),
+  "debateTopicId": zod.string().nullish().describe('Set when contentType is \'debate_topic\'; null otherwise.'),
+  "debateTopicCommentId": zod.string().nullish().describe('Set when contentType is \'debate_topic_comment\'; null otherwise.'),
+  "contentType": zod.string().describe('\'whisp\' | \'text_whisp\' | \'circle_comment\' | \'debate_topic\' | \'debate_topic_comment\''),
+  "userId": zod.string().nullish().describe('Null only for contentType=\'circle_comment\' or contentType=\'debate_topic_comment\' from a fully anonymous, no-account commenter — there\'s no account to attribute the flag to.'),
   "videoTitle": zod.string().nullish().describe('The flagged whisp\'s video title, denormalized for display in flag lists without a second lookup. Null unless contentType is \'whisp\'.'),
   "textWhispMessage": zod.string().nullish().describe('The flagged text whisp\'s message text, denormalized for display the same way videoTitle is. Null unless contentType is \'text_whisp\'.'),
   "circleCommentText": zod.string().nullish().describe('The flagged comment\'s text, denormalized the same way. Null unless contentType is \'circle_comment\'.'),
+  "debateTopicText": zod.string().nullish().describe('The flagged debate topic\'s own text, denormalized the same way. Null unless contentType is \'debate_topic\'.'),
+  "debateTopicCommentText": zod.string().nullish().describe('The flagged debate topic comment\'s text, denormalized the same way. Null unless contentType is \'debate_topic_comment\'.'),
   "senderEmail": zod.string().nullish(),
   "severity": zod.enum(['low', 'medium', 'high']),
   "reasoning": zod.string(),

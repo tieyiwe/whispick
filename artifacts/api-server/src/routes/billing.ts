@@ -11,6 +11,7 @@ import { ensureUser } from "../lib/ensureUser";
 import { getPublicAppUrl } from "../lib/publicUrl";
 import { stripe, CREDIT_PACKS, PLAN_PRICES, type CreditPackId, type PlanId } from "../lib/stripe";
 import { PLAN_LIMITS } from "../lib/plans";
+import { billingCheckoutLimiter } from "../lib/rateLimit";
 import { logger } from "../lib/logger";
 
 const router = Router();
@@ -21,7 +22,7 @@ const checkoutSchema = z.object({
 });
 
 // POST /api/billing/checkout
-router.post("/checkout", requireAuth, async (req, res): Promise<void> => {
+router.post("/checkout", requireAuth, billingCheckoutLimiter, async (req, res): Promise<void> => {
   if (!stripe) {
     res.status(503).json({ error: "Billing is not configured. Set STRIPE_SECRET_KEY to enable payments." });
     return;

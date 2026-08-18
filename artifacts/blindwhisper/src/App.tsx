@@ -56,6 +56,9 @@ const PublicTextWhisp = lazy(() => import("@/pages/PublicTextWhisp").then((m) =>
 const TextWhispsList = lazy(() => import("@/pages/TextWhispsList").then((m) => ({ default: m.TextWhispsList })));
 const SendTextWhisp = lazy(() => import("@/pages/SendTextWhisp").then((m) => ({ default: m.SendTextWhisp })));
 const TextWhispDetail = lazy(() => import("@/pages/TextWhispDetail").then((m) => ({ default: m.TextWhispDetail })));
+const DebateTopics = lazy(() => import("@/pages/DebateTopics").then((m) => ({ default: m.DebateTopics })));
+const DebateTopicDetail = lazy(() => import("@/pages/DebateTopicDetail").then((m) => ({ default: m.DebateTopicDetail })));
+const CreateDebateTopic = lazy(() => import("@/pages/CreateDebateTopic").then((m) => ({ default: m.CreateDebateTopic })));
 const SubscribePage = lazy(() => import("@/pages/SubscribePage").then((m) => ({ default: m.SubscribePage })));
 const VerifySubscriptionPage = lazy(() => import("@/pages/VerifySubscriptionPage").then((m) => ({ default: m.VerifySubscriptionPage })));
 const UnsubscribeFromMatchingPage = lazy(() => import("@/pages/UnsubscribeFromMatchingPage").then((m) => ({ default: m.UnsubscribeFromMatchingPage })));
@@ -278,6 +281,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/credits" component={() => <ProtectedRoute component={CreditsPage} />} />
             <Route path="/settings" component={() => <ProtectedRoute component={SettingsPage} />} />
             <Route path="/invite" component={() => <ProtectedRoute component={InvitePage} />} />
+            <Route path="/debate-topics/new" component={() => <ProtectedRoute component={CreateDebateTopic} />} />
             <Route path="/send-text" component={() => <ProtectedRoute component={SendTextWhisp} />} />
             <Route path="/text-whisps/:id" component={() => <ProtectedRoute component={TextWhispDetail} />} />
             <Route path="/text-whisps" component={() => <ProtectedRoute component={TextWhispsList} />} />
@@ -292,6 +296,8 @@ function ClerkProviderWithRoutes() {
             <Route path="/admin/notifications" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminNotifications} />} />} />
             <Route path="/admin" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminDashboard} />} />} />
 
+            <Route path="/debate-topics/:id" component={DebateTopicDetail} />
+            <Route path="/debate-topics" component={DebateTopics} />
             <Route path="/w/:token" component={PublicWhispPage} />
             <Route path="/invite/:token" component={PublicInvitePage} />
             <Route path="/tw/:token" component={PublicTextWhisp} />

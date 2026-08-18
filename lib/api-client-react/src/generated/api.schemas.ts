@@ -541,6 +541,57 @@ export interface CircleFeedResponse {
   nextCursor: string | null;
 }
 
+export interface DebateTopicInput {
+  /** Title/subtitle length by design — a debate topic is a headline to react to, capped server-side at 200 characters. */
+  topicText: string;
+}
+
+/**
+ * authorId is deliberately never included — a debate topic is posted anonymously, same as every other posting surface in this app.
+ */
+export interface DebateTopicFeedItem {
+  id: string;
+  topicText: string;
+  commentCount: number;
+  createdAt: string;
+}
+
+export interface DebateTopicFeedResponse {
+  items: DebateTopicFeedItem[];
+  /** @nullable */
+  nextCursor: string | null;
+}
+
+/**
+ * visitorId is deliberately never included — see debate_topic_comments.ts. isPoster reveals a ROLE (the topic's own author), never an identity.
+ */
+export interface DebateTopicComment {
+  id: string;
+  commentText: string;
+  /** @nullable */
+  parentCommentId: string | null;
+  isPoster: boolean;
+  createdAt: string;
+}
+
+export interface DebateTopicCommentInput {
+  commentText: string;
+  /** Anonymous, client-generated id from lib/anonymousVisitor.ts — never linked to a real identity. */
+  visitorId: string;
+  /** @nullable */
+  parentCommentId?: string | null;
+}
+
+export interface DebateTopicDetail {
+  id: string;
+  topicText: string;
+  createdAt: string;
+  /** True only when the caller is signed in and is this topic's own author — lets the author see a "Retract" control without revealing anything to anyone else. */
+  isOwnTopic: boolean;
+  commentCount: number;
+  comments: DebateTopicComment[];
+}
+
 export interface Circle {
   id: string;
   name: string;
@@ -667,10 +718,20 @@ export interface ModerationFlag {
      * @nullable
      */
   circleCommentId?: string | null;
-  /** 'whisp' | 'text_whisp' | 'circle_comment' */
+  /**
+     * Set when contentType is 'debate_topic'; null otherwise.
+     * @nullable
+     */
+  debateTopicId?: string | null;
+  /**
+     * Set when contentType is 'debate_topic_comment'; null otherwise.
+     * @nullable
+     */
+  debateTopicCommentId?: string | null;
+  /** 'whisp' | 'text_whisp' | 'circle_comment' | 'debate_topic' | 'debate_topic_comment' */
   contentType: string;
   /**
-     * Null only for contentType='circle_comment' from a fully anonymous, no-account commenter — there's no account to attribute the flag to.
+     * Null only for contentType='circle_comment' or contentType='debate_topic_comment' from a fully anonymous, no-account commenter — there's no account to attribute the flag to.
      * @nullable
      */
   userId?: string | null;
@@ -689,6 +750,16 @@ export interface ModerationFlag {
      * @nullable
      */
   circleCommentText?: string | null;
+  /**
+     * The flagged debate topic's own text, denormalized the same way. Null unless contentType is 'debate_topic'.
+     * @nullable
+     */
+  debateTopicText?: string | null;
+  /**
+     * The flagged debate topic comment's text, denormalized the same way. Null unless contentType is 'debate_topic_comment'.
+     * @nullable
+     */
+  debateTopicCommentText?: string | null;
   /** @nullable */
   senderEmail?: string | null;
   severity: ModerationFlagSeverity;
@@ -1531,6 +1602,10 @@ export type StartCircleDm201 = {
 };
 
 export type ListCircleFeedParams = {
+cursor?: string;
+};
+
+export type ListDebateTopicsParams = {
 cursor?: string;
 };
 

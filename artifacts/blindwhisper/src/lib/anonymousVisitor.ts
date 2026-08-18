@@ -1,11 +1,14 @@
 // A per-device, per-browser opaque id for the fully-anonymous engagement
-// surfaces this app has (Blind Circle likes/comments, and anything else
-// built the same way — see circle_comments.ts/circle_post_likes.ts's own
+// surfaces this app has — Blind Circle likes/comments, Debate Topic
+// comments, and anything else built the same way (see
+// circle_comments.ts/circle_post_likes.ts/debate_topic_comments.ts's own
 // schema comments). It exists purely so a like is idempotent (the same
-// visitor tapping twice doesn't double-count) and so "is this my own
-// comment" can be styled client-side — it is NEVER linked to a real
-// identity, NEVER sent to the other party in a conversation, and NEVER
-// returned by the server to any viewer other than the one who generated it.
+// visitor tapping twice doesn't double-count), so the anonymous comment
+// rate limit (api-server's lib/plans.ts's canPostAnonymousComment) can
+// count a device's own recent comments, and so "is this my own comment"
+// can be styled client-side — it is NEVER linked to a real identity, NEVER
+// sent to the other party in a conversation, and NEVER returned by the
+// server to any viewer other than the one who generated it.
 //
 // Deliberately localStorage, not a cookie or anything server-set: nothing
 // about this needs to survive a server round trip or be readable by the

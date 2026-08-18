@@ -24,10 +24,20 @@ export interface ModerationFlag {
      * @nullable
      */
   circleCommentId?: string | null;
-  /** 'whisp' | 'text_whisp' | 'circle_comment' */
+  /**
+     * Set when contentType is 'debate_topic'; null otherwise.
+     * @nullable
+     */
+  debateTopicId?: string | null;
+  /**
+     * Set when contentType is 'debate_topic_comment'; null otherwise.
+     * @nullable
+     */
+  debateTopicCommentId?: string | null;
+  /** 'whisp' | 'text_whisp' | 'circle_comment' | 'debate_topic' | 'debate_topic_comment' */
   contentType: string;
   /**
-     * Null only for contentType='circle_comment' from a fully anonymous, no-account commenter — there's no account to attribute the flag to.
+     * Null only for contentType='circle_comment' or contentType='debate_topic_comment' from a fully anonymous, no-account commenter — there's no account to attribute the flag to.
      * @nullable
      */
   userId?: string | null;
@@ -46,6 +56,16 @@ export interface ModerationFlag {
      * @nullable
      */
   circleCommentText?: string | null;
+  /**
+     * The flagged debate topic's own text, denormalized the same way. Null unless contentType is 'debate_topic'.
+     * @nullable
+     */
+  debateTopicText?: string | null;
+  /**
+     * The flagged debate topic comment's text, denormalized the same way. Null unless contentType is 'debate_topic_comment'.
+     * @nullable
+     */
+  debateTopicCommentText?: string | null;
   /** @nullable */
   senderEmail?: string | null;
   severity: ModerationFlagSeverity;

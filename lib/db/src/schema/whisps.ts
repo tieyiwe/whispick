@@ -141,6 +141,16 @@ export const whispsTable = pgTable("whisps", {
   index("whisps_recipient_phone_idx").on(table.recipientPhone),
   index("whisps_concierge_request_id_idx").on(table.conciergeRequestId),
   index("whisps_origin_circle_whisp_id_idx").on(table.originCircleWhispId),
+  // Same FK-shaped-column-with-no-index gap whisp_categories.ts's comment
+  // describes. circleId backs the public Circle feed (routes/circle.ts's
+  // isNull(circleId) filter) and a member's own circle feed
+  // (routes/circles.ts's GET /:id/feed) — both unauthenticated-or-frequent,
+  // paginated hot paths. groupSendId backs GET /w/:token's per-visit group
+  // size lookup (routes/public.ts — the single hottest public route in the
+  // app), plus lib/matching.ts, lib/scheduler.ts, and
+  // routes/whisperGroups.ts's sends detail.
+  index("whisps_circle_id_idx").on(table.circleId),
+  index("whisps_group_send_id_idx").on(table.groupSendId),
 ]);
 
 export const insertWhispSchema = createInsertSchema(whispsTable).omit({ createdAt: true });

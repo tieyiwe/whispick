@@ -8,6 +8,14 @@ import { notifyUserPersisted } from "./push";
 import { logger } from "./logger";
 
 const POLL_INTERVAL_MS = 60_000;
+// Bounds the work done per sweep regardless of how large the due backlog
+// gets (same reasoning as lib/takeawayScheduler.ts's BATCH_LIMIT) — this loop
+// awaits a real Twilio/Resend send per row sequentially, so an unbounded
+// due-count (e.g. a pile of scheduled sends all coming due around the same
+// moment) would otherwise make one sweep run long enough to overlap the
+// next. Any leftover due rows are simply picked up on the next poll, still
+// only 60s away.
+const BATCH_LIMIT = 100;
 
 // Delivers whisps whose scheduledAt has come due. There's no incoming HTTP
 // request here to derive a safe app URL from (unlike the immediate-send
@@ -22,7 +30,8 @@ export function startScheduledWhispDispatcher(): void {
       const due = await db
         .select()
         .from(whispsTable)
-        .where(and(eq(whispsTable.status, "scheduled"), lte(whispsTable.scheduledAt, new Date())));
+        .where(and(eq(whispsTable.status, "scheduled"), lte(whispsTable.scheduledAt, new Date())))
+        .limit(BATCH_LIMIT);
 
       if (due.length === 0) return;
 

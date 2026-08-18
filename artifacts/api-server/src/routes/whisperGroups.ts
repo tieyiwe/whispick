@@ -31,6 +31,17 @@ const router = Router();
 
 const WHISPER_CHANNELS = ["email", "sms", "whatsapp"] as const;
 
+// POST /:id/send fans out one real Whisper Link (a Twilio/Resend send, or an
+// in-app delivery) per deliverable member in a single request — and unlike
+// every other real-cost action in this app, that fan-out isn't bounded by
+// createWhispLimiter (which only counts requests, 30/hour, not recipients
+// per request) or by the free-plan Whisper Link cap (spark/ember are
+// unlimited — see lib/plans.ts's PLAN_LIMITS). POST /:id/members only caps
+// a single call at 200, but nothing stops calling it repeatedly to build an
+// unbounded group over time. Capping total group size here is what actually
+// bounds a single POST /:id/send's real-world cost and blast radius.
+const MAX_GROUP_MEMBERS = 500;
+
 async function requireOwnedGroup(groupId: string, ownerId: string) {
   return db
     .select()
@@ -262,6 +273,19 @@ router.post("/:id/members", requireAuth, async (req, res): Promise<void> => {
   const parsed = z.object({ members: z.array(memberInputSchema).min(1).max(200) }).safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const existingCountRow = await db
+    .select({ count: count() })
+    .from(whisperGroupMembersTable)
+    .where(eq(whisperGroupMembersTable.groupId, group.id))
+    .then((r) => r[0]);
+  const existingCount = existingCountRow?.count ?? 0;
+  if (existingCount + parsed.data.members.length > MAX_GROUP_MEMBERS) {
+    res.status(400).json({
+      error: `A group can have at most ${MAX_GROUP_MEMBERS} members — this group has ${existingCount} and adding ${parsed.data.members.length} more would go over.`,
+    });
     return;
   }
 

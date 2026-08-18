@@ -56,6 +56,12 @@ import type {
   CreateCircleInput,
   CreateSuggestionInput,
   CreditTransaction,
+  DebateTopicComment,
+  DebateTopicCommentInput,
+  DebateTopicDetail,
+  DebateTopicFeedItem,
+  DebateTopicFeedResponse,
+  DebateTopicInput,
   DeleteMedia200,
   GetPublicWhispParams,
   GroupWhispSendDetail,
@@ -65,6 +71,7 @@ import type {
   InviteInput,
   JoinCircleInput,
   ListCircleFeedParams,
+  ListDebateTopicsParams,
   ListSuggestionsParams,
   ListWhispsParams,
   MatchStats,
@@ -3687,6 +3694,378 @@ export function useListCircleFeed<TData = Awaited<ReturnType<typeof listCircleFe
 
 
 
+
+export const getCreateDebateTopicUrl = () => {
+
+
+
+
+  return `/api/debate-topics`
+}
+
+/**
+ * @summary Post a new debate topic (signed in, anonymous to other viewers)
+ */
+export const createDebateTopic = async (debateTopicInput: DebateTopicInput, options?: RequestInit): Promise<DebateTopicFeedItem> => {
+
+  return customFetch<DebateTopicFeedItem>(getCreateDebateTopicUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(debateTopicInput)
+  }
+);}
+
+
+
+
+export const getCreateDebateTopicMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDebateTopic>>, TError,{data: BodyType<DebateTopicInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createDebateTopic>>, TError,{data: BodyType<DebateTopicInput>}, TContext> => {
+
+const mutationKey = ['createDebateTopic'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createDebateTopic>>, {data: BodyType<DebateTopicInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createDebateTopic(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateDebateTopicMutationResult = NonNullable<Awaited<ReturnType<typeof createDebateTopic>>>
+    export type CreateDebateTopicMutationBody = BodyType<DebateTopicInput>
+    export type CreateDebateTopicMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Post a new debate topic (signed in, anonymous to other viewers)
+ */
+export const useCreateDebateTopic = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDebateTopic>>, TError,{data: BodyType<DebateTopicInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createDebateTopic>>,
+        TError,
+        {data: BodyType<DebateTopicInput>},
+        TContext
+      > => {
+      return useMutation(getCreateDebateTopicMutationOptions(options));
+    }
+
+export const getDeleteDebateTopicUrl = (id: string,) => {
+
+
+
+
+  return `/api/debate-topics/${id}`
+}
+
+/**
+ * @summary Retract a debate topic you posted — removes it from the public feed and detail lookup
+ */
+export const deleteDebateTopic = async (id: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteDebateTopicUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteDebateTopicMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDebateTopic>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteDebateTopic>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteDebateTopic'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteDebateTopic>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteDebateTopic(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteDebateTopicMutationResult = NonNullable<Awaited<ReturnType<typeof deleteDebateTopic>>>
+
+    export type DeleteDebateTopicMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Retract a debate topic you posted — removes it from the public feed and detail lookup
+ */
+export const useDeleteDebateTopic = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDebateTopic>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteDebateTopic>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getDeleteDebateTopicMutationOptions(options));
+    }
+
+export const getListDebateTopicsUrl = (params?: ListDebateTopicsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/public/debate-topics?${stringifiedParams}` : `/api/public/debate-topics`
+}
+
+/**
+ * @summary Public Debate Topics feed (no auth required)
+ */
+export const listDebateTopics = async (params?: ListDebateTopicsParams, options?: RequestInit): Promise<DebateTopicFeedResponse> => {
+
+  return customFetch<DebateTopicFeedResponse>(getListDebateTopicsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListDebateTopicsQueryKey = (params?: ListDebateTopicsParams,) => {
+    return [
+    `/api/public/debate-topics`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListDebateTopicsQueryOptions = <TData = Awaited<ReturnType<typeof listDebateTopics>>, TError = ErrorType<unknown>>(params?: ListDebateTopicsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDebateTopics>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListDebateTopicsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listDebateTopics>>> = ({ signal }) => listDebateTopics(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listDebateTopics>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListDebateTopicsQueryResult = NonNullable<Awaited<ReturnType<typeof listDebateTopics>>>
+export type ListDebateTopicsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Public Debate Topics feed (no auth required)
+ */
+
+export function useListDebateTopics<TData = Awaited<ReturnType<typeof listDebateTopics>>, TError = ErrorType<unknown>>(
+ params?: ListDebateTopicsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDebateTopics>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListDebateTopicsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetDebateTopicUrl = (id: string,) => {
+
+
+
+
+  return `/api/public/debate-topics/${id}`
+}
+
+/**
+ * @summary A single debate topic with its full public comment thread (no auth required)
+ */
+export const getDebateTopic = async (id: string, options?: RequestInit): Promise<DebateTopicDetail> => {
+
+  return customFetch<DebateTopicDetail>(getGetDebateTopicUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDebateTopicQueryKey = (id: string,) => {
+    return [
+    `/api/public/debate-topics/${id}`
+    ] as const;
+    }
+
+
+export const getGetDebateTopicQueryOptions = <TData = Awaited<ReturnType<typeof getDebateTopic>>, TError = ErrorType<ApiError>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDebateTopic>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDebateTopicQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDebateTopic>>> = ({ signal }) => getDebateTopic(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDebateTopic>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDebateTopicQueryResult = NonNullable<Awaited<ReturnType<typeof getDebateTopic>>>
+export type GetDebateTopicQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary A single debate topic with its full public comment thread (no auth required)
+ */
+
+export function useGetDebateTopic<TData = Awaited<ReturnType<typeof getDebateTopic>>, TError = ErrorType<ApiError>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDebateTopic>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDebateTopicQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getPostDebateTopicCommentUrl = (id: string,) => {
+
+
+
+
+  return `/api/public/debate-topics/${id}/comments`
+}
+
+/**
+ * @summary Post an anonymous (or signed-in) comment on a debate topic (no auth required)
+ */
+export const postDebateTopicComment = async (id: string,
+    debateTopicCommentInput: DebateTopicCommentInput, options?: RequestInit): Promise<DebateTopicComment> => {
+
+  return customFetch<DebateTopicComment>(getPostDebateTopicCommentUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(debateTopicCommentInput)
+  }
+);}
+
+
+
+
+export const getPostDebateTopicCommentMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDebateTopicComment>>, TError,{id: string;data: BodyType<DebateTopicCommentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof postDebateTopicComment>>, TError,{id: string;data: BodyType<DebateTopicCommentInput>}, TContext> => {
+
+const mutationKey = ['postDebateTopicComment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postDebateTopicComment>>, {id: string;data: BodyType<DebateTopicCommentInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  postDebateTopicComment(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostDebateTopicCommentMutationResult = NonNullable<Awaited<ReturnType<typeof postDebateTopicComment>>>
+    export type PostDebateTopicCommentMutationBody = BodyType<DebateTopicCommentInput>
+    export type PostDebateTopicCommentMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Post an anonymous (or signed-in) comment on a debate topic (no auth required)
+ */
+export const usePostDebateTopicComment = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDebateTopicComment>>, TError,{id: string;data: BodyType<DebateTopicCommentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postDebateTopicComment>>,
+        TError,
+        {id: string;data: BodyType<DebateTopicCommentInput>},
+        TContext
+      > => {
+      return useMutation(getPostDebateTopicCommentMutationOptions(options));
+    }
 
 export const getCreateCheckoutSessionUrl = () => {
 

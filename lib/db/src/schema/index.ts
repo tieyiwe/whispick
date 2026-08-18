@@ -20,3 +20,5 @@ export * from "./text_whisps";
 export * from "./text_whisp_replies";
 export * from "./circle_comments";
 export * from "./circle_post_likes";
+export * from "./debate_topics";
+export * from "./debate_topic_comments";

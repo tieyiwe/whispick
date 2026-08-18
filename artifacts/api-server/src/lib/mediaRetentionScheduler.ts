@@ -7,6 +7,10 @@ import { UPLOAD_DELETION_WARNING_DAYS } from "./uploads";
 import { logger } from "./logger";
 
 const POLL_INTERVAL_MS = 60 * 60 * 1000; // retention is day-granularity — hourly is plenty
+// Same bounded-sweep reasoning as lib/scheduler.ts's BATCH_LIMIT — both
+// sweeps below loop sequentially (a real email/push per row here, a real
+// object-storage delete there). Leftover rows are picked up next hour.
+const BATCH_LIMIT = 200;
 
 // Phases out uploaded originals on a fixed schedule (see lib/uploads.ts):
 // warns the owner a couple of days before deletion, then actually deletes
@@ -36,7 +40,8 @@ async function warnUpcomingDeletions(): Promise<void> {
         isNull(uploadedVideosTable.deletionWarnedAt),
         lte(uploadedVideosTable.expiresAt, warningCutoff),
       ),
-    );
+    )
+    .limit(BATCH_LIMIT);
 
   // No per-request Host header out here (same reason lib/scheduler.ts and
   // lib/reminderScheduler.ts require this explicitly), so the push
@@ -76,7 +81,8 @@ async function deleteExpiredMedia(): Promise<void> {
   const due = await db
     .select()
     .from(uploadedVideosTable)
-    .where(and(eq(uploadedVideosTable.status, "ready"), lte(uploadedVideosTable.expiresAt, new Date())));
+    .where(and(eq(uploadedVideosTable.status, "ready"), lte(uploadedVideosTable.expiresAt, new Date())))
+    .limit(BATCH_LIMIT);
 
   for (const media of due) {
     await deleteObject(media.objectKey);
