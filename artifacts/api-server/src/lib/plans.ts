@@ -71,6 +71,24 @@ export function recipientReplyAllowance(replyCreditsPurchased: number): number |
   return free === null ? null : free + replyCreditsPurchased;
 }
 
+/**
+ * Whether the recipient of this whisp may reply with a VIDEO.
+ *
+ * Text replies stay open to anonymous recipients (up to the reply allowance);
+ * whisping a video back is the thing that needs either a membership or credit
+ * the sender bought for this whisp. Two reasons it's drawn here rather than at
+ * the reply cap: a video reply costs real storage and moderation attention in
+ * a way a line of text doesn't, and it's the moment where asking an anonymous
+ * recipient to join is a fair trade rather than an interruption — they're
+ * already choosing to put something of their own into the exchange.
+ *
+ * Deliberately NOT tied to recipientFreeReplies: that cap is currently off
+ * (see the TODO above), and this restriction is meant to hold regardless.
+ */
+export function canRecipientWhispVideoBack(isSignedIn: boolean, replyCreditsPurchased: number): boolean {
+  return isSignedIn || replyCreditsPurchased > 0;
+}
+
 export function whisperLinkLimitFor(plan: string): number | null {
   return (PLAN_LIMITS[plan] ?? PLAN_LIMITS.free).whisperLinksPerMonth;
 }

@@ -10,6 +10,7 @@ import {
   useScrapeVideoMeta,
   useSubmitAppreciation,
   useRequestWhispReminder,
+  useRequestVideoReply,
   getGetPublicWhispQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -20,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MoodTag, MOOD_CONFIG } from "@/components/shared/MoodTag";
 import { useToast } from "@/hooks/use-toast";
-import { Send, Loader2, Video, X, Link2, HeartHandshake, Clock, BellRing, Sparkles, UserCircle2, PlayCircle, PenLine } from "lucide-react";
+import { Send, Loader2, Video, X, Link2, HeartHandshake, Clock, BellRing, Sparkles, UserCircle2, PlayCircle, PenLine, Lock } from "lucide-react";
 import { LogoLockup } from "@/components/ui/logo";
 import { VideoPlayer } from "@/components/shared/VideoPlayer";
 import { QUICK_REPLIES } from "@/lib/quickReplies";
@@ -133,6 +134,7 @@ export function PublicWhispPage() {
   const scrapeReplyVideo = useScrapeVideoMeta();
   const submitAppreciation = useSubmitAppreciation();
   const requestReminder = useRequestWhispReminder();
+  const requestVideoReply = useRequestVideoReply();
 
   // Keep the countdown fresh without refetching the whisp itself.
   useEffect(() => {
@@ -253,6 +255,28 @@ export function PublicWhispPage() {
         },
       }
     );
+  }
+
+  // Whisping a video back needs an account, or credit the sender bought for
+  // this whisp. Text replies are unaffected — the gate is on the one action
+  // that costs storage and moderation, and it's the natural moment to ask an
+  // anonymous recipient to join rather than an interruption.
+  const videoRepliesLocked = whisp ? whisp.videoRepliesAllowed === false : false;
+
+  function handleVideoReplyClick() {
+    if (!videoRepliesLocked) {
+      setShowVideoReply(true);
+      return;
+    }
+    // Tell the sender their recipient wanted to send something back, so they
+    // can unlock it. Fire-and-forget: the sign-up prompt is what matters here
+    // and shouldn't wait on it, and the server ignores repeats anyway.
+    requestVideoReply.mutate({ token: token! });
+    toast({
+      title: "Create a free account to whisp a video back",
+      description: "We've let the sender know too — they can unlock video replies for you.",
+    });
+    setLocation("/sign-up");
   }
 
   function handleReply() {
@@ -544,17 +568,19 @@ export function PublicWhispPage() {
                     // be filled, and saying what it actually gets you.
                     <button
                       type="button"
-                      onClick={() => setShowVideoReply(true)}
+                      onClick={handleVideoReplyClick}
                       data-testid="button-show-video-reply"
                       className="group w-full flex items-center gap-3 rounded-xl border border-dashed border-primary/40 bg-primary/[0.06] px-4 py-3 text-left transition-colors hover:border-primary/70 hover:bg-primary/10 active:scale-[0.99]"
                     >
                       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary transition-colors group-hover:bg-primary/25">
-                        <Video className="h-4 w-4" />
+                        {videoRepliesLocked ? <Lock className="h-4 w-4" /> : <Video className="h-4 w-4" />}
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block text-sm font-medium text-foreground">Whisp a video back</span>
                         <span className="block text-xs text-muted-foreground">
-                          Send a video with your reply — still anonymous
+                          {videoRepliesLocked
+                            ? "Needs a free account — your text replies still work"
+                            : "Send a video with your reply — still anonymous"}
                         </span>
                       </span>
                       <PlayCircle className="h-4 w-4 shrink-0 text-primary/60 transition-colors group-hover:text-primary" />

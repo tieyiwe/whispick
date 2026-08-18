@@ -7,7 +7,7 @@ import {
   usersTable,
   uploadedVideosTable,
 } from "@workspace/db";
-import { eq, and, count } from "drizzle-orm";
+import { eq, and, count, isNull } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
 import { randomUUID } from "crypto";
 import { z } from "zod";
@@ -19,7 +19,7 @@ import { downloadObject } from "../lib/objectStorage";
 import { generateTakeawayAsync } from "../lib/aiTakeaway";
 import { httpUrlString } from "../lib/safeUrl";
 import { deriveVideoFields, detectPlatform, embedUrlFor } from "../lib/videoMeta";
-import { recipientReplyAllowance } from "../lib/plans";
+import { recipientReplyAllowance, canRecipientWhispVideoBack } from "../lib/plans";
 
 const router = Router();
 
@@ -73,6 +73,30 @@ function randomNotifyDelay(): Date {
   return new Date(Date.now() + minutes * 60_000);
 }
 
+/**
+ * Records that this whisp's recipient wanted to whisp a video back and
+ * couldn't, so the sender can be told (deferred) that adding credit would
+ * unlock it.
+ *
+ * Conditional on both columns still being null, in one UPDATE, so the write
+ * itself is the guard: this is reachable from an unauthenticated route, and
+ * without it a recipient tapping a locked button in a loop would drive a
+ * notification per tap straight at the sender. Once notified it stays
+ * notified — a second nudge for the same whisp isn't worth the abuse surface.
+ */
+async function recordVideoReplyRequest(whispId: string): Promise<void> {
+  await db
+    .update(whispsTable)
+    .set({ videoReplyRequestNotifyAt: randomNotifyDelay() })
+    .where(
+      and(
+        eq(whispsTable.id, whispId),
+        isNull(whispsTable.videoReplyRequestNotifyAt),
+        isNull(whispsTable.videoReplyRequestNotifiedAt),
+      ),
+    );
+}
+
 // GET /api/public/w/:token — public recipient page
 router.get("/w/:token", async (req, res): Promise<void> => {
   const whisp = await db
@@ -117,6 +141,11 @@ router.get("/w/:token", async (req, res): Promise<void> => {
     // recipient out to the original app forever. Cheap, and it self-heals
     // rather than needing a backfill.
     videoEmbedUrl: whisp.videoEmbedUrl ?? embedUrlFor(whisp.videoUrl, whisp.videoPlatform),
+    // Whether THIS viewer may whisp a video back, so the page can gate the
+    // affordance instead of letting someone compose one and then be refused.
+    // Says nothing about the sender beyond "they have or haven't unlocked
+    // this" — nothing identifying, and nothing about who holds an account.
+    videoRepliesAllowed: canRecipientWhispVideoBack(!!getAuth(req).userId, whisp.replyCreditsPurchased),
     videoStartSeconds: whisp.videoStartSeconds,
     videoEndSeconds: whisp.videoEndSeconds,
     videoPlatform: whisp.videoPlatform,
@@ -213,6 +242,33 @@ router.get("/w/:token/media/thumbnail", async (req, res): Promise<void> => {
 });
 
 // POST /api/public/w/:token/track — tracking pixel
+// POST /api/public/w/:token/video-reply-request
+//
+// The recipient tapped "whisp a video back" and it's locked. Called at that
+// moment rather than waiting for them to compose one and be refused, so the
+// sender learns their recipient wanted to send something back while it's
+// still worth acting on.
+//
+// Returns 204 whatever happens — including for an unknown token or a whisp
+// that already recorded one. There is nothing here for a caller to learn: a
+// different answer per case would turn this into an oracle for which tokens
+// exist.
+router.post("/w/:token/video-reply-request", async (req, res): Promise<void> => {
+  const whisp = await db
+    .select({ id: whispsTable.id, replyCreditsPurchased: whispsTable.replyCreditsPurchased })
+    .from(whispsTable)
+    .where(eq(whispsTable.publicToken, req.params.token))
+    .then((r) => r[0]);
+
+  // Only record a genuine block. If the sender has already unlocked it (or
+  // the caller is signed in), there is nothing to ask them for.
+  if (whisp && !canRecipientWhispVideoBack(!!getAuth(req).userId, whisp.replyCreditsPurchased)) {
+    await recordVideoReplyRequest(whisp.id);
+  }
+
+  res.status(204).send();
+});
+
 router.post("/w/:token/track", async (req, res): Promise<void> => {
   const schema = z.object({ eventType: z.string().min(1) });
   const parsed = schema.safeParse(req.body);
@@ -373,6 +429,20 @@ router.post("/w/:token/reply", async (req, res): Promise<void> => {
   // clerkMiddleware runs globally (app.ts) — so a recipient who's created an
   // account and is signed in simply isn't subject to this at all.
   const { userId: replierClerkId } = getAuth(req);
+
+  // Video replies are gated even when text replies are still allowed. Checked
+  // server-side and not only in the UI: this route is unauthenticated, so the
+  // client-side gate is a courtesy and this is the actual rule.
+  if (parsed.data.videoUrl && !canRecipientWhispVideoBack(!!replierClerkId, whisp.replyCreditsPurchased)) {
+    await recordVideoReplyRequest(whisp.id);
+    res.status(403).json({
+      error:
+        "Whisping a video back needs a free account — or the sender can unlock it for you. Your text replies still work.",
+      code: "video_reply_requires_membership",
+    });
+    return;
+  }
+
   const allowance = replierClerkId ? null : recipientReplyAllowance(whisp.replyCreditsPurchased);
 
   let rejectedAtCap = false;

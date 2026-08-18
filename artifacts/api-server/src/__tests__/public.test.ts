@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import app from "../app";
-import { db, whispRepliesTable } from "@workspace/db";
+import { db, whispRepliesTable, whispsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { TEST_USER_HEADER } from "./setup";
 
@@ -13,6 +13,15 @@ async function createWhisp(overrides: Record<string, unknown> = {}) {
     .set(TEST_USER_HEADER, USER_A)
     .send({ videoUrl: "https://youtu.be/x", deliveryMethod: "circle_drop", ...overrides });
   return res.body as { id: string; publicToken: string };
+}
+
+
+// Video replies from an anonymous recipient need credit the sender bought
+// (see videoReplyGate.test.ts, which covers that rule directly). Tests below
+// that are about video handling rather than the gate unlock it explicitly, so
+// a failure there means what it says.
+async function unlockVideoReplies(whispId: string) {
+  await db.update(whispsTable).set({ replyCreditsPurchased: 1 }).where(eq(whispsTable.id, whispId));
 }
 
 describe("GET /api/public/w/:token", () => {
@@ -95,6 +104,7 @@ describe("POST /api/public/w/:token/reply", () => {
 
   it("accepts a whisp-back video reply with no text", async () => {
     const whisp = await createWhisp();
+    await unlockVideoReplies(whisp.id);
 
     const res = await request(app).post(`/api/public/w/${whisp.publicToken}/reply`).send({
       videoUrl: "https://youtu.be/reply",
@@ -183,6 +193,7 @@ describe("POST /api/public/w/:token/reply", () => {
 
   it("ignores a client-supplied reply thumbnail/embed and derives them server-side (anti-deanonymization)", async () => {
     const whisp = await createWhisp();
+    await unlockVideoReplies(whisp.id);
 
     const res = await request(app).post(`/api/public/w/${whisp.publicToken}/reply`).send({
       videoUrl: "https://youtu.be/dQw4w9WgXcQ",
@@ -201,6 +212,7 @@ describe("POST /api/public/w/:token/reply", () => {
 
   it("drops a non-YouTube reply thumbnail rather than trusting the client (no attacker host reaches the sender's browser)", async () => {
     const whisp = await createWhisp();
+    await unlockVideoReplies(whisp.id);
 
     const res = await request(app).post(`/api/public/w/${whisp.publicToken}/reply`).send({
       videoUrl: "https://www.tiktok.com/@a/video/123",

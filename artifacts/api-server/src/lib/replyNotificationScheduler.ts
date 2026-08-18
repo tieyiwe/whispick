@@ -12,6 +12,25 @@ const POLL_INTERVAL_MS = 60_000;
 // other schedulers, none of which are otherwise unit-tested since they're
 // setInterval loops with no seams to fast-forward) can be exercised directly
 // in a test without waiting on a real interval or system clock.
+/**
+ * Whisps whose recipient tried to whisp a video back and couldn't, past their
+ * deferred notify time. Same deferral as a reply notification and for the same
+ * reason — the trigger is a recipient action, so an immediate push would tie
+ * the sender's buzzing phone to the recipient standing next to them.
+ */
+export async function getDueVideoReplyRequests() {
+  return db
+    .select()
+    .from(whispsTable)
+    .where(
+      and(
+        isNotNull(whispsTable.videoReplyRequestNotifyAt),
+        lte(whispsTable.videoReplyRequestNotifyAt, new Date()),
+        isNull(whispsTable.videoReplyRequestNotifiedAt),
+      ),
+    );
+}
+
 export async function getDueReplyNotifications() {
   return db
     .select()
@@ -95,6 +114,30 @@ export function startReplyNotificationScheduler(): void {
       logger.info({ count: due.length }, "Dispatched deferred reply notifications");
     } catch (err) {
       logger.error({ err }, "Deferred reply notification dispatch failed");
+    }
+
+    // Separate try block: a failure dispatching these must not stop reply
+    // notifications, which matter more, and vice versa.
+    try {
+      const blocked = await getDueVideoReplyRequests();
+      for (const whisp of blocked) {
+        await notifyUserPersisted(
+          whisp.senderId,
+          "They wanted to whisp a video back 🎬",
+          "Your recipient tried to send a video back but isn't a member yet. Add reply credit to unlock it for them.",
+          `/whisps/${whisp.id}`,
+          "video_reply_request",
+        );
+        await db
+          .update(whispsTable)
+          .set({ videoReplyRequestNotifiedAt: new Date() })
+          .where(eq(whispsTable.id, whisp.id));
+      }
+      if (blocked.length) {
+        logger.info({ count: blocked.length }, "Dispatched deferred video-reply-request notifications");
+      }
+    } catch (err) {
+      logger.error({ err }, "Deferred video-reply-request dispatch failed");
     }
   }, POLL_INTERVAL_MS);
 }

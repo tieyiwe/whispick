@@ -2142,6 +2142,77 @@ export function useGetPublicWhisp<TData = Awaited<ReturnType<typeof getPublicWhi
 
 
 
+export const getRequestVideoReplyUrl = (token: string,) => {
+
+
+
+
+  return `/api/public/w/${token}/video-reply-request`
+}
+
+/**
+ * Called when an anonymous recipient taps a locked "whisp a video back" control, so the sender can be told (on the same deferred schedule as a reply notification) that adding credit would unlock it. Always 204 — an unknown token gets the same answer as a known one, so this can't be used to probe which tokens exist.
+ * @summary Record that the recipient wanted to whisp a video back but couldn't
+ */
+export const requestVideoReply = async (token: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRequestVideoReplyUrl(token),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRequestVideoReplyMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestVideoReply>>, TError,{token: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestVideoReply>>, TError,{token: string}, TContext> => {
+
+const mutationKey = ['requestVideoReply'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestVideoReply>>, {token: string}> = (props) => {
+          const {token} = props ?? {};
+
+          return  requestVideoReply(token,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestVideoReplyMutationResult = NonNullable<Awaited<ReturnType<typeof requestVideoReply>>>
+
+    export type RequestVideoReplyMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Record that the recipient wanted to whisp a video back but couldn't
+ */
+export const useRequestVideoReply = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestVideoReply>>, TError,{token: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestVideoReply>>,
+        TError,
+        {token: string},
+        TContext
+      > => {
+      return useMutation(getRequestVideoReplyMutationOptions(options));
+    }
+
 export const getTrackWhispEventUrl = (token: string,) => {
 
 

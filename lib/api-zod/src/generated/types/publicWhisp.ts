@@ -48,4 +48,6 @@ export interface PublicWhisp {
      * @nullable
      */
   recipientRepliesRemaining?: number | null;
+  /** Whether this viewer may whisp a VIDEO back. Text replies stay open to anonymous recipients up to their allowance; a video reply needs either an account or reply credit the sender bought for this whisp. */
+  videoRepliesAllowed?: boolean;
 }

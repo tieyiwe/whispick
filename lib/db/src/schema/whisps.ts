@@ -80,6 +80,19 @@ export const whispsTable = pgTable("whisps", {
   // credits meant for another. Never a cap on a recipient who signs up —
   // membership removes the limit entirely.
   replyCreditsPurchased: integer("reply_credits_purchased").notNull().default(0),
+  // An anonymous recipient tried to whisp a VIDEO back and couldn't — video
+  // replies need either a membership or credit the sender has bought. The
+  // sender is told, so they can unlock it, but on the same deferred schedule
+  // as a reply notification and for the same reason: the trigger is a
+  // recipient action, so an instant push would buzz the sender's phone the
+  // moment the recipient taps, and give the sender away if the two are
+  // physically together (see whisp_replies.notifySenderAt).
+  //
+  // Set once per whisp and never reset. A recipient who taps a locked button
+  // repeatedly must not be able to drive a notification each time — that is
+  // an unauthenticated endpoint pointed at the sender's inbox.
+  videoReplyRequestNotifyAt: timestamp("video_reply_request_notify_at", { withTimezone: true }),
+  videoReplyRequestNotifiedAt: timestamp("video_reply_request_notified_at", { withTimezone: true }),
   // A short, therapist-toned "takeaway" of the video's message, generated for
   // the RECIPIENT (not the sender) once they finish watching, or proactively
   // if they haven't watched after a while so the gist is there whenever they

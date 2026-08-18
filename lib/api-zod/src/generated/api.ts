@@ -759,8 +759,20 @@ export const GetPublicWhispResponse = zod.object({
   "parentReplyId": zod.string().nullish().describe('The message this one answers, when it replies to a specific earlier message rather than the thread as a whole. Always a reply on the same whisp.'),
   "createdAt": zod.string()
 })),
-  "recipientRepliesRemaining": zod.number().nullish().describe('Anonymous replies this recipient has left on this whisp. Null means uncapped. Signing up removes the cap entirely.')
+  "recipientRepliesRemaining": zod.number().nullish().describe('Anonymous replies this recipient has left on this whisp. Null means uncapped. Signing up removes the cap entirely.'),
+  "videoRepliesAllowed": zod.boolean().optional().describe('Whether this viewer may whisp a VIDEO back. Text replies stay open to anonymous recipients up to their allowance; a video reply needs either an account or reply credit the sender bought for this whisp.')
 })
+
+
+/**
+ * Called when an anonymous recipient taps a locked "whisp a video back" control, so the sender can be told (on the same deferred schedule as a reply notification) that adding credit would unlock it. Always 204 — an unknown token gets the same answer as a known one, so this can't be used to probe which tokens exist.
+ * @summary Record that the recipient wanted to whisp a video back but couldn't
+ */
+export const RequestVideoReplyParams = zod.object({
+  "token": zod.coerce.string()
+})
+
+export const RequestVideoReplyResponse = zod.void()
 
 
 /**

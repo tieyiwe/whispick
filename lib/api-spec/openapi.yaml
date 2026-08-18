@@ -646,6 +646,27 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
 
+  /public/w/{token}/video-reply-request:
+    post:
+      operationId: requestVideoReply
+      tags: [public]
+      summary: Record that the recipient wanted to whisp a video back but couldn't
+      description: >-
+        Called when an anonymous recipient taps a locked "whisp a video back"
+        control, so the sender can be told (on the same deferred schedule as a
+        reply notification) that adding credit would unlock it. Always 204 —
+        an unknown token gets the same answer as a known one, so this can't be
+        used to probe which tokens exist.
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Recorded, or intentionally ignored
+
   /public/w/{token}/track:
     post:
       operationId: trackWhispEvent
@@ -2880,6 +2901,12 @@ components:
           description: >-
             Anonymous replies this recipient has left on this whisp. Null
             means uncapped. Signing up removes the cap entirely.
+        videoRepliesAllowed:
+          type: boolean
+          description: >-
+            Whether this viewer may whisp a VIDEO back. Text replies stay open
+            to anonymous recipients up to their allowance; a video reply needs
+            either an account or reply credit the sender bought for this whisp.
       required:
         - id
         - videoUrl
