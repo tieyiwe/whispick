@@ -444,7 +444,7 @@ router.post("/:id/send", requireAuth, createWhispLimiter, async (req, res): Prom
   // Derived server-side, not taken from the client — see routes/whisps.ts and
   // lib/videoMeta.ts deriveVideoFields for why the thumbnail/embed/platform
   // must never be attacker-controlled.
-  const derived = uploadedVideo ? null : deriveVideoFields(data.videoUrl!);
+  const derived = uploadedVideo ? null : deriveVideoFields(data.videoUrl!, data.videoThumbnail);
   const effectiveVideoEmbedUrl = uploadedVideo ? null : derived!.embedUrl;
   const effectiveVideoPlatform = uploadedVideo ? "upload" : derived!.platform;
 

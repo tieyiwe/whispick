@@ -20,7 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MoodTag, MOOD_CONFIG } from "@/components/shared/MoodTag";
 import { useToast } from "@/hooks/use-toast";
-import { Send, Loader2, Video, X, Link2, HeartHandshake, Clock, BellRing, Sparkles, UserCircle2, PlayCircle } from "lucide-react";
+import { Send, Loader2, Video, X, Link2, HeartHandshake, Clock, BellRing, Sparkles, UserCircle2, PlayCircle, PenLine } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { VideoPlayer } from "@/components/shared/VideoPlayer";
 import { QUICK_REPLIES } from "@/lib/quickReplies";
@@ -363,11 +363,32 @@ export function PublicWhispPage() {
 
                 {whisp.moodTag && <MoodTag mood={whisp.moodTag} />}
 
+                {/* The note is the most personal thing on this page, so it's
+                    set as a quote card rather than a line of text against a
+                    rule: its own surface, a serif open-quote, and the sender's
+                    alias as a small gilded seal underneath. The alias is the
+                    only identity a recipient ever gets, which is exactly why
+                    it should look deliberate rather than like a footnote. */}
                 {whisp.anonymousNote && (
-                  <div className="border-l-2 border-primary/40 pl-4">
-                    <p className="text-foreground italic text-sm leading-relaxed">"{whisp.anonymousNote}"</p>
+                  <div className="relative rounded-2xl bg-primary/[0.07] border border-primary/20 px-5 py-4 mt-1">
+                    <span
+                      aria-hidden
+                      className="absolute -top-2 left-4 font-serif text-5xl leading-none text-primary/30 select-none"
+                    >
+                      &ldquo;
+                    </span>
+                    <p className="text-foreground italic text-sm leading-relaxed relative">{whisp.anonymousNote}</p>
                     {whisp.senderAlias && (
-                      <p className="text-xs text-muted-foreground mt-2">— {whisp.senderAlias}</p>
+                      <div className="mt-3 flex items-center gap-2">
+                        <span className="h-px flex-1 bg-gradient-to-r from-gilded/40 to-transparent" />
+                        <span
+                          className="inline-flex items-center gap-1.5 rounded-full border border-gilded/30 bg-gilded/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.12em] text-gilded"
+                          data-testid="text-sender-alias"
+                        >
+                          <PenLine className="w-3 h-3" />
+                          {whisp.senderAlias}
+                        </span>
+                      </div>
                     )}
                   </div>
                 )}
