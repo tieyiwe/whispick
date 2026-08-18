@@ -27,6 +27,13 @@
          This PNG is the same mark on a deliberately square background, since
          iOS applies its own corner mask and would otherwise round it twice. -->
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <!-- Android's home-screen icon and install metadata come from the manifest,
+         not from the icons above. Without it the service worker registered in
+         lib/push.ts had nothing to install against, and "Add to Home Screen"
+         fell back to a screenshot the same way iOS did. The maskable icon is a
+         separate file because Android masks icons to arbitrary shapes and keeps
+         only the central 80% circle, which the full-size mark overflows. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
