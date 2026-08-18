@@ -234,7 +234,8 @@ export const GetWhispResponse = zod.object({
   "videoPlatform": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
   "parentReplyId": zod.string().nullish().describe('The message this one answers, when it replies to a specific earlier message rather than the thread as a whole. Always a reply on the same whisp.'),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "readAt": zod.string().nullish().describe('When the other party in the conversation (whichever one didn\'t author this message) is known to have viewed it — set the moment they load a view containing it. Null means unread. Drives the WhatsApp-style single\/double checkmark next to a message the current viewer sent themselves; never rendered on a message you received.')
 })),
   "recipientRepliesRemaining": zod.number().nullish().describe('Anonymous replies the recipient has left on this whisp. Null means uncapped. 0 means they can\'t reply again unless the sender adds more replies or the recipient signs up.')
 })
@@ -269,7 +270,8 @@ export const ListWhispRepliesResponseItem = zod.object({
   "videoPlatform": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
   "parentReplyId": zod.string().nullish().describe('The message this one answers, when it replies to a specific earlier message rather than the thread as a whole. Always a reply on the same whisp.'),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "readAt": zod.string().nullish().describe('When the other party in the conversation (whichever one didn\'t author this message) is known to have viewed it — set the moment they load a view containing it. Null means unread. Drives the WhatsApp-style single\/double checkmark next to a message the current viewer sent themselves; never rendered on a message you received.')
 })
 export const ListWhispRepliesResponse = zod.array(ListWhispRepliesResponseItem)
 
@@ -299,7 +301,8 @@ export const CreateWhispReplyResponse = zod.object({
   "videoPlatform": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
   "parentReplyId": zod.string().nullish().describe('The message this one answers, when it replies to a specific earlier message rather than the thread as a whole. Always a reply on the same whisp.'),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "readAt": zod.string().nullish().describe('When the other party in the conversation (whichever one didn\'t author this message) is known to have viewed it — set the moment they load a view containing it. Null means unread. Drives the WhatsApp-style single\/double checkmark next to a message the current viewer sent themselves; never rendered on a message you received.')
 })
 
 
@@ -757,7 +760,8 @@ export const GetPublicWhispResponse = zod.object({
   "videoPlatform": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
   "parentReplyId": zod.string().nullish().describe('The message this one answers, when it replies to a specific earlier message rather than the thread as a whole. Always a reply on the same whisp.'),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "readAt": zod.string().nullish().describe('When the other party in the conversation (whichever one didn\'t author this message) is known to have viewed it — set the moment they load a view containing it. Null means unread. Drives the WhatsApp-style single\/double checkmark next to a message the current viewer sent themselves; never rendered on a message you received.')
 })),
   "recipientRepliesRemaining": zod.number().nullish().describe('Anonymous replies this recipient has left on this whisp. Null means uncapped. Signing up removes the cap entirely.'),
   "videoRepliesAllowed": zod.boolean().optional().describe('Whether this viewer may whisp a VIDEO back. Text replies stay open to anonymous recipients up to their allowance; a video reply needs either an account or reply credit the sender bought for this whisp.')
@@ -821,7 +825,8 @@ export const PublicReplyResponse = zod.object({
   "videoPlatform": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
   "parentReplyId": zod.string().nullish().describe('The message this one answers, when it replies to a specific earlier message rather than the thread as a whole. Always a reply on the same whisp.'),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "readAt": zod.string().nullish().describe('When the other party in the conversation (whichever one didn\'t author this message) is known to have viewed it — set the moment they load a view containing it. Null means unread. Drives the WhatsApp-style single\/double checkmark next to a message the current viewer sent themselves; never rendered on a message you received.')
 })
 
 
@@ -1451,7 +1456,8 @@ export const AdminGetWhispResponse = zod.object({
   "videoPlatform": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
   "parentReplyId": zod.string().nullish().describe('The message this one answers, when it replies to a specific earlier message rather than the thread as a whole. Always a reply on the same whisp.'),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "readAt": zod.string().nullish().describe('When the other party in the conversation (whichever one didn\'t author this message) is known to have viewed it — set the moment they load a view containing it. Null means unread. Drives the WhatsApp-style single\/double checkmark next to a message the current viewer sent themselves; never rendered on a message you received.')
 })),
   "categories": zod.array(zod.object({
   "id": zod.string(),
@@ -2161,7 +2167,8 @@ export const GetGroupWhispSendResponse = zod.object({
   "videoPlatform": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
   "parentReplyId": zod.string().nullish().describe('The message this one answers, when it replies to a specific earlier message rather than the thread as a whole. Always a reply on the same whisp.'),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "readAt": zod.string().nullish().describe('When the other party in the conversation (whichever one didn\'t author this message) is known to have viewed it — set the moment they load a view containing it. Null means unread. Drives the WhatsApp-style single\/double checkmark next to a message the current viewer sent themselves; never rendered on a message you received.')
 }))
 }))
 })

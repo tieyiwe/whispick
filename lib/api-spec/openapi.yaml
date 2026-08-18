@@ -2570,6 +2570,15 @@ components:
             on the same whisp.
         createdAt:
           type: string
+        readAt:
+          type: ["string", "null"]
+          description: >-
+            When the other party in the conversation (whichever one didn't
+            author this message) is known to have viewed it — set the moment
+            they load a view containing it. Null means unread. Drives the
+            WhatsApp-style single/double checkmark next to a message the
+            current viewer sent themselves; never rendered on a message you
+            received.
       required:
         - id
         - whispId

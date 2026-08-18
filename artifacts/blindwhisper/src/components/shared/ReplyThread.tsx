@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { PlayCircle, Loader2, Send, Reply as ReplyIcon, X, ArrowDown } from "lucide-react";
+import { PlayCircle, Loader2, Send, Reply as ReplyIcon, X, ArrowDown, Check, CheckCheck } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 
@@ -23,7 +23,23 @@ export type ThreadReply = {
   videoThumbnail?: string | null;
   parentReplyId?: string | null;
   createdAt: string;
+  /** When the OTHER party viewed this message. Null means sent but unread —
+   *  see the schema comment on whisp_replies.readAt for the full model. */
+  readAt?: string | null;
 };
+
+// WhatsApp-style read receipt: one grey check once it's sent, two green
+// checks once the other party has actually seen it. Only ever rendered on a
+// message the current viewer sent themselves — seeing a receipt on a message
+// you *received* isn't a thing WhatsApp does either, and here it would just
+// be restating "yes, you can see this, since you're looking at it."
+function ReadReceipt({ read }: { read: boolean }) {
+  return read ? (
+    <CheckCheck className="w-3.5 h-3.5 text-[hsl(142_71%_45%)]" aria-label="Seen" />
+  ) : (
+    <Check className="w-3.5 h-3.5 text-muted-foreground/70" aria-label="Sent" />
+  );
+}
 
 // One line of the message being answered, shown inside the reply that
 // answers it. A quote rather than indentation: the thread stays one
@@ -103,8 +119,9 @@ function MessageBubble({
       // an unclamped index leaves message #40 invisible for two seconds.
       style={{ ["--message-index" as string]: String(Math.min(index, 10)) }}
     >
-      <span className="text-[11px] text-muted-foreground px-2 mb-1">
+      <span className="flex items-center gap-1 text-[11px] text-muted-foreground px-2 mb-1">
         {authorLabel} · {formatTimestamp(reply.createdAt)}
+        {isOwn && <ReadReceipt read={!!reply.readAt} />}
       </span>
       <div
         className={[

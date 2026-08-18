@@ -514,6 +514,23 @@ router.get("/:id", requireAuth, async (req, res): Promise<void> => {
     .where(eq(trackingEventsTable.whispId, whisp.id))
     .orderBy(sql`${trackingEventsTable.createdAt} ASC`);
 
+  // Loading this page IS reading the recipient's side of the conversation —
+  // same "opening the chat" read receipt as the recipient gets on the public
+  // page (see routes/public.ts's GET /w/:token), mirrored for the other
+  // direction. Marked before the select below so this response already
+  // reflects it; scoped to fromRecipient=true (the recipient authored it)
+  // and still-null readAt so re-visiting an already-read thread is a no-op.
+  await db
+    .update(whispRepliesTable)
+    .set({ readAt: new Date() })
+    .where(
+      and(
+        eq(whispRepliesTable.whispId, whisp.id),
+        eq(whispRepliesTable.fromRecipient, true),
+        isNull(whispRepliesTable.readAt)
+      )
+    );
+
   const replies = await db
     .select()
     .from(whispRepliesTable)

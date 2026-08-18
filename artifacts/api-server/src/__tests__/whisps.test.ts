@@ -431,6 +431,41 @@ describe("DELETE /api/whisps/:id", () => {
   });
 });
 
+describe("GET /api/whisps/:id — reply read receipts", () => {
+  const USER_E = "clerk_user_e";
+
+  it("marks the recipient's replies read the moment the sender views the thread", async () => {
+    const created = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_E))
+      .send({ videoUrl: "https://youtu.be/a", deliveryMethod: "circle_drop" });
+    const whispId = created.body.id;
+
+    // A real recipient-authored row — the only route that can produce
+    // fromRecipient=true is the public one; POST /api/whisps/:id/replies is
+    // sender-only and ignores any fromRecipient the client sends (see its
+    // own comment), so that route can't stand in for this.
+    const reply = await request(app)
+      .post(`/api/public/w/${created.body.publicToken}/reply`)
+      .send({ replyText: "a reply from the recipient" });
+    expect(reply.body.readAt).toBeNull();
+
+    const firstView = await request(app).get(`/api/whisps/${whispId}`).set(asUser(USER_E));
+    expect(firstView.body.replies[0].readAt).toBeTruthy();
+
+    // A sender-authored follow-up should never get marked "read" by the
+    // sender's own view — only the recipient side of the conversation does
+    // that, in GET /api/public/w/:token (see public.test.ts).
+    const followUp = await request(app)
+      .post(`/api/whisps/${whispId}/replies`)
+      .set(asUser(USER_E))
+      .send({ replyText: "a follow-up from the sender", fromRecipient: false });
+    const secondView = await request(app).get(`/api/whisps/${whispId}`).set(asUser(USER_E));
+    const senderReply = secondView.body.replies.find((r: { id: string }) => r.id === followUp.body.id);
+    expect(senderReply.readAt).toBeNull();
+  });
+});
+
 describe("GET /api/public/circle", () => {
   it("lists Circle Drop whisps without exposing sender identity fields", async () => {
     await request(app)

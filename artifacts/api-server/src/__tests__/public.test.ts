@@ -54,6 +54,35 @@ describe("GET /api/public/w/:token", () => {
     expect(res.body.replies[0].fromRecipient).toBe(true);
     expect(res.body.replies[1].fromRecipient).toBe(false);
   });
+
+  it("marks the sender's follow-up read the moment the recipient views the thread, but never their own reply", async () => {
+    const whisp = await createWhisp();
+
+    // The recipient's own message — a read receipt on this should only ever
+    // come from the sender's side (routes/whisps.ts GET /:id), never from
+    // the recipient loading their own page.
+    const ownReply = await request(app)
+      .post(`/api/public/w/${whisp.publicToken}/reply`)
+      .send({ replyText: "thank you" });
+    expect(ownReply.body.readAt).toBeNull();
+
+    const senderFollowUp = await request(app)
+      .post(`/api/whisps/${whisp.id}/replies`)
+      .set(TEST_USER_HEADER, USER_A)
+      .send({ replyText: "of course" });
+    expect(senderFollowUp.body.readAt).toBeNull();
+
+    const res = await request(app).get(`/api/public/w/${whisp.publicToken}`);
+    const [recipientMessage, senderMessage] = res.body.replies;
+    expect(recipientMessage.readAt).toBeNull();
+    expect(senderMessage.readAt).toBeTruthy();
+
+    // Idempotent: a second load (the page's own poll included) doesn't move
+    // an already-set readAt.
+    const firstReadAt = senderMessage.readAt;
+    const again = await request(app).get(`/api/public/w/${whisp.publicToken}`);
+    expect(again.body.replies[1].readAt).toBe(firstReadAt);
+  });
 });
 
 describe("POST /api/public/w/:token/track", () => {

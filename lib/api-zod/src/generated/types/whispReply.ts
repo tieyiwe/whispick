@@ -29,4 +29,9 @@ export interface WhispReply {
      */
   parentReplyId?: string | null;
   createdAt: string;
+  /**
+     * When the other party in the conversation (whichever one didn't author this message) is known to have viewed it — set the moment they load a view containing it. Null means unread. Drives the WhatsApp-style single/double checkmark next to a message the current viewer sent themselves; never rendered on a message you received.
+     * @nullable
+     */
+  readAt?: string | null;
 }

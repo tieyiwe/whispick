@@ -39,6 +39,17 @@ export const whispRepliesTable = pgTable("whisp_replies", {
   // fires the deferred email + push, so null means "still pending".
   notifySenderAt: timestamp("notify_sender_at", { withTimezone: true }),
   senderNotifiedAt: timestamp("sender_notified_at", { withTimezone: true }),
+  // WhatsApp-style read receipt: set the moment the OTHER party (not
+  // whoever authored this row) loads a view containing it — the recipient's
+  // GET /w/:token for a fromRecipient=false (sender-authored) row, or the
+  // sender's GET /whisps/:id for a fromRecipient=true (recipient-authored)
+  // one. Deliberately instant, not deferred like notifySenderAt above: that
+  // delay exists specifically to break the timing correlation of a PUSH
+  // notification physically buzzing a nearby phone the moment someone acts.
+  // A read receipt is pull-based — the other party only ever sees it by
+  // separately choosing to open their own view later — so there's no
+  // equivalent proximity signal to protect against here.
+  readAt: timestamp("read_at", { withTimezone: true }),
 }, (table) => [
   index("whisp_replies_whisp_id_idx").on(table.whispId),
   index("whisp_replies_notify_sender_at_idx").on(table.notifySenderAt),

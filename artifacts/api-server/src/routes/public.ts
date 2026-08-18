@@ -49,6 +49,7 @@ const RECIPIENT_SAFE_REPLY_COLUMNS = {
   moodTag: whispRepliesTable.moodTag,
   parentReplyId: whispRepliesTable.parentReplyId,
   createdAt: whispRepliesTable.createdAt,
+  readAt: whispRepliesTable.readAt,
 } as const;
 
 // A Ghost Boost fan-out row (see lib/matching.ts) shares its senderId with
@@ -119,6 +120,23 @@ router.get("/w/:token", async (req, res): Promise<void> => {
       .then((r) => r[0]);
     groupSize = row?.count ?? 1;
   }
+
+  // Loading this page IS reading the sender's side of the conversation —
+  // mirrors WhatsApp's "opened the chat" read receipt. Marked before the
+  // select below so the response the recipient gets back already reflects
+  // it, and scoped to fromRecipient=false (the sender authored it) and
+  // still-null readAt so a page already fully read is a no-op on every
+  // subsequent poll.
+  await db
+    .update(whispRepliesTable)
+    .set({ readAt: new Date() })
+    .where(
+      and(
+        eq(whispRepliesTable.whispId, whisp.id),
+        eq(whispRepliesTable.fromRecipient, false),
+        isNull(whispRepliesTable.readAt)
+      )
+    );
 
   // The reply thread. Without it, a recipient could send a reply but never
   // see it (or any sender follow-up) again on a later visit — every reply
