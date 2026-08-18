@@ -23,6 +23,33 @@ const SNOOZE_MS = 14 * 24 * 60 * 60 * 1000;
 
 export type InstallPlatform = "android" | "ios" | "unsupported";
 
+const APP_SEEN_THIS_TAB_KEY = "blindwhisper:appSeenThisTab";
+
+/**
+ * Whether AppLayout has already rendered once in this browser tab's session.
+ *
+ * sessionStorage is exactly the primitive this needs: it survives a same-tab
+ * reload (so hitting refresh reads as "already seen"), but starts empty in a
+ * brand new tab (so completing sign-in, or opening the app fresh, reads as
+ * "not yet seen") — which is precisely the "just signed in" vs. "this is a
+ * refresh" distinction the install prompt's timing depends on.
+ *
+ * Marks itself as a side effect: the first call in a tab's life reports
+ * false, every call after (including across reloads) reports true.
+ */
+export function hasAppLayoutRenderedThisTab(): boolean {
+  try {
+    const seen = sessionStorage.getItem(APP_SEEN_THIS_TAB_KEY) === "1";
+    sessionStorage.setItem(APP_SEEN_THIS_TAB_KEY, "1");
+    return seen;
+  } catch {
+    // Storage unavailable (private mode, a locked-down profile) — treat as a
+    // fresh sign-in, since that's the longer of the two delays and the safer
+    // default when we can't tell.
+    return false;
+  }
+}
+
 /** True when the app is already running from the home screen. */
 export function isStandalone(): boolean {
   if (typeof window === "undefined") return false;

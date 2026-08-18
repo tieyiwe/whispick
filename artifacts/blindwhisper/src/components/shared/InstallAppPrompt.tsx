@@ -10,12 +10,24 @@ import {
   rememberDismissed,
   onInstallPromptAvailable,
   clearDeferredInstallPrompt,
+  hasAppLayoutRenderedThisTab,
   type BeforeInstallPromptEvent,
 } from "@/lib/installApp";
 
-// How long after arriving before we ask. Immediately would interrupt whatever
-// brought them here; a few seconds lands after the page has settled.
-const APPEAR_DELAY_MS = 3500;
+// How long after arriving before we ask, on iOS, where there's no captured
+// event to wait for — see the two Android/Chrome delays below for the
+// reasoning this mirrors.
+const IOS_APPEAR_DELAY_MS = 3000;
+
+// Two different delays for two different moments. Someone who just finished
+// signing in is still mid-task — landing straight in the dashboard, likely
+// about to go do the thing they came to do; asking immediately competes with
+// that. A refresh is a much quieter moment (they're already settled into the
+// app), so it earns a shorter wait. hasAppLayoutRenderedThisTab is what tells
+// the two apart: a same-tab reload reads as "already seen", a fresh sign-in
+// or a new tab reads as "not yet".
+const SIGN_IN_APPEAR_DELAY_MS = 5000;
+const REFRESH_APPEAR_DELAY_MS = 3000;
 
 /**
  * Offers to install Blind Whisper to the home screen, once.
@@ -39,32 +51,47 @@ export function InstallAppPrompt() {
   useEffect(() => {
     if (shouldStayQuiet()) return;
 
+    // Read (and mark) once per mount, not per event delivery — the tab's
+    // status as "already seen" shouldn't change based on how many times the
+    // captured-event callback happens to fire below.
+    const delay = hasAppLayoutRenderedThisTab() ? REFRESH_APPEAR_DELAY_MS : SIGN_IN_APPEAR_DELAY_MS;
+    let revealTimer: ReturnType<typeof setTimeout> | undefined;
+
     // Subscribes to the module-level capture in lib/installApp.ts rather than
     // attaching a beforeinstallprompt listener here directly. That event
     // fires once per page load, often before sign-in — before this
     // component, which only exists inside AppLayout, has ever mounted — so a
     // listener attached at this point would reliably miss it. Subscribing
     // instead delivers whatever was already captured immediately (the
-    // common case) and anything that arrives later (the rare one).
+    // common case, since the event has almost always already arrived by the
+    // time AppLayout's chunk loads) and anything that arrives later (rare,
+    // but possible if the criteria aren't met until partway through the
+    // visit).
     const unsubscribe = onInstallPromptAvailable((event) => {
       deferredRef.current = event;
-      setVisible(event !== null);
+      if (revealTimer) clearTimeout(revealTimer);
+      if (event === null) {
+        setVisible(false);
+        return;
+      }
+      revealTimer = setTimeout(() => setVisible(true), delay);
     });
 
     // iOS never fires beforeinstallprompt, so there is nothing to wait for —
-    // show the instructions on a timer instead. Safari only: an iPhone using
-    // Chrome or Firefox cannot add to the home screen at all, and telling
-    // someone to tap a Share button their browser doesn't have is worse than
-    // staying quiet.
-    let timer: ReturnType<typeof setTimeout> | undefined;
+    // show the instructions on their own timer instead. Safari only: an
+    // iPhone using Chrome or Firefox cannot add to the home screen at all,
+    // and telling someone to tap a Share button their browser doesn't have
+    // is worse than staying quiet.
+    let iosTimer: ReturnType<typeof setTimeout> | undefined;
     if (ios) {
       const safari = !/CriOS|FxiOS|EdgiOS|OPiOS/.test(navigator.userAgent);
-      if (safari) timer = setTimeout(() => setVisible(true), APPEAR_DELAY_MS);
+      if (safari) iosTimer = setTimeout(() => setVisible(true), IOS_APPEAR_DELAY_MS);
     }
 
     return () => {
       unsubscribe();
-      if (timer) clearTimeout(timer);
+      if (revealTimer) clearTimeout(revealTimer);
+      if (iosTimer) clearTimeout(iosTimer);
     };
   }, [ios]);
 
