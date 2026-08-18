@@ -177,8 +177,20 @@ export function AppLayout({ children }: { children: ReactNode }) {
     : NAV_ITEMS;
 
   return (
-    <div className="min-h-[100dvh] bg-background flex flex-col md:flex-row">
-      <aside className="w-full md:w-64 border-r border-border bg-card/50 backdrop-blur-xl flex flex-col hidden md:flex h-screen sticky top-0">
+    // From md: up the shell is exactly one viewport tall and clips, and the
+    // <main> inside it does the scrolling. The sidebar was already `sticky
+    // top-0` and still scrolled away; the likely culprit is index.css setting
+    // `overflow-x: hidden` on html and body, since an element with overflow-x
+    // hidden and overflow-y visible computes overflow-y to auto, which makes
+    // it a scroll container and moves what `sticky` sticks to. Owning the
+    // scroll region outright is deliberately chosen so it doesn't matter
+    // whether that diagnosis is exactly right — nothing here depends on
+    // sticky resolving against the element we expect.
+    //
+    // Mobile is untouched: the page scrolls, the header stays sticky, the tab
+    // bar stays fixed, and pull-to-refresh keeps working.
+    <div className="min-h-[100dvh] md:h-[100dvh] md:overflow-hidden bg-background flex flex-col md:flex-row">
+      <aside className="w-full md:w-64 border-r border-border bg-card/50 backdrop-blur-xl flex-col hidden md:flex md:h-full md:shrink-0">
         <div className="p-6 flex items-center justify-between gap-2">
           <Link href="/dashboard" className="flex items-center gap-3 text-primary hover:opacity-80 transition-opacity min-w-0">
             <Logo className="w-8 h-8 text-primary shrink-0" />
@@ -258,7 +270,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className="flex-1 overflow-x-hidden md:min-h-screen pb-24 md:pb-0">
+      {/* md:min-h-0 is load-bearing: a flex item's default min-height is auto,
+          which refuses to shrink below its content and would let the page grow
+          past the shell instead of scrolling inside it. */}
+      <main className="flex-1 overflow-x-hidden pb-24 md:pb-0 md:h-full md:min-h-0 md:overflow-y-auto">
         {/* Restores a swipe-down refresh on mobile: index.css sets
             overscroll-behavior-y: contain (so the page doesn't rubber-band
             against the fixed header/bottom nav), which also disables the

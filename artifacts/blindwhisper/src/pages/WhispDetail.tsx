@@ -47,38 +47,78 @@ import {
   Sparkles,
   Users,
   Lock,
+  ChevronDown,
 } from "lucide-react";
 import { deliveryLabel } from "@/lib/deliveryMethod";
 
-function TimelineStep({
-  label,
-  time,
-  done,
-  active,
-}: {
+type TimelineStepData = {
   label: string;
+  /** Spelled out on hover/long-press when the label had to be shortened to
+   *  survive six steps across a phone screen. */
+  fullLabel?: string;
   time?: string | Date | null;
   done: boolean;
   active?: boolean;
-}) {
+};
+
+// The full timestamp (toLocaleString) was fine stacked vertically with a whole
+// row to itself; across a horizontal track it's the widest thing on screen by
+// far. Same-day steps — the common case while a whisp is live — only need the
+// clock time.
+function compactTime(value: string | Date): string {
+  const date = new Date(value);
+  const sameDay = new Date().toDateString() === date.toDateString();
+  return sameDay
+    ? date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+    : date.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
+// One horizontal track rather than six stacked rows. Vertically this card ran
+// most of a phone screen on its own, pushing the conversation — the part
+// worth coming back for — below the fold.
+function TimelineTrack({ steps }: { steps: TimelineStepData[] }) {
   return (
-    <div className="flex items-start gap-3">
-      <div
-        className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${
-          done
-            ? "bg-primary text-primary-foreground"
-            : active
-            ? "bg-muted border-2 border-primary"
-            : "bg-muted border border-border"
-        }`}
-      >
-        {done ? <Check className="w-4 h-4" /> : <Clock className="w-4 h-4 text-muted-foreground" />}
-      </div>
-      <div>
-        <p className={`text-sm font-medium ${done ? "text-foreground" : "text-muted-foreground"}`}>{label}</p>
-        {time && <p className="text-xs text-muted-foreground mt-0.5">{new Date(time).toLocaleString()}</p>}
-        {!time && !done && <p className="text-xs text-muted-foreground mt-0.5">Waiting...</p>}
-      </div>
+    // Scrolls rather than crushes: six steps fit a typical phone, but a
+    // narrow screen or large text size shouldn't squeeze the labels into
+    // unreadable slivers.
+    <div className="flex overflow-x-auto pb-1">
+      {steps.map((step, i) => (
+        <div key={step.label} className="relative flex min-w-[54px] flex-1 flex-col items-center">
+          {/* Connector back to the previous step, tinted only when this step
+              is reached — so the filled portion of the track reads as
+              progress at a glance, before any label is read. */}
+          {i > 0 && (
+            <span
+              aria-hidden
+              className={`absolute right-1/2 top-4 h-0.5 w-full -translate-y-1/2 ${
+                step.done ? "bg-primary" : "bg-border"
+              }`}
+            />
+          )}
+          <div
+            title={step.fullLabel ?? step.label}
+            className={`relative z-10 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full transition-all ${
+              step.done
+                ? "bg-primary text-primary-foreground"
+                : step.active
+                ? "border-2 border-primary bg-card"
+                : "border border-border bg-muted"
+            }`}
+          >
+            {step.done ? <Check className="h-4 w-4" /> : <Clock className="h-4 w-4 text-muted-foreground" />}
+          </div>
+          <p
+            className={`mt-1.5 px-0.5 text-center text-[10px] leading-tight ${
+              step.done ? "font-medium text-foreground" : "text-muted-foreground"
+            }`}
+          >
+            {step.label}
+          </p>
+          <p className="text-center text-[10px] leading-tight text-muted-foreground/70">
+            {step.time ? compactTime(step.time) : step.done ? "" : "—"}
+          </p>
+        </div>
+      ))}
     </div>
   );
 }
@@ -90,6 +130,7 @@ export function WhispDetail() {
   const queryClient = useQueryClient();
   const [replyText, setReplyText] = useState("");
   const [replyingTo, setReplyingTo] = useState<ThreadReply | null>(null);
+  const [timelineOpen, setTimelineOpen] = useState(true);
 
   // Polled so a reply arriving while this page is open shows up on its own.
   // 15s is a deliberate middle ground: the sender's notification is already
@@ -194,6 +235,41 @@ export function WhispDetail() {
   }
 
   const eventTypes = trackingEvents.map((e) => e.eventType);
+  const recipientReplied = replies.some((r) => r.fromRecipient);
+
+  const timelineSteps: TimelineStepData[] = [
+    { label: "Sent", time: whisp.createdAt, done: true },
+    { label: "Delivered", time: whisp.deliveredAt, done: !!whisp.deliveredAt },
+    {
+      label: "Opened",
+      time: whisp.openedAt,
+      done: !!whisp.openedAt,
+      active: !!whisp.deliveredAt && !whisp.openedAt,
+    },
+    {
+      // Shortened from "Clicked video": six labels have to share the width of
+      // a phone screen, and the full wording is on the step's title.
+      label: "Clicked",
+      fullLabel: "Clicked video",
+      time: trackingEvents.find((e) => e.eventType === "clicked")?.createdAt,
+      done: eventTypes.includes("clicked"),
+      active: !!whisp.openedAt && !eventTypes.includes("clicked"),
+    },
+    {
+      label: "Watched",
+      time: whisp.watchedAt,
+      done: !!whisp.watchedAt,
+      active: eventTypes.includes("clicked") && !whisp.watchedAt,
+    },
+    {
+      label: "Replied",
+      time: replies.find((r) => r.fromRecipient)?.createdAt,
+      done: recipientReplied,
+      active: !!whisp.openedAt && !recipientReplied,
+    },
+  ];
+  // Furthest stage actually reached — shown in the header while collapsed.
+  const currentStage = timelineSteps.filter((s) => s.done).at(-1)?.label ?? null;
 
   return (
     <AppLayout>
@@ -332,37 +408,37 @@ export function WhispDetail() {
             Ghost Boost campaign that fans out to many anonymous subscribers */}
         {!isGhostBoost && (
         <Card className="bg-card border-border/50">
-          <CardHeader className="pb-2">
+          {/* Collapsible, because once a whisp has been watched the timeline
+              is settled history and mostly costs the reader scrolling to get
+              past it. Open by default — it's the answer to "did they see
+              it?", which is why most people open this page at all. */}
+          <button
+            type="button"
+            onClick={() => setTimelineOpen((open) => !open)}
+            aria-expanded={timelineOpen}
+            aria-controls="delivery-timeline"
+            data-testid="button-toggle-timeline"
+            className="flex w-full items-center gap-2 px-6 py-4 text-left"
+          >
             <CardTitle className="text-base font-serif">Delivery Timeline</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <TimelineStep label="Sent" time={whisp.createdAt} done={true} />
-            <TimelineStep label="Delivered" time={whisp.deliveredAt} done={!!whisp.deliveredAt} />
-            <TimelineStep
-              label="Opened"
-              time={whisp.openedAt}
-              done={!!whisp.openedAt}
-              active={!!whisp.deliveredAt && !whisp.openedAt}
+            {/* Collapsing shouldn't cost the headline fact, so the furthest
+                stage reached comes up into the header to replace it. */}
+            {!timelineOpen && currentStage && (
+              <span className="rounded-full bg-primary/12 px-2 py-0.5 text-[11px] font-medium text-primary">
+                {currentStage}
+              </span>
+            )}
+            <ChevronDown
+              className={`ml-auto h-4 w-4 flex-shrink-0 text-muted-foreground transition-transform ${
+                timelineOpen ? "rotate-180" : ""
+              }`}
             />
-            <TimelineStep
-              label="Clicked video"
-              time={trackingEvents.find((e) => e.eventType === "clicked")?.createdAt}
-              done={eventTypes.includes("clicked")}
-              active={!!whisp.openedAt && !eventTypes.includes("clicked")}
-            />
-            <TimelineStep
-              label="Watched"
-              time={whisp.watchedAt}
-              done={!!whisp.watchedAt}
-              active={eventTypes.includes("clicked") && !whisp.watchedAt}
-            />
-            <TimelineStep
-              label="Replied"
-              time={replies.find((r) => r.fromRecipient)?.createdAt}
-              done={replies.some((r) => r.fromRecipient)}
-              active={!!whisp.openedAt && !replies.some((r) => r.fromRecipient)}
-            />
-          </CardContent>
+          </button>
+          {timelineOpen && (
+            <CardContent id="delivery-timeline" className="pt-0">
+              <TimelineTrack steps={timelineSteps} />
+            </CardContent>
+          )}
         </Card>
         )}
 
