@@ -660,6 +660,17 @@ export function PublicWhispPage() {
                     maxLength={300}
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
+                    // Enter sends, Shift+Enter makes a newline — same
+                    // convention as ThreadComposer, so it's what a recipient's
+                    // fingers already expect after typing anywhere else in
+                    // the app. Guarded exactly like the Send button itself:
+                    // no bare Enter with nothing to send, and no double-send
+                    // while a request is already in flight.
+                    onKeyDown={(e) => {
+                      if (e.key !== "Enter" || e.shiftKey) return;
+                      e.preventDefault();
+                      if ((replyText.trim() || replyVideoUrl.trim()) && !publicReply.isPending) handleReply();
+                    }}
                     data-testid="textarea-public-reply"
                   />
 
@@ -871,17 +882,36 @@ export function PublicWhispPage() {
             )}
 
             {/* Signup CTA — recipients never need an account to watch or reply,
-                this is just an invite to send their own. */}
-            <a
-              href="/sign-up"
-              className="flex items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors p-4"
-            >
-              <div>
-                <p className="text-sm font-medium text-foreground">Have a video someone needs to see?</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Become a Whisperer — send your own, anonymously.</p>
+                this is just an invite to send their own. Made a real focal
+                point rather than a quiet link: by the time someone's read
+                this far — watched the video, maybe replied — they've just
+                felt exactly what the product does, which is the best
+                moment to invite them to try sending one themselves. */}
+            <div className="relative overflow-hidden rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/15 via-card to-card p-6 text-center space-y-3 glow-card">
+              <div
+                className="absolute -top-10 -right-10 w-32 h-32 rounded-full blur-[60px] pointer-events-none"
+                style={{ backgroundColor: moodColor, opacity: 0.25 }}
+              />
+              <Sparkles className="w-6 h-6 text-primary mx-auto relative" />
+              <div className="relative space-y-1.5">
+                <p className="font-serif text-lg font-semibold text-foreground">
+                  Got something to say, but not out loud?
+                </p>
+                <p className="text-sm text-muted-foreground max-w-xs mx-auto leading-relaxed">
+                  Send a video to someone who needs it — anonymously, without the awkward part of saying it
+                  yourself. They'll never know it was you, unless you want them to.
+                </p>
               </div>
-              <Sparkles className="w-5 h-5 text-primary shrink-0" />
-            </a>
+              <Button
+                size="lg"
+                className="relative rounded-full h-12 px-8 text-base font-medium shadow-[0_0_24px_rgba(124,92,252,0.35)] hover:shadow-[0_0_36px_rgba(124,92,252,0.55)] transition-all"
+                onClick={() => setLocation("/sign-up")}
+                data-testid="button-become-whisperer"
+              >
+                <Sparkles className="w-4 h-4 mr-2" /> Become a Whisperer Now
+              </Button>
+              <p className="relative text-xs text-muted-foreground">Free to start — no card required.</p>
+            </div>
 
             {/* Ghost Boost matching CTA — a recipient who just felt what an
                 anonymous whisp can do is a natural fit for the subscriber list. */}
