@@ -1,7 +1,14 @@
 import { Router } from "express";
 import { getAuth } from "@clerk/express";
 import { db } from "@workspace/db";
-import { usersTable, pushSubscriptionsTable, notificationsTable, notificationReadsTable } from "@workspace/db";
+import {
+  usersTable,
+  pushSubscriptionsTable,
+  notificationsTable,
+  notificationReadsTable,
+  whispsTable,
+  textWhispsTable,
+} from "@workspace/db";
 import { eq, and, or, ne, isNull, desc, count, notInArray } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { z } from "zod";
@@ -348,6 +355,90 @@ router.post("/notifications/:id/read", requireAuth, async (req, res): Promise<vo
   }
 
   res.status(204).send();
+});
+
+// ---------------------------------------------------------------------------
+// Recent recipients — powers autocomplete on the Whisper Link recipient field,
+// so a returning sender doesn't retype an address they've already used.
+//
+// Derived from the sender's own outbound history rather than stored as a
+// separate address book: the addresses are already on their whisps, a second
+// copy would drift, and there's nothing to keep in sync or clean up when a
+// whisp is deleted. It also means this works on a new device immediately,
+// which a localStorage list would not.
+//
+// Strictly scoped to whisps this user SENT. That matters beyond the obvious
+// privacy point: it's the sender's own typed input coming back to them, so it
+// reveals nothing about who holds an account — the fact the anti-enumeration
+// rules exist to protect. Nothing here reads whisps sent TO this user.
+// ---------------------------------------------------------------------------
+const RECENT_RECIPIENT_LIMIT = 50;
+// Scanned before de-duplication, so someone who whisps the same handful of
+// people repeatedly still surfaces the full set rather than one name.
+const RECENT_RECIPIENT_SCAN = 400;
+
+// GET /api/user/recent-recipients
+router.get("/recent-recipients", requireAuth, async (req, res): Promise<void> => {
+  const { userId } = getAuth(req);
+  const user = await ensureUser(userId!, req);
+
+  const [whisps, textWhisps] = await Promise.all([
+    db
+      .select({
+        email: whispsTable.recipientEmail,
+        phone: whispsTable.recipientPhone,
+        createdAt: whispsTable.createdAt,
+      })
+      .from(whispsTable)
+      .where(eq(whispsTable.senderId, user.id))
+      .orderBy(desc(whispsTable.createdAt))
+      .limit(RECENT_RECIPIENT_SCAN),
+    db
+      .select({ phone: textWhispsTable.recipientPhone, createdAt: textWhispsTable.createdAt })
+      .from(textWhispsTable)
+      .where(eq(textWhispsTable.senderId, user.id))
+      .orderBy(desc(textWhispsTable.createdAt))
+      .limit(RECENT_RECIPIENT_SCAN),
+  ]);
+
+  type Entry = { value: string; kind: "email" | "phone"; lastUsedAt: Date; useCount: number };
+  const byKey = new Map<string, Entry>();
+
+  function record(raw: string | null, kind: "email" | "phone", at: Date) {
+    const value = raw?.trim();
+    if (!value) return;
+    // Case-insensitive for emails, digits-only for phones — the same keys the
+    // client dedupes on (lib/recipients.ts), so one contact typed two ways
+    // doesn't show up as two suggestions.
+    const key = kind === "email" ? value.toLowerCase() : value.replace(/\D/g, "");
+    if (!key) return;
+    const existing = byKey.get(key);
+    if (!existing) {
+      byKey.set(key, { value, kind, lastUsedAt: at, useCount: 1 });
+      return;
+    }
+    existing.useCount += 1;
+    // Keep the most recent spelling, since that's the one they'd expect back.
+    if (at > existing.lastUsedAt) {
+      existing.lastUsedAt = at;
+      existing.value = value;
+    }
+  }
+
+  for (const row of whisps) {
+    record(row.email, "email", row.createdAt);
+    record(row.phone, "phone", row.createdAt);
+  }
+  for (const row of textWhisps) {
+    record(row.phone, "phone", row.createdAt);
+  }
+
+  const items = [...byKey.values()]
+    .sort((a, b) => b.lastUsedAt.getTime() - a.lastUsedAt.getTime())
+    .slice(0, RECENT_RECIPIENT_LIMIT)
+    .map((e) => ({ ...e, lastUsedAt: e.lastUsedAt.toISOString() }));
+
+  res.json({ items });
 });
 
 // POST /api/user/notifications/read-all

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,6 +15,7 @@ import {
   useGetNoteSuggestions,
   useGetConciergeSuggestions,
   useGetUserProfile,
+  useGetMyRecentRecipients,
   getListMyCirclesQueryKey,
   getListWhisperGroupsQueryKey,
   getGetWhispStatsQueryKey,
@@ -30,6 +31,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { MoodTag, MOOD_CONFIG } from "@/components/shared/MoodTag";
+import { Logo } from "@/components/ui/logo";
 import {
   ArrowLeft,
   ArrowRight,
@@ -58,7 +60,7 @@ import {
 import { SiWhatsapp } from "react-icons/si";
 import { PlatformIcon } from "@/components/shared/PlatformIcon";
 import { isContactPickerSupported, pickContact } from "@/lib/contactPicker";
-import { parseRecipients } from "@/lib/recipients";
+import { parseRecipients, tokenAtCaret, replaceTokenAt, recipientKey } from "@/lib/recipients";
 import { uploadMedia, UploadValidationError, type UploadedVideoResult } from "@/lib/uploadMedia";
 import { Thumbnail } from "@/components/shared/Thumbnail";
 import { CameraCapture } from "@/components/shared/CameraCapture";
@@ -176,6 +178,10 @@ export function SendWhisp() {
   // still used by Group Whisper, which picks one channel for the whole
   // group rather than per member.)
   const [recipientsInput, setRecipientsInput] = useState("");
+  // Where the caret sits in that field, so suggestions match the entry being
+  // typed rather than the whole comma-separated list.
+  const [recipientCaret, setRecipientCaret] = useState(0);
+  const recipientsRef = useRef<HTMLTextAreaElement>(null);
   const [preferWhatsApp, setPreferWhatsApp] = useState(false);
   const [sendingBatch, setSendingBatch] = useState(false);
   const [sentCount, setSentCount] = useState(1);
@@ -594,6 +600,42 @@ export function SendWhisp() {
   }
 
   const parsedRecipients = parseRecipients(recipientsInput);
+
+  // Contacts this sender has used before, so a returning user doesn't retype
+  // an address. Server-derived from their own sending history rather than
+  // held in localStorage, so it's there on a new device too.
+  const { data: recentRecipients } = useGetMyRecentRecipients();
+  const recipientToken = tokenAtCaret(recipientsInput, recipientCaret);
+  const alreadyEntered = new Set(parsedRecipients.recipients.map((r) => recipientKey(r.raw, r.kind)));
+  const recipientSuggestions = (recentRecipients?.items ?? [])
+    // Never suggest someone already in the field — the whole point is to save
+    // typing, and offering a duplicate wastes the one slot it has.
+    .filter((c) => !alreadyEntered.has(recipientKey(c.value, c.kind as "email" | "phone")))
+    .filter((c) => {
+      if (!recipientToken.token) return true;
+      const typed = recipientToken.token.toLowerCase();
+      // Phone numbers are matched on digits so "555" finds "+1 555 123 4567"
+      // despite the spaces and the country code the sender didn't type.
+      const digits = typed.replace(/\D/g, "");
+      return c.kind === "phone" && digits
+        ? c.value.replace(/\D/g, "").includes(digits)
+        : c.value.toLowerCase().includes(typed);
+    })
+    .slice(0, 5);
+
+  function applyRecipientSuggestion(value: string) {
+    const next = replaceTokenAt(recipientsInput, recipientToken.start, recipientToken.end, value);
+    setRecipientsInput(next.value);
+    setRecipientCaret(next.caret);
+    // Put the caret back where the next entry goes; without this the browser
+    // parks it at the end of the field on refocus.
+    requestAnimationFrame(() => {
+      const el = recipientsRef.current;
+      if (!el) return;
+      el.focus();
+      el.setSelectionRange(next.caret, next.caret);
+    });
+  }
   const hasPhoneRecipient = parsedRecipients.recipients.some((r) => r.kind === "phone");
   const canContinueFromRecipients =
     parsedRecipients.recipients.length > 0 && parsedRecipients.invalid.length === 0;
@@ -1404,12 +1446,50 @@ export function SendWhisp() {
                 </p>
                 <div className="space-y-3">
                   <Textarea
+                    ref={recipientsRef}
                     className="bg-input/50 border-border/50 rounded-xl resize-none min-h-[80px]"
                     placeholder="sam@example.com, +1 555 123 4567"
                     value={recipientsInput}
-                    onChange={(e) => setRecipientsInput(e.target.value)}
+                    onChange={(e) => {
+                      setRecipientsInput(e.target.value);
+                      setRecipientCaret(e.target.selectionStart ?? e.target.value.length);
+                    }}
+                    // Clicking or arrowing into a different entry has to move
+                    // the suggestions with it, not just typing.
+                    onSelect={(e) => setRecipientCaret(e.currentTarget.selectionStart ?? 0)}
                     data-testid="input-recipients"
                   />
+
+                  {/* Contacts they've sent to before. Shown as soon as the
+                      field is focused-and-empty as well as while typing —
+                      "who did I send that to last time" is exactly the thing
+                      people can't remember, and a list they have to start
+                      spelling correctly to see is no help. */}
+                  {recipientSuggestions.length > 0 && (
+                    <div className="space-y-1.5" data-testid="recipient-suggestions">
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                        {recipientToken.token ? "Matching contacts" : "Recently sent to"}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {recipientSuggestions.map((c) => (
+                          <button
+                            key={`${c.kind}:${c.value}`}
+                            type="button"
+                            onClick={() => applyRecipientSuggestion(c.value)}
+                            data-testid={`suggestion-recipient-${c.value}`}
+                            className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-card px-2.5 py-1 text-xs text-foreground transition-colors hover:border-primary/50 hover:bg-primary/10"
+                          >
+                            {c.kind === "email" ? (
+                              <Mail className="w-3 h-3 text-muted-foreground" />
+                            ) : (
+                              <Phone className="w-3 h-3 text-muted-foreground" />
+                            )}
+                            {c.value}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Live read-back of how each entry was understood. Without
                       it, auto-detection is invisible — a typo'd address just
@@ -1508,7 +1588,13 @@ export function SendWhisp() {
             {/* Step 6: Confirm + Send */}
             {step === 6 && (
               <div className="space-y-4">
-                <h2 className="text-xl font-serif font-semibold">Ready to send?</h2>
+                {/* The mark sits opposite the heading on the final step —
+                    the last screen before something goes out anonymously is
+                    the one worth signing. */}
+                <div className="flex items-start justify-between gap-3">
+                  <h2 className="text-xl font-serif font-semibold">Ready to send?</h2>
+                  <Logo className="h-8 w-auto shrink-0 text-primary" aria-hidden />
+                </div>
                 <div className="space-y-2 text-sm">
                   {videoMeta?.noPreview ? (
                     <div className="flex gap-3 p-3 bg-muted/30 rounded-xl items-center" data-testid="review-video-preview-card">

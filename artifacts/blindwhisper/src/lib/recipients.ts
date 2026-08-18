@@ -87,6 +87,52 @@ export function parseRecipients(input: string): RecipientParseResult {
 }
 
 /**
+ * The single entry the caret currently sits in.
+ *
+ * The field holds a comma-separated list, so autocomplete has to work on one
+ * entry rather than the whole value — otherwise typing a second recipient
+ * matches against "sam@example.com, jo" and finds nothing, and accepting a
+ * suggestion would replace everything already typed.
+ */
+export function tokenAtCaret(value: string, caret: number): { token: string; start: number; end: number } {
+  const isSeparator = (ch: string) => ch === "," || ch === "\n";
+
+  let start = caret;
+  while (start > 0 && !isSeparator(value[start - 1])) start--;
+
+  let end = caret;
+  while (end < value.length && !isSeparator(value[end])) end++;
+
+  return { token: value.slice(start, end).trim(), start, end };
+}
+
+/**
+ * Swaps the entry at [start, end) for a chosen suggestion and leaves the caret
+ * ready for the next one. Returns the new value and where the caret should go,
+ * since the browser puts it at the end of the field otherwise — which would
+ * drop you past entries you hadn't finished editing.
+ */
+export function replaceTokenAt(
+  value: string,
+  start: number,
+  end: number,
+  replacement: string,
+): { value: string; caret: number } {
+  const before = value.slice(0, start);
+  const after = value.slice(end);
+  // Trailing ", " so the next entry can be typed straight away — but not when
+  // something already follows, or the list grows a double separator.
+  const needsSeparator = after.trim() === "";
+  const inserted = needsSeparator ? `${replacement}, ` : replacement;
+  return { value: before + inserted + after, caret: before.length + inserted.length };
+}
+
+/** Matching key for "is this contact already in the field" — mirrors parseRecipients. */
+export function recipientKey(value: string, kind: RecipientKind): string {
+  return kind === "email" ? value.trim().toLowerCase() : value.replace(/\D/g, "");
+}
+
+/**
  * How a whisp's recipient should be named back to its own sender.
  *
  * Only ever shown to the sender, and only their own data — they typed this

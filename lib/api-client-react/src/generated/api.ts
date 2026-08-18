@@ -79,6 +79,7 @@ import type {
   PushPublicKeyResponse,
   PushSubscriptionDeleteInput,
   PushSubscriptionInput,
+  RecentRecipientListResponse,
   RemindMeInput,
   RemindMeResult,
   RevealResponse,
@@ -4911,6 +4912,84 @@ export function useGetMyUnreadNotificationCount<TData = Awaited<ReturnType<typeo
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetMyUnreadNotificationCountQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetMyRecentRecipientsUrl = () => {
+
+
+
+
+  return `/api/user/recent-recipients`
+}
+
+/**
+ * Only ever the caller's own sending history — addresses they typed themselves. Says nothing about whether any of them has a Blind Whisper account, which is the fact the anti-enumeration rules protect.
+ * @summary Contacts this user has sent to before, for autocompleting the recipient field
+ */
+export const getMyRecentRecipients = async ( options?: RequestInit): Promise<RecentRecipientListResponse> => {
+
+  return customFetch<RecentRecipientListResponse>(getGetMyRecentRecipientsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyRecentRecipientsQueryKey = () => {
+    return [
+    `/api/user/recent-recipients`
+    ] as const;
+    }
+
+
+export const getGetMyRecentRecipientsQueryOptions = <TData = Awaited<ReturnType<typeof getMyRecentRecipients>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyRecentRecipients>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyRecentRecipientsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyRecentRecipients>>> = ({ signal }) => getMyRecentRecipients({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyRecentRecipients>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyRecentRecipientsQueryResult = NonNullable<Awaited<ReturnType<typeof getMyRecentRecipients>>>
+export type GetMyRecentRecipientsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Contacts this user has sent to before, for autocompleting the recipient field
+ */
+
+export function useGetMyRecentRecipients<TData = Awaited<ReturnType<typeof getMyRecentRecipients>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyRecentRecipients>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyRecentRecipientsQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

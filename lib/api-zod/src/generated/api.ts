@@ -1737,6 +1737,20 @@ export const GetMyUnreadNotificationCountResponse = zod.object({
 
 
 /**
+ * Only ever the caller's own sending history — addresses they typed themselves. Says nothing about whether any of them has a Blind Whisper account, which is the fact the anti-enumeration rules protect.
+ * @summary Contacts this user has sent to before, for autocompleting the recipient field
+ */
+export const GetMyRecentRecipientsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "value": zod.string().describe('The address exactly as the sender last typed it.'),
+  "kind": zod.enum(['email', 'phone']),
+  "lastUsedAt": zod.coerce.date(),
+  "useCount": zod.number().describe('How many whisps this sender has sent to this address.')
+}))
+})
+
+
+/**
  * @summary Mark one notification as read
  */
 export const MarkNotificationReadParams = zod.object({

@@ -1504,6 +1504,23 @@ paths:
               schema:
                 $ref: "#/components/schemas/UnreadNotificationCountResponse"
 
+  /user/recent-recipients:
+    get:
+      operationId: getMyRecentRecipients
+      tags: [user]
+      summary: Contacts this user has sent to before, for autocompleting the recipient field
+      description: >-
+        Only ever the caller's own sending history — addresses they typed themselves.
+        Says nothing about whether any of them has a Blind Whisper account, which is
+        the fact the anti-enumeration rules protect.
+      responses:
+        "200":
+          description: Previously used recipients, most recently used first
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecentRecipientListResponse"
+
   /user/notifications/{id}/read:
     post:
       operationId: markNotificationRead
@@ -4063,6 +4080,37 @@ components:
       required:
         - unreadCount
         - unreadReplyCount
+
+    RecentRecipient:
+      type: object
+      properties:
+        value:
+          type: string
+          description: The address exactly as the sender last typed it.
+        kind:
+          type: string
+          enum: [email, phone]
+        lastUsedAt:
+          type: string
+          format: date-time
+        useCount:
+          type: integer
+          description: How many whisps this sender has sent to this address.
+      required:
+        - value
+        - kind
+        - lastUsedAt
+        - useCount
+
+    RecentRecipientListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecentRecipient"
+      required:
+        - items
 
     WhisperGroup:
       type: object

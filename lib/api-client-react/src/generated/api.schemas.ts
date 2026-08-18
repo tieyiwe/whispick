@@ -1075,6 +1075,27 @@ export interface UnreadNotificationCountResponse {
   unreadReplyCount: number;
 }
 
+export type RecentRecipientKind = typeof RecentRecipientKind[keyof typeof RecentRecipientKind];
+
+
+export const RecentRecipientKind = {
+  email: 'email',
+  phone: 'phone',
+} as const;
+
+export interface RecentRecipient {
+  /** The address exactly as the sender last typed it. */
+  value: string;
+  kind: RecentRecipientKind;
+  lastUsedAt: string;
+  /** How many whisps this sender has sent to this address. */
+  useCount: number;
+}
+
+export interface RecentRecipientListResponse {
+  items: RecentRecipient[];
+}
+
 export interface WhisperGroup {
   id: string;
   ownerId: string;
