@@ -764,7 +764,8 @@ export const GetPublicWhispResponse = zod.object({
   "readAt": zod.string().nullish().describe('When the other party in the conversation (whichever one didn\'t author this message) is known to have viewed it — set the moment they load a view containing it. Null means unread. Drives the WhatsApp-style single\/double checkmark next to a message the current viewer sent themselves; never rendered on a message you received.')
 })),
   "recipientRepliesRemaining": zod.number().nullish().describe('Anonymous replies this recipient has left on this whisp. Null means uncapped. Signing up removes the cap entirely.'),
-  "videoRepliesAllowed": zod.boolean().optional().describe('Whether this viewer may whisp a VIDEO back. Text replies stay open to anonymous recipients up to their allowance; a video reply needs either an account or reply credit the sender bought for this whisp.')
+  "videoRepliesAllowed": zod.boolean().optional().describe('Whether this viewer may whisp a VIDEO back. Text replies stay open to anonymous recipients up to their allowance; a video reply needs either an account or reply credit the sender bought for this whisp.'),
+  "hasWatched": zod.boolean().optional().describe('Whether this whisp was already marked watched (whisps.watchedAt) BEFORE this request — true only on a reopen, never on the load that itself does the watching. Drives whether the appreciation prompt starts expanded or collapsed.')
 })
 
 

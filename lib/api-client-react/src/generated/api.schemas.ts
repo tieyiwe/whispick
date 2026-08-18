@@ -375,6 +375,8 @@ export interface PublicWhisp {
   recipientRepliesRemaining?: number | null;
   /** Whether this viewer may whisp a VIDEO back. Text replies stay open to anonymous recipients up to their allowance; a video reply needs either an account or reply credit the sender bought for this whisp. */
   videoRepliesAllowed?: boolean;
+  /** Whether this whisp was already marked watched (whisps.watchedAt) BEFORE this request — true only on a reopen, never on the load that itself does the watching. Drives whether the appreciation prompt starts expanded or collapsed. */
+  hasWatched?: boolean;
 }
 
 export interface TrackingEventInput {

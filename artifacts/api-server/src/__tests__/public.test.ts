@@ -39,6 +39,18 @@ describe("GET /api/public/w/:token", () => {
     expect(res.body).not.toHaveProperty("senderId");
   });
 
+  it("reports hasWatched only once a prior visit already marked it watched, not the visit that does the watching", async () => {
+    const whisp = await createWhisp();
+
+    const beforeWatching = await request(app).get(`/api/public/w/${whisp.publicToken}`);
+    expect(beforeWatching.body.hasWatched).toBe(false);
+
+    await request(app).post(`/api/public/w/${whisp.publicToken}/track`).send({ eventType: "watched_complete" });
+
+    const afterWatching = await request(app).get(`/api/public/w/${whisp.publicToken}`);
+    expect(afterWatching.body.hasWatched).toBe(true);
+  });
+
   it("includes the reply thread so the recipient can see prior messages, not just send a one-shot reply", async () => {
     const whisp = await createWhisp();
 

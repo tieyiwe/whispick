@@ -177,6 +177,12 @@ router.get("/w/:token", async (req, res): Promise<void> => {
     reminderCount: whisp.reminderCount,
     expired: isExpired(whisp.expiresAt),
     hasUpload: !!whisp.uploadedVideoId,
+    // True only when watchedAt was ALREADY set before this request — i.e.
+    // this is a reopen of a whisp they watched on some earlier visit, never
+    // the visit that itself does the watching (that happens client-side,
+    // after this response has already gone out). Drives whether the
+    // appreciation prompt starts expanded or collapsed on the recipient page.
+    hasWatched: !!whisp.watchedAt,
     aiTakeaway: whisp.aiTakeaway,
     aiTakeawayStatus: whisp.aiTakeawayStatus,
     replies,

@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MoodTag, MOOD_CONFIG } from "@/components/shared/MoodTag";
 import { useToast } from "@/hooks/use-toast";
-import { Send, Loader2, Video, X, Link2, HeartHandshake, Clock, BellRing, Sparkles, PlayCircle, PenLine, Lock } from "lucide-react";
+import { Send, Loader2, Video, X, Link2, HeartHandshake, Clock, BellRing, Sparkles, PlayCircle, PenLine, Lock, ChevronDown } from "lucide-react";
 import { LogoLockup } from "@/components/ui/logo";
 import { VideoPlayer } from "@/components/shared/VideoPlayer";
 import { QUICK_REPLIES } from "@/lib/quickReplies";
@@ -111,6 +111,19 @@ export function PublicWhispPage() {
   const [now, setNow] = useState(() => Date.now());
   const [justWatched, setJustWatched] = useState(false);
 
+  // The "Was this something you needed to hear?" card starts collapsed —
+  // right after the video card and takeaway, it was crowding the screen
+  // before there was anything to react to yet. Two things open it back up:
+  // finishing the video just now (justWatched, below), or — the case this
+  // ref exists for — this being a REOPEN of a whisp already watched on some
+  // earlier visit, where leading with the prompt is exactly what makes
+  // sense. hasWatchedOnLoadRef captures whisp.hasWatched only once, the
+  // first moment it's available, so a later poll returning hasWatched=true
+  // (because THIS visit just watched it) can't retroactively re-trigger it —
+  // that case is already covered by the justWatched effect below.
+  const [reactionExpanded, setReactionExpanded] = useState(false);
+  const hasWatchedOnLoadRef = useRef(false);
+
   // This is a private, single-recipient page — never indexable, even if a
   // link to it ends up publicly posted somewhere. robots.txt disallows /w/
   // for well-behaved crawlers, but a noindex tag also stops a page from
@@ -172,6 +185,19 @@ export function PublicWhispPage() {
     // and the ref itself only exists in some render branches (not the
     // expired/limit-reached ones, which are shorter).
   }, [showVideoReply, replyVideoMeta, whisp?.recipientRepliesRemaining, whisp?.expired]);
+
+  // Captures whisp.hasWatched exactly once — the first render where `whisp`
+  // exists at all, i.e. the very first load's response, before any poll
+  // triggered by this session's own watching could change it.
+  useEffect(() => {
+    if (hasWatchedOnLoadRef.current || !whisp) return;
+    hasWatchedOnLoadRef.current = true;
+    if (whisp.hasWatched) setReactionExpanded(true);
+  }, [whisp]);
+
+  useEffect(() => {
+    if (justWatched) setReactionExpanded(true);
+  }, [justWatched]);
 
   const trackEvent = useTrackWhispEvent();
   const publicReply = usePublicReply();
@@ -489,54 +515,73 @@ export function PublicWhispPage() {
 
             {whisp.aiTakeawayStatus === "ready" && whisp.aiTakeaway && <TakeawayCard text={whisp.aiTakeaway} />}
 
-            {/* Appreciation prompt */}
-            <div className="bg-card border border-border/50 rounded-2xl p-4 text-center space-y-2">
-              {appreciationResponse ? (
-                <>
-                  <p className="text-sm text-muted-foreground flex items-center justify-center gap-1.5">
-                    <HeartHandshake className="w-4 h-4 text-primary" />
-                    {appreciationResponse === "yes" ? "Glad this reached you." : "Thanks for letting them know."}
-                  </p>
-                  {appreciationResponse === "yes" && whisp.videoPlatform !== "upload" && (
-                    <div className="pt-1 space-y-1.5">
-                      <p className="text-xs text-muted-foreground">Know someone who needs this too?</p>
+            {/* Appreciation prompt — collapsible so it doesn't crowd the
+                video/takeaway on a fresh visit before there's anything to
+                react to yet. Opens itself (see the two effects near
+                justWatched/hasWatchedOnLoadRef above) the moment they finish
+                watching, or immediately on a reopen of a whisp already
+                watched on some earlier visit. */}
+            <div className="bg-card border border-border/50 rounded-2xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setReactionExpanded((v) => !v)}
+                data-testid="button-toggle-appreciation"
+                aria-expanded={reactionExpanded}
+                className="w-full flex items-center justify-between gap-2 px-4 py-3.5 text-left"
+              >
+                <span className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                  {appreciationResponse && <HeartHandshake className="w-4 h-4 text-primary shrink-0" />}
+                  {appreciationResponse
+                    ? appreciationResponse === "yes"
+                      ? "Glad this reached you."
+                      : "Thanks for letting them know."
+                    : "Was this something you needed to hear?"}
+                </span>
+                <ChevronDown
+                  className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform ${reactionExpanded ? "rotate-180" : ""}`}
+                />
+              </button>
+              {reactionExpanded && (
+                <div className="px-4 pb-4 text-center space-y-2">
+                  {appreciationResponse ? (
+                    appreciationResponse === "yes" && whisp.videoPlatform !== "upload" && (
+                      <div className="space-y-1.5">
+                        <p className="text-xs text-muted-foreground">Know someone who needs this too?</p>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="rounded-full"
+                          onClick={handlePassItForward}
+                          data-testid="button-pass-it-forward"
+                        >
+                          <Send className="w-3.5 h-3.5 mr-1.5" /> Pass it forward
+                        </Button>
+                      </div>
+                    )
+                  ) : (
+                    <div className="flex gap-2 justify-center">
+                      <Button
+                        size="sm"
+                        className="rounded-full"
+                        onClick={() => handleAppreciation(true)}
+                        disabled={submitAppreciation.isPending}
+                        data-testid="button-appreciation-yes"
+                      >
+                        Yes
+                      </Button>
                       <Button
                         size="sm"
                         variant="outline"
                         className="rounded-full"
-                        onClick={handlePassItForward}
-                        data-testid="button-pass-it-forward"
+                        onClick={() => handleAppreciation(false)}
+                        disabled={submitAppreciation.isPending}
+                        data-testid="button-appreciation-no"
                       >
-                        <Send className="w-3.5 h-3.5 mr-1.5" /> Pass it forward
+                        Not really
                       </Button>
                     </div>
                   )}
-                </>
-              ) : (
-                <>
-                  <p className="text-sm font-medium text-foreground">Was this something you needed to hear?</p>
-                  <div className="flex gap-2 justify-center pt-1">
-                    <Button
-                      size="sm"
-                      className="rounded-full"
-                      onClick={() => handleAppreciation(true)}
-                      disabled={submitAppreciation.isPending}
-                      data-testid="button-appreciation-yes"
-                    >
-                      Yes
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="rounded-full"
-                      onClick={() => handleAppreciation(false)}
-                      disabled={submitAppreciation.isPending}
-                      data-testid="button-appreciation-no"
-                    >
-                      Not really
-                    </Button>
-                  </div>
-                </>
+                </div>
               )}
             </div>
 
