@@ -2688,6 +2688,10 @@ components:
         - whisp
         - trackingEvents
         - replies
+        - viewCount
+        - likeCount
+        - comments
+        - circleConversations
 
     CircleComment:
       type: object

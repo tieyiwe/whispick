@@ -238,20 +238,20 @@ export const GetWhispResponse = zod.object({
   "readAt": zod.string().nullish().describe('When the other party in the conversation (whichever one didn\'t author this message) is known to have viewed it — set the moment they load a view containing it. Null means unread. Drives the WhatsApp-style single\/double checkmark next to a message the current viewer sent themselves; never rendered on a message you received.')
 })),
   "recipientRepliesRemaining": zod.number().nullish().describe('Anonymous replies the recipient has left on this whisp. Null means uncapped. 0 means they can\'t reply again unless the sender adds more replies or the recipient signs up.'),
-  "viewCount": zod.number().optional().describe('Blind Circle posts only (0 otherwise) — how many times this post was opened, across every anonymous viewer.'),
-  "likeCount": zod.number().optional().describe('Blind Circle posts only (0 otherwise).'),
+  "viewCount": zod.number().describe('Blind Circle posts only (0 otherwise) — how many times this post was opened, across every anonymous viewer.'),
+  "likeCount": zod.number().describe('Blind Circle posts only (0 otherwise).'),
   "comments": zod.array(zod.object({
   "id": zod.string(),
   "commentText": zod.string(),
   "parentCommentId": zod.string().nullish().describe('The comment this one replies to, if any — same flat quote-reference model as WhispReply.parentReplyId.'),
   "isPoster": zod.boolean().describe('True when this comment came from the post\'s own (signed-in) sender — a role badge, never an identity.'),
   "createdAt": zod.coerce.date()
-}).describe('A public comment on a Blind Circle post. Never carries a visitor identifier — see circle_comments.ts\'s schema comment for why.')).optional().describe('Blind Circle posts only (empty otherwise).'),
+}).describe('A public comment on a Blind Circle post. Never carries a visitor identifier — see circle_comments.ts\'s schema comment for why.')).describe('Blind Circle posts only (empty otherwise).'),
   "circleConversations": zod.array(zod.object({
   "id": zod.string(),
   "publicToken": zod.string(),
   "createdAt": zod.coerce.date()
-})).optional().describe('Private 1:1 conversations anonymous viewers started from this Blind Circle post (see POST \/w\/{token}\/circle-dm\/start). Empty for every other delivery method, including a circle_dm thread itself — a conversation can\'t spawn another conversation.')
+})).describe('Private 1:1 conversations anonymous viewers started from this Blind Circle post (see POST \/w\/{token}\/circle-dm\/start). Empty for every other delivery method, including a circle_dm thread itself — a conversation can\'t spawn another conversation.')
 })
 
 

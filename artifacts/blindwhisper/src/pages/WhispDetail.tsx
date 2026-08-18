@@ -1,14 +1,16 @@
-import { useParams, useLocation } from "wouter";
+import { useParams, useLocation, Link } from "wouter";
 import {
   useGetWhisp,
   useCreateWhispReply,
   useRequestReveal,
   useDeleteWhisp,
   useGetGhostBoostMatches,
+  usePostCircleComment,
   getGetGhostBoostMatchesQueryKey,
   getGetWhispQueryKey,
   getListWhispsQueryKey,
   getGetWhispStatsQueryKey,
+  type CircleComment,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -47,8 +49,12 @@ import {
   Users,
   Lock,
   ChevronDown,
+  Heart,
+  X,
 } from "lucide-react";
 import { deliveryLabel } from "@/lib/deliveryMethod";
+import { getVisitorId } from "@/lib/anonymousVisitor";
+import { CircleCommentRow } from "@/components/shared/CircleCommentRow";
 
 type TimelineStepData = {
   label: string;
@@ -130,6 +136,9 @@ export function WhispDetail() {
   const [replyText, setReplyText] = useState("");
   const [replyingTo, setReplyingTo] = useState<ThreadReply | null>(null);
   const [timelineOpen, setTimelineOpen] = useState(true);
+  const [posterCommentText, setPosterCommentText] = useState("");
+  const [posterCommentReplyingTo, setPosterCommentReplyingTo] = useState<CircleComment | null>(null);
+  const postComment = usePostCircleComment();
 
   // Polled so a reply arriving while this page is open shows up on its own.
   // 15s is a deliberate middle ground: the sender's notification is already
@@ -180,7 +189,7 @@ export function WhispDetail() {
     );
   }
 
-  const { whisp, trackingEvents, replies, recipientRepliesRemaining } = data;
+  const { whisp, trackingEvents, replies, recipientRepliesRemaining, viewCount, likeCount, comments, circleConversations } = data;
 
   function handleSendFollowUp() {
     if (!replyText.trim()) return;
@@ -201,6 +210,29 @@ export function WhispDetail() {
           toast({ title: "Follow-up sent" });
         },
         onError: () => toast({ title: "Failed to send", variant: "destructive" }),
+      }
+    );
+  }
+
+  // Posts through the SAME public endpoint an anonymous viewer uses — the
+  // sender is authenticated here, so isPoster gets set server-side
+  // automatically (see routes/public.ts's POST /w/:token/comments), badging
+  // this as coming from the post's own poster without a separate code path.
+  function handlePostComment() {
+    const text = posterCommentText.trim();
+    if (!text || !whisp) return;
+    postComment.mutate(
+      {
+        token: whisp.publicToken,
+        data: { commentText: text, visitorId: getVisitorId(), parentCommentId: posterCommentReplyingTo?.id ?? null },
+      },
+      {
+        onSuccess: () => {
+          setPosterCommentText("");
+          setPosterCommentReplyingTo(null);
+          queryClient.invalidateQueries({ queryKey: getGetWhispQueryKey(id!) });
+        },
+        onError: () => toast({ title: "Couldn't post that comment", variant: "destructive" }),
       }
     );
   }
@@ -370,6 +402,13 @@ export function WhispDetail() {
                 )}
               </div>
             )}
+            {whisp.deliveryMethod === "circle_drop" && (
+              <div className="flex items-center gap-4 text-sm text-muted-foreground pt-1 pb-2 flex-wrap" data-testid="circle-post-stats">
+                <span className="flex items-center gap-1"><Eye className="w-3.5 h-3.5" /> {viewCount} view{viewCount === 1 ? "" : "s"}</span>
+                <span className="flex items-center gap-1"><Heart className="w-3.5 h-3.5" /> {likeCount} like{likeCount === 1 ? "" : "s"}</span>
+                <span className="flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5" /> {comments.length} comment{comments.length === 1 ? "" : "s"}</span>
+              </div>
+            )}
             {whisp.moodTag && <MoodTag mood={whisp.moodTag} className="mb-2" />}
             {whisp.anonymousNote && (
               <p className="text-sm text-muted-foreground italic border-l-2 border-primary/40 pl-3 mb-2">
@@ -513,6 +552,107 @@ export function WhispDetail() {
                   />
                 }
               />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Blind Circle comments — the poster can read every public comment
+            here and reply into the same thread anonymous viewers see, badged
+            "Poster" (see routes/public.ts's isPoster). Doesn't apply to any
+            other delivery method — a Whisper Link has no public comment
+            section, just the private "Anonymous conversation" above. */}
+        {whisp.deliveryMethod === "circle_drop" && (
+          <Card className="bg-card border-border/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-serif flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-primary" />
+                Comments ({comments.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {comments.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-3">No comments yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {comments
+                    .filter((c) => !c.parentCommentId)
+                    .map((comment) => (
+                      <div key={comment.id} className="space-y-2">
+                        <CircleCommentRow comment={comment} onReply={() => setPosterCommentReplyingTo(comment)} />
+                        {comments
+                          .filter((r) => r.parentCommentId === comment.id)
+                          .map((reply) => (
+                            <div key={reply.id} className="ml-5 pl-3 border-l-2 border-border/30">
+                              <CircleCommentRow comment={reply} onReply={() => setPosterCommentReplyingTo(comment)} />
+                            </div>
+                          ))}
+                      </div>
+                    ))}
+                </div>
+              )}
+
+              {posterCommentReplyingTo && (
+                <div className="flex items-center justify-between gap-2 rounded-lg border-l-2 border-primary/60 bg-primary/5 px-3 py-1.5">
+                  <span className="text-[11px] text-muted-foreground">Replying to a comment</span>
+                  <button
+                    type="button"
+                    onClick={() => setPosterCommentReplyingTo(null)}
+                    aria-label="Cancel reply"
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+              <div className="flex gap-2">
+                <Textarea
+                  className="bg-input/40 border-border/50 rounded-xl resize-none min-h-[44px]"
+                  placeholder="Reply as the poster..."
+                  maxLength={500}
+                  value={posterCommentText}
+                  onChange={(e) => setPosterCommentText(e.target.value)}
+                  data-testid="textarea-poster-comment"
+                />
+                <Button
+                  size="sm"
+                  className="rounded-full self-end shrink-0"
+                  onClick={handlePostComment}
+                  disabled={!posterCommentText.trim() || postComment.isPending}
+                  data-testid="button-post-poster-comment"
+                >
+                  {postComment.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Private conversations anonymous viewers started from this post —
+            each is its own separate whisp (deliveryMethod='circle_dm', see
+            routes/public.ts's POST /w/:token/circle-dm/start), so it gets
+            its own full WhispDetail page with its own reply thread. */}
+        {whisp.deliveryMethod === "circle_drop" && circleConversations.length > 0 && (
+          <Card className="bg-card border-border/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-serif flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-primary" />
+                Private conversations ({circleConversations.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1">
+              {circleConversations.map((conversation) => (
+                <Link
+                  key={conversation.id}
+                  href={`/whisps/${conversation.id}`}
+                  className="flex items-center justify-between gap-2 rounded-lg px-2 py-2 text-sm text-foreground hover:bg-muted/40 transition-colors"
+                  data-testid={`link-circle-conversation-${conversation.id}`}
+                >
+                  <span>An anonymous visitor wants to talk</span>
+                  <span className="text-xs text-muted-foreground shrink-0">
+                    {new Date(conversation.createdAt).toLocaleDateString()}
+                  </span>
+                </Link>
+              ))}
             </CardContent>
           </Card>
         )}

@@ -11,7 +11,11 @@ import {
   useSubmitAppreciation,
   useRequestWhispReminder,
   useRequestVideoReply,
+  useToggleCircleLike,
+  usePostCircleComment,
+  useStartCircleDm,
   getGetPublicWhispQueryKey,
+  type CircleComment,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNowStrict } from "date-fns";
@@ -21,12 +25,13 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MoodTag, MOOD_CONFIG } from "@/components/shared/MoodTag";
 import { useToast } from "@/hooks/use-toast";
-import { Send, Loader2, Video, X, Link2, HeartHandshake, Clock, BellRing, Sparkles, PlayCircle, PenLine, Lock, ChevronDown } from "lucide-react";
+import { Send, Loader2, Video, X, Link2, HeartHandshake, Clock, BellRing, Sparkles, PlayCircle, PenLine, Lock, ChevronDown, Heart, MessageCircle } from "lucide-react";
 import { LogoLockup } from "@/components/ui/logo";
 import { VideoPlayer } from "@/components/shared/VideoPlayer";
 import { QUICK_REPLIES } from "@/lib/quickReplies";
 import { Thumbnail } from "@/components/shared/Thumbnail";
 import { ReplyThread, type ThreadReply } from "@/components/shared/ReplyThread";
+import { CircleCommentRow } from "@/components/shared/CircleCommentRow";
 import { PullToRefresh } from "@/components/shared/PullToRefresh";
 import { REMINDER_PRESETS, MAX_REMINDERS } from "@/lib/reminderPresets";
 import { savePendingForward } from "@/lib/forwardVideo";
@@ -213,6 +218,11 @@ export function PublicWhispPage() {
   const submitAppreciation = useSubmitAppreciation();
   const requestReminder = useRequestWhispReminder();
   const requestVideoReply = useRequestVideoReply();
+  const toggleLike = useToggleCircleLike();
+  const postComment = usePostCircleComment();
+  const startCircleDm = useStartCircleDm();
+  const [commentText, setCommentText] = useState("");
+  const [commentReplyingTo, setCommentReplyingTo] = useState<CircleComment | null>(null);
 
   // Keep the countdown fresh without refetching the whisp itself.
   useEffect(() => {
@@ -361,6 +371,64 @@ export function PublicWhispPage() {
     const video = replyVideoUrl.trim();
     if (!replyText.trim() && !video) return;
     submitReply(replyText.trim(), video ? { url: video, meta: replyVideoMeta } : undefined);
+  }
+
+  function handleToggleLike() {
+    toggleLike.mutate(
+      { token: token!, data: { visitorId: getVisitorId() } },
+      { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetPublicWhispQueryKey(token!) }) }
+    );
+  }
+
+  function handlePostComment() {
+    const text = commentText.trim();
+    if (!text) return;
+    postComment.mutate(
+      {
+        token: token!,
+        data: { commentText: text, visitorId: getVisitorId(), parentCommentId: commentReplyingTo?.id ?? null },
+      },
+      {
+        onSuccess: () => {
+          setCommentText("");
+          setCommentReplyingTo(null);
+          queryClient.invalidateQueries({ queryKey: getGetPublicWhispQueryKey(token!) });
+        },
+        onError: (err: any) => {
+          if (err?.data?.code === "comment_limit_reached") {
+            toast({
+              title: "You've used your free comments for now",
+              description: "Sign up to comment anytime, or check back in 24 hours.",
+              variant: "destructive",
+            });
+            return;
+          }
+          toast({ title: "Couldn't post that comment", variant: "destructive" });
+        },
+      }
+    );
+  }
+
+  // Resumes the SAME private thread on a repeat visit (see
+  // lib/circleDm.ts) instead of minting a new one on every click — the
+  // token, once saved, is this device's only way back to that conversation.
+  function handleMessagePoster() {
+    if (!whisp) return;
+    const saved = getSavedCircleDmToken(whisp.id);
+    if (saved) {
+      setLocation(`/w/${saved}`);
+      return;
+    }
+    startCircleDm.mutate(
+      { token: token! },
+      {
+        onSuccess: (result) => {
+          saveCircleDmToken(whisp.id, result.publicToken);
+          setLocation(`/w/${result.publicToken}`);
+        },
+        onError: () => toast({ title: "Couldn't start that conversation", variant: "destructive" }),
+      }
+    );
   }
 
   const moodColor = (whisp?.moodTag && MOOD_CONFIG[whisp.moodTag]?.color) || "#7C5CFC";
@@ -591,6 +659,128 @@ export function PublicWhispPage() {
                 </div>
               )}
             </div>
+
+            {/* Blind Circle engagement — likes, a public comment thread, and
+                an entry point into a private 1:1 conversation with the
+                poster. Only meaningful for a Circle post (a Whisper Link
+                already has exactly one anonymous party, for whom "liked" or
+                "N comments" is meaningless) — every other delivery method
+                keeps using the ordinary Reply section just below instead. */}
+            {whisp.deliveryMethod === "circle_drop" && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleToggleLike}
+                    disabled={toggleLike.isPending}
+                    data-testid="button-like-circle-post"
+                    aria-pressed={whisp.viewerHasLiked}
+                    className={`flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition-colors active:scale-95 ${
+                      whisp.viewerHasLiked
+                        ? "border-primary/40 bg-primary/10 text-primary"
+                        : "border-border/50 bg-card text-foreground hover:border-primary/40"
+                    }`}
+                  >
+                    <Heart className={`w-4 h-4 ${whisp.viewerHasLiked ? "fill-primary" : ""}`} />
+                    {whisp.likeCount > 0 ? whisp.likeCount : "Like"}
+                  </button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full flex-1"
+                    onClick={handleMessagePoster}
+                    disabled={startCircleDm.isPending}
+                    data-testid="button-message-poster"
+                  >
+                    {startCircleDm.isPending ? (
+                      <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                    ) : (
+                      <MessageCircle className="w-3.5 h-3.5 mr-1.5" />
+                    )}
+                    Message the poster privately
+                  </Button>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-px bg-border/40" />
+                    <span className="text-xs text-muted-foreground">
+                      {whisp.comments.length > 0
+                        ? `${whisp.comments.length} comment${whisp.comments.length === 1 ? "" : "s"}`
+                        : "Be the first to comment"}
+                    </span>
+                    <div className="flex-1 h-px bg-border/40" />
+                  </div>
+
+                  {whisp.comments.length > 0 && (
+                    <div className="space-y-3">
+                      {whisp.comments
+                        .filter((c) => !c.parentCommentId)
+                        .map((comment) => (
+                          <div key={comment.id} className="space-y-2">
+                            <CircleCommentRow comment={comment} onReply={() => setCommentReplyingTo(comment)} />
+                            {whisp.comments
+                              .filter((r) => r.parentCommentId === comment.id)
+                              .map((reply) => (
+                                <div key={reply.id} className="ml-5 pl-3 border-l-2 border-border/30">
+                                  <CircleCommentRow comment={reply} onReply={() => setCommentReplyingTo(comment)} />
+                                </div>
+                              ))}
+                          </div>
+                        ))}
+                    </div>
+                  )}
+
+                  {commentReplyingTo && (
+                    <div
+                      className="flex items-center justify-between gap-2 rounded-lg border-l-2 border-primary/60 bg-primary/5 px-3 py-1.5"
+                      data-testid="comment-replying-to"
+                    >
+                      <span className="text-[11px] text-muted-foreground">
+                        Replying to {commentReplyingTo.isPoster ? "the poster" : "a comment"}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setCommentReplyingTo(null)}
+                        aria-label="Cancel reply"
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+
+                  <Textarea
+                    className="bg-card border-border/50 rounded-xl resize-none min-h-[60px]"
+                    placeholder="Add a comment... (anonymous)"
+                    maxLength={500}
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    data-testid="textarea-circle-comment"
+                  />
+
+                  <div className="flex items-center justify-between gap-3">
+                    {/* The reminder the product asked for, plus the same
+                        signup nudge the rest of this page uses — comments
+                        are anonymous by default, but signing up lifts the
+                        rate limit entirely (see the toast on a 403 above). */}
+                    <p className="text-[11px] text-muted-foreground leading-snug">
+                      Keep it kind — the goal here is genuine, productive conversation.{" "}
+                      <a href="/sign-up" className="text-primary hover:underline">Become a Whisperer</a> for unlimited comments.
+                    </p>
+                    <Button
+                      size="sm"
+                      className="rounded-full shrink-0"
+                      onClick={handlePostComment}
+                      disabled={!commentText.trim() || postComment.isPending}
+                      data-testid="button-post-comment"
+                    >
+                      {postComment.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Reply section */}
             <div className="space-y-3">

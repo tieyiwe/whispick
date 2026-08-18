@@ -21,11 +21,11 @@ export interface WhispDetail {
      */
   recipientRepliesRemaining?: number | null;
   /** Blind Circle posts only (0 otherwise) — how many times this post was opened, across every anonymous viewer. */
-  viewCount?: number;
+  viewCount: number;
   /** Blind Circle posts only (0 otherwise). */
-  likeCount?: number;
+  likeCount: number;
   /** Blind Circle posts only (empty otherwise). */
-  comments?: CircleComment[];
+  comments: CircleComment[];
   /** Private 1:1 conversations anonymous viewers started from this Blind Circle post (see POST /w/{token}/circle-dm/start). Empty for every other delivery method, including a circle_dm thread itself — a conversation can't spawn another conversation. */
-  circleConversations?: WhispDetailCircleConversationsItem[];
+  circleConversations: WhispDetailCircleConversationsItem[];
 }

@@ -114,7 +114,13 @@ export function WhispsList() {
                       </div>
                       <div className="flex items-center text-sm text-muted-foreground mb-4">
                         <span className="truncate">
-                          To: {whisp.recipientEmail || whisp.recipientPhone || (whisp.deliveryMethod === "circle_drop" ? "Blind Circle feed" : "Ghost Boost audience")}
+                          To: {whisp.recipientEmail || whisp.recipientPhone || (
+                            whisp.deliveryMethod === "circle_drop"
+                              ? "Blind Circle feed"
+                              : whisp.deliveryMethod === "circle_dm"
+                                ? "An anonymous Circle visitor"
+                                : "Ghost Boost audience"
+                          )}
                         </span>
                         <span className="mx-2">•</span>
                         <span>{new Date(whisp.createdAt).toLocaleDateString()}</span>

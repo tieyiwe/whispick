@@ -3,6 +3,11 @@ export const DELIVERY_METHOD_LABELS: Record<string, string> = {
   ghost_boost: "Ghost Boost",
   circle_drop: "Blind Circle",
   group_whisper: "Group Whisper",
+  // A private conversation an anonymous Circle viewer started with the
+  // poster (see routes/public.ts's POST /w/:token/circle-dm/start) — not
+  // something the sender chose to send, so it needs its own label rather
+  // than reading as an ordinary outbound whisp.
+  circle_dm: "Circle conversation",
 };
 
 export const WHISPER_CHANNEL_LABELS: Record<string, string> = {
