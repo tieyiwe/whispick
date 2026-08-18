@@ -8,6 +8,21 @@
 // problem pull-to-refresh was changed to a real reload to escape.
 self.addEventListener("fetch", () => {});
 
+// Without these two, a new service worker installs after every deploy but
+// sits in the "waiting" state until every open tab/window of the app is
+// fully closed — which for an installed PWA that people rarely quit outright
+// can be days. skipWaiting + clients.claim make a newly-installed worker
+// take over immediately, which is what lib/appUpdate.ts's update detection
+// (see App.tsx's ServiceWorkerRegistration) depends on: it learns a new
+// version is live by watching for exactly this handover.
+self.addEventListener("install", () => {
+  self.skipWaiting();
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
 self.addEventListener("push", (event) => {
   if (!event.data) return;
   let payload = {};

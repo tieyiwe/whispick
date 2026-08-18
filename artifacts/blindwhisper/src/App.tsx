@@ -11,6 +11,8 @@ import { registerServiceWorker } from "@/lib/push";
 // of that.
 import "@/lib/installApp";
 import { PinToTaskbarTip } from "@/components/shared/PinToTaskbarTip";
+import { AppErrorBoundary } from "@/components/shared/AppErrorBoundary";
+import { watchForUpdates, isUpdateAvailable } from "@/lib/appUpdate";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
 import { dark } from '@clerk/themes';
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from 'wouter';
@@ -193,7 +195,9 @@ function ServiceWorkerRegistration() {
     if (!("serviceWorker" in navigator)) return;
     // Failure here is never worth surfacing: it means no push and no install
     // offer, not a broken app.
-    void registerServiceWorker().catch(() => {});
+    void registerServiceWorker()
+      .then((registration) => watchForUpdates(registration))
+      .catch(() => {});
   }, []);
 
   return null;
@@ -218,7 +222,22 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
 }
 
 function ClerkProviderWithRoutes() {
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
+  const skipNextUpdateCheck = useRef(true);
+
+  // Belt-and-suspenders for watchForUpdates' own background-tab reload: that
+  // covers the common case (a phone gets backgrounded within seconds), but a
+  // desktop tab left open and actively used for hours might never go hidden.
+  // The next real navigation is the other moment a stale bundle would 404
+  // anyway, so treat it the same way — reload for real instead of letting
+  // wouter hand off to a chunk that no longer exists on the server.
+  useEffect(() => {
+    if (skipNextUpdateCheck.current) {
+      skipNextUpdateCheck.current = false;
+      return;
+    }
+    if (isUpdateAvailable()) window.location.reload();
+  }, [location]);
 
   return (
     <ClerkProvider
@@ -236,6 +255,7 @@ function ClerkProviderWithRoutes() {
         <PinToTaskbarTip />
         <ClerkQueryClientCacheInvalidator />
         <ClaimPendingInvite />
+        <AppErrorBoundary>
         <Suspense fallback={<RouteLoadingFallback />}>
           <Switch>
             <Route path="/" component={HomeRedirect} />
@@ -294,6 +314,7 @@ function ClerkProviderWithRoutes() {
             </Route>
           </Switch>
         </Suspense>
+        </AppErrorBoundary>
         <Toaster />
       </QueryClientProvider>
     </ClerkProvider>
