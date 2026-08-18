@@ -6,7 +6,7 @@ const BILLING_EMAIL = "billing@blindwhisper.com";
 
 export function TermsOfService() {
   return (
-    <LegalLayout title="Terms and Conditions of Use" updatedDate="August 8, 2026">
+    <LegalLayout title="Terms and Conditions of Use" updatedDate="August 18, 2026">
       <p className="text-sm text-muted-foreground">A product of TIBLOGICS, a sub-entity of TILO GROUP, LLC.</p>
       <p>
         PLEASE READ THESE TERMS AND CONDITIONS CAREFULLY BEFORE USING BLIND WHISPER. BY CREATING AN ACCOUNT,
@@ -47,7 +47,7 @@ export function TermsOfService() {
       </LegalSection>
 
       <LegalSection heading="4. Acceptable Use Policy">
-        <p><strong>4.1 Permitted uses.</strong> The Platform is designed for anonymously recommending video content and sending short anonymous messages — whether privately to a specific person via a Whisper Link, Whisper Group, or Text Whisp, to Blind Whisper's opted-in subscriber pool via Ghost Boost, to a public or shared feed via Blind Circle, or inviting someone to join via an Invite — for lawful purposes, including facilitating difficult conversations, sharing educational content, expressing care or concern, relationship communication, and general video discovery/discussion through Blind Circle.</p>
+        <p><strong>4.1 Permitted uses.</strong> The Platform is designed for anonymously recommending video content and sending short anonymous messages — whether privately to a specific person via a Whisper Link, Whisper Group, or Text Whisp, to Blind Whisper's opted-in subscriber pool via Ghost Boost, to a public or shared feed via Blind Circle, or inviting someone to join via an Invite — for lawful purposes, including facilitating difficult conversations, sharing educational content, expressing care or concern, relationship communication, and general video discovery/discussion through Blind Circle and Debate Topics. Commenting on a Blind Circle post or Debate Topic, and starting a private conversation with a post's Sender, is intended for genuine, good-faith engagement with that content.</p>
         <p><strong>4.2 Strictly prohibited conduct.</strong> The following will result in account termination, forfeiture of credits and subscription fees, and may result in civil and criminal liability:</p>
         <ul className="list-disc pl-5 space-y-1">
           <li>Sending a Whisp to a Recipient who hasn't consented to receiving communications from unknown parties, or who has explicitly requested no contact from you</li>
@@ -65,7 +65,7 @@ export function TermsOfService() {
           <li>Interfering with or disrupting the integrity or performance of the Platform or its infrastructure</li>
           <li>Using the Platform in any manner that could expose TILO GROUP, LLC, TIBLOGICS, or Blind Whisper to legal liability</li>
         </ul>
-        <p><strong>4.3 Content standards.</strong> All video URLs or files submitted through the Platform must be lawful and, if linked, publicly accessible. You represent and warrant that: (a) you have the right to share and recommend the content; (b) it doesn't infringe any third-party intellectual property rights; (c) it complies with applicable law; and (d) it doesn't violate the terms of service of the originating platform (YouTube, TikTok, Instagram, Facebook, etc.). The same standards, and the prohibited conduct in Section 4.2, apply in full to the free-text content of a Text Whisp — it isn't held to a lower standard just because it's text instead of a video.</p>
+        <p><strong>4.3 Content standards.</strong> All video URLs or files submitted through the Platform must be lawful and, if linked, publicly accessible. You represent and warrant that: (a) you have the right to share and recommend the content; (b) it doesn't infringe any third-party intellectual property rights; (c) it complies with applicable law; and (d) it doesn't violate the terms of service of the originating platform (YouTube, TikTok, Instagram, Facebook, etc.). The same standards, and the prohibited conduct in Section 4.2, apply in full to the free-text content of a Text Whisp, a Blind Circle comment, a Debate Topic, and a Debate Topic comment — none of these are held to a lower standard just because they're text instead of a video, or posted anonymously without an account. As described in our Privacy Policy, this content is automatically screened for sexual/explicit material and for dangerous or harmful language, and flagged content is reviewed by administrators; repeated or severe violations may result in the underlying content being removed and, where the poster has an account, in account action under Section 13.</p>
       </LegalSection>
 
       <LegalSection heading="5. Sender Responsibilities and Representations">
@@ -73,6 +73,7 @@ export function TermsOfService() {
         <ul className="list-disc pl-5 space-y-1">
           <li>For Whisper Links, Whisper Groups, Text Whisps, and Invites, you'll only send to individuals with whom you have a genuine pre-existing personal, familial, or professional relationship, and you have a good-faith basis for believing they'd benefit from or want to receive it.</li>
           <li>For Blind Circle, you understand your post is visible to anyone with access to that feed, not just one chosen person, and you'll only post content appropriate for that audience.</li>
+          <li>For Blind Circle comments and Debate Topics (and their comments), you understand these are public and anonymous — visible to anyone who can browse that feed, without you being identified as the author — and you'll use them for genuine discussion, not harassment or spam.</li>
           <li>You accept sole and full responsibility for the content of everything you send or post, including any consequences arising from a Recipient's or viewer's exposure to it.</li>
           <li>You won't use the anonymous nature of the Platform to engage in conduct that would otherwise be prohibited by applicable law or these Terms.</li>
           <li>You understand that Blind Whisper's anonymity protections don't extend to unlawful conduct, and that we may disclose your identity in response to valid legal process.</li>
@@ -115,6 +116,7 @@ export function TermsOfService() {
         <p><strong>8.2 Blind Circle is not private delivery.</strong> Content posted via Blind Circle is visible to anyone with access to that feed — the public, for a public Blind Circle post, or all members of a private Blind Circle. The Sender's identity is still not attached to the post, but the content itself is not delivered privately the way a Whisper Link is. Don't use Blind Circle for anything you only want one specific person to see.</p>
         <p><strong>8.3 Reveal Flow.</strong> The optional Reveal Flow feature — available for Whisps, Text Whisps, and Invites — lets a Sender initiate a consensual identity disclosure process once the Recipient has an account. By initiating a Reveal Flow: (a) you acknowledge your identity may be disclosed to the Recipient if they consent; (b) you agree the Recipient's decision to accept or decline is final and binding through the Platform; (c) you won't attempt to coerce or pressure a Recipient into accepting a reveal; and (d) a Recipient's decision to decline doesn't entitle you to a refund.</p>
         <p><strong>8.4 Anonymous replies.</strong> The anonymous reply feature lets Recipients respond to Whisps without disclosing their identity. You agree not to use it for harassment, threats, or any conduct prohibited by Section 4.</p>
+        <p><strong>8.5 Blind Circle comments, private conversations, and Debate Topics.</strong> Comments on a Blind Circle post or Debate Topic are public, like the post itself — visible to anyone browsing that feed — but anonymous: no viewer, including the original poster, is shown who wrote a given comment unless the commenter is themselves the poster (shown only as "the poster," never by name or account). A private conversation started from a Blind Circle post works like a Whisper Link reply thread: anonymous on both sides, unless a Reveal Flow is used. A Debate Topic's author is never disclosed to viewers; only the author themselves can retract a Debate Topic they posted, which removes it from the public feed. You agree not to use anonymous comments or private conversations for harassment, threats, or any conduct prohibited by Section 4.</p>
       </LegalSection>
 
       <LegalSection heading="9. Intellectual Property">
