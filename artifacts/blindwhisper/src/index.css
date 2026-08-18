@@ -86,6 +86,12 @@
   --gilded: 43 73% 67%;
   --gilded-foreground: 240 33% 8%;
 
+  /* Aqua sits opposite the violet the other way round from gilded — gilded is
+     the warm complement, this is the cool one. Between them the logo's pulse
+     travels violet → aqua → gold as it moves outward. Not general-purpose UI
+     colour: like gilded, it earns its place by being rare. */
+  --aqua: 180 72% 62%;
+
   --muted: 247 24% 30%;
   --muted-foreground: 252 20% 75%;
 
@@ -235,16 +241,29 @@
    depth the fade creates. The base is also still on each path as an SVG
    opacity attribute, which is what takes over when the animation is off. */
 @keyframes logo-wave {
-  0%, 55%, 100% {
+  0%,
+  62%,
+  100% {
     opacity: var(--wave-base);
+    stroke: currentColor;
+    stroke-width: var(--wave-weight);
   }
-  25% {
+  20% {
     opacity: var(--wave-peak);
+    /* Each arc peaks in its own colour, so the ripple shifts hue as it travels
+       outward instead of just brightening. Resting state stays currentColor,
+       which is what keeps the mark tintable per context. */
+    stroke: var(--wave-color);
+    stroke-width: var(--wave-weight-peak);
   }
 }
 
 .logo-wave {
-  animation: logo-wave 2.6s ease-in-out infinite;
+  /* 1.7s with 0.15s between arcs. The previous 2.6s cycle rested from 55% to
+     100% — more than half of it was dead air, which read as a wait rather
+     than a rhythm. Now the three arcs fire within the first 0.6s and the
+     remainder is a single short breath before the next ripple. */
+  animation: logo-wave 1.7s ease-in-out infinite;
   animation-delay: var(--wave-delay, 0s);
 }
 

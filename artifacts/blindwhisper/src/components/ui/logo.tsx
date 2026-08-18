@@ -34,29 +34,61 @@ export function Logo(props: SVGProps<SVGSVGElement>) {
         <path d="M112,140 Q124,142 122,158" strokeWidth="4" />
         {/* Sound arriving, fading as it widens. Each arc brightens in turn,
             nearest first, so the pulse travels outward instead of blinking
-            all three together. The opacity attributes stay as the resting
-            values the animation returns to, and as the whole appearance when
-            it's switched off for reduced motion (see index.css). */}
+            all three together — and each peaks in its own colour, violet to
+            aqua to gold, so the ripple shifts hue as it goes rather than only
+            getting brighter. The two non-violet peaks are the palette's
+            complements to it (see --aqua and --gilded in index.css).
+
+            The opacity and strokeWidth attributes are the resting values the
+            animation returns to, and the whole appearance when it's switched
+            off for reduced motion. */}
         <path
           d="M155,150 A22,22 0 0,1 155,180"
           strokeWidth="4"
           opacity="0.8"
           className="logo-wave"
-          style={{ "--wave-base": 0.8, "--wave-peak": 1, "--wave-delay": "0s" } as React.CSSProperties}
+          style={
+            {
+              "--wave-base": 0.8,
+              "--wave-peak": 1,
+              "--wave-weight": 4,
+              "--wave-weight-peak": 4.8,
+              "--wave-color": "hsl(var(--primary))",
+              "--wave-delay": "0s",
+            } as React.CSSProperties
+          }
         />
         <path
           d="M167,138 A38,38 0 0,1 167,192"
           strokeWidth="3.5"
           opacity="0.5"
           className="logo-wave"
-          style={{ "--wave-base": 0.5, "--wave-peak": 0.85, "--wave-delay": "0.22s" } as React.CSSProperties}
+          style={
+            {
+              "--wave-base": 0.5,
+              "--wave-peak": 0.95,
+              "--wave-weight": 3.5,
+              "--wave-weight-peak": 4.3,
+              "--wave-color": "hsl(var(--aqua))",
+              "--wave-delay": "0.15s",
+            } as React.CSSProperties
+          }
         />
         <path
           d="M179,126 A54,54 0 0,1 179,204"
           strokeWidth="3"
           opacity="0.28"
           className="logo-wave"
-          style={{ "--wave-base": 0.28, "--wave-peak": 0.62, "--wave-delay": "0.44s" } as React.CSSProperties}
+          style={
+            {
+              "--wave-base": 0.28,
+              "--wave-peak": 0.9,
+              "--wave-weight": 3,
+              "--wave-weight-peak": 3.8,
+              "--wave-color": "hsl(var(--gilded))",
+              "--wave-delay": "0.3s",
+            } as React.CSSProperties
+          }
         />
       </g>
     </svg>
