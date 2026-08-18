@@ -1,6 +1,8 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import app from "../app";
+import { db, whispRepliesTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 import { TEST_USER_HEADER } from "./setup";
 
 const USER_A = "clerk_user_public";
@@ -127,12 +129,42 @@ describe("POST /api/public/w/:token/reply", () => {
 
     const res = await request(app).post(`/api/public/w/${whisp.publicToken}/reply`).send({ replyText: "thank you" });
     expect(res.status).toBe(201);
-    expect(res.body.senderNotifiedAt).toBeNull();
-    expect(res.body.notifySenderAt).not.toBeNull();
 
-    const notifyAt = new Date(res.body.notifySenderAt).getTime();
+    // Asserted from the DB, NOT the response: notifySenderAt/senderNotifiedAt
+    // must never be returned to the recipient (see the test below) — telling
+    // them exactly when the sender's phone will buzz defeats the very delay
+    // this schedules.
+    const row = await db
+      .select()
+      .from(whispRepliesTable)
+      .where(eq(whispRepliesTable.id, res.body.id))
+      .then((r) => r[0]);
+    expect(row?.senderNotifiedAt).toBeNull();
+    expect(row?.notifySenderAt).not.toBeNull();
+
+    const notifyAt = new Date(row!.notifySenderAt!).getTime();
     const deltaMinutes = Math.round((notifyAt - before) / 60_000);
     expect([3, 5, 9]).toContain(deltaMinutes);
+  });
+
+  // The 3/5/9-minute random delay exists so a sender who is physically with
+  // the recipient isn't given away by their phone buzzing the instant the
+  // recipient hits send. Handing the recipient notifySenderAt would publish
+  // that countdown to exactly the party it hides from.
+  it("never exposes the sender-notification schedule to the recipient", async () => {
+    const whisp = await createWhisp();
+
+    const created = await request(app).post(`/api/public/w/${whisp.publicToken}/reply`).send({ replyText: "hi" });
+    expect(created.status).toBe(201);
+    expect(created.body).not.toHaveProperty("notifySenderAt");
+    expect(created.body).not.toHaveProperty("senderNotifiedAt");
+
+    const page = await request(app).get(`/api/public/w/${whisp.publicToken}`);
+    expect(page.status).toBe(200);
+    for (const reply of page.body.replies) {
+      expect(reply).not.toHaveProperty("notifySenderAt");
+      expect(reply).not.toHaveProperty("senderNotifiedAt");
+    }
   });
 
   // Security: a reply's thumbnail/embed are auto-loaded in the SENDER's
@@ -183,7 +215,19 @@ describe("POST /api/public/w/:token/reply", () => {
 });
 
 describe("anonymous recipient reply cap", () => {
-  // Default free allowance is 3 (lib/plans.ts recipientFreeReplies).
+  // The cap ships OFF by default until billing exists (see plans.ts's
+  // TODO(payment)), so these pin it on explicitly rather than relying on the
+  // default — that keeps the enforcement logic under test either way, and
+  // means flipping the default back doesn't quietly change what's covered.
+  // recipientFreeReplies() reads the env var per call, so setting it here is
+  // enough; no module reload needed.
+  beforeAll(() => {
+    process.env.RECIPIENT_FREE_REPLIES = "3";
+  });
+  afterAll(() => {
+    delete process.env.RECIPIENT_FREE_REPLIES;
+  });
+
   it("blocks an anonymous recipient once they've used their free replies", async () => {
     const whisp = await createWhisp();
 

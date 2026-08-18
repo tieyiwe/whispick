@@ -174,8 +174,19 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
       deliveryMethod: z.enum(DELIVERY_METHODS),
       whisperChannel: z.enum(WHISPER_CHANNELS).nullable().optional(),
       circleId: z.string().nullable().optional(),
-      recipientEmail: z.string().nullable().optional(),
-      recipientPhone: z.string().nullable().optional(),
+      // .email(), not a bare string: this value is handed straight to the
+      // mail transport as the `to` address (lib/deliver.ts → sendEmail).
+      // nodemailer parses `to` as an ADDRESS LIST, so an unvalidated
+      // "victim@x.com, attacker@evil.com" silently delivered the whisp to
+      // every address in it — one Whisper Link fanning out to arbitrarily
+      // many strangers, bypassing the plan's per-send accounting and turning
+      // the app into a relay for real mail from its own domain.
+      recipientEmail: z.string().email().max(320).nullable().optional(),
+      // Same reasoning for the SMS/WhatsApp side: this reaches the Twilio
+      // `To` parameter. Constrained to plausible phone characters so it
+      // can't carry a list or control characters (lib/phone.ts normalizes
+      // for matching, but the send path uses this value directly).
+      recipientPhone: z.string().max(32).regex(/^[+0-9()\-.\s]+$/, "Not a valid phone number").nullable().optional(),
       anonymousNote: z.string().nullable().optional(),
       senderAlias: z.string().nullable().optional(),
       moodTag: z.string().nullable().optional(),

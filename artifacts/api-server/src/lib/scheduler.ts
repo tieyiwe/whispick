@@ -54,7 +54,7 @@ export function startScheduledWhispDispatcher(): void {
               whisp.senderId,
               "A scheduled whisp couldn't be sent",
               "The video you uploaded is no longer available, so this scheduled whisp wasn't delivered.",
-              `${appUrl}/whisps/${whisp.id}`,
+              `/whisps/${whisp.id}`,
             );
             continue;
           }

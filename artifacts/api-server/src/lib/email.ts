@@ -63,7 +63,33 @@ function complianceFooter(): string {
   </p>`;
 }
 
+// Exactly one plain address, nothing else. nodemailer parses `to` as an
+// address LIST, so "victim@x.com, attacker@evil.com" is three deliveries, not
+// a validation error — and a `to` carrying CRLF is header-injection shaped.
+// Route schemas already validate these fields, but this is the chokepoint
+// every send funnels through: enforcing it here means a future call site
+// can't quietly reintroduce the same hole. Deliberately stricter than a full
+// RFC address parser (no display names, no groups, no comments) because
+// nothing this app sends needs any of that.
+const SINGLE_EMAIL_ADDRESS = /^[^\s@,;<>"]+@[^\s@,;<>"]+\.[^\s@,;<>"]+$/;
+
+function isSingleEmailAddress(value: string): boolean {
+  return value.length <= 320 && SINGLE_EMAIL_ADDRESS.test(value);
+}
+
 export async function sendEmail(to: string, subject: string, html: string, logCtx: DeliveryLogContext): Promise<boolean> {
+  if (!isSingleEmailAddress(to)) {
+    // Logged without echoing the address itself — a rejected value is
+    // attacker-supplied by definition, and putting it in the logs verbatim
+    // just moves the injection attempt into the log stream.
+    logger.error({ length: to.length }, "Refusing to send email: `to` is not a single plain address");
+    await logDeliveryAttempt("email", to, logCtx, {
+      success: false,
+      errorMessage: "Recipient address is not a single valid email address",
+    });
+    return false;
+  }
+
   if (SMTP_USER && SMTP_PASS) {
     try {
       const info = await getSmtpTransport().sendMail({ from: EMAIL_FROM, to, subject, html });

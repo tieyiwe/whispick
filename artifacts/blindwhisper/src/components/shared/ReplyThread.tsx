@@ -24,6 +24,20 @@ export type ThreadReply = {
   createdAt: string;
 };
 
+// Belt-and-braces scheme check before rendering a stored URL as a clickable
+// href. The write paths validate this server-side (lib/safeUrl.ts), but that
+// validation is recent — any row written before it was stored unchecked, and
+// React renders a `javascript:` href rather than blocking it. Cheap enough to
+// not depend on every historical row having gone through the current rules.
+function isHttpUrl(value: string): boolean {
+  try {
+    const { protocol } = new URL(value);
+    return protocol === "http:" || protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 // Same-day messages only need a time; older ones need a date for the thread
 // to stay readable as a conversation spans days.
 function formatTimestamp(iso: string): string {
@@ -49,7 +63,9 @@ function MessageBubble({
     <div
       data-testid={`reply-${reply.id}`}
       className={`flex flex-col message-in ${isOwn ? "items-end" : "items-start"}`}
-      style={{ ["--message-index" as string]: String(index) }}
+      // Clamped: the stagger is a 50ms-per-message delay with `both` fill, so
+      // an unclamped index leaves message #40 invisible for two seconds.
+      style={{ ["--message-index" as string]: String(Math.min(index, 10)) }}
     >
       <span className="text-[11px] text-muted-foreground px-2 mb-1">
         {authorLabel} · {formatTimestamp(reply.createdAt)}
@@ -66,7 +82,7 @@ function MessageBubble({
         ].join(" ")}
       >
         {reply.replyText && <p className="whitespace-pre-wrap break-words">{reply.replyText}</p>}
-        {reply.videoUrl && (
+        {reply.videoUrl && isHttpUrl(reply.videoUrl) && (
           <a
             href={reply.videoUrl}
             target="_blank"

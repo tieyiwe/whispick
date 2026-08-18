@@ -1,3 +1,16 @@
+// Strict digits-only parse with a sane ceiling. parseInt alone accepted
+// "3 replies" as 3 (so a typo'd value silently "worked" instead of falling
+// back as the comments promise) and accepted absurd magnitudes like 1e20,
+// which are effectively unlimited yet never return null — leaking a nonsense
+// number into API responses that report a remaining count.
+const MAX_CONFIGURABLE_LIMIT = 100_000;
+
+function parsePositiveIntOr(raw: string, fallback: number): number {
+  if (!/^\d+$/.test(raw)) return fallback;
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isSafeInteger(parsed) && parsed <= MAX_CONFIGURABLE_LIMIT ? parsed : fallback;
+}
+
 // Free-plan Whisper Link cap, overridable without a code change via
 // FREE_PLAN_WHISPER_LINKS — set it to "unlimited" to lift the cap entirely
 // (useful while billing isn't built out yet, or for end-to-end delivery
@@ -10,8 +23,7 @@ function freePlanWhisperLinks(): number | null {
   const raw = process.env.FREE_PLAN_WHISPER_LINKS?.trim();
   if (!raw) return FREE_PLAN_WHISPER_LINKS_DEFAULT;
   if (raw.toLowerCase() === "unlimited") return null;
-  const parsed = Number.parseInt(raw, 10);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : FREE_PLAN_WHISPER_LINKS_DEFAULT;
+  return parsePositiveIntOr(raw, FREE_PLAN_WHISPER_LINKS_DEFAULT);
 }
 
 export const PLAN_LIMITS: Record<string, { whisperLinksPerMonth: number | null; monthlyBoostCredits: number }> = {
@@ -31,14 +43,25 @@ export const GHOST_BOOST_COST_USD = 6.99;
 // never capped — the limit exists to make an unlimited anonymous back-and-
 // forth a deliberate purchase (or a reason to join), not to ration
 // conversation between members.
-const RECIPIENT_FREE_REPLIES_DEFAULT = 3;
+// TODO(payment): flip this back to 3 once the "buy more replies" purchase
+// flow exists. The cap is OFF by default until then — deliberately, not by
+// oversight. Capping recipients before there's any way to lift the cap
+// leaves a sender staring at a dead thread with a disabled "coming soon"
+// button, and it would keep interrupting testing. All the enforcement below
+// (and the sender/recipient UI) is built and tested; it's a one-line change
+// plus a redeploy when billing lands.
+//
+// Note this also parks a design question worth revisiting then: because the
+// cap is skipped for signed-in callers, a sender who watches replies keep
+// arriving past the allowance can infer their recipient created an account.
+// Harmless while uncapped (no allowance is ever shown or enforced).
+const RECIPIENT_FREE_REPLIES_DEFAULT = null;
 
 export function recipientFreeReplies(): number | null {
   const raw = process.env.RECIPIENT_FREE_REPLIES?.trim();
   if (!raw) return RECIPIENT_FREE_REPLIES_DEFAULT;
   if (raw.toLowerCase() === "unlimited") return null;
-  const parsed = Number.parseInt(raw, 10);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : RECIPIENT_FREE_REPLIES_DEFAULT;
+  return parsePositiveIntOr(raw, RECIPIENT_FREE_REPLIES_DEFAULT ?? 3);
 }
 
 // Total anonymous replies allowed on a whisp: the free allowance plus

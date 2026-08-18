@@ -58,7 +58,7 @@ async function warnUpcomingDeletions(): Promise<void> {
         owner.id,
         "Video expiring soon",
         `"${media.originalFilename}" will be removed from your Media Library soon.`,
-        `${appUrl.replace(/\/$/, "")}/media-library`,
+        "/media-library",
       );
     }
     await db

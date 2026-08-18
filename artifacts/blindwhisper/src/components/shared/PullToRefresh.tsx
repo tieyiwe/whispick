@@ -23,6 +23,9 @@ const MAX_PULL = 110;
 // pull-to-refresh feel, where the sheet lags the finger and gets "heavier"
 // the further you pull.
 const DRAG_RESISTANCE = 0.5;
+// Ceiling on how long the indicator will wait for onRefresh before releasing
+// the gesture again.
+const REFRESH_TIMEOUT_MS = 10_000;
 
 export function PullToRefresh({
   onRefresh,
@@ -52,8 +55,26 @@ export function PullToRefresh({
       startYRef.current = e.touches[0].clientY;
     }
 
+    // True when the touch began inside something that scrolls itself and
+    // isn't already at its own top — a long draft in the reply composer's
+    // textarea, for instance. preventDefault-ing those drags would stop
+    // people scrolling their own content, so the gesture yields to them.
+    function startedInScrolledChild(target: EventTarget | null): boolean {
+      let el = target instanceof Element ? target : null;
+      while (el && el !== node) {
+        if (el.scrollHeight > el.clientHeight && el.scrollTop > 0) return true;
+        el = el.parentElement;
+      }
+      return false;
+    }
+
     function handleTouchMove(e: TouchEvent) {
       if (startYRef.current === null || refreshing) return;
+      if (startedInScrolledChild(e.target)) {
+        startYRef.current = null;
+        setPullDistance(0);
+        return;
+      }
       const delta = e.touches[0].clientY - startYRef.current;
 
       // Upward movement means they're scrolling the page, not pulling —
@@ -87,7 +108,14 @@ export function PullToRefresh({
       setRefreshing(true);
       setPullDistance(TRIGGER_DISTANCE);
       try {
-        await onRefresh();
+        // Raced against a timeout: if onRefresh never settles (a request that
+        // hangs rather than fails), the indicator would otherwise stay stuck
+        // on "Refreshing..." and — because `refreshing` gates touchstart —
+        // disable pull-to-refresh for the rest of the page's life.
+        await Promise.race([
+          onRefresh(),
+          new Promise((resolve) => setTimeout(resolve, REFRESH_TIMEOUT_MS)),
+        ]);
       } finally {
         setRefreshing(false);
         setPullDistance(0);

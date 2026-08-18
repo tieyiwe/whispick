@@ -73,9 +73,15 @@ const explicitAllowedOrigins = new Set(
   ].filter((v): v is string => !!v),
 );
 
+// Compares the FULL origin (scheme included), not just the host. Matching on
+// host alone treated http://app.example.com as same-origin for an https
+// deployment, so a network attacker able to serve plaintext on the app's own
+// hostname would pass this check and then get to make credentialed
+// cross-origin requests. Unreachable behind an https-only edge with HSTS, but
+// the check shouldn't be the thing relying on that.
 function isSameOrigin(origin: string, req: import("express").Request): boolean {
   try {
-    return new URL(origin).host === getPublicAppUrl(req).replace(/^https?:\/\//, "");
+    return new URL(origin).origin === new URL(getPublicAppUrl(req)).origin;
   } catch {
     return false;
   }

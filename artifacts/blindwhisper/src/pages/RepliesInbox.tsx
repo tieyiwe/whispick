@@ -25,7 +25,19 @@ export function RepliesInbox() {
   // notification bell, pointing them back at a page they're already on.
   // Guarded by a ref so a re-render (or the list refetching) can't fire the
   // same mutations twice.
+  // Latched for the lifetime of the page and NEVER released, including on
+  // failure. Releasing it on error looked like a harmless retry, but
+  // `useMutation` returns a new object identity every render, so this effect
+  // re-runs on every render — and a rejection is itself a state change that
+  // causes one. That turned any persistent failure (a notification deleted
+  // between fetch and mark-read → permanent 404, or a flaky connection) into
+  // a tight render → fail → release → render loop hammering authenticated
+  // POSTs for as long as the tab stayed open. A stuck badge clears on the
+  // next visit; an unthrottled request loop does not self-correct.
   const clearedRef = useRef(false);
+  // mutateAsync is referentially stable, unlike the mutation result object —
+  // depending on it keeps this effect from re-running every single render.
+  const markReadAsync = markRead.mutateAsync;
 
   useEffect(() => {
     if (clearedRef.current || !notifications?.items) return;
@@ -33,17 +45,13 @@ export function RepliesInbox() {
     if (unreadReplies.length === 0) return;
 
     clearedRef.current = true;
-    Promise.all(unreadReplies.map((n) => markRead.mutateAsync({ id: n.id })))
-      .then(() => {
-        queryClient.invalidateQueries({ queryKey: getGetMyNotificationsQueryKey() });
-        queryClient.invalidateQueries({ queryKey: getGetMyUnreadNotificationCountQueryKey() });
-      })
-      // A failed mark-read just means the badge stays up — not worth
-      // surfacing an error toast over, but allow a later retry.
-      .catch(() => {
-        clearedRef.current = false;
-      });
-  }, [notifications, markRead, queryClient]);
+    // allSettled, not all: one already-deleted notification shouldn't stop
+    // the rest of the badge from clearing.
+    void Promise.allSettled(unreadReplies.map((n) => markReadAsync({ id: n.id }))).then(() => {
+      queryClient.invalidateQueries({ queryKey: getGetMyNotificationsQueryKey() });
+      queryClient.invalidateQueries({ queryKey: getGetMyUnreadNotificationCountQueryKey() });
+    });
+  }, [notifications, markReadAsync, queryClient]);
 
   if (isLoading) {
     return (
