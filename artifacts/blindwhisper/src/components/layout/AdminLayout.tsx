@@ -1,8 +1,7 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { Logo } from "@/components/ui/logo";
-import { PullToRefresh } from "@/components/shared/PullToRefresh";
-import { useQueryClient } from "@tanstack/react-query";
+import { PullToRefresh, reloadPage } from "@/components/shared/PullToRefresh";
 import { LayoutDashboard, Users, ListVideo, BarChart3, ArrowLeft, ShieldCheck, Sparkles, Bell, ShieldAlert } from "lucide-react";
 
 const ADMIN_NAV_ITEMS = [
@@ -17,7 +16,6 @@ const ADMIN_NAV_ITEMS = [
 
 export function AdminLayout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
-  const queryClient = useQueryClient();
 
   return (
     <div className="min-h-[100dvh] bg-background flex flex-col">
@@ -66,7 +64,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
       <main className="flex-1">
         {/* Same swipe-down refresh the rest of the app has, so the gesture
             doesn't silently stop working the moment you cross into admin. */}
-        <PullToRefresh onRefresh={() => queryClient.refetchQueries({ type: "active" })}>
+        <PullToRefresh onRefresh={reloadPage}>
           <div className="max-w-6xl mx-auto p-4 md:p-8">{children}</div>
         </PullToRefresh>
       </main>

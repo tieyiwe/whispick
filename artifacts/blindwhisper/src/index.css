@@ -225,6 +225,35 @@
   }
 }
 
+/* The three arcs in the logo mark are sound leaving the ear, so they brighten
+   in sequence — nearest first — rather than all at once, which would read as
+   a blink instead of a wave travelling outward.
+
+   Each arc carries its own --wave-base/--wave-peak because they rest at
+   different opacities (0.8, 0.5, 0.28) and have to return to those exact
+   values; one shared keyframe with hardcoded numbers would flatten the
+   depth the fade creates. The base is also still on each path as an SVG
+   opacity attribute, which is what takes over when the animation is off. */
+@keyframes logo-wave {
+  0%, 55%, 100% {
+    opacity: var(--wave-base);
+  }
+  25% {
+    opacity: var(--wave-peak);
+  }
+}
+
+.logo-wave {
+  animation: logo-wave 2.6s ease-in-out infinite;
+  animation-delay: var(--wave-delay, 0s);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-wave {
+    animation: none;
+  }
+}
+
 .particle {
   animation: float-up 3s ease-out forwards;
 }

@@ -32,8 +32,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { NotificationBell } from "@/components/shared/NotificationBell";
-import { PullToRefresh } from "@/components/shared/PullToRefresh";
-import { useQueryClient } from "@tanstack/react-query";
+import { PullToRefresh, reloadPage } from "@/components/shared/PullToRefresh";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -156,7 +155,6 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const { signOut } = useClerk();
   const { data: profile } = useGetUserProfile();
   const isAdmin = profile?.role === "admin";
-  const queryClient = useQueryClient();
 
   // Drives the Replies badge. Polled (no websockets anywhere in this app —
   // see NotificationBell's note) on the same 60s cadence as the bell, so a
@@ -287,9 +285,17 @@ export function AppLayout({ children }: { children: ReactNode }) {
         {/* Restores a swipe-down refresh on mobile: index.css sets
             overscroll-behavior-y: contain (so the page doesn't rubber-band
             against the fixed header/bottom nav), which also disables the
-            browser's own pull-to-refresh. Refetches every active query
-            rather than any one endpoint, since this wraps every page. */}
-        <PullToRefresh onRefresh={() => queryClient.refetchQueries({ type: "active" })}>
+            browser's own pull-to-refresh — and now that <main> scrolls
+            internally rather than the window, the browser wouldn't offer it
+            here regardless.
+
+            A genuine reload, not a query refetch. Refetching updates the data
+            but leaves the loaded bundle and service worker exactly as they
+            were, so a pull down after a deploy appeared to do nothing. Note
+            this discards in-progress form state — a half-composed whisp on
+            /send included — which is the accepted cost of the gesture meaning
+            what it does in every other app. */}
+        <PullToRefresh onRefresh={reloadPage}>
           <div className="max-w-5xl mx-auto p-4 md:p-8 lg:p-10">
             {children}
           </div>

@@ -27,6 +27,23 @@ const DRAG_RESISTANCE = 0.5;
 // the gesture again.
 const REFRESH_TIMEOUT_MS = 10_000;
 
+/**
+ * A real browser reload, for use as `onRefresh`.
+ *
+ * Refetching the active queries updates the data but leaves the loaded app
+ * itself untouched — the bundle, the service worker, anything cached. A pull
+ * down is the gesture people use when they want the page genuinely reloaded,
+ * including after a deploy, so it does exactly that.
+ *
+ * Never resolves in practice: navigation starts and the page is torn down.
+ * PullToRefresh races onRefresh against REFRESH_TIMEOUT_MS, so the spinner
+ * can't get stuck if the reload is slow or blocked.
+ */
+export function reloadPage(): Promise<void> {
+  window.location.reload();
+  return new Promise(() => {});
+}
+
 export function PullToRefresh({
   onRefresh,
   children,

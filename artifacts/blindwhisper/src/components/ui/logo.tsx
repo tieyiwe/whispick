@@ -32,10 +32,32 @@ export function Logo(props: SVGProps<SVGSVGElement>) {
         />
         {/* Inner curl */}
         <path d="M112,140 Q124,142 122,158" strokeWidth="4" />
-        {/* Sound arriving, fading as it widens */}
-        <path d="M155,150 A22,22 0 0,1 155,180" strokeWidth="4" opacity="0.8" />
-        <path d="M167,138 A38,38 0 0,1 167,192" strokeWidth="3.5" opacity="0.5" />
-        <path d="M179,126 A54,54 0 0,1 179,204" strokeWidth="3" opacity="0.28" />
+        {/* Sound arriving, fading as it widens. Each arc brightens in turn,
+            nearest first, so the pulse travels outward instead of blinking
+            all three together. The opacity attributes stay as the resting
+            values the animation returns to, and as the whole appearance when
+            it's switched off for reduced motion (see index.css). */}
+        <path
+          d="M155,150 A22,22 0 0,1 155,180"
+          strokeWidth="4"
+          opacity="0.8"
+          className="logo-wave"
+          style={{ "--wave-base": 0.8, "--wave-peak": 1, "--wave-delay": "0s" } as React.CSSProperties}
+        />
+        <path
+          d="M167,138 A38,38 0 0,1 167,192"
+          strokeWidth="3.5"
+          opacity="0.5"
+          className="logo-wave"
+          style={{ "--wave-base": 0.5, "--wave-peak": 0.85, "--wave-delay": "0.22s" } as React.CSSProperties}
+        />
+        <path
+          d="M179,126 A54,54 0 0,1 179,204"
+          strokeWidth="3"
+          opacity="0.28"
+          className="logo-wave"
+          style={{ "--wave-base": 0.28, "--wave-peak": 0.62, "--wave-delay": "0.44s" } as React.CSSProperties}
+        />
       </g>
     </svg>
   );
