@@ -221,8 +221,23 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
 
     onWatchEvent("clicked");
     if (isEmbeddable || isNativeVideo) {
+      // Real playback happens in a player we can observe, so watched_complete
+      // is left to the progress checks above — an accurate signal beats an
+      // assumed one.
       setPlaying(true);
     } else {
+      // Everything else (TikTok, Instagram, Facebook, X, a bare link) opens
+      // in a new tab, where we can never see playback at all. Previously that
+      // meant those whisps could NEVER register as watched — the sender's
+      // "Watched" timeline step and the Videos Watched stat stayed empty
+      // forever no matter what the recipient did, which reads as "they
+      // ignored it" rather than "we couldn't tell". Treating the deliberate
+      // tap-to-open as watched is the best evidence available on this path,
+      // and a truer answer than a permanent no.
+      if (!firedRef.current.complete) {
+        firedRef.current.complete = true;
+        onWatchEvent("watched_complete");
+      }
       window.open(videoUrl, "_blank", "noopener,noreferrer");
     }
   }

@@ -8,6 +8,8 @@ import {
   useCreateWhisp,
   useListMyCircles,
   useListWhisperGroups,
+  useCreateWhisperGroup,
+  useAddWhisperGroupMembers,
   useSendGroupWhisp,
   useListMedia,
   useGetNoteSuggestions,
@@ -196,6 +198,8 @@ export function SendWhisp() {
   const scrapeMeta = useScrapeVideoMeta();
   const createWhisp = useCreateWhisp();
   const sendGroupWhisp = useSendGroupWhisp();
+  const createWhisperGroup = useCreateWhisperGroup();
+  const addWhisperGroupMembers = useAddWhisperGroupMembers();
   const noteSuggestionsMutation = useGetNoteSuggestions();
   const conciergeMutation = useGetConciergeSuggestions();
   const { data: myCircles } = useListMyCircles({
@@ -489,6 +493,35 @@ export function SendWhisp() {
     const succeeded: string[] = [];
     const failed: { contact: string; message: string }[] = [];
     let gated = false;
+
+    // More than one recipient means this is a group worth keeping. Saved as a
+    // real Whisper Group so the same set is reusable next time without
+    // retyping it — but delivery still goes out one whisp per person (below)
+    // rather than through the group-send pipeline, because a group send
+    // commits to a single channel and this list can mix emails with phone
+    // numbers. Best-effort: if saving the group fails, the whisps still go.
+    if (parsedRecipients.recipients.length > 1) {
+      try {
+        const first = parsedRecipients.recipients[0].raw;
+        const others = parsedRecipients.recipients.length - 1;
+        const group = await createWhisperGroup.mutateAsync({
+          data: { name: `${first} +${others} more` },
+        });
+        await addWhisperGroupMembers.mutateAsync({
+          id: group.id,
+          data: {
+            members: parsedRecipients.recipients.map((r) => ({
+              email: r.kind === "email" ? r.raw : null,
+              phone: r.kind === "phone" ? r.raw : null,
+            })),
+          },
+        });
+        queryClient.invalidateQueries({ queryKey: getListWhisperGroupsQueryKey() });
+      } catch {
+        // Saving the group is a convenience, not the point of the send —
+        // never block delivery on it.
+      }
+    }
 
     for (const recipient of parsedRecipients.recipients) {
       try {
@@ -1366,8 +1399,8 @@ export function SendWhisp() {
               <div className="space-y-4">
                 <h2 className="text-xl font-serif font-semibold">Who should receive it?</h2>
                 <p className="text-sm text-muted-foreground">
-                  Enter an email address or a phone number (in international format, e.g. +1 555 123 4567).
-                  Separate multiple people with commas — we'll work out how to reach each of them.
+                  Enter an email or a phone number (in international format, e.g. +1 555 123 4567). Add commas if
+                  more than one.
                 </p>
                 <div className="space-y-3">
                   <Textarea
@@ -1399,6 +1432,26 @@ export function SendWhisp() {
                     <p className="text-xs text-destructive" data-testid="text-invalid-recipients">
                       Not a valid email or phone number: {parsedRecipients.invalid.join(", ")}
                     </p>
+                  )}
+
+                  {/* Says plainly what more than one recipient causes, before
+                      they commit to it — a group appearing in their account
+                      unannounced, or each person quietly costing a separate
+                      Whisper Link, would both be surprises. */}
+                  {parsedRecipients.recipients.length > 1 && (
+                    <div
+                      className="flex items-start gap-2 rounded-xl border border-gilded/25 bg-gilded/[0.07] px-3 py-2.5"
+                      data-testid="notice-becomes-group"
+                    >
+                      <UsersRound className="w-4 h-4 text-gilded shrink-0 mt-0.5" />
+                      <p className="text-xs text-muted-foreground">
+                        <span className="text-foreground font-medium">
+                          This will be saved as a Whisper Group ({parsedRecipients.recipients.length} people)
+                        </span>{" "}
+                        so you can reuse it later. Everyone gets their own private whisp — they won't see each other,
+                        and each one uses a Whisper Link from your plan.
+                      </p>
+                    </div>
                   )}
 
                   {/* Only meaningful once a phone number is actually in the
