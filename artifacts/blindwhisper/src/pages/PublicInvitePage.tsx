@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, Sparkles, ShieldCheck } from "lucide-react";
 import { LogoLockup } from "@/components/ui/logo";
+import { PullToRefresh } from "@/components/shared/PullToRefresh";
 import { savePendingInvite } from "@/lib/pendingInvite";
 
 function BlindWhisperLogoMark() {
@@ -37,7 +38,7 @@ export function PublicInvitePage() {
     };
   }, []);
 
-  const { data: invite, isLoading } = useGetPublicInvite(token!, {
+  const { refetch, data: invite, isLoading } = useGetPublicInvite(token!, {
     query: { enabled: !!token, queryKey: getGetPublicInviteQueryKey(token!) },
   });
 
@@ -63,7 +64,8 @@ export function PublicInvitePage() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-background flex flex-col relative overflow-hidden">
+    <PullToRefresh onRefresh={() => refetch()}>
+      <div className="min-h-[100dvh] bg-background flex flex-col relative overflow-hidden">
       {/* Ambient background */}
       <div className="absolute top-[-15%] left-[-15%] w-[70%] h-[45%] rounded-full blur-[110px] pointer-events-none bg-primary/16" />
       <div className="absolute bottom-[-10%] right-[-15%] w-[55%] h-[35%] rounded-full blur-[100px] pointer-events-none bg-secondary/10" />
@@ -170,6 +172,7 @@ export function PublicInvitePage() {
           {" "}— send what matters, without the awkward part.
         </p>
       </footer>
-    </div>
+      </div>
+    </PullToRefresh>
   );
 }

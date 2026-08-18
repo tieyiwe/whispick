@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Eye, Sparkles, ScrollText } from "lucide-react";
 import { LogoLockup } from "@/components/ui/logo";
+import { PullToRefresh } from "@/components/shared/PullToRefresh";
 import { TextWhispScroll } from "@/components/shared/TextWhispScroll";
 
 function BlindWhisperLogoMark() {
@@ -37,7 +38,7 @@ export function PublicTextWhisp() {
     };
   }, []);
 
-  const { data: textWhisp, isLoading } = useGetPublicTextWhisp(token!, {
+  const { refetch, data: textWhisp, isLoading } = useGetPublicTextWhisp(token!, {
     query: { enabled: !!token, queryKey: getGetPublicTextWhispQueryKey(token!) },
   });
 
@@ -46,7 +47,8 @@ export function PublicTextWhisp() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-background flex flex-col relative overflow-hidden">
+    <PullToRefresh onRefresh={() => refetch()}>
+      <div className="min-h-[100dvh] bg-background flex flex-col relative overflow-hidden">
       {/* Ambient background */}
       <div className="absolute top-[-15%] left-[-15%] w-[70%] h-[45%] rounded-full blur-[110px] pointer-events-none bg-primary/16" />
       <div className="absolute bottom-[-10%] right-[-15%] w-[55%] h-[35%] rounded-full blur-[100px] pointer-events-none bg-secondary/10" />
@@ -137,6 +139,7 @@ export function PublicTextWhisp() {
           {" "}— send what matters, without the awkward part.
         </p>
       </footer>
-    </div>
+      </div>
+    </PullToRefresh>
   );
 }

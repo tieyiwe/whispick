@@ -45,12 +45,13 @@ export function PullToRefresh({
     const node = containerRef.current;
     if (!node || disabled) return;
 
-    // "At the top" is not the same question as `window.scrollY === 0`. From
-    // md: up, AppLayout scrolls <main> internally so the sidebar can stay
-    // put, which leaves the window permanently at 0 — on a touch device wide
-    // enough to get that layout (an iPad in landscape) the gesture would then
-    // fire at any scroll depth and hijack ordinary upward scrolling. So walk
-    // the ancestors too.
+    // "At the top" is not the same question as `window.scrollY === 0`.
+    // AppLayout scrolls <main> internally at every width so the sidebar and
+    // the mobile header stay put, which leaves the window permanently at 0 —
+    // judging by window.scrollY alone, the gesture would fire at any scroll
+    // depth and hijack ordinary upward scrolling. The public pages still
+    // scroll the window, so both cases have to be handled: check the window,
+    // then walk the ancestors for whichever element is really scrolling.
     function isAtTop(): boolean {
       if (window.scrollY > 0) return false;
       let el = node?.parentElement ?? null;
