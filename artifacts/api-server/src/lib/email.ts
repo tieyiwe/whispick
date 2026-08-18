@@ -55,12 +55,107 @@ const COMPANY_MAILING_ADDRESS = process.env.COMPANY_MAILING_ADDRESS ?? null;
 // compliance footer already takes, for the same reason: simpler and safer
 // than relying on a legal classification being right in every case.
 function complianceFooter(): string {
-  const addressLine = COMPANY_MAILING_ADDRESS
-    ? `<br />${COMPANY_MAILING_ADDRESS}`
-    : "";
-  return `<p style="color:#9ca3af; font-size: 11px; margin-top: 24px; border-top: 1px solid #e5e7eb; padding-top: 12px;">
-    TIBLOGICS, a sub-entity of TILO GROUP, LLC${addressLine}
+  const addressLine = COMPANY_MAILING_ADDRESS ? `<br />${COMPANY_MAILING_ADDRESS}` : "";
+  // Names one legal entity and the postal address, and stops there. CAN-SPAM
+  // asks for a valid physical address, not a description of corporate
+  // structure — "a sub-entity of ..." satisfied nothing and read to a
+  // recipient like a forwarded chain of companies, which is the shape spam
+  // takes. The brand the recipient actually recognises leads.
+  return `<p style="margin:20px 0 0;color:#8a8aa3;font-size:11px;line-height:1.6;text-align:center;">
+    Blind Whisper is a service of TIBLOGICS.${addressLine}
   </p>`;
+}
+
+// ---------------------------------------------------------------------------
+// Email layout primitives.
+//
+// Email HTML is not web HTML: Outlook renders through Word, Gmail strips
+// <head> and <style>, and neither flexbox nor grid can be relied on. Hence
+// nested tables with inline styles and explicit bgcolor attributes — the
+// dated-looking constructs are the ones that actually render everywhere.
+// ---------------------------------------------------------------------------
+
+const CARD_BG = "#14142B";
+const CARD_BORDER = "#2A2A4A";
+const PAGE_BG = "#F4F4F7";
+const ACCENT = "#9B7BFF";
+const BUTTON_BG = "#7C5CFC";
+const TEXT = "#FFFFFF";
+const TEXT_MUTED = "#A8A8C0";
+const TEXT_FAINT = "#6F6F8A";
+
+/**
+ * Wraps content in the branded card. Dark, like the app itself — a whisp is
+ * meant to feel like something arriving after dark, and a white transactional
+ * shell threw that away the moment it landed in the inbox.
+ *
+ * `extraFooterHtml` is for per-send additions that must sit outside the card
+ * but inside the centred column (the Ghost Boost unsubscribe line). It used to
+ * be concatenated onto the end of the returned string by the caller, which put
+ * it outside the layout entirely and left it full-width and flush left.
+ */
+function emailShell(contentHtml: string, extraFooterHtml = ""): string {
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${PAGE_BG};margin:0;padding:0;width:100%;">
+    <tr>
+      <td align="center" style="padding:28px 12px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;margin:0 auto;">
+          <tr>
+            <td bgcolor="${CARD_BG}" style="background:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:18px;padding:34px 30px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+              <div style="text-align:center;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:${ACCENT};font-weight:700;margin:0 0 22px;">
+                Blind Whisper
+              </div>
+              ${contentHtml}
+            </td>
+          </tr>
+        </table>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;margin:0 auto;">
+          <tr>
+            <td style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+              ${extraFooterHtml}
+              ${complianceFooter()}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>`;
+}
+
+function emailHeading(text: string): string {
+  return `<p style="margin:0;text-align:center;font-size:20px;line-height:1.45;font-weight:600;color:${TEXT};">${text}</p>`;
+}
+
+function emailText(text: string): string {
+  return `<p style="margin:14px 0 0;text-align:center;font-size:14px;line-height:1.65;color:${TEXT_MUTED};">${text}</p>`;
+}
+
+/**
+ * A "bulletproof" button: the background colour lives on a table cell rather
+ * than the anchor, because Outlook drops padding and background from an <a>
+ * and would otherwise render this as a bare text link.
+ */
+function emailButton(url: string, label: string): string {
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:28px auto 0;">
+    <tr>
+      <td align="center" bgcolor="${BUTTON_BG}" style="border-radius:999px;">
+        <a href="${url}" style="display:inline-block;padding:16px 46px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;font-weight:700;line-height:1;color:#ffffff;text-decoration:none;border-radius:999px;">${label}</a>
+      </td>
+    </tr>
+  </table>`;
+}
+
+/** The raw URL under the button — for clients that mangle buttons, and for
+ *  anyone who'd rather see where a link goes before following it. */
+function emailFallbackLink(url: string): string {
+  return `<p style="margin:16px 0 0;text-align:center;font-size:12px;line-height:1.6;color:${TEXT_FAINT};">
+    Or open this link:<br />
+    <a href="${url}" style="color:${ACCENT};text-decoration:none;word-break:break-all;">${url}</a>
+  </p>`;
+}
+
+/** Fine print below a hairline rule, inside the card. */
+function emailNote(text: string): string {
+  return `<p style="margin:24px 0 0;padding-top:18px;border-top:1px solid ${CARD_BORDER};text-align:center;font-size:12px;line-height:1.6;color:${TEXT_FAINT};">${text}</p>`;
 }
 
 // Exactly one plain address, nothing else. nodemailer parses `to` as an
@@ -145,17 +240,24 @@ export async function sendEmail(to: string, subject: string, html: string, logCt
   }
 }
 
-export function whisperLinkEmailHtml(publicUrl: string, hookLine: string = HOOK_LINE): string {
-  return `<div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a2e;">
-    <p style="font-size: 16px;">${hookLine}</p>
-    <p>
-      <a href="${publicUrl}" style="display:inline-block; padding: 12px 24px; background:#7C5CFC; color:#fff; border-radius: 999px; text-decoration:none; font-weight: 600;">
-        View it
-      </a>
-    </p>
-    <p style="color:#888; font-size: 12px;">Sent anonymously via Blind Whisper. No sender identity is included unless they choose to reveal it.</p>
-    ${complianceFooter()}
-  </div>`;
+// hookLine is always one of lib/copy.ts's constants or functions — app copy,
+// never recipient- or sender-supplied text — so it goes in unescaped on
+// purpose (it carries emoji and, in the reminder variant, a formatted date).
+export function whisperLinkEmailHtml(
+  publicUrl: string,
+  hookLine: string = HOOK_LINE,
+  extraFooterHtml = "",
+): string {
+  return emailShell(
+    `${emailHeading(hookLine)}
+     ${emailText("It's waiting behind a private link — no account, no sign-up. Just open it.")}
+     ${emailButton(publicUrl, "View your whisp")}
+     ${emailFallbackLink(publicUrl)}
+     ${emailNote(
+       "Sent anonymously through Blind Whisper. The sender's identity isn't included unless they choose to reveal it.",
+     )}`,
+    extraFooterHtml,
+  );
 }
 
 export function replyNotificationEmailHtml(videoTitle: string | null): string {
@@ -163,42 +265,41 @@ export function replyNotificationEmailHtml(videoTitle: string | null): string {
   // escape it before it lands in this HTML string (it isn't rendered through
   // React here) — otherwise it's a content-injection vector into the inbox.
   const subject = videoTitle ? `your whisp "${escapeHtml(videoTitle)}"` : "your whisp";
-  return `<div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a2e;">
-    <p>Someone replied anonymously to ${subject}. Log in to Blind Whisper to read it.</p>
-    ${complianceFooter()}
-  </div>`;
+  return emailShell(
+    `${emailHeading("You got a reply 💬")}
+     ${emailText(`Someone replied anonymously to ${subject}. Open Blind Whisper to read it.`)}`,
+  );
 }
 
 export function appreciationNotificationEmailHtml(videoTitle: string | null): string {
   const subject = videoTitle ? `"${escapeHtml(videoTitle)}"` : "your whisp";
-  return `<div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a2e;">
-    <p>Good news — the person you sent ${subject} to said it was something they needed to hear. 💜</p>
-    ${complianceFooter()}
-  </div>`;
+  return emailShell(
+    `${emailHeading("It landed 💜")}
+     ${emailText(`The person you sent ${subject} to said it was something they needed to hear.`)}`,
+  );
 }
 
 export function mediaExpiringEmailHtml(filename: string, expiresAt: Date): string {
   const when = expiresAt.toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" });
   // filename is the user's own uploaded filename — escape it so a crafted
   // name can't inject markup into this HTML email.
-  return `<div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a2e;">
-    <p>Your uploaded video "${escapeHtml(filename)}" will be removed from Blind Whisper on ${when} — save a copy now if you still need it.</p>
-    <p style="font-size: 13px; color: #6b7280;">Whisps that already used it aren't affected as long as the recipient opened them in time.</p>
-    ${complianceFooter()}
-  </div>`;
+  return emailShell(
+    `${emailHeading("Your uploaded video is expiring")}
+     ${emailText(
+       `"${escapeHtml(filename)}" will be removed from Blind Whisper on ${when} — save a copy now if you still need it.`,
+     )}
+     ${emailNote("Whisps that already used it aren't affected, as long as the recipient opened them in time.")}`,
+  );
 }
 
 export function subscriptionVerificationEmailHtml(verifyUrl: string): string {
-  return `<div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a2e;">
-    <p style="font-size: 16px;">Confirm you'd like to receive anonymous whisps on the topics you picked.</p>
-    <p>
-      <a href="${verifyUrl}" style="display:inline-block; padding: 12px 24px; background:#7C5CFC; color:#fff; border-radius: 999px; text-decoration:none; font-weight: 600;">
-        Confirm subscription
-      </a>
-    </p>
-    <p style="font-size: 13px; color: #6b7280;">If you didn't request this, you can ignore this email — you won't be subscribed unless you confirm.</p>
-    ${complianceFooter()}
-  </div>`;
+  return emailShell(
+    `${emailHeading("Confirm your subscription")}
+     ${emailText("You asked to receive anonymous whisps on the topics you picked. One tap and you're set.")}
+     ${emailButton(verifyUrl, "Confirm subscription")}
+     ${emailFallbackLink(verifyUrl)}
+     ${emailNote("If you didn't request this, ignore this email — you won't be subscribed unless you confirm.")}`,
+  );
 }
 
 // Anonymous invite-a-friend (routes/invites.ts) — same anonymous framing and
@@ -206,21 +307,19 @@ export function subscriptionVerificationEmailHtml(verifyUrl: string): string {
 // required verbatim hook line (see lib/copy.ts INVITE_HOOK_LINE) instead of
 // the whisp one. No sender name/hint anywhere in this template.
 export function inviteEmailHtml(inviteUrl: string): string {
-  return `<div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a2e;">
-    <p style="font-size: 16px;">${INVITE_HOOK_LINE}</p>
-    <p>
-      <a href="${inviteUrl}" style="display:inline-block; padding: 12px 24px; background:#7C5CFC; color:#fff; border-radius: 999px; text-decoration:none; font-weight: 600;">
-        Join Blind Whisper
-      </a>
-    </p>
-    <p style="color:#888; font-size: 12px;">Sent anonymously via Blind Whisper. No inviter identity is included unless they choose to reveal it.</p>
-    ${complianceFooter()}
-  </div>`;
+  return emailShell(
+    `${emailHeading(INVITE_HOOK_LINE)}
+     ${emailButton(inviteUrl, "Join Blind Whisper")}
+     ${emailFallbackLink(inviteUrl)}
+     ${emailNote(
+       "Sent anonymously through Blind Whisper. The inviter's identity isn't included unless they choose to reveal it.",
+     )}`,
+  );
 }
 
 export function subscriptionMatchedEmailFooter(unsubscribeUrl: string): string {
-  return `<p style="font-size: 12px; color: #9ca3af; margin-top: 24px;">
-    You're getting this because you subscribed to anonymous whisps on a topic you chose.
-    <a href="${unsubscribeUrl}" style="color: #9ca3af;">Unsubscribe</a>
+  return `<p style="margin:20px 0 0;text-align:center;font-size:12px;line-height:1.6;color:#8a8aa3;">
+    You're getting this because you subscribed to anonymous whisps on a topic you chose.<br />
+    <a href="${unsubscribeUrl}" style="color:#8a8aa3;text-decoration:underline;">Unsubscribe</a>
   </p>`;
 }

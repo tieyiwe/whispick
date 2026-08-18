@@ -537,19 +537,37 @@ export function PublicWhispPage() {
                   />
 
                   {!showVideoReply ? (
+                    // Answering with a video — not just text — is the thing
+                    // this app does that a message thread doesn't, and it was
+                    // sitting here as grey 12px text that read as a footnote.
+                    // Given the weight of the action it needs to look like an
+                    // offer: full width, dashed like an empty slot waiting to
+                    // be filled, and saying what it actually gets you.
                     <button
                       type="button"
                       onClick={() => setShowVideoReply(true)}
                       data-testid="button-show-video-reply"
-                      className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
+                      className="group w-full flex items-center gap-3 rounded-xl border border-dashed border-primary/40 bg-primary/[0.06] px-4 py-3 text-left transition-colors hover:border-primary/70 hover:bg-primary/10 active:scale-[0.99]"
                     >
-                      <Video className="w-3.5 h-3.5" /> Whisp a video back too
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary transition-colors group-hover:bg-primary/25">
+                        <Video className="h-4 w-4" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-medium text-foreground">Whisp a video back</span>
+                        <span className="block text-xs text-muted-foreground">
+                          Send a video with your reply — still anonymous
+                        </span>
+                      </span>
+                      <PlayCircle className="h-4 w-4 shrink-0 text-primary/60 transition-colors group-hover:text-primary" />
                     </button>
                   ) : (
-                    <div className="space-y-2 p-3 rounded-xl border border-border/50 bg-muted/20">
+                    <div className="space-y-2 p-3 rounded-xl border border-primary/30 bg-primary/[0.06]">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                          <Video className="w-3.5 h-3.5" /> Whisp a video back
+                        <span className="text-sm font-medium text-foreground flex items-center gap-2">
+                          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/15 text-primary">
+                            <Video className="h-3.5 w-3.5" />
+                          </span>
+                          Whisp a video back
                         </span>
                         <button
                           type="button"
