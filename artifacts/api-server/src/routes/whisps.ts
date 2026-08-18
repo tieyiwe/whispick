@@ -363,7 +363,7 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
   // they render as auto-loaded <img>/<iframe> in the recipient's (and
   // admin's) browser. Derive them server-side from the pasted URL instead
   // (see lib/videoMeta.ts deriveVideoFields).
-  const derived = uploadedVideo ? null : deriveVideoFields(data.videoUrl!);
+  const derived = uploadedVideo ? null : deriveVideoFields(data.videoUrl!, data.videoThumbnail);
   const effectiveVideoThumbnail = uploadedVideo
     ? uploadedVideo.thumbnailObjectKey
       ? `/api/public/w/${publicToken}/media/thumbnail`

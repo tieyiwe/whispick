@@ -342,7 +342,7 @@ router.post("/w/:token/reply", async (req, res): Promise<void> => {
   // silently leak the sender's IP/geolocation to the recipient the first time
   // they open the thread — a direct break of the app's core sender/recipient
   // anonymity guarantee. See lib/videoMeta.ts deriveVideoFields.
-  const replyDerived = parsed.data.videoUrl ? deriveVideoFields(parsed.data.videoUrl) : null;
+  const replyDerived = parsed.data.videoUrl ? deriveVideoFields(parsed.data.videoUrl, parsed.data.videoThumbnail) : null;
 
   // Anonymous replies are capped per whisp; signing up lifts the cap
   // entirely. getAuth works here even though this route is unauthenticated —

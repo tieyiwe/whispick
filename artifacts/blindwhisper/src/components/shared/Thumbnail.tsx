@@ -18,11 +18,23 @@ import { getAuthToken } from "@workspace/api-client-react";
 // a blob URL instead. Public, token-scoped thumbnails
 // (/api/public/w/:token/media/thumbnail) need no credential, but going
 // through the same path costs nothing and keeps one code path.
+// Only our own API needs the credentialed blob path. A platform CDN
+// thumbnail (i.ytimg.com and friends) is public and — critically — does NOT
+// send CORS headers, so fetch() on it fails outright where a plain <img src>
+// has always worked fine. Routing those through fetch broke every video
+// preview in the composer; they must stay a normal <img>.
+function needsCredentialedFetch(src: string): boolean {
+  return src.startsWith("/api/");
+}
+
 export function Thumbnail({ src, alt, className }: { src: string; alt?: string; className?: string }) {
   const [failed, setFailed] = useState(false);
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
+  const credentialed = needsCredentialedFetch(src);
 
   useEffect(() => {
+    if (!credentialed) return;
+
     let cancelled = false;
     let created: string | null = null;
     setFailed(false);
@@ -50,7 +62,7 @@ export function Thumbnail({ src, alt, className }: { src: string; alt?: string; 
       // the composer's picker) doesn't accumulate blobs for the tab's life.
       if (created) URL.revokeObjectURL(created);
     };
-  }, [src]);
+  }, [src, credentialed]);
 
   if (failed) {
     return (
@@ -58,6 +70,11 @@ export function Thumbnail({ src, alt, className }: { src: string; alt?: string; 
         <PlayCircle className="w-1/4 h-1/4 min-w-4 min-h-4 text-muted-foreground" />
       </div>
     );
+  }
+
+  // Public/cross-origin thumbnail: straight <img>, exactly as before.
+  if (!credentialed) {
+    return <img src={src} alt={alt ?? ""} className={className} onError={() => setFailed(true)} />;
   }
 
   // Placeholder-shaped (not an empty <img>) while the blob resolves, so the

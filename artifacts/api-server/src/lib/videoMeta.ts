@@ -77,26 +77,73 @@ export function buildThumbnailUrl(url: string, platform: string): string | null 
   return null;
 }
 
+// Image CDNs the supported platforms actually serve their thumbnails from.
+// Only YouTube exposes a thumbnail URL derivable from the video id alone
+// (buildThumbnailUrl above); every other platform's is discoverable only by
+// scraping, which /api/video/meta already did before the send. Rather than
+// throw that scraped URL away — which left every non-YouTube whisp with no
+// preview at all — accept it when it comes from one of these hosts.
+//
+// The point of the check is WHO is being contacted, not what the URL says:
+// an attacker can't host on ytimg.com, so a thumbnail from this list can't
+// be a beacon pointed at a party trying to learn the viewer's IP. Matched on
+// the parsed hostname as a domain suffix, so the many regional
+// subdomains (scontent-lhr8-1.cdninstagram.com, p16-sign-va.tiktokcdn.com)
+// resolve without enumerating them, while "ytimg.com.evil.tld" does not.
+const ALLOWED_THUMBNAIL_DOMAINS = [
+  "ytimg.com",
+  "youtube.com",
+  "vimeocdn.com",
+  "tiktokcdn.com",
+  "tiktokcdn-us.com",
+  "cdninstagram.com",
+  "fbcdn.net",
+  "twimg.com",
+];
+
+export function isAllowedThumbnailUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:") return false;
+    const host = parsed.hostname.toLowerCase();
+    return ALLOWED_THUMBNAIL_DOMAINS.some((domain) => host === domain || host.endsWith(`.${domain}`));
+  } catch {
+    return false;
+  }
+}
+
 // The single trusted source of a whisp/reply's platform, embed URL, and
-// thumbnail. Everything here is derived server-side from the one field we
-// can meaningfully validate — the pasted videoUrl — with the client's own
-// videoPlatform/videoEmbedUrl/videoThumbnail deliberately ignored. Accepting
-// those from the client was a stored-XSS/iframe-injection sink (a chosen
-// embed URL renders in an <iframe> in the viewer's session) and, for the
-// thumbnail, the deanonymization channel described above. detectPlatform and
-// buildEmbedUrl/buildThumbnailUrl are all pure (no network), so this stays a
-// cheap synchronous transform on the send path.
-export function deriveVideoFields(videoUrl: string): {
+// thumbnail. Platform and embed URL are always derived server-side from the
+// one field we can meaningfully validate — the pasted videoUrl — with the
+// client's own values ignored: accepting a chosen embed URL was an
+// iframe-injection sink, since it renders in an <iframe> in the viewer's
+// session.
+//
+// The thumbnail is derived where that's possible (YouTube) and otherwise
+// falls back to the client's scraped one *only* if it points at a real
+// platform CDN. That keeps the deanonymization guard described above — no
+// attacker-controlled host can be auto-loaded by the other party's browser —
+// without blanking the preview on every platform whose thumbnail can't be
+// computed from the URL.
+export function deriveVideoFields(
+  videoUrl: string,
+  clientThumbnail?: string | null,
+): {
   platform: string | null;
   embedUrl: string | null;
   thumbnail: string | null;
 } {
   const platform = detectPlatform(videoUrl);
   if (!platform) return { platform: null, embedUrl: null, thumbnail: null };
+
+  const derivedThumbnail = buildThumbnailUrl(videoUrl, platform);
+  const thumbnail =
+    derivedThumbnail ?? (clientThumbnail && isAllowedThumbnailUrl(clientThumbnail) ? clientThumbnail : null);
+
   return {
     platform,
     embedUrl: buildEmbedUrl(videoUrl, platform),
-    thumbnail: buildThumbnailUrl(videoUrl, platform),
+    thumbnail,
   };
 }
 

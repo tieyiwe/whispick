@@ -577,3 +577,63 @@ describe("POST /api/whisps — recipient contact validation", () => {
     expect(sms.status).toBe(201);
   });
 });
+
+describe("POST /api/whisps — video thumbnail handling", () => {
+  const USER_THUMB = "clerk_user_thumb";
+
+  // Regression: server-side derivation only knows how to build a thumbnail
+  // URL for YouTube, so discarding the client's scraped one outright left
+  // every other platform with no preview at all. A scraped thumbnail from a
+  // real platform CDN is kept; anything else still isn't.
+  it("keeps a scraped thumbnail from a real platform CDN on a non-YouTube whisp", async () => {
+    const res = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_THUMB))
+      .send({
+        videoUrl: "https://www.tiktok.com/@a/video/123",
+        videoThumbnail: "https://p16-sign-va.tiktokcdn.com/obj/abc123",
+        deliveryMethod: "circle_drop",
+      });
+    expect(res.status).toBe(201);
+    expect(res.body.videoThumbnail).toBe("https://p16-sign-va.tiktokcdn.com/obj/abc123");
+  });
+
+  it("still rejects a thumbnail from a host outside the platform allowlist", async () => {
+    const res = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_THUMB))
+      .send({
+        videoUrl: "https://www.tiktok.com/@a/video/123",
+        videoThumbnail: "https://attacker.example/beacon.gif",
+        deliveryMethod: "circle_drop",
+      });
+    expect(res.status).toBe(201);
+    expect(res.body.videoThumbnail).toBeNull();
+  });
+
+  it("rejects a lookalike host that merely ends with an allowlisted name", async () => {
+    const res = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_THUMB))
+      .send({
+        videoUrl: "https://www.tiktok.com/@a/video/123",
+        videoThumbnail: "https://ytimg.com.attacker.example/beacon.gif",
+        deliveryMethod: "circle_drop",
+      });
+    expect(res.status).toBe(201);
+    expect(res.body.videoThumbnail).toBeNull();
+  });
+
+  it("still prefers the server-derived thumbnail for YouTube", async () => {
+    const res = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_THUMB))
+      .send({
+        videoUrl: "https://youtu.be/dQw4w9WgXcQ",
+        videoThumbnail: "https://i.ytimg.com/vi/SOMETHINGELSE/hqdefault.jpg",
+        deliveryMethod: "circle_drop",
+      });
+    expect(res.status).toBe(201);
+    expect(res.body.videoThumbnail).toBe("https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg");
+  });
+});
