@@ -61,7 +61,7 @@ function complianceFooter(): string {
   // structure — "a sub-entity of ..." satisfied nothing and read to a
   // recipient like a forwarded chain of companies, which is the shape spam
   // takes. The brand the recipient actually recognises leads.
-  return `<p style="margin:20px 0 0;color:#8a8aa3;font-size:11px;line-height:1.6;text-align:center;">
+  return `<p style="margin:20px 0 0;color:#5F5F73;font-size:11px;line-height:1.6;text-align:center;">
     Blind Whisper is a service of TIBLOGICS.${addressLine}
   </p>`;
 }
@@ -79,10 +79,12 @@ const CARD_BG = "#14142B";
 const CARD_BORDER = "#2A2A4A";
 const PAGE_BG = "#F4F4F7";
 const ACCENT = "#9B7BFF";
-const BUTTON_BG = "#7C5CFC";
-const TEXT = "#FFFFFF";
+// A shade deeper than the app's #7C5CFC so the label clears WCAG AA (4.57:1)
+// at 16px — the on-screen purple only managed 3.77:1 behind white text.
+const BUTTON_BG = "#6D4AF5";
+const TEXT = "#EDEDF7";
 const TEXT_MUTED = "#A8A8C0";
-const TEXT_FAINT = "#6F6F8A";
+const TEXT_FAINT = "#9A9AB8";
 
 /**
  * Wraps content in the branded card. Dark, like the app itself — a whisp is
@@ -95,7 +97,19 @@ const TEXT_FAINT = "#6F6F8A";
  * it outside the layout entirely and left it full-width and flush left.
  */
 function emailShell(contentHtml: string, extraFooterHtml = ""): string {
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${PAGE_BG};margin:0;padding:0;width:100%;">
+  // A complete document, not a bare fragment. Filters and clients both parse
+  // what arrives; a fragment with no doctype and no declared charset leaves
+  // the encoding to be guessed and reads as machine-assembled, and malformed
+  // HTML is a documented spam heuristic. Cheap to get right, so it is.
+  return `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Blind Whisper</title>
+</head>
+<body style="margin:0;padding:0;background:${PAGE_BG};">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${PAGE_BG};margin:0;padding:0;width:100%;">
     <tr>
       <td align="center" style="padding:28px 12px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;margin:0 auto;">
@@ -118,7 +132,9 @@ function emailShell(contentHtml: string, extraFooterHtml = ""): string {
         </table>
       </td>
     </tr>
-  </table>`;
+  </table>
+</body>
+</html>`;
 }
 
 function emailHeading(text: string): string {
@@ -138,7 +154,7 @@ function emailButton(url: string, label: string): string {
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:28px auto 0;">
     <tr>
       <td align="center" bgcolor="${BUTTON_BG}" style="border-radius:999px;">
-        <a href="${url}" style="display:inline-block;padding:16px 46px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;font-weight:700;line-height:1;color:#ffffff;text-decoration:none;border-radius:999px;">${label}</a>
+        <a href="${url}" style="display:inline-block;padding:16px 46px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;font-weight:700;line-height:1;color:#EDEDF7;text-decoration:none;border-radius:999px;">${label}</a>
       </td>
     </tr>
   </table>`;
@@ -172,6 +188,61 @@ function isSingleEmailAddress(value: string): boolean {
   return value.length <= 320 && SINGLE_EMAIL_ADDRESS.test(value);
 }
 
+const HTML_ENTITIES: Record<string, string> = {
+  "&amp;": "&",
+  "&lt;": "<",
+  "&gt;": ">",
+  "&quot;": '"',
+  "&#39;": "'",
+  "&nbsp;": " ",
+};
+
+/**
+ * Plain-text alternative for the HTML body.
+ *
+ * Every message used to go out as HTML only, which is one of the older and
+ * stronger spam heuristics there is: legitimate senders offer both parts, and
+ * a message with no text/plain alternative is disproportionately bulk mail.
+ * It also means anything reading without HTML — a text-only client, a screen
+ * reader falling back, a preview pane — got a blank message.
+ *
+ * Derived from the HTML rather than written per template on purpose: two
+ * hand-maintained copies of the same message drift, and the one nobody looks
+ * at is the one that goes stale. This only ever parses HTML this module built
+ * itself, so it can be simple without being fragile.
+ */
+export function htmlToPlainText(html: string): string {
+  const withoutHead = html.replace(/<(head|style|script)\b[\s\S]*?<\/\1>/gi, "");
+
+  const linked = withoutHead.replace(
+    /<a\b[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi,
+    (_match, href: string, label: string) => {
+      const text = label.replace(/<[^>]+>/g, "").trim();
+      // "Label: url" so the destination survives, except when the label is
+      // already the URL — printing it twice reads like a mistake. Note the
+      // angle-bracket convention ("Label <url>") is NOT usable here: the
+      // tag-stripping pass below would eat <url> as if it were a tag, which
+      // silently dropped every button's destination.
+      return !text || text === href ? href : `${text}: ${href}`;
+    },
+  );
+
+  const decoded = linked
+    .replace(/<br\s*\/?>/gi, "\n")
+    // Block-level closers become line breaks so the text keeps the shape of
+    // the message instead of collapsing into one paragraph.
+    .replace(/<\/(p|div|h[1-6]|td|tr|table)>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&#39;|&quot;|&nbsp;|&amp;|&lt;|&gt;/g, (entity) => HTML_ENTITIES[entity] ?? entity);
+
+  return decoded
+    .split("\n")
+    .map((line) => line.replace(/[ \t ]+/g, " ").trim())
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 export async function sendEmail(to: string, subject: string, html: string, logCtx: DeliveryLogContext): Promise<boolean> {
   if (!isSingleEmailAddress(to)) {
     // Logged without echoing the address itself — a rejected value is
@@ -187,7 +258,14 @@ export async function sendEmail(to: string, subject: string, html: string, logCt
 
   if (SMTP_USER && SMTP_PASS) {
     try {
-      const info = await getSmtpTransport().sendMail({ from: EMAIL_FROM, to, subject, html });
+      // Both parts: nodemailer assembles multipart/alternative from these.
+      const info = await getSmtpTransport().sendMail({
+        from: EMAIL_FROM,
+        to,
+        subject,
+        html,
+        text: htmlToPlainText(html),
+      });
       await logDeliveryAttempt("email", to, logCtx, { success: true, providerMessageId: info.messageId ?? null });
       return true;
     } catch (err) {
@@ -213,7 +291,7 @@ export async function sendEmail(to: string, subject: string, html: string, logCt
         Authorization: `Bearer ${RESEND_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ from: EMAIL_FROM, to, subject, html }),
+      body: JSON.stringify({ from: EMAIL_FROM, to, subject, html, text: htmlToPlainText(html) }),
     });
 
     if (!res.ok) {
@@ -318,8 +396,8 @@ export function inviteEmailHtml(inviteUrl: string): string {
 }
 
 export function subscriptionMatchedEmailFooter(unsubscribeUrl: string): string {
-  return `<p style="margin:20px 0 0;text-align:center;font-size:12px;line-height:1.6;color:#8a8aa3;">
+  return `<p style="margin:20px 0 0;text-align:center;font-size:12px;line-height:1.6;color:#5F5F73;">
     You're getting this because you subscribed to anonymous whisps on a topic you chose.<br />
-    <a href="${unsubscribeUrl}" style="color:#8a8aa3;text-decoration:underline;">Unsubscribe</a>
+    <a href="${unsubscribeUrl}" style="color:#5F5F73;text-decoration:underline;">Unsubscribe</a>
   </p>`;
 }
