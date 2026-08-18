@@ -171,7 +171,7 @@ export function MyCircles() {
             <VenetianMask className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
             <h3 className="text-xl font-medium text-foreground mb-2">No circles yet</h3>
             <p className="text-muted-foreground max-w-md mx-auto">
-              Create one to share whisps privately with a small group, or join one with an invite code.
+              Create one to share whisps anonymously with a small group, or join one with an invite code.
             </p>
           </Card>
         )}
