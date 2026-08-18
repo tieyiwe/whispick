@@ -22,6 +22,11 @@
     <meta name="twitter:description" content="Blind Whisper lets you send a video to someone who needs it, anonymously. Whisper Links, Ghost Boost matching, and Circle — no account required to receive." />
     <meta name="twitter:image" content="https://blindwhisper.com/opengraph.jpg" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- iOS ignores SVG icons and won't use the one above, falling back to a
+         screenshot of the page when someone adds the app to their home screen.
+         This PNG is the same mark on a deliberately square background, since
+         iOS applies its own corner mask and would otherwise round it twice. -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",

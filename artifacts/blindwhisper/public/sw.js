@@ -10,7 +10,9 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     self.registration.showNotification(title, {
       body,
-      icon: "/favicon.svg",
+      // PNG, not the SVG favicon: Chrome on Android doesn't reliably render
+      // SVG notification icons and silently falls back to a generic bell.
+      icon: "/apple-touch-icon.png",
       data: { url },
     })
   );

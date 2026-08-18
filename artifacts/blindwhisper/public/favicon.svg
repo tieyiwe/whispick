@@ -1,3 +1,11 @@
-<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-<rect width="180" height="180" rx="36" fill="#FF3C00"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Blind Whisper">
+  <rect width="64" height="64" rx="14" fill="#0D0D1A"/>
+  <!-- Ear + sound arc. The transform centres the mark in the box and scales it
+       to leave a 9px margin; the stroke weights are deliberately heavier than
+       the source artwork because this file is also rendered at 16px in the tab
+       strip, where the original 2px strokes fell below one device pixel. -->
+  <g transform="translate(-12.72,-15.32) scale(0.3309)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M118,80 C145,80 158,105 154,130 C151,150 135,155 128,170 C122,183 130,196 122,204 C114,210 104,202 106,190 C108,180 98,178 95,165 C90,145 96,120 108,100 C111,93 113,86 118,80 Z" stroke="#9B7BFF" stroke-width="13"/>
+    <path d="M167,138 A38,38 0 0,1 167,192" stroke="#7B61FF" stroke-width="11" opacity="0.9"/>
+  </g>
 </svg>
