@@ -34,9 +34,32 @@ self.addEventListener("notificationclick", (event) => {
   if (!url) return;
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
-      for (const client of clients) {
-        if (client.url === url && "focus" in client) return client.focus();
+      // Reuse ANY already-open Blind Whisper window, not just one sitting on
+      // the exact target URL — an installed app that happens to be open on
+      // /dashboard is still the window a notification about /whisps/abc
+      // should land in. Matching on origin (rather than requiring an exact
+      // URL match) is what makes that the common case instead of the rare
+      // one, which in turn is what keeps a click from spawning a second
+      // window/tab next to an app that's already running.
+      const existing = clients.find((client) => {
+        try {
+          return new URL(client.url).origin === self.location.origin;
+        } catch {
+          return false;
+        }
+      });
+      if (existing) {
+        // navigate() only exists on WindowClient, and can reject (e.g. the
+        // page has since been discarded) — focus() still gets attempted
+        // either way, so the click always lands somewhere.
+        return Promise.resolve(existing.navigate ? existing.navigate(url).catch(() => {}) : undefined).then(
+          () => "focus" in existing && existing.focus()
+        );
       }
+      // No window open at all: openWindow() launches inside the installed
+      // app rather than a browser tab whenever one is installed for this
+      // origin/scope — that association is handled by the browser itself
+      // (see manifest.webmanifest's scope), not something this code decides.
       if (self.clients.openWindow) return self.clients.openWindow(url);
     })
   );

@@ -10,6 +10,7 @@ import { registerServiceWorker } from "@/lib/push";
 // App.tsx's own eager bundle specifically so the listener is live before any
 // of that.
 import "@/lib/installApp";
+import { PinToTaskbarTip } from "@/components/shared/PinToTaskbarTip";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
 import { dark } from '@clerk/themes';
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from 'wouter';
@@ -232,6 +233,7 @@ function ClerkProviderWithRoutes() {
       <QueryClientProvider client={queryClient}>
         <ClerkAuthTokenBridge />
         <ServiceWorkerRegistration />
+        <PinToTaskbarTip />
         <ClerkQueryClientCacheInvalidator />
         <ClaimPendingInvite />
         <Suspense fallback={<RouteLoadingFallback />}>

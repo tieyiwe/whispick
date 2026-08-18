@@ -141,6 +141,40 @@ let deferredPrompt: BeforeInstallPromptEvent | null = null;
 type Listener = (event: BeforeInstallPromptEvent | null) => void;
 const listeners = new Set<Listener>();
 
+// A separate channel from `listeners` above, deliberately: that one carries
+// the *prompt* event and goes quiet the moment it's consumed (dismissed,
+// cleared on unmount, etc.) — "just installed" needs to reach a listener
+// exactly once, regardless of what happened to the prompt event on the way.
+type InstalledListener = () => void;
+const installedListeners = new Set<InstalledListener>();
+
+function announceJustInstalled(): void {
+  for (const listener of installedListeners) listener();
+}
+
+/**
+ * Fires once, the moment an install actually completes — whether triggered
+ * through our own Install button or the browser's own address-bar/menu
+ * install affordance. Meant for a follow-up nudge (e.g. "now pin it to your
+ * taskbar") that only makes sense right after a real install, not on every
+ * mount.
+ */
+export function onJustInstalled(listener: InstalledListener): () => void {
+  installedListeners.add(listener);
+  return () => installedListeners.delete(listener);
+}
+
+/**
+ * Called directly from the Install button's own accepted-outcome branch, in
+ * addition to the `appinstalled` handler below — belt-and-suspenders for the
+ * same reason `rememberInstalled` is called from both places: `appinstalled`
+ * can be missed if the tab is backgrounded while the OS finishes installing.
+ * Safe to call twice; listeners just re-fire.
+ */
+export function notifyJustInstalled(): void {
+  announceJustInstalled();
+}
+
 if (typeof window !== "undefined") {
   window.addEventListener("beforeinstallprompt", (e) => {
     e.preventDefault();
@@ -156,6 +190,7 @@ if (typeof window !== "undefined") {
     rememberInstalled();
     deferredPrompt = null;
     for (const listener of listeners) listener(null);
+    announceJustInstalled();
   });
 }
 

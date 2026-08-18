@@ -12,6 +12,7 @@ import {
   onInstallPromptAvailable,
   clearDeferredInstallPrompt,
   hasAppLayoutRenderedThisTab,
+  notifyJustInstalled,
   type BeforeInstallPromptEvent,
 } from "@/lib/installApp";
 
@@ -127,6 +128,7 @@ export function InstallAppPrompt() {
         // Recorded here as well as on `appinstalled`, since that event can be
         // missed if the page is backgrounded while the OS finishes installing.
         rememberInstalled();
+        notifyJustInstalled();
         setVisible(false);
       } else {
         // Declining the OS dialog is a real answer — treat it as "not now"
