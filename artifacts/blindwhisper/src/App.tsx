@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useRef } from "react";
 import { ClerkProvider, SignIn, SignUp, Show, useClerk, useAuth } from '@clerk/react';
+import { registerServiceWorker } from "@/lib/push";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
 import { dark } from '@clerk/themes';
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from 'wouter';
@@ -167,6 +168,26 @@ function ClerkAuthTokenBridge() {
   return null;
 }
 
+// Registers the service worker on load, for everyone.
+//
+// It used to be registered only as a side effect of turning on push
+// notifications (lib/push.ts subscribeToPush), which meant anyone who never
+// granted notification permission had no service worker at all — and Chrome
+// will not fire `beforeinstallprompt` without one, so the install prompt
+// could never appear for most people. Registration is cheap, idempotent, and
+// the worker itself does nothing but handle pushes and pass fetches straight
+// through (public/sw.js).
+function ServiceWorkerRegistration() {
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    // Failure here is never worth surfacing: it means no push and no install
+    // offer, not a broken app.
+    void registerServiceWorker().catch(() => {});
+  }, []);
+
+  return null;
+}
+
 function HomeRedirect() {
   return (
     <>
@@ -200,6 +221,7 @@ function ClerkProviderWithRoutes() {
     >
       <QueryClientProvider client={queryClient}>
         <ClerkAuthTokenBridge />
+        <ServiceWorkerRegistration />
         <ClerkQueryClientCacheInvalidator />
         <ClaimPendingInvite />
         <Suspense fallback={<RouteLoadingFallback />}>

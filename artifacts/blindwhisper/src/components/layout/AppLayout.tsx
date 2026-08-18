@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { NotificationBell } from "@/components/shared/NotificationBell";
 import { PullToRefresh, reloadPage } from "@/components/shared/PullToRefresh";
+import { InstallAppPrompt } from "@/components/shared/InstallAppPrompt";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -301,6 +302,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </div>
         </PullToRefresh>
       </main>
+
+      {/* Only inside AppLayout, so it reaches signed-in users and never a
+          stranger on a public whisp page who has no account to install for. */}
+      <InstallAppPrompt />
 
       {/* Mobile bottom tab bar with a raised Send action, native-app style */}
       <nav
