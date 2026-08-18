@@ -69,6 +69,20 @@ export function isIos(): boolean {
 }
 
 /**
+ * Phone/tablet vs. desktop — used only to pick which install copy to show
+ * ("to your phone" vs. "to this computer"), never to decide whether to show
+ * a prompt at all. Chromium exposes this directly via NavigatorUAData; other
+ * engines (and older Chromium) fall back to a user-agent sniff, the same
+ * technique isIos() above already relies on.
+ */
+export function isMobileDevice(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const uaData = (navigator as unknown as { userAgentData?: { mobile?: boolean } }).userAgentData;
+  if (uaData && typeof uaData.mobile === "boolean") return uaData.mobile;
+  return /Android|iPhone|iPad|iPod|Mobi/i.test(navigator.userAgent);
+}
+
+/**
  * Whether we should stay quiet: already installed, previously installed on
  * this device, or snoozed recently.
  *

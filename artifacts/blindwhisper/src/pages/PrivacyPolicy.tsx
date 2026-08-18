@@ -43,6 +43,11 @@ export function PrivacyPolicy() {
           <li><strong>Push notification data:</strong> if you opt in, we store a device/browser push subscription endpoint so we can notify you when something you sent is opened, watched, or replied to.</li>
         </ul>
         <p><strong>1.6 Information from third parties.</strong> If you sign in using a supported social login provider through Clerk, we receive your name, email address, and profile photo from that provider in accordance with your account permissions there. We also receive transaction confirmations and subscription status from Stripe.</p>
+        <p>
+          See our <a href="/sms-terms" className="text-primary hover:underline">SMS Messaging Program</a> page for
+          the full program description, sample messages, and message frequency for the SMS deliveries described in
+          this section.
+        </p>
         <p><strong>1.7 Phone number verification and in-app delivery matching.</strong> A verified phone number lets us do one additional thing: when a Sender addresses a Whisper Link to a phone number by SMS or WhatsApp, we check — privately, on our servers only — whether that number matches a verified Blind Whisper account. If it does, we deliver the Whisp inside the app as an in-app notification instead of sending it as a text message through Twilio. This is purely a delivery-routing decision: the content, anonymity protections, and Reveal Flow all work identically either way, and it can meaningfully reduce our SMS/WhatsApp costs and get the Whisp to the Recipient faster. Two things we want to be explicit about:</p>
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>The Sender is never told which path was used.</strong> Nothing in the Sender's experience — timing, confirmation text, or any other signal — reveals whether their Whisp was delivered by text message or in-app. This is a deliberate design choice: telling a Sender "this number already has an account" would let them use Blind Whisper to check whether a specific phone number belongs to someone they know, which we consider a privacy risk to Recipients and refuse to expose.</li>

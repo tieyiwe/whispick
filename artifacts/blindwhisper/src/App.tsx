@@ -31,6 +31,7 @@ import { ClaimPendingInvite } from "@/components/shared/ClaimPendingInvite";
 // React.lazy only accepts a module with a default export.
 const PrivacyPolicy = lazy(() => import("@/pages/PrivacyPolicy").then((m) => ({ default: m.PrivacyPolicy })));
 const TermsOfService = lazy(() => import("@/pages/TermsOfService").then((m) => ({ default: m.TermsOfService })));
+const SmsTerms = lazy(() => import("@/pages/SmsTerms").then((m) => ({ default: m.SmsTerms })));
 const WhispsList = lazy(() => import("@/pages/WhispsList").then((m) => ({ default: m.WhispsList })));
 const CircleFeed = lazy(() => import("@/pages/CircleFeed").then((m) => ({ default: m.CircleFeed })));
 const MyCircles = lazy(() => import("@/pages/MyCircles").then((m) => ({ default: m.MyCircles })));
@@ -276,6 +277,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/privacy-policy" component={PrivacyPolicy} />
             <Route path="/terms" component={TermsOfService} />
             <Route path="/terms-and-conditions" component={TermsOfService} />
+            <Route path="/sms-terms" component={SmsTerms} />
             <Route path="/subscribe" component={SubscribePage} />
             <Route path="/verify-subscription" component={VerifySubscriptionPage} />
             <Route path="/unsubscribe" component={UnsubscribeFromMatchingPage} />

@@ -308,6 +308,8 @@ export function LandingPage() {
         <Link href="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link>
         <span className="text-border">•</span>
         <Link href="/terms" className="hover:text-primary transition-colors">Terms of Service</Link>
+        <span className="text-border">•</span>
+        <Link href="/sms-terms" className="hover:text-primary transition-colors">SMS Terms</Link>
       </footer>
 
       {/* This is a signed-out visitor's only chance to see an install nudge

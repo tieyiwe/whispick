@@ -91,6 +91,10 @@ export function TermsOfService() {
 
       <LegalSection heading="7. Message Delivery and SMS/WhatsApp Consent">
         <p>
+          See our <a href="/sms-terms" className="text-primary hover:underline">SMS Messaging Program</a> page for
+          the full program description, sample messages, and message frequency.
+        </p>
+        <p>
           We use third-party providers, including telecom carriers, to deliver Whisper Links, Whisper Groups,
           Invites, and — when the Recipient's number isn't already a verified Blind Whisper account — Text Whisps,
           by SMS, WhatsApp, or email. Delivery is best-effort — we do not guarantee that any message will be

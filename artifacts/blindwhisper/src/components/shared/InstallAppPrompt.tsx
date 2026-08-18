@@ -4,6 +4,7 @@ import { Logo } from "@/components/ui/logo";
 import { Download, X, Share, Plus } from "lucide-react";
 import {
   isIos,
+  isMobileDevice,
   isStandalone,
   shouldStayQuiet,
   rememberInstalled,
@@ -53,6 +54,9 @@ export function InstallAppPrompt() {
   const [installing, setInstalling] = useState(false);
   const deferredRef = useRef<BeforeInstallPromptEvent | null>(null);
   const ios = isIos();
+  // Read once — this doesn't change over the component's lifetime, and the
+  // whole point is to pick copy that matches the device, not to react to it.
+  const [mobile] = useState(isMobileDevice);
 
   useEffect(() => {
     if (shouldStayQuiet()) return;
@@ -159,11 +163,15 @@ export function InstallAppPrompt() {
         <div className="flex items-start gap-3">
           <Logo className="h-10 w-auto shrink-0 text-primary" aria-hidden />
           <div className="min-w-0 flex-1">
-            <p className="font-serif text-base font-semibold text-foreground">Add Blind Whisper to your phone</p>
+            <p className="font-serif text-base font-semibold text-foreground">
+              {ios || mobile ? "Add Blind Whisper to your phone" : "Add Blind Whisper to this computer"}
+            </p>
             <p className="mt-0.5 text-xs text-muted-foreground">
               {ios
                 ? "Opens full screen, with no browser bars — like an app."
-                : "Opens full screen from your home screen, like an app."}
+                : mobile
+                  ? "Opens full screen from your home screen, like an app."
+                  : "Launch it in one click next time, straight from your desktop or taskbar — no browser tabs to dig through."}
             </p>
           </div>
           <button
