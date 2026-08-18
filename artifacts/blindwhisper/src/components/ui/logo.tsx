@@ -21,7 +21,17 @@ import { SVGProps } from "react";
  * instead of a square box leaving dead space beside a mark that is taller
  * than it is wide.
  */
-export function Logo(props: SVGProps<SVGSVGElement>) {
+export function Logo({
+  waveOnce = false,
+  ...props
+}: SVGProps<SVGSVGElement> & {
+  /** Plays the arc pulse through a single cycle instead of looping forever —
+   *  see .logo-wave-once in index.css. For a one-off moment (a send
+   *  confirmation) rather than the ambient loop every other use of the mark
+   *  wants. */
+  waveOnce?: boolean;
+}) {
+  const waveClassName = waveOnce ? "logo-wave-once" : "logo-wave";
   return (
     <svg viewBox="88 74 112 138" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
       <g stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" fill="none">
@@ -46,7 +56,7 @@ export function Logo(props: SVGProps<SVGSVGElement>) {
           d="M155,150 A22,22 0 0,1 155,180"
           strokeWidth="4"
           opacity="0.8"
-          className="logo-wave"
+          className={waveClassName}
           style={
             {
               "--wave-base": 0.8,
@@ -62,7 +72,7 @@ export function Logo(props: SVGProps<SVGSVGElement>) {
           d="M167,138 A38,38 0 0,1 167,192"
           strokeWidth="3.5"
           opacity="0.5"
-          className="logo-wave"
+          className={waveClassName}
           style={
             {
               "--wave-base": 0.5,
@@ -78,7 +88,7 @@ export function Logo(props: SVGProps<SVGSVGElement>) {
           d="M179,126 A54,54 0 0,1 179,204"
           strokeWidth="3"
           opacity="0.28"
-          className="logo-wave"
+          className={waveClassName}
           style={
             {
               "--wave-base": 0.28,

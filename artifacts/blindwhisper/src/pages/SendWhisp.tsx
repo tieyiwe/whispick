@@ -30,6 +30,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { MoodTag, MOOD_CONFIG } from "@/components/shared/MoodTag";
 import { Logo } from "@/components/ui/logo";
+import { WhispSentConfirmation } from "@/components/shared/WhispSentConfirmation";
 import {
   ArrowLeft,
   ArrowRight,
@@ -40,7 +41,6 @@ import {
   Phone,
   Ghost,
   Send,
-  Check,
   Clock,
   CalendarClock,
   Contact,
@@ -82,28 +82,6 @@ const SENDER_ALIASES = [
   "Someone who loves you",
   "An admirer",
 ];
-
-function ParticleAnimation() {
-  return (
-    <div className="relative h-32 flex items-center justify-center pointer-events-none overflow-hidden">
-      {Array.from({ length: 8 }).map((_, i) => (
-        <div
-          key={i}
-          className="particle absolute w-3 h-3 rounded-full bg-primary/80 blur-[2px]"
-          style={{
-            left: `${15 + i * 10}%`,
-            bottom: "0",
-            animationDelay: `${i * 0.25}s`,
-            animationDuration: `${2.5 + (i % 3) * 0.5}s`,
-            width: `${8 + (i % 3) * 4}px`,
-            height: `${8 + (i % 3) * 4}px`,
-            background: i % 3 === 0 ? "#7C5CFC" : i % 3 === 1 ? "#FF6B6B" : "#a78bfa",
-          }}
-        />
-      ))}
-    </div>
-  );
-}
 
 function parseTimestampToSeconds(value: string): number | null {
   const trimmed = value.trim();
@@ -639,10 +617,7 @@ export function SendWhisp() {
     return (
       <AppLayout>
         <div className="max-w-xl mx-auto text-center py-16 space-y-6">
-          <ParticleAnimation />
-          <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center mx-auto glow-card">
-            <Check className="w-10 h-10 text-primary" />
-          </div>
+          <WhispSentConfirmation />
           <h1 className="text-4xl font-serif font-bold text-foreground">
             {sentCount > 1 ? "Your whisps are on their way" : "Your whisp is on its way"}
           </h1>

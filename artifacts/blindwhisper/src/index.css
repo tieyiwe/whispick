@@ -273,6 +273,24 @@
   }
 }
 
+/* Same ripple, played through exactly once instead of looping — the send-
+   confirmation moment (WhispSentConfirmation.tsx) needs "it pulsed, then
+   it's done," not a background ambient loop. Kept as its own class rather
+   than adding an animation-iteration-count prop to .logo-wave itself, since
+   every other use of the mark (headers, install prompts) genuinely wants
+   the infinite loop and shouldn't have to opt back into it. */
+.logo-wave-once {
+  animation: logo-wave 1.7s ease-in-out 1;
+  animation-delay: var(--wave-delay, 0s);
+  animation-fill-mode: forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-wave-once {
+    animation: none;
+  }
+}
+
 .particle {
   animation: float-up 3s ease-out forwards;
 }
