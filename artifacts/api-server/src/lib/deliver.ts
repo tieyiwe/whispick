@@ -155,32 +155,48 @@ export async function deliverWhisperLink(
 
   let success: boolean;
   if (whisp.whisperChannel === "email" && whisp.recipientEmail) {
-    // Unlike the SMS/WhatsApp branch below, a matched email recipient gets
-    // BOTH: the in-app notification (so they see it without leaving the
-    // app) AND — unless they've turned it off in Settings — the email too.
-    // Email is the default/most common channel, and unlike a Twilio SMS it
-    // costs nothing to also send, so there's no reason to make it either/or
-    // the way the SMS path does.
+    // A matched recipient gets BOTH: the in-app notification (so they see it
+    // without leaving the app) AND — unless they've turned it off in
+    // Settings — the email too. Same dual-delivery the SMS/WhatsApp branch
+    // below now does; see its own comment for why this used to be
+    // either/or and no longer is.
     const matched = await findVerifiedRecipientByEmail(whisp.recipientEmail);
     const inAppOk = matched
       ? await deliverInApp(matched.id, "You have a new whisp", hookLine, `/w/${whisp.publicToken}`, whisp.recipientEmail, logCtx)
-      : true;
+      : false;
     const shouldEmail = !matched || matched.emailNotificationsEnabled;
     const emailOk = shouldEmail
       ? await sendEmail(whisp.recipientEmail, hookLine, whisperLinkEmailHtml(sharedUrl, hookLine), logCtx)
-      : true;
-    success = inAppOk && emailOk;
+      : true; // opted out, not a failure
+    // For a matched recipient, in-app is the channel that's guaranteed to
+    // work — the email alongside it is a bonus, so a Resend hiccup (or an
+    // opt-out) never marks a whisp that actually reached them as "failed".
+    // For an unmatched recipient there's no in-app fallback, so the email
+    // send is the only thing that determines success.
+    success = matched ? inAppOk || emailOk : emailOk;
   } else if ((whisp.whisperChannel === "sms" || whisp.whisperChannel === "whatsapp") && whisp.recipientPhone) {
     const channel = whisp.whisperChannel;
     const matched = await findVerifiedRecipient(whisp.recipientPhone);
 
-    if (matched) {
-      success = await deliverInApp(matched.id, "You have a new whisp", hookLine, `/w/${whisp.publicToken}`, whisp.recipientPhone, logCtx);
-    } else if (channel === "sms") {
-      success = await sendSms(whisp.recipientPhone, whisperLinkSmsBody(sharedUrl, hookLine), logCtx);
-    } else {
-      success = await sendWhatsApp(whisp.recipientPhone, sharedUrl, logCtx);
-    }
+    // A matched recipient gets BOTH the in-app notification AND the real
+    // SMS/WhatsApp message — this used to skip the Twilio send entirely for
+    // a matched recipient (a real cost-saving "why text someone who'll see
+    // it in-app anyway" call), but product wants both to fire once Twilio
+    // SMS is approved, same as the email branch above always has: seeing it
+    // in-app doesn't mean they have the app open right now, and the text is
+    // still the more likely thing to actually get noticed first.
+    const inAppOk = matched
+      ? await deliverInApp(matched.id, "You have a new whisp", hookLine, `/w/${whisp.publicToken}`, whisp.recipientPhone, logCtx)
+      : false;
+    const transportOk =
+      channel === "sms"
+        ? await sendSms(whisp.recipientPhone, whisperLinkSmsBody(sharedUrl, hookLine), logCtx)
+        : await sendWhatsApp(whisp.recipientPhone, sharedUrl, logCtx);
+    // Same reasoning as the email branch above: while Twilio/WhatsApp
+    // Business approval is still pending (or on any later transient
+    // failure), a matched recipient who already got the in-app notification
+    // is NOT "failed" just because the bonus text didn't go out.
+    success = matched ? inAppOk || transportOk : transportOk;
   } else {
     // No recognized channel, or the contact info that channel needs is
     // missing — shouldn't happen given intake validation, but log it as a
