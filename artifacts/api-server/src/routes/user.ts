@@ -34,6 +34,7 @@ router.get("/profile", requireAuth, async (req, res): Promise<void> => {
     avatarUrl: user.avatarUrl,
     phone: user.phone,
     phoneVerifiedAt: user.phoneVerifiedAt,
+    countryCode: user.countryCode,
     gender: user.gender,
     ageRange: user.ageRange,
     plan: user.plan,
@@ -58,6 +59,7 @@ router.patch("/profile", requireAuth, async (req, res): Promise<void> => {
     gender: z.enum(GENDER_OPTIONS).nullable().optional(),
     ageRange: z.enum(AGE_RANGE_OPTIONS).nullable().optional(),
     emailNotificationsEnabled: z.boolean().optional(),
+    countryCode: z.string().length(2).nullable().optional(),
   });
 
   const parsed = schema.safeParse(req.body);
@@ -66,7 +68,10 @@ router.patch("/profile", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  await db.update(usersTable).set(parsed.data).where(eq(usersTable.id, user.id));
+  await db
+    .update(usersTable)
+    .set({ ...parsed.data, ...(parsed.data.countryCode ? { countryCode: parsed.data.countryCode.toUpperCase() } : {}) })
+    .where(eq(usersTable.id, user.id));
   const updated = await db.select().from(usersTable).where(eq(usersTable.id, user.id)).then(r => r[0]);
 
   res.json({
@@ -77,6 +82,7 @@ router.patch("/profile", requireAuth, async (req, res): Promise<void> => {
     avatarUrl: updated.avatarUrl,
     phone: updated.phone,
     phoneVerifiedAt: updated.phoneVerifiedAt,
+    countryCode: updated.countryCode,
     gender: updated.gender,
     ageRange: updated.ageRange,
     plan: updated.plan,
@@ -164,6 +170,12 @@ router.delete("/push-subscription", requireAuth, async (req, res): Promise<void>
 
 const startPhoneVerificationSchema = z.object({
   phone: z.string().min(1).max(32),
+  // ISO 3166-1 alpha-2, from the country picker in CountryPhoneInput.tsx.
+  // Optional (and harmless when omitted) since `phone` is already a fully
+  // international "+"-prefixed value by the time it gets here — see
+  // normalizePhoneE164's own comment — but passing it keeps this endpoint
+  // robust even against a future caller that sends a bare national number.
+  countryCode: z.string().length(2).optional(),
 });
 
 // POST /api/user/phone/start-verification — sends a Twilio Verify SMS code
@@ -179,7 +191,7 @@ router.post("/phone/start-verification", requireAuth, phoneVerificationLimiter, 
     return;
   }
 
-  const normalized = normalizePhoneE164(parsed.data.phone);
+  const normalized = normalizePhoneE164(parsed.data.phone, parsed.data.countryCode);
   if (!normalized) {
     res.status(400).json({ error: "That doesn't look like a valid phone number" });
     return;
@@ -197,6 +209,7 @@ router.post("/phone/start-verification", requireAuth, phoneVerificationLimiter, 
 const confirmPhoneVerificationSchema = z.object({
   phone: z.string().min(1).max(32),
   code: z.string().min(1).max(12),
+  countryCode: z.string().length(2).optional(),
 });
 
 // POST /api/user/phone/confirm-verification — checks the code against
@@ -216,7 +229,7 @@ router.post("/phone/confirm-verification", requireAuth, confirmPhoneVerification
     return;
   }
 
-  const normalized = normalizePhoneE164(parsed.data.phone);
+  const normalized = normalizePhoneE164(parsed.data.phone, parsed.data.countryCode);
   if (!normalized) {
     res.status(400).json({ error: "That doesn't look like a valid phone number" });
     return;
@@ -243,11 +256,20 @@ router.post("/phone/confirm-verification", requireAuth, confirmPhoneVerification
 
   await db
     .update(usersTable)
-    .set({ phone: normalized, phoneVerifiedAt: new Date() })
+    .set({
+      phone: normalized,
+      phoneVerifiedAt: new Date(),
+      // Real, user-confirmed country beats the best-effort IP-geolocation
+      // guess that may already be sitting in this same row — see
+      // users.countryCode's own schema comment. Only overwritten when the
+      // client actually sent one; an old client hitting this endpoint
+      // without it just leaves whatever was there before untouched.
+      ...(parsed.data.countryCode ? { countryCode: parsed.data.countryCode.toUpperCase() } : {}),
+    })
     .where(eq(usersTable.id, user.id));
 
   const updated = await db.select().from(usersTable).where(eq(usersTable.id, user.id)).then((r) => r[0]!);
-  res.status(200).json({ phone: updated.phone, phoneVerifiedAt: updated.phoneVerifiedAt });
+  res.status(200).json({ phone: updated.phone, phoneVerifiedAt: updated.phoneVerifiedAt, countryCode: updated.countryCode });
 });
 
 // ---------------------------------------------------------------------------

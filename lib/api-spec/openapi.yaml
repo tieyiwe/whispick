@@ -3471,6 +3471,9 @@ components:
         phoneVerifiedAt:
           type: ["string", "null"]
           description: Null means this phone number has NOT been confirmed via our own Twilio Verify one-time-code flow (see POST /user/phone/confirm-verification) — never trust `phone` alone as proof of ownership, even when set.
+        countryCode:
+          type: ["string", "null"]
+          description: ISO 3166-1 alpha-2, self-reported — captured from the country picker at phone-verification time (see users.countryCode), or set directly via PATCH /user/profile. Null until either happens.
         gender:
           type: ["string", "null"]
           description: "'woman' | 'man' | 'nonbinary' | 'prefer_not_to_say' | null (not yet answered)"
@@ -3514,12 +3517,17 @@ components:
           type: ["string", "null"]
         emailNotificationsEnabled:
           type: boolean
+        countryCode:
+          type: ["string", "null"]
 
     StartPhoneVerificationInput:
       type: object
       properties:
         phone:
           type: string
+        countryCode:
+          type: string
+          description: ISO 3166-1 alpha-2, from the country picker in CountryPhoneInput.tsx. Optional — phone is already a fully international "+"-prefixed value by the time it gets here.
       required:
         - phone
 
@@ -3530,6 +3538,9 @@ components:
           type: string
         code:
           type: string
+        countryCode:
+          type: string
+          description: Same as StartPhoneVerificationInput's — persisted to the user's account on a successful confirmation (see users.countryCode).
       required:
         - phone
         - code
@@ -3540,6 +3551,8 @@ components:
         phone:
           type: ["string", "null"]
         phoneVerifiedAt:
+          type: ["string", "null"]
+        countryCode:
           type: ["string", "null"]
       required:
         - phone

@@ -1006,6 +1006,7 @@ export const GetUserProfileResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "phone": zod.string().nullish(),
   "phoneVerifiedAt": zod.string().nullish().describe('Null means this phone number has NOT been confirmed via our own Twilio Verify one-time-code flow (see POST \/user\/phone\/confirm-verification) — never trust `phone` alone as proof of ownership, even when set.'),
+  "countryCode": zod.string().nullish().describe('ISO 3166-1 alpha-2, self-reported — captured from the country picker at phone-verification time (see users.countryCode), or set directly via PATCH \/user\/profile. Null until either happens.'),
   "gender": zod.string().nullish().describe('\'woman\' | \'man\' | \'nonbinary\' | \'prefer_not_to_say\' | null (not yet answered)'),
   "ageRange": zod.string().nullish().describe('\'13-17\' | \'18-24\' | \'25-34\' | \'35-44\' | \'45-54\' | \'55-64\' | \'65+\' | \'prefer_not_to_say\' | null (not yet answered)'),
   "plan": zod.string(),
@@ -1025,7 +1026,8 @@ export const UpdateUserProfileBody = zod.object({
   "avatarUrl": zod.string().nullish(),
   "gender": zod.string().nullish(),
   "ageRange": zod.string().nullish(),
-  "emailNotificationsEnabled": zod.boolean().optional()
+  "emailNotificationsEnabled": zod.boolean().optional(),
+  "countryCode": zod.string().nullish()
 })
 
 export const UpdateUserProfileResponse = zod.object({
@@ -1036,6 +1038,7 @@ export const UpdateUserProfileResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "phone": zod.string().nullish(),
   "phoneVerifiedAt": zod.string().nullish().describe('Null means this phone number has NOT been confirmed via our own Twilio Verify one-time-code flow (see POST \/user\/phone\/confirm-verification) — never trust `phone` alone as proof of ownership, even when set.'),
+  "countryCode": zod.string().nullish().describe('ISO 3166-1 alpha-2, self-reported — captured from the country picker at phone-verification time (see users.countryCode), or set directly via PATCH \/user\/profile. Null until either happens.'),
   "gender": zod.string().nullish().describe('\'woman\' | \'man\' | \'nonbinary\' | \'prefer_not_to_say\' | null (not yet answered)'),
   "ageRange": zod.string().nullish().describe('\'13-17\' | \'18-24\' | \'25-34\' | \'35-44\' | \'45-54\' | \'55-64\' | \'65+\' | \'prefer_not_to_say\' | null (not yet answered)'),
   "plan": zod.string(),
@@ -1085,7 +1088,8 @@ export const DeletePushSubscriptionResponse = zod.void()
  * @summary Send a one-time Twilio Verify SMS code to a phone number, to later confirm ownership of it
  */
 export const StartPhoneVerificationBody = zod.object({
-  "phone": zod.string()
+  "phone": zod.string(),
+  "countryCode": zod.string().optional().describe('ISO 3166-1 alpha-2, from the country picker in CountryPhoneInput.tsx. Optional — phone is already a fully international \"+\"-prefixed value by the time it gets here.')
 })
 
 export const StartPhoneVerificationResponse = zod.object({
@@ -1098,12 +1102,14 @@ export const StartPhoneVerificationResponse = zod.object({
  */
 export const ConfirmPhoneVerificationBody = zod.object({
   "phone": zod.string(),
-  "code": zod.string()
+  "code": zod.string(),
+  "countryCode": zod.string().optional().describe('Same as StartPhoneVerificationInput\'s — persisted to the user\'s account on a successful confirmation (see users.countryCode).')
 })
 
 export const ConfirmPhoneVerificationResponse = zod.object({
   "phone": zod.string().nullable(),
-  "phoneVerifiedAt": zod.string().nullable()
+  "phoneVerifiedAt": zod.string().nullable(),
+  "countryCode": zod.string().nullish()
 })
 
 

@@ -16,4 +16,6 @@ export interface UserProfileUpdate {
   /** @nullable */
   ageRange?: string | null;
   emailNotificationsEnabled?: boolean;
+  /** @nullable */
+  countryCode?: string | null;
 }

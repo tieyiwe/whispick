@@ -26,6 +26,7 @@ function formatForDisplay(e164: string): string {
 export function PhoneVerificationFlow({ onVerified }: { onVerified?: () => void }) {
   const [step, setStep] = useState<"phone" | "code">("phone");
   const [phone, setPhone] = useState("");
+  const [country, setCountry] = useState("");
   const [code, setCode] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -35,7 +36,7 @@ export function PhoneVerificationFlow({ onVerified }: { onVerified?: () => void 
   function handleSendCode() {
     if (!phone.trim()) return;
     startVerification.mutate(
-      { data: { phone: phone.trim() } },
+      { data: { phone: phone.trim(), countryCode: country || undefined } },
       {
         onSuccess: () => {
           setStep("code");
@@ -55,7 +56,7 @@ export function PhoneVerificationFlow({ onVerified }: { onVerified?: () => void 
   function handleConfirmCode() {
     if (!code.trim()) return;
     confirmVerification.mutate(
-      { data: { phone: phone.trim(), code: code.trim() } },
+      { data: { phone: phone.trim(), code: code.trim(), countryCode: country || undefined } },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetUserProfileQueryKey() });
@@ -76,7 +77,7 @@ export function PhoneVerificationFlow({ onVerified }: { onVerified?: () => void 
   if (step === "phone") {
     return (
       <div className="space-y-3">
-        <CountryPhoneInput onChange={setPhone} disabled={startVerification.isPending} />
+        <CountryPhoneInput onChange={setPhone} onCountryChange={setCountry} disabled={startVerification.isPending} />
         <p className="text-xs text-muted-foreground">
           We'll verify your number so whisps sent to you deliver instantly if you're already on Blind Whisper — what
           you send and receive is still 100% anonymous, always.

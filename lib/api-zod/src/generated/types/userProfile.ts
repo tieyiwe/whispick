@@ -22,6 +22,11 @@ export interface UserProfile {
      */
   phoneVerifiedAt?: string | null;
   /**
+     * ISO 3166-1 alpha-2, self-reported — captured from the country picker at phone-verification time (see users.countryCode), or set directly via PATCH /user/profile. Null until either happens.
+     * @nullable
+     */
+  countryCode?: string | null;
+  /**
      * 'woman' | 'man' | 'nonbinary' | 'prefer_not_to_say' | null (not yet answered)
      * @nullable
      */
