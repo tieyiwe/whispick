@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Swords, Loader2, Sparkles } from "lucide-react";
+import { Swords, Loader2, Sparkles, ArrowLeft } from "lucide-react";
 
 // Title/subtitle length by product design — keep in sync with
 // api-server's routes/debateTopics.ts MAX_TOPIC_TEXT_LENGTH.
@@ -45,6 +45,16 @@ export function CreateDebateTopic() {
   return (
     <AppLayout>
       <div className="max-w-xl mx-auto space-y-6">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setLocation("/debate-topics")}
+          className="-ml-2 -mt-2 text-muted-foreground hover:text-foreground"
+          data-testid="button-back"
+        >
+          <ArrowLeft className="w-4 h-4 mr-1.5" /> Back to Debate Topics
+        </Button>
+
         <div>
           <h1 className="text-3xl font-serif font-bold text-foreground flex items-center gap-3">
             <Swords className="w-7 h-7 text-primary" /> Post a Debate Topic
