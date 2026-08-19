@@ -118,28 +118,16 @@ export function PublicWhispPage() {
   const [now, setNow] = useState(() => Date.now());
   const [justWatched, setJustWatched] = useState(false);
 
-  // The "Was this something you needed to hear?" card is visible (expanded)
-  // by default the FIRST time anyone ever opens this whisp — placed right
-  // under the video, not overlaying or gating it, just an ordinary section
-  // someone can see without hunting for it. From a REOPEN onward it starts
-  // collapsed instead (still one tap away via the chevron below), since by
-  // then it's already been seen once and shouldn't have to be dismissed all
-  // over again on every future visit.
-  //
-  // "First time" is driven by whisp.hasOpenedBefore — false only when nobody
-  // has ever opened this whisp before (see routes/public.ts's GET
-  // /w/:token; the "opened" tracking event that flips it fires via a
-  // separate POST after this page's own data has already loaded, so a true
-  // first visit's GET response still reflects it as false). Deliberately NOT
-  // whisp.hasWatched/watchedAt — that flips to true the instant someone taps
-  // Play, even on a platform where completion can't be observed (see
-  // VideoPlayer.tsx's handlePlayClick comment), which used to spring this
-  // open on a reload after a single tap, before the video was even watched.
-  // hasOpenedOnLoadRef captures it only once — the first render `whisp`
-  // exists at all — so a later poll (which will by then show openedAt set,
-  // since THIS visit's own open just got tracked) can't flip it back.
+  // The "Was this something you needed to hear?" prompt's HEADER row is
+  // always rendered right under the video/takeaway — that alone is what
+  // puts it "somewhere they can see" without hunting for it, regardless of
+  // expand state. The CONTENT (the Yes/Not really buttons) only auto-opens
+  // once they've actually finished watching THIS visit (justWatched,
+  // below). It never auto-opens just because the page loaded or because a
+  // whisp was opened before — asking someone to react before they've
+  // watched anything is the exact "obstructing the video" complaint this is
+  // guarding against. It's always one tap away via the chevron regardless.
   const [reactionExpanded, setReactionExpanded] = useState(false);
-  const hasOpenedOnLoadRef = useRef(false);
 
   // This is a private, single-recipient page — never indexable, even if a
   // link to it ends up publicly posted somewhere. robots.txt disallows /w/
@@ -207,12 +195,6 @@ export function PublicWhispPage() {
     // and the ref itself only exists in some render branches (not the
     // expired/limit-reached ones, which are shorter).
   }, [showVideoReply, replyVideoMeta, whisp?.recipientRepliesRemaining, whisp?.expired]);
-
-  useEffect(() => {
-    if (hasOpenedOnLoadRef.current || !whisp) return;
-    hasOpenedOnLoadRef.current = true;
-    if (!whisp.hasOpenedBefore) setReactionExpanded(true);
-  }, [whisp]);
 
   useEffect(() => {
     if (justWatched) setReactionExpanded(true);
