@@ -5,7 +5,8 @@ import { useListDebateTopics } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Logo } from "@/components/ui/logo";
-import { Swords, MessageCircle, ArrowRight, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Swords, MessageCircle, Repeat2, Share2, ArrowRight, Loader2 } from "lucide-react";
 
 function BlindWhisperLogoMark() {
   return (
@@ -33,11 +34,26 @@ function accentFor(id: string) {
 
 export function DebateTopics() {
   const { isSignedIn } = useUser();
+  const { toast } = useToast();
   const [cursors, setCursors] = useState<string[]>([]);
   const cursor = cursors[cursors.length - 1];
 
   const { data, isLoading, isFetching } = useListDebateTopics(cursor ? { cursor } : undefined);
   const items = data?.items ?? [];
+
+  // Distinct from "rewhisp" (the retweet-style boost on the detail page) —
+  // this just gets the topic's link in front of someone so they can join the
+  // debate, same clipboard-copy pattern as MyCircles.tsx's invite code copy.
+  function handleShareTopic(e: React.MouseEvent, topicId: string) {
+    e.preventDefault();
+    e.stopPropagation();
+    const url = `${window.location.origin}/debate-topics/${topicId}`;
+    if (navigator.share) {
+      navigator.share({ title: "Blind Whisper — Debate Topic", url }).catch(() => {});
+      return;
+    }
+    navigator.clipboard.writeText(url).then(() => toast({ title: "Link copied — send it to bring someone into the debate" }));
+  }
 
   return (
     <div className="min-h-[100dvh] bg-background flex flex-col relative overflow-hidden">
@@ -98,8 +114,11 @@ export function DebateTopics() {
               const accent = accentFor(topic.id);
               return (
                 <Link key={topic.id} href={`/debate-topics/${topic.id}`}>
+                  {/* Gilded frame (see index.css's --gilded token, same one
+                      WhispsList.tsx uses for its pin ring) around every topic
+                      card, on top of the per-topic accent glow. */}
                   <article
-                    className="group relative rounded-2xl border border-border/50 bg-card hover:bg-card/80 transition-all cursor-pointer p-6 overflow-hidden"
+                    className="group relative rounded-2xl border border-gilded/40 bg-card hover:bg-card/80 transition-all cursor-pointer p-6 overflow-hidden"
                     style={{ boxShadow: `0 0 28px ${accent.glow}` }}
                     data-testid={`debate-topic-${topic.id}`}
                   >
@@ -112,14 +131,31 @@ export function DebateTopics() {
                     <p className="relative font-serif text-xl md:text-2xl font-bold text-foreground leading-snug tracking-tight pr-6">
                       {topic.topicText}
                     </p>
-                    <div className="relative flex items-center justify-between gap-2 mt-4">
-                      <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${accent.text}`}>
-                        <MessageCircle className="w-3.5 h-3.5" />
-                        {topic.commentCount} {topic.commentCount === 1 ? "comment" : "comments"}
-                      </span>
-                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground group-hover:text-foreground transition-colors">
-                        Join the debate <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                      </span>
+                    <div className="relative flex items-center justify-between gap-3 mt-4">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${accent.text}`}>
+                          <MessageCircle className="w-3.5 h-3.5" />
+                          {topic.commentCount} {topic.commentCount === 1 ? "comment" : "comments"}
+                        </span>
+                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                          <Repeat2 className="w-3.5 h-3.5" />
+                          {topic.rewhispCount}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={(e) => handleShareTopic(e, topic.id)}
+                          aria-label="Whisper this topic"
+                          className="p-1.5 -m-1.5 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                          data-testid={`button-share-${topic.id}`}
+                        >
+                          <Share2 className="w-3.5 h-3.5" />
+                        </button>
+                        <span className="hidden sm:inline-flex items-center gap-1 text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+                          Join the debate <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                        </span>
+                      </div>
                     </div>
                   </article>
                 </Link>
