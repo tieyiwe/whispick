@@ -341,6 +341,36 @@ describe("GET /api/whisps", () => {
     expect(res.body).toHaveLength(1);
     expect(res.body[0].videoUrl).toBe("https://youtu.be/a");
   });
+
+  it("never reveals the real sender's account id to a matched recipient (box=received)", async () => {
+    // Test env's ensureUser gives every user a deterministic `${clerkId}@blindwhisper.com`
+    // email (see ensureUser.ts) — the recipient's user row has to exist BEFORE
+    // the send for lib/deliver.ts's email-match lookup to find it at all.
+    await request(app).get("/api/whisps").set(asUser("clerk_whisp_leak_recipient"));
+
+    const sent = await request(app)
+      .post("/api/whisps")
+      .set(asUser("clerk_whisp_leak_sender"))
+      .send({
+        videoUrl: "https://youtu.be/leak",
+        deliveryMethod: "whisper_link",
+        whisperChannel: "email",
+        recipientEmail: "clerk_whisp_leak_recipient@blindwhisper.com",
+      });
+    expect(sent.status).toBe(201);
+
+    const received = await request(app).get("/api/whisps?box=received").set(asUser("clerk_whisp_leak_recipient"));
+    expect(received.status).toBe(200);
+    expect(received.body).toHaveLength(1);
+    expect(received.body[0].senderId).toBeNull();
+    expect(received.body[0].viewerRole).toBe("recipient");
+
+    // The sender's own "Sent" view is unaffected — they already know it's
+    // their own id.
+    const asSender = await request(app).get("/api/whisps").set(asUser("clerk_whisp_leak_sender"));
+    expect(asSender.body[0].senderId).toEqual(expect.any(String));
+    expect(asSender.body[0].viewerRole).toBe("sender");
+  });
 });
 
 describe("Reveal flow", () => {

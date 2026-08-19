@@ -40,7 +40,7 @@ afterEach(async () => {
   anthropicMessagesCreateMock.mockClear();
   const { pool } = await import("@workspace/db");
   await pool.query(
-    "TRUNCATE TABLE tracking_events, whisp_replies, credit_transactions, push_subscriptions, whisp_categories, whisps, circle_members, circles, circle_comments, circle_post_likes, whisper_group_members, whisper_groups, uploaded_videos, match_subscribers, suggested_videos, suggestion_agent_status, delivery_attempts, notification_reads, notifications, moderation_flags, concierge_requests, invites, text_whisp_replies, text_whisps, debate_topic_comments, debate_topics, users RESTART IDENTITY CASCADE",
+    "TRUNCATE TABLE tracking_events, whisp_replies, credit_transactions, push_subscriptions, whisp_categories, whisps, circle_members, circles, circle_comments, circle_post_likes, whisper_group_members, whisper_groups, uploaded_videos, match_subscribers, suggested_videos, suggestion_agent_status, delivery_attempts, notification_reads, notifications, moderation_flags, concierge_requests, invites, text_whisp_replies, text_whisps, debate_topic_comments, debate_topics, anonymous_handles, comment_reactions, debate_topic_rewhisps, follows, users RESTART IDENTITY CASCADE",
   );
 });
 

@@ -3153,7 +3153,14 @@ components:
         id:
           type: string
         senderId:
-          type: string
+          type: ["string", "null"]
+          description: >-
+            The sender's real account id — present only when the CALLER is
+            that sender (viewerRole === "sender"). null for a matched
+            recipient viewing a whisp sent TO them (viewerRole ===
+            "recipient"), so the anonymous-sender guarantee Whisper Link is
+            built around can't be broken by reading this field off a
+            box=received/archived response.
         videoUrl:
           type: string
         videoTitle:

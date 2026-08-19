@@ -26,7 +26,7 @@ export const ListWhispsQueryParams = zod.object({
 
 export const ListWhispsResponseItem = zod.object({
   "id": zod.string(),
-  "senderId": zod.string(),
+  "senderId": zod.string().nullable().describe('The sender\'s real account id — present only when the CALLER is that sender (viewerRole === \"sender\"). null for a matched recipient viewing a whisp sent TO them (viewerRole === \"recipient\"), so the anonymous-sender guarantee Whisper Link is built around can\'t be broken by reading this field off a box=received\/archived response.'),
   "videoUrl": zod.string(),
   "videoTitle": zod.string().nullish(),
   "videoThumbnail": zod.string().nullish(),
@@ -92,7 +92,7 @@ export const CreateWhispBody = zod.object({
 
 export const CreateWhispResponse = zod.object({
   "id": zod.string(),
-  "senderId": zod.string(),
+  "senderId": zod.string().nullable().describe('The sender\'s real account id — present only when the CALLER is that sender (viewerRole === \"sender\"). null for a matched recipient viewing a whisp sent TO them (viewerRole === \"recipient\"), so the anonymous-sender guarantee Whisper Link is built around can\'t be broken by reading this field off a box=received\/archived response.'),
   "videoUrl": zod.string(),
   "videoTitle": zod.string().nullish(),
   "videoThumbnail": zod.string().nullish(),
@@ -146,7 +146,7 @@ export const GetWhispStatsResponse = zod.object({
   "plan": zod.string(),
   "recentWhisps": zod.array(zod.object({
   "id": zod.string(),
-  "senderId": zod.string(),
+  "senderId": zod.string().nullable().describe('The sender\'s real account id — present only when the CALLER is that sender (viewerRole === \"sender\"). null for a matched recipient viewing a whisp sent TO them (viewerRole === \"recipient\"), so the anonymous-sender guarantee Whisper Link is built around can\'t be broken by reading this field off a box=received\/archived response.'),
   "videoUrl": zod.string(),
   "videoTitle": zod.string().nullish(),
   "videoThumbnail": zod.string().nullish(),
@@ -196,7 +196,7 @@ export const GetWhispParams = zod.object({
 export const GetWhispResponse = zod.object({
   "whisp": zod.object({
   "id": zod.string(),
-  "senderId": zod.string(),
+  "senderId": zod.string().nullable().describe('The sender\'s real account id — present only when the CALLER is that sender (viewerRole === \"sender\"). null for a matched recipient viewing a whisp sent TO them (viewerRole === \"recipient\"), so the anonymous-sender guarantee Whisper Link is built around can\'t be broken by reading this field off a box=received\/archived response.'),
   "videoUrl": zod.string(),
   "videoTitle": zod.string().nullish(),
   "videoThumbnail": zod.string().nullish(),
@@ -376,7 +376,7 @@ export const RequestRevealParams = zod.object({
 
 export const RequestRevealResponse = zod.object({
   "id": zod.string(),
-  "senderId": zod.string(),
+  "senderId": zod.string().nullable().describe('The sender\'s real account id — present only when the CALLER is that sender (viewerRole === \"sender\"). null for a matched recipient viewing a whisp sent TO them (viewerRole === \"recipient\"), so the anonymous-sender guarantee Whisper Link is built around can\'t be broken by reading this field off a box=received\/archived response.'),
   "videoUrl": zod.string(),
   "videoTitle": zod.string().nullish(),
   "videoThumbnail": zod.string().nullish(),
@@ -1612,7 +1612,7 @@ export const AdminGetUserResponse = zod.object({
 }),
   "recentWhisps": zod.array(zod.object({
   "id": zod.string(),
-  "senderId": zod.string(),
+  "senderId": zod.string().nullable().describe('The sender\'s real account id — present only when the CALLER is that sender (viewerRole === \"sender\"). null for a matched recipient viewing a whisp sent TO them (viewerRole === \"recipient\"), so the anonymous-sender guarantee Whisper Link is built around can\'t be broken by reading this field off a box=received\/archived response.'),
   "videoUrl": zod.string(),
   "videoTitle": zod.string().nullish(),
   "videoThumbnail": zod.string().nullish(),
@@ -1855,7 +1855,7 @@ export const AdminGetWhispParams = zod.object({
 export const AdminGetWhispResponse = zod.object({
   "whisp": zod.object({
   "id": zod.string(),
-  "senderId": zod.string(),
+  "senderId": zod.string().nullable().describe('The sender\'s real account id — present only when the CALLER is that sender (viewerRole === \"sender\"). null for a matched recipient viewing a whisp sent TO them (viewerRole === \"recipient\"), so the anonymous-sender guarantee Whisper Link is built around can\'t be broken by reading this field off a box=received\/archived response.'),
   "videoUrl": zod.string(),
   "videoTitle": zod.string().nullish(),
   "videoThumbnail": zod.string().nullish(),

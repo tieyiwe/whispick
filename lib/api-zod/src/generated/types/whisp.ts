@@ -8,7 +8,11 @@
 
 export interface Whisp {
   id: string;
-  senderId: string;
+  /**
+     * The sender's real account id — present only when the CALLER is that sender (viewerRole === "sender"). null for a matched recipient viewing a whisp sent TO them (viewerRole === "recipient"), so the anonymous-sender guarantee Whisper Link is built around can't be broken by reading this field off a box=received/archived response.
+     * @nullable
+     */
+  senderId: string | null;
   videoUrl: string;
   /** @nullable */
   videoTitle?: string | null;

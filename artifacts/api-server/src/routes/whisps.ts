@@ -121,20 +121,28 @@ router.post("/concierge", requireAuth, conciergeLimiter, async (req, res): Promi
   });
 });
 
-// ANTI-ENUMERATION: strips recipientUserId AND the raw sender*/recipient*
-// pin/archive columns from every response — same reasoning as
-// routes/textWhisps.ts's toResponse, which this mirrors. A sender reading
-// recipientUserId straight off their own sent whisps would learn whether an
-// arbitrary email/phone belongs to a verified Blind Whisper account for
-// free; the raw pin/archive pairs would leak whether the OTHER party (the
-// one who isn't the caller) pinned or archived their own copy. viewerRole/
-// pinned/archived only ever reveal facts about the CALLER's own side.
+// ANTI-ENUMERATION: strips recipientUserId, the raw sender*/recipient*
+// pin/archive columns, AND senderId (when the caller isn't the sender) from
+// every response — same reasoning as routes/textWhisps.ts's toResponse,
+// which this mirrors. A sender reading recipientUserId straight off their
+// own sent whisps would learn whether an arbitrary email/phone belongs to a
+// verified Blind Whisper account for free; the raw pin/archive pairs would
+// leak whether the OTHER party (the one who isn't the caller) pinned or
+// archived their own copy; senderId reaching a matched RECIPIENT (box=
+// received/archived) would hand them the sender's real account id, breaking
+// the exact anonymity guarantee Whisper Link is built around — the same
+// thing PATCH /:id/reveal deliberately withholds even when a reveal is
+// accepted, and that routes/public.ts's GET /w/:token allowlists around by
+// construction. viewerRole/pinned/archived only ever reveal facts about the
+// CALLER's own side.
 function toWhispResponse(whisp: typeof whispsTable.$inferSelect, viewerId: string) {
   const { recipientUserId, senderPinnedAt, senderArchivedAt, recipientPinnedAt, recipientArchivedAt, ...rest } = whisp;
   const viewerRole: "sender" | "recipient" | null =
     whisp.senderId === viewerId ? "sender" : recipientUserId === viewerId ? "recipient" : null;
+  const { senderId, ...safeRest } = rest;
   return {
-    ...rest,
+    ...safeRest,
+    senderId: viewerRole === "sender" ? senderId : null,
     viewerIsRecipient: recipientUserId === viewerId,
     viewerRole,
     pinned: viewerRole === "sender" ? !!senderPinnedAt : viewerRole === "recipient" ? !!recipientPinnedAt : false,
