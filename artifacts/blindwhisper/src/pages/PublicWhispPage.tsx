@@ -110,6 +110,18 @@ export function PublicWhispPage() {
   const composerRef = useRef<HTMLDivElement>(null);
   const [composerHeight, setComposerHeight] = useState(0);
 
+  // The reply composer starts COMPACT — a single-line input plus a
+  // horizontally-scrolling row of quick-reply chips, not the full editor
+  // (context card, wrapped chips, textarea, video-reply offer, character
+  // count). It's pinned to the bottom of the viewport (see composerRef
+  // below), so the full version — several rows tall — used to sit directly
+  // under a freshly-opened video, on screen before anyone had even watched
+  // it, crowding the video into a sliver at the top on a normal phone
+  // screen. Tapping into the input (or, once a conversation already
+  // exists, just having replies) expands it to the full editor.
+  const [composerExpanded, setComposerExpanded] = useState(false);
+  const replyTextareaRef = useRef<HTMLTextAreaElement>(null);
+
   const [hasTrackedOpen, setHasTrackedOpen] = useState(false);
   const [revealResponse, setRevealResponse] = useState<"accepted" | "declined" | null>(null);
   const [localAppreciation, setLocalAppreciation] = useState<"yes" | "no" | null>(null);
@@ -199,6 +211,13 @@ export function PublicWhispPage() {
   useEffect(() => {
     if (justWatched) setReactionExpanded(true);
   }, [justWatched]);
+
+  // Carries focus from the compact input over to the full textarea the
+  // instant it expands, so tapping in feels like one continuous field
+  // rather than losing the keyboard/cursor mid-tap.
+  useEffect(() => {
+    if (composerExpanded) replyTextareaRef.current?.focus();
+  }, [composerExpanded]);
 
   const trackEvent = useTrackWhispEvent();
   const publicReply = usePublicReply();
@@ -852,6 +871,56 @@ export function PublicWhispPage() {
                     </div>
                   );
                 }
+                // Compact mode: a slim input plus quick-reply chips in one
+                // scrollable row, nothing else — see composerExpanded's own
+                // comment above for why. Once a conversation already exists
+                // (whisp.replies.length > 0), always go straight to the full
+                // editor below instead — the quick-reply chips don't even
+                // apply once there's a real reply thread.
+                if (!composerExpanded && whisp.replies.length === 0) {
+                  return (
+                    <div className="space-y-2">
+                      <div
+                        className="flex gap-2 overflow-x-auto pb-0.5"
+                        style={{ scrollbarWidth: "none" }}
+                        data-testid="quick-replies-compact"
+                      >
+                        {QUICK_REPLIES.map((qr) => (
+                          <button
+                            key={qr.key}
+                            type="button"
+                            onClick={() => submitReply(qr.text)}
+                            disabled={publicReply.isPending}
+                            data-testid={`quick-reply-${qr.key}`}
+                            className="shrink-0 whitespace-nowrap px-4 py-2 min-h-11 rounded-full border border-border/50 bg-card text-sm text-foreground hover:border-primary/50 hover:bg-primary/10 active:scale-95 transition-all disabled:opacity-50"
+                          >
+                            {qr.text}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          className="flex-1 h-11 bg-card border-border/50 rounded-full px-4"
+                          placeholder="Reply anonymously..."
+                          value={replyText}
+                          onChange={(e) => setReplyText(e.target.value)}
+                          onFocus={() => setComposerExpanded(true)}
+                          data-testid="input-reply-compact"
+                        />
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          className="rounded-full h-11 w-11 shrink-0"
+                          onClick={() => setComposerExpanded(true)}
+                          data-testid="button-expand-composer"
+                          aria-label="More reply options, including a video reply"
+                        >
+                          <Video className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                }
                 return (
                 <div className="space-y-3">
                   {/* A reminder of what they're actually replying to. By the
@@ -901,6 +970,7 @@ export function PublicWhispPage() {
                     <div className="flex-1 h-px bg-border/40" />
                   </div>
                   <Textarea
+                    ref={replyTextareaRef}
                     className="bg-card border-border/50 rounded-xl resize-none min-h-[80px]"
                     placeholder="Type your reply... (anonymous)"
                     maxLength={300}
