@@ -918,6 +918,53 @@ router.patch("/moderation/flags/:id", async (req, res): Promise<void> => {
   res.json(updated);
 });
 
+// POST /api/admin/moderation/flags/:id/remove-content — the real takedown
+// action this queue exists to lead to: PATCH above only ever dismisses or
+// leaves a flag as-is, neither of which touches the underlying content.
+// This pulls it from every public read path by setting removedByAdminAt on
+// whichever table the flag's contentType points at, distinct from
+// deletedByAuthorAt/deletedBySenderAt (the author's/sender's own choice) for
+// the accountability reasons each of those columns' comments describe.
+router.post("/moderation/flags/:id/remove-content", async (req, res): Promise<void> => {
+  const flag = await db.select().from(moderationFlagsTable).where(eq(moderationFlagsTable.id, req.params.id)).then((r) => r[0]);
+  if (!flag) {
+    res.status(404).json({ error: "Flag not found" });
+    return;
+  }
+
+  const now = new Date();
+  switch (flag.contentType) {
+    case "whisp":
+      if (!flag.whispId) { res.status(400).json({ error: "Flag has no associated whisp" }); return; }
+      await db.update(whispsTable).set({ removedByAdminAt: now }).where(eq(whispsTable.id, flag.whispId));
+      break;
+    case "circle_comment":
+      if (!flag.circleCommentId) { res.status(400).json({ error: "Flag has no associated comment" }); return; }
+      await db.update(circleCommentsTable).set({ removedByAdminAt: now }).where(eq(circleCommentsTable.id, flag.circleCommentId));
+      break;
+    case "debate_topic":
+      if (!flag.debateTopicId) { res.status(400).json({ error: "Flag has no associated topic" }); return; }
+      await db.update(debateTopicsTable).set({ removedByAdminAt: now }).where(eq(debateTopicsTable.id, flag.debateTopicId));
+      break;
+    case "debate_topic_comment":
+      if (!flag.debateTopicCommentId) { res.status(400).json({ error: "Flag has no associated comment" }); return; }
+      await db.update(debateTopicCommentsTable).set({ removedByAdminAt: now }).where(eq(debateTopicCommentsTable.id, flag.debateTopicCommentId));
+      break;
+    default:
+      res.status(400).json({ error: "This content type can't be taken down from here" });
+      return;
+  }
+
+  const adminUser = (req as any).adminUser as User;
+  await db
+    .update(moderationFlagsTable)
+    .set({ dismissed: false, reviewedAt: now, reviewedByAdminId: adminUser.id })
+    .where(eq(moderationFlagsTable.id, flag.id));
+
+  const updated = await db.select().from(moderationFlagsTable).where(eq(moderationFlagsTable.id, flag.id)).then((r) => r[0]);
+  res.json(updated);
+});
+
 // ---------------------------------------------------------------------------
 // Suggestions Library
 // ---------------------------------------------------------------------------

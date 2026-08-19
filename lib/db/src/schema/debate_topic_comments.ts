@@ -35,9 +35,34 @@ export const debateTopicCommentsTable = pgTable("debate_topic_comments", {
   // are, same anonymity posture as everywhere else in the app: what's
   // revealed is a ROLE, never an identity.
   isPoster: boolean("is_poster").notNull().default(false),
+  // The commenter's real account id, set only when they were signed in at
+  // post time — never returned in any public response (the comment always
+  // displays only via its anonymous_handles handle/isPoster), same
+  // anonymous-display-but-internally-attributed pattern moderation_flags.
+  // userId already uses. Its ONLY purpose is notification routing: without
+  // it there is no way to tell a reply/reaction "your comment got a
+  // response" when the recipient is a real account, since visitorId alone
+  // resolves to nothing server-side. Null for a genuinely anonymous
+  // (never-signed-in) commenter, who simply can't be notified.
+  authorUserId: text("author_user_id"),
+  // An optional image attached to the comment — object storage key plus a
+  // read-time-resolved URL, same split lib/objectStorage.ts's video/photo
+  // pipeline already uses. Screened the same way comment TEXT already is
+  // (see lib/moderation.ts's moderateDebateTopicCommentAsync, extended to
+  // classify the image too when present) — imageModerationStatus tracks
+  // that pass independently of the text one, since an image can take
+  // longer to classify and a comment shouldn't wait on it to post.
+  imageObjectKey: text("image_object_key"),
+  imageModerationStatus: text("image_moderation_status"), // null (no image, or not yet checked) | 'ok' | 'flagged'
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  // Admin-initiated takedown of just this one comment — same reasoning as
+  // debate_topics.removedByAdminAt, tracked separately from nothing-else
+  // (a comment has no author-retraction path of its own today). Excluded
+  // from every thread read once set (routes/debateTopics.ts).
+  removedByAdminAt: timestamp("removed_by_admin_at", { withTimezone: true }),
 }, (table) => [
   index("debate_topic_comments_topic_id_idx").on(table.topicId),
+  index("debate_topic_comments_author_user_id_idx").on(table.authorUserId),
   // Backs the anonymous rate-limit check: "how many comments has this
   // visitor posted (anywhere) in the last COMMENT_LIMIT_WINDOW_HOURS."
   index("debate_topic_comments_visitor_id_created_at_idx").on(table.visitorId, table.createdAt),

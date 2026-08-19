@@ -160,6 +160,15 @@ export const whispsTable = pgTable("whisps", {
   senderArchivedAt: timestamp("sender_archived_at", { withTimezone: true }),
   recipientPinnedAt: timestamp("recipient_pinned_at", { withTimezone: true }),
   recipientArchivedAt: timestamp("recipient_archived_at", { withTimezone: true }),
+  // Admin-initiated takedown of a public Blind Circle post (deliveryMethod =
+  // 'circle_drop') — same reasoning as debate_topics.removedByAdminAt,
+  // tracked separately from deletedBySenderAt above since one is the
+  // sender hiding their own post from their own views and the other is a
+  // moderator pulling it from the public feed entirely. Meaningless for
+  // every other deliveryMethod (a whisper_link/group_whisper/circle_dm has
+  // no public feed to be pulled from), but not worth a second table for.
+  // Excluded from the public feed (routes/circle.ts) once set.
+  removedByAdminAt: timestamp("removed_by_admin_at", { withTimezone: true }),
 }, (table) => [
   // publicToken already gets an index for free from its unique() constraint
   // above — not duplicated here. The rest back the admin panel's list/detail

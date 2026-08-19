@@ -13,5 +13,6 @@ export interface DebateTopicFeedItem {
   id: string;
   topicText: string;
   commentCount: number;
+  rewhispCount: number;
   createdAt: string;
 }

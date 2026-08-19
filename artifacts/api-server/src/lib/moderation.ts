@@ -1,9 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { randomUUID } from "crypto";
-import { db, moderationFlagsTable, notificationsTable } from "@workspace/db";
+import { db, moderationFlagsTable, notificationsTable, circleCommentsTable, debateTopicCommentsTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { fetchTranscript } from "./transcript";
 import { notifyUser } from "./push";
+import { downloadObject } from "./objectStorage";
 import { logger } from "./logger";
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
@@ -371,6 +372,99 @@ export async function moderateDebateTopicCommentAsync(input: {
     if (input.senderId) await maybeWarnUser(input.senderId);
   } catch (err) {
     logger.warn({ err, debateTopicCommentId: input.debateTopicCommentId }, "Content moderation pass failed");
+  }
+}
+
+const IMAGE_SYSTEM_PROMPT = `You are a content-safety classifier for an image attached to a public, anonymous comment on Blind Whisper. Assess whether this ONE image contains: (a) sexual/explicit content (nudity, pornographic, or sexually suggestive imagery); or (b) dangerous/harmful content (graphic violence/gore, weapons used threateningly, or content promoting self-harm). You are not moderating for general bad taste — an ordinary, unremarkable photo is "none".
+
+Respond with ONLY a JSON object, no other text, in exactly this shape:
+{"severity": "none" | "low" | "medium" | "high", "reason": "<one short sentence>"}`;
+
+const IMAGE_MEDIA_TYPE_BY_EXT: Record<string, "image/jpeg" | "image/png" | "image/webp" | "image/gif"> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  gif: "image/gif",
+};
+
+// Classifies an image attached to a Circle or Debate Topic comment — the one
+// image-upload surface in the app open to fully anonymous, no-account
+// visitors (see commentImages.ts). Separate pass from the comment's own
+// TEXT moderation (moderateCircleCommentAsync/moderateDebateTopicCommentAsync
+// already cover that): an image can take longer to fetch/classify than text,
+// and a comment shouldn't wait on it to post — imageModerationStatus tracks
+// this pass independently ('ok' | 'flagged'), set once it resolves.
+export async function moderateCommentImageAsync(input: {
+  commentType: "circle_comment" | "debate_topic_comment";
+  commentId: string;
+  senderId: string | null;
+  imageObjectKey: string;
+}): Promise<void> {
+  const markStatus = async (status: "ok" | "flagged") => {
+    if (input.commentType === "circle_comment") {
+      await db.update(circleCommentsTable).set({ imageModerationStatus: status }).where(eq(circleCommentsTable.id, input.commentId));
+    } else {
+      await db.update(debateTopicCommentsTable).set({ imageModerationStatus: status }).where(eq(debateTopicCommentsTable.id, input.commentId));
+    }
+  };
+
+  if (!ANTHROPIC_API_KEY) {
+    logger.warn({ commentId: input.commentId }, "ANTHROPIC_API_KEY not set; skipping image moderation pass");
+    await markStatus("ok");
+    return;
+  }
+
+  try {
+    const bytes = await downloadObject(input.imageObjectKey);
+    if (!bytes) {
+      await markStatus("ok");
+      return;
+    }
+    const ext = input.imageObjectKey.split(".").pop() ?? "";
+    const mediaType = IMAGE_MEDIA_TYPE_BY_EXT[ext] ?? "image/jpeg";
+
+    const response = await getClient().messages.create({
+      model: MODEL,
+      max_tokens: 200,
+      system: IMAGE_SYSTEM_PROMPT,
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "image", source: { type: "base64", media_type: mediaType, data: bytes.toString("base64") } },
+            { type: "text", text: "Classify this image." },
+          ],
+        },
+      ],
+    });
+
+    const responseText = response.content.find((block) => block.type === "text")?.text?.trim();
+    const verdict = responseText ? parseVerdict(responseText) : null;
+
+    if (!verdict || verdict.severity === "none" || verdict.severity === "low") {
+      await markStatus("ok");
+      return;
+    }
+
+    await markStatus("flagged");
+    await db.insert(moderationFlagsTable).values({
+      id: randomUUID(),
+      whispId: null,
+      textWhispId: null,
+      circleCommentId: input.commentType === "circle_comment" ? input.commentId : null,
+      debateTopicCommentId: input.commentType === "debate_topic_comment" ? input.commentId : null,
+      contentType: input.commentType,
+      userId: input.senderId,
+      severity: verdict.severity,
+      reasoning: `Attached image: ${verdict.reason}`,
+      source: "ai_classifier",
+    });
+
+    if (input.senderId) await maybeWarnUser(input.senderId);
+  } catch (err) {
+    logger.warn({ err, commentId: input.commentId }, "Image moderation pass failed");
+    await markStatus("ok");
   }
 }
 

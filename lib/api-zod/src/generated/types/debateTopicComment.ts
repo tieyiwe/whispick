@@ -5,6 +5,7 @@
  * Blind Whisper API — anonymous video recommendation platform
  * OpenAPI spec version: 0.1.0
  */
+import type { DebateTopicCommentViewerReaction } from './debateTopicCommentViewerReaction';
 
 /**
  * visitorId is deliberately never included — see debate_topic_comments.ts. isPoster reveals a ROLE (the topic's own author), never an identity.
@@ -16,4 +17,17 @@ export interface DebateTopicComment {
   parentCommentId: string | null;
   isPoster: boolean;
   createdAt: string;
+  /** This commenter's stable anonymous handle within this topic's thread (e.g. "SwiftFalcon482") — see anonymous_handles.ts. */
+  handle: string;
+  /** True when the caller's own visitorId matches this comment's author. */
+  isOwnComment: boolean;
+  /**
+     * Proxy-served URL for an attached image, or null if there is none or it was flagged by moderation and is pending review.
+     * @nullable
+     */
+  imageUrl: string | null;
+  likeCount: number;
+  dislikeCount: number;
+  /** @nullable */
+  viewerReaction: DebateTopicCommentViewerReaction;
 }

@@ -28,6 +28,13 @@ export const debateTopicsTable = pgTable("debate_topics", {
   // debateTopics.ts). The row and its comment thread are kept, not erased,
   // for admin/moderation history.
   deletedByAuthorAt: timestamp("deleted_by_author_at", { withTimezone: true }),
+  // Admin-initiated takedown — same observable effect as deletedByAuthorAt
+  // (excluded from the public feed and detail lookup) but tracked
+  // separately for accountability: an author's own retraction and an
+  // admin's moderation action are different events, and support/appeals
+  // need to be able to tell which one happened. Set via POST
+  // /admin/moderation/flags/:id/remove-content (routes/admin.ts).
+  removedByAdminAt: timestamp("removed_by_admin_at", { withTimezone: true }),
 }, (table) => [
   // Powers the cursor-paginated public feed, newest first.
   index("debate_topics_created_at_idx").on(table.createdAt),

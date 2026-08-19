@@ -708,9 +708,10 @@ paths:
             type: string
           description: >-
             The anonymous, client-generated, localStorage-persisted id this
-            device uses for Circle likes/comments — only affects whether the
-            response's viewerHasLiked reflects this visitor. Omit for a
-            Whisper Link/circle_dm, where it's meaningless.
+            device uses for Circle likes/comments — affects whether the
+            response's viewerHasLiked, and each comment's viewerReaction/
+            isOwnComment, reflect this visitor. Omit for a Whisper Link/
+            circle_dm, where it's meaningless.
       responses:
         "200":
           description: Public whisp data
@@ -884,7 +885,16 @@ paths:
         window per visitor (see lib/plans.ts's canPostAnonymousComment) —
         signing in removes the limit entirely, same as the anonymous reply
         cap elsewhere. isPoster on the response is set automatically when the
-        caller is signed in and is this whisp's own sender.
+        caller is signed in and is this whisp's own sender. An anonymous
+        handle is assigned automatically on a visitor's first comment in
+        this thread (see anonymous_handles.ts). Also accepts
+        multipart/form-data with the same fields plus an optional `image`
+        file (max 5MB, jpeg/png/webp/gif) — intentionally not modeled here,
+        same reasoning as POST /media/upload above: a `format: binary` body
+        generates File/Blob-typed Zod schemas that don't compile in
+        lib/api-zod's Node-only project. The frontend attaches an image via
+        a hand-written multipart fetch to this same URL, mirroring
+        lib/uploadMedia.ts.
       parameters:
         - in: path
           name: token
@@ -920,6 +930,128 @@ paths:
                 $ref: "#/components/schemas/ApiError"
         "403":
           description: Anonymous comment limit reached (code "comment_limit_reached")
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/w/{token}/comments/{commentId}/reactions:
+    post:
+      operationId: reactToCircleComment
+      tags: [public]
+      summary: Like or dislike a Blind Circle comment
+      description: Idempotent toggle — reacting with the same reaction again removes it; reacting with the other one switches it.
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: commentId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                visitorId:
+                  type: string
+                reaction:
+                  type: string
+                  enum: [like, dislike]
+              required: [visitorId, reaction]
+      responses:
+        "200":
+          description: Updated reaction state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentReactionResult"
+        "404":
+          description: Comment not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/w/{token}/comments/{commentId}/image:
+    get:
+      operationId: getCircleCommentImage
+      tags: [public]
+      summary: Fetch a Blind Circle comment's attached image
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: commentId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The image bytes
+          content:
+            image/*:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: No image, or it's pending/failed moderation review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/w/{token}/handle:
+    patch:
+      operationId: renameCircleHandle
+      tags: [public]
+      summary: Rename the caller's own anonymous handle in this post's comment thread
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                visitorId:
+                  type: string
+                handle:
+                  type: string
+              required: [visitorId, handle]
+      responses:
+        "200":
+          description: Handle updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  handle:
+                    type: string
+                required: [handle]
+        "400":
+          description: Invalid handle, or already taken in this thread
           content:
             application/json:
               schema:
@@ -1351,6 +1483,16 @@ paths:
           required: true
           schema:
             type: string
+        - in: query
+          name: visitorId
+          required: false
+          schema:
+            type: string
+          description: >-
+            The caller's own anonymous, client-generated, localStorage-
+            persisted id — affects whether each comment's viewerReaction/
+            isOwnComment, and the topic's viewerRewhisped, reflect this
+            visitor.
       responses:
         "200":
           description: Debate topic detail
@@ -1370,6 +1512,12 @@ paths:
       operationId: postDebateTopicComment
       tags: [debateTopics]
       summary: Post an anonymous (or signed-in) comment on a debate topic (no auth required)
+      description: >-
+        An anonymous handle is assigned automatically on a visitor's first
+        comment in this thread (see anonymous_handles.ts). Also accepts
+        multipart/form-data with the same fields plus an optional `image`
+        file — intentionally not modeled here, same reasoning as POST
+        /media/upload above; see postCircleComment's description for why.
       parameters:
         - in: path
           name: id
@@ -1401,6 +1549,159 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/debate-topics/comments/{commentId}/image:
+    get:
+      operationId: getDebateTopicCommentImage
+      tags: [debateTopics]
+      summary: Fetch a debate topic comment's attached image
+      parameters:
+        - in: path
+          name: commentId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The image bytes
+          content:
+            image/*:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: No image, or it's pending/failed moderation review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/debate-topics/{id}/handle:
+    patch:
+      operationId: renameDebateTopicHandle
+      tags: [debateTopics]
+      summary: Rename the caller's own anonymous handle in this topic's comment thread
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                visitorId:
+                  type: string
+                handle:
+                  type: string
+              required: [visitorId, handle]
+      responses:
+        "200":
+          description: Handle updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  handle:
+                    type: string
+                required: [handle]
+        "400":
+          description: Invalid handle, or already taken in this thread
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/debate-topics/{id}/comments/{commentId}/reactions:
+    post:
+      operationId: reactToDebateTopicComment
+      tags: [debateTopics]
+      summary: Like or dislike a debate topic comment
+      description: Idempotent toggle — reacting with the same reaction again removes it; reacting with the other one switches it.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: commentId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                visitorId:
+                  type: string
+                reaction:
+                  type: string
+                  enum: [like, dislike]
+              required: [visitorId, reaction]
+      responses:
+        "200":
+          description: Updated reaction state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentReactionResult"
+        "404":
+          description: Comment not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/debate-topics/{id}/rewhisp:
+    post:
+      operationId: rewhispDebateTopic
+      tags: [debateTopics]
+      summary: Rewhisp (retweet-style boost) a debate topic
+      description: Idempotent toggle — rewhisping a topic already rewhisped by this visitor undoes it. No list of who rewhisped is ever exposed, only a count.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                visitorId:
+                  type: string
+              required: [visitorId]
+      responses:
+        "200":
+          description: Updated rewhisp state
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rewhispCount:
+                    type: integer
+                  viewerRewhisped:
+                    type: boolean
+                required: [rewhispCount, viewerRewhisped]
         "404":
           description: Not found
           content:
@@ -1983,6 +2284,43 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ModerationFlag"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/moderation/flags/{id}/remove-content:
+    post:
+      operationId: adminRemoveFlaggedContent
+      tags: [admin]
+      summary: Take down the content a flag points at (admin only)
+      description: >-
+        Sets removedByAdminAt on whichever table the flag's contentType
+        points at (whisp, circle_comment, debate_topic, or
+        debate_topic_comment), excluding it from every public read path from
+        then on. Distinct from PATCH's dismiss/undismiss, which never
+        touches the underlying content.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Content removed; updated flag returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModerationFlag"
+        "400":
+          description: This flag's content type can't be taken down from here, or the flag has no associated content id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
         "404":
           description: Not found
           content:
@@ -2928,11 +3266,50 @@ components:
         createdAt:
           type: string
           format: date-time
+        handle:
+          type: string
+          description: This commenter's stable anonymous handle within this post's thread (e.g. "SwiftFalcon482") — see anonymous_handles.ts.
+        isOwnComment:
+          type: boolean
+          description: True when the caller's own visitorId matches this comment's author — lets the client show its own "you" state without ever exposing the raw visitorId to other viewers.
+        imageUrl:
+          type: ["string", "null"]
+          description: Proxy-served URL for an attached image, or null if there is none or it was flagged by moderation and is pending review.
+        likeCount:
+          type: integer
+        dislikeCount:
+          type: integer
+        viewerReaction:
+          type: ["string", "null"]
+          enum: [like, dislike, null]
+          description: The caller's own reaction to this comment, if any — requires visitorId to have been passed on the read.
       required:
         - id
         - commentText
         - isPoster
         - createdAt
+        - handle
+        - isOwnComment
+        - imageUrl
+        - likeCount
+        - dislikeCount
+        - viewerReaction
+
+    CommentReactionResult:
+      type: object
+      description: The resulting reaction state after a like/dislike toggle — shared shape for Circle and Debate Topic comments.
+      properties:
+        likeCount:
+          type: integer
+        dislikeCount:
+          type: integer
+        viewerReaction:
+          type: ["string", "null"]
+          enum: [like, dislike, null]
+      required:
+        - likeCount
+        - dislikeCount
+        - viewerReaction
 
     WhispStats:
       type: object
@@ -3641,12 +4018,15 @@ components:
           type: string
         commentCount:
           type: integer
+        rewhispCount:
+          type: integer
         createdAt:
           type: string
       required:
         - id
         - topicText
         - commentCount
+        - rewhispCount
         - createdAt
 
     DebateTopicFeedResponse:
@@ -3676,12 +4056,34 @@ components:
           type: boolean
         createdAt:
           type: string
+        handle:
+          type: string
+          description: This commenter's stable anonymous handle within this topic's thread (e.g. "SwiftFalcon482") — see anonymous_handles.ts.
+        isOwnComment:
+          type: boolean
+          description: True when the caller's own visitorId matches this comment's author.
+        imageUrl:
+          type: ["string", "null"]
+          description: Proxy-served URL for an attached image, or null if there is none or it was flagged by moderation and is pending review.
+        likeCount:
+          type: integer
+        dislikeCount:
+          type: integer
+        viewerReaction:
+          type: ["string", "null"]
+          enum: [like, dislike, null]
       required:
         - id
         - commentText
         - parentCommentId
         - isPoster
         - createdAt
+        - handle
+        - isOwnComment
+        - imageUrl
+        - likeCount
+        - dislikeCount
+        - viewerReaction
 
     DebateTopicCommentInput:
       type: object
@@ -3711,6 +4113,10 @@ components:
           description: True only when the caller is signed in and is this topic's own author — lets the author see a "Retract" control without revealing anything to anyone else.
         commentCount:
           type: integer
+        rewhispCount:
+          type: integer
+        viewerRewhisped:
+          type: boolean
         comments:
           type: array
           items:
@@ -3721,6 +4127,8 @@ components:
         - createdAt
         - isOwnTopic
         - commentCount
+        - rewhispCount
+        - viewerRewhisped
         - comments
 
     Circle:

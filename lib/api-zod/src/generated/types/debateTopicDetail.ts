@@ -14,5 +14,7 @@ export interface DebateTopicDetail {
   /** True only when the caller is signed in and is this topic's own author — lets the author see a "Retract" control without revealing anything to anyone else. */
   isOwnTopic: boolean;
   commentCount: number;
+  rewhispCount: number;
+  viewerRewhisped: boolean;
   comments: DebateTopicComment[];
 }

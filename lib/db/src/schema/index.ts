@@ -22,3 +22,6 @@ export * from "./circle_comments";
 export * from "./circle_post_likes";
 export * from "./debate_topics";
 export * from "./debate_topic_comments";
+export * from "./anonymous_handles";
+export * from "./comment_reactions";
+export * from "./debate_topic_rewhisps";

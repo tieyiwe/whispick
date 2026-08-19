@@ -177,6 +177,18 @@ export interface WhispReply {
 }
 
 /**
+ * The caller's own reaction to this comment, if any — requires visitorId to have been passed on the read.
+ * @nullable
+ */
+export type CircleCommentViewerReaction = typeof CircleCommentViewerReaction[keyof typeof CircleCommentViewerReaction] | null;
+
+
+export const CircleCommentViewerReaction = {
+  like: 'like',
+  dislike: 'dislike',
+} as const;
+
+/**
  * A public comment on a Blind Circle post. Never carries a visitor identifier — see circle_comments.ts's schema comment for why.
  */
 export interface CircleComment {
@@ -190,6 +202,22 @@ export interface CircleComment {
   /** True when this comment came from the post's own (signed-in) sender — a role badge, never an identity. */
   isPoster: boolean;
   createdAt: string;
+  /** This commenter's stable anonymous handle within this post's thread (e.g. "SwiftFalcon482") — see anonymous_handles.ts. */
+  handle: string;
+  /** True when the caller's own visitorId matches this comment's author — lets the client show its own "you" state without ever exposing the raw visitorId to other viewers. */
+  isOwnComment: boolean;
+  /**
+     * Proxy-served URL for an attached image, or null if there is none or it was flagged by moderation and is pending review.
+     * @nullable
+     */
+  imageUrl: string | null;
+  likeCount: number;
+  dislikeCount: number;
+  /**
+     * The caller's own reaction to this comment, if any — requires visitorId to have been passed on the read.
+     * @nullable
+     */
+  viewerReaction: CircleCommentViewerReaction;
 }
 
 export interface WhispDetail {
@@ -209,6 +237,27 @@ export interface WhispDetail {
   comments: CircleComment[];
   /** Private 1:1 conversations anonymous viewers started from this Blind Circle post (see POST /w/{token}/circle-dm/start). Empty for every other delivery method, including a circle_dm thread itself — a conversation can't spawn another conversation. */
   circleConversations: WhispDetailCircleConversationsItem[];
+}
+
+/**
+ * @nullable
+ */
+export type CommentReactionResultViewerReaction = typeof CommentReactionResultViewerReaction[keyof typeof CommentReactionResultViewerReaction] | null;
+
+
+export const CommentReactionResultViewerReaction = {
+  like: 'like',
+  dislike: 'dislike',
+} as const;
+
+/**
+ * The resulting reaction state after a like/dislike toggle — shared shape for Circle and Debate Topic comments.
+ */
+export interface CommentReactionResult {
+  likeCount: number;
+  dislikeCount: number;
+  /** @nullable */
+  viewerReaction: CommentReactionResultViewerReaction;
 }
 
 export interface WhispStats {
@@ -586,6 +635,7 @@ export interface DebateTopicFeedItem {
   id: string;
   topicText: string;
   commentCount: number;
+  rewhispCount: number;
   createdAt: string;
 }
 
@@ -594,6 +644,17 @@ export interface DebateTopicFeedResponse {
   /** @nullable */
   nextCursor: string | null;
 }
+
+/**
+ * @nullable
+ */
+export type DebateTopicCommentViewerReaction = typeof DebateTopicCommentViewerReaction[keyof typeof DebateTopicCommentViewerReaction] | null;
+
+
+export const DebateTopicCommentViewerReaction = {
+  like: 'like',
+  dislike: 'dislike',
+} as const;
 
 /**
  * visitorId is deliberately never included — see debate_topic_comments.ts. isPoster reveals a ROLE (the topic's own author), never an identity.
@@ -605,6 +666,19 @@ export interface DebateTopicComment {
   parentCommentId: string | null;
   isPoster: boolean;
   createdAt: string;
+  /** This commenter's stable anonymous handle within this topic's thread (e.g. "SwiftFalcon482") — see anonymous_handles.ts. */
+  handle: string;
+  /** True when the caller's own visitorId matches this comment's author. */
+  isOwnComment: boolean;
+  /**
+     * Proxy-served URL for an attached image, or null if there is none or it was flagged by moderation and is pending review.
+     * @nullable
+     */
+  imageUrl: string | null;
+  likeCount: number;
+  dislikeCount: number;
+  /** @nullable */
+  viewerReaction: DebateTopicCommentViewerReaction;
 }
 
 export interface DebateTopicCommentInput {
@@ -622,6 +696,8 @@ export interface DebateTopicDetail {
   /** True only when the caller is signed in and is this topic's own author — lets the author see a "Retract" control without revealing anything to anyone else. */
   isOwnTopic: boolean;
   commentCount: number;
+  rewhispCount: number;
+  viewerRewhisped: boolean;
   comments: DebateTopicComment[];
 }
 
@@ -1630,7 +1706,7 @@ export type ArchiveWhisp200 = {
 
 export type GetPublicWhispParams = {
 /**
- * The anonymous, client-generated, localStorage-persisted id this device uses for Circle likes/comments — only affects whether the response's viewerHasLiked reflects this visitor. Omit for a Whisper Link/circle_dm, where it's meaningless.
+ * The anonymous, client-generated, localStorage-persisted id this device uses for Circle likes/comments — affects whether the response's viewerHasLiked, and each comment's viewerReaction/ isOwnComment, reflect this visitor. Omit for a Whisper Link/ circle_dm, where it's meaningless.
  */
 visitorId?: string;
 };
@@ -1651,6 +1727,28 @@ export type PostCircleCommentBody = {
   parentCommentId?: string | null;
 };
 
+export type ReactToCircleCommentBodyReaction = typeof ReactToCircleCommentBodyReaction[keyof typeof ReactToCircleCommentBodyReaction];
+
+
+export const ReactToCircleCommentBodyReaction = {
+  like: 'like',
+  dislike: 'dislike',
+} as const;
+
+export type ReactToCircleCommentBody = {
+  visitorId: string;
+  reaction: ReactToCircleCommentBodyReaction;
+};
+
+export type RenameCircleHandleBody = {
+  visitorId: string;
+  handle: string;
+};
+
+export type RenameCircleHandle200 = {
+  handle: string;
+};
+
 export type StartCircleDm201 = {
   publicToken: string;
 };
@@ -1661,6 +1759,44 @@ cursor?: string;
 
 export type ListDebateTopicsParams = {
 cursor?: string;
+};
+
+export type GetDebateTopicParams = {
+/**
+ * The caller's own anonymous, client-generated, localStorage- persisted id — affects whether each comment's viewerReaction/ isOwnComment, and the topic's viewerRewhisped, reflect this visitor.
+ */
+visitorId?: string;
+};
+
+export type RenameDebateTopicHandleBody = {
+  visitorId: string;
+  handle: string;
+};
+
+export type RenameDebateTopicHandle200 = {
+  handle: string;
+};
+
+export type ReactToDebateTopicCommentBodyReaction = typeof ReactToDebateTopicCommentBodyReaction[keyof typeof ReactToDebateTopicCommentBodyReaction];
+
+
+export const ReactToDebateTopicCommentBodyReaction = {
+  like: 'like',
+  dislike: 'dislike',
+} as const;
+
+export type ReactToDebateTopicCommentBody = {
+  visitorId: string;
+  reaction: ReactToDebateTopicCommentBodyReaction;
+};
+
+export type RewhispDebateTopicBody = {
+  visitorId: string;
+};
+
+export type RewhispDebateTopic200 = {
+  rewhispCount: number;
+  viewerRewhisped: boolean;
 };
 
 export type AdminListUsersParams = {

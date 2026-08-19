@@ -262,7 +262,13 @@ export const GetWhispResponse = zod.object({
   "commentText": zod.string(),
   "parentCommentId": zod.string().nullish().describe('The comment this one replies to, if any — same flat quote-reference model as WhispReply.parentReplyId.'),
   "isPoster": zod.boolean().describe('True when this comment came from the post\'s own (signed-in) sender — a role badge, never an identity.'),
-  "createdAt": zod.coerce.date()
+  "createdAt": zod.coerce.date(),
+  "handle": zod.string().describe('This commenter\'s stable anonymous handle within this post\'s thread (e.g. \"SwiftFalcon482\") — see anonymous_handles.ts.'),
+  "isOwnComment": zod.boolean().describe('True when the caller\'s own visitorId matches this comment\'s author — lets the client show its own \"you\" state without ever exposing the raw visitorId to other viewers.'),
+  "imageUrl": zod.string().nullable().describe('Proxy-served URL for an attached image, or null if there is none or it was flagged by moderation and is pending review.'),
+  "likeCount": zod.number(),
+  "dislikeCount": zod.number(),
+  "viewerReaction": zod.union([zod.literal('like'),zod.literal('dislike'),zod.literal(null)]).nullable().describe('The caller\'s own reaction to this comment, if any — requires visitorId to have been passed on the read.')
 }).describe('A public comment on a Blind Circle post. Never carries a visitor identifier — see circle_comments.ts\'s schema comment for why.')).describe('Blind Circle posts only (empty otherwise).'),
   "circleConversations": zod.array(zod.object({
   "id": zod.string(),
@@ -787,7 +793,7 @@ export const GetPublicWhispParams = zod.object({
 })
 
 export const GetPublicWhispQueryParams = zod.object({
-  "visitorId": zod.coerce.string().optional().describe('The anonymous, client-generated, localStorage-persisted id this device uses for Circle likes\/comments — only affects whether the response\'s viewerHasLiked reflects this visitor. Omit for a Whisper Link\/circle_dm, where it\'s meaningless.')
+  "visitorId": zod.coerce.string().optional().describe('The anonymous, client-generated, localStorage-persisted id this device uses for Circle likes\/comments — affects whether the response\'s viewerHasLiked, and each comment\'s viewerReaction\/ isOwnComment, reflect this visitor. Omit for a Whisper Link\/ circle_dm, where it\'s meaningless.')
 })
 
 export const GetPublicWhispResponse = zod.object({
@@ -840,7 +846,13 @@ export const GetPublicWhispResponse = zod.object({
   "commentText": zod.string(),
   "parentCommentId": zod.string().nullish().describe('The comment this one replies to, if any — same flat quote-reference model as WhispReply.parentReplyId.'),
   "isPoster": zod.boolean().describe('True when this comment came from the post\'s own (signed-in) sender — a role badge, never an identity.'),
-  "createdAt": zod.coerce.date()
+  "createdAt": zod.coerce.date(),
+  "handle": zod.string().describe('This commenter\'s stable anonymous handle within this post\'s thread (e.g. \"SwiftFalcon482\") — see anonymous_handles.ts.'),
+  "isOwnComment": zod.boolean().describe('True when the caller\'s own visitorId matches this comment\'s author — lets the client show its own \"you\" state without ever exposing the raw visitorId to other viewers.'),
+  "imageUrl": zod.string().nullable().describe('Proxy-served URL for an attached image, or null if there is none or it was flagged by moderation and is pending review.'),
+  "likeCount": zod.number(),
+  "dislikeCount": zod.number(),
+  "viewerReaction": zod.union([zod.literal('like'),zod.literal('dislike'),zod.literal(null)]).nullable().describe('The caller\'s own reaction to this comment, if any — requires visitorId to have been passed on the read.')
 }).describe('A public comment on a Blind Circle post. Never carries a visitor identifier — see circle_comments.ts\'s schema comment for why.')).describe('Blind Circle posts only (empty otherwise).')
 })
 
@@ -942,7 +954,7 @@ export const ToggleCircleLikeResponse = zod.object({
 
 
 /**
- * Anonymous by default, rate-limited to a handful per rolling 24h window per visitor (see lib/plans.ts's canPostAnonymousComment) — signing in removes the limit entirely, same as the anonymous reply cap elsewhere. isPoster on the response is set automatically when the caller is signed in and is this whisp's own sender.
+ * Anonymous by default, rate-limited to a handful per rolling 24h window per visitor (see lib/plans.ts's canPostAnonymousComment) — signing in removes the limit entirely, same as the anonymous reply cap elsewhere. isPoster on the response is set automatically when the caller is signed in and is this whisp's own sender. An anonymous handle is assigned automatically on a visitor's first comment in this thread (see anonymous_handles.ts). Also accepts multipart/form-data with the same fields plus an optional `image` file (max 5MB, jpeg/png/webp/gif) — intentionally not modeled here, same reasoning as POST /media/upload above: a `format: binary` body generates File/Blob-typed Zod schemas that don't compile in lib/api-zod's Node-only project. The frontend attaches an image via a hand-written multipart fetch to this same URL, mirroring lib/uploadMedia.ts.
  * @summary Post a public comment on a Blind Circle post
  */
 export const PostCircleCommentParams = zod.object({
@@ -960,8 +972,63 @@ export const PostCircleCommentResponse = zod.object({
   "commentText": zod.string(),
   "parentCommentId": zod.string().nullish().describe('The comment this one replies to, if any — same flat quote-reference model as WhispReply.parentReplyId.'),
   "isPoster": zod.boolean().describe('True when this comment came from the post\'s own (signed-in) sender — a role badge, never an identity.'),
-  "createdAt": zod.coerce.date()
+  "createdAt": zod.coerce.date(),
+  "handle": zod.string().describe('This commenter\'s stable anonymous handle within this post\'s thread (e.g. \"SwiftFalcon482\") — see anonymous_handles.ts.'),
+  "isOwnComment": zod.boolean().describe('True when the caller\'s own visitorId matches this comment\'s author — lets the client show its own \"you\" state without ever exposing the raw visitorId to other viewers.'),
+  "imageUrl": zod.string().nullable().describe('Proxy-served URL for an attached image, or null if there is none or it was flagged by moderation and is pending review.'),
+  "likeCount": zod.number(),
+  "dislikeCount": zod.number(),
+  "viewerReaction": zod.union([zod.literal('like'),zod.literal('dislike'),zod.literal(null)]).nullable().describe('The caller\'s own reaction to this comment, if any — requires visitorId to have been passed on the read.')
 }).describe('A public comment on a Blind Circle post. Never carries a visitor identifier — see circle_comments.ts\'s schema comment for why.')
+
+
+/**
+ * Idempotent toggle — reacting with the same reaction again removes it; reacting with the other one switches it.
+ * @summary Like or dislike a Blind Circle comment
+ */
+export const ReactToCircleCommentParams = zod.object({
+  "token": zod.coerce.string(),
+  "commentId": zod.coerce.string()
+})
+
+export const ReactToCircleCommentBody = zod.object({
+  "visitorId": zod.string(),
+  "reaction": zod.enum(['like', 'dislike'])
+})
+
+export const ReactToCircleCommentResponse = zod.object({
+  "likeCount": zod.number(),
+  "dislikeCount": zod.number(),
+  "viewerReaction": zod.union([zod.literal('like'),zod.literal('dislike'),zod.literal(null)]).nullable()
+}).describe('The resulting reaction state after a like\/dislike toggle — shared shape for Circle and Debate Topic comments.')
+
+
+/**
+ * @summary Fetch a Blind Circle comment's attached image
+ */
+export const GetCircleCommentImageParams = zod.object({
+  "token": zod.coerce.string(),
+  "commentId": zod.coerce.string()
+})
+
+export const GetCircleCommentImageResponse = zod.unknown()
+
+
+/**
+ * @summary Rename the caller's own anonymous handle in this post's comment thread
+ */
+export const RenameCircleHandleParams = zod.object({
+  "token": zod.coerce.string()
+})
+
+export const RenameCircleHandleBody = zod.object({
+  "visitorId": zod.string(),
+  "handle": zod.string()
+})
+
+export const RenameCircleHandleResponse = zod.object({
+  "handle": zod.string()
+})
 
 
 /**
@@ -1231,6 +1298,7 @@ export const CreateDebateTopicResponse = zod.object({
   "id": zod.string(),
   "topicText": zod.string(),
   "commentCount": zod.number(),
+  "rewhispCount": zod.number(),
   "createdAt": zod.string()
 }).describe('authorId is deliberately never included — a debate topic is posted anonymously, same as every other posting surface in this app.')
 
@@ -1257,6 +1325,7 @@ export const ListDebateTopicsResponse = zod.object({
   "id": zod.string(),
   "topicText": zod.string(),
   "commentCount": zod.number(),
+  "rewhispCount": zod.number(),
   "createdAt": zod.string()
 }).describe('authorId is deliberately never included — a debate topic is posted anonymously, same as every other posting surface in this app.')),
   "nextCursor": zod.string().nullable()
@@ -1270,23 +1339,36 @@ export const GetDebateTopicParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const GetDebateTopicQueryParams = zod.object({
+  "visitorId": zod.coerce.string().optional().describe('The caller\'s own anonymous, client-generated, localStorage- persisted id — affects whether each comment\'s viewerReaction\/ isOwnComment, and the topic\'s viewerRewhisped, reflect this visitor.')
+})
+
 export const GetDebateTopicResponse = zod.object({
   "id": zod.string(),
   "topicText": zod.string(),
   "createdAt": zod.string(),
   "isOwnTopic": zod.boolean().describe('True only when the caller is signed in and is this topic\'s own author — lets the author see a \"Retract\" control without revealing anything to anyone else.'),
   "commentCount": zod.number(),
+  "rewhispCount": zod.number(),
+  "viewerRewhisped": zod.boolean(),
   "comments": zod.array(zod.object({
   "id": zod.string(),
   "commentText": zod.string(),
   "parentCommentId": zod.string().nullable(),
   "isPoster": zod.boolean(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "handle": zod.string().describe('This commenter\'s stable anonymous handle within this topic\'s thread (e.g. \"SwiftFalcon482\") — see anonymous_handles.ts.'),
+  "isOwnComment": zod.boolean().describe('True when the caller\'s own visitorId matches this comment\'s author.'),
+  "imageUrl": zod.string().nullable().describe('Proxy-served URL for an attached image, or null if there is none or it was flagged by moderation and is pending review.'),
+  "likeCount": zod.number(),
+  "dislikeCount": zod.number(),
+  "viewerReaction": zod.union([zod.literal('like'),zod.literal('dislike'),zod.literal(null)]).nullable()
 }).describe('visitorId is deliberately never included — see debate_topic_comments.ts. isPoster reveals a ROLE (the topic\'s own author), never an identity.'))
 })
 
 
 /**
+ * An anonymous handle is assigned automatically on a visitor's first comment in this thread (see anonymous_handles.ts). Also accepts multipart/form-data with the same fields plus an optional `image` file — intentionally not modeled here, same reasoning as POST /media/upload above; see postCircleComment's description for why.
  * @summary Post an anonymous (or signed-in) comment on a debate topic (no auth required)
  */
 export const PostDebateTopicCommentParams = zod.object({
@@ -1304,8 +1386,80 @@ export const PostDebateTopicCommentResponse = zod.object({
   "commentText": zod.string(),
   "parentCommentId": zod.string().nullable(),
   "isPoster": zod.boolean(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "handle": zod.string().describe('This commenter\'s stable anonymous handle within this topic\'s thread (e.g. \"SwiftFalcon482\") — see anonymous_handles.ts.'),
+  "isOwnComment": zod.boolean().describe('True when the caller\'s own visitorId matches this comment\'s author.'),
+  "imageUrl": zod.string().nullable().describe('Proxy-served URL for an attached image, or null if there is none or it was flagged by moderation and is pending review.'),
+  "likeCount": zod.number(),
+  "dislikeCount": zod.number(),
+  "viewerReaction": zod.union([zod.literal('like'),zod.literal('dislike'),zod.literal(null)]).nullable()
 }).describe('visitorId is deliberately never included — see debate_topic_comments.ts. isPoster reveals a ROLE (the topic\'s own author), never an identity.')
+
+
+/**
+ * @summary Fetch a debate topic comment's attached image
+ */
+export const GetDebateTopicCommentImageParams = zod.object({
+  "commentId": zod.coerce.string()
+})
+
+export const GetDebateTopicCommentImageResponse = zod.unknown()
+
+
+/**
+ * @summary Rename the caller's own anonymous handle in this topic's comment thread
+ */
+export const RenameDebateTopicHandleParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const RenameDebateTopicHandleBody = zod.object({
+  "visitorId": zod.string(),
+  "handle": zod.string()
+})
+
+export const RenameDebateTopicHandleResponse = zod.object({
+  "handle": zod.string()
+})
+
+
+/**
+ * Idempotent toggle — reacting with the same reaction again removes it; reacting with the other one switches it.
+ * @summary Like or dislike a debate topic comment
+ */
+export const ReactToDebateTopicCommentParams = zod.object({
+  "id": zod.coerce.string(),
+  "commentId": zod.coerce.string()
+})
+
+export const ReactToDebateTopicCommentBody = zod.object({
+  "visitorId": zod.string(),
+  "reaction": zod.enum(['like', 'dislike'])
+})
+
+export const ReactToDebateTopicCommentResponse = zod.object({
+  "likeCount": zod.number(),
+  "dislikeCount": zod.number(),
+  "viewerReaction": zod.union([zod.literal('like'),zod.literal('dislike'),zod.literal(null)]).nullable()
+}).describe('The resulting reaction state after a like\/dislike toggle — shared shape for Circle and Debate Topic comments.')
+
+
+/**
+ * Idempotent toggle — rewhisping a topic already rewhisped by this visitor undoes it. No list of who rewhisped is ever exposed, only a count.
+ * @summary Rewhisp (retweet-style boost) a debate topic
+ */
+export const RewhispDebateTopicParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const RewhispDebateTopicBody = zod.object({
+  "visitorId": zod.string()
+})
+
+export const RewhispDebateTopicResponse = zod.object({
+  "rewhispCount": zod.number(),
+  "viewerRewhisped": zod.boolean()
+})
 
 
 /**
@@ -2083,6 +2237,39 @@ export const AdminUpdateModerationFlagBody = zod.object({
 })
 
 export const AdminUpdateModerationFlagResponse = zod.object({
+  "id": zod.string(),
+  "whispId": zod.string().nullish().describe('Set when contentType is \'whisp\'; null otherwise.'),
+  "textWhispId": zod.string().nullish().describe('Set when contentType is \'text_whisp\'; null otherwise.'),
+  "circleCommentId": zod.string().nullish().describe('Set when contentType is \'circle_comment\'; null otherwise.'),
+  "debateTopicId": zod.string().nullish().describe('Set when contentType is \'debate_topic\'; null otherwise.'),
+  "debateTopicCommentId": zod.string().nullish().describe('Set when contentType is \'debate_topic_comment\'; null otherwise.'),
+  "contentType": zod.string().describe('\'whisp\' | \'text_whisp\' | \'circle_comment\' | \'debate_topic\' | \'debate_topic_comment\''),
+  "userId": zod.string().nullish().describe('Null only for contentType=\'circle_comment\' or contentType=\'debate_topic_comment\' from a fully anonymous, no-account commenter — there\'s no account to attribute the flag to.'),
+  "videoTitle": zod.string().nullish().describe('The flagged whisp\'s video title, denormalized for display in flag lists without a second lookup. Null unless contentType is \'whisp\'.'),
+  "textWhispMessage": zod.string().nullish().describe('The flagged text whisp\'s message text, denormalized for display the same way videoTitle is. Null unless contentType is \'text_whisp\'.'),
+  "circleCommentText": zod.string().nullish().describe('The flagged comment\'s text, denormalized the same way. Null unless contentType is \'circle_comment\'.'),
+  "debateTopicText": zod.string().nullish().describe('The flagged debate topic\'s own text, denormalized the same way. Null unless contentType is \'debate_topic\'.'),
+  "debateTopicCommentText": zod.string().nullish().describe('The flagged debate topic comment\'s text, denormalized the same way. Null unless contentType is \'debate_topic_comment\'.'),
+  "senderEmail": zod.string().nullish(),
+  "severity": zod.enum(['low', 'medium', 'high']),
+  "reasoning": zod.string(),
+  "source": zod.string().describe('\'ai_classifier\' | \'admin_manual\''),
+  "dismissed": zod.boolean(),
+  "reviewedAt": zod.string().nullish(),
+  "reviewedByAdminId": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * Sets removedByAdminAt on whichever table the flag's contentType points at (whisp, circle_comment, debate_topic, or debate_topic_comment), excluding it from every public read path from then on. Distinct from PATCH's dismiss/undismiss, which never touches the underlying content.
+ * @summary Take down the content a flag points at (admin only)
+ */
+export const AdminRemoveFlaggedContentParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const AdminRemoveFlaggedContentResponse = zod.object({
   "id": zod.string(),
   "whispId": zod.string().nullish().describe('Set when contentType is \'whisp\'; null otherwise.'),
   "textWhispId": zod.string().nullish().describe('Set when contentType is \'text_whisp\'; null otherwise.'),

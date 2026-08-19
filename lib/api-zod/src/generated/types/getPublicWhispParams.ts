@@ -8,7 +8,7 @@
 
 export type GetPublicWhispParams = {
 /**
- * The anonymous, client-generated, localStorage-persisted id this device uses for Circle likes/comments — only affects whether the response's viewerHasLiked reflects this visitor. Omit for a Whisper Link/circle_dm, where it's meaningless.
+ * The anonymous, client-generated, localStorage-persisted id this device uses for Circle likes/comments — affects whether the response's viewerHasLiked, and each comment's viewerReaction/ isOwnComment, reflect this visitor. Omit for a Whisper Link/ circle_dm, where it's meaningless.
  */
 visitorId?: string;
 };

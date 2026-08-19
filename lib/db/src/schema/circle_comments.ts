@@ -37,9 +37,23 @@ export const circleCommentsTable = pgTable("circle_comments", {
   // anonymity posture as everywhere else in the app: what's revealed is a
   // ROLE, never an identity.
   isPoster: boolean("is_poster").notNull().default(false),
+  // Same notification-routing-only purpose as
+  // debate_topic_comments.authorUserId — see that column's comment.
+  authorUserId: text("author_user_id"),
+  // An optional image attached to the comment — same object storage key +
+  // read-time-resolved URL split lib/objectStorage.ts's video/photo
+  // pipeline already uses, and the same independent moderation pass as
+  // debate_topic_comments.imageObjectKey (see that column's comment).
+  imageObjectKey: text("image_object_key"),
+  imageModerationStatus: text("image_moderation_status"), // null (no image, or not yet checked) | 'ok' | 'flagged'
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  // Admin-initiated takedown of just this one comment — same reasoning as
+  // debate_topics.removedByAdminAt. Excluded from every thread read once
+  // set (routes/public.ts).
+  removedByAdminAt: timestamp("removed_by_admin_at", { withTimezone: true }),
 }, (table) => [
   index("circle_comments_whisp_id_idx").on(table.whispId),
+  index("circle_comments_author_user_id_idx").on(table.authorUserId),
   // Backs the anonymous rate-limit check: "how many comments has this
   // visitor posted (anywhere) in the last 24 hours."
   index("circle_comments_visitor_id_created_at_idx").on(table.visitorId, table.createdAt),

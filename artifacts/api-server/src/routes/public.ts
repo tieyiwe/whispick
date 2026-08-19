@@ -22,8 +22,11 @@ import { generateTakeawayAsync } from "../lib/aiTakeaway";
 import { httpUrlString } from "../lib/safeUrl";
 import { deriveVideoFields, detectPlatform, embedUrlFor } from "../lib/videoMeta";
 import { recipientReplyAllowance, canRecipientWhispVideoBack, canPostAnonymousComment, COMMENT_LIMIT_WINDOW_HOURS } from "../lib/plans";
-import { moderateCircleCommentAsync } from "../lib/moderation";
+import { moderateCircleCommentAsync, moderateCommentImageAsync } from "../lib/moderation";
 import { ensureUser } from "../lib/ensureUser";
+import { assignOrGetHandle, getHandlesFor, renameHandle } from "../lib/anonymousHandles";
+import { toggleReaction, reactionCountsFor, viewerReactionsFor } from "../lib/commentReactions";
+import { commentImageUpload, storeCommentImage } from "../lib/commentImages";
 
 const router = Router();
 
@@ -110,7 +113,11 @@ router.get("/w/:token", async (req, res): Promise<void> => {
     .where(eq(whispsTable.publicToken, req.params.token))
     .then(r => r[0]);
 
-  if (!whisp) {
+  // removedByAdminAt is a moderation takedown — unlike deletedBySenderAt
+  // (which only hides a whisp from the SENDER's own views, keeping the
+  // recipient's link working), this is meant to come down entirely, same
+  // observable effect as debate_topics.removedByAdminAt.
+  if (!whisp || whisp.removedByAdminAt) {
     res.status(404).json({ error: "Not found" });
     return;
   }
@@ -165,7 +172,14 @@ router.get("/w/:token", async (req, res): Promise<void> => {
     parentCommentId: string | null;
     isPoster: boolean;
     createdAt: Date;
+    handle: string;
+    isOwnComment: boolean;
+    imageUrl: string | null;
+    likeCount: number;
+    dislikeCount: number;
+    viewerReaction: "like" | "dislike" | null;
   }> = [];
+  const visitorId = typeof req.query.visitorId === "string" ? req.query.visitorId : undefined;
   if (whisp.deliveryMethod === "circle_drop") {
     const [likeRow] = await db
       .select({ count: count() })
@@ -173,7 +187,6 @@ router.get("/w/:token", async (req, res): Promise<void> => {
       .where(eq(circlePostLikesTable.whispId, whisp.id));
     likeCount = likeRow?.count ?? 0;
 
-    const visitorId = typeof req.query.visitorId === "string" ? req.query.visitorId : undefined;
     if (visitorId) {
       const existingLike = await db
         .select({ id: circlePostLikesTable.id })
@@ -187,18 +200,39 @@ router.get("/w/:token", async (req, res): Promise<void> => {
     // recognizes it client-side (matched against the visitorId stored in
     // their own localStorage), not something any other viewer should ever
     // receive. Nothing here identifies who posted a comment beyond isPoster,
-    // which reveals a ROLE (the whisp's own sender), never an identity.
-    comments = await db
+    // which reveals a ROLE (the whisp's own sender), never an identity — and
+    // the thread-scoped handle it maps to.
+    const rawComments = await db
       .select({
         id: circleCommentsTable.id,
         commentText: circleCommentsTable.commentText,
         parentCommentId: circleCommentsTable.parentCommentId,
         isPoster: circleCommentsTable.isPoster,
+        imageObjectKey: circleCommentsTable.imageObjectKey,
+        imageModerationStatus: circleCommentsTable.imageModerationStatus,
         createdAt: circleCommentsTable.createdAt,
+        visitorId: circleCommentsTable.visitorId,
       })
       .from(circleCommentsTable)
-      .where(eq(circleCommentsTable.whispId, whisp.id))
+      .where(and(eq(circleCommentsTable.whispId, whisp.id), isNull(circleCommentsTable.removedByAdminAt)))
       .orderBy(circleCommentsTable.createdAt);
+
+    const commentIds = rawComments.map((c) => c.id);
+    const [handles, reactionCounts, viewerReactions] = await Promise.all([
+      getHandlesFor("circle_drop", whisp.id, rawComments.map((c) => c.visitorId)),
+      reactionCountsFor("circle_comment", commentIds),
+      visitorId ? viewerReactionsFor("circle_comment", commentIds, visitorId) : Promise.resolve({} as Record<string, "like" | "dislike">),
+    ]);
+
+    comments = rawComments.map(({ visitorId: commentVisitorId, imageObjectKey, imageModerationStatus, ...c }) => ({
+      ...c,
+      handle: handles[commentVisitorId] ?? "Anonymous",
+      isOwnComment: visitorId ? commentVisitorId === visitorId : false,
+      imageUrl: imageObjectKey && imageModerationStatus !== "flagged" ? `/api/public/w/${whisp.publicToken}/comments/${c.id}/image` : null,
+      likeCount: reactionCounts[c.id]?.likeCount ?? 0,
+      dislikeCount: reactionCounts[c.id]?.dislikeCount ?? 0,
+      viewerReaction: viewerReactions[c.id] ?? null,
+    }));
   }
 
   // Whether the SIGNED-IN viewer (if any) is this whisp's own matched
@@ -339,7 +373,7 @@ router.post("/w/:token/like", async (req, res): Promise<void> => {
 // caller is signed in AND is this whisp's own sender, which happens to work
 // even on this "unauthenticated" router because clerkMiddleware runs
 // globally (app.ts) — same trick the reply cap's signed-in exemption uses.
-router.post("/w/:token/comments", async (req, res): Promise<void> => {
+router.post("/w/:token/comments", commentImageUpload, async (req, res): Promise<void> => {
   const parsed = z
     .object({
       commentText: z.string().trim().min(1).max(500),
@@ -364,8 +398,10 @@ router.post("/w/:token/comments", async (req, res): Promise<void> => {
 
   const { userId: clerkId } = getAuth(req);
   let isPoster = false;
+  let authorUserId: string | null = null;
   if (clerkId) {
     const user = await ensureUser(clerkId, req);
+    authorUserId = user.id;
     isPoster = user.id === whisp.senderId;
   }
 
@@ -390,16 +426,23 @@ router.post("/w/:token/comments", async (req, res): Promise<void> => {
   // Same-whisp check as whisp_replies' parentReplyId — an unvalidated parent
   // id would let a comment quote one from a different post's thread.
   let parentCommentId: string | null = null;
+  let parentAuthorUserId: string | null = null;
   if (parsed.data.parentCommentId) {
     const parent = await db
-      .select({ id: circleCommentsTable.id })
+      .select({ id: circleCommentsTable.id, authorUserId: circleCommentsTable.authorUserId })
       .from(circleCommentsTable)
       .where(and(eq(circleCommentsTable.id, parsed.data.parentCommentId), eq(circleCommentsTable.whispId, whisp.id)))
       .then((r) => r[0]);
     parentCommentId = parent?.id ?? null;
+    parentAuthorUserId = parent?.authorUserId ?? null;
   }
 
   const id = randomUUID();
+  let imageObjectKey: string | null = null;
+  if (req.file) {
+    imageObjectKey = await storeCommentImage(req.file);
+  }
+
   await db.insert(circleCommentsTable).values({
     id,
     whispId: whisp.id,
@@ -407,13 +450,29 @@ router.post("/w/:token/comments", async (req, res): Promise<void> => {
     commentText: parsed.data.commentText,
     parentCommentId,
     isPoster,
+    authorUserId,
+    imageObjectKey,
+    imageModerationStatus: imageObjectKey ? null : "ok",
   });
+
+  const handle = await assignOrGetHandle("circle_drop", whisp.id, parsed.data.visitorId);
 
   void moderateCircleCommentAsync({
     circleCommentId: id,
     senderId: isPoster ? whisp.senderId : null,
     text: parsed.data.commentText,
   });
+  if (imageObjectKey) {
+    void moderateCommentImageAsync({ commentType: "circle_comment", commentId: id, senderId: authorUserId, imageObjectKey });
+  }
+
+  const postUrl = `/w/${whisp.publicToken}`;
+  if (parentAuthorUserId && parentAuthorUserId !== authorUserId) {
+    void notifyUserPersisted(parentAuthorUserId, "New reply to your comment 💬", "Someone replied to your comment on a Blind Circle post.", postUrl, "circle_comment_reply");
+  }
+  if (whisp.senderId !== authorUserId && !isPoster) {
+    void notifyUserPersisted(whisp.senderId, "New comment on your post 🗣️", "Someone commented on your Blind Circle post.", postUrl, "circle_comment");
+  }
 
   const comment = await db
     .select({
@@ -427,7 +486,102 @@ router.post("/w/:token/comments", async (req, res): Promise<void> => {
     .where(eq(circleCommentsTable.id, id))
     .then((r) => r[0]);
 
-  res.status(201).json(comment);
+  res.status(201).json({
+    ...comment,
+    handle,
+    isOwnComment: true,
+    imageUrl: imageObjectKey ? `/api/public/w/${whisp.publicToken}/comments/${id}/image` : null,
+    likeCount: 0,
+    dislikeCount: 0,
+    viewerReaction: null,
+  });
+});
+
+// GET /api/public/w/:token/comments/:commentId/image — proxy-serves an
+// attached comment image, same posture as routes/media.ts. Hidden (404)
+// once flagged by moderation or once the comment itself is admin-removed.
+router.get("/w/:token/comments/:commentId/image", async (req, res): Promise<void> => {
+  const comment = await db
+    .select({ imageObjectKey: circleCommentsTable.imageObjectKey, imageModerationStatus: circleCommentsTable.imageModerationStatus, removedByAdminAt: circleCommentsTable.removedByAdminAt })
+    .from(circleCommentsTable)
+    .where(eq(circleCommentsTable.id, req.params.commentId))
+    .then((r) => r[0]);
+
+  if (!comment?.imageObjectKey || comment.imageModerationStatus === "flagged" || comment.removedByAdminAt) {
+    res.status(404).end();
+    return;
+  }
+
+  const bytes = await downloadObject(comment.imageObjectKey);
+  if (!bytes) {
+    res.status(404).end();
+    return;
+  }
+
+  const ext = comment.imageObjectKey.split(".").pop() ?? "jpg";
+  const contentType = ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : ext === "gif" ? "image/gif" : "image/jpeg";
+  res.setHeader("Content-Type", contentType);
+  res.setHeader("Content-Length", bytes.length.toString());
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.send(bytes);
+});
+
+// PATCH /api/public/w/:token/handle — a visitor renames their own anonymous
+// handle within this post's comment thread.
+router.patch("/w/:token/handle", async (req, res): Promise<void> => {
+  const parsed = z.object({ visitorId: z.string().min(1).max(100), handle: z.string().min(1).max(50) }).safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const whisp = await db.select({ id: whispsTable.id }).from(whispsTable).where(eq(whispsTable.publicToken, req.params.token)).then((r) => r[0]);
+  if (!whisp) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+
+  const result = await renameHandle("circle_drop", whisp.id, parsed.data.visitorId, parsed.data.handle);
+  if (!result.ok) {
+    res.status(400).json({ error: result.error === "taken" ? "That name is already taken in this thread." : "Use letters and numbers only (3-24 characters)." });
+    return;
+  }
+
+  res.json({ handle: result.handle });
+});
+
+// POST /api/public/w/:token/comments/:commentId/reactions — like or dislike
+// a comment; tapping the same reaction again removes it.
+router.post("/w/:token/comments/:commentId/reactions", async (req, res): Promise<void> => {
+  const parsed = z.object({ visitorId: z.string().min(1).max(100), reaction: z.enum(["like", "dislike"]) }).safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const whisp = await db.select({ id: whispsTable.id }).from(whispsTable).where(eq(whispsTable.publicToken, req.params.token)).then((r) => r[0]);
+  if (!whisp) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+
+  const comment = await db
+    .select({ id: circleCommentsTable.id, authorUserId: circleCommentsTable.authorUserId })
+    .from(circleCommentsTable)
+    .where(and(eq(circleCommentsTable.id, req.params.commentId), eq(circleCommentsTable.whispId, whisp.id), isNull(circleCommentsTable.removedByAdminAt)))
+    .then((r) => r[0]);
+  if (!comment) {
+    res.status(404).json({ error: "Comment not found" });
+    return;
+  }
+
+  const result = await toggleReaction("circle_comment", comment.id, parsed.data.visitorId, parsed.data.reaction);
+
+  if (result.viewerReaction === "like" && comment.authorUserId) {
+    void notifyUserPersisted(comment.authorUserId, "Someone liked your comment 👍", "Your comment on a Blind Circle post got a reaction.", `/w/${req.params.token}`, "circle_comment_reaction");
+  }
+
+  res.json(result);
 });
 
 // POST /api/public/w/:token/circle-dm/start — an anonymous Circle viewer
