@@ -60,6 +60,7 @@ const TextWhispDetail = lazy(() => import("@/pages/TextWhispDetail").then((m) =>
 const DebateTopics = lazy(() => import("@/pages/DebateTopics").then((m) => ({ default: m.DebateTopics })));
 const DebateTopicDetail = lazy(() => import("@/pages/DebateTopicDetail").then((m) => ({ default: m.DebateTopicDetail })));
 const CreateDebateTopic = lazy(() => import("@/pages/CreateDebateTopic").then((m) => ({ default: m.CreateDebateTopic })));
+const DebateFollowing = lazy(() => import("@/pages/DebateFollowing").then((m) => ({ default: m.DebateFollowing })));
 const SubscribePage = lazy(() => import("@/pages/SubscribePage").then((m) => ({ default: m.SubscribePage })));
 const VerifySubscriptionPage = lazy(() => import("@/pages/VerifySubscriptionPage").then((m) => ({ default: m.VerifySubscriptionPage })));
 const UnsubscribeFromMatchingPage = lazy(() => import("@/pages/UnsubscribeFromMatchingPage").then((m) => ({ default: m.UnsubscribeFromMatchingPage })));
@@ -284,6 +285,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/settings" component={() => <ProtectedRoute component={SettingsPage} />} />
             <Route path="/invite" component={() => <ProtectedRoute component={InvitePage} />} />
             <Route path="/debate-topics/new" component={() => <ProtectedRoute component={CreateDebateTopic} />} />
+            <Route path="/debate-topics/following" component={() => <ProtectedRoute component={DebateFollowing} />} />
             <Route path="/send-text" component={() => <ProtectedRoute component={SendTextWhisp} />} />
             <Route path="/text-whisps/:id" component={() => <ProtectedRoute component={TextWhispDetail} />} />
             <Route path="/text-whisps" component={() => <ProtectedRoute component={TextWhispsList} />} />

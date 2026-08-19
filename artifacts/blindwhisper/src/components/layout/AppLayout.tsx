@@ -21,6 +21,7 @@ import {
   ScrollText,
   Swords,
   Menu,
+  UserCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -47,6 +48,7 @@ const NAV_ITEMS = [
   { href: "/circle", label: "Blind Circle", icon: Users },
   { href: "/circles", label: "My Blind Circles", icon: VenetianMask },
   { href: "/debate-topics", label: "Debate Topics", icon: Swords },
+  { href: "/debate-topics/following", label: "Following", icon: UserCheck },
   { href: "/whisper-groups", label: "Whisper Groups", icon: UsersRound },
   { href: "/media-library", label: "Media Library", icon: Clapperboard },
   { href: "/replies", label: "Replies", icon: MessageSquareHeart },
