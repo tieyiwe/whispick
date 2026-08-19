@@ -21,7 +21,7 @@ export const HealthCheckResponse = zod.object({
  */
 export const ListWhispsQueryParams = zod.object({
   "status": zod.coerce.string().optional(),
-  "box": zod.enum(['sent', 'received']).optional().describe('\'sent\' (default): whisps this user sent. \'received\': whisps another Whisperer sent TO this user (matched at send time — see whisps.recipientUserId).')
+  "box": zod.enum(['sent', 'received', 'archived']).optional().describe('\'sent\' (default): whisps this user sent. \'received\': whisps another Whisperer sent TO this user (matched at send time — see whisps.recipientUserId). \'archived\': whichever of those this user archived from either side, combined into one list.')
 })
 
 export const ListWhispsResponseItem = zod.object({
@@ -58,7 +58,10 @@ export const ListWhispsResponseItem = zod.object({
   "aiTakeawayStatus": zod.string().nullish(),
   "conciergeRequestId": zod.string().nullish().describe('Set when this whisp\'s video and\/or note came from the \"Not sure what to send?\" AI concierge (see POST \/whisps\/concierge)'),
   "createdAt": zod.string(),
-  "viewerIsRecipient": zod.boolean().describe('True only when the caller is themselves this whisp\'s matched recipient (see GET \/whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email\/phone belongs to a verified account.')
+  "viewerIsRecipient": zod.boolean().describe('True only when the caller is themselves this whisp\'s matched recipient (see GET \/whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email\/phone belongs to a verified account.'),
+  "viewerRole": zod.string().nullable().describe('\'sender\' | \'recipient\' | null — which role the caller has on this whisp. Drives pinned\/archived below, and (frontend-side) whether Delete is offered — only a sender may delete.'),
+  "pinned": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is pinned (see POST \/whisps\/{id}\/pin) — never the other party\'s pin state.'),
+  "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.')
 })
 export const ListWhispsResponse = zod.array(ListWhispsResponseItem)
 
@@ -121,7 +124,10 @@ export const CreateWhispResponse = zod.object({
   "aiTakeawayStatus": zod.string().nullish(),
   "conciergeRequestId": zod.string().nullish().describe('Set when this whisp\'s video and\/or note came from the \"Not sure what to send?\" AI concierge (see POST \/whisps\/concierge)'),
   "createdAt": zod.string(),
-  "viewerIsRecipient": zod.boolean().describe('True only when the caller is themselves this whisp\'s matched recipient (see GET \/whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email\/phone belongs to a verified account.')
+  "viewerIsRecipient": zod.boolean().describe('True only when the caller is themselves this whisp\'s matched recipient (see GET \/whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email\/phone belongs to a verified account.'),
+  "viewerRole": zod.string().nullable().describe('\'sender\' | \'recipient\' | null — which role the caller has on this whisp. Drives pinned\/archived below, and (frontend-side) whether Delete is offered — only a sender may delete.'),
+  "pinned": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is pinned (see POST \/whisps\/{id}\/pin) — never the other party\'s pin state.'),
+  "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.')
 })
 
 
@@ -172,7 +178,10 @@ export const GetWhispStatsResponse = zod.object({
   "aiTakeawayStatus": zod.string().nullish(),
   "conciergeRequestId": zod.string().nullish().describe('Set when this whisp\'s video and\/or note came from the \"Not sure what to send?\" AI concierge (see POST \/whisps\/concierge)'),
   "createdAt": zod.string(),
-  "viewerIsRecipient": zod.boolean().describe('True only when the caller is themselves this whisp\'s matched recipient (see GET \/whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email\/phone belongs to a verified account.')
+  "viewerIsRecipient": zod.boolean().describe('True only when the caller is themselves this whisp\'s matched recipient (see GET \/whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email\/phone belongs to a verified account.'),
+  "viewerRole": zod.string().nullable().describe('\'sender\' | \'recipient\' | null — which role the caller has on this whisp. Drives pinned\/archived below, and (frontend-side) whether Delete is offered — only a sender may delete.'),
+  "pinned": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is pinned (see POST \/whisps\/{id}\/pin) — never the other party\'s pin state.'),
+  "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.')
 }))
 })
 
@@ -219,7 +228,10 @@ export const GetWhispResponse = zod.object({
   "aiTakeawayStatus": zod.string().nullish(),
   "conciergeRequestId": zod.string().nullish().describe('Set when this whisp\'s video and\/or note came from the \"Not sure what to send?\" AI concierge (see POST \/whisps\/concierge)'),
   "createdAt": zod.string(),
-  "viewerIsRecipient": zod.boolean().describe('True only when the caller is themselves this whisp\'s matched recipient (see GET \/whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email\/phone belongs to a verified account.')
+  "viewerIsRecipient": zod.boolean().describe('True only when the caller is themselves this whisp\'s matched recipient (see GET \/whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email\/phone belongs to a verified account.'),
+  "viewerRole": zod.string().nullable().describe('\'sender\' | \'recipient\' | null — which role the caller has on this whisp. Drives pinned\/archived below, and (frontend-side) whether Delete is offered — only a sender may delete.'),
+  "pinned": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is pinned (see POST \/whisps\/{id}\/pin) — never the other party\'s pin state.'),
+  "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.')
 }),
   "trackingEvents": zod.array(zod.object({
   "id": zod.string(),
@@ -268,6 +280,30 @@ export const DeleteWhispParams = zod.object({
 })
 
 export const DeleteWhispResponse = zod.void()
+
+
+/**
+ * @summary Toggle pin for whichever role (sender or matched recipient) the caller has on this whisp
+ */
+export const PinWhispParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const PinWhispResponse = zod.object({
+  "pinned": zod.boolean()
+})
+
+
+/**
+ * @summary Toggle archive for whichever role the caller has on this whisp — reversible, calling it again un-archives
+ */
+export const ArchiveWhispParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const ArchiveWhispResponse = zod.object({
+  "archived": zod.boolean()
+})
 
 
 /**
@@ -366,7 +402,10 @@ export const RequestRevealResponse = zod.object({
   "aiTakeawayStatus": zod.string().nullish(),
   "conciergeRequestId": zod.string().nullish().describe('Set when this whisp\'s video and\/or note came from the \"Not sure what to send?\" AI concierge (see POST \/whisps\/concierge)'),
   "createdAt": zod.string(),
-  "viewerIsRecipient": zod.boolean().describe('True only when the caller is themselves this whisp\'s matched recipient (see GET \/whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email\/phone belongs to a verified account.')
+  "viewerIsRecipient": zod.boolean().describe('True only when the caller is themselves this whisp\'s matched recipient (see GET \/whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email\/phone belongs to a verified account.'),
+  "viewerRole": zod.string().nullable().describe('\'sender\' | \'recipient\' | null — which role the caller has on this whisp. Drives pinned\/archived below, and (frontend-side) whether Delete is offered — only a sender may delete.'),
+  "pinned": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is pinned (see POST \/whisps\/{id}\/pin) — never the other party\'s pin state.'),
+  "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.')
 })
 
 
@@ -753,6 +792,8 @@ export const GetPublicWhispQueryParams = zod.object({
 
 export const GetPublicWhispResponse = zod.object({
   "id": zod.string(),
+  "viewerArchived": zod.boolean().optional().describe('True only when the caller is signed in, is this whisp\'s matched recipient, and has archived their copy (see POST \/whisps\/{id}\/archive) — always false for an anonymous visitor or a signed-in non-recipient.'),
+  "viewerPinned": zod.boolean().optional().describe('Same caller-relative scoping as viewerArchived, for pin instead.'),
   "videoUrl": zod.string(),
   "videoTitle": zod.string().nullish(),
   "videoThumbnail": zod.string().nullish(),
@@ -1381,7 +1422,10 @@ export const AdminGetUserResponse = zod.object({
   "aiTakeawayStatus": zod.string().nullish(),
   "conciergeRequestId": zod.string().nullish().describe('Set when this whisp\'s video and\/or note came from the \"Not sure what to send?\" AI concierge (see POST \/whisps\/concierge)'),
   "createdAt": zod.string(),
-  "viewerIsRecipient": zod.boolean().describe('True only when the caller is themselves this whisp\'s matched recipient (see GET \/whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email\/phone belongs to a verified account.')
+  "viewerIsRecipient": zod.boolean().describe('True only when the caller is themselves this whisp\'s matched recipient (see GET \/whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email\/phone belongs to a verified account.'),
+  "viewerRole": zod.string().nullable().describe('\'sender\' | \'recipient\' | null — which role the caller has on this whisp. Drives pinned\/archived below, and (frontend-side) whether Delete is offered — only a sender may delete.'),
+  "pinned": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is pinned (see POST \/whisps\/{id}\/pin) — never the other party\'s pin state.'),
+  "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.')
 })),
   "totalWhisps": zod.number(),
   "creditTransactions": zod.array(zod.object({
@@ -1621,7 +1665,10 @@ export const AdminGetWhispResponse = zod.object({
   "aiTakeawayStatus": zod.string().nullish(),
   "conciergeRequestId": zod.string().nullish().describe('Set when this whisp\'s video and\/or note came from the \"Not sure what to send?\" AI concierge (see POST \/whisps\/concierge)'),
   "createdAt": zod.string(),
-  "viewerIsRecipient": zod.boolean().describe('True only when the caller is themselves this whisp\'s matched recipient (see GET \/whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email\/phone belongs to a verified account.')
+  "viewerIsRecipient": zod.boolean().describe('True only when the caller is themselves this whisp\'s matched recipient (see GET \/whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email\/phone belongs to a verified account.'),
+  "viewerRole": zod.string().nullable().describe('\'sender\' | \'recipient\' | null — which role the caller has on this whisp. Drives pinned\/archived below, and (frontend-side) whether Delete is offered — only a sender may delete.'),
+  "pinned": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is pinned (see POST \/whisps\/{id}\/pin) — never the other party\'s pin state.'),
+  "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.')
 }),
   "senderId": zod.string().nullish(),
   "senderEmail": zod.string().nullish(),

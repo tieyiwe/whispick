@@ -143,6 +143,23 @@ export const whispsTable = pgTable("whisps", {
   // routes/admin.ts, which never filters on this). Doesn't affect the
   // Recipient's own public link, which keeps working as already delivered.
   deletedBySenderAt: timestamp("deleted_by_sender_at", { withTimezone: true }),
+  // Pin/archive, one pair per possible viewer ROLE rather than one shared
+  // pair — the sender and the matched recipient (whisps.recipientUserId)
+  // are two different people organizing the SAME row independently, same
+  // reasoning as deletedBySenderAt above being sender-only. Archiving is
+  // reversible (unlike delete): it just moves the whisp out of that
+  // viewer's Sent/Received list into their Archive list, from which it can
+  // be brought back. Pin sorts a whisp to the top of whichever list it's
+  // currently showing in for that viewer. Never exposed raw in an API
+  // response — see routes/whisps.ts's toWhispResponse, which turns these
+  // into caller-relative `pinned`/`archived`/`viewerRole` fields instead,
+  // for the same anti-enumeration reason recipientUserId itself is
+  // stripped: an unpinned/unpinned pair leaking the OTHER party's
+  // organizing choices would defeat that.
+  senderPinnedAt: timestamp("sender_pinned_at", { withTimezone: true }),
+  senderArchivedAt: timestamp("sender_archived_at", { withTimezone: true }),
+  recipientPinnedAt: timestamp("recipient_pinned_at", { withTimezone: true }),
+  recipientArchivedAt: timestamp("recipient_archived_at", { withTimezone: true }),
 }, (table) => [
   // publicToken already gets an index for free from its unique() constraint
   // above — not duplicated here. The rest back the admin panel's list/detail

@@ -65,9 +65,9 @@ paths:
           name: box
           schema:
             type: string
-            enum: [sent, received]
+            enum: [sent, received, archived]
           required: false
-          description: "'sent' (default): whisps this user sent. 'received': whisps another Whisperer sent TO this user (matched at send time — see whisps.recipientUserId)."
+          description: "'sent' (default): whisps this user sent. 'received': whisps another Whisperer sent TO this user (matched at send time — see whisps.recipientUserId). 'archived': whichever of those this user archived from either side, combined into one list."
       responses:
         "200":
           description: List of whisps
@@ -151,6 +151,66 @@ paths:
       responses:
         "204":
           description: Deleted
+
+  /whisps/{id}/pin:
+    post:
+      operationId: pinWhisp
+      tags: [whisps]
+      summary: Toggle pin for whichever role (sender or matched recipient) the caller has on this whisp
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: New pin state
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pinned:
+                    type: boolean
+                required:
+                  - pinned
+        "404":
+          description: Not found (or the caller has neither role on this whisp)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /whisps/{id}/archive:
+    post:
+      operationId: archiveWhisp
+      tags: [whisps]
+      summary: Toggle archive for whichever role the caller has on this whisp — reversible, calling it again un-archives
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: New archive state
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  archived:
+                    type: boolean
+                required:
+                  - archived
+        "404":
+          description: Not found (or the caller has neither role on this whisp)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
 
   /whisps/{id}/replies:
     get:
@@ -2725,6 +2785,15 @@ components:
         viewerIsRecipient:
           type: boolean
           description: True only when the caller is themselves this whisp's matched recipient (see GET /whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email/phone belongs to a verified account.
+        viewerRole:
+          type: ["string", "null"]
+          description: "'sender' | 'recipient' | null — which role the caller has on this whisp. Drives pinned/archived below, and (frontend-side) whether Delete is offered — only a sender may delete."
+        pinned:
+          type: boolean
+          description: Whether the CALLER's own copy of this whisp is pinned (see POST /whisps/{id}/pin) — never the other party's pin state.
+        archived:
+          type: boolean
+          description: Whether the CALLER's own copy of this whisp is archived (see POST /whisps/{id}/archive) — never the other party's archive state.
       required:
         - id
         - senderId
@@ -2735,6 +2804,9 @@ components:
         - revealRequested
         - createdAt
         - viewerIsRecipient
+        - viewerRole
+        - pinned
+        - archived
 
     WhispInput:
       type: object
@@ -3222,6 +3294,12 @@ components:
       properties:
         id:
           type: string
+        viewerArchived:
+          type: boolean
+          description: True only when the caller is signed in, is this whisp's matched recipient, and has archived their copy (see POST /whisps/{id}/archive) — always false for an anonymous visitor or a signed-in non-recipient.
+        viewerPinned:
+          type: boolean
+          description: Same caller-relative scoping as viewerArchived, for pin instead.
         videoUrl:
           type: string
         videoTitle:

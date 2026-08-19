@@ -43,6 +43,7 @@ import type {
   ApiError,
   AppreciationInput,
   AppreciationResult,
+  ArchiveWhisp200,
   CheckoutRequest,
   CheckoutResponse,
   Circle,
@@ -81,6 +82,7 @@ import type {
   NoteSuggestionsResult,
   NotificationListResponse,
   PhoneVerificationResult,
+  PinWhisp200,
   PostCircleCommentBody,
   PublicInvite,
   PublicReplyInput,
@@ -622,6 +624,146 @@ export const useDeleteWhisp = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getDeleteWhispMutationOptions(options));
+    }
+
+export const getPinWhispUrl = (id: string,) => {
+
+
+
+
+  return `/api/whisps/${id}/pin`
+}
+
+/**
+ * @summary Toggle pin for whichever role (sender or matched recipient) the caller has on this whisp
+ */
+export const pinWhisp = async (id: string, options?: RequestInit): Promise<PinWhisp200> => {
+
+  return customFetch<PinWhisp200>(getPinWhispUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getPinWhispMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pinWhisp>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof pinWhisp>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['pinWhisp'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof pinWhisp>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  pinWhisp(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PinWhispMutationResult = NonNullable<Awaited<ReturnType<typeof pinWhisp>>>
+
+    export type PinWhispMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Toggle pin for whichever role (sender or matched recipient) the caller has on this whisp
+ */
+export const usePinWhisp = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pinWhisp>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof pinWhisp>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getPinWhispMutationOptions(options));
+    }
+
+export const getArchiveWhispUrl = (id: string,) => {
+
+
+
+
+  return `/api/whisps/${id}/archive`
+}
+
+/**
+ * @summary Toggle archive for whichever role the caller has on this whisp — reversible, calling it again un-archives
+ */
+export const archiveWhisp = async (id: string, options?: RequestInit): Promise<ArchiveWhisp200> => {
+
+  return customFetch<ArchiveWhisp200>(getArchiveWhispUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getArchiveWhispMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof archiveWhisp>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof archiveWhisp>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['archiveWhisp'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof archiveWhisp>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  archiveWhisp(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ArchiveWhispMutationResult = NonNullable<Awaited<ReturnType<typeof archiveWhisp>>>
+
+    export type ArchiveWhispMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Toggle archive for whichever role the caller has on this whisp — reversible, calling it again un-archives
+ */
+export const useArchiveWhisp = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof archiveWhisp>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof archiveWhisp>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getArchiveWhispMutationOptions(options));
     }
 
 export const getListWhispRepliesUrl = (id: string,) => {

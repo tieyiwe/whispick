@@ -78,6 +78,15 @@ export interface Whisp {
   createdAt: string;
   /** True only when the caller is themselves this whisp's matched recipient (see GET /whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email/phone belongs to a verified account. */
   viewerIsRecipient: boolean;
+  /**
+     * 'sender' | 'recipient' | null — which role the caller has on this whisp. Drives pinned/archived below, and (frontend-side) whether Delete is offered — only a sender may delete.
+     * @nullable
+     */
+  viewerRole: string | null;
+  /** Whether the CALLER's own copy of this whisp is pinned (see POST /whisps/{id}/pin) — never the other party's pin state. */
+  pinned: boolean;
+  /** Whether the CALLER's own copy of this whisp is archived (see POST /whisps/{id}/archive) — never the other party's archive state. */
+  archived: boolean;
 }
 
 export interface WhispInput {
@@ -366,6 +375,10 @@ export interface VideoMeta {
 
 export interface PublicWhisp {
   id: string;
+  /** True only when the caller is signed in, is this whisp's matched recipient, and has archived their copy (see POST /whisps/{id}/archive) — always false for an anonymous visitor or a signed-in non-recipient. */
+  viewerArchived?: boolean;
+  /** Same caller-relative scoping as viewerArchived, for pin instead. */
+  viewerPinned?: boolean;
   videoUrl: string;
   /** @nullable */
   videoTitle?: string | null;
@@ -1580,7 +1593,7 @@ export interface RunSuggestionAgentResult {
 export type ListWhispsParams = {
 status?: string;
 /**
- * 'sent' (default): whisps this user sent. 'received': whisps another Whisperer sent TO this user (matched at send time — see whisps.recipientUserId).
+ * 'sent' (default): whisps this user sent. 'received': whisps another Whisperer sent TO this user (matched at send time — see whisps.recipientUserId). 'archived': whichever of those this user archived from either side, combined into one list.
  */
 box?: ListWhispsBox;
 };
@@ -1591,7 +1604,16 @@ export type ListWhispsBox = typeof ListWhispsBox[keyof typeof ListWhispsBox];
 export const ListWhispsBox = {
   sent: 'sent',
   received: 'received',
+  archived: 'archived',
 } as const;
+
+export type PinWhisp200 = {
+  pinned: boolean;
+};
+
+export type ArchiveWhisp200 = {
+  archived: boolean;
+};
 
 export type GetPublicWhispParams = {
 /**

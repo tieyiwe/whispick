@@ -201,9 +201,29 @@ router.get("/w/:token", async (req, res): Promise<void> => {
       .orderBy(circleCommentsTable.createdAt);
   }
 
+  // Whether the SIGNED-IN viewer (if any) is this whisp's own matched
+  // recipient and has archived/pinned their copy of it — see
+  // whisps.recipientArchivedAt/recipientPinnedAt and routes/whisps.ts's
+  // POST /:id/archive and /:id/pin, which this page's frontend calls
+  // directly using the `id` this response already returns. Stays false for
+  // an anonymous visitor or a signed-in viewer who isn't the matched
+  // recipient — there's no per-viewer state to report for either.
+  let viewerArchived = false;
+  let viewerPinned = false;
+  const clerkUserId = getAuth(req).userId;
+  if (clerkUserId && whisp.recipientUserId) {
+    const viewer = await ensureUser(clerkUserId, req);
+    if (whisp.recipientUserId === viewer.id) {
+      viewerArchived = !!whisp.recipientArchivedAt;
+      viewerPinned = !!whisp.recipientPinnedAt;
+    }
+  }
+
   // Return only public-safe fields
   res.json({
     id: whisp.id,
+    viewerArchived,
+    viewerPinned,
     deliveryMethod: whisp.deliveryMethod,
     likeCount,
     viewerHasLiked,

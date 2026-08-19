@@ -70,4 +70,13 @@ export interface Whisp {
   createdAt: string;
   /** True only when the caller is themselves this whisp's matched recipient (see GET /whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email/phone belongs to a verified account. */
   viewerIsRecipient: boolean;
+  /**
+     * 'sender' | 'recipient' | null — which role the caller has on this whisp. Drives pinned/archived below, and (frontend-side) whether Delete is offered — only a sender may delete.
+     * @nullable
+     */
+  viewerRole: string | null;
+  /** Whether the CALLER's own copy of this whisp is pinned (see POST /whisps/{id}/pin) — never the other party's pin state. */
+  pinned: boolean;
+  /** Whether the CALLER's own copy of this whisp is archived (see POST /whisps/{id}/archive) — never the other party's archive state. */
+  archived: boolean;
 }

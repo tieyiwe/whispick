@@ -10,7 +10,7 @@ import type { ListWhispsBox } from './listWhispsBox';
 export type ListWhispsParams = {
 status?: string;
 /**
- * 'sent' (default): whisps this user sent. 'received': whisps another Whisperer sent TO this user (matched at send time — see whisps.recipientUserId).
+ * 'sent' (default): whisps this user sent. 'received': whisps another Whisperer sent TO this user (matched at send time — see whisps.recipientUserId). 'archived': whichever of those this user archived from either side, combined into one list.
  */
 box?: ListWhispsBox;
 };

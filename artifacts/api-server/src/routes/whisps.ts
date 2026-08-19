@@ -13,7 +13,7 @@ import {
   circleCommentsTable,
   circlePostLikesTable,
 } from "@workspace/db";
-import { eq, and, sql, isNull, or, lt, gte, count, desc } from "drizzle-orm";
+import { eq, and, sql, isNull, isNotNull, or, lt, gte, count, desc } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { z } from "zod";
 import { requireAuth } from "../lib/auth";
@@ -121,19 +121,42 @@ router.post("/concierge", requireAuth, conciergeLimiter, async (req, res): Promi
   });
 });
 
-// ANTI-ENUMERATION: strips recipientUserId from every response — same
-// reasoning as routes/textWhisps.ts's toResponse, which this mirrors. A
-// sender reading recipientUserId straight off their own sent whisps would
-// learn whether an arbitrary email/phone belongs to a verified Blind
-// Whisper account for free; viewerIsRecipient only ever reveals a fact
-// about the CALLER themselves.
+// ANTI-ENUMERATION: strips recipientUserId AND the raw sender*/recipient*
+// pin/archive columns from every response — same reasoning as
+// routes/textWhisps.ts's toResponse, which this mirrors. A sender reading
+// recipientUserId straight off their own sent whisps would learn whether an
+// arbitrary email/phone belongs to a verified Blind Whisper account for
+// free; the raw pin/archive pairs would leak whether the OTHER party (the
+// one who isn't the caller) pinned or archived their own copy. viewerRole/
+// pinned/archived only ever reveal facts about the CALLER's own side.
 function toWhispResponse(whisp: typeof whispsTable.$inferSelect, viewerId: string) {
-  const { recipientUserId, ...rest } = whisp;
-  return { ...rest, viewerIsRecipient: recipientUserId === viewerId };
+  const { recipientUserId, senderPinnedAt, senderArchivedAt, recipientPinnedAt, recipientArchivedAt, ...rest } = whisp;
+  const viewerRole: "sender" | "recipient" | null =
+    whisp.senderId === viewerId ? "sender" : recipientUserId === viewerId ? "recipient" : null;
+  return {
+    ...rest,
+    viewerIsRecipient: recipientUserId === viewerId,
+    viewerRole,
+    pinned: viewerRole === "sender" ? !!senderPinnedAt : viewerRole === "recipient" ? !!recipientPinnedAt : false,
+    archived: viewerRole === "sender" ? !!senderArchivedAt : viewerRole === "recipient" ? !!recipientArchivedAt : false,
+  };
+}
+
+// Loads a whisp this user has SOME role on (sender or matched recipient) —
+// shared by the pin/archive toggle endpoints below, which both need to know
+// which pair of columns (sender* vs recipient*) applies to this caller.
+async function loadWhispForViewer(id: string, userId: string) {
+  const whisp = await db.select().from(whispsTable).where(eq(whispsTable.id, id)).then((r) => r[0]);
+  if (!whisp) return null;
+  if (whisp.senderId === userId) return { whisp, role: "sender" as const };
+  if (whisp.recipientUserId === userId) return { whisp, role: "recipient" as const };
+  return null;
 }
 
 // GET /api/whisps — ?box=sent (default) is what this sender sent; ?box=received
-// is what other Whisperers have sent TO this user (see whisps.recipientUserId).
+// is what other Whisperers have sent TO this user (see whisps.recipientUserId);
+// ?box=archived is whichever of those this user archived from either side,
+// combined into one list (see whisps.senderArchivedAt/recipientArchivedAt).
 // Received items are never affected by the sender's own soft-delete
 // (excludeDeleted() only ever applies to the box this user sent), and Ghost
 // Boost's stranger-matched deliveries never appear as "received" — a
@@ -143,23 +166,79 @@ router.get("/", requireAuth, async (req, res): Promise<void> => {
   const user = await ensureUser(userId!, req);
 
   const statusFilter = req.query.status as string | undefined;
-  const box = req.query.box === "received" ? "received" : "sent";
+  const box = req.query.box === "received" ? "received" : req.query.box === "archived" ? "archived" : "sent";
 
-  const whisps = await db
-    .select()
-    .from(whispsTable)
-    .where(
-      box === "received"
-        ? statusFilter
-          ? and(eq(whispsTable.recipientUserId, user.id), eq(whispsTable.status, statusFilter))
-          : eq(whispsTable.recipientUserId, user.id)
-        : statusFilter
-          ? and(eq(whispsTable.senderId, user.id), eq(whispsTable.status, statusFilter), excludeMatchDeliveries(), excludeDeleted())
-          : and(eq(whispsTable.senderId, user.id), excludeMatchDeliveries(), excludeDeleted()),
-    )
-    .orderBy(sql`${whispsTable.createdAt} DESC`);
+  let whereClause;
+  let orderClause;
+  if (box === "received") {
+    whereClause = and(
+      eq(whispsTable.recipientUserId, user.id),
+      isNull(whispsTable.recipientArchivedAt),
+      statusFilter ? eq(whispsTable.status, statusFilter) : undefined,
+    );
+    orderClause = sql`${whispsTable.recipientPinnedAt} IS NOT NULL DESC, ${whispsTable.createdAt} DESC`;
+  } else if (box === "archived") {
+    whereClause = or(
+      and(eq(whispsTable.senderId, user.id), isNotNull(whispsTable.senderArchivedAt), excludeMatchDeliveries(), excludeDeleted()),
+      and(eq(whispsTable.recipientUserId, user.id), isNotNull(whispsTable.recipientArchivedAt)),
+    );
+    orderClause = sql`GREATEST(${whispsTable.senderArchivedAt}, ${whispsTable.recipientArchivedAt}) DESC`;
+  } else {
+    whereClause = and(
+      eq(whispsTable.senderId, user.id),
+      excludeMatchDeliveries(),
+      excludeDeleted(),
+      isNull(whispsTable.senderArchivedAt),
+      statusFilter ? eq(whispsTable.status, statusFilter) : undefined,
+    );
+    orderClause = sql`${whispsTable.senderPinnedAt} IS NOT NULL DESC, ${whispsTable.createdAt} DESC`;
+  }
+
+  const whisps = await db.select().from(whispsTable).where(whereClause).orderBy(orderClause);
 
   res.json(whisps.map((w) => toWhispResponse(w, user.id)));
+});
+
+// POST /api/whisps/:id/pin — toggles pin for whichever role (sender or
+// matched recipient) the caller has on this whisp. Pinning only affects
+// sort order within whichever list it's already showing in; it never moves
+// a whisp between Sent/Received/Archive on its own.
+router.post("/:id/pin", requireAuth, async (req, res): Promise<void> => {
+  const { userId } = getAuth(req);
+  const user = await ensureUser(userId!, req);
+
+  const loaded = await loadWhispForViewer(req.params.id, user.id);
+  if (!loaded) {
+    res.status(404).json({ error: "Whisp not found" });
+    return;
+  }
+
+  const column = loaded.role === "sender" ? whispsTable.senderPinnedAt : whispsTable.recipientPinnedAt;
+  const currentlyPinned = loaded.role === "sender" ? !!loaded.whisp.senderPinnedAt : !!loaded.whisp.recipientPinnedAt;
+  const nextValue = currentlyPinned ? null : new Date();
+
+  await db.update(whispsTable).set({ [loaded.role === "sender" ? "senderPinnedAt" : "recipientPinnedAt"]: nextValue }).where(eq(whispsTable.id, loaded.whisp.id));
+  res.json({ pinned: !currentlyPinned });
+});
+
+// POST /api/whisps/:id/archive — toggles archive for whichever role the
+// caller has, same shape as the pin endpoint. Reversible: calling it again
+// un-archives, moving the whisp back into that role's Sent/Received list.
+router.post("/:id/archive", requireAuth, async (req, res): Promise<void> => {
+  const { userId } = getAuth(req);
+  const user = await ensureUser(userId!, req);
+
+  const loaded = await loadWhispForViewer(req.params.id, user.id);
+  if (!loaded) {
+    res.status(404).json({ error: "Whisp not found" });
+    return;
+  }
+
+  const currentlyArchived = loaded.role === "sender" ? !!loaded.whisp.senderArchivedAt : !!loaded.whisp.recipientArchivedAt;
+  const nextValue = currentlyArchived ? null : new Date();
+
+  await db.update(whispsTable).set({ [loaded.role === "sender" ? "senderArchivedAt" : "recipientArchivedAt"]: nextValue }).where(eq(whispsTable.id, loaded.whisp.id));
+  res.json({ archived: !currentlyArchived });
 });
 
 // POST /api/whisps
@@ -632,19 +711,26 @@ router.get("/:id", requireAuth, async (req, res): Promise<void> => {
       .orderBy(desc(whispsTable.createdAt));
   }
 
-  // recipientUserId is stripped for the same anti-enumeration reason
-  // toWhispResponse strips it in GET / — a sender reading it straight off
-  // their own whisp's detail page would learn whether the email/phone they
-  // sent to belongs to a verified Blind Whisper account. This route is
-  // already scoped to the sender (never the recipient), so there's no
-  // matching viewerIsRecipient to add here.
-  const { recipientUserId: _recipientUserId, ...senderSafeWhisp } = whisp;
+  // recipientUserId (and the recipient's own pin/archive columns) are
+  // stripped for the same anti-enumeration reason toWhispResponse strips
+  // them in GET / — a sender reading recipientUserId straight off their own
+  // whisp's detail page would learn whether the email/phone they sent to
+  // belongs to a verified Blind Whisper account, and the recipient's
+  // pin/archive state isn't the sender's to see. This route is already
+  // scoped to the sender (never the recipient), so pinned/archived below
+  // always reflect the sender's own senderPinnedAt/senderArchivedAt.
+  const { recipientUserId: _recipientUserId, senderPinnedAt, senderArchivedAt, recipientPinnedAt: _recipientPinnedAt, recipientArchivedAt: _recipientArchivedAt, ...senderSafeWhisp } = whisp;
 
   res.json({
     // Same read-time embed fill-in as the public page (see routes/public.ts),
     // so the sender previewing their own whisp sees exactly what the
     // recipient will.
-    whisp: { ...senderSafeWhisp, videoEmbedUrl: whisp.videoEmbedUrl ?? embedUrlFor(whisp.videoUrl, whisp.videoPlatform) },
+    whisp: {
+      ...senderSafeWhisp,
+      videoEmbedUrl: whisp.videoEmbedUrl ?? embedUrlFor(whisp.videoUrl, whisp.videoPlatform),
+      pinned: !!senderPinnedAt,
+      archived: !!senderArchivedAt,
+    },
     trackingEvents,
     replies,
     recipientRepliesRemaining:

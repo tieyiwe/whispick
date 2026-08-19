@@ -12,4 +12,5 @@ export type ListWhispsBox = typeof ListWhispsBox[keyof typeof ListWhispsBox];
 export const ListWhispsBox = {
   sent: 'sent',
   received: 'received',
+  archived: 'archived',
 } as const;

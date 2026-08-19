@@ -10,6 +10,10 @@ import type { WhispReply } from './whispReply';
 
 export interface PublicWhisp {
   id: string;
+  /** True only when the caller is signed in, is this whisp's matched recipient, and has archived their copy (see POST /whisps/{id}/archive) — always false for an anonymous visitor or a signed-in non-recipient. */
+  viewerArchived?: boolean;
+  /** Same caller-relative scoping as viewerArchived, for pin instead. */
+  viewerPinned?: boolean;
   videoUrl: string;
   /** @nullable */
   videoTitle?: string | null;
