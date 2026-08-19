@@ -57,20 +57,36 @@ export function watchForUpdates(registration: ServiceWorkerRegistration): void {
 
   // The "seamless" part: never reload out from under someone actively using
   // the app — that would be worse than the stale version it's fixing.
-  // Instead, apply it the moment they're not looking. On a phone that's
-  // almost always seconds away (backgrounding the app, locking the screen),
-  // so in practice this reads as "it was just already up to date" the next
-  // time they open it.
+  //
+  // This used to call reload() the instant the page was (or became) hidden,
+  // on the theory that a backgrounded tab is safe to quietly refresh behind
+  // the user's back. That's exactly backwards on a phone: a hidden/
+  // backgrounded PWA is frequently suspended or frozen by the OS, so a
+  // reload issued while hidden can be silently dropped or interrupted
+  // mid-navigation — and the next time the app is reopened, it resumes into
+  // that half-reloaded state: a blank white screen that only a manual
+  // force-close-and-reopen clears. That's this exact "sometimes goes blank"
+  // bug.
+  //
+  // The fix: only ever reload once the page is actively being resumed to
+  // VISIBLE — that's the one moment the browser is guaranteed to actually
+  // be running the page, not suspending it, so the reload lands instead of
+  // racing a frozen background state. If the app is already hidden right
+  // now, that just means waiting for the very next time it's reopened; if
+  // it's currently visible (actively in use), wait for it to be backgrounded
+  // first so the reload doesn't interrupt anything, then wait for the
+  // following reopen.
   onUpdateAvailable(() => {
-    if (document.visibilityState === "hidden") {
-      window.location.reload();
-      return;
-    }
-    const reloadWhenHidden = () => {
-      if (document.visibilityState !== "hidden") return;
-      document.removeEventListener("visibilitychange", reloadWhenHidden);
+    let hasBeenHidden = document.visibilityState === "hidden";
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        hasBeenHidden = true;
+        return;
+      }
+      if (!hasBeenHidden) return;
+      document.removeEventListener("visibilitychange", onVisibilityChange);
       window.location.reload();
     };
-    document.addEventListener("visibilitychange", reloadWhenHidden);
+    document.addEventListener("visibilitychange", onVisibilityChange);
   });
 }
