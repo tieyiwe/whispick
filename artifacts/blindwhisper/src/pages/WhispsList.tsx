@@ -1,31 +1,188 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { useListWhisps, getListWhispsQueryKey } from "@workspace/api-client-react";
+import {
+  useListWhisps,
+  getListWhispsQueryKey,
+  usePinWhisp,
+  useArchiveWhisp,
+  useDeleteWhisp,
+} from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import { Link, useLocation } from "wouter";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { MoodTag } from "@/components/shared/MoodTag";
-import { PlayCircle, Search, Filter, Repeat, Heart, Send, Inbox, Sparkles } from "lucide-react";
+import {
+  PlayCircle,
+  Search,
+  Filter,
+  Repeat,
+  Heart,
+  Send,
+  Inbox,
+  Sparkles,
+  Pin,
+  MoreVertical,
+  Archive,
+  ArchiveRestore,
+  Trash2,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 import { deliveryLabel } from "@/lib/deliveryMethod";
 import { savePendingForward, type ForwardVideo } from "@/lib/forwardVideo";
 
+type Box = "sent" | "received" | "archived";
+
+// How long a press has to hold before it counts as "long press, open the
+// options menu" instead of "tap, navigate" — and how far a finger can drift
+// during that hold before it reads as a scroll gesture instead (which
+// cancels the press rather than opening anything).
+const LONG_PRESS_MS = 500;
+const LONG_PRESS_MOVE_TOLERANCE_PX = 10;
+
 export function WhispsList() {
-  const [box, setBox] = useState<"sent" | "received">("sent");
+  const [box, setBox] = useState<Box>("sent");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+
+  // A press-and-hold on the card itself opens the same options menu the
+  // "⋯" button does — tracked with refs (not state) since every pointer
+  // event on every card would otherwise re-render the whole list.
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressFiredRef = useRef(false);
+  const pressStartRef = useRef<{ x: number; y: number } | null>(null);
+
+  function clearLongPressTimer() {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }
+
+  function handleCardPointerDown(e: React.PointerEvent, whispId: string) {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    pressStartRef.current = { x: e.clientX, y: e.clientY };
+    longPressFiredRef.current = false;
+    clearLongPressTimer();
+    longPressTimerRef.current = setTimeout(() => {
+      longPressFiredRef.current = true;
+      setOpenMenuId(whispId);
+      navigator.vibrate?.(10);
+    }, LONG_PRESS_MS);
+  }
+
+  function handleCardPointerMove(e: React.PointerEvent) {
+    if (!pressStartRef.current) return;
+    const dx = e.clientX - pressStartRef.current.x;
+    const dy = e.clientY - pressStartRef.current.y;
+    if (Math.hypot(dx, dy) > LONG_PRESS_MOVE_TOLERANCE_PX) clearLongPressTimer();
+  }
+
+  // A long press that DID fire must swallow the click that follows it
+  // (pointerup on touch devices dispatches a synthetic click right after) —
+  // otherwise opening the menu would also navigate to the whisp underneath it.
+  function handleCardClick(e: React.MouseEvent) {
+    clearLongPressTimer();
+    if (longPressFiredRef.current) {
+      e.preventDefault();
+      longPressFiredRef.current = false;
+    }
+  }
+
+  // Pin/archive/delete can all move a whisp between boxes (or in/out of the
+  // list entirely), so every mutation below invalidates all three box
+  // queries plus the received-tab badge — simplest way to keep every tab
+  // honest without hand-tracking which specific queries a given toggle
+  // could affect.
+  function invalidateAllBoxes() {
+    (["sent", "received", "archived"] as const).forEach((b) => {
+      const params = b === "sent" ? {} : { box: b };
+      queryClient.invalidateQueries({ queryKey: getListWhispsQueryKey(params) });
+    });
+  }
+
+  const pinWhisp = usePinWhisp();
+  const archiveWhisp = useArchiveWhisp();
+  const deleteWhisp = useDeleteWhisp();
+
+  function handleTogglePin(e: React.MouseEvent, id: string, currentlyPinned: boolean) {
+    e.preventDefault();
+    e.stopPropagation();
+    pinWhisp.mutate(
+      { id },
+      {
+        onSuccess: () => {
+          invalidateAllBoxes();
+          toast({ title: currentlyPinned ? "Unpinned" : "Pinned to top" });
+        },
+        onError: () => toast({ title: "Couldn't update that", variant: "destructive" }),
+      },
+    );
+  }
+
+  function handleToggleArchive(id: string, currentlyArchived: boolean) {
+    setOpenMenuId(null);
+    archiveWhisp.mutate(
+      { id },
+      {
+        onSuccess: () => {
+          invalidateAllBoxes();
+          toast({ title: currentlyArchived ? "Moved back to your list" : "Archived" });
+        },
+        onError: () => toast({ title: "Couldn't update that", variant: "destructive" }),
+      },
+    );
+  }
+
+  function handleConfirmDelete() {
+    if (!deleteTargetId) return;
+    const id = deleteTargetId;
+    setDeleteTargetId(null);
+    deleteWhisp.mutate(
+      { id },
+      {
+        onSuccess: () => {
+          invalidateAllBoxes();
+          toast({ title: "Whisp deleted" });
+        },
+        onError: () => toast({ title: "Couldn't delete that", variant: "destructive" }),
+      },
+    );
+  }
 
   // Polled, not just fetched once — same 60s cadence and background-pause
   // behavior as NotificationBell.tsx, so a whisp someone else sends while
-  // this Whisperer is sitting on the page (either tab) shows up on its own,
+  // this Whisperer is sitting on the page (any tab) shows up on its own,
   // the same way the notification bell already does, instead of needing a
   // manual refresh to notice it.
   const listParams = {
-    ...(box === "received" ? { box: "received" as const } : {}),
+    ...(box !== "sent" ? { box } : {}),
     ...(statusFilter !== "all" ? { status: statusFilter } : {}),
   };
   const { data: whisps, isLoading } = useListWhisps(listParams, {
@@ -59,13 +216,17 @@ export function WhispsList() {
     setLocation("/send");
   }
 
-  const filteredWhisps = whisps?.filter(w =>
-    !searchQuery ||
-    w.videoTitle?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (box === "sent" && w.recipientEmail?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (box === "sent" && w.recipientPhone?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (box === "received" && w.senderAlias?.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const filteredWhisps = whisps?.filter((w) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    const isReceivedItem = w.viewerRole === "recipient";
+    return (
+      w.videoTitle?.toLowerCase().includes(q) ||
+      (!isReceivedItem && w.recipientEmail?.toLowerCase().includes(q)) ||
+      (!isReceivedItem && w.recipientPhone?.toLowerCase().includes(q)) ||
+      (isReceivedItem && w.senderAlias?.toLowerCase().includes(q))
+    );
+  });
 
   return (
     <AppLayout>
@@ -75,11 +236,10 @@ export function WhispsList() {
           <p className="text-muted-foreground mt-1">Everything you've sent, and everything sent to you.</p>
         </div>
 
-        {/* Sent / Received — two clearly different collections (what you
-            chose to send vs. what an anonymous someone chose to send you),
-            so this is a real tab switch rather than a filter dropdown value,
-            with its own badge so a new arrival is noticeable without having
-            to open the tab first. */}
+        {/* Sent / Received / Archived — three clearly different collections,
+            so this is a real tab switch rather than a filter dropdown
+            value, with its own badge on Received so a new arrival is
+            noticeable without having to open the tab first. */}
         <div className="inline-flex items-center gap-1 rounded-full bg-card border border-border/50 p-1">
           <button
             type="button"
@@ -111,6 +271,16 @@ export function WhispsList() {
               </span>
             )}
           </button>
+          <button
+            type="button"
+            onClick={() => setBox("archived")}
+            data-testid="tab-whisps-archived"
+            className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+              box === "archived" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Archive className="w-3.5 h-3.5" /> Archived
+          </button>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4">
@@ -123,21 +293,23 @@ export function WhispsList() {
               className="pl-9 bg-card border-border/50 rounded-full"
             />
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-[180px] bg-card border-border/50 rounded-full">
-              <Filter className="w-4 h-4 mr-2 text-muted-foreground" />
-              <SelectValue placeholder="All Statuses" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="scheduled">Scheduled</SelectItem>
-              <SelectItem value="delivered">Delivered</SelectItem>
-              <SelectItem value="opened">Opened</SelectItem>
-              <SelectItem value="watched">Watched</SelectItem>
-              <SelectItem value="replied">Replied</SelectItem>
-            </SelectContent>
-          </Select>
+          {box !== "archived" && (
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-[180px] bg-card border-border/50 rounded-full">
+                <Filter className="w-4 h-4 mr-2 text-muted-foreground" />
+                <SelectValue placeholder="All Statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="scheduled">Scheduled</SelectItem>
+                <SelectItem value="delivered">Delivered</SelectItem>
+                <SelectItem value="opened">Opened</SelectItem>
+                <SelectItem value="watched">Watched</SelectItem>
+                <SelectItem value="replied">Replied</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
         </div>
 
         {isLoading ? (
@@ -147,19 +319,36 @@ export function WhispsList() {
         ) : filteredWhisps?.length ? (
           <div className="space-y-4">
             {filteredWhisps.map((whisp) => {
-              const isReceived = box === "received";
-              const isNew = isReceived && !whisp.openedAt;
+              // Which role this specific whisp is showing under — for the
+              // Sent/Received tabs it always matches the tab itself, but the
+              // Archived tab mixes both origins into one list, so each card
+              // has to work this out for itself.
+              const isReceivedItem = whisp.viewerRole === "recipient";
+              const isNew = box === "received" && !whisp.openedAt;
+              const canDelete = whisp.viewerRole === "sender";
               return (
-              <Link key={whisp.id} href={isReceived ? `/w/${whisp.publicToken}` : `/whisps/${whisp.id}`}>
+              <Link
+                key={whisp.id}
+                href={isReceivedItem ? `/w/${whisp.publicToken}` : `/whisps/${whisp.id}`}
+                onClick={handleCardClick}
+              >
                 {/* Received cards get their own identity, not just the sent
                     card reused with different text: a left accent bar (gold
                     for a genuinely new/unopened one, a quieter primary tint
                     once it's been seen) and a Received pill, so a glance at
                     the list — not just the tab you're on — tells you which
-                    kind of card this is. */}
+                    kind of card this is. Pinned cards get a subtle gilded
+                    ring regardless of box, since a pin means "important to
+                    me" independent of sent/received/archived. */}
                 <Card
-                  className={`bg-card hover:bg-card/80 transition-colors cursor-pointer overflow-hidden group ${
-                    isReceived
+                  onPointerDown={(e) => handleCardPointerDown(e, whisp.id)}
+                  onPointerMove={handleCardPointerMove}
+                  onPointerUp={clearLongPressTimer}
+                  onPointerCancel={clearLongPressTimer}
+                  className={`bg-card hover:bg-card/80 transition-colors cursor-pointer overflow-hidden group select-none ${
+                    whisp.pinned ? "ring-1 ring-gilded/40" : ""
+                  } ${
+                    isReceivedItem
                       ? isNew
                         ? "border-gilded/50 border-l-4 border-l-gilded shadow-[0_0_16px_rgba(212,175,55,0.12)]"
                         : "border-primary/25 border-l-4 border-l-primary/40"
@@ -183,10 +372,10 @@ export function WhispsList() {
                     <div className="p-5 flex-1 flex flex-col justify-center min-w-0">
                       <div className="flex items-start justify-between gap-4 mb-2">
                         <h3 className="font-semibold text-foreground text-lg truncate">{whisp.videoTitle || "Video Link"}</h3>
-                        <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-1 shrink-0">
                           {isNew && (
                             <span
-                              className="inline-flex items-center gap-1 rounded-full bg-gilded/15 text-gilded text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5"
+                              className="inline-flex items-center gap-1 rounded-full bg-gilded/15 text-gilded text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 mr-1"
                               data-testid={`badge-new-${whisp.id}`}
                             >
                               <Sparkles className="w-2.5 h-2.5" /> New
@@ -196,10 +385,79 @@ export function WhispsList() {
                             <Heart className="w-4 h-4 text-rose-400 fill-rose-400" data-testid={`icon-appreciated-${whisp.id}`} />
                           )}
                           <StatusBadge status={whisp.status} />
+                          {/* One-tap pin toggle, separate from the options
+                              menu below — the single action common enough
+                              to deserve its own button instead of a menu
+                              trip every time. */}
+                          <button
+                            type="button"
+                            onClick={(e) => handleTogglePin(e, whisp.id, whisp.pinned)}
+                            aria-label={whisp.pinned ? "Unpin" : "Pin to top"}
+                            aria-pressed={whisp.pinned}
+                            data-testid={`button-pin-${whisp.id}`}
+                            className={`p-1.5 rounded-full transition-colors ${
+                              whisp.pinned ? "text-gilded hover:bg-gilded/10" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                            }`}
+                          >
+                            <Pin className={`w-4 h-4 ${whisp.pinned ? "fill-gilded" : ""}`} />
+                          </button>
+                          <DropdownMenu
+                            open={openMenuId === whisp.id}
+                            onOpenChange={(o) => setOpenMenuId(o ? whisp.id : null)}
+                          >
+                            <DropdownMenuTrigger asChild>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                }}
+                                aria-label="More options"
+                                data-testid={`button-menu-${whisp.id}`}
+                                className="p-1.5 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                              >
+                                <MoreVertical className="w-4 h-4" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
+                              <DropdownMenuItem
+                                onClick={(e) => handleTogglePin(e as unknown as React.MouseEvent, whisp.id, whisp.pinned)}
+                                data-testid={`menu-pin-${whisp.id}`}
+                              >
+                                <Pin className="w-4 h-4 mr-2" /> {whisp.pinned ? "Unpin" : "Pin to top"}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleToggleArchive(whisp.id, whisp.archived)}
+                                data-testid={`menu-archive-${whisp.id}`}
+                              >
+                                {whisp.archived ? (
+                                  <>
+                                    <ArchiveRestore className="w-4 h-4 mr-2" /> Move back to list
+                                  </>
+                                ) : (
+                                  <>
+                                    <Archive className="w-4 h-4 mr-2" /> Archive
+                                  </>
+                                )}
+                              </DropdownMenuItem>
+                              {canDelete && (
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setOpenMenuId(null);
+                                    setDeleteTargetId(whisp.id);
+                                  }}
+                                  className="text-destructive focus:text-destructive"
+                                  data-testid={`menu-delete-${whisp.id}`}
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" /> Delete
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
                       <div className="flex items-center text-sm text-muted-foreground mb-4">
-                        {isReceived ? (
+                        {isReceivedItem ? (
                           <span className="truncate flex items-center gap-1.5">
                             <Inbox className="w-3.5 h-3.5 text-primary/70 shrink-0" />
                             From: {whisp.senderAlias || "Someone anonymous"}
@@ -222,7 +480,7 @@ export function WhispsList() {
                       </div>
                       <div className="mt-auto flex items-center justify-between gap-3">
                         {whisp.moodTag ? <MoodTag mood={whisp.moodTag} className="scale-90 origin-left" /> : <span />}
-                        {!isReceived && whisp.videoPlatform !== "upload" && (
+                        {!isReceivedItem && whisp.videoPlatform !== "upload" && (
                           <Button
                             variant="outline"
                             size="sm"
@@ -249,7 +507,9 @@ export function WhispsList() {
                 ? "Try adjusting your filters to find what you're looking for."
                 : box === "received"
                   ? "Nothing's landed in your inbox yet — when a fellow Whisperer sends you something, it'll show up here."
-                  : "You haven't sent any whisps yet."}
+                  : box === "archived"
+                    ? "Nothing archived — pin, archive, or delete a whisp from its options menu (or press and hold its card)."
+                    : "You haven't sent any whisps yet."}
             </p>
             {!searchQuery && statusFilter === "all" && box === "sent" && (
               <Link href="/send">
@@ -261,6 +521,24 @@ export function WhispsList() {
           </Card>
         )}
       </div>
+
+      <AlertDialog open={deleteTargetId !== null} onOpenChange={(open) => !open && setDeleteTargetId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this whisp?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This hides it from your own list — the recipient's link, and their view of it, keeps working as
+              already delivered. This can't be undone from your side.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 }
