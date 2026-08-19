@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { LogoLockup } from "@/components/ui/logo";
 import { useUser, useClerk } from "@clerk/react";
@@ -20,6 +20,7 @@ import {
   UserPlus,
   ScrollText,
   Swords,
+  Menu,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -32,6 +33,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet";
 import { NotificationBell } from "@/components/shared/NotificationBell";
 import { PullToRefresh, reloadPage } from "@/components/shared/PullToRefresh";
 import { InstallAppPrompt } from "@/components/shared/InstallAppPrompt";
@@ -176,6 +178,15 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const navItems = isAdmin
     ? [...NAV_ITEMS, { href: "/admin", label: "Admin", icon: ShieldCheck }]
     : NAV_ITEMS;
+
+  // Everything not already reachable from one of the 4 fixed mobile tabs —
+  // derived from navItems (not the raw NAV_ITEMS constant) so a page added
+  // to the desktop sidebar later, including Admin, automatically shows up
+  // here too instead of silently being mobile-unreachable again.
+  const [moreOpen, setMoreOpen] = useState(false);
+  const fixedMobileHrefs = new Set([...MOBILE_TAB_ITEMS_LEFT, ...MOBILE_TAB_ITEMS_RIGHT].map((item) => item.href));
+  const moreNavItems = navItems.filter((item) => !fixedMobileHrefs.has(item.href));
+  const isOnMoreItem = moreNavItems.some((item) => item.href === location);
 
   return (
     // The shell is exactly one viewport tall and clips; <main> inside it does
@@ -333,8 +344,46 @@ export function AppLayout({ children }: { children: ReactNode }) {
               badgeCount={item.href === "/replies" ? unreadReplyCount : 0}
             />
           ))}
+
+          <button
+            type="button"
+            onClick={() => setMoreOpen(true)}
+            data-testid="button-mobile-more"
+            className={`relative flex flex-col items-center justify-center gap-0.5 min-w-11 min-h-11 px-2 py-1.5 rounded-xl transition-colors ${
+              isOnMoreItem ? "text-primary" : "text-muted-foreground"
+            }`}
+          >
+            <Menu className="w-6 h-6" />
+            <span className="text-[10px] font-medium leading-none">More</span>
+          </button>
         </div>
       </nav>
+
+      <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
+        <SheetContent side="bottom" className="md:hidden max-h-[80vh] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>More</SheetTitle>
+          </SheetHeader>
+          <div className="grid grid-cols-3 gap-2 py-4">
+            {moreNavItems.map((item) => (
+              <SheetClose asChild key={item.href}>
+                <Link
+                  href={item.href}
+                  data-testid={`link-more-${item.href.replace(/\//g, "")}`}
+                  className={`flex flex-col items-center justify-center gap-1.5 rounded-xl border p-3 text-center transition-colors ${
+                    location === item.href
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border/50 text-muted-foreground hover:border-border"
+                  }`}
+                >
+                  <item.icon className="w-5 h-5" />
+                  <span className="text-xs font-medium leading-tight">{item.label}</span>
+                </Link>
+              </SheetClose>
+            ))}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
