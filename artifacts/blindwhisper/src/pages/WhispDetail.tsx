@@ -4,6 +4,7 @@ import {
   useCreateWhispReply,
   useRequestReveal,
   useDeleteWhisp,
+  useArchiveWhisp,
   useGetGhostBoostMatches,
   usePostCircleComment,
   getGetGhostBoostMatchesQueryKey,
@@ -55,6 +56,7 @@ import {
 import { deliveryLabel } from "@/lib/deliveryMethod";
 import { getVisitorId } from "@/lib/anonymousVisitor";
 import { CircleCommentRow } from "@/components/shared/CircleCommentRow";
+import { ArchivedWhispGate } from "@/components/shared/ArchivedWhispGate";
 
 type TimelineStepData = {
   label: string;
@@ -163,6 +165,7 @@ export function WhispDetail() {
   const createReply = useCreateWhispReply();
   const requestReveal = useRequestReveal();
   const deleteWhisp = useDeleteWhisp();
+  const archiveWhisp = useArchiveWhisp();
 
   if (isLoading) {
     return (
@@ -190,6 +193,39 @@ export function WhispDetail() {
   }
 
   const { whisp, trackingEvents, replies, recipientRepliesRemaining, viewCount, likeCount, comments, circleConversations } = data;
+
+  function handleUnarchive() {
+    archiveWhisp.mutate(
+      { id: whisp.id },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetWhispQueryKey(id!) });
+          queryClient.invalidateQueries({ queryKey: getListWhispsQueryKey() });
+          toast({ title: "Moved back to your list" });
+        },
+        onError: () => toast({ title: "Couldn't update that", variant: "destructive" }),
+      },
+    );
+  }
+
+  // A reply/follow-up on an archived whisp still notifies normally
+  // (archiving only hides it from THIS sender's own list, see
+  // whisps.senderArchivedAt) — clicking that notification lands here, and
+  // this is what greets them instead of the full thread: a deliberate
+  // choice, not a dead end, so unarchiving is a real decision rather than
+  // happening invisibly the moment a notification is clicked.
+  if (whisp.archived) {
+    return (
+      <AppLayout>
+        <ArchivedWhispGate
+          videoTitle={whisp.videoTitle}
+          onUnarchive={handleUnarchive}
+          isUnarchiving={archiveWhisp.isPending}
+          onBack={() => setLocation("/whisps")}
+        />
+      </AppLayout>
+    );
+  }
 
   function handleSendFollowUp() {
     if (!replyText.trim()) return;

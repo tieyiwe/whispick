@@ -14,6 +14,7 @@ import {
   useToggleCircleLike,
   usePostCircleComment,
   useStartCircleDm,
+  useArchiveWhisp,
   getGetPublicWhispQueryKey,
   type CircleComment,
 } from "@workspace/api-client-react";
@@ -32,6 +33,7 @@ import { QUICK_REPLIES } from "@/lib/quickReplies";
 import { Thumbnail } from "@/components/shared/Thumbnail";
 import { ReplyThread, type ThreadReply } from "@/components/shared/ReplyThread";
 import { CircleCommentRow } from "@/components/shared/CircleCommentRow";
+import { ArchivedWhispGate } from "@/components/shared/ArchivedWhispGate";
 import { PullToRefresh } from "@/components/shared/PullToRefresh";
 import { REMINDER_PRESETS, MAX_REMINDERS } from "@/lib/reminderPresets";
 import { savePendingForward } from "@/lib/forwardVideo";
@@ -229,6 +231,21 @@ export function PublicWhispPage() {
   const toggleLike = useToggleCircleLike();
   const postComment = usePostCircleComment();
   const startCircleDm = useStartCircleDm();
+  const archiveWhisp = useArchiveWhisp();
+
+  function handleUnarchive() {
+    if (!whisp) return;
+    archiveWhisp.mutate(
+      { id: whisp.id },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetPublicWhispQueryKey(token!) });
+          toast({ title: "Moved back to your list" });
+        },
+        onError: () => toast({ title: "Couldn't update that", variant: "destructive" }),
+      },
+    );
+  }
   const [commentText, setCommentText] = useState("");
   const [commentReplyingTo, setCommentReplyingTo] = useState<CircleComment | null>(null);
 
@@ -526,6 +543,18 @@ export function PublicWhispPage() {
           <div className="text-center py-20">
             <p className="text-muted-foreground">This whisp could not be found.</p>
           </div>
+        ) : whisp.viewerArchived ? (
+          // Only ever true for a signed-in viewer who is this whisp's own
+          // matched recipient AND has archived their copy of it (see
+          // routes/public.ts's GET /w/:token) — a reply/follow-up here still
+          // notifies them normally, but this is what they land on instead of
+          // the thread until they choose to bring it back.
+          <ArchivedWhispGate
+            videoTitle={whisp.videoTitle}
+            onUnarchive={handleUnarchive}
+            isUnarchiving={archiveWhisp.isPending}
+            onBack={() => setLocation(isSignedIn ? "/dashboard" : "/")}
+          />
         ) : (
           <>
             {/* Lead text — keep in sync with api-server's lib/copy.ts HOOK_LINE/groupHookLine */}
