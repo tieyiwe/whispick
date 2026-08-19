@@ -13,12 +13,14 @@ import {
   useRequestVideoReply,
   useToggleCircleLike,
   usePostCircleComment,
+  useReactToCircleComment,
+  useRenameCircleHandle,
   useStartCircleDm,
   useArchiveWhisp,
   getGetPublicWhispQueryKey,
   type CircleComment,
 } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNowStrict } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -26,7 +28,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MoodTag, MOOD_CONFIG } from "@/components/shared/MoodTag";
 import { useToast } from "@/hooks/use-toast";
-import { Send, Loader2, Video, X, Link2, HeartHandshake, Clock, BellRing, Sparkles, PlayCircle, PenLine, Lock, ChevronDown, ChevronLeft, Heart, MessageCircle } from "lucide-react";
+import { Send, Loader2, Video, X, Link2, HeartHandshake, Clock, BellRing, Sparkles, PlayCircle, PenLine, Lock, ChevronDown, ChevronLeft, Heart, MessageCircle, ImagePlus } from "lucide-react";
 import { LogoLockup } from "@/components/ui/logo";
 import { VideoPlayer } from "@/components/shared/VideoPlayer";
 import { QUICK_REPLIES } from "@/lib/quickReplies";
@@ -39,6 +41,7 @@ import { REMINDER_PRESETS, MAX_REMINDERS } from "@/lib/reminderPresets";
 import { savePendingForward } from "@/lib/forwardVideo";
 import { getVisitorId } from "@/lib/anonymousVisitor";
 import { getSavedCircleDmToken, saveCircleDmToken } from "@/lib/circleDm";
+import { postCircleCommentWithImage, validateCommentImage, CommentImageValidationError } from "@/lib/postCircleComment";
 
 function BlindWhisperLogoMark({ href }: { href: string }) {
   return (
@@ -235,6 +238,12 @@ export function PublicWhispPage() {
   const requestVideoReply = useRequestVideoReply();
   const toggleLike = useToggleCircleLike();
   const postComment = usePostCircleComment();
+  const postCommentWithImage = useMutation({
+    mutationFn: (vars: { token: string; commentText: string; visitorId: string; parentCommentId?: string | null; image: File }) =>
+      postCircleCommentWithImage(vars.token, vars),
+  });
+  const reactToComment = useReactToCircleComment();
+  const renameHandle = useRenameCircleHandle();
   const startCircleDm = useStartCircleDm();
   const archiveWhisp = useArchiveWhisp();
 
@@ -253,6 +262,33 @@ export function PublicWhispPage() {
   }
   const [commentText, setCommentText] = useState("");
   const [commentReplyingTo, setCommentReplyingTo] = useState<CircleComment | null>(null);
+
+  // The Blind Circle comment composer gets the same compact-by-default,
+  // expand-on-focus treatment as the reply composer below (see
+  // composerExpanded's own comment) — a slim pill rather than a full
+  // textarea, image picker, and rename control competing for attention
+  // before someone's decided to say anything.
+  const [commentComposerExpanded, setCommentComposerExpanded] = useState(false);
+  const commentTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const commentFileRef = useRef<HTMLInputElement>(null);
+  const [commentImage, setCommentImage] = useState<File | null>(null);
+  const [commentImagePreview, setCommentImagePreview] = useState<string | null>(null);
+  const [commentImageError, setCommentImageError] = useState<string | null>(null);
+  const [renamingHandle, setRenamingHandle] = useState(false);
+  const [handleDraft, setHandleDraft] = useState("");
+
+  useEffect(() => {
+    if (commentComposerExpanded) commentTextareaRef.current?.focus();
+  }, [commentComposerExpanded]);
+
+  // Revoke the object URL backing the attached-image preview once it's no
+  // longer shown — otherwise every selected image leaks its blob for the
+  // life of the page.
+  useEffect(() => {
+    return () => {
+      if (commentImagePreview) URL.revokeObjectURL(commentImagePreview);
+    };
+  }, [commentImagePreview]);
 
   // Keep the countdown fresh without refetching the whisp itself.
   useEffect(() => {
@@ -410,31 +446,100 @@ export function PublicWhispPage() {
     );
   }
 
+  function handleStartCommentReply(comment: CircleComment) {
+    setCommentReplyingTo(comment);
+    setCommentComposerExpanded(true);
+  }
+
+  function handleCommentImageSelect(file: File | undefined) {
+    if (!file) return;
+    setCommentImageError(null);
+    try {
+      validateCommentImage(file);
+    } catch (err) {
+      setCommentImageError(err instanceof CommentImageValidationError ? err.message : "Couldn't attach that image");
+      if (commentFileRef.current) commentFileRef.current.value = "";
+      return;
+    }
+    setCommentImage(file);
+    setCommentImagePreview(URL.createObjectURL(file));
+  }
+
+  function handleRemoveCommentImage() {
+    setCommentImage(null);
+    setCommentImagePreview(null);
+    setCommentImageError(null);
+    if (commentFileRef.current) commentFileRef.current.value = "";
+  }
+
   function handlePostComment() {
     const text = commentText.trim();
     if (!text) return;
+    const callbacks = {
+      onSuccess: () => {
+        setCommentText("");
+        setCommentReplyingTo(null);
+        handleRemoveCommentImage();
+        queryClient.invalidateQueries({ queryKey: getGetPublicWhispQueryKey(token!) });
+      },
+      onError: (err: any) => {
+        if (err?.data?.code === "comment_limit_reached") {
+          toast({
+            title: "You've used your free comments for now",
+            description: "Sign up to comment anytime, or check back in 24 hours.",
+            variant: "destructive",
+          });
+          return;
+        }
+        toast({ title: err?.data?.error ?? "Couldn't post that comment", variant: "destructive" });
+      },
+    };
+    if (commentImage) {
+      postCommentWithImage.mutate(
+        {
+          token: token!,
+          commentText: text,
+          visitorId: getVisitorId(),
+          parentCommentId: commentReplyingTo?.id ?? null,
+          image: commentImage,
+        },
+        callbacks
+      );
+      return;
+    }
     postComment.mutate(
       {
         token: token!,
         data: { commentText: text, visitorId: getVisitorId(), parentCommentId: commentReplyingTo?.id ?? null },
       },
+      callbacks
+    );
+  }
+
+  function handleCommentReaction(commentId: string, reaction: "like" | "dislike") {
+    reactToComment.mutate(
+      { token: token!, commentId, data: { visitorId: getVisitorId(), reaction } },
+      { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetPublicWhispQueryKey(token!) }) }
+    );
+  }
+
+  function handleOpenRenameHandle(currentHandle: string | null) {
+    setHandleDraft(currentHandle ?? "");
+    setRenamingHandle(true);
+  }
+
+  function handleRenameHandle() {
+    const next = handleDraft.trim();
+    if (!next) return;
+    renameHandle.mutate(
+      { token: token!, data: { visitorId: getVisitorId(), handle: next } },
       {
         onSuccess: () => {
-          setCommentText("");
-          setCommentReplyingTo(null);
+          setRenamingHandle(false);
           queryClient.invalidateQueries({ queryKey: getGetPublicWhispQueryKey(token!) });
+          toast({ title: "Name updated" });
         },
-        onError: (err: any) => {
-          if (err?.data?.code === "comment_limit_reached") {
-            toast({
-              title: "You've used your free comments for now",
-              description: "Sign up to comment anytime, or check back in 24 hours.",
-              variant: "destructive",
-            });
-            return;
-          }
-          toast({ title: "Couldn't post that comment", variant: "destructive" });
-        },
+        onError: (err: any) => toast({ title: err?.data?.error ?? "Couldn't update that name", variant: "destructive" }),
       }
     );
   }
@@ -463,6 +568,12 @@ export function PublicWhispPage() {
 
   const moodColor = (whisp?.moodTag && MOOD_CONFIG[whisp.moodTag]?.color) || "#7C5CFC";
   const appreciationResponse = localAppreciation ?? whisp?.appreciationResponse ?? null;
+  const commentPosting = postComment.isPending || postCommentWithImage.isPending;
+  // Known only once this visitor has an existing comment in this thread —
+  // the server assigns a handle lazily (see anonymousHandles.ts), so there's
+  // nothing to display until then. The rename control still works before
+  // that: renameHandle assigns one on the fly if none exists yet.
+  const ownHandle = whisp?.comments.find((c) => c.isOwnComment)?.handle ?? null;
 
   const expired = whisp?.expired ?? false;
   const expiresAtMs = whisp?.expiresAt ? new Date(whisp.expiresAt).getTime() : null;
@@ -775,12 +886,22 @@ export function PublicWhispPage() {
                         .filter((c) => !c.parentCommentId)
                         .map((comment) => (
                           <div key={comment.id} className="space-y-2">
-                            <CircleCommentRow comment={comment} onReply={() => setCommentReplyingTo(comment)} />
+                            <CircleCommentRow
+                              comment={comment}
+                              onReply={() => handleStartCommentReply(comment)}
+                              onReact={(reaction) => handleCommentReaction(comment.id, reaction)}
+                              reactionPending={reactToComment.isPending && reactToComment.variables?.commentId === comment.id}
+                            />
                             {whisp.comments
                               .filter((r) => r.parentCommentId === comment.id)
                               .map((reply) => (
                                 <div key={reply.id} className="ml-5 pl-3 border-l-2 border-border/30">
-                                  <CircleCommentRow comment={reply} onReply={() => setCommentReplyingTo(comment)} />
+                                  <CircleCommentRow
+                                    comment={reply}
+                                    onReply={() => handleStartCommentReply(comment)}
+                                    onReact={(reaction) => handleCommentReaction(reply.id, reaction)}
+                                    reactionPending={reactToComment.isPending && reactToComment.variables?.commentId === reply.id}
+                                  />
                                 </div>
                               ))}
                           </div>
@@ -788,53 +909,184 @@ export function PublicWhispPage() {
                     </div>
                   )}
 
-                  {commentReplyingTo && (
-                    <div
-                      className="flex items-center justify-between gap-2 rounded-lg border-l-2 border-primary/60 bg-primary/5 px-3 py-1.5"
-                      data-testid="comment-replying-to"
-                    >
-                      <span className="text-[11px] text-muted-foreground">
-                        Replying to {commentReplyingTo.isPoster ? "the poster" : "a comment"}
-                      </span>
-                      <button
+                  {/* Composer: compact by default, expanding to the full
+                      editor (rename control, quote-reply banner, image
+                      attach, character count) on focus — see
+                      commentComposerExpanded's own comment above. */}
+                  {!commentComposerExpanded ? (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        className="flex-1 h-10 bg-card border-border/50 rounded-full px-4 text-sm"
+                        placeholder="Add a comment... (anonymous)"
+                        value={commentText}
+                        onChange={(e) => setCommentText(e.target.value)}
+                        onFocus={() => setCommentComposerExpanded(true)}
+                        data-testid="input-circle-comment-compact"
+                      />
+                      <Button
                         type="button"
-                        onClick={() => setCommentReplyingTo(null)}
-                        aria-label="Cancel reply"
-                        className="text-muted-foreground hover:text-foreground"
+                        size="icon"
+                        variant="outline"
+                        className="rounded-full h-10 w-10 shrink-0"
+                        onClick={() => setCommentComposerExpanded(true)}
+                        aria-label="More comment options, including a photo attachment"
+                        data-testid="button-expand-comment-composer"
                       >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
+                        <ImagePlus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2.5">
+                      {/* Anonymous handle: auto-assigned on this visitor's
+                          first comment (see anonymousHandles.ts), renameable
+                          for this thread only — not a global setting. */}
+                      <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+                        <span>
+                          Commenting as <span className="font-medium text-foreground">{ownHandle ?? "Anonymous"}</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenRenameHandle(ownHandle)}
+                          className="inline-flex items-center gap-1 text-primary hover:underline"
+                          data-testid="button-change-handle"
+                        >
+                          <PenLine className="w-3 h-3" /> Change name
+                        </button>
+                      </div>
+
+                      {renamingHandle && (
+                        <div className="space-y-1.5 rounded-lg border border-border/50 bg-muted/20 p-3" data-testid="handle-rename-form">
+                          <Input
+                            className="h-9 bg-card border-border/50 rounded-lg text-sm"
+                            placeholder="New name (letters and numbers only)"
+                            maxLength={24}
+                            value={handleDraft}
+                            onChange={(e) => setHandleDraft(e.target.value)}
+                            data-testid="input-handle-rename"
+                          />
+                          <p className="text-[11px] text-destructive">
+                            Don't use your real name or anything that could identify you.
+                          </p>
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setRenamingHandle(false)}
+                              data-testid="button-cancel-handle-rename"
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              className="rounded-full"
+                              onClick={handleRenameHandle}
+                              disabled={!handleDraft.trim() || renameHandle.isPending}
+                              data-testid="button-save-handle-rename"
+                            >
+                              {renameHandle.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Save"}
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {commentReplyingTo && (
+                        <div
+                          className="flex items-center justify-between gap-2 rounded-lg border-l-2 border-primary/60 bg-primary/5 px-3 py-1.5"
+                          data-testid="comment-replying-to"
+                        >
+                          <span className="text-[11px] text-muted-foreground">
+                            Replying to {commentReplyingTo.isPoster ? "the poster" : "a comment"}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setCommentReplyingTo(null)}
+                            aria-label="Cancel reply"
+                            className="text-muted-foreground hover:text-foreground"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      )}
+
+                      <Textarea
+                        ref={commentTextareaRef}
+                        className="bg-card border-border/50 rounded-xl resize-none min-h-[60px]"
+                        placeholder="Add a comment... (anonymous)"
+                        maxLength={500}
+                        value={commentText}
+                        onChange={(e) => setCommentText(e.target.value)}
+                        data-testid="textarea-circle-comment"
+                      />
+
+                      {/* Image attachment — screened asynchronously by the
+                          backend's moderation pass once posted; a flagged
+                          image just never gets an imageUrl back, no client
+                          UI needed for that. */}
+                      {commentImagePreview ? (
+                        <div className="relative inline-block" data-testid="comment-image-preview">
+                          <img
+                            src={commentImagePreview}
+                            alt="Attachment preview"
+                            className="max-h-32 rounded-lg border border-border/50 object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleRemoveCommentImage}
+                            aria-label="Remove image"
+                            className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-background border border-border/60 text-muted-foreground hover:text-destructive"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div>
+                          <input
+                            ref={commentFileRef}
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp,image/gif"
+                            className="hidden"
+                            onChange={(e) => handleCommentImageSelect(e.target.files?.[0])}
+                            data-testid="input-comment-image"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => commentFileRef.current?.click()}
+                            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
+                            data-testid="button-attach-comment-image"
+                          >
+                            <ImagePlus className="w-3.5 h-3.5" /> Attach a photo
+                          </button>
+                        </div>
+                      )}
+                      {commentImageError && (
+                        <p className="text-xs text-destructive" data-testid="text-comment-image-error">
+                          {commentImageError}
+                        </p>
+                      )}
+
+                      <div className="flex items-center justify-between gap-3">
+                        {/* The reminder the product asked for, plus the same
+                            signup nudge the rest of this page uses — comments
+                            are anonymous by default, but signing up lifts the
+                            rate limit entirely (see the toast on a 403 above). */}
+                        <p className="text-[11px] text-muted-foreground leading-snug">
+                          Keep it kind — the goal here is genuine, productive conversation.{" "}
+                          <a href="/sign-up" className="text-primary hover:underline">Become a Whisperer</a> for unlimited comments.
+                        </p>
+                        <Button
+                          size="sm"
+                          className="rounded-full shrink-0"
+                          onClick={handlePostComment}
+                          disabled={!commentText.trim() || commentPosting}
+                          data-testid="button-post-comment"
+                        >
+                          {commentPosting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                        </Button>
+                      </div>
                     </div>
                   )}
-
-                  <Textarea
-                    className="bg-card border-border/50 rounded-xl resize-none min-h-[60px]"
-                    placeholder="Add a comment... (anonymous)"
-                    maxLength={500}
-                    value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
-                    data-testid="textarea-circle-comment"
-                  />
-
-                  <div className="flex items-center justify-between gap-3">
-                    {/* The reminder the product asked for, plus the same
-                        signup nudge the rest of this page uses — comments
-                        are anonymous by default, but signing up lifts the
-                        rate limit entirely (see the toast on a 403 above). */}
-                    <p className="text-[11px] text-muted-foreground leading-snug">
-                      Keep it kind — the goal here is genuine, productive conversation.{" "}
-                      <a href="/sign-up" className="text-primary hover:underline">Become a Whisperer</a> for unlimited comments.
-                    </p>
-                    <Button
-                      size="sm"
-                      className="rounded-full shrink-0"
-                      onClick={handlePostComment}
-                      disabled={!commentText.trim() || postComment.isPending}
-                      data-testid="button-post-comment"
-                    >
-                      {postComment.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                    </Button>
-                  </div>
                 </div>
               </div>
             )}
