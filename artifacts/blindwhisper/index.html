@@ -22,6 +22,18 @@
     <meta name="twitter:description" content="Blind Whisper lets you send a video to someone who needs it, anonymously. Whisper Links, Ghost Boost matching, and Circle — no account required to receive." />
     <meta name="twitter:image" content="https://blindwhisper.com/opengraph.jpg" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- iOS ignores SVG icons and won't use the one above, falling back to a
+         screenshot of the page when someone adds the app to their home screen.
+         This PNG is the same mark on a deliberately square background, since
+         iOS applies its own corner mask and would otherwise round it twice. -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <!-- Android's home-screen icon and install metadata come from the manifest,
+         not from the icons above. Without it the service worker registered in
+         lib/push.ts had nothing to install against, and "Add to Home Screen"
+         fell back to a screenshot the same way iOS did. The maskable icon is a
+         separate file because Android masks icons to arbitrary shapes and keeps
+         only the central 80% circle, which the full-size mark overflows. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -48,6 +60,23 @@
         }
       }
     </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "TIBLOGICS",
+        "url": "https://blindwhisper.com/",
+        "logo": "https://blindwhisper.com/opengraph.jpg",
+        "parentOrganization": {
+          "@type": "Organization",
+          "name": "TILO GROUP, LLC"
+        }
+      }
+    </script>
+    <!-- FAQPage JSON-LD is injected here at build time by scripts/prerender.mjs,
+         generated from src/lib/faqContent.ts so the structured data always
+         matches the FAQ accordion's visible text exactly. -->
+    <!-- PRERENDER:FAQ_JSONLD -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">

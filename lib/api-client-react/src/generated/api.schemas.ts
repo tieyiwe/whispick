@@ -76,6 +76,17 @@ export interface Whisp {
      */
   conciergeRequestId?: string | null;
   createdAt: string;
+  /** True only when the caller is themselves this whisp's matched recipient (see GET /whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email/phone belongs to a verified account. */
+  viewerIsRecipient: boolean;
+  /**
+     * 'sender' | 'recipient' | null — which role the caller has on this whisp. Drives pinned/archived below, and (frontend-side) whether Delete is offered — only a sender may delete.
+     * @nullable
+     */
+  viewerRole: string | null;
+  /** Whether the CALLER's own copy of this whisp is pinned (see POST /whisps/{id}/pin) — never the other party's pin state. */
+  pinned: boolean;
+  /** Whether the CALLER's own copy of this whisp is archived (see POST /whisps/{id}/archive) — never the other party's archive state. */
+  archived: boolean;
 }
 
 export interface WhispInput {
@@ -122,6 +133,12 @@ export interface WhispInput {
   conciergeRequestId?: string | null;
 }
 
+export type WhispDetailCircleConversationsItem = {
+  id: string;
+  publicToken: string;
+  createdAt: string;
+};
+
 export interface TrackingEvent {
   id: string;
   whispId: string;
@@ -146,13 +163,101 @@ export interface WhispReply {
   videoPlatform?: string | null;
   /** @nullable */
   moodTag?: string | null;
+  /**
+     * The message this one answers, when it replies to a specific earlier message rather than the thread as a whole. Always a reply on the same whisp.
+     * @nullable
+     */
+  parentReplyId?: string | null;
   createdAt: string;
+  /**
+     * When the other party in the conversation (whichever one didn't author this message) is known to have viewed it — set the moment they load a view containing it. Null means unread. Drives the WhatsApp-style single/double checkmark next to a message the current viewer sent themselves; never rendered on a message you received.
+     * @nullable
+     */
+  readAt?: string | null;
+}
+
+/**
+ * The caller's own reaction to this comment, if any — requires visitorId to have been passed on the read.
+ * @nullable
+ */
+export type CircleCommentViewerReaction = typeof CircleCommentViewerReaction[keyof typeof CircleCommentViewerReaction] | null;
+
+
+export const CircleCommentViewerReaction = {
+  like: 'like',
+  dislike: 'dislike',
+} as const;
+
+/**
+ * A public comment on a Blind Circle post. Never carries a visitor identifier — see circle_comments.ts's schema comment for why.
+ */
+export interface CircleComment {
+  id: string;
+  commentText: string;
+  /**
+     * The comment this one replies to, if any — same flat quote-reference model as WhispReply.parentReplyId.
+     * @nullable
+     */
+  parentCommentId?: string | null;
+  /** True when this comment came from the post's own (signed-in) sender — a role badge, never an identity. */
+  isPoster: boolean;
+  createdAt: string;
+  /** This commenter's stable anonymous handle within this post's thread (e.g. "SwiftFalcon482") — see anonymous_handles.ts. */
+  handle: string;
+  /** True when the caller's own visitorId matches this comment's author — lets the client show its own "you" state without ever exposing the raw visitorId to other viewers. */
+  isOwnComment: boolean;
+  /**
+     * Proxy-served URL for an attached image, or null if there is none or it was flagged by moderation and is pending review.
+     * @nullable
+     */
+  imageUrl: string | null;
+  likeCount: number;
+  dislikeCount: number;
+  /**
+     * The caller's own reaction to this comment, if any — requires visitorId to have been passed on the read.
+     * @nullable
+     */
+  viewerReaction: CircleCommentViewerReaction;
 }
 
 export interface WhispDetail {
   whisp: Whisp;
   trackingEvents: TrackingEvent[];
   replies: WhispReply[];
+  /**
+     * Anonymous replies the recipient has left on this whisp. Null means uncapped. 0 means they can't reply again unless the sender adds more replies or the recipient signs up.
+     * @nullable
+     */
+  recipientRepliesRemaining?: number | null;
+  /** Blind Circle posts only (0 otherwise) — how many times this post was opened, across every anonymous viewer. */
+  viewCount: number;
+  /** Blind Circle posts only (0 otherwise). */
+  likeCount: number;
+  /** Blind Circle posts only (empty otherwise). */
+  comments: CircleComment[];
+  /** Private 1:1 conversations anonymous viewers started from this Blind Circle post (see POST /w/{token}/circle-dm/start). Empty for every other delivery method, including a circle_dm thread itself — a conversation can't spawn another conversation. */
+  circleConversations: WhispDetailCircleConversationsItem[];
+}
+
+/**
+ * @nullable
+ */
+export type CommentReactionResultViewerReaction = typeof CommentReactionResultViewerReaction[keyof typeof CommentReactionResultViewerReaction] | null;
+
+
+export const CommentReactionResultViewerReaction = {
+  like: 'like',
+  dislike: 'dislike',
+} as const;
+
+/**
+ * The resulting reaction state after a like/dislike toggle — shared shape for Circle and Debate Topic comments.
+ */
+export interface CommentReactionResult {
+  likeCount: number;
+  dislikeCount: number;
+  /** @nullable */
+  viewerReaction: CommentReactionResultViewerReaction;
 }
 
 export interface WhispStats {
@@ -171,6 +276,11 @@ export interface WhispStats {
 export interface WhispReplyInput {
   replyText: string;
   fromRecipient?: boolean;
+  /**
+     * Reply to a specific earlier message on the same whisp.
+     * @nullable
+     */
+  parentReplyId?: string | null;
 }
 
 export interface RevealResponse {
@@ -314,6 +424,10 @@ export interface VideoMeta {
 
 export interface PublicWhisp {
   id: string;
+  /** True only when the caller is signed in, is this whisp's matched recipient, and has archived their copy (see POST /whisps/{id}/archive) — always false for an anonymous visitor or a signed-in non-recipient. */
+  viewerArchived?: boolean;
+  /** Same caller-relative scoping as viewerArchived, for pin instead. */
+  viewerPinned?: boolean;
   videoUrl: string;
   /** @nullable */
   videoTitle?: string | null;
@@ -348,6 +462,25 @@ export interface PublicWhisp {
   /** @nullable */
   aiTakeawayStatus?: string | null;
   replies: WhispReply[];
+  /**
+     * Anonymous replies this recipient has left on this whisp. Null means uncapped. Signing up removes the cap entirely.
+     * @nullable
+     */
+  recipientRepliesRemaining?: number | null;
+  /** Whether this viewer may whisp a VIDEO back. Text replies stay open to anonymous recipients up to their allowance; a video reply needs either an account or reply credit the sender bought for this whisp. */
+  videoRepliesAllowed?: boolean;
+  /** Whether this whisp was already marked watched (whisps.watchedAt) BEFORE this request — true only on a reopen, never on the load that itself does the watching. */
+  hasWatched?: boolean;
+  /** Whether this whisp was already opened (whisps.openedAt) BEFORE this request — true only on a reopen, never on a true first visit. This, not hasWatched, drives whether the appreciation prompt starts expanded (first-ever open — visible right under the video) or collapsed (any reopen, still one tap away): watchedAt gets set the moment someone taps Play, before they've actually watched anything, so it would spring the prompt open too early; openedAt never does. */
+  hasOpenedBefore?: boolean;
+  /** 'whisper_link' | 'ghost_boost' | 'circle_drop' | 'group_whisper' | 'circle_dm' */
+  deliveryMethod: string;
+  /** Blind Circle posts only (0 otherwise). */
+  likeCount: number;
+  /** Whether the visitorId passed as a query param has already liked this post. False (not just "unknown") when no visitorId is given. */
+  viewerHasLiked: boolean;
+  /** Blind Circle posts only (empty otherwise). */
+  comments: CircleComment[];
 }
 
 export interface TrackingEventInput {
@@ -373,6 +506,11 @@ export interface PublicReplyInput {
   videoPlatform?: string | null;
   /** @nullable */
   moodTag?: string | null;
+  /**
+     * Reply to a specific earlier message on the same whisp.
+     * @nullable
+     */
+  parentReplyId?: string | null;
 }
 
 export interface UserProfile {
@@ -391,6 +529,11 @@ export interface UserProfile {
      */
   phoneVerifiedAt?: string | null;
   /**
+     * ISO 3166-1 alpha-2, self-reported — captured from the country picker at phone-verification time (see users.countryCode), or set directly via PATCH /user/profile. Null until either happens.
+     * @nullable
+     */
+  countryCode?: string | null;
+  /**
      * 'woman' | 'man' | 'nonbinary' | 'prefer_not_to_say' | null (not yet answered)
      * @nullable
      */
@@ -404,6 +547,8 @@ export interface UserProfile {
   boostCredits: number;
   whisperLinksUsed: number;
   role: string;
+  /** Whether this Whisperer wants the "you have a new whisp" email in addition to the in-app notification. On by default — see PATCH /user/profile to change it. */
+  emailNotificationsEnabled: boolean;
   createdAt: string;
 }
 
@@ -416,15 +561,22 @@ export interface UserProfileUpdate {
   gender?: string | null;
   /** @nullable */
   ageRange?: string | null;
+  emailNotificationsEnabled?: boolean;
+  /** @nullable */
+  countryCode?: string | null;
 }
 
 export interface StartPhoneVerificationInput {
   phone: string;
+  /** ISO 3166-1 alpha-2, from the country picker in CountryPhoneInput.tsx. Optional — phone is already a fully international "+"-prefixed value by the time it gets here. */
+  countryCode?: string;
 }
 
 export interface ConfirmPhoneVerificationInput {
   phone: string;
   code: string;
+  /** Same as StartPhoneVerificationInput's — persisted to the user's account on a successful confirmation (see users.countryCode). */
+  countryCode?: string;
 }
 
 export interface PhoneVerificationResult {
@@ -432,6 +584,8 @@ export interface PhoneVerificationResult {
   phone: string | null;
   /** @nullable */
   phoneVerifiedAt: string | null;
+  /** @nullable */
+  countryCode?: string | null;
 }
 
 export interface CreditTransaction {
@@ -467,6 +621,84 @@ export interface CircleFeedResponse {
   items: CircleFeedItem[];
   /** @nullable */
   nextCursor: string | null;
+}
+
+export interface DebateTopicInput {
+  /** Title/subtitle length by design — a debate topic is a headline to react to, capped server-side at 200 characters. */
+  topicText: string;
+}
+
+/**
+ * authorId is deliberately never included — a debate topic is posted anonymously, same as every other posting surface in this app.
+ */
+export interface DebateTopicFeedItem {
+  id: string;
+  topicText: string;
+  commentCount: number;
+  rewhispCount: number;
+  createdAt: string;
+}
+
+export interface DebateTopicFeedResponse {
+  items: DebateTopicFeedItem[];
+  /** @nullable */
+  nextCursor: string | null;
+}
+
+/**
+ * @nullable
+ */
+export type DebateTopicCommentViewerReaction = typeof DebateTopicCommentViewerReaction[keyof typeof DebateTopicCommentViewerReaction] | null;
+
+
+export const DebateTopicCommentViewerReaction = {
+  like: 'like',
+  dislike: 'dislike',
+} as const;
+
+/**
+ * visitorId is deliberately never included — see debate_topic_comments.ts. isPoster reveals a ROLE (the topic's own author), never an identity.
+ */
+export interface DebateTopicComment {
+  id: string;
+  commentText: string;
+  /** @nullable */
+  parentCommentId: string | null;
+  isPoster: boolean;
+  createdAt: string;
+  /** This commenter's stable anonymous handle within this topic's thread (e.g. "SwiftFalcon482") — see anonymous_handles.ts. */
+  handle: string;
+  /** True when the caller's own visitorId matches this comment's author. */
+  isOwnComment: boolean;
+  /**
+     * Proxy-served URL for an attached image, or null if there is none or it was flagged by moderation and is pending review.
+     * @nullable
+     */
+  imageUrl: string | null;
+  likeCount: number;
+  dislikeCount: number;
+  /** @nullable */
+  viewerReaction: DebateTopicCommentViewerReaction;
+}
+
+export interface DebateTopicCommentInput {
+  commentText: string;
+  /** Anonymous, client-generated id from lib/anonymousVisitor.ts — never linked to a real identity. */
+  visitorId: string;
+  /** @nullable */
+  parentCommentId?: string | null;
+}
+
+export interface DebateTopicDetail {
+  id: string;
+  topicText: string;
+  createdAt: string;
+  /** True only when the caller is signed in and is this topic's own author — lets the author see a "Retract" control without revealing anything to anyone else. */
+  isOwnTopic: boolean;
+  commentCount: number;
+  rewhispCount: number;
+  viewerRewhisped: boolean;
+  comments: DebateTopicComment[];
 }
 
 export interface Circle {
@@ -581,28 +813,62 @@ export const ModerationFlagSeverity = {
 export interface ModerationFlag {
   id: string;
   /**
-     * Set when contentType is 'whisp'; null when it's 'text_whisp'.
+     * Set when contentType is 'whisp'; null otherwise.
      * @nullable
      */
   whispId?: string | null;
   /**
-     * Set when contentType is 'text_whisp'; null when it's 'whisp'.
+     * Set when contentType is 'text_whisp'; null otherwise.
      * @nullable
      */
   textWhispId?: string | null;
-  /** 'whisp' | 'text_whisp' */
-  contentType: string;
-  userId: string;
   /**
-     * The flagged whisp's video title, denormalized for display in flag lists without a second lookup. Null for a text_whisp flag.
+     * Set when contentType is 'circle_comment'; null otherwise.
+     * @nullable
+     */
+  circleCommentId?: string | null;
+  /**
+     * Set when contentType is 'debate_topic'; null otherwise.
+     * @nullable
+     */
+  debateTopicId?: string | null;
+  /**
+     * Set when contentType is 'debate_topic_comment'; null otherwise.
+     * @nullable
+     */
+  debateTopicCommentId?: string | null;
+  /** 'whisp' | 'text_whisp' | 'circle_comment' | 'debate_topic' | 'debate_topic_comment' */
+  contentType: string;
+  /**
+     * Null only for contentType='circle_comment' or contentType='debate_topic_comment' from a fully anonymous, no-account commenter — there's no account to attribute the flag to.
+     * @nullable
+     */
+  userId?: string | null;
+  /**
+     * The flagged whisp's video title, denormalized for display in flag lists without a second lookup. Null unless contentType is 'whisp'.
      * @nullable
      */
   videoTitle?: string | null;
   /**
-     * The flagged text whisp's message text, denormalized for display the same way videoTitle is. Null for a whisp flag.
+     * The flagged text whisp's message text, denormalized for display the same way videoTitle is. Null unless contentType is 'text_whisp'.
      * @nullable
      */
   textWhispMessage?: string | null;
+  /**
+     * The flagged comment's text, denormalized the same way. Null unless contentType is 'circle_comment'.
+     * @nullable
+     */
+  circleCommentText?: string | null;
+  /**
+     * The flagged debate topic's own text, denormalized the same way. Null unless contentType is 'debate_topic'.
+     * @nullable
+     */
+  debateTopicText?: string | null;
+  /**
+     * The flagged debate topic comment's text, denormalized the same way. Null unless contentType is 'debate_topic_comment'.
+     * @nullable
+     */
+  debateTopicCommentText?: string | null;
   /** @nullable */
   senderEmail?: string | null;
   severity: ModerationFlagSeverity;
@@ -983,6 +1249,11 @@ export interface Notification {
   /** @nullable */
   url?: string | null;
   /**
+     * What produced this notification ("reply", "opened", "watched", "appreciation", ...). Null for admin-composed notifications and for rows predating this field.
+     * @nullable
+     */
+  kind?: string | null;
+  /**
      * Null means system-generated (e.g. a repeated content-flag warning), not composed by an admin.
      * @nullable
      */
@@ -1041,6 +1312,29 @@ export interface NotificationListResponse {
 
 export interface UnreadNotificationCountResponse {
   unreadCount: number;
+  /** Unread notifications of kind "reply" only — lets the Replies tab badge mean "someone replied" rather than lighting up for any unread notification. */
+  unreadReplyCount: number;
+}
+
+export type RecentRecipientKind = typeof RecentRecipientKind[keyof typeof RecentRecipientKind];
+
+
+export const RecentRecipientKind = {
+  email: 'email',
+  phone: 'phone',
+} as const;
+
+export interface RecentRecipient {
+  /** The address exactly as the sender last typed it. */
+  value: string;
+  kind: RecentRecipientKind;
+  lastUsedAt: string;
+  /** How many whisps this sender has sent to this address. */
+  useCount: number;
+}
+
+export interface RecentRecipientListResponse {
+  items: RecentRecipient[];
 }
 
 export interface WhisperGroup {
@@ -1387,10 +1681,122 @@ export interface RunSuggestionAgentResult {
 
 export type ListWhispsParams = {
 status?: string;
+/**
+ * 'sent' (default): whisps this user sent. 'received': whisps another Whisperer sent TO this user (matched at send time — see whisps.recipientUserId). 'archived': whichever of those this user archived from either side, combined into one list.
+ */
+box?: ListWhispsBox;
+};
+
+export type ListWhispsBox = typeof ListWhispsBox[keyof typeof ListWhispsBox];
+
+
+export const ListWhispsBox = {
+  sent: 'sent',
+  received: 'received',
+  archived: 'archived',
+} as const;
+
+export type PinWhisp200 = {
+  pinned: boolean;
+};
+
+export type ArchiveWhisp200 = {
+  archived: boolean;
+};
+
+export type GetPublicWhispParams = {
+/**
+ * The anonymous, client-generated, localStorage-persisted id this device uses for Circle likes/comments — affects whether the response's viewerHasLiked, and each comment's viewerReaction/ isOwnComment, reflect this visitor. Omit for a Whisper Link/ circle_dm, where it's meaningless.
+ */
+visitorId?: string;
+};
+
+export type ToggleCircleLikeBody = {
+  visitorId: string;
+};
+
+export type ToggleCircleLike200 = {
+  liked: boolean;
+  likeCount: number;
+};
+
+export type PostCircleCommentBody = {
+  commentText: string;
+  visitorId: string;
+  /** @nullable */
+  parentCommentId?: string | null;
+};
+
+export type ReactToCircleCommentBodyReaction = typeof ReactToCircleCommentBodyReaction[keyof typeof ReactToCircleCommentBodyReaction];
+
+
+export const ReactToCircleCommentBodyReaction = {
+  like: 'like',
+  dislike: 'dislike',
+} as const;
+
+export type ReactToCircleCommentBody = {
+  visitorId: string;
+  reaction: ReactToCircleCommentBodyReaction;
+};
+
+export type RenameCircleHandleBody = {
+  visitorId: string;
+  handle: string;
+};
+
+export type RenameCircleHandle200 = {
+  handle: string;
+};
+
+export type StartCircleDm201 = {
+  publicToken: string;
 };
 
 export type ListCircleFeedParams = {
 cursor?: string;
+};
+
+export type ListDebateTopicsParams = {
+cursor?: string;
+};
+
+export type GetDebateTopicParams = {
+/**
+ * The caller's own anonymous, client-generated, localStorage- persisted id — affects whether each comment's viewerReaction/ isOwnComment, and the topic's viewerRewhisped, reflect this visitor.
+ */
+visitorId?: string;
+};
+
+export type RenameDebateTopicHandleBody = {
+  visitorId: string;
+  handle: string;
+};
+
+export type RenameDebateTopicHandle200 = {
+  handle: string;
+};
+
+export type ReactToDebateTopicCommentBodyReaction = typeof ReactToDebateTopicCommentBodyReaction[keyof typeof ReactToDebateTopicCommentBodyReaction];
+
+
+export const ReactToDebateTopicCommentBodyReaction = {
+  like: 'like',
+  dislike: 'dislike',
+} as const;
+
+export type ReactToDebateTopicCommentBody = {
+  visitorId: string;
+  reaction: ReactToDebateTopicCommentBodyReaction;
+};
+
+export type RewhispDebateTopicBody = {
+  visitorId: string;
+};
+
+export type RewhispDebateTopic200 = {
+  rewhispCount: number;
+  viewerRewhisped: boolean;
 };
 
 export type AdminListUsersParams = {

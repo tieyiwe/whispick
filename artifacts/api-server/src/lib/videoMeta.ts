@@ -42,9 +42,21 @@ export function detectPlatform(url: string): string | null {
   }
 }
 
-// Only YouTube and Vimeo expose an embeddable player with a JS API we can use
-// to detect real watch progress — every other platform requires opening the
-// original link, where we have no visibility into playback.
+// Platforms whose embedded player also exposes a JS API we can watch, so
+// "watched" is measured rather than assumed. The rest embed fine but play
+// behind an opaque iframe — see VideoPlayer for how that difference is
+// handled.
+export const PLATFORMS_WITH_PROGRESS_API = new Set(["youtube", "vimeo"]);
+
+// An in-page player for everything we can build one for, so a whisp opens
+// where it was sent instead of throwing the recipient out to another app
+// mid-moment. Returns null when the URL doesn't carry the id its platform's
+// embed needs, and for platforms with no embeddable player at all — the
+// caller falls back to opening the original link.
+//
+// Every one of these renders only PUBLIC content. A restricted or
+// login-walled video yields an iframe that loads to nothing, which is why
+// the player always keeps an "open on <platform>" escape hatch alongside it.
 export function buildEmbedUrl(url: string, platform: string): string | null {
   if (platform === "youtube") {
     const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\/))([\w-]{11})/);
@@ -54,7 +66,130 @@ export function buildEmbedUrl(url: string, platform: string): string | null {
     const match = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
     return match ? `https://player.vimeo.com/video/${match[1]}` : null;
   }
+  if (platform === "tiktok") {
+    const match = url.match(/tiktok\.com\/(?:@[\w.-]+\/video\/|v\/)(\d{6,25})/);
+    return match ? `https://www.tiktok.com/embed/v2/${match[1]}` : null;
+  }
+  if (platform === "instagram") {
+    // Posts, reels and IGTV all embed through the /p/ path.
+    const match = url.match(/instagram\.com\/(?:p|reel|reels|tv)\/([A-Za-z0-9_-]{5,20})/);
+    return match ? `https://www.instagram.com/p/${match[1]}/embed/` : null;
+  }
+  if (platform === "facebook") {
+    // Facebook's plugin takes the whole watch URL rather than an extracted
+    // id, which is what makes fb.watch short links and the several
+    // /watch/?v= | /video.php | /reel/ shapes all work without parsing each.
+    // encodeURIComponent is what keeps the caller's URL a value here and not
+    // a way to append plugin parameters of their own — and detectPlatform has
+    // already established the host is Facebook's.
+    return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=false`;
+  }
+  // Twitter/X has no supported iframe embed — its widget needs a script we
+  // won't load into a page that renders anonymous content.
   return null;
+}
+
+/**
+ * Embed URL for a stored whisp, tolerating the nulls a row can carry.
+ *
+ * Read paths use this to fill in an embed for rows written before their
+ * platform was embeddable — the value is a pure function of the video URL, so
+ * deriving it on read is equivalent to having stored it, without a migration.
+ */
+export function embedUrlFor(videoUrl: string | null, platform: string | null): string | null {
+  if (!videoUrl) return null;
+  const resolved = platform ?? detectPlatform(videoUrl);
+  return resolved ? buildEmbedUrl(videoUrl, resolved) : null;
+}
+
+// A deterministic, platform-hosted thumbnail URL derived purely from the
+// video id — no network call, and critically no chance of returning an
+// attacker-chosen host. Only YouTube exposes a stable, guessable thumbnail
+// URL; every other platform needs an API/oEmbed call to discover its CDN
+// path, so we return null for them rather than trust a client-supplied
+// thumbnail. See deriveVideoFields for why that matters: a thumbnail is
+// auto-loaded by the *other* party's browser (recipient loads the sender's,
+// sender loads the recipient's reply), so an attacker-controlled thumbnail
+// URL is a silent IP/geo deanonymization channel between two parties the
+// whole app exists to keep anonymous from each other. i.ytimg.com is
+// Google, not the counterparty, so it leaks nothing about either party to
+// the other (they already load it when the video itself plays).
+export function buildThumbnailUrl(url: string, platform: string): string | null {
+  if (platform === "youtube") {
+    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\/))([\w-]{11})/);
+    return match ? `https://i.ytimg.com/vi/${match[1]}/hqdefault.jpg` : null;
+  }
+  return null;
+}
+
+// Image CDNs the supported platforms actually serve their thumbnails from.
+// Only YouTube exposes a thumbnail URL derivable from the video id alone
+// (buildThumbnailUrl above); every other platform's is discoverable only by
+// scraping, which /api/video/meta already did before the send. Rather than
+// throw that scraped URL away — which left every non-YouTube whisp with no
+// preview at all — accept it when it comes from one of these hosts.
+//
+// The point of the check is WHO is being contacted, not what the URL says:
+// an attacker can't host on ytimg.com, so a thumbnail from this list can't
+// be a beacon pointed at a party trying to learn the viewer's IP. Matched on
+// the parsed hostname as a domain suffix, so the many regional
+// subdomains (scontent-lhr8-1.cdninstagram.com, p16-sign-va.tiktokcdn.com)
+// resolve without enumerating them, while "ytimg.com.evil.tld" does not.
+const ALLOWED_THUMBNAIL_DOMAINS = [
+  "ytimg.com",
+  "youtube.com",
+  "vimeocdn.com",
+  "tiktokcdn.com",
+  "tiktokcdn-us.com",
+  "cdninstagram.com",
+  "fbcdn.net",
+  "twimg.com",
+];
+
+export function isAllowedThumbnailUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:") return false;
+    const host = parsed.hostname.toLowerCase();
+    return ALLOWED_THUMBNAIL_DOMAINS.some((domain) => host === domain || host.endsWith(`.${domain}`));
+  } catch {
+    return false;
+  }
+}
+
+// The single trusted source of a whisp/reply's platform, embed URL, and
+// thumbnail. Platform and embed URL are always derived server-side from the
+// one field we can meaningfully validate — the pasted videoUrl — with the
+// client's own values ignored: accepting a chosen embed URL was an
+// iframe-injection sink, since it renders in an <iframe> in the viewer's
+// session.
+//
+// The thumbnail is derived where that's possible (YouTube) and otherwise
+// falls back to the client's scraped one *only* if it points at a real
+// platform CDN. That keeps the deanonymization guard described above — no
+// attacker-controlled host can be auto-loaded by the other party's browser —
+// without blanking the preview on every platform whose thumbnail can't be
+// computed from the URL.
+export function deriveVideoFields(
+  videoUrl: string,
+  clientThumbnail?: string | null,
+): {
+  platform: string | null;
+  embedUrl: string | null;
+  thumbnail: string | null;
+} {
+  const platform = detectPlatform(videoUrl);
+  if (!platform) return { platform: null, embedUrl: null, thumbnail: null };
+
+  const derivedThumbnail = buildThumbnailUrl(videoUrl, platform);
+  const thumbnail =
+    derivedThumbnail ?? (clientThumbnail && isAllowedThumbnailUrl(clientThumbnail) ? clientThumbnail : null);
+
+  return {
+    platform,
+    embedUrl: buildEmbedUrl(videoUrl, platform),
+    thumbnail,
+  };
 }
 
 // Text that shows up in place of real content when a video/post is private,
@@ -158,6 +293,44 @@ function ogScrapeUserAgent(platform: string | null): string {
   return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 }
 
+const NAMED_ENTITIES: Record<string, string> = {
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  quot: '"',
+  apos: "'",
+  nbsp: " ",
+  "#39": "'",
+};
+
+/**
+ * Decodes the entities an HTML attribute value is required to carry.
+ *
+ * Not cosmetic. An og:image is an attribute value, so its query string arrives
+ * with every `&` written as `&amp;` — and Facebook's image URLs are signed,
+ * with the signature spread across several query parameters. Storing the raw
+ * value left `...?oh=x&amp;oe=y`, which Facebook reads as one parameter named
+ * "oh" and a broken signature, so every Facebook thumbnail 403'd and rendered
+ * as a broken image. Titles had the visible half of the same bug: "15M views
+ * &#xb7; 299K reactions" instead of "15M views · 299K reactions".
+ *
+ * Numeric forms are handled too because that is what real pages use for
+ * punctuation and emoji — &#183;, &#xb7; and &#x1F600; all appear in the wild.
+ */
+export function decodeHtmlEntities(value: string): string {
+  return value.replace(/&(#[xX][0-9a-fA-F]+|#\d+|[a-zA-Z]+);/g, (match, entity: string) => {
+    if (entity.startsWith("#x") || entity.startsWith("#X")) {
+      const code = Number.parseInt(entity.slice(2), 16);
+      return Number.isFinite(code) ? String.fromCodePoint(code) : match;
+    }
+    if (entity.startsWith("#")) {
+      const code = Number.parseInt(entity.slice(1), 10);
+      return Number.isFinite(code) ? String.fromCodePoint(code) : match;
+    }
+    return NAMED_ENTITIES[entity.toLowerCase()] ?? match;
+  });
+}
+
 export async function scrapeOpenGraph(url: string, platform: string | null = null): Promise<ScrapeResult | null> {
   try {
     const res = await fetch(url, {
@@ -179,10 +352,11 @@ export async function scrapeOpenGraph(url: string, platform: string | null = nul
     // description is worth checking too even when we don't return it.
     const ogDescription = html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["']/i)?.[1];
 
+    const rawTitle = ogTitle ?? ogDescription;
     return {
       status: res.status,
-      title: (ogTitle ?? ogDescription)?.trim(),
-      thumbnail: ogImage?.trim(),
+      title: rawTitle ? decodeHtmlEntities(rawTitle).trim() : undefined,
+      thumbnail: ogImage ? decodeHtmlEntities(ogImage).trim() : undefined,
     };
   } catch {
     return null;

@@ -1,5 +1,20 @@
 import { lazy, Suspense, useEffect, useRef } from "react";
-import { ClerkProvider, SignIn, SignUp, Show, useClerk } from '@clerk/react';
+import { ClerkProvider, SignIn, SignUp, Show, useClerk, useAuth } from '@clerk/react';
+import { registerServiceWorker } from "@/lib/push";
+// Imported for its module-level side effect: capturing beforeinstallprompt
+// from the moment this script evaluates, not from whenever the install UI
+// happens to mount. That UI lives inside AppLayout, which is pulled in by a
+// lazily-loaded route chunk that only loads once auth has resolved and
+// routing has landed somewhere — by which point the one-shot event may
+// already have fired into a page with nothing listening. This file sits in
+// App.tsx's own eager bundle specifically so the listener is live before any
+// of that.
+import "@/lib/installApp";
+import { PinToTaskbarTip } from "@/components/shared/PinToTaskbarTip";
+import { EnableNotificationsPrompt } from "@/components/shared/EnableNotificationsPrompt";
+import { AppErrorBoundary } from "@/components/shared/AppErrorBoundary";
+import { watchForUpdates, isUpdateAvailable } from "@/lib/appUpdate";
+import { setAuthTokenGetter } from "@workspace/api-client-react";
 import { dark } from '@clerk/themes';
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from 'wouter';
 import { Loader2 } from "lucide-react";
@@ -20,6 +35,7 @@ import { ClaimPendingInvite } from "@/components/shared/ClaimPendingInvite";
 // React.lazy only accepts a module with a default export.
 const PrivacyPolicy = lazy(() => import("@/pages/PrivacyPolicy").then((m) => ({ default: m.PrivacyPolicy })));
 const TermsOfService = lazy(() => import("@/pages/TermsOfService").then((m) => ({ default: m.TermsOfService })));
+const SmsTerms = lazy(() => import("@/pages/SmsTerms").then((m) => ({ default: m.SmsTerms })));
 const WhispsList = lazy(() => import("@/pages/WhispsList").then((m) => ({ default: m.WhispsList })));
 const CircleFeed = lazy(() => import("@/pages/CircleFeed").then((m) => ({ default: m.CircleFeed })));
 const MyCircles = lazy(() => import("@/pages/MyCircles").then((m) => ({ default: m.MyCircles })));
@@ -41,6 +57,9 @@ const PublicTextWhisp = lazy(() => import("@/pages/PublicTextWhisp").then((m) =>
 const TextWhispsList = lazy(() => import("@/pages/TextWhispsList").then((m) => ({ default: m.TextWhispsList })));
 const SendTextWhisp = lazy(() => import("@/pages/SendTextWhisp").then((m) => ({ default: m.SendTextWhisp })));
 const TextWhispDetail = lazy(() => import("@/pages/TextWhispDetail").then((m) => ({ default: m.TextWhispDetail })));
+const DebateTopics = lazy(() => import("@/pages/DebateTopics").then((m) => ({ default: m.DebateTopics })));
+const DebateTopicDetail = lazy(() => import("@/pages/DebateTopicDetail").then((m) => ({ default: m.DebateTopicDetail })));
+const CreateDebateTopic = lazy(() => import("@/pages/CreateDebateTopic").then((m) => ({ default: m.CreateDebateTopic })));
 const SubscribePage = lazy(() => import("@/pages/SubscribePage").then((m) => ({ default: m.SubscribePage })));
 const VerifySubscriptionPage = lazy(() => import("@/pages/VerifySubscriptionPage").then((m) => ({ default: m.VerifySubscriptionPage })));
 const UnsubscribeFromMatchingPage = lazy(() => import("@/pages/UnsubscribeFromMatchingPage").then((m) => ({ default: m.UnsubscribeFromMatchingPage })));
@@ -144,6 +163,50 @@ function ClerkQueryClientCacheInvalidator() {
   return null;
 }
 
+// Cookie-based auth (the customFetch default — see its own doc comment)
+// depends on the browser's __session/__client_uat cookies staying in sync
+// under a suffix @clerk/backend derives from the publishable key. On this
+// deployment's exact custom-domain + Frontend-API-proxy combination, the
+// browser's Clerk client ends up refreshing a DIFFERENT cookie suffix family
+// than the one @clerk/backend computes for the same (confirmed byte-
+// identical) key — every request looked signed-out no matter how many times
+// a user signed in, sitewide, regardless of caching/cookie state. Explicitly
+// sending the session token as a Bearer header sidesteps that whole
+// cookie-suffix mechanism: @clerk/backend's header-auth path verifies the
+// token directly and never touches __client_uat at all.
+function ClerkAuthTokenBridge() {
+  const { getToken } = useAuth();
+
+  useEffect(() => {
+    setAuthTokenGetter(() => getToken());
+    return () => setAuthTokenGetter(null);
+  }, [getToken]);
+
+  return null;
+}
+
+// Registers the service worker on load, for everyone.
+//
+// It used to be registered only as a side effect of turning on push
+// notifications (lib/push.ts subscribeToPush), which meant anyone who never
+// granted notification permission had no service worker at all — and Chrome
+// will not fire `beforeinstallprompt` without one, so the install prompt
+// could never appear for most people. Registration is cheap, idempotent, and
+// the worker itself does nothing but handle pushes and pass fetches straight
+// through (public/sw.js).
+function ServiceWorkerRegistration() {
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    // Failure here is never worth surfacing: it means no push and no install
+    // offer, not a broken app.
+    void registerServiceWorker()
+      .then((registration) => watchForUpdates(registration))
+      .catch(() => {});
+  }, []);
+
+  return null;
+}
+
 function HomeRedirect() {
   return (
     <>
@@ -163,7 +226,22 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
 }
 
 function ClerkProviderWithRoutes() {
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
+  const skipNextUpdateCheck = useRef(true);
+
+  // Belt-and-suspenders for watchForUpdates' own background-tab reload: that
+  // covers the common case (a phone gets backgrounded within seconds), but a
+  // desktop tab left open and actively used for hours might never go hidden.
+  // The next real navigation is the other moment a stale bundle would 404
+  // anyway, so treat it the same way — reload for real instead of letting
+  // wouter hand off to a chunk that no longer exists on the server.
+  useEffect(() => {
+    if (skipNextUpdateCheck.current) {
+      skipNextUpdateCheck.current = false;
+      return;
+    }
+    if (isUpdateAvailable()) window.location.reload();
+  }, [location]);
 
   return (
     <ClerkProvider
@@ -176,8 +254,13 @@ function ClerkProviderWithRoutes() {
       routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
     >
       <QueryClientProvider client={queryClient}>
+        <ClerkAuthTokenBridge />
+        <ServiceWorkerRegistration />
+        <EnableNotificationsPrompt />
+        <PinToTaskbarTip />
         <ClerkQueryClientCacheInvalidator />
         <ClaimPendingInvite />
+        <AppErrorBoundary>
         <Suspense fallback={<RouteLoadingFallback />}>
           <Switch>
             <Route path="/" component={HomeRedirect} />
@@ -200,6 +283,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/credits" component={() => <ProtectedRoute component={CreditsPage} />} />
             <Route path="/settings" component={() => <ProtectedRoute component={SettingsPage} />} />
             <Route path="/invite" component={() => <ProtectedRoute component={InvitePage} />} />
+            <Route path="/debate-topics/new" component={() => <ProtectedRoute component={CreateDebateTopic} />} />
             <Route path="/send-text" component={() => <ProtectedRoute component={SendTextWhisp} />} />
             <Route path="/text-whisps/:id" component={() => <ProtectedRoute component={TextWhispDetail} />} />
             <Route path="/text-whisps" component={() => <ProtectedRoute component={TextWhispsList} />} />
@@ -214,6 +298,8 @@ function ClerkProviderWithRoutes() {
             <Route path="/admin/notifications" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminNotifications} />} />} />
             <Route path="/admin" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminDashboard} />} />} />
 
+            <Route path="/debate-topics/:id" component={DebateTopicDetail} />
+            <Route path="/debate-topics" component={DebateTopics} />
             <Route path="/w/:token" component={PublicWhispPage} />
             <Route path="/invite/:token" component={PublicInvitePage} />
             <Route path="/tw/:token" component={PublicTextWhisp} />
@@ -221,6 +307,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/privacy-policy" component={PrivacyPolicy} />
             <Route path="/terms" component={TermsOfService} />
             <Route path="/terms-and-conditions" component={TermsOfService} />
+            <Route path="/sms-terms" component={SmsTerms} />
             <Route path="/subscribe" component={SubscribePage} />
             <Route path="/verify-subscription" component={VerifySubscriptionPage} />
             <Route path="/unsubscribe" component={UnsubscribeFromMatchingPage} />
@@ -235,6 +322,7 @@ function ClerkProviderWithRoutes() {
             </Route>
           </Switch>
         </Suspense>
+        </AppErrorBoundary>
         <Toaster />
       </QueryClientProvider>
     </ClerkProvider>

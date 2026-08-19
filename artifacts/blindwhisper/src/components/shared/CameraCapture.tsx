@@ -100,6 +100,28 @@ export function CameraCapture({ onUploaded }: CameraCaptureProps) {
       if (unsupportedReason) return;
       setPhase("requesting");
       setErrorMessage(null);
+
+      // Release whatever camera is currently held BEFORE asking for a new
+      // one — not after, which is what this used to do. Flipping from front
+      // to back is really "stop this track, start a different one," and
+      // most mobile browsers/OSes can't hold both open at once: a still-live
+      // front-camera track makes the very next getUserMedia() call for the
+      // back camera fail with NotReadableError ("already in use by another
+      // app"), even though nothing else is actually using it — the previous
+      // request from THIS component is. A brief pause after stopping gives
+      // the OS a moment to actually release the hardware before the next
+      // request comes in; skipped on the very first request, where there's
+      // nothing to release yet.
+      const hadPreviousStream = stream !== null;
+      if (hadPreviousStream) {
+        setStream((current) => {
+          current?.getTracks().forEach((t) => t.stop());
+          return null;
+        });
+        await new Promise((resolve) => setTimeout(resolve, 250));
+        if (!isMountedRef.current) return;
+      }
+
       try {
         const nextStream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: nextFacingMode },
@@ -114,6 +136,8 @@ export function CameraCapture({ onUploaded }: CameraCaptureProps) {
           return;
         }
         setStream((current) => {
+          // Belt-and-suspenders: stop anything unexpectedly still set (e.g.
+          // a stream acquired by an overlapping call) rather than leaking it.
           current?.getTracks().forEach((t) => t.stop());
           return nextStream;
         });
@@ -125,7 +149,7 @@ export function CameraCapture({ onUploaded }: CameraCaptureProps) {
         setPhase("denied");
       }
     },
-    [unsupportedReason],
+    [unsupportedReason, stream],
   );
 
   function handleModeChange(mode: CaptureMode) {

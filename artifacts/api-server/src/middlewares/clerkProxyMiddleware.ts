@@ -103,6 +103,25 @@ export function clerkProxyMiddleware(): RequestHandler {
         delete headers["connection"];
         delete headers["keep-alive"];
 
+        // Every response through this proxy is per-session/per-request
+        // dynamic state (client, session tokens, Set-Cookie for
+        // __client_uat/__session) — never safe to cache at any intermediary
+        // (the deployment's edge/CDN, a browser disk cache, etc). Force this
+        // regardless of whatever Clerk's own response set, overriding rather
+        // than merely adding: a cached stale response here doesn't just show
+        // outdated content, it makes auth fail outright, since the backend
+        // compares a live-decoded session token against whatever
+        // __client_uat value the client is holding. A previously-cached
+        // /v1/client response replayed indefinitely was traced as the actual
+        // cause of a persistent "session-token-iat-before-client-uat" 401 on
+        // every request, no matter how many times a user signed in — the
+        // browser's __client_uat cookie was correct, but frozen at whatever
+        // value was live the moment a cache first captured this response.
+        headers["cache-control"] = "no-store, private";
+        delete headers["etag"];
+        delete headers["age"];
+        delete headers["expires"];
+
         const status = proxyRes.statusCode ?? 502;
         // Content-Length is forbidden on 1xx/204; HEAD/304 may keep theirs.
         if (status < 200 || status === 204) {

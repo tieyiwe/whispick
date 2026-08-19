@@ -40,7 +40,7 @@ const PLANS = [
       "Identity reveal flow",
       "Deep analytics per whisp",
       "5 Ghost Boost credits/month",
-      "Family Circle (5 members)",
+      "Family Blind Circle (5 members)",
       "Weekly Impact Digest",
     ],
   },

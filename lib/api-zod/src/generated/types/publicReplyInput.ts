@@ -21,4 +21,9 @@ export interface PublicReplyInput {
   videoPlatform?: string | null;
   /** @nullable */
   moodTag?: string | null;
+  /**
+     * Reply to a specific earlier message on the same whisp.
+     * @nullable
+     */
+  parentReplyId?: string | null;
 }

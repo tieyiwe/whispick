@@ -1,7 +1,8 @@
 import webpush from "web-push";
 import { db } from "@workspace/db";
-import { pushSubscriptionsTable } from "@workspace/db";
+import { pushSubscriptionsTable, notificationsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { randomUUID } from "crypto";
 import { logger } from "./logger";
 
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
@@ -36,6 +37,47 @@ export async function notifyUser(userId: string, title: string, body: string, ur
 
   const results = await Promise.all(subscriptions.map((sub) => pushToSubscription(sub, title, body, url, { userId })));
   return results.filter(Boolean).length;
+}
+
+// The two-layer notification every user-facing event should use: a
+// PERSISTENT in-app notification (the bell — routes/user.ts's GET
+// /notifications) plus a best-effort live browser push.
+//
+// notifyUser alone is push-ONLY, which means the notification effectively
+// doesn't exist for anyone who hasn't granted browser-notification
+// permission, has no VAPID keys configured, or simply wasn't online when it
+// fired — there's nothing to come back and find later. Anything a user would
+// reasonably expect to see in the app (a reply to their whisp, their whisp
+// being opened/watched/appreciated) needs to be persisted too, which is what
+// this does. Push failures never block persistence: the row is written
+// first, and the push is fire-and-forget after it.
+//
+// Same shape as lib/deliver.ts's deliverInApp, minus the delivery-attempt
+// logging that's specific to actually delivering a whisp to a recipient.
+export async function notifyUserPersisted(
+  userId: string,
+  title: string,
+  body: string,
+  url: string,
+  kind?: string,
+): Promise<void> {
+  try {
+    await db.insert(notificationsTable).values({
+      id: randomUUID(),
+      targetUserId: userId,
+      title,
+      body,
+      url: url || null,
+      kind: kind ?? null,
+      // Not admin-composed — see the notifications schema comment.
+      createdByAdminId: null,
+    });
+  } catch (err) {
+    // A failed persist shouldn't swallow the live push too — log and still
+    // try to reach them in the moment.
+    logger.error({ userId, err }, "Failed to persist in-app notification");
+  }
+  void notifyUser(userId, title, body, url);
 }
 
 // Shared by notifyUser (one person's browsers) and notifyAllUsers (an

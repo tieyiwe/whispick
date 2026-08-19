@@ -85,8 +85,12 @@ async function notifyInviteeOfReveal(invite: Invite): Promise<void> {
 
 const createInviteSchema = z
   .object({
-    recipientEmail: z.string().nullable().optional(),
-    recipientPhone: z.string().nullable().optional(),
+    // Validated, not bare strings — these go straight to the mail/SMS
+    // transports as the destination address. See the same fields in
+    // routes/whisps.ts for why an unvalidated email was a multi-recipient
+    // injection (nodemailer treats `to` as an address list).
+    recipientEmail: z.string().email().max(320).nullable().optional(),
+    recipientPhone: z.string().max(32).regex(/^[+0-9()\-.\s]+$/, "Not a valid phone number").nullable().optional(),
     channel: z.enum(CHANNELS),
   })
   .refine((data) => (data.channel === "email" ? !!data.recipientEmail : !!data.recipientPhone), {

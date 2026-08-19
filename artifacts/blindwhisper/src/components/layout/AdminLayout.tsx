@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { Logo } from "@/components/ui/logo";
+import { PullToRefresh, reloadPage } from "@/components/shared/PullToRefresh";
 import { LayoutDashboard, Users, ListVideo, BarChart3, ArrowLeft, ShieldCheck, Sparkles, Bell, ShieldAlert } from "lucide-react";
 
 const ADMIN_NAV_ITEMS = [
@@ -23,11 +24,15 @@ export function AdminLayout({ children }: { children: ReactNode }) {
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
         <div className="max-w-6xl mx-auto px-4 md:px-8 py-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <Logo className="w-7 h-7 text-primary" />
-            <div className="flex items-center gap-2">
-              <span className="font-serif text-xl font-bold text-foreground tracking-tight">Blind Whisper</span>
-              <span className="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-primary/15 text-primary">
+          {/* Keeps its own composition rather than using LogoLockup: the
+              Admin pill has to sit beside the wordmark, not below it. */}
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Logo className="h-9 w-auto sm:h-10 shrink-0 text-primary" />
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="font-serif text-xl sm:text-2xl font-bold text-foreground tracking-tight truncate">
+                Blind Whisper
+              </span>
+              <span className="flex shrink-0 items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-primary/15 text-primary">
                 <ShieldCheck className="w-3 h-3" /> Admin
               </span>
             </div>
@@ -57,7 +62,11 @@ export function AdminLayout({ children }: { children: ReactNode }) {
       </header>
 
       <main className="flex-1">
-        <div className="max-w-6xl mx-auto p-4 md:p-8">{children}</div>
+        {/* Same swipe-down refresh the rest of the app has, so the gesture
+            doesn't silently stop working the moment you cross into admin. */}
+        <PullToRefresh onRefresh={reloadPage}>
+          <div className="max-w-6xl mx-auto p-4 md:p-8">{children}</div>
+        </PullToRefresh>
       </main>
     </div>
   );
