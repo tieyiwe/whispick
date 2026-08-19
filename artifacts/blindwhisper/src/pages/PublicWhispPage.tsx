@@ -40,11 +40,16 @@ import { savePendingForward } from "@/lib/forwardVideo";
 import { getVisitorId } from "@/lib/anonymousVisitor";
 import { getSavedCircleDmToken, saveCircleDmToken } from "@/lib/circleDm";
 
-function BlindWhisperLogoMark() {
+function BlindWhisperLogoMark({ href }: { href: string }) {
   return (
     // A recipient's first and often only sight of the brand, so the lockup
     // gets its full form here — mark at a real size, with the strapline.
-    <LogoLockup tagline />
+    // Clickable like everywhere else the logo appears (AppLayout,
+    // LegalLayout) — home for an anonymous visitor, their own dashboard for
+    // a signed-in Whisperer (the caller picks which via `href`).
+    <a href={href} className="inline-block hover:opacity-80 transition-opacity">
+      <LogoLockup tagline />
+    </a>
   );
 }
 
@@ -495,7 +500,7 @@ export function PublicWhispPage() {
         className="fixed top-0 inset-x-0 z-20 px-5 pb-5 flex items-center justify-between border-b border-border/30 bg-background/95 backdrop-blur"
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 1.25rem)" }}
       >
-        <BlindWhisperLogoMark />
+        <BlindWhisperLogoMark href={isSignedIn ? "/dashboard" : "/"} />
         {isSignedIn ? (
           // A signed-in Whisperer landing here (their own Received tab, a
           // notification, a link someone sent them) has an app to go back

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
-import { isIos, isMobileDevice, onJustInstalled } from "@/lib/installApp";
+import { isIos, isMobileDevice, onNotificationStepDone } from "@/lib/installApp";
 
 /**
  * A brief, one-time nudge right after a desktop install completes: the app
@@ -11,15 +11,17 @@ import { isIos, isMobileDevice, onJustInstalled } from "@/lib/installApp";
  *
  * Mounted once, globally, alongside ServiceWorkerRegistration (not inside
  * InstallAppPrompt) so it isn't tied to whichever page happened to trigger
- * the install — `onJustInstalled` can fire from either the landing page or
- * the in-app prompt.
+ * the install. Listens for `onNotificationStepDone`, not `onJustInstalled`
+ * directly — EnableNotificationsPrompt is the first post-install nudge, and
+ * this one is meant to follow it, not compete for the same fixed
+ * bottom-of-viewport slot at the same time.
  */
 export function PinToTaskbarTip() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     if (isIos() || isMobileDevice()) return;
-    return onJustInstalled(() => setVisible(true));
+    return onNotificationStepDone(() => setVisible(true));
   }, []);
 
   if (!visible) return null;

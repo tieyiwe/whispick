@@ -65,7 +65,9 @@ export function LandingPage() {
         className="absolute top-0 w-full px-4 sm:px-6 pb-4 sm:pb-6 flex justify-between items-center z-10 gap-2"
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}
       >
-        <LogoLockup />
+        <a href="/" className="hover:opacity-80 transition-opacity">
+          <LogoLockup />
+        </a>
         <div className="flex items-center gap-2 sm:gap-4 shrink-0">
           <Link href="/sign-in">
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground rounded-full px-3 sm:px-4">

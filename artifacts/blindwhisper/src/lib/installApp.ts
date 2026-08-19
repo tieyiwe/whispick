@@ -175,6 +175,25 @@ export function notifyJustInstalled(): void {
   announceJustInstalled();
 }
 
+// A third channel, for sequencing the two post-install nudges
+// (EnableNotificationsPrompt, then PinToTaskbarTip on desktop) one after
+// another instead of both popping into the same fixed bottom-of-viewport
+// slot at once. The notifications prompt listens for `onJustInstalled`
+// directly (it's the FIRST thing to show); the pin-to-taskbar tip listens
+// for this instead, fired once the notifications step is fully resolved
+// (enabled, denied, or not applicable on this browser) — never before.
+type StepDoneListener = () => void;
+const notificationStepDoneListeners = new Set<StepDoneListener>();
+
+export function onNotificationStepDone(listener: StepDoneListener): () => void {
+  notificationStepDoneListeners.add(listener);
+  return () => notificationStepDoneListeners.delete(listener);
+}
+
+export function announceNotificationStepDone(): void {
+  for (const listener of notificationStepDoneListeners) listener();
+}
+
 if (typeof window !== "undefined") {
   window.addEventListener("beforeinstallprompt", (e) => {
     e.preventDefault();

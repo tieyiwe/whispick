@@ -11,6 +11,7 @@ import { registerServiceWorker } from "@/lib/push";
 // of that.
 import "@/lib/installApp";
 import { PinToTaskbarTip } from "@/components/shared/PinToTaskbarTip";
+import { EnableNotificationsPrompt } from "@/components/shared/EnableNotificationsPrompt";
 import { AppErrorBoundary } from "@/components/shared/AppErrorBoundary";
 import { watchForUpdates, isUpdateAvailable } from "@/lib/appUpdate";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
@@ -255,6 +256,7 @@ function ClerkProviderWithRoutes() {
       <QueryClientProvider client={queryClient}>
         <ClerkAuthTokenBridge />
         <ServiceWorkerRegistration />
+        <EnableNotificationsPrompt />
         <PinToTaskbarTip />
         <ClerkQueryClientCacheInvalidator />
         <ClaimPendingInvite />
