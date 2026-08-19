@@ -17,6 +17,16 @@ vi.mock("../lib/categorizeWhisp", () => ({
   categorizeWhispsAsync: async () => {},
 }));
 
+// Ghost Boost is paused in production (GHOST_BOOST_ENABLED = false in
+// lib/plans.ts), but the matching/fan-out logic this file exercises is
+// still real, still tested code kept ready for when the feature comes
+// back — so this file overrides just that one flag to keep exercising it,
+// without touching anything else lib/plans.ts exports.
+vi.mock("../lib/plans", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../lib/plans")>();
+  return { ...actual, GHOST_BOOST_ENABLED: true };
+});
+
 // Sender-facing notifications go through notifyUserPersisted (persists an
 // in-app notification, then fires a best-effort push). Mocking it is the only
 // way to distinguish "the ghost_boost fan-out guard skipped the call" from

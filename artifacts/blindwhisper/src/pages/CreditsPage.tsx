@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { Check, Ghost, Zap, Flame, CreditCard, ArrowUpRight, Loader2 } from "lucide-react";
+import { GHOST_BOOST_ENABLED } from "@/lib/featureFlags";
 
 const PLANS = [
   {
@@ -21,7 +22,7 @@ const PLANS = [
       "Unlimited Whisper Links",
       "Scheduling",
       "Anonymous reply inbox",
-      "2 Ghost Boost credits/month",
+      ...(GHOST_BOOST_ENABLED ? ["2 Ghost Boost credits/month"] : []),
     ],
   },
   {
@@ -39,7 +40,7 @@ const PLANS = [
       "Mood tags",
       "Identity reveal flow",
       "Deep analytics per whisp",
-      "5 Ghost Boost credits/month",
+      ...(GHOST_BOOST_ENABLED ? ["5 Ghost Boost credits/month"] : []),
       "Family Blind Circle (5 members)",
       "Weekly Impact Digest",
     ],
@@ -201,42 +202,44 @@ export function CreditsPage() {
         </div>
 
         {/* Ghost Boost credit packs */}
-        <div>
-          <h2 className="text-xl font-serif font-semibold mb-4">Ghost Boost Credit Packs</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {CREDIT_PACKS.map((pack) => (
-              <Card
-                key={pack.id}
-                className="bg-card border-border/50 hover:border-primary/30 transition-colors cursor-pointer relative overflow-hidden"
-                data-testid={`credit-pack-${pack.id}`}
-              >
-                <CardContent className="p-4 text-center">
-                  {pack.savings && (
-                    <Badge className="absolute top-2 right-2 text-[10px] bg-green-500/20 text-green-400 border-green-500/30">
-                      {pack.savings}
-                    </Badge>
-                  )}
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                    <Ghost className="w-5 h-5 text-primary" />
-                  </div>
-                  <p className="text-2xl font-bold text-foreground">{pack.boosts}</p>
-                  <p className="text-xs text-muted-foreground mb-3">{pack.boosts === 1 ? "Boost" : "Boosts"}</p>
-                  <p className="text-lg font-semibold text-foreground mb-3">{pack.price}</p>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="w-full rounded-full text-xs border-primary/30 hover:bg-primary/10 hover:text-primary"
-                    disabled={checkout.isPending}
-                    onClick={() => startCheckout("credit_pack", pack.id)}
-                    data-testid={`button-buy-${pack.id}`}
-                  >
-                    {checkout.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "Buy"}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+        {GHOST_BOOST_ENABLED && (
+          <div>
+            <h2 className="text-xl font-serif font-semibold mb-4">Ghost Boost Credit Packs</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {CREDIT_PACKS.map((pack) => (
+                <Card
+                  key={pack.id}
+                  className="bg-card border-border/50 hover:border-primary/30 transition-colors cursor-pointer relative overflow-hidden"
+                  data-testid={`credit-pack-${pack.id}`}
+                >
+                  <CardContent className="p-4 text-center">
+                    {pack.savings && (
+                      <Badge className="absolute top-2 right-2 text-[10px] bg-green-500/20 text-green-400 border-green-500/30">
+                        {pack.savings}
+                      </Badge>
+                    )}
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                      <Ghost className="w-5 h-5 text-primary" />
+                    </div>
+                    <p className="text-2xl font-bold text-foreground">{pack.boosts}</p>
+                    <p className="text-xs text-muted-foreground mb-3">{pack.boosts === 1 ? "Boost" : "Boosts"}</p>
+                    <p className="text-lg font-semibold text-foreground mb-3">{pack.price}</p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full rounded-full text-xs border-primary/30 hover:bg-primary/10 hover:text-primary"
+                      disabled={checkout.isPending}
+                      onClick={() => startCheckout("credit_pack", pack.id)}
+                      data-testid={`button-buy-${pack.id}`}
+                    >
+                      {checkout.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "Buy"}
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Transaction history */}
         <div>

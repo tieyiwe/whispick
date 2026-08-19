@@ -34,6 +34,20 @@ export const PLAN_LIMITS: Record<string, { whisperLinksPerMonth: number | null; 
 
 export const GHOST_BOOST_COST_USD = 6.99;
 
+// Ghost Boost is paused, not removed: the original idea was to buy reach on
+// social ad platforms, which turned out not to be viable (no way to
+// guarantee reaching one identified person, plus anti-harassment ad-policy
+// risk), and the anonymous-mailing-list matching that replaced it hasn't
+// proven itself either. The code, schema, tests, and historical
+// data/campaigns all stay intact so this can be re-scoped and flipped back
+// on later — this ONE flag is the single place that does it. Every other
+// gate in the app (routes/whisps.ts's send block, routes/billing.ts's
+// credit-pack checkout block, SendWhisp.tsx/CreditsPage.tsx/Dashboard.tsx's
+// hidden UI) reads from this constant. Viewing/managing a PAST Ghost Boost
+// campaign (WhispDetail.tsx's match-stats view, admin panel) is
+// deliberately NOT gated by this — only new sends and new purchases are.
+export const GHOST_BOOST_ENABLED = false;
+
 // How many times an ANONYMOUS recipient can reply to a single whisp before
 // the thread closes and the sender is offered more (whisps.
 // replyCreditsPurchased). Overridable via RECIPIENT_FREE_REPLIES; set it to

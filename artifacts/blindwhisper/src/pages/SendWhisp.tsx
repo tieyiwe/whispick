@@ -63,6 +63,7 @@ import { CameraCapture } from "@/components/shared/CameraCapture";
 import { takePendingForward } from "@/lib/forwardVideo";
 import { DemographicsGateDialog } from "@/components/shared/DemographicsGateDialog";
 import { needsDemographics } from "@/lib/demographics";
+import { GHOST_BOOST_ENABLED } from "@/lib/featureFlags";
 
 const WHISPER_CHANNELS = [
   { key: "email", label: "Email", icon: Mail },
@@ -1270,27 +1271,29 @@ export function SendWhisp() {
                     </div>
                   )}
 
-                  <button
-                    type="button"
-                    onClick={() => setDeliveryMethod("ghost_boost")}
-                    data-testid="delivery-ghost-boost"
-                    className={`p-4 rounded-xl border text-left transition-all ${
-                      deliveryMethod === "ghost_boost"
-                        ? "border-primary bg-primary/10"
-                        : "border-border/50 hover:border-border"
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={`p-2 rounded-xl ${deliveryMethod === "ghost_boost" ? "bg-primary/20" : "bg-muted/40"}`}>
-                        <Ghost className="w-5 h-5 text-primary" />
+                  {GHOST_BOOST_ENABLED && (
+                    <button
+                      type="button"
+                      onClick={() => setDeliveryMethod("ghost_boost")}
+                      data-testid="delivery-ghost-boost"
+                      className={`p-4 rounded-xl border text-left transition-all ${
+                        deliveryMethod === "ghost_boost"
+                          ? "border-primary bg-primary/10"
+                          : "border-border/50 hover:border-border"
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`p-2 rounded-xl ${deliveryMethod === "ghost_boost" ? "bg-primary/20" : "bg-muted/40"}`}>
+                          <Ghost className="w-5 h-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-foreground">Ghost Boost</p>
+                          <p className="text-sm text-muted-foreground mt-0.5">Matched to strangers who opted in to hear about topics like this one — anonymous both ways. Reach isn't guaranteed; it depends on how many people are subscribed right now.</p>
+                          <p className="text-xs text-secondary mt-1 font-medium">1 Credit ($6.99)</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-semibold text-foreground">Ghost Boost</p>
-                        <p className="text-sm text-muted-foreground mt-0.5">Matched to strangers who opted in to hear about topics like this one — anonymous both ways. Reach isn't guaranteed; it depends on how many people are subscribed right now.</p>
-                        <p className="text-xs text-secondary mt-1 font-medium">1 Credit ($6.99)</p>
-                      </div>
-                    </div>
-                  </button>
+                    </button>
+                  )}
                   {/* Blind Circle used to be a fourth option here. Posting to a
                       community feed has no recipient at all, so asking people to
                       start a choose-a-recipient wizard in order to do it was

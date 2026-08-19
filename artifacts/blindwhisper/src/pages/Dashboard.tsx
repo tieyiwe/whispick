@@ -11,6 +11,7 @@ import { Thumbnail } from "@/components/shared/Thumbnail";
 import { Button } from "@/components/ui/button";
 import { hasPendingForward, savePendingForward } from "@/lib/forwardVideo";
 import { hasDismissedPhoneVerificationDialog, dismissPhoneVerificationDialog } from "@/lib/phoneVerificationDialog";
+import { GHOST_BOOST_ENABLED } from "@/lib/featureFlags";
 
 // Lazy, even though Dashboard itself deliberately isn't (see the code-split
 // comment in App.tsx): the phone verification flow pulls in libphonenumber-js
@@ -238,27 +239,31 @@ export function Dashboard() {
           </div>
 
           <div className="space-y-4">
-            <h2 className="text-xl font-serif font-semibold">Ghost Boosts</h2>
-            <Card className="bg-card border-border/50 relative overflow-hidden">
-              <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] bg-primary/10 rounded-full blur-[60px] pointer-events-none" />
-              <CardContent className="p-6 text-center">
-                <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4 glow-card">
-                  <Ghost className="w-8 h-8 text-primary" />
-                </div>
-                <h3 className="text-3xl font-bold text-foreground mb-1">{stats?.boostCredits || 0}</h3>
-                <p className="text-muted-foreground text-sm mb-6">Boost Credits Available</p>
-                
-                <p className="text-xs text-muted-foreground mb-6">
-                  Ghost Boost queues a whisp for boosted, wider-reach delivery instead of a direct message — it doesn't guarantee it reaches one specific person the way Whisper Link does.
-                </p>
-                
-                <Link href="/credits">
-                  <Button variant="outline" className="w-full rounded-full border-primary/30 hover:bg-primary/10 hover:text-primary">
-                    Get More Credits
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
+            {GHOST_BOOST_ENABLED && (
+              <>
+                <h2 className="text-xl font-serif font-semibold">Ghost Boosts</h2>
+                <Card className="bg-card border-border/50 relative overflow-hidden">
+                  <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] bg-primary/10 rounded-full blur-[60px] pointer-events-none" />
+                  <CardContent className="p-6 text-center">
+                    <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4 glow-card">
+                      <Ghost className="w-8 h-8 text-primary" />
+                    </div>
+                    <h3 className="text-3xl font-bold text-foreground mb-1">{stats?.boostCredits || 0}</h3>
+                    <p className="text-muted-foreground text-sm mb-6">Boost Credits Available</p>
+
+                    <p className="text-xs text-muted-foreground mb-6">
+                      Ghost Boost queues a whisp for boosted, wider-reach delivery instead of a direct message — it doesn't guarantee it reaches one specific person the way Whisper Link does.
+                    </p>
+
+                    <Link href="/credits">
+                      <Button variant="outline" className="w-full rounded-full border-primary/30 hover:bg-primary/10 hover:text-primary">
+                        Get More Credits
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              </>
+            )}
 
             <h2 className="text-xl font-serif font-semibold pt-2">Suggestions Library</h2>
             <Card className="bg-card border-border/50 relative overflow-hidden" data-testid="card-suggestions-nudge">

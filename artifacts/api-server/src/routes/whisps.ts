@@ -26,7 +26,7 @@ import { moderateWhispAsync } from "../lib/moderation";
 import { needsDemographics } from "../lib/demographics";
 import { computeExpiresAt, MAX_SCHEDULE_DAYS } from "../lib/expiration";
 import { MAX_SCHEDULE_DAYS_WITH_UPLOAD } from "../lib/uploads";
-import { whisperLinkLimitFor, GHOST_BOOST_COST_USD, recipientReplyAllowance } from "../lib/plans";
+import { whisperLinkLimitFor, GHOST_BOOST_COST_USD, GHOST_BOOST_ENABLED, recipientReplyAllowance } from "../lib/plans";
 import { createWhispLimiter, noteSuggestionLimiter, conciergeLimiter, publicEndpointLimiter } from "../lib/rateLimit";
 import { getGhostBoostMatchStats } from "../lib/matching";
 import { generateNoteSuggestions } from "../lib/noteSuggestions";
@@ -313,6 +313,11 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
   }
 
   const data = parsed.data;
+
+  if (data.deliveryMethod === "ghost_boost" && !GHOST_BOOST_ENABLED) {
+    res.status(403).json({ error: "Ghost Boost is temporarily unavailable." });
+    return;
+  }
 
   let uploadedVideo: typeof uploadedVideosTable.$inferSelect | null = null;
   if (data.uploadedVideoId) {

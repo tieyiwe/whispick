@@ -1,9 +1,19 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import request from "supertest";
 import app from "../app";
 import { db, usersTable, whispsTable, whispRepliesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { TEST_USER_HEADER } from "./setup";
+
+// Ghost Boost is paused in production (GHOST_BOOST_ENABLED = false in
+// lib/plans.ts — see ghostBoostDisabled.test.ts for coverage of that
+// default), but the credit-spend/scheduling logic this file's Ghost Boost
+// tests exercise is still real code kept ready for when the feature comes
+// back, so this file overrides just that one flag to keep exercising it.
+vi.mock("../lib/plans", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../lib/plans")>();
+  return { ...actual, GHOST_BOOST_ENABLED: true };
+});
 
 const USER_A = "clerk_user_a";
 const USER_B = "clerk_user_b";
