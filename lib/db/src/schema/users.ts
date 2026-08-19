@@ -26,6 +26,20 @@ export const usersTable = pgTable("users", {
   // lib/deliver.ts's SMS/WhatsApp-skip-Twilio matching) — never `phone`
   // alone.
   phoneVerifiedAt: timestamp("phone_verified_at", { withTimezone: true }),
+  // Self-reported, ISO 3166-1 alpha-2 (e.g. "US", "GB", "KE") — captured
+  // from the country picker in CountryPhoneInput.tsx at the moment a user
+  // confirms their phone number (see routes/user.ts's
+  // /phone/confirm-verification), which is both a natural low-friction
+  // moment to ask and directly useful right then: it's what lets
+  // lib/phone.ts's normalizePhoneE164 parse a bare national number against
+  // the RIGHT country instead of always assuming US. Deliberately distinct
+  // from the country/region/city columns below, which are best-effort
+  // IP-geolocation guesses for aggregate analytics only — this one is a
+  // real, user-confirmed fact, not an inference, and (once phone
+  // verification isn't the only way to set it) is meant to become the
+  // general "this user's country" signal for anything that needs one
+  // (e.g. a future locale/language default).
+  countryCode: text("country_code"),
   // Self-reported, optional-to-decline demographic buckets — see
   // artifacts/api-server/src/lib/demographics.ts for the fixed value sets
   // and where they're collected (a one-time gate before a user's first
@@ -48,6 +62,14 @@ export const usersTable = pgTable("users", {
   region: text("region"),
   city: text("city"),
   lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
+  // Opt-out, on by default: whether this Whisperer wants a "you have a new
+  // whisp" email in addition to the in-app notification when someone
+  // whisps them (see lib/deliver.ts's deliverWhisperLink). Never gates the
+  // in-app notification itself — only the extra inbox email. Defaults to
+  // true so existing rows (backfilled by the migration) and every new
+  // signup keep getting email unless they explicitly turn it off in
+  // Settings.
+  emailNotificationsEnabled: boolean("email_notifications_enabled").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

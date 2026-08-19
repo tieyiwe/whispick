@@ -1,5 +1,5 @@
 import { useUnsubscribeFromMatching, getUnsubscribeFromMatchingQueryKey } from "@workspace/api-client-react";
-import { Logo } from "@/components/ui/logo";
+import { LogoLockup } from "@/components/ui/logo";
 import { Loader2, Check, X } from "lucide-react";
 
 export function UnsubscribeFromMatchingPage() {
@@ -12,10 +12,7 @@ export function UnsubscribeFromMatchingPage() {
   return (
     <div className="min-h-[100dvh] bg-background flex flex-col items-center justify-center px-5 text-center relative overflow-hidden">
       <div className="absolute top-[-15%] left-[-15%] w-[70%] h-[45%] rounded-full blur-[110px] pointer-events-none bg-primary/15" />
-      <div className="flex items-center gap-2 mb-8 relative z-10">
-        <Logo className="w-6 h-6 text-primary" />
-        <span className="font-serif text-xl font-bold text-foreground tracking-tight">Blind Whisper</span>
-      </div>
+      <LogoLockup className="mb-8 relative z-10" />
 
       <div className="max-w-sm space-y-3 relative z-10" data-testid="unsubscribe-status">
         {!token || isError ? (

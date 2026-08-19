@@ -20,6 +20,9 @@ import {
   conciergeRequestsTable,
   invitesTable,
   textWhispsTable,
+  circleCommentsTable,
+  debateTopicsTable,
+  debateTopicCommentsTable,
   type User,
 } from "@workspace/db";
 import { and, asc, count, desc, eq, gte, ilike, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
@@ -30,6 +33,7 @@ import { resolveVideoMeta } from "../lib/videoMeta";
 import { generateSuggestionSummaryAsync } from "../lib/suggestionSummary";
 import { runSuggestionDiscoveryAgent } from "../lib/suggestionAgent";
 import { notifyUser, notifyAllUsers } from "../lib/push";
+import { httpUrlString, isHttpUrlOrAppPath } from "../lib/safeUrl";
 
 const router = Router();
 
@@ -96,18 +100,22 @@ router.get("/users/:id", async (req, res): Promise<void> => {
       .innerJoin(whispsTable, eq(whispRepliesTable.whispId, whispsTable.id))
       .where(eq(whispsTable.senderId, user.id))
       .then((r) => r[0]),
-    // Every content-safety flag on this user's whisps AND text whisps,
+    // Every content-safety flag on this user's whisps, text whisps, circle
+    // comments, and debate topics/comments they posted while signed in,
     // dismissed or not — an admin reviewing one flag can see this person's
     // full flag history right here instead of hunting for it in the
-    // site-wide queue. leftJoin (not innerJoin) on both content tables since
-    // a flag row only ever has one of whispId/textWhispId set (see
-    // moderation_flags.ts's contentType) — an innerJoin on either alone
-    // would silently drop the other content type's flags.
+    // site-wide queue. leftJoin (not innerJoin) on every content table since
+    // a flag row only ever has one of whispId/textWhispId/circleCommentId/
+    // debateTopicId/debateTopicCommentId set (see moderation_flags.ts's
+    // contentType) — an innerJoin on any one alone would silently drop the
+    // other content types' flags.
     db
       .select({
         id: moderationFlagsTable.id,
         whispId: moderationFlagsTable.whispId,
         textWhispId: moderationFlagsTable.textWhispId,
+        debateTopicId: moderationFlagsTable.debateTopicId,
+        debateTopicCommentId: moderationFlagsTable.debateTopicCommentId,
         contentType: moderationFlagsTable.contentType,
         userId: moderationFlagsTable.userId,
         severity: moderationFlagsTable.severity,
@@ -119,10 +127,16 @@ router.get("/users/:id", async (req, res): Promise<void> => {
         createdAt: moderationFlagsTable.createdAt,
         videoTitle: whispsTable.videoTitle,
         textWhispMessage: textWhispsTable.messageText,
+        circleCommentText: circleCommentsTable.commentText,
+        debateTopicText: debateTopicsTable.topicText,
+        debateTopicCommentText: debateTopicCommentsTable.commentText,
       })
       .from(moderationFlagsTable)
       .leftJoin(whispsTable, eq(moderationFlagsTable.whispId, whispsTable.id))
       .leftJoin(textWhispsTable, eq(moderationFlagsTable.textWhispId, textWhispsTable.id))
+      .leftJoin(circleCommentsTable, eq(moderationFlagsTable.circleCommentId, circleCommentsTable.id))
+      .leftJoin(debateTopicsTable, eq(moderationFlagsTable.debateTopicId, debateTopicsTable.id))
+      .leftJoin(debateTopicCommentsTable, eq(moderationFlagsTable.debateTopicCommentId, debateTopicCommentsTable.id))
       .where(eq(moderationFlagsTable.userId, user.id))
       .orderBy(desc(moderationFlagsTable.createdAt)),
   ]);
@@ -722,7 +736,9 @@ const sendNotificationSchema = z
   .object({
     title: z.string().trim().min(1).max(200),
     body: z.string().trim().min(1).max(2000),
-    url: z.string().min(1).nullable().optional(),
+    // In-app path ("/whisps/abc") or absolute http(s) only — this renders as
+    // a clickable href in every recipient's NotificationBell.
+    url: z.string().min(1).max(2048).refine(isHttpUrlOrAppPath, { message: "Must be an app path or http(s) URL" }).nullable().optional(),
     audience: z.enum(["all", "users"]),
     userIds: z.array(z.string()).optional(),
   })
@@ -835,6 +851,8 @@ router.get("/moderation/flags", async (req, res): Promise<void> => {
         id: moderationFlagsTable.id,
         whispId: moderationFlagsTable.whispId,
         textWhispId: moderationFlagsTable.textWhispId,
+        debateTopicId: moderationFlagsTable.debateTopicId,
+        debateTopicCommentId: moderationFlagsTable.debateTopicCommentId,
         contentType: moderationFlagsTable.contentType,
         userId: moderationFlagsTable.userId,
         severity: moderationFlagsTable.severity,
@@ -846,14 +864,23 @@ router.get("/moderation/flags", async (req, res): Promise<void> => {
         createdAt: moderationFlagsTable.createdAt,
         videoTitle: whispsTable.videoTitle,
         textWhispMessage: textWhispsTable.messageText,
+        circleCommentText: circleCommentsTable.commentText,
+        debateTopicText: debateTopicsTable.topicText,
+        debateTopicCommentText: debateTopicCommentsTable.commentText,
         senderEmail: usersTable.email,
       })
       .from(moderationFlagsTable)
-      // leftJoin, not innerJoin — see the same comment on the
-      // /users/:id moderationFlags query above: a flag row only ever
-      // matches one of whispsTable/textWhispsTable.
+      // leftJoin, not innerJoin — a flag row only ever matches one of
+      // whispsTable/textWhispsTable/circleCommentsTable/debateTopicsTable/
+      // debateTopicCommentsTable, per contentType. usersTable is also a
+      // leftJoin, not inner: a circle_comment or debate_topic_comment flag
+      // from an anonymous (no-account) commenter has userId=null and should
+      // still show up here, just without a "Sender:" link to follow.
       .leftJoin(whispsTable, eq(moderationFlagsTable.whispId, whispsTable.id))
       .leftJoin(textWhispsTable, eq(moderationFlagsTable.textWhispId, textWhispsTable.id))
+      .leftJoin(circleCommentsTable, eq(moderationFlagsTable.circleCommentId, circleCommentsTable.id))
+      .leftJoin(debateTopicsTable, eq(moderationFlagsTable.debateTopicId, debateTopicsTable.id))
+      .leftJoin(debateTopicCommentsTable, eq(moderationFlagsTable.debateTopicCommentId, debateTopicCommentsTable.id))
       .leftJoin(usersTable, eq(moderationFlagsTable.userId, usersTable.id))
       .where(where)
       .orderBy(desc(moderationFlagsTable.createdAt))
@@ -891,6 +918,53 @@ router.patch("/moderation/flags/:id", async (req, res): Promise<void> => {
   res.json(updated);
 });
 
+// POST /api/admin/moderation/flags/:id/remove-content — the real takedown
+// action this queue exists to lead to: PATCH above only ever dismisses or
+// leaves a flag as-is, neither of which touches the underlying content.
+// This pulls it from every public read path by setting removedByAdminAt on
+// whichever table the flag's contentType points at, distinct from
+// deletedByAuthorAt/deletedBySenderAt (the author's/sender's own choice) for
+// the accountability reasons each of those columns' comments describe.
+router.post("/moderation/flags/:id/remove-content", async (req, res): Promise<void> => {
+  const flag = await db.select().from(moderationFlagsTable).where(eq(moderationFlagsTable.id, req.params.id)).then((r) => r[0]);
+  if (!flag) {
+    res.status(404).json({ error: "Flag not found" });
+    return;
+  }
+
+  const now = new Date();
+  switch (flag.contentType) {
+    case "whisp":
+      if (!flag.whispId) { res.status(400).json({ error: "Flag has no associated whisp" }); return; }
+      await db.update(whispsTable).set({ removedByAdminAt: now }).where(eq(whispsTable.id, flag.whispId));
+      break;
+    case "circle_comment":
+      if (!flag.circleCommentId) { res.status(400).json({ error: "Flag has no associated comment" }); return; }
+      await db.update(circleCommentsTable).set({ removedByAdminAt: now }).where(eq(circleCommentsTable.id, flag.circleCommentId));
+      break;
+    case "debate_topic":
+      if (!flag.debateTopicId) { res.status(400).json({ error: "Flag has no associated topic" }); return; }
+      await db.update(debateTopicsTable).set({ removedByAdminAt: now }).where(eq(debateTopicsTable.id, flag.debateTopicId));
+      break;
+    case "debate_topic_comment":
+      if (!flag.debateTopicCommentId) { res.status(400).json({ error: "Flag has no associated comment" }); return; }
+      await db.update(debateTopicCommentsTable).set({ removedByAdminAt: now }).where(eq(debateTopicCommentsTable.id, flag.debateTopicCommentId));
+      break;
+    default:
+      res.status(400).json({ error: "This content type can't be taken down from here" });
+      return;
+  }
+
+  const adminUser = (req as any).adminUser as User;
+  await db
+    .update(moderationFlagsTable)
+    .set({ dismissed: false, reviewedAt: now, reviewedByAdminId: adminUser.id })
+    .where(eq(moderationFlagsTable.id, flag.id));
+
+  const updated = await db.select().from(moderationFlagsTable).where(eq(moderationFlagsTable.id, flag.id)).then((r) => r[0]);
+  res.json(updated);
+});
+
 // ---------------------------------------------------------------------------
 // Suggestions Library
 // ---------------------------------------------------------------------------
@@ -898,7 +972,9 @@ router.patch("/moderation/flags/:id", async (req, res): Promise<void> => {
 const VALID_SUGGESTION_CATEGORY_KEYS = new Set<string>(VIDEO_CATEGORIES.map((c) => c.key));
 
 const createSuggestionSchema = z.object({
-  videoUrl: z.string().url(),
+  // Not plain .url(): "javascript:alert(1)" passes z.string().url() — the
+  // http(s)-protocol check is what actually matters for the href sink.
+  videoUrl: httpUrlString,
   categories: z
     .array(z.string())
     .min(1)

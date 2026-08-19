@@ -43,19 +43,30 @@ import type {
   ApiError,
   AppreciationInput,
   AppreciationResult,
+  ArchiveWhisp200,
   CheckoutRequest,
   CheckoutResponse,
   Circle,
+  CircleComment,
   CircleFeedResponse,
   ClaimInviteInput,
   ClaimInviteResult,
+  CommentReactionResult,
   ConciergeInput,
   ConciergeResult,
   ConfirmPhoneVerificationInput,
   CreateCircleInput,
   CreateSuggestionInput,
   CreditTransaction,
+  DebateTopicComment,
+  DebateTopicCommentInput,
+  DebateTopicDetail,
+  DebateTopicFeedItem,
+  DebateTopicFeedResponse,
+  DebateTopicInput,
   DeleteMedia200,
+  GetDebateTopicParams,
+  GetPublicWhispParams,
   GroupWhispSendDetail,
   GroupWhispSendSummary,
   HealthStatus,
@@ -63,6 +74,7 @@ import type {
   InviteInput,
   JoinCircleInput,
   ListCircleFeedParams,
+  ListDebateTopicsParams,
   ListSuggestionsParams,
   ListWhispsParams,
   MatchStats,
@@ -72,6 +84,8 @@ import type {
   NoteSuggestionsResult,
   NotificationListResponse,
   PhoneVerificationResult,
+  PinWhisp200,
+  PostCircleCommentBody,
   PublicInvite,
   PublicReplyInput,
   PublicTextWhisp,
@@ -79,15 +93,25 @@ import type {
   PushPublicKeyResponse,
   PushSubscriptionDeleteInput,
   PushSubscriptionInput,
+  ReactToCircleCommentBody,
+  ReactToDebateTopicCommentBody,
+  RecentRecipientListResponse,
   RemindMeInput,
   RemindMeResult,
+  RenameCircleHandle200,
+  RenameCircleHandleBody,
+  RenameDebateTopicHandle200,
+  RenameDebateTopicHandleBody,
   RevealResponse,
   RevealResult,
+  RewhispDebateTopic200,
+  RewhispDebateTopicBody,
   RunSuggestionAgentResult,
   SendGroupWhispInput,
   SendGroupWhispResult,
   SendNotificationInput,
   SendNotificationResult,
+  StartCircleDm201,
   StartPhoneVerificationInput,
   SubscribeInput,
   SubscribeResult,
@@ -100,6 +124,8 @@ import type {
   TextWhispInput,
   TextWhispReply,
   TextWhispReplyInput,
+  ToggleCircleLike200,
+  ToggleCircleLikeBody,
   TrackingEventInput,
   TrackingResult,
   UnreadNotificationCountResponse,
@@ -248,7 +274,7 @@ export const getListWhispsUrl = (params?: ListWhispsParams,) => {
 }
 
 /**
- * @summary List all whisps sent by the current user
+ * @summary List whisps sent by the current user (default), or received by them
  */
 export const listWhisps = async (params?: ListWhispsParams, options?: RequestInit): Promise<Whisp[]> => {
 
@@ -295,7 +321,7 @@ export type ListWhispsQueryError = ErrorType<unknown>
 
 
 /**
- * @summary List all whisps sent by the current user
+ * @summary List whisps sent by the current user (default), or received by them
  */
 
 export function useListWhisps<TData = Awaited<ReturnType<typeof listWhisps>>, TError = ErrorType<unknown>>(
@@ -608,6 +634,146 @@ export const useDeleteWhisp = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getDeleteWhispMutationOptions(options));
+    }
+
+export const getPinWhispUrl = (id: string,) => {
+
+
+
+
+  return `/api/whisps/${id}/pin`
+}
+
+/**
+ * @summary Toggle pin for whichever role (sender or matched recipient) the caller has on this whisp
+ */
+export const pinWhisp = async (id: string, options?: RequestInit): Promise<PinWhisp200> => {
+
+  return customFetch<PinWhisp200>(getPinWhispUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getPinWhispMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pinWhisp>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof pinWhisp>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['pinWhisp'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof pinWhisp>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  pinWhisp(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PinWhispMutationResult = NonNullable<Awaited<ReturnType<typeof pinWhisp>>>
+
+    export type PinWhispMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Toggle pin for whichever role (sender or matched recipient) the caller has on this whisp
+ */
+export const usePinWhisp = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pinWhisp>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof pinWhisp>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getPinWhispMutationOptions(options));
+    }
+
+export const getArchiveWhispUrl = (id: string,) => {
+
+
+
+
+  return `/api/whisps/${id}/archive`
+}
+
+/**
+ * @summary Toggle archive for whichever role the caller has on this whisp — reversible, calling it again un-archives
+ */
+export const archiveWhisp = async (id: string, options?: RequestInit): Promise<ArchiveWhisp200> => {
+
+  return customFetch<ArchiveWhisp200>(getArchiveWhispUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getArchiveWhispMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof archiveWhisp>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof archiveWhisp>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['archiveWhisp'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof archiveWhisp>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  archiveWhisp(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ArchiveWhispMutationResult = NonNullable<Awaited<ReturnType<typeof archiveWhisp>>>
+
+    export type ArchiveWhispMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Toggle archive for whichever role the caller has on this whisp — reversible, calling it again un-archives
+ */
+export const useArchiveWhisp = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof archiveWhisp>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof archiveWhisp>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getArchiveWhispMutationOptions(options));
     }
 
 export const getListWhispRepliesUrl = (id: string,) => {
@@ -2064,20 +2230,29 @@ export const useScrapeVideoMeta = <TError = ErrorType<ApiError>,
       return useMutation(getScrapeVideoMetaMutationOptions(options));
     }
 
-export const getGetPublicWhispUrl = (token: string,) => {
+export const getGetPublicWhispUrl = (token: string,
+    params?: GetPublicWhispParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/public/w/${token}`
+  return stringifiedParams.length > 0 ? `/api/public/w/${token}?${stringifiedParams}` : `/api/public/w/${token}`
 }
 
 /**
  * @summary Public recipient landing page data (no auth required)
  */
-export const getPublicWhisp = async (token: string, options?: RequestInit): Promise<PublicWhisp> => {
+export const getPublicWhisp = async (token: string,
+    params?: GetPublicWhispParams, options?: RequestInit): Promise<PublicWhisp> => {
 
-  return customFetch<PublicWhisp>(getGetPublicWhispUrl(token),
+  return customFetch<PublicWhisp>(getGetPublicWhispUrl(token,params),
   {
     ...options,
     method: 'GET'
@@ -2090,23 +2265,25 @@ export const getPublicWhisp = async (token: string, options?: RequestInit): Prom
 
 
 
-export const getGetPublicWhispQueryKey = (token: string,) => {
+export const getGetPublicWhispQueryKey = (token: string,
+    params?: GetPublicWhispParams,) => {
     return [
-    `/api/public/w/${token}`
+    `/api/public/w/${token}`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetPublicWhispQueryOptions = <TData = Awaited<ReturnType<typeof getPublicWhisp>>, TError = ErrorType<ApiError>>(token: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicWhisp>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetPublicWhispQueryOptions = <TData = Awaited<ReturnType<typeof getPublicWhisp>>, TError = ErrorType<ApiError>>(token: string,
+    params?: GetPublicWhispParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicWhisp>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetPublicWhispQueryKey(token);
+  const queryKey =  queryOptions?.queryKey ?? getGetPublicWhispQueryKey(token,params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPublicWhisp>>> = ({ signal }) => getPublicWhisp(token, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPublicWhisp>>> = ({ signal }) => getPublicWhisp(token,params, { signal, ...requestOptions });
 
 
 
@@ -2124,11 +2301,12 @@ export type GetPublicWhispQueryError = ErrorType<ApiError>
  */
 
 export function useGetPublicWhisp<TData = Awaited<ReturnType<typeof getPublicWhisp>>, TError = ErrorType<ApiError>>(
- token: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicWhisp>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ token: string,
+    params?: GetPublicWhispParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicWhisp>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetPublicWhispQueryOptions(token,options)
+  const queryOptions = getGetPublicWhispQueryOptions(token,params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -2140,6 +2318,77 @@ export function useGetPublicWhisp<TData = Awaited<ReturnType<typeof getPublicWhi
 
 
 
+
+export const getRequestVideoReplyUrl = (token: string,) => {
+
+
+
+
+  return `/api/public/w/${token}/video-reply-request`
+}
+
+/**
+ * Called when an anonymous recipient taps a locked "whisp a video back" control, so the sender can be told (on the same deferred schedule as a reply notification) that adding credit would unlock it. Always 204 — an unknown token gets the same answer as a known one, so this can't be used to probe which tokens exist.
+ * @summary Record that the recipient wanted to whisp a video back but couldn't
+ */
+export const requestVideoReply = async (token: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRequestVideoReplyUrl(token),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRequestVideoReplyMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestVideoReply>>, TError,{token: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestVideoReply>>, TError,{token: string}, TContext> => {
+
+const mutationKey = ['requestVideoReply'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestVideoReply>>, {token: string}> = (props) => {
+          const {token} = props ?? {};
+
+          return  requestVideoReply(token,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestVideoReplyMutationResult = NonNullable<Awaited<ReturnType<typeof requestVideoReply>>>
+
+    export type RequestVideoReplyMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Record that the recipient wanted to whisp a video back but couldn't
+ */
+export const useRequestVideoReply = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestVideoReply>>, TError,{token: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestVideoReply>>,
+        TError,
+        {token: string},
+        TContext
+      > => {
+      return useMutation(getRequestVideoReplyMutationOptions(options));
+    }
 
 export const getTrackWhispEventUrl = (token: string,) => {
 
@@ -2352,6 +2601,447 @@ export const useSubmitAppreciation = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getSubmitAppreciationMutationOptions(options));
+    }
+
+export const getToggleCircleLikeUrl = (token: string,) => {
+
+
+
+
+  return `/api/public/w/${token}/like`
+}
+
+/**
+ * @summary Anonymous, idempotent like toggle — Blind Circle posts only
+ */
+export const toggleCircleLike = async (token: string,
+    toggleCircleLikeBody: ToggleCircleLikeBody, options?: RequestInit): Promise<ToggleCircleLike200> => {
+
+  return customFetch<ToggleCircleLike200>(getToggleCircleLikeUrl(token),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(toggleCircleLikeBody)
+  }
+);}
+
+
+
+
+export const getToggleCircleLikeMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleCircleLike>>, TError,{token: string;data: BodyType<ToggleCircleLikeBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof toggleCircleLike>>, TError,{token: string;data: BodyType<ToggleCircleLikeBody>}, TContext> => {
+
+const mutationKey = ['toggleCircleLike'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof toggleCircleLike>>, {token: string;data: BodyType<ToggleCircleLikeBody>}> = (props) => {
+          const {token,data} = props ?? {};
+
+          return  toggleCircleLike(token,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ToggleCircleLikeMutationResult = NonNullable<Awaited<ReturnType<typeof toggleCircleLike>>>
+    export type ToggleCircleLikeMutationBody = BodyType<ToggleCircleLikeBody>
+    export type ToggleCircleLikeMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Anonymous, idempotent like toggle — Blind Circle posts only
+ */
+export const useToggleCircleLike = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleCircleLike>>, TError,{token: string;data: BodyType<ToggleCircleLikeBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof toggleCircleLike>>,
+        TError,
+        {token: string;data: BodyType<ToggleCircleLikeBody>},
+        TContext
+      > => {
+      return useMutation(getToggleCircleLikeMutationOptions(options));
+    }
+
+export const getPostCircleCommentUrl = (token: string,) => {
+
+
+
+
+  return `/api/public/w/${token}/comments`
+}
+
+/**
+ * Anonymous by default, rate-limited to a handful per rolling 24h window per visitor (see lib/plans.ts's canPostAnonymousComment) — signing in removes the limit entirely, same as the anonymous reply cap elsewhere. isPoster on the response is set automatically when the caller is signed in and is this whisp's own sender. An anonymous handle is assigned automatically on a visitor's first comment in this thread (see anonymous_handles.ts). Also accepts multipart/form-data with the same fields plus an optional `image` file (max 5MB, jpeg/png/webp/gif) — intentionally not modeled here, same reasoning as POST /media/upload above: a `format: binary` body generates File/Blob-typed Zod schemas that don't compile in lib/api-zod's Node-only project. The frontend attaches an image via a hand-written multipart fetch to this same URL, mirroring lib/uploadMedia.ts.
+ * @summary Post a public comment on a Blind Circle post
+ */
+export const postCircleComment = async (token: string,
+    postCircleCommentBody: PostCircleCommentBody, options?: RequestInit): Promise<CircleComment> => {
+
+  return customFetch<CircleComment>(getPostCircleCommentUrl(token),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(postCircleCommentBody)
+  }
+);}
+
+
+
+
+export const getPostCircleCommentMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postCircleComment>>, TError,{token: string;data: BodyType<PostCircleCommentBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof postCircleComment>>, TError,{token: string;data: BodyType<PostCircleCommentBody>}, TContext> => {
+
+const mutationKey = ['postCircleComment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postCircleComment>>, {token: string;data: BodyType<PostCircleCommentBody>}> = (props) => {
+          const {token,data} = props ?? {};
+
+          return  postCircleComment(token,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostCircleCommentMutationResult = NonNullable<Awaited<ReturnType<typeof postCircleComment>>>
+    export type PostCircleCommentMutationBody = BodyType<PostCircleCommentBody>
+    export type PostCircleCommentMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Post a public comment on a Blind Circle post
+ */
+export const usePostCircleComment = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postCircleComment>>, TError,{token: string;data: BodyType<PostCircleCommentBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postCircleComment>>,
+        TError,
+        {token: string;data: BodyType<PostCircleCommentBody>},
+        TContext
+      > => {
+      return useMutation(getPostCircleCommentMutationOptions(options));
+    }
+
+export const getReactToCircleCommentUrl = (token: string,
+    commentId: string,) => {
+
+
+
+
+  return `/api/public/w/${token}/comments/${commentId}/reactions`
+}
+
+/**
+ * Idempotent toggle — reacting with the same reaction again removes it; reacting with the other one switches it.
+ * @summary Like or dislike a Blind Circle comment
+ */
+export const reactToCircleComment = async (token: string,
+    commentId: string,
+    reactToCircleCommentBody: ReactToCircleCommentBody, options?: RequestInit): Promise<CommentReactionResult> => {
+
+  return customFetch<CommentReactionResult>(getReactToCircleCommentUrl(token,commentId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(reactToCircleCommentBody)
+  }
+);}
+
+
+
+
+export const getReactToCircleCommentMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reactToCircleComment>>, TError,{token: string;commentId: string;data: BodyType<ReactToCircleCommentBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reactToCircleComment>>, TError,{token: string;commentId: string;data: BodyType<ReactToCircleCommentBody>}, TContext> => {
+
+const mutationKey = ['reactToCircleComment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reactToCircleComment>>, {token: string;commentId: string;data: BodyType<ReactToCircleCommentBody>}> = (props) => {
+          const {token,commentId,data} = props ?? {};
+
+          return  reactToCircleComment(token,commentId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReactToCircleCommentMutationResult = NonNullable<Awaited<ReturnType<typeof reactToCircleComment>>>
+    export type ReactToCircleCommentMutationBody = BodyType<ReactToCircleCommentBody>
+    export type ReactToCircleCommentMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Like or dislike a Blind Circle comment
+ */
+export const useReactToCircleComment = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reactToCircleComment>>, TError,{token: string;commentId: string;data: BodyType<ReactToCircleCommentBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reactToCircleComment>>,
+        TError,
+        {token: string;commentId: string;data: BodyType<ReactToCircleCommentBody>},
+        TContext
+      > => {
+      return useMutation(getReactToCircleCommentMutationOptions(options));
+    }
+
+export const getGetCircleCommentImageUrl = (token: string,
+    commentId: string,) => {
+
+
+
+
+  return `/api/public/w/${token}/comments/${commentId}/image`
+}
+
+/**
+ * @summary Fetch a Blind Circle comment's attached image
+ */
+export const getCircleCommentImage = async (token: string,
+    commentId: string, options?: RequestInit): Promise<Blob> => {
+
+  return customFetch<Blob>(getGetCircleCommentImageUrl(token,commentId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCircleCommentImageQueryKey = (token: string,
+    commentId: string,) => {
+    return [
+    `/api/public/w/${token}/comments/${commentId}/image`
+    ] as const;
+    }
+
+
+export const getGetCircleCommentImageQueryOptions = <TData = Awaited<ReturnType<typeof getCircleCommentImage>>, TError = ErrorType<ApiError>>(token: string,
+    commentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCircleCommentImage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCircleCommentImageQueryKey(token,commentId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCircleCommentImage>>> = ({ signal }) => getCircleCommentImage(token,commentId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: token !== null && token !== undefined && commentId !== null && commentId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCircleCommentImage>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCircleCommentImageQueryResult = NonNullable<Awaited<ReturnType<typeof getCircleCommentImage>>>
+export type GetCircleCommentImageQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Fetch a Blind Circle comment's attached image
+ */
+
+export function useGetCircleCommentImage<TData = Awaited<ReturnType<typeof getCircleCommentImage>>, TError = ErrorType<ApiError>>(
+ token: string,
+    commentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCircleCommentImage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCircleCommentImageQueryOptions(token,commentId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRenameCircleHandleUrl = (token: string,) => {
+
+
+
+
+  return `/api/public/w/${token}/handle`
+}
+
+/**
+ * @summary Rename the caller's own anonymous handle in this post's comment thread
+ */
+export const renameCircleHandle = async (token: string,
+    renameCircleHandleBody: RenameCircleHandleBody, options?: RequestInit): Promise<RenameCircleHandle200> => {
+
+  return customFetch<RenameCircleHandle200>(getRenameCircleHandleUrl(token),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(renameCircleHandleBody)
+  }
+);}
+
+
+
+
+export const getRenameCircleHandleMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameCircleHandle>>, TError,{token: string;data: BodyType<RenameCircleHandleBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof renameCircleHandle>>, TError,{token: string;data: BodyType<RenameCircleHandleBody>}, TContext> => {
+
+const mutationKey = ['renameCircleHandle'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof renameCircleHandle>>, {token: string;data: BodyType<RenameCircleHandleBody>}> = (props) => {
+          const {token,data} = props ?? {};
+
+          return  renameCircleHandle(token,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RenameCircleHandleMutationResult = NonNullable<Awaited<ReturnType<typeof renameCircleHandle>>>
+    export type RenameCircleHandleMutationBody = BodyType<RenameCircleHandleBody>
+    export type RenameCircleHandleMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Rename the caller's own anonymous handle in this post's comment thread
+ */
+export const useRenameCircleHandle = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameCircleHandle>>, TError,{token: string;data: BodyType<RenameCircleHandleBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof renameCircleHandle>>,
+        TError,
+        {token: string;data: BodyType<RenameCircleHandleBody>},
+        TContext
+      > => {
+      return useMutation(getRenameCircleHandleMutationOptions(options));
+    }
+
+export const getStartCircleDmUrl = (token: string,) => {
+
+
+
+
+  return `/api/public/w/${token}/circle-dm/start`
+}
+
+/**
+ * Mints a new whisp (deliveryMethod='circle_dm') the caller can now message the poster through via the ordinary POST /w/{token}/reply on the RETURNED token, exactly like a Whisper Link. The frontend is responsible for remembering the returned token per origin post (localStorage) so a repeat visitor resumes the same conversation instead of starting a new one on every click.
+ * @summary Start (or is idempotently expected to be reused for) a private anonymous conversation with a Blind Circle post's poster
+ */
+export const startCircleDm = async (token: string, options?: RequestInit): Promise<StartCircleDm201> => {
+
+  return customFetch<StartCircleDm201>(getStartCircleDmUrl(token),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getStartCircleDmMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startCircleDm>>, TError,{token: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startCircleDm>>, TError,{token: string}, TContext> => {
+
+const mutationKey = ['startCircleDm'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startCircleDm>>, {token: string}> = (props) => {
+          const {token} = props ?? {};
+
+          return  startCircleDm(token,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartCircleDmMutationResult = NonNullable<Awaited<ReturnType<typeof startCircleDm>>>
+
+    export type StartCircleDmMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Start (or is idempotently expected to be reused for) a private anonymous conversation with a Blind Circle post's poster
+ */
+export const useStartCircleDm = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startCircleDm>>, TError,{token: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startCircleDm>>,
+        TError,
+        {token: string},
+        TContext
+      > => {
+      return useMutation(getStartCircleDmMutationOptions(options));
     }
 
 export const getRequestWhispReminderUrl = (token: string,) => {
@@ -3383,6 +4073,685 @@ export function useListCircleFeed<TData = Awaited<ReturnType<typeof listCircleFe
 
 
 
+
+export const getCreateDebateTopicUrl = () => {
+
+
+
+
+  return `/api/debate-topics`
+}
+
+/**
+ * @summary Post a new debate topic (signed in, anonymous to other viewers)
+ */
+export const createDebateTopic = async (debateTopicInput: DebateTopicInput, options?: RequestInit): Promise<DebateTopicFeedItem> => {
+
+  return customFetch<DebateTopicFeedItem>(getCreateDebateTopicUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(debateTopicInput)
+  }
+);}
+
+
+
+
+export const getCreateDebateTopicMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDebateTopic>>, TError,{data: BodyType<DebateTopicInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createDebateTopic>>, TError,{data: BodyType<DebateTopicInput>}, TContext> => {
+
+const mutationKey = ['createDebateTopic'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createDebateTopic>>, {data: BodyType<DebateTopicInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createDebateTopic(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateDebateTopicMutationResult = NonNullable<Awaited<ReturnType<typeof createDebateTopic>>>
+    export type CreateDebateTopicMutationBody = BodyType<DebateTopicInput>
+    export type CreateDebateTopicMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Post a new debate topic (signed in, anonymous to other viewers)
+ */
+export const useCreateDebateTopic = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDebateTopic>>, TError,{data: BodyType<DebateTopicInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createDebateTopic>>,
+        TError,
+        {data: BodyType<DebateTopicInput>},
+        TContext
+      > => {
+      return useMutation(getCreateDebateTopicMutationOptions(options));
+    }
+
+export const getDeleteDebateTopicUrl = (id: string,) => {
+
+
+
+
+  return `/api/debate-topics/${id}`
+}
+
+/**
+ * @summary Retract a debate topic you posted — removes it from the public feed and detail lookup
+ */
+export const deleteDebateTopic = async (id: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteDebateTopicUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteDebateTopicMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDebateTopic>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteDebateTopic>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteDebateTopic'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteDebateTopic>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteDebateTopic(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteDebateTopicMutationResult = NonNullable<Awaited<ReturnType<typeof deleteDebateTopic>>>
+
+    export type DeleteDebateTopicMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Retract a debate topic you posted — removes it from the public feed and detail lookup
+ */
+export const useDeleteDebateTopic = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDebateTopic>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteDebateTopic>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getDeleteDebateTopicMutationOptions(options));
+    }
+
+export const getListDebateTopicsUrl = (params?: ListDebateTopicsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/public/debate-topics?${stringifiedParams}` : `/api/public/debate-topics`
+}
+
+/**
+ * @summary Public Debate Topics feed (no auth required)
+ */
+export const listDebateTopics = async (params?: ListDebateTopicsParams, options?: RequestInit): Promise<DebateTopicFeedResponse> => {
+
+  return customFetch<DebateTopicFeedResponse>(getListDebateTopicsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListDebateTopicsQueryKey = (params?: ListDebateTopicsParams,) => {
+    return [
+    `/api/public/debate-topics`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListDebateTopicsQueryOptions = <TData = Awaited<ReturnType<typeof listDebateTopics>>, TError = ErrorType<unknown>>(params?: ListDebateTopicsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDebateTopics>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListDebateTopicsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listDebateTopics>>> = ({ signal }) => listDebateTopics(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listDebateTopics>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListDebateTopicsQueryResult = NonNullable<Awaited<ReturnType<typeof listDebateTopics>>>
+export type ListDebateTopicsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Public Debate Topics feed (no auth required)
+ */
+
+export function useListDebateTopics<TData = Awaited<ReturnType<typeof listDebateTopics>>, TError = ErrorType<unknown>>(
+ params?: ListDebateTopicsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDebateTopics>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListDebateTopicsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetDebateTopicUrl = (id: string,
+    params?: GetDebateTopicParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/public/debate-topics/${id}?${stringifiedParams}` : `/api/public/debate-topics/${id}`
+}
+
+/**
+ * @summary A single debate topic with its full public comment thread (no auth required)
+ */
+export const getDebateTopic = async (id: string,
+    params?: GetDebateTopicParams, options?: RequestInit): Promise<DebateTopicDetail> => {
+
+  return customFetch<DebateTopicDetail>(getGetDebateTopicUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDebateTopicQueryKey = (id: string,
+    params?: GetDebateTopicParams,) => {
+    return [
+    `/api/public/debate-topics/${id}`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetDebateTopicQueryOptions = <TData = Awaited<ReturnType<typeof getDebateTopic>>, TError = ErrorType<ApiError>>(id: string,
+    params?: GetDebateTopicParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDebateTopic>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDebateTopicQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDebateTopic>>> = ({ signal }) => getDebateTopic(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDebateTopic>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDebateTopicQueryResult = NonNullable<Awaited<ReturnType<typeof getDebateTopic>>>
+export type GetDebateTopicQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary A single debate topic with its full public comment thread (no auth required)
+ */
+
+export function useGetDebateTopic<TData = Awaited<ReturnType<typeof getDebateTopic>>, TError = ErrorType<ApiError>>(
+ id: string,
+    params?: GetDebateTopicParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDebateTopic>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDebateTopicQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getPostDebateTopicCommentUrl = (id: string,) => {
+
+
+
+
+  return `/api/public/debate-topics/${id}/comments`
+}
+
+/**
+ * An anonymous handle is assigned automatically on a visitor's first comment in this thread (see anonymous_handles.ts). Also accepts multipart/form-data with the same fields plus an optional `image` file — intentionally not modeled here, same reasoning as POST /media/upload above; see postCircleComment's description for why.
+ * @summary Post an anonymous (or signed-in) comment on a debate topic (no auth required)
+ */
+export const postDebateTopicComment = async (id: string,
+    debateTopicCommentInput: DebateTopicCommentInput, options?: RequestInit): Promise<DebateTopicComment> => {
+
+  return customFetch<DebateTopicComment>(getPostDebateTopicCommentUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(debateTopicCommentInput)
+  }
+);}
+
+
+
+
+export const getPostDebateTopicCommentMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDebateTopicComment>>, TError,{id: string;data: BodyType<DebateTopicCommentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof postDebateTopicComment>>, TError,{id: string;data: BodyType<DebateTopicCommentInput>}, TContext> => {
+
+const mutationKey = ['postDebateTopicComment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postDebateTopicComment>>, {id: string;data: BodyType<DebateTopicCommentInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  postDebateTopicComment(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostDebateTopicCommentMutationResult = NonNullable<Awaited<ReturnType<typeof postDebateTopicComment>>>
+    export type PostDebateTopicCommentMutationBody = BodyType<DebateTopicCommentInput>
+    export type PostDebateTopicCommentMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Post an anonymous (or signed-in) comment on a debate topic (no auth required)
+ */
+export const usePostDebateTopicComment = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDebateTopicComment>>, TError,{id: string;data: BodyType<DebateTopicCommentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postDebateTopicComment>>,
+        TError,
+        {id: string;data: BodyType<DebateTopicCommentInput>},
+        TContext
+      > => {
+      return useMutation(getPostDebateTopicCommentMutationOptions(options));
+    }
+
+export const getGetDebateTopicCommentImageUrl = (commentId: string,) => {
+
+
+
+
+  return `/api/public/debate-topics/comments/${commentId}/image`
+}
+
+/**
+ * @summary Fetch a debate topic comment's attached image
+ */
+export const getDebateTopicCommentImage = async (commentId: string, options?: RequestInit): Promise<Blob> => {
+
+  return customFetch<Blob>(getGetDebateTopicCommentImageUrl(commentId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDebateTopicCommentImageQueryKey = (commentId: string,) => {
+    return [
+    `/api/public/debate-topics/comments/${commentId}/image`
+    ] as const;
+    }
+
+
+export const getGetDebateTopicCommentImageQueryOptions = <TData = Awaited<ReturnType<typeof getDebateTopicCommentImage>>, TError = ErrorType<ApiError>>(commentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDebateTopicCommentImage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDebateTopicCommentImageQueryKey(commentId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDebateTopicCommentImage>>> = ({ signal }) => getDebateTopicCommentImage(commentId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: commentId !== null && commentId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDebateTopicCommentImage>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDebateTopicCommentImageQueryResult = NonNullable<Awaited<ReturnType<typeof getDebateTopicCommentImage>>>
+export type GetDebateTopicCommentImageQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Fetch a debate topic comment's attached image
+ */
+
+export function useGetDebateTopicCommentImage<TData = Awaited<ReturnType<typeof getDebateTopicCommentImage>>, TError = ErrorType<ApiError>>(
+ commentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDebateTopicCommentImage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDebateTopicCommentImageQueryOptions(commentId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRenameDebateTopicHandleUrl = (id: string,) => {
+
+
+
+
+  return `/api/public/debate-topics/${id}/handle`
+}
+
+/**
+ * @summary Rename the caller's own anonymous handle in this topic's comment thread
+ */
+export const renameDebateTopicHandle = async (id: string,
+    renameDebateTopicHandleBody: RenameDebateTopicHandleBody, options?: RequestInit): Promise<RenameDebateTopicHandle200> => {
+
+  return customFetch<RenameDebateTopicHandle200>(getRenameDebateTopicHandleUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(renameDebateTopicHandleBody)
+  }
+);}
+
+
+
+
+export const getRenameDebateTopicHandleMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameDebateTopicHandle>>, TError,{id: string;data: BodyType<RenameDebateTopicHandleBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof renameDebateTopicHandle>>, TError,{id: string;data: BodyType<RenameDebateTopicHandleBody>}, TContext> => {
+
+const mutationKey = ['renameDebateTopicHandle'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof renameDebateTopicHandle>>, {id: string;data: BodyType<RenameDebateTopicHandleBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  renameDebateTopicHandle(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RenameDebateTopicHandleMutationResult = NonNullable<Awaited<ReturnType<typeof renameDebateTopicHandle>>>
+    export type RenameDebateTopicHandleMutationBody = BodyType<RenameDebateTopicHandleBody>
+    export type RenameDebateTopicHandleMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Rename the caller's own anonymous handle in this topic's comment thread
+ */
+export const useRenameDebateTopicHandle = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameDebateTopicHandle>>, TError,{id: string;data: BodyType<RenameDebateTopicHandleBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof renameDebateTopicHandle>>,
+        TError,
+        {id: string;data: BodyType<RenameDebateTopicHandleBody>},
+        TContext
+      > => {
+      return useMutation(getRenameDebateTopicHandleMutationOptions(options));
+    }
+
+export const getReactToDebateTopicCommentUrl = (id: string,
+    commentId: string,) => {
+
+
+
+
+  return `/api/public/debate-topics/${id}/comments/${commentId}/reactions`
+}
+
+/**
+ * Idempotent toggle — reacting with the same reaction again removes it; reacting with the other one switches it.
+ * @summary Like or dislike a debate topic comment
+ */
+export const reactToDebateTopicComment = async (id: string,
+    commentId: string,
+    reactToDebateTopicCommentBody: ReactToDebateTopicCommentBody, options?: RequestInit): Promise<CommentReactionResult> => {
+
+  return customFetch<CommentReactionResult>(getReactToDebateTopicCommentUrl(id,commentId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(reactToDebateTopicCommentBody)
+  }
+);}
+
+
+
+
+export const getReactToDebateTopicCommentMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reactToDebateTopicComment>>, TError,{id: string;commentId: string;data: BodyType<ReactToDebateTopicCommentBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reactToDebateTopicComment>>, TError,{id: string;commentId: string;data: BodyType<ReactToDebateTopicCommentBody>}, TContext> => {
+
+const mutationKey = ['reactToDebateTopicComment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reactToDebateTopicComment>>, {id: string;commentId: string;data: BodyType<ReactToDebateTopicCommentBody>}> = (props) => {
+          const {id,commentId,data} = props ?? {};
+
+          return  reactToDebateTopicComment(id,commentId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReactToDebateTopicCommentMutationResult = NonNullable<Awaited<ReturnType<typeof reactToDebateTopicComment>>>
+    export type ReactToDebateTopicCommentMutationBody = BodyType<ReactToDebateTopicCommentBody>
+    export type ReactToDebateTopicCommentMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Like or dislike a debate topic comment
+ */
+export const useReactToDebateTopicComment = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reactToDebateTopicComment>>, TError,{id: string;commentId: string;data: BodyType<ReactToDebateTopicCommentBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reactToDebateTopicComment>>,
+        TError,
+        {id: string;commentId: string;data: BodyType<ReactToDebateTopicCommentBody>},
+        TContext
+      > => {
+      return useMutation(getReactToDebateTopicCommentMutationOptions(options));
+    }
+
+export const getRewhispDebateTopicUrl = (id: string,) => {
+
+
+
+
+  return `/api/public/debate-topics/${id}/rewhisp`
+}
+
+/**
+ * Idempotent toggle — rewhisping a topic already rewhisped by this visitor undoes it. No list of who rewhisped is ever exposed, only a count.
+ * @summary Rewhisp (retweet-style boost) a debate topic
+ */
+export const rewhispDebateTopic = async (id: string,
+    rewhispDebateTopicBody: RewhispDebateTopicBody, options?: RequestInit): Promise<RewhispDebateTopic200> => {
+
+  return customFetch<RewhispDebateTopic200>(getRewhispDebateTopicUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(rewhispDebateTopicBody)
+  }
+);}
+
+
+
+
+export const getRewhispDebateTopicMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rewhispDebateTopic>>, TError,{id: string;data: BodyType<RewhispDebateTopicBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof rewhispDebateTopic>>, TError,{id: string;data: BodyType<RewhispDebateTopicBody>}, TContext> => {
+
+const mutationKey = ['rewhispDebateTopic'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rewhispDebateTopic>>, {id: string;data: BodyType<RewhispDebateTopicBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  rewhispDebateTopic(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RewhispDebateTopicMutationResult = NonNullable<Awaited<ReturnType<typeof rewhispDebateTopic>>>
+    export type RewhispDebateTopicMutationBody = BodyType<RewhispDebateTopicBody>
+    export type RewhispDebateTopicMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Rewhisp (retweet-style boost) a debate topic
+ */
+export const useRewhispDebateTopic = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rewhispDebateTopic>>, TError,{id: string;data: BodyType<RewhispDebateTopicBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof rewhispDebateTopic>>,
+        TError,
+        {id: string;data: BodyType<RewhispDebateTopicBody>},
+        TContext
+      > => {
+      return useMutation(getRewhispDebateTopicMutationOptions(options));
+    }
 
 export const getCreateCheckoutSessionUrl = () => {
 
@@ -4923,6 +6292,84 @@ export function useGetMyUnreadNotificationCount<TData = Awaited<ReturnType<typeo
 
 
 
+export const getGetMyRecentRecipientsUrl = () => {
+
+
+
+
+  return `/api/user/recent-recipients`
+}
+
+/**
+ * Only ever the caller's own sending history — addresses they typed themselves. Says nothing about whether any of them has a Blind Whisper account, which is the fact the anti-enumeration rules protect.
+ * @summary Contacts this user has sent to before, for autocompleting the recipient field
+ */
+export const getMyRecentRecipients = async ( options?: RequestInit): Promise<RecentRecipientListResponse> => {
+
+  return customFetch<RecentRecipientListResponse>(getGetMyRecentRecipientsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyRecentRecipientsQueryKey = () => {
+    return [
+    `/api/user/recent-recipients`
+    ] as const;
+    }
+
+
+export const getGetMyRecentRecipientsQueryOptions = <TData = Awaited<ReturnType<typeof getMyRecentRecipients>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyRecentRecipients>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyRecentRecipientsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyRecentRecipients>>> = ({ signal }) => getMyRecentRecipients({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyRecentRecipients>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyRecentRecipientsQueryResult = NonNullable<Awaited<ReturnType<typeof getMyRecentRecipients>>>
+export type GetMyRecentRecipientsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Contacts this user has sent to before, for autocompleting the recipient field
+ */
+
+export function useGetMyRecentRecipients<TData = Awaited<ReturnType<typeof getMyRecentRecipients>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyRecentRecipients>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyRecentRecipientsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getMarkNotificationReadUrl = (id: string,) => {
 
 
@@ -5216,6 +6663,77 @@ export const useAdminUpdateModerationFlag = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getAdminUpdateModerationFlagMutationOptions(options));
+    }
+
+export const getAdminRemoveFlaggedContentUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/moderation/flags/${id}/remove-content`
+}
+
+/**
+ * Sets removedByAdminAt on whichever table the flag's contentType points at (whisp, circle_comment, debate_topic, or debate_topic_comment), excluding it from every public read path from then on. Distinct from PATCH's dismiss/undismiss, which never touches the underlying content.
+ * @summary Take down the content a flag points at (admin only)
+ */
+export const adminRemoveFlaggedContent = async (id: string, options?: RequestInit): Promise<ModerationFlag> => {
+
+  return customFetch<ModerationFlag>(getAdminRemoveFlaggedContentUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAdminRemoveFlaggedContentMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRemoveFlaggedContent>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminRemoveFlaggedContent>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['adminRemoveFlaggedContent'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminRemoveFlaggedContent>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adminRemoveFlaggedContent(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminRemoveFlaggedContentMutationResult = NonNullable<Awaited<ReturnType<typeof adminRemoveFlaggedContent>>>
+
+    export type AdminRemoveFlaggedContentMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Take down the content a flag points at (admin only)
+ */
+export const useAdminRemoveFlaggedContent = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRemoveFlaggedContent>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminRemoveFlaggedContent>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getAdminRemoveFlaggedContentMutationOptions(options));
     }
 
 export const getAdminListSuggestionsUrl = (params?: AdminListSuggestionsParams,) => {

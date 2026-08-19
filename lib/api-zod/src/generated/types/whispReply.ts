@@ -23,5 +23,15 @@ export interface WhispReply {
   videoPlatform?: string | null;
   /** @nullable */
   moodTag?: string | null;
+  /**
+     * The message this one answers, when it replies to a specific earlier message rather than the thread as a whole. Always a reply on the same whisp.
+     * @nullable
+     */
+  parentReplyId?: string | null;
   createdAt: string;
+  /**
+     * When the other party in the conversation (whichever one didn't author this message) is known to have viewed it — set the moment they load a view containing it. Null means unread. Drives the WhatsApp-style single/double checkmark next to a message the current viewer sent themselves; never rendered on a message you received.
+     * @nullable
+     */
+  readAt?: string | null;
 }

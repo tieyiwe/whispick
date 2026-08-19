@@ -72,6 +72,19 @@ export const phoneVerificationLimiter = rateLimit({
   keyGenerator: authKeyGenerator,
 });
 
+// Confirming a phone-verification code (routes/user.ts). Twilio Verify
+// already enforces its own per-code attempt lockout and expiry server-side,
+// but this adds our own defense-in-depth cap so the confirm endpoint can't be
+// hammered independent of Twilio's limits. Looser than the send limiter,
+// since a legitimate user may retype a code a few times.
+export const confirmPhoneVerificationLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: authKeyGenerator,
+});
+
 // The "Not sure what to send?" concierge (lib/concierge.ts) is a Claude call
 // plus a library lookup — slightly heavier than a plain note suggestion, so
 // it gets a somewhat tighter cap, same per-user keying rationale as above.
@@ -108,6 +121,19 @@ export const createTextWhispLimiter = rateLimit({
   keyGenerator: authKeyGenerator,
 });
 
+// Posting a Debate Topic (routes/debateTopics.ts) is free — no plan cap, no
+// per-send cost like an email/SMS whisp — so this is the only thing bounding
+// burst creation by one signed-in account. Tighter than createWhispLimiter:
+// a debate topic is a public feed post meant to spark discussion, not
+// something anyone legitimately needs to fire off dozens of per hour.
+export const createDebateTopicLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: authKeyGenerator,
+});
+
 // POST /:id/reveal (routes/textWhisps.ts) is the one remaining place a
 // sender can learn whether a Text Whisp's recipient phone number matched a
 // verified account: it 400s with "hasn't joined yet" if not, succeeds (and
@@ -116,6 +142,22 @@ export const createTextWhispLimiter = rateLimit({
 // silently — this limiter makes the one remaining, unavoidable signal
 // expensive and noisy to probe at scale instead of free.
 export const textWhispRevealLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: authKeyGenerator,
+});
+
+// POST /billing/checkout (routes/billing.ts) calls the real Stripe API
+// (customer.create, checkout.sessions.create) — no per-request dollar cost,
+// but each call is an outbound network round-trip against Stripe's own rate
+// limits, shared across this whole app's Stripe usage. A normal user hits
+// this a handful of times per purchase/upgrade at most (a mis-click, a
+// changed mind about which plan/pack); nothing in the legitimate flow needs
+// more than a few calls an hour, and without a limiter this was the one
+// authenticated write left that could hammer an external paid API for free.
+export const billingCheckoutLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   limit: 20,
   standardHeaders: true,

@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Link } from "wouter";
-import { Logo } from "@/components/ui/logo";
+import { LogoLockup } from "@/components/ui/logo";
 import { ArrowLeft } from "lucide-react";
 
 export function LegalLayout({ title, updatedDate, children }: { title: string; updatedDate: string; children: ReactNode }) {
@@ -10,9 +10,8 @@ export function LegalLayout({ title, updatedDate, children }: { title: string; u
         className="border-b border-border/50 px-4 sm:px-6 py-4 flex items-center justify-between"
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}
       >
-        <Link href="/" className="flex items-center gap-2">
-          <Logo className="w-7 h-7 text-primary" />
-          <span className="font-serif text-xl font-bold tracking-tight text-foreground">Blind Whisper</span>
+        <Link href="/">
+          <LogoLockup />
         </Link>
         <Link href="/" className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1">
           <ArrowLeft className="w-4 h-4" /> Home

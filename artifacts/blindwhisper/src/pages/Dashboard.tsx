@@ -110,8 +110,17 @@ export function Dashboard() {
     { title: "Replies Received", value: stats?.totalReplied || 0, icon: MessageSquareHeart, color: "text-amber-400", bg: "bg-amber-500/10" },
     // The recipient's own "was this something you needed to hear?" signal,
     // rolled up — previously visible only one whisp at a time, buried on
-    // each individual detail page, with no sense of overall impact.
-    { title: "Whisps That Helped", value: stats?.totalAppreciated || 0, icon: Heart, color: "text-rose-400", bg: "bg-rose-500/10" },
+    // each individual detail page, with no sense of overall impact. Given
+    // the gilded accent because it's the one number that measures the thing
+    // the app exists to do; the others are mechanics by comparison.
+    {
+      title: "Whisps That Helped",
+      value: stats?.totalAppreciated || 0,
+      icon: Heart,
+      color: "text-gilded",
+      bg: "bg-gilded/10",
+      highlight: true,
+    },
   ];
 
   return (
@@ -131,13 +140,20 @@ export function Dashboard() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {statCards.map((stat, i) => (
-            <Card key={i} className="bg-card border-border/50 shadow-sm overflow-hidden relative">
+            <Card
+              key={i}
+              className={`bg-card shadow-sm overflow-hidden relative ${
+                stat.highlight ? "border-gilded/25 shadow-[0_0_20px_rgba(232,200,110,0.08)]" : "border-border/50"
+              }`}
+            >
               <div className={`absolute top-0 right-0 w-24 h-24 rounded-full ${stat.bg} blur-2xl -mr-10 -mt-10 pointer-events-none`} />
               <CardContent className="p-6">
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
-                    <h3 className="text-3xl font-bold text-foreground mt-2">{stat.value}</h3>
+                    <h3 className={`text-3xl font-bold mt-2 ${stat.highlight ? "text-gilded" : "text-foreground"}`}>
+                      {stat.value}
+                    </h3>
                   </div>
                   <div className={`p-3 rounded-xl ${stat.bg}`}>
                     <stat.icon className={`w-5 h-5 ${stat.color}`} />
@@ -180,7 +196,7 @@ export function Dashboard() {
                           </div>
                           <div className="flex items-center text-sm text-muted-foreground mb-3">
                             <span className="truncate">
-                              Sent to {whisp.recipientEmail || whisp.recipientPhone || (whisp.deliveryMethod === "circle_drop" ? "Circle feed" : "Ghost Boost audience")}
+                              Sent to {whisp.recipientEmail || whisp.recipientPhone || (whisp.deliveryMethod === "circle_drop" ? "Blind Circle feed" : "Ghost Boost audience")}
                             </span>
                             <span className="mx-2">•</span>
                             <span>{new Date(whisp.createdAt).toLocaleDateString()}</span>

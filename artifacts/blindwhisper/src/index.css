@@ -27,6 +27,9 @@
   --color-secondary: hsl(var(--secondary));
   --color-secondary-foreground: hsl(var(--secondary-foreground));
 
+  --color-gilded: hsl(var(--gilded));
+  --color-gilded-foreground: hsl(var(--gilded-foreground));
+
   --color-muted: hsl(var(--muted));
   --color-muted-foreground: hsl(var(--muted-foreground));
 
@@ -70,6 +73,24 @@
   /* Ember: #FF6B6B */
   --secondary: 360 100% 71%;
   --secondary-foreground: 0 0% 100%;
+
+  /* Gilded: #E8C86E — a warm gold used sparingly as the app's accent.
+     Deliberately a third hue rather than more violet: on a Midnight
+     background, violet-on-violet flattens (everything "important" ends up
+     the same colour as everything else), while gold is the classic
+     complement to deep violet — it reads as considered rather than loud,
+     and it's warm where the rest of the palette is cool, so a single gold
+     element draws the eye without shouting. Reserved for moments worth
+     marking (a sender's signature, a delivered milestone), never for
+     ordinary UI chrome — an accent used everywhere stops being an accent. */
+  --gilded: 43 73% 67%;
+  --gilded-foreground: 240 33% 8%;
+
+  /* Aqua sits opposite the violet the other way round from gilded — gilded is
+     the warm complement, this is the cool one. Between them the logo's pulse
+     travels violet → aqua → gold as it moves outward. Not general-purpose UI
+     colour: like gilded, it earns its place by being rare. */
+  --aqua: 180 72% 62%;
 
   --muted: 247 24% 30%;
   --muted-foreground: 252 20% 75%;
@@ -145,6 +166,129 @@
 @keyframes pulse-glow {
   0%, 100% { box-shadow: 0 0 24px rgba(124,92,252,0.15); }
   50% { box-shadow: 0 0 40px rgba(124,92,252,0.3); }
+}
+
+/* Reply-thread message entrance. The overshoot easing (a soft
+   ease-out-back) is what makes a new bubble feel like it "settles" into
+   place rather than snapping in — the difference between a chat that feels
+   mechanical and one that feels alive. Staggered per-message via
+   --message-index so a thread renders as a cascade instead of all at once. */
+@keyframes message-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.message-in {
+  animation: message-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--message-index, 0) * 50ms);
+}
+
+/* Anyone who's asked their OS to reduce motion gets the end state
+   immediately — no travel, no stagger. */
+@media (prefers-reduced-motion: reduce) {
+  .message-in {
+    animation: none;
+  }
+}
+
+/* The reply thread's own scroll area. The scrollbar is deliberately always
+   visible rather than the overlay kind that fades out: it doubles as the
+   signal that there is more conversation above, which is the whole reason
+   the thread scrolls separately from the page. Sized narrow and tinted to
+   the brand so it reads as part of the design, not a browser artifact. */
+.thread-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--primary) / 0.45) transparent;
+  scroll-behavior: smooth;
+}
+
+.thread-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.thread-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.thread-scroll::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--primary) / 0.45);
+  border-radius: 999px;
+}
+
+.thread-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--primary) / 0.7);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thread-scroll {
+    scroll-behavior: auto;
+  }
+}
+
+/* The three arcs in the logo mark are sound leaving the ear, so they brighten
+   in sequence — nearest first — rather than all at once, which would read as
+   a blink instead of a wave travelling outward.
+
+   Each arc carries its own --wave-base/--wave-peak because they rest at
+   different opacities (0.8, 0.5, 0.28) and have to return to those exact
+   values; one shared keyframe with hardcoded numbers would flatten the
+   depth the fade creates. The base is also still on each path as an SVG
+   opacity attribute, which is what takes over when the animation is off. */
+@keyframes logo-wave {
+  0%,
+  62%,
+  100% {
+    opacity: var(--wave-base);
+    stroke: currentColor;
+    stroke-width: var(--wave-weight);
+  }
+  20% {
+    opacity: var(--wave-peak);
+    /* Each arc peaks in its own colour, so the ripple shifts hue as it travels
+       outward instead of just brightening. Resting state stays currentColor,
+       which is what keeps the mark tintable per context. */
+    stroke: var(--wave-color);
+    stroke-width: var(--wave-weight-peak);
+  }
+}
+
+.logo-wave {
+  /* 1.7s with 0.15s between arcs. The previous 2.6s cycle rested from 55% to
+     100% — more than half of it was dead air, which read as a wait rather
+     than a rhythm. Now the three arcs fire within the first 0.6s and the
+     remainder is a single short breath before the next ripple. */
+  animation: logo-wave 1.7s ease-in-out infinite;
+  animation-delay: var(--wave-delay, 0s);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-wave {
+    animation: none;
+  }
+}
+
+/* Same ripple, played through exactly once instead of looping — the send-
+   confirmation moment (WhispSentConfirmation.tsx) needs "it pulsed, then
+   it's done," not a background ambient loop. Kept as its own class rather
+   than adding an animation-iteration-count prop to .logo-wave itself, since
+   every other use of the mark (headers, install prompts) genuinely wants
+   the infinite loop and shouldn't have to opt back into it. */
+.logo-wave-once {
+  animation: logo-wave 1.7s ease-in-out 1;
+  animation-delay: var(--wave-delay, 0s);
+  animation-fill-mode: forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-wave-once {
+    animation: none;
+  }
 }
 
 .particle {

@@ -3,7 +3,7 @@ import { useSubscribeToMatching } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Logo } from "@/components/ui/logo";
+import { LogoLockup } from "@/components/ui/logo";
 import { Loader2, MailCheck, Sparkles } from "lucide-react";
 import { VIDEO_CATEGORY_LABELS } from "@/lib/videoCategories";
 
@@ -48,10 +48,7 @@ export function SubscribePage() {
         className="px-5 pb-5 flex items-center justify-between border-b border-border/30 relative z-10"
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 1.25rem)" }}
       >
-        <div className="flex items-center gap-2">
-          <Logo className="w-6 h-6 text-primary" />
-          <span className="font-serif text-xl font-bold text-foreground tracking-tight">Blind Whisper</span>
-        </div>
+        <LogoLockup />
         <a href="/sign-up" className="text-xs text-muted-foreground hover:text-primary transition-colors py-2">
           Become a Whisperer
         </a>

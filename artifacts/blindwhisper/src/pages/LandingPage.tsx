@@ -1,8 +1,10 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Logo } from "@/components/ui/logo";
+import { LogoLockup } from "@/components/ui/logo";
 import { MoodTag } from "@/components/shared/MoodTag";
-import { Send, Heart, Shield, Sparkles, PlayCircle, Users2, Users, Briefcase, UserRound, X, Check } from "lucide-react";
+import { FAQ_ITEMS } from "@/lib/faqContent";
+import { InstallAppPrompt } from "@/components/shared/InstallAppPrompt";
+import { Send, Heart, Shield, Sparkles, PlayCircle, Users2, Users, Briefcase, UserRound, X, Check, ChevronDown } from "lucide-react";
 
 const USE_CASES = [
   {
@@ -63,10 +65,9 @@ export function LandingPage() {
         className="absolute top-0 w-full px-4 sm:px-6 pb-4 sm:pb-6 flex justify-between items-center z-10 gap-2"
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}
       >
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-          <Logo className="w-7 h-7 sm:w-8 sm:h-8 text-primary shrink-0" />
-          <span className="font-serif text-lg sm:text-2xl font-bold tracking-tight truncate">Blind Whisper</span>
-        </div>
+        <a href="/" className="hover:opacity-80 transition-opacity">
+          <LogoLockup />
+        </a>
         <div className="flex items-center gap-2 sm:gap-4 shrink-0">
           <Link href="/sign-in">
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground rounded-full px-3 sm:px-4">
@@ -130,12 +131,15 @@ export function LandingPage() {
               {
                 icon: Send,
                 title: "Your Choice of Delivery",
-                desc: "Send a private anonymous link straight to them, or drop it into Circle for organic community discovery."
+                desc: "Send a private anonymous link straight to them, or drop it into Blind Circle for organic community discovery."
               }
             ].map((feature, i) => (
               <div key={i} className="p-8 rounded-3xl bg-card/40 border border-border backdrop-blur hover:bg-card/60 transition-colors">
                 <feature.icon className="w-10 h-10 text-primary mb-6" />
-                <h3 className="text-xl font-serif font-semibold mb-3">{feature.title}</h3>
+                {/* h2, not h3: these three cards sit directly under the
+                    page's single h1 with no section h2 of their own, so h3
+                    here would skip a heading level. */}
+                <h2 className="text-xl font-serif font-semibold mb-3">{feature.title}</h2>
                 <p className="text-muted-foreground">{feature.desc}</p>
               </div>
             ))}
@@ -246,6 +250,36 @@ export function LandingPage() {
           </p>
         </section>
 
+        {/* FAQ */}
+        <section className="relative z-10 px-4 py-24 sm:py-32">
+          <div className="max-w-2xl mx-auto text-center space-y-4 mb-14">
+            <h2 className="text-3xl md:text-4xl font-serif font-bold text-foreground">
+              Frequently asked questions
+            </h2>
+            <p className="text-muted-foreground text-lg">
+              Everything people usually want to know before sending their first Whisp.
+            </p>
+          </div>
+
+          {/* Plain <details>/<summary> instead of the Radix accordion
+              primitive: browsers keep a closed <details>'s content in the
+              DOM at all times (just CSS-hidden), so the full answer text is
+              always present for crawlers and in the prerendered HTML — no
+              JS, no lazy-render-on-click, and no risk of a Presence/forceMount
+              edge case silently dropping collapsed answers from the markup. */}
+          <div className="max-w-2xl mx-auto divide-y divide-border">
+            {FAQ_ITEMS.map((item, i) => (
+              <details key={i} className="group py-4">
+                <summary className="flex items-center justify-between gap-4 cursor-pointer list-none text-left text-base font-serif font-semibold text-foreground hover:text-primary transition-colors [&::-webkit-details-marker]:hidden">
+                  {item.question}
+                  <ChevronDown className="w-4 h-4 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-180" />
+                </summary>
+                <p className="mt-3 text-muted-foreground leading-relaxed">{item.answer}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+
         {/* Closing CTA */}
         <section className="relative z-10 px-4 py-24 sm:py-32 text-center">
           <div className="max-w-2xl mx-auto space-y-6">
@@ -276,7 +310,15 @@ export function LandingPage() {
         <Link href="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link>
         <span className="text-border">•</span>
         <Link href="/terms" className="hover:text-primary transition-colors">Terms of Service</Link>
+        <span className="text-border">•</span>
+        <Link href="/sms-terms" className="hover:text-primary transition-colors">SMS Terms</Link>
       </footer>
+
+      {/* This is a signed-out visitor's only chance to see an install nudge
+          outside of AppLayout (see InstallAppPrompt's own docs) — someone who
+          already has the app, or a returning user browsing signed out, lands
+          here rather than mid-task inside the product. */}
+      <InstallAppPrompt />
     </div>
   );
 }

@@ -431,6 +431,41 @@ describe("DELETE /api/whisps/:id", () => {
   });
 });
 
+describe("GET /api/whisps/:id — reply read receipts", () => {
+  const USER_E = "clerk_user_e";
+
+  it("marks the recipient's replies read the moment the sender views the thread", async () => {
+    const created = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_E))
+      .send({ videoUrl: "https://youtu.be/a", deliveryMethod: "circle_drop" });
+    const whispId = created.body.id;
+
+    // A real recipient-authored row — the only route that can produce
+    // fromRecipient=true is the public one; POST /api/whisps/:id/replies is
+    // sender-only and ignores any fromRecipient the client sends (see its
+    // own comment), so that route can't stand in for this.
+    const reply = await request(app)
+      .post(`/api/public/w/${created.body.publicToken}/reply`)
+      .send({ replyText: "a reply from the recipient" });
+    expect(reply.body.readAt).toBeNull();
+
+    const firstView = await request(app).get(`/api/whisps/${whispId}`).set(asUser(USER_E));
+    expect(firstView.body.replies[0].readAt).toBeTruthy();
+
+    // A sender-authored follow-up should never get marked "read" by the
+    // sender's own view — only the recipient side of the conversation does
+    // that, in GET /api/public/w/:token (see public.test.ts).
+    const followUp = await request(app)
+      .post(`/api/whisps/${whispId}/replies`)
+      .set(asUser(USER_E))
+      .send({ replyText: "a follow-up from the sender", fromRecipient: false });
+    const secondView = await request(app).get(`/api/whisps/${whispId}`).set(asUser(USER_E));
+    const senderReply = secondView.body.replies.find((r: { id: string }) => r.id === followUp.body.id);
+    expect(senderReply.readAt).toBeNull();
+  });
+});
+
 describe("GET /api/public/circle", () => {
   it("lists Circle Drop whisps without exposing sender identity fields", async () => {
     await request(app)
@@ -453,5 +488,187 @@ describe("GET /api/public/circle", () => {
     expect(res.body.items[0].videoUrl).toBe("https://youtu.be/a");
     expect(res.body.items[0]).not.toHaveProperty("senderId");
     expect(res.body.items[0]).not.toHaveProperty("recipientEmail");
+  });
+});
+
+describe("POST /api/whisps — video field security", () => {
+  const USER_SEC = "clerk_user_sec_whisps";
+
+  it("rejects a javascript: video URL (stored-XSS guard)", async () => {
+    const res = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_SEC))
+      .send({ videoUrl: "javascript:alert(document.cookie)", deliveryMethod: "circle_drop" });
+    expect(res.status).toBe(400);
+  });
+
+  it("ignores client-supplied embed/thumbnail/platform and derives them from the URL", async () => {
+    const res = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_SEC))
+      .send({
+        videoUrl: "https://youtu.be/dQw4w9WgXcQ",
+        videoEmbedUrl: "https://attacker.example/phish",
+        videoThumbnail: "https://attacker.example/track.gif",
+        videoPlatform: "youtube",
+        deliveryMethod: "circle_drop",
+      });
+    expect(res.status).toBe(201);
+    expect(res.body.videoEmbedUrl).toBe("https://www.youtube.com/embed/dQw4w9WgXcQ?enablejsapi=1");
+    expect(res.body.videoThumbnail).toBe("https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg");
+    expect(res.body.videoEmbedUrl).not.toContain("attacker.example");
+    expect(res.body.videoThumbnail).not.toContain("attacker.example");
+  });
+
+  it("enforces the free-plan Whisper Link limit even under repeated sends", async () => {
+    const USER_LIMIT = "clerk_user_limit_whisps";
+    const send = () =>
+      request(app)
+        .post("/api/whisps")
+        .set(asUser(USER_LIMIT))
+        .send({
+          videoUrl: "https://youtu.be/dQw4w9WgXcQ",
+          deliveryMethod: "whisper_link",
+          whisperChannel: "email",
+          recipientEmail: "friend@example.com",
+        });
+
+    // Free plan allows 3 Whisper Links per rolling window.
+    expect((await send()).status).toBe(201);
+    expect((await send()).status).toBe(201);
+    expect((await send()).status).toBe(201);
+    const fourth = await send();
+    expect(fourth.status).toBe(402);
+  });
+});
+
+describe("POST /api/whisps — recipient contact validation", () => {
+  const USER_CONTACT = "clerk_user_contact_validation";
+
+  // nodemailer parses `to` as an ADDRESS LIST, so an unvalidated
+  // comma-separated value delivered one whisp to every address in it —
+  // fanning a single Whisper Link out to arbitrarily many strangers and
+  // sending real mail from the app's own domain on demand.
+  it("rejects a comma-separated recipient email (multi-recipient injection)", async () => {
+    const res = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_CONTACT))
+      .send({
+        videoUrl: "https://youtu.be/dQw4w9WgXcQ",
+        deliveryMethod: "whisper_link",
+        whisperChannel: "email",
+        recipientEmail: "victim@example.com, attacker@evil.com",
+      });
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects a recipient email carrying CRLF (header-injection shaped)", async () => {
+    const res = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_CONTACT))
+      .send({
+        videoUrl: "https://youtu.be/dQw4w9WgXcQ",
+        deliveryMethod: "whisper_link",
+        whisperChannel: "email",
+        recipientEmail: "victim@example.com\r\nBcc: attacker@evil.com",
+      });
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects a non-phone-shaped recipient phone", async () => {
+    const res = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_CONTACT))
+      .send({
+        videoUrl: "https://youtu.be/dQw4w9WgXcQ",
+        deliveryMethod: "whisper_link",
+        whisperChannel: "sms",
+        recipientPhone: "+15551234567, +15559999999",
+      });
+    expect(res.status).toBe(400);
+  });
+
+  it("still accepts a single ordinary email and phone", async () => {
+    const email = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_CONTACT))
+      .send({
+        videoUrl: "https://youtu.be/dQw4w9WgXcQ",
+        deliveryMethod: "whisper_link",
+        whisperChannel: "email",
+        recipientEmail: "friend@example.com",
+      });
+    expect(email.status).toBe(201);
+
+    const sms = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_CONTACT))
+      .send({
+        videoUrl: "https://youtu.be/dQw4w9WgXcQ",
+        deliveryMethod: "whisper_link",
+        whisperChannel: "sms",
+        recipientPhone: "+1 (555) 123-4567",
+      });
+    expect(sms.status).toBe(201);
+  });
+});
+
+describe("POST /api/whisps — video thumbnail handling", () => {
+  const USER_THUMB = "clerk_user_thumb";
+
+  // Regression: server-side derivation only knows how to build a thumbnail
+  // URL for YouTube, so discarding the client's scraped one outright left
+  // every other platform with no preview at all. A scraped thumbnail from a
+  // real platform CDN is kept; anything else still isn't.
+  it("keeps a scraped thumbnail from a real platform CDN on a non-YouTube whisp", async () => {
+    const res = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_THUMB))
+      .send({
+        videoUrl: "https://www.tiktok.com/@a/video/123",
+        videoThumbnail: "https://p16-sign-va.tiktokcdn.com/obj/abc123",
+        deliveryMethod: "circle_drop",
+      });
+    expect(res.status).toBe(201);
+    expect(res.body.videoThumbnail).toBe("https://p16-sign-va.tiktokcdn.com/obj/abc123");
+  });
+
+  it("still rejects a thumbnail from a host outside the platform allowlist", async () => {
+    const res = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_THUMB))
+      .send({
+        videoUrl: "https://www.tiktok.com/@a/video/123",
+        videoThumbnail: "https://attacker.example/beacon.gif",
+        deliveryMethod: "circle_drop",
+      });
+    expect(res.status).toBe(201);
+    expect(res.body.videoThumbnail).toBeNull();
+  });
+
+  it("rejects a lookalike host that merely ends with an allowlisted name", async () => {
+    const res = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_THUMB))
+      .send({
+        videoUrl: "https://www.tiktok.com/@a/video/123",
+        videoThumbnail: "https://ytimg.com.attacker.example/beacon.gif",
+        deliveryMethod: "circle_drop",
+      });
+    expect(res.status).toBe(201);
+    expect(res.body.videoThumbnail).toBeNull();
+  });
+
+  it("still prefers the server-derived thumbnail for YouTube", async () => {
+    const res = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_THUMB))
+      .send({
+        videoUrl: "https://youtu.be/dQw4w9WgXcQ",
+        videoThumbnail: "https://i.ytimg.com/vi/SOMETHINGELSE/hqdefault.jpg",
+        deliveryMethod: "circle_drop",
+      });
+    expect(res.status).toBe(201);
+    expect(res.body.videoThumbnail).toBe("https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg");
   });
 });

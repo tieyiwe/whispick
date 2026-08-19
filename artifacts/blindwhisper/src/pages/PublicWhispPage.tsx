@@ -1,5 +1,5 @@
 import { useParams, useLocation } from "wouter";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useUser } from "@clerk/react";
 import {
@@ -10,7 +10,13 @@ import {
   useScrapeVideoMeta,
   useSubmitAppreciation,
   useRequestWhispReminder,
+  useRequestVideoReply,
+  useToggleCircleLike,
+  usePostCircleComment,
+  useStartCircleDm,
+  useArchiveWhisp,
   getGetPublicWhispQueryKey,
+  type CircleComment,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNowStrict } from "date-fns";
@@ -20,19 +26,30 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MoodTag, MOOD_CONFIG } from "@/components/shared/MoodTag";
 import { useToast } from "@/hooks/use-toast";
-import { Send, Loader2, Video, X, Link2, HeartHandshake, Clock, BellRing, Sparkles, UserCircle2, PlayCircle } from "lucide-react";
-import { Logo } from "@/components/ui/logo";
+import { Send, Loader2, Video, X, Link2, HeartHandshake, Clock, BellRing, Sparkles, PlayCircle, PenLine, Lock, ChevronDown, ChevronLeft, Heart, MessageCircle } from "lucide-react";
+import { LogoLockup } from "@/components/ui/logo";
 import { VideoPlayer } from "@/components/shared/VideoPlayer";
 import { QUICK_REPLIES } from "@/lib/quickReplies";
+import { Thumbnail } from "@/components/shared/Thumbnail";
+import { ReplyThread, type ThreadReply } from "@/components/shared/ReplyThread";
+import { CircleCommentRow } from "@/components/shared/CircleCommentRow";
+import { ArchivedWhispGate } from "@/components/shared/ArchivedWhispGate";
+import { PullToRefresh } from "@/components/shared/PullToRefresh";
 import { REMINDER_PRESETS, MAX_REMINDERS } from "@/lib/reminderPresets";
 import { savePendingForward } from "@/lib/forwardVideo";
+import { getVisitorId } from "@/lib/anonymousVisitor";
+import { getSavedCircleDmToken, saveCircleDmToken } from "@/lib/circleDm";
 
-function BlindWhisperLogoMark() {
+function BlindWhisperLogoMark({ href }: { href: string }) {
   return (
-    <div className="flex items-center gap-2">
-      <Logo className="w-6 h-6 text-primary" />
-      <span className="font-serif text-xl font-bold text-foreground tracking-tight">Blind Whisper</span>
-    </div>
+    // A recipient's first and often only sight of the brand, so the lockup
+    // gets its full form here — mark at a real size, with the strapline.
+    // Clickable like everywhere else the logo appears (AppLayout,
+    // LegalLayout) — home for an anonymous visitor, their own dashboard for
+    // a signed-in Whisperer (the caller picks which via `href`).
+    <a href={href} className="inline-block hover:opacity-80 transition-opacity">
+      <LogoLockup tagline />
+    </a>
   );
 }
 
@@ -76,6 +93,42 @@ export function PublicWhispPage() {
   const [, setLocation] = useLocation();
   const { isSignedIn } = useUser();
   const [replyText, setReplyText] = useState("");
+  const [replyingTo, setReplyingTo] = useState<ThreadReply | null>(null);
+
+  // The fixed header's real rendered height, so the content below it knows
+  // how much space to reserve. Measured rather than a guessed constant
+  // because it varies with env(safe-area-inset-top) — different on every
+  // device with a notch/dynamic island — and again if the logo lockup ever
+  // wraps to two lines on a narrow screen.
+  const headerRef = useRef<HTMLElement>(null);
+  const [headerHeight, setHeaderHeight] = useState(0);
+
+  useLayoutEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => setHeaderHeight(entry.contentRect.height));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  // The reply composer is fixed to the bottom of the viewport — see the
+  // effect below (placed after `whisp` and the composer's own state are
+  // declared) for the full reasoning and the height it measures.
+  const composerRef = useRef<HTMLDivElement>(null);
+  const [composerHeight, setComposerHeight] = useState(0);
+
+  // The reply composer starts COMPACT — a single-line input plus a
+  // horizontally-scrolling row of quick-reply chips, not the full editor
+  // (context card, wrapped chips, textarea, video-reply offer, character
+  // count). It's pinned to the bottom of the viewport (see composerRef
+  // below), so the full version — several rows tall — used to sit directly
+  // under a freshly-opened video, on screen before anyone had even watched
+  // it, crowding the video into a sliver at the top on a normal phone
+  // screen. Tapping into the input (or, once a conversation already
+  // exists, just having replies) expands it to the full editor.
+  const [composerExpanded, setComposerExpanded] = useState(false);
+  const replyTextareaRef = useRef<HTMLTextAreaElement>(null);
+
   const [hasTrackedOpen, setHasTrackedOpen] = useState(false);
   const [revealResponse, setRevealResponse] = useState<"accepted" | "declined" | null>(null);
   const [localAppreciation, setLocalAppreciation] = useState<"yes" | "no" | null>(null);
@@ -83,6 +136,17 @@ export function PublicWhispPage() {
   const [reminderScheduled, setReminderScheduled] = useState<{ nextReminderAt: string; isFinal: boolean } | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [justWatched, setJustWatched] = useState(false);
+
+  // The "Was this something you needed to hear?" prompt's HEADER row is
+  // always rendered right under the video/takeaway — that alone is what
+  // puts it "somewhere they can see" without hunting for it, regardless of
+  // expand state. The CONTENT (the Yes/Not really buttons) only auto-opens
+  // once they've actually finished watching THIS visit (justWatched,
+  // below). It never auto-opens just because the page loaded or because a
+  // whisp was opened before — asking someone to react before they've
+  // watched anything is the exact "obstructing the video" complaint this is
+  // guarding against. It's always one tap away via the chevron regardless.
+  const [reactionExpanded, setReactionExpanded] = useState(false);
 
   // This is a private, single-recipient page — never indexable, even if a
   // link to it ends up publicly posted somewhere. robots.txt disallows /w/
@@ -107,15 +171,60 @@ export function PublicWhispPage() {
   } | null>(null);
   const [replyVideoError, setReplyVideoError] = useState<string | null>(null);
 
-  const { data: whisp, isLoading } = useGetPublicWhisp(token!, {
+  // Sent as a query param purely so a circle_drop response's viewerHasLiked
+  // reflects this device — meaningless (and ignored server-side) for every
+  // other delivery method.
+  const visitorIdParams = { visitorId: getVisitorId() };
+
+  const { data: whisp, isLoading, refetch } = useGetPublicWhisp(token!, visitorIdParams, {
     query: {
       enabled: !!token,
-      queryKey: getGetPublicWhispQueryKey(token!),
-      // The takeaway generates asynchronously after watched_complete fires —
-      // poll briefly to pick it up once it lands, then stop.
-      refetchInterval: (query) => (justWatched && !query.state.data?.aiTakeawayStatus ? 3000 : false),
+      queryKey: getGetPublicWhispQueryKey(token!, visitorIdParams),
+      // Two independent reasons to poll:
+      //  - the takeaway generates asynchronously after watched_complete
+      //    fires, so poll fast until it lands, then stop;
+      //  - a sender's follow-up should appear in the thread while the
+      //    recipient still has the page open, so keep a slower poll running
+      //    for the life of the page once a conversation exists.
+      refetchInterval: (query) => {
+        if (justWatched && !query.state.data?.aiTakeawayStatus) return 3000;
+        return query.state.data?.replies?.length ? 15_000 : false;
+      },
+      refetchIntervalInBackground: false,
     },
   });
+
+  // The composer's real rendered height, so content above it (and the page's
+  // own bottom padding) knows how much space to reserve — same measured
+  // technique as the header, since a guessed constant would drift the moment
+  // the video-reply form or the "N replies remaining" line appears.
+  useLayoutEffect(() => {
+    const el = composerRef.current;
+    if (!el) {
+      // Nothing pinned right now (whisp still loading, or not found) — stop
+      // reserving space for a bar that isn't there.
+      setComposerHeight(0);
+      return;
+    }
+    const observer = new ResizeObserver(([entry]) => setComposerHeight(entry.contentRect.height));
+    observer.observe(el);
+    return () => observer.disconnect();
+    // Re-runs whenever the composer's actual content changes — the video-reply
+    // form and the "N replies remaining" line change the bar's real height,
+    // and the ref itself only exists in some render branches (not the
+    // expired/limit-reached ones, which are shorter).
+  }, [showVideoReply, replyVideoMeta, whisp?.recipientRepliesRemaining, whisp?.expired]);
+
+  useEffect(() => {
+    if (justWatched) setReactionExpanded(true);
+  }, [justWatched]);
+
+  // Carries focus from the compact input over to the full textarea the
+  // instant it expands, so tapping in feels like one continuous field
+  // rather than losing the keyboard/cursor mid-tap.
+  useEffect(() => {
+    if (composerExpanded) replyTextareaRef.current?.focus();
+  }, [composerExpanded]);
 
   const trackEvent = useTrackWhispEvent();
   const publicReply = usePublicReply();
@@ -123,6 +232,27 @@ export function PublicWhispPage() {
   const scrapeReplyVideo = useScrapeVideoMeta();
   const submitAppreciation = useSubmitAppreciation();
   const requestReminder = useRequestWhispReminder();
+  const requestVideoReply = useRequestVideoReply();
+  const toggleLike = useToggleCircleLike();
+  const postComment = usePostCircleComment();
+  const startCircleDm = useStartCircleDm();
+  const archiveWhisp = useArchiveWhisp();
+
+  function handleUnarchive() {
+    if (!whisp) return;
+    archiveWhisp.mutate(
+      { id: whisp.id },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetPublicWhispQueryKey(token!) });
+          toast({ title: "Moved back to your list" });
+        },
+        onError: () => toast({ title: "Couldn't update that", variant: "destructive" }),
+      },
+    );
+  }
+  const [commentText, setCommentText] = useState("");
+  const [commentReplyingTo, setCommentReplyingTo] = useState<CircleComment | null>(null);
 
   // Keep the countdown fresh without refetching the whisp itself.
   useEffect(() => {
@@ -200,11 +330,13 @@ export function PublicWhispPage() {
           videoThumbnail: video?.meta?.thumbnail ?? null,
           videoEmbedUrl: video?.meta?.embedUrl ?? null,
           videoPlatform: video?.meta?.platform ?? null,
+          ...(replyingTo ? { parentReplyId: replyingTo.id } : {}),
         },
       },
       {
         onSuccess: () => {
           setReplyText("");
+          setReplyingTo(null);
           setShowVideoReply(false);
           setReplyVideoUrl("");
           setReplyVideoMeta(null);
@@ -243,10 +375,90 @@ export function PublicWhispPage() {
     );
   }
 
+  // Whisping a video back needs an account, or credit the sender bought for
+  // this whisp. Text replies are unaffected — the gate is on the one action
+  // that costs storage and moderation, and it's the natural moment to ask an
+  // anonymous recipient to join rather than an interruption.
+  const videoRepliesLocked = whisp ? whisp.videoRepliesAllowed === false : false;
+
+  function handleVideoReplyClick() {
+    if (!videoRepliesLocked) {
+      setShowVideoReply(true);
+      return;
+    }
+    // Tell the sender their recipient wanted to send something back, so they
+    // can unlock it. Fire-and-forget: the sign-up prompt is what matters here
+    // and shouldn't wait on it, and the server ignores repeats anyway.
+    requestVideoReply.mutate({ token: token! });
+    toast({
+      title: "Create a free account to whisp a video back",
+      description: "We've let the sender know too — they can unlock video replies for you.",
+    });
+    setLocation("/sign-up");
+  }
+
   function handleReply() {
     const video = replyVideoUrl.trim();
     if (!replyText.trim() && !video) return;
     submitReply(replyText.trim(), video ? { url: video, meta: replyVideoMeta } : undefined);
+  }
+
+  function handleToggleLike() {
+    toggleLike.mutate(
+      { token: token!, data: { visitorId: getVisitorId() } },
+      { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetPublicWhispQueryKey(token!) }) }
+    );
+  }
+
+  function handlePostComment() {
+    const text = commentText.trim();
+    if (!text) return;
+    postComment.mutate(
+      {
+        token: token!,
+        data: { commentText: text, visitorId: getVisitorId(), parentCommentId: commentReplyingTo?.id ?? null },
+      },
+      {
+        onSuccess: () => {
+          setCommentText("");
+          setCommentReplyingTo(null);
+          queryClient.invalidateQueries({ queryKey: getGetPublicWhispQueryKey(token!) });
+        },
+        onError: (err: any) => {
+          if (err?.data?.code === "comment_limit_reached") {
+            toast({
+              title: "You've used your free comments for now",
+              description: "Sign up to comment anytime, or check back in 24 hours.",
+              variant: "destructive",
+            });
+            return;
+          }
+          toast({ title: "Couldn't post that comment", variant: "destructive" });
+        },
+      }
+    );
+  }
+
+  // Resumes the SAME private thread on a repeat visit (see
+  // lib/circleDm.ts) instead of minting a new one on every click — the
+  // token, once saved, is this device's only way back to that conversation.
+  function handleMessagePoster() {
+    if (!whisp) return;
+    const saved = getSavedCircleDmToken(whisp.id);
+    if (saved) {
+      setLocation(`/w/${saved}`);
+      return;
+    }
+    startCircleDm.mutate(
+      { token: token! },
+      {
+        onSuccess: (result) => {
+          saveCircleDmToken(whisp.id, result.publicToken);
+          setLocation(`/w/${result.publicToken}`);
+        },
+        onError: () => toast({ title: "Couldn't start that conversation", variant: "destructive" }),
+      }
+    );
   }
 
   const moodColor = (whisp?.moodTag && MOOD_CONFIG[whisp.moodTag]?.color) || "#7C5CFC";
@@ -262,6 +474,7 @@ export function PublicWhispPage() {
     : [];
 
   return (
+    <PullToRefresh onRefresh={() => refetch()}>
     <div className="min-h-[100dvh] bg-background flex flex-col relative overflow-hidden">
       {/* Ambient background, tinted by the whisp's mood */}
       <div
@@ -273,22 +486,58 @@ export function PublicWhispPage() {
         style={{ backgroundColor: moodColor, opacity: 0.1 }}
       />
 
-      {/* Header */}
+      {/* Header — fixed, not sticky. index.css sets overflow-x: hidden on both
+          html and body, which (per AppLayout's own fix earlier) turns them
+          into scroll containers and defeats `sticky` almost entirely.
+          `position: fixed` isn't subject to that: it resolves against the
+          viewport regardless, confirmed empirically the same way the AppLayout
+          fix was. Pulling it out of flow means the content below needs
+          compensating top space equal to its real rendered height — which
+          varies with safe-area-inset-top per device — so it's measured rather
+          than guessed. */}
       <header
-        className="px-5 pb-5 flex items-center justify-between border-b border-border/30 relative z-10"
+        ref={headerRef}
+        className="fixed top-0 inset-x-0 z-20 px-5 pb-5 flex items-center justify-between border-b border-border/30 bg-background/95 backdrop-blur"
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 1.25rem)" }}
       >
-        <BlindWhisperLogoMark />
-        <a
-          href="/sign-up"
-          className="text-xs text-muted-foreground hover:text-primary transition-colors py-2"
-        >
-          Become a Whisperer
-        </a>
+        <BlindWhisperLogoMark href={isSignedIn ? "/dashboard" : "/"} />
+        {isSignedIn ? (
+          // A signed-in Whisperer landing here (their own Received tab, a
+          // notification, a link someone sent them) has an app to go back
+          // to — unlike an anonymous recipient, for whom this page IS the
+          // whole experience and a dashboard link would just be a dead end.
+          <button
+            type="button"
+            onClick={() => setLocation("/dashboard")}
+            data-testid="button-back-to-dashboard"
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors py-2"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" /> Dashboard
+          </button>
+        ) : (
+          <a
+            href="/sign-up"
+            className="text-xs text-muted-foreground hover:text-primary transition-colors py-2"
+          >
+            Become a Whisperer
+          </a>
+        )}
       </header>
 
       {/* Content */}
-      <main className="flex-1 max-w-lg mx-auto w-full px-5 py-10 space-y-7 relative z-10">
+      <main
+        className="flex-1 max-w-lg mx-auto w-full px-5 py-10 space-y-7 relative z-10"
+        style={{
+          paddingTop: `calc(${headerHeight}px + 2.5rem)`,
+          // Reserves space for the fixed composer the same way the top
+          // padding reserves space for the fixed header — without it, the
+          // reveal section, reminder picker, both CTAs and the footer would
+          // render partly hidden underneath the bar. 0 while it isn't
+          // rendered at all (loading/not-found), so nothing is reserved for
+          // a bar that isn't there.
+          paddingBottom: composerHeight ? `calc(${composerHeight}px + 2rem)` : undefined,
+        }}
+      >
         {isLoading ? (
           <div className="space-y-4">
             <Skeleton className="h-6 w-48 mx-auto" />
@@ -299,6 +548,18 @@ export function PublicWhispPage() {
           <div className="text-center py-20">
             <p className="text-muted-foreground">This whisp could not be found.</p>
           </div>
+        ) : whisp.viewerArchived ? (
+          // Only ever true for a signed-in viewer who is this whisp's own
+          // matched recipient AND has archived their copy of it (see
+          // routes/public.ts's GET /w/:token) — a reply/follow-up here still
+          // notifies them normally, but this is what they land on instead of
+          // the thread until they choose to bring it back.
+          <ArchivedWhispGate
+            videoTitle={whisp.videoTitle}
+            onUnarchive={handleUnarchive}
+            isUnarchiving={archiveWhisp.isPending}
+            onBack={() => setLocation(isSignedIn ? "/dashboard" : "/")}
+          />
         ) : (
           <>
             {/* Lead text — keep in sync with api-server's lib/copy.ts HOOK_LINE/groupHookLine */}
@@ -352,11 +613,32 @@ export function PublicWhispPage() {
 
                 {whisp.moodTag && <MoodTag mood={whisp.moodTag} />}
 
+                {/* The note is the most personal thing on this page, so it's
+                    set as a quote card rather than a line of text against a
+                    rule: its own surface, a serif open-quote, and the sender's
+                    alias as a small gilded seal underneath. The alias is the
+                    only identity a recipient ever gets, which is exactly why
+                    it should look deliberate rather than like a footnote. */}
                 {whisp.anonymousNote && (
-                  <div className="border-l-2 border-primary/40 pl-4">
-                    <p className="text-foreground italic text-sm leading-relaxed">"{whisp.anonymousNote}"</p>
+                  <div className="relative rounded-2xl bg-primary/[0.07] border border-primary/20 px-5 py-4 mt-1">
+                    <span
+                      aria-hidden
+                      className="absolute -top-2 left-4 font-serif text-5xl leading-none text-primary/30 select-none"
+                    >
+                      &ldquo;
+                    </span>
+                    <p className="text-foreground italic text-sm leading-relaxed relative">{whisp.anonymousNote}</p>
                     {whisp.senderAlias && (
-                      <p className="text-xs text-muted-foreground mt-2">— {whisp.senderAlias}</p>
+                      <div className="mt-3 flex items-center gap-2">
+                        <span className="h-px flex-1 bg-gradient-to-r from-gilded/40 to-transparent" />
+                        <span
+                          className="inline-flex items-center gap-1.5 rounded-full border border-gilded/30 bg-gilded/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.12em] text-gilded"
+                          data-testid="text-sender-alias"
+                        >
+                          <PenLine className="w-3 h-3" />
+                          {whisp.senderAlias}
+                        </span>
+                      </div>
                     )}
                   </div>
                 )}
@@ -365,56 +647,197 @@ export function PublicWhispPage() {
 
             {whisp.aiTakeawayStatus === "ready" && whisp.aiTakeaway && <TakeawayCard text={whisp.aiTakeaway} />}
 
-            {/* Appreciation prompt */}
-            <div className="bg-card border border-border/50 rounded-2xl p-4 text-center space-y-2">
-              {appreciationResponse ? (
-                <>
-                  <p className="text-sm text-muted-foreground flex items-center justify-center gap-1.5">
-                    <HeartHandshake className="w-4 h-4 text-primary" />
-                    {appreciationResponse === "yes" ? "Glad this reached you." : "Thanks for letting them know."}
-                  </p>
-                  {appreciationResponse === "yes" && whisp.videoPlatform !== "upload" && (
-                    <div className="pt-1 space-y-1.5">
-                      <p className="text-xs text-muted-foreground">Know someone who needs this too?</p>
+            {/* Appreciation prompt — collapsible so it doesn't crowd the
+                video/takeaway before there's anything to react to yet, and
+                stays collapsed until they actually finish watching in THIS
+                visit (see the justWatched effect above) — never just because
+                the server says it was watched before, which used to spring
+                this open on reload after a single tap. */}
+            <div className="bg-card border border-border/50 rounded-2xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setReactionExpanded((v) => !v)}
+                data-testid="button-toggle-appreciation"
+                aria-expanded={reactionExpanded}
+                className="w-full flex items-center justify-between gap-2 px-4 py-3.5 text-left"
+              >
+                <span className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                  {appreciationResponse && <HeartHandshake className="w-4 h-4 text-primary shrink-0" />}
+                  {appreciationResponse
+                    ? appreciationResponse === "yes"
+                      ? "Glad this reached you."
+                      : "Thanks for letting them know."
+                    : "Was this something you needed to hear?"}
+                </span>
+                <ChevronDown
+                  className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform ${reactionExpanded ? "rotate-180" : ""}`}
+                />
+              </button>
+              {reactionExpanded && (
+                <div className="px-4 pb-4 text-center space-y-2">
+                  {appreciationResponse ? (
+                    appreciationResponse === "yes" && whisp.videoPlatform !== "upload" && (
+                      <div className="space-y-1.5">
+                        <p className="text-xs text-muted-foreground">Know someone who needs this too?</p>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="rounded-full"
+                          onClick={handlePassItForward}
+                          data-testid="button-pass-it-forward"
+                        >
+                          <Send className="w-3.5 h-3.5 mr-1.5" /> Pass it forward
+                        </Button>
+                      </div>
+                    )
+                  ) : (
+                    <div className="flex gap-2 justify-center">
+                      <Button
+                        size="sm"
+                        className="rounded-full"
+                        onClick={() => handleAppreciation(true)}
+                        disabled={submitAppreciation.isPending}
+                        data-testid="button-appreciation-yes"
+                      >
+                        Yes
+                      </Button>
                       <Button
                         size="sm"
                         variant="outline"
                         className="rounded-full"
-                        onClick={handlePassItForward}
-                        data-testid="button-pass-it-forward"
+                        onClick={() => handleAppreciation(false)}
+                        disabled={submitAppreciation.isPending}
+                        data-testid="button-appreciation-no"
                       >
-                        <Send className="w-3.5 h-3.5 mr-1.5" /> Pass it forward
+                        Not really
                       </Button>
                     </div>
                   )}
-                </>
-              ) : (
-                <>
-                  <p className="text-sm font-medium text-foreground">Was this something you needed to hear?</p>
-                  <div className="flex gap-2 justify-center pt-1">
-                    <Button
-                      size="sm"
-                      className="rounded-full"
-                      onClick={() => handleAppreciation(true)}
-                      disabled={submitAppreciation.isPending}
-                      data-testid="button-appreciation-yes"
-                    >
-                      Yes
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="rounded-full"
-                      onClick={() => handleAppreciation(false)}
-                      disabled={submitAppreciation.isPending}
-                      data-testid="button-appreciation-no"
-                    >
-                      Not really
-                    </Button>
-                  </div>
-                </>
+                </div>
               )}
             </div>
+
+            {/* Blind Circle engagement — likes, a public comment thread, and
+                an entry point into a private 1:1 conversation with the
+                poster. Only meaningful for a Circle post (a Whisper Link
+                already has exactly one anonymous party, for whom "liked" or
+                "N comments" is meaningless) — every other delivery method
+                keeps using the ordinary Reply section just below instead. */}
+            {whisp.deliveryMethod === "circle_drop" && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleToggleLike}
+                    disabled={toggleLike.isPending}
+                    data-testid="button-like-circle-post"
+                    aria-pressed={whisp.viewerHasLiked}
+                    className={`flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition-colors active:scale-95 ${
+                      whisp.viewerHasLiked
+                        ? "border-primary/40 bg-primary/10 text-primary"
+                        : "border-border/50 bg-card text-foreground hover:border-primary/40"
+                    }`}
+                  >
+                    <Heart className={`w-4 h-4 ${whisp.viewerHasLiked ? "fill-primary" : ""}`} />
+                    {whisp.likeCount > 0 ? whisp.likeCount : "Like"}
+                  </button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full flex-1"
+                    onClick={handleMessagePoster}
+                    disabled={startCircleDm.isPending}
+                    data-testid="button-message-poster"
+                  >
+                    {startCircleDm.isPending ? (
+                      <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                    ) : (
+                      <MessageCircle className="w-3.5 h-3.5 mr-1.5" />
+                    )}
+                    Message the poster privately
+                  </Button>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-px bg-border/40" />
+                    <span className="text-xs text-muted-foreground">
+                      {whisp.comments.length > 0
+                        ? `${whisp.comments.length} comment${whisp.comments.length === 1 ? "" : "s"}`
+                        : "Be the first to comment"}
+                    </span>
+                    <div className="flex-1 h-px bg-border/40" />
+                  </div>
+
+                  {whisp.comments.length > 0 && (
+                    <div className="space-y-3">
+                      {whisp.comments
+                        .filter((c) => !c.parentCommentId)
+                        .map((comment) => (
+                          <div key={comment.id} className="space-y-2">
+                            <CircleCommentRow comment={comment} onReply={() => setCommentReplyingTo(comment)} />
+                            {whisp.comments
+                              .filter((r) => r.parentCommentId === comment.id)
+                              .map((reply) => (
+                                <div key={reply.id} className="ml-5 pl-3 border-l-2 border-border/30">
+                                  <CircleCommentRow comment={reply} onReply={() => setCommentReplyingTo(comment)} />
+                                </div>
+                              ))}
+                          </div>
+                        ))}
+                    </div>
+                  )}
+
+                  {commentReplyingTo && (
+                    <div
+                      className="flex items-center justify-between gap-2 rounded-lg border-l-2 border-primary/60 bg-primary/5 px-3 py-1.5"
+                      data-testid="comment-replying-to"
+                    >
+                      <span className="text-[11px] text-muted-foreground">
+                        Replying to {commentReplyingTo.isPoster ? "the poster" : "a comment"}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setCommentReplyingTo(null)}
+                        aria-label="Cancel reply"
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+
+                  <Textarea
+                    className="bg-card border-border/50 rounded-xl resize-none min-h-[60px]"
+                    placeholder="Add a comment... (anonymous)"
+                    maxLength={500}
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    data-testid="textarea-circle-comment"
+                  />
+
+                  <div className="flex items-center justify-between gap-3">
+                    {/* The reminder the product asked for, plus the same
+                        signup nudge the rest of this page uses — comments
+                        are anonymous by default, but signing up lifts the
+                        rate limit entirely (see the toast on a 403 above). */}
+                    <p className="text-[11px] text-muted-foreground leading-snug">
+                      Keep it kind — the goal here is genuine, productive conversation.{" "}
+                      <a href="/sign-up" className="text-primary hover:underline">Become a Whisperer</a> for unlimited comments.
+                    </p>
+                    <Button
+                      size="sm"
+                      className="rounded-full shrink-0"
+                      onClick={handlePostComment}
+                      disabled={!commentText.trim() || postComment.isPending}
+                      data-testid="button-post-comment"
+                    >
+                      {postComment.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Reply section */}
             <div className="space-y-3">
@@ -427,48 +850,34 @@ export function PublicWhispPage() {
               </div>
 
               {whisp.replies.length > 0 && (
-                <div className="space-y-2">
-                  {whisp.replies.map((reply) => (
-                    <div
-                      key={reply.id}
-                      data-testid={`reply-${reply.id}`}
-                      className={`p-3 rounded-xl text-sm ${
-                        reply.fromRecipient
-                          ? "bg-primary/10 border border-primary/20"
-                          : "bg-muted/30 border border-border/50 mr-8"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 mb-1">
-                        <UserCircle2 className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">
-                          {reply.fromRecipient ? "You" : whisp.senderAlias || "The sender"} ·{" "}
-                          {new Date(reply.createdAt).toLocaleString()}
-                        </span>
-                      </div>
-                      {reply.replyText && <p className="text-foreground">{reply.replyText}</p>}
-                      {reply.videoUrl && (
-                        <a
-                          href={reply.videoUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          data-testid={`reply-video-${reply.id}`}
-                          className={`flex gap-2 items-center bg-card rounded-lg p-2 hover:bg-card/70 transition-colors ${reply.replyText ? "mt-2" : ""}`}
-                        >
-                          {reply.videoThumbnail ? (
-                            <img src={reply.videoThumbnail} className="w-16 h-12 object-cover rounded" alt="Video reply thumbnail" />
-                          ) : (
-                            <div className="w-16 h-12 bg-muted rounded flex items-center justify-center shrink-0">
-                              <PlayCircle className="w-5 h-5 text-muted-foreground" />
-                            </div>
-                          )}
-                          <span className="text-xs text-foreground truncate">{reply.videoTitle || "Whisped a video back"}</span>
-                        </a>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                <ReplyThread
+                  replies={whisp.replies}
+                  viewerIsRecipient
+                  otherLabel={whisp.senderAlias || "The sender"}
+                  replyingTo={replyingTo}
+                  // No per-message Reply affordance when the composer below
+                  // isn't going to be there — offering to answer a message
+                  // and then showing an expired/out-of-replies notice instead
+                  // is worse than not offering.
+                  onReplyTo={
+                    whisp.expired || whisp.recipientRepliesRemaining === 0 ? undefined : setReplyingTo
+                  }
+                />
               )}
 
+              {/* Pinned to the bottom of the viewport rather than left in
+                  normal flow, same treatment and same reasoning as the fixed
+                  header: reachable from wherever on the page you've scrolled
+                  to, the way a chat app's input bar always is. Every branch
+                  below (the live composer, the expired notice, the
+                  out-of-replies card) renders into this same fixed slot for
+                  consistency — whichever is active, it's the page's one
+                  "reply status" area, and should live in the same place. */}
+              <div
+                ref={composerRef}
+                className="fixed bottom-0 inset-x-0 z-20 border-t border-border/30 bg-background/95 px-5 pt-3 backdrop-blur"
+                style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.75rem)" }}
+              >
               {(() => {
                 const disabled = whisp.expired;
                 if (disabled) {
@@ -478,8 +887,101 @@ export function PublicWhispPage() {
                     </p>
                   );
                 }
+                // Out of anonymous replies: signing up is the way to keep
+                // going, so lead with that rather than a dead end. (The
+                // sender can also add more — but that's their decision to
+                // make, not something to promise the recipient here.)
+                const remaining = whisp.recipientRepliesRemaining;
+                if (remaining === 0) {
+                  return (
+                    <div className="rounded-2xl border border-primary/25 bg-primary/5 p-4 text-center space-y-2" data-testid="reply-limit-reached">
+                      <p className="text-sm text-foreground">You've used all your anonymous replies here.</p>
+                      <p className="text-xs text-muted-foreground">
+                        Create a free account to keep this conversation going — you'll still be anonymous to them.
+                      </p>
+                      <Button size="sm" className="rounded-full" onClick={() => setLocation("/sign-up")} data-testid="button-signup-for-replies">
+                        Sign up to keep replying
+                      </Button>
+                    </div>
+                  );
+                }
+                // Compact mode: a slim input plus quick-reply chips in one
+                // scrollable row, nothing else — see composerExpanded's own
+                // comment above for why. Once a conversation already exists
+                // (whisp.replies.length > 0), always go straight to the full
+                // editor below instead — the quick-reply chips don't even
+                // apply once there's a real reply thread.
+                if (!composerExpanded && whisp.replies.length === 0) {
+                  return (
+                    <div className="space-y-2">
+                      <div
+                        className="flex gap-2 overflow-x-auto pb-0.5"
+                        style={{ scrollbarWidth: "none" }}
+                        data-testid="quick-replies-compact"
+                      >
+                        {QUICK_REPLIES.map((qr) => (
+                          <button
+                            key={qr.key}
+                            type="button"
+                            onClick={() => submitReply(qr.text)}
+                            disabled={publicReply.isPending}
+                            data-testid={`quick-reply-${qr.key}`}
+                            className="shrink-0 whitespace-nowrap px-4 py-2 min-h-11 rounded-full border border-border/50 bg-card text-sm text-foreground hover:border-primary/50 hover:bg-primary/10 active:scale-95 transition-all disabled:opacity-50"
+                          >
+                            {qr.text}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          className="flex-1 h-11 bg-card border-border/50 rounded-full px-4"
+                          placeholder="Reply anonymously..."
+                          value={replyText}
+                          onChange={(e) => setReplyText(e.target.value)}
+                          onFocus={() => setComposerExpanded(true)}
+                          data-testid="input-reply-compact"
+                        />
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          className="rounded-full h-11 w-11 shrink-0"
+                          onClick={() => setComposerExpanded(true)}
+                          data-testid="button-expand-composer"
+                          aria-label="More reply options, including a video reply"
+                        >
+                          <Video className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                }
                 return (
                 <div className="space-y-3">
+                  {/* A reminder of what they're actually replying to. By the
+                      time someone scrolls this far down — past the takeaway
+                      card and the appreciation prompt — the video card up top
+                      is long gone, and there's nothing on screen saying which
+                      video this reply is even about. */}
+                  <div
+                    className="flex items-center gap-2.5 rounded-xl border border-border/40 bg-muted/20 px-3 py-2"
+                    data-testid="reply-context-card"
+                  >
+                    {whisp.videoThumbnail || whisp.videoPlatform === "upload" ? (
+                      <Thumbnail
+                        src={whisp.videoPlatform === "upload" ? `/api/public/w/${token}/media/thumbnail` : whisp.videoThumbnail!}
+                        alt=""
+                        className="h-9 w-14 shrink-0 rounded-lg object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-9 w-14 shrink-0 items-center justify-center rounded-lg bg-muted">
+                        <PlayCircle className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    )}
+                    <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+                      Replying to <span className="text-foreground">{whisp.videoTitle || "this video"}</span>
+                    </p>
+                  </div>
+
                   {whisp.replies.length === 0 && (
                   <div className="flex flex-wrap gap-2 justify-center">
                     {QUICK_REPLIES.map((qr) => (
@@ -502,28 +1004,60 @@ export function PublicWhispPage() {
                     <div className="flex-1 h-px bg-border/40" />
                   </div>
                   <Textarea
+                    ref={replyTextareaRef}
                     className="bg-card border-border/50 rounded-xl resize-none min-h-[80px]"
                     placeholder="Type your reply... (anonymous)"
                     maxLength={300}
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
+                    // Enter sends, Shift+Enter makes a newline — same
+                    // convention as ThreadComposer, so it's what a recipient's
+                    // fingers already expect after typing anywhere else in
+                    // the app. Guarded exactly like the Send button itself:
+                    // no bare Enter with nothing to send, and no double-send
+                    // while a request is already in flight.
+                    onKeyDown={(e) => {
+                      if (e.key !== "Enter" || e.shiftKey) return;
+                      e.preventDefault();
+                      if ((replyText.trim() || replyVideoUrl.trim()) && !publicReply.isPending) handleReply();
+                    }}
                     data-testid="textarea-public-reply"
                   />
 
                   {!showVideoReply ? (
+                    // Answering with a video — not just text — is the thing
+                    // this app does that a message thread doesn't, and it was
+                    // sitting here as grey 12px text that read as a footnote.
+                    // Given the weight of the action it needs to look like an
+                    // offer: full width, dashed like an empty slot waiting to
+                    // be filled, and saying what it actually gets you.
                     <button
                       type="button"
-                      onClick={() => setShowVideoReply(true)}
+                      onClick={handleVideoReplyClick}
                       data-testid="button-show-video-reply"
-                      className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
+                      className="group w-full flex items-center gap-3 rounded-xl border border-dashed border-primary/40 bg-primary/[0.06] px-4 py-3 text-left transition-colors hover:border-primary/70 hover:bg-primary/10 active:scale-[0.99]"
                     >
-                      <Video className="w-3.5 h-3.5" /> Whisp a video back too
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary transition-colors group-hover:bg-primary/25">
+                        {videoRepliesLocked ? <Lock className="h-4 w-4" /> : <Video className="h-4 w-4" />}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-medium text-foreground">Whisp a video back</span>
+                        <span className="block text-xs text-muted-foreground">
+                          {videoRepliesLocked
+                            ? "Needs a free account — your text replies still work"
+                            : "Send a video with your reply — still anonymous"}
+                        </span>
+                      </span>
+                      <PlayCircle className="h-4 w-4 shrink-0 text-primary/60 transition-colors group-hover:text-primary" />
                     </button>
                   ) : (
-                    <div className="space-y-2 p-3 rounded-xl border border-border/50 bg-muted/20">
+                    <div className="space-y-2 p-3 rounded-xl border border-primary/30 bg-primary/[0.06]">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                          <Video className="w-3.5 h-3.5" /> Whisp a video back
+                        <span className="text-sm font-medium text-foreground flex items-center gap-2">
+                          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/15 text-primary">
+                            <Video className="h-3.5 w-3.5" />
+                          </span>
+                          Whisp a video back
                         </span>
                         <button
                           type="button"
@@ -578,6 +1112,18 @@ export function PublicWhispPage() {
                     </div>
                   )}
 
+                  {/* Warn only when they're nearly out — showing a counter
+                      from the very first reply would make an anonymous note
+                      feel metered when there's no reason to think about it
+                      yet. */}
+                  {typeof remaining === "number" && remaining > 0 && remaining <= 2 && (
+                    <p className="text-xs text-muted-foreground text-center" data-testid="text-replies-remaining">
+                      {remaining === 1
+                        ? "This is your last anonymous reply — sign up free to keep going."
+                        : `${remaining} anonymous replies left.`}
+                    </p>
+                  )}
+
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">{replyText.length}/300</span>
                     <Button
@@ -598,6 +1144,7 @@ export function PublicWhispPage() {
                 </div>
                 );
               })()}
+              </div>
             </div>
 
             {/* Reveal section */}
@@ -685,17 +1232,36 @@ export function PublicWhispPage() {
             )}
 
             {/* Signup CTA — recipients never need an account to watch or reply,
-                this is just an invite to send their own. */}
-            <a
-              href="/sign-up"
-              className="flex items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors p-4"
-            >
-              <div>
-                <p className="text-sm font-medium text-foreground">Have a video someone needs to see?</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Become a Whisperer — send your own, anonymously.</p>
+                this is just an invite to send their own. Made a real focal
+                point rather than a quiet link: by the time someone's read
+                this far — watched the video, maybe replied — they've just
+                felt exactly what the product does, which is the best
+                moment to invite them to try sending one themselves. */}
+            <div className="relative overflow-hidden rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/15 via-card to-card p-6 text-center space-y-3 glow-card">
+              <div
+                className="absolute -top-10 -right-10 w-32 h-32 rounded-full blur-[60px] pointer-events-none"
+                style={{ backgroundColor: moodColor, opacity: 0.25 }}
+              />
+              <Sparkles className="w-6 h-6 text-primary mx-auto relative" />
+              <div className="relative space-y-1.5">
+                <p className="font-serif text-lg font-semibold text-foreground">
+                  Got something to say, but not out loud?
+                </p>
+                <p className="text-sm text-muted-foreground max-w-xs mx-auto leading-relaxed">
+                  Send a video to someone who needs it — anonymously, without the awkward part of saying it
+                  yourself. They'll never know it was you, unless you want them to.
+                </p>
               </div>
-              <Sparkles className="w-5 h-5 text-primary shrink-0" />
-            </a>
+              <Button
+                size="lg"
+                className="relative rounded-full h-12 px-8 text-base font-medium shadow-[0_0_24px_rgba(124,92,252,0.35)] hover:shadow-[0_0_36px_rgba(124,92,252,0.55)] transition-all"
+                onClick={() => setLocation("/sign-up")}
+                data-testid="button-become-whisperer"
+              >
+                <Sparkles className="w-4 h-4 mr-2" /> Become a Whisperer Now
+              </Button>
+              <p className="relative text-xs text-muted-foreground">Free to start — no card required.</p>
+            </div>
 
             {/* Ghost Boost matching CTA — a recipient who just felt what an
                 anonymous whisp can do is a natural fit for the subscriber list. */}
@@ -727,5 +1293,6 @@ export function PublicWhispPage() {
         </p>
       </footer>
     </div>
+    </PullToRefresh>
   );
 }

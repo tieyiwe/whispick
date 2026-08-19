@@ -1,8 +1,15 @@
 import { Router } from "express";
 import { getAuth } from "@clerk/express";
 import { db } from "@workspace/db";
-import { usersTable, pushSubscriptionsTable, notificationsTable, notificationReadsTable } from "@workspace/db";
-import { eq, and, or, isNull, desc, count, notInArray } from "drizzle-orm";
+import {
+  usersTable,
+  pushSubscriptionsTable,
+  notificationsTable,
+  notificationReadsTable,
+  whispsTable,
+  textWhispsTable,
+} from "@workspace/db";
+import { eq, and, or, ne, isNull, desc, count, notInArray } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { z } from "zod";
 import { requireAuth } from "../lib/auth";
@@ -11,7 +18,7 @@ import { getVapidPublicKey } from "../lib/push";
 import { GENDER_OPTIONS, AGE_RANGE_OPTIONS } from "../lib/demographics";
 import { normalizePhoneE164 } from "../lib/phone";
 import { startPhoneVerification, checkPhoneVerification } from "../lib/phoneVerification";
-import { phoneVerificationLimiter } from "../lib/rateLimit";
+import { phoneVerificationLimiter, confirmPhoneVerificationLimiter } from "../lib/rateLimit";
 
 const router = Router();
 
@@ -27,12 +34,14 @@ router.get("/profile", requireAuth, async (req, res): Promise<void> => {
     avatarUrl: user.avatarUrl,
     phone: user.phone,
     phoneVerifiedAt: user.phoneVerifiedAt,
+    countryCode: user.countryCode,
     gender: user.gender,
     ageRange: user.ageRange,
     plan: user.plan,
     boostCredits: user.boostCredits,
     whisperLinksUsed: user.whisperLinksUsed,
     role: user.role,
+    emailNotificationsEnabled: user.emailNotificationsEnabled,
     createdAt: user.createdAt,
   });
 });
@@ -49,6 +58,8 @@ router.patch("/profile", requireAuth, async (req, res): Promise<void> => {
     avatarUrl: z.string().nullable().optional(),
     gender: z.enum(GENDER_OPTIONS).nullable().optional(),
     ageRange: z.enum(AGE_RANGE_OPTIONS).nullable().optional(),
+    emailNotificationsEnabled: z.boolean().optional(),
+    countryCode: z.string().length(2).nullable().optional(),
   });
 
   const parsed = schema.safeParse(req.body);
@@ -57,7 +68,10 @@ router.patch("/profile", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  await db.update(usersTable).set(parsed.data).where(eq(usersTable.id, user.id));
+  await db
+    .update(usersTable)
+    .set({ ...parsed.data, ...(parsed.data.countryCode ? { countryCode: parsed.data.countryCode.toUpperCase() } : {}) })
+    .where(eq(usersTable.id, user.id));
   const updated = await db.select().from(usersTable).where(eq(usersTable.id, user.id)).then(r => r[0]);
 
   res.json({
@@ -68,11 +82,13 @@ router.patch("/profile", requireAuth, async (req, res): Promise<void> => {
     avatarUrl: updated.avatarUrl,
     phone: updated.phone,
     phoneVerifiedAt: updated.phoneVerifiedAt,
+    countryCode: updated.countryCode,
     gender: updated.gender,
     ageRange: updated.ageRange,
     plan: updated.plan,
     boostCredits: updated.boostCredits,
     whisperLinksUsed: updated.whisperLinksUsed,
+    emailNotificationsEnabled: updated.emailNotificationsEnabled,
     createdAt: updated.createdAt,
   });
 });
@@ -154,6 +170,12 @@ router.delete("/push-subscription", requireAuth, async (req, res): Promise<void>
 
 const startPhoneVerificationSchema = z.object({
   phone: z.string().min(1).max(32),
+  // ISO 3166-1 alpha-2, from the country picker in CountryPhoneInput.tsx.
+  // Optional (and harmless when omitted) since `phone` is already a fully
+  // international "+"-prefixed value by the time it gets here — see
+  // normalizePhoneE164's own comment — but passing it keeps this endpoint
+  // robust even against a future caller that sends a bare national number.
+  countryCode: z.string().length(2).optional(),
 });
 
 // POST /api/user/phone/start-verification — sends a Twilio Verify SMS code
@@ -169,7 +191,7 @@ router.post("/phone/start-verification", requireAuth, phoneVerificationLimiter, 
     return;
   }
 
-  const normalized = normalizePhoneE164(parsed.data.phone);
+  const normalized = normalizePhoneE164(parsed.data.phone, parsed.data.countryCode);
   if (!normalized) {
     res.status(400).json({ error: "That doesn't look like a valid phone number" });
     return;
@@ -187,6 +209,7 @@ router.post("/phone/start-verification", requireAuth, phoneVerificationLimiter, 
 const confirmPhoneVerificationSchema = z.object({
   phone: z.string().min(1).max(32),
   code: z.string().min(1).max(12),
+  countryCode: z.string().length(2).optional(),
 });
 
 // POST /api/user/phone/confirm-verification — checks the code against
@@ -196,7 +219,7 @@ const confirmPhoneVerificationSchema = z.object({
 // no server-side "verification in progress for this user" state to look up
 // otherwise — Twilio Verify itself is the source of truth for which
 // (phone, code) pairs are valid.
-router.post("/phone/confirm-verification", requireAuth, async (req, res): Promise<void> => {
+router.post("/phone/confirm-verification", requireAuth, confirmPhoneVerificationLimiter, async (req, res): Promise<void> => {
   const { userId } = getAuth(req);
   const user = await ensureUser(userId!, req);
 
@@ -206,7 +229,7 @@ router.post("/phone/confirm-verification", requireAuth, async (req, res): Promis
     return;
   }
 
-  const normalized = normalizePhoneE164(parsed.data.phone);
+  const normalized = normalizePhoneE164(parsed.data.phone, parsed.data.countryCode);
   if (!normalized) {
     res.status(400).json({ error: "That doesn't look like a valid phone number" });
     return;
@@ -218,13 +241,35 @@ router.post("/phone/confirm-verification", requireAuth, async (req, res): Promis
     return;
   }
 
+  // A phone number is the routing key for in-app whisp delivery
+  // (findVerifiedRecipient in lib/deliver.ts), so it must map to exactly one
+  // verified account. Phone numbers get recycled between people, and the
+  // person now holding this SIM just proved control of it — so clear any
+  // OTHER account still claiming it as verified. Without this, a recycled
+  // number could resolve to a stranger's old account and an anonymized whisp
+  // meant for the current holder would land in that stranger's in-app inbox
+  // instead of being texted to the right person.
   await db
     .update(usersTable)
-    .set({ phone: normalized, phoneVerifiedAt: new Date() })
+    .set({ phone: null, phoneVerifiedAt: null })
+    .where(and(eq(usersTable.phone, normalized), ne(usersTable.id, user.id)));
+
+  await db
+    .update(usersTable)
+    .set({
+      phone: normalized,
+      phoneVerifiedAt: new Date(),
+      // Real, user-confirmed country beats the best-effort IP-geolocation
+      // guess that may already be sitting in this same row — see
+      // users.countryCode's own schema comment. Only overwritten when the
+      // client actually sent one; an old client hitting this endpoint
+      // without it just leaves whatever was there before untouched.
+      ...(parsed.data.countryCode ? { countryCode: parsed.data.countryCode.toUpperCase() } : {}),
+    })
     .where(eq(usersTable.id, user.id));
 
   const updated = await db.select().from(usersTable).where(eq(usersTable.id, user.id)).then((r) => r[0]!);
-  res.status(200).json({ phone: updated.phone, phoneVerifiedAt: updated.phoneVerifiedAt });
+  res.status(200).json({ phone: updated.phone, phoneVerifiedAt: updated.phoneVerifiedAt, countryCode: updated.countryCode });
 });
 
 // ---------------------------------------------------------------------------
@@ -251,6 +296,7 @@ router.get("/notifications", requireAuth, async (req, res): Promise<void> => {
       title: notificationsTable.title,
       body: notificationsTable.body,
       url: notificationsTable.url,
+      kind: notificationsTable.kind,
       createdByAdminId: notificationsTable.createdByAdminId,
       createdAt: notificationsTable.createdAt,
       readAt: notificationReadsTable.readAt,
@@ -273,22 +319,39 @@ router.get("/notifications", requireAuth, async (req, res): Promise<void> => {
 });
 
 // GET /api/user/notifications/unread-count — a lightweight poll target for
-// a nav badge, without pulling the full list every time.
+// a nav badge, without pulling the full list every time. Also breaks out
+// unread REPLY notifications separately, so the Replies tab can show a badge
+// that means "someone replied" specifically — an open/watch notification
+// lighting up the Replies tab would send the user looking for a message
+// that isn't there.
 router.get("/notifications/unread-count", requireAuth, async (req, res): Promise<void> => {
   const { userId } = getAuth(req);
   const user = await ensureUser(userId!, req);
 
-  const row = await db
-    .select({ count: count() })
-    .from(notificationsTable)
-    .leftJoin(
-      notificationReadsTable,
-      and(eq(notificationReadsTable.notificationId, notificationsTable.id), eq(notificationReadsTable.userId, user.id)),
-    )
-    .where(and(visibleToUser(user.id), isNull(notificationReadsTable.id)))
-    .then((r) => r[0]);
+  const unreadOnly = and(visibleToUser(user.id), isNull(notificationReadsTable.id));
 
-  res.json({ unreadCount: row?.count ?? 0 });
+  const [row, replyRow] = await Promise.all([
+    db
+      .select({ count: count() })
+      .from(notificationsTable)
+      .leftJoin(
+        notificationReadsTable,
+        and(eq(notificationReadsTable.notificationId, notificationsTable.id), eq(notificationReadsTable.userId, user.id)),
+      )
+      .where(unreadOnly)
+      .then((r) => r[0]),
+    db
+      .select({ count: count() })
+      .from(notificationsTable)
+      .leftJoin(
+        notificationReadsTable,
+        and(eq(notificationReadsTable.notificationId, notificationsTable.id), eq(notificationReadsTable.userId, user.id)),
+      )
+      .where(and(unreadOnly, eq(notificationsTable.kind, "reply")))
+      .then((r) => r[0]),
+  ]);
+
+  res.json({ unreadCount: row?.count ?? 0, unreadReplyCount: replyRow?.count ?? 0 });
 });
 
 // POST /api/user/notifications/:id/read
@@ -317,6 +380,90 @@ router.post("/notifications/:id/read", requireAuth, async (req, res): Promise<vo
   }
 
   res.status(204).send();
+});
+
+// ---------------------------------------------------------------------------
+// Recent recipients — powers autocomplete on the Whisper Link recipient field,
+// so a returning sender doesn't retype an address they've already used.
+//
+// Derived from the sender's own outbound history rather than stored as a
+// separate address book: the addresses are already on their whisps, a second
+// copy would drift, and there's nothing to keep in sync or clean up when a
+// whisp is deleted. It also means this works on a new device immediately,
+// which a localStorage list would not.
+//
+// Strictly scoped to whisps this user SENT. That matters beyond the obvious
+// privacy point: it's the sender's own typed input coming back to them, so it
+// reveals nothing about who holds an account — the fact the anti-enumeration
+// rules exist to protect. Nothing here reads whisps sent TO this user.
+// ---------------------------------------------------------------------------
+const RECENT_RECIPIENT_LIMIT = 50;
+// Scanned before de-duplication, so someone who whisps the same handful of
+// people repeatedly still surfaces the full set rather than one name.
+const RECENT_RECIPIENT_SCAN = 400;
+
+// GET /api/user/recent-recipients
+router.get("/recent-recipients", requireAuth, async (req, res): Promise<void> => {
+  const { userId } = getAuth(req);
+  const user = await ensureUser(userId!, req);
+
+  const [whisps, textWhisps] = await Promise.all([
+    db
+      .select({
+        email: whispsTable.recipientEmail,
+        phone: whispsTable.recipientPhone,
+        createdAt: whispsTable.createdAt,
+      })
+      .from(whispsTable)
+      .where(eq(whispsTable.senderId, user.id))
+      .orderBy(desc(whispsTable.createdAt))
+      .limit(RECENT_RECIPIENT_SCAN),
+    db
+      .select({ phone: textWhispsTable.recipientPhone, createdAt: textWhispsTable.createdAt })
+      .from(textWhispsTable)
+      .where(eq(textWhispsTable.senderId, user.id))
+      .orderBy(desc(textWhispsTable.createdAt))
+      .limit(RECENT_RECIPIENT_SCAN),
+  ]);
+
+  type Entry = { value: string; kind: "email" | "phone"; lastUsedAt: Date; useCount: number };
+  const byKey = new Map<string, Entry>();
+
+  function record(raw: string | null, kind: "email" | "phone", at: Date) {
+    const value = raw?.trim();
+    if (!value) return;
+    // Case-insensitive for emails, digits-only for phones — the same keys the
+    // client dedupes on (lib/recipients.ts), so one contact typed two ways
+    // doesn't show up as two suggestions.
+    const key = kind === "email" ? value.toLowerCase() : value.replace(/\D/g, "");
+    if (!key) return;
+    const existing = byKey.get(key);
+    if (!existing) {
+      byKey.set(key, { value, kind, lastUsedAt: at, useCount: 1 });
+      return;
+    }
+    existing.useCount += 1;
+    // Keep the most recent spelling, since that's the one they'd expect back.
+    if (at > existing.lastUsedAt) {
+      existing.lastUsedAt = at;
+      existing.value = value;
+    }
+  }
+
+  for (const row of whisps) {
+    record(row.email, "email", row.createdAt);
+    record(row.phone, "phone", row.createdAt);
+  }
+  for (const row of textWhisps) {
+    record(row.phone, "phone", row.createdAt);
+  }
+
+  const items = [...byKey.values()]
+    .sort((a, b) => b.lastUsedAt.getTime() - a.lastUsedAt.getTime())
+    .slice(0, RECENT_RECIPIENT_LIMIT)
+    .map((e) => ({ ...e, lastUsedAt: e.lastUsedAt.toISOString() }));
+
+  res.json({ items });
 });
 
 // POST /api/user/notifications/read-all

@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Lock, Plus, LogIn, Copy, Loader2, ChevronRight } from "lucide-react";
+import { VenetianMask, Plus, LogIn, Copy, Loader2, ChevronRight } from "lucide-react";
 
 export function MyCircles() {
   const { toast } = useToast();
@@ -36,7 +36,7 @@ export function MyCircles() {
         onSuccess: () => {
           setNewCircleName("");
           queryClient.invalidateQueries({ queryKey: getListMyCirclesQueryKey() });
-          toast({ title: "Circle created" });
+          toast({ title: "Blind Circle created" });
         },
         onError: () => toast({ title: "Failed to create circle", variant: "destructive" }),
       }
@@ -68,7 +68,7 @@ export function MyCircles() {
       <div className="space-y-8">
         <div>
           <h1 className="text-3xl font-serif font-bold text-foreground flex items-center gap-3">
-            <Lock className="w-7 h-7 text-primary" /> My Circles
+            <VenetianMask className="w-7 h-7 text-primary" /> My Blind Circles
           </h1>
           <p className="text-muted-foreground mt-1">
             Small, invite-only groups for whisps you only want a few people to see.
@@ -141,7 +141,7 @@ export function MyCircles() {
                 <CardContent className="p-4 flex items-center justify-between gap-4">
                   <Link href={`/circles/${circle.id}`} className="flex-1 min-w-0 flex items-center gap-3 group">
                     <div className="p-2.5 rounded-xl bg-primary/10">
-                      <Lock className="w-4 h-4 text-primary" />
+                      <VenetianMask className="w-4 h-4 text-primary" />
                     </div>
                     <div className="min-w-0">
                       <p className="font-medium text-foreground truncate group-hover:text-primary transition-colors">{circle.name}</p>
@@ -168,10 +168,10 @@ export function MyCircles() {
           </div>
         ) : (
           <Card className="bg-card/50 border-dashed border-border py-16 text-center">
-            <Lock className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+            <VenetianMask className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
             <h3 className="text-xl font-medium text-foreground mb-2">No circles yet</h3>
             <p className="text-muted-foreground max-w-md mx-auto">
-              Create one to share whisps privately with a small group, or join one with an invite code.
+              Create one to share whisps anonymously with a small group, or join one with an invite code.
             </p>
           </Card>
         )}

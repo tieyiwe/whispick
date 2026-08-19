@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { MoodTag } from "@/components/shared/MoodTag";
-import { ArrowLeft, PlayCircle, Lock } from "lucide-react";
+import { ArrowLeft, PlayCircle, VenetianMask } from "lucide-react";
 
 export function CircleDetail() {
   const { id } = useParams<{ id: string }>();
@@ -23,10 +23,10 @@ export function CircleDetail() {
       <div className="space-y-6">
         <div>
           <Button variant="ghost" onClick={() => setLocation("/circles")} className="text-muted-foreground -ml-2 mb-2" data-testid="button-back-circles">
-            <ArrowLeft className="w-4 h-4 mr-1" /> My Circles
+            <ArrowLeft className="w-4 h-4 mr-1" /> My Blind Circles
           </Button>
           <h1 className="text-3xl font-serif font-bold text-foreground flex items-center gap-3">
-            <Lock className="w-7 h-7 text-primary" /> {circle?.name ?? "Circle"}
+            <VenetianMask className="w-7 h-7 text-primary" /> {circle?.name ?? "Blind Circle"}
           </h1>
           <p className="text-muted-foreground mt-1">
             Whisps dropped privately into this circle — visible only to its members.
@@ -75,10 +75,10 @@ export function CircleDetail() {
           </div>
         ) : (
           <Card className="bg-card/50 border-dashed border-border py-16 text-center">
-            <Lock className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+            <VenetianMask className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
             <h3 className="text-xl font-medium text-foreground mb-2">Nothing here yet</h3>
             <p className="text-muted-foreground max-w-md mx-auto">
-              Choose Circle Drop when sending a whisp, then pick this circle to share it here.
+              Choose Blind Circle when sending a whisp, then pick this circle to share it here.
             </p>
           </Card>
         )}
