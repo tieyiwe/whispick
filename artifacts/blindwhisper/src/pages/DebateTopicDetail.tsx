@@ -22,6 +22,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Logo } from "@/components/ui/logo";
 import { useToast } from "@/hooks/use-toast";
 import { getVisitorId } from "@/lib/anonymousVisitor";
+import { FollowButton } from "@/components/shared/FollowButton";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   AlertDialog,
@@ -192,12 +193,14 @@ function CommentCard({
   onReply,
   onReact,
   reactPending,
+  onFollowToggle,
 }: {
   comment: DebateTopicComment;
   parentHandle?: string;
   onReply: () => void;
   onReact: (reaction: "like" | "dislike") => void;
   reactPending: boolean;
+  onFollowToggle: (patch: { following: boolean; followerCount?: number }) => void;
 }) {
   return (
     <div
@@ -210,6 +213,17 @@ function CommentCard({
         <span className="text-sm font-medium text-foreground" data-testid={`text-handle-${comment.id}`}>
           {comment.handle}
         </span>
+        {/* commentAuthorFollowed is null when there's nothing followable here —
+            purely anonymous commenter, caller not signed in, or it's the
+            caller's own comment. No affordance shows in any of those cases. */}
+        {comment.commentAuthorFollowed !== null && (
+          <FollowButton
+            handle={comment.handle}
+            following={comment.commentAuthorFollowed}
+            compact
+            onToggled={onFollowToggle}
+          />
+        )}
         {comment.isPoster && (
           <span className="text-[10px] font-semibold uppercase tracking-wide text-primary px-2 py-0.5 rounded-full bg-primary/10">
             Topic Author
@@ -449,6 +463,31 @@ export function DebateTopicDetail() {
     );
   }
 
+  function handleAuthorFollowToggled(patch: { following: boolean; followerCount?: number }) {
+    if (!id) return;
+    queryClient.setQueryData<DebateTopicDetailResponse>(getGetDebateTopicQueryKey(id, { visitorId }), (old) =>
+      old
+        ? {
+            ...old,
+            authorFollowed: patch.following,
+            authorFollowerCount: patch.followerCount ?? old.authorFollowerCount,
+          }
+        : old,
+    );
+  }
+
+  function handleCommentFollowToggled(commentId: string, patch: { following: boolean; followerCount?: number }) {
+    if (!id) return;
+    queryClient.setQueryData<DebateTopicDetailResponse>(getGetDebateTopicQueryKey(id, { visitorId }), (old) =>
+      old
+        ? {
+            ...old,
+            comments: old.comments.map((c) => (c.id === commentId ? { ...c, commentAuthorFollowed: patch.following } : c)),
+          }
+        : old,
+    );
+  }
+
   function handleShareTopic() {
     if (!id) return;
     const url = `${window.location.origin}/debate-topics/${id}`;
@@ -527,9 +566,22 @@ export function DebateTopicDetail() {
                   {topic.topicText}
                 </h1>
                 <div className="flex items-center justify-between gap-3 pt-1 flex-wrap">
-                  <span className="text-xs text-muted-foreground">
-                    Posted anonymously · {formatDistanceToNowStrict(new Date(topic.createdAt))} ago
-                  </span>
+                  <div className="flex items-center gap-2 flex-wrap" data-testid="text-topic-author">
+                    <span className="text-xs text-muted-foreground">
+                      Posted by <span className="text-foreground font-medium">{topic.authorHandle}</span> ·{" "}
+                      {formatDistanceToNowStrict(new Date(topic.createdAt))} ago
+                      {topic.authorFollowerCount > 0 &&
+                        ` · ${topic.authorFollowerCount} ${topic.authorFollowerCount === 1 ? "follower" : "followers"}`}
+                    </span>
+                    {topic.authorFollowed !== null && (
+                      <FollowButton
+                        handle={topic.authorHandle}
+                        following={topic.authorFollowed}
+                        followerCount={topic.authorFollowerCount}
+                        onToggled={handleAuthorFollowToggled}
+                      />
+                    )}
+                  </div>
                   <div className="flex items-center gap-1.5">
                     <Button
                       variant="ghost"
@@ -723,6 +775,7 @@ export function DebateTopicDetail() {
                       onReply={() => setReplyTo({ id: root.id, handle: root.handle })}
                       onReact={(reaction) => handleReact(root.id, reaction)}
                       reactPending={reactToComment.isPending}
+                      onFollowToggle={(patch) => handleCommentFollowToggled(root.id, patch)}
                     />
                     {replies.length > 0 && (
                       <div className="ml-4 sm:ml-8 pl-3 sm:pl-4 border-l-2 border-border/40 space-y-2">
@@ -736,6 +789,7 @@ export function DebateTopicDetail() {
                             onReply={() => setReplyTo({ id: reply.id, handle: reply.handle })}
                             onReact={(reaction) => handleReact(reply.id, reaction)}
                             reactPending={reactToComment.isPending}
+                            onFollowToggle={(patch) => handleCommentFollowToggled(reply.id, patch)}
                           />
                         ))}
                       </div>
