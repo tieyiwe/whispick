@@ -629,11 +629,13 @@ export interface DebateTopicInput {
 }
 
 /**
- * authorId is deliberately never included — a debate topic is posted anonymously, same as every other posting surface in this app.
+ * The raw account id is deliberately never included — only the public, followable authorHandle byline is.
  */
 export interface DebateTopicFeedItem {
   id: string;
   topicText: string;
+  /** The author's persistent, public, followable Whisperer handle (e.g. "SwiftFalcon482") — see users.whispererHandle. */
+  authorHandle: string;
   commentCount: number;
   rewhispCount: number;
   createdAt: string;
@@ -666,10 +668,15 @@ export interface DebateTopicComment {
   parentCommentId: string | null;
   isPoster: boolean;
   createdAt: string;
-  /** This commenter's stable anonymous handle within this topic's thread (e.g. "SwiftFalcon482") — see anonymous_handles.ts. */
+  /** The commenter's display name. For a signed-in commenter, this is their persistent, followable Whisperer handle (users. whispererHandle) — the same one shown as their topic bylines elsewhere, so "who am I talking to" stays consistent across the whole app. For a purely anonymous (never-signed-in) commenter, it's the ordinary per-thread-only handle (anonymous_handles.ts). */
   handle: string;
   /** True when the caller's own visitorId matches this comment's author. */
   isOwnComment: boolean;
+  /**
+     * Whether the signed-in caller already follows this commenter. null when there's nothing followable here — the commenter has no account (purely anonymous), or the caller isn't signed in, or it's the caller's own comment.
+     * @nullable
+     */
+  commentAuthorFollowed: boolean | null;
   /**
      * Proxy-served URL for an attached image, or null if there is none or it was flagged by moderation and is pending review.
      * @nullable
@@ -695,10 +702,33 @@ export interface DebateTopicDetail {
   createdAt: string;
   /** True only when the caller is signed in and is this topic's own author — lets the author see a "Retract" control without revealing anything to anyone else. */
   isOwnTopic: boolean;
+  /** The author's persistent, public, followable Whisperer handle — see DebateTopicFeedItem.authorHandle. */
+  authorHandle: string;
+  /**
+     * Whether the signed-in caller already follows the author. null when the caller isn't signed in, or is the author themselves.
+     * @nullable
+     */
+  authorFollowed: boolean | null;
+  authorFollowerCount: number;
   commentCount: number;
   rewhispCount: number;
   viewerRewhisped: boolean;
   comments: DebateTopicComment[];
+}
+
+/**
+ * The caller's own topic-engagement stats (GET /debate-topics/my-stats).
+ */
+export interface DebateTopicStats {
+  topicsPosted: number;
+  /** Total (non-removed) comments across every topic this account has posted. */
+  commentsReceived: number;
+  /** Total rewhisps across every topic this account has posted. */
+  rewhispsReceived: number;
+  /** Total comments this account has posted, across every topic. */
+  commentsPosted: number;
+  /** Total likes (not dislikes) this account's own comments have received, across every topic. */
+  commentLikesReceived: number;
 }
 
 export interface Circle {
@@ -1755,6 +1785,24 @@ export type StartCircleDm201 = {
 
 export type ListCircleFeedParams = {
 cursor?: string;
+};
+
+export type ListFollowingDebateTopicsParams = {
+cursor?: string;
+};
+
+export type ToggleFollowBody = {
+  handle: string;
+};
+
+export type ToggleFollow200 = {
+  following: boolean;
+  followerCount: number;
+};
+
+export type GetFollowStats200 = {
+  followerCount: number;
+  followingCount: number;
 };
 
 export type ListDebateTopicsParams = {

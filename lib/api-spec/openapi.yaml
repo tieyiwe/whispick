@@ -1453,6 +1453,103 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
 
+  /debate-topics/following-feed:
+    get:
+      operationId: listFollowingDebateTopics
+      tags: [debateTopics]
+      summary: Debate Topics posted by accounts you follow, newest first (signed in)
+      parameters:
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Following feed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DebateTopicFeedResponse"
+
+  /debate-topics/my-stats:
+    get:
+      operationId: getMyDebateTopicStats
+      tags: [debateTopics]
+      summary: Your own topic-engagement stats — how much your topics and comments have drawn (signed in)
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DebateTopicStats"
+
+  /follows:
+    post:
+      operationId: toggleFollow
+      tags: [follows]
+      summary: Follow or unfollow the account behind a public Whisperer handle (signed in)
+      description: >-
+        Idempotent toggle — following an already-followed handle unfollows
+        it. Resolves by whispererHandle, never a raw user id, matching this
+        app's anti-enumeration posture everywhere else. Rejects following
+        yourself.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                handle:
+                  type: string
+              required: [handle]
+      responses:
+        "200":
+          description: Updated follow state
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  following:
+                    type: boolean
+                  followerCount:
+                    type: integer
+                required: [following, followerCount]
+        "400":
+          description: Tried to follow yourself
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: No account with that handle
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /follows/stats:
+    get:
+      operationId: getFollowStats
+      tags: [follows]
+      summary: Your own follower/following counts (signed in)
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  followerCount:
+                    type: integer
+                  followingCount:
+                    type: integer
+                required: [followerCount, followingCount]
+
   /public/debate-topics:
     get:
       operationId: listDebateTopics
@@ -4010,12 +4107,15 @@ components:
 
     DebateTopicFeedItem:
       type: object
-      description: authorId is deliberately never included — a debate topic is posted anonymously, same as every other posting surface in this app.
+      description: The raw account id is deliberately never included — only the public, followable authorHandle byline is.
       properties:
         id:
           type: string
         topicText:
           type: string
+        authorHandle:
+          type: string
+          description: The author's persistent, public, followable Whisperer handle (e.g. "SwiftFalcon482") — see users.whispererHandle.
         commentCount:
           type: integer
         rewhispCount:
@@ -4025,6 +4125,7 @@ components:
       required:
         - id
         - topicText
+        - authorHandle
         - commentCount
         - rewhispCount
         - createdAt
@@ -4058,10 +4159,23 @@ components:
           type: string
         handle:
           type: string
-          description: This commenter's stable anonymous handle within this topic's thread (e.g. "SwiftFalcon482") — see anonymous_handles.ts.
+          description: >-
+            The commenter's display name. For a signed-in commenter, this is
+            their persistent, followable Whisperer handle (users.
+            whispererHandle) — the same one shown as their topic bylines
+            elsewhere, so "who am I talking to" stays consistent across the
+            whole app. For a purely anonymous (never-signed-in) commenter,
+            it's the ordinary per-thread-only handle (anonymous_handles.ts).
         isOwnComment:
           type: boolean
           description: True when the caller's own visitorId matches this comment's author.
+        commentAuthorFollowed:
+          type: ["boolean", "null"]
+          description: >-
+            Whether the signed-in caller already follows this commenter.
+            null when there's nothing followable here — the commenter has
+            no account (purely anonymous), or the caller isn't signed in,
+            or it's the caller's own comment.
         imageUrl:
           type: ["string", "null"]
           description: Proxy-served URL for an attached image, or null if there is none or it was flagged by moderation and is pending review.
@@ -4080,6 +4194,7 @@ components:
         - createdAt
         - handle
         - isOwnComment
+        - commentAuthorFollowed
         - imageUrl
         - likeCount
         - dislikeCount
@@ -4111,6 +4226,14 @@ components:
         isOwnTopic:
           type: boolean
           description: True only when the caller is signed in and is this topic's own author — lets the author see a "Retract" control without revealing anything to anyone else.
+        authorHandle:
+          type: string
+          description: The author's persistent, public, followable Whisperer handle — see DebateTopicFeedItem.authorHandle.
+        authorFollowed:
+          type: ["boolean", "null"]
+          description: Whether the signed-in caller already follows the author. null when the caller isn't signed in, or is the author themselves.
+        authorFollowerCount:
+          type: integer
         commentCount:
           type: integer
         rewhispCount:
@@ -4126,10 +4249,38 @@ components:
         - topicText
         - createdAt
         - isOwnTopic
+        - authorHandle
+        - authorFollowed
+        - authorFollowerCount
         - commentCount
         - rewhispCount
         - viewerRewhisped
         - comments
+
+    DebateTopicStats:
+      type: object
+      description: The caller's own topic-engagement stats (GET /debate-topics/my-stats).
+      properties:
+        topicsPosted:
+          type: integer
+        commentsReceived:
+          type: integer
+          description: Total (non-removed) comments across every topic this account has posted.
+        rewhispsReceived:
+          type: integer
+          description: Total rewhisps across every topic this account has posted.
+        commentsPosted:
+          type: integer
+          description: Total comments this account has posted, across every topic.
+        commentLikesReceived:
+          type: integer
+          description: Total likes (not dislikes) this account's own comments have received, across every topic.
+      required:
+        - topicsPosted
+        - commentsReceived
+        - rewhispsReceived
+        - commentsPosted
+        - commentLikesReceived
 
     Circle:
       type: object

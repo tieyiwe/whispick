@@ -17,10 +17,15 @@ export interface DebateTopicComment {
   parentCommentId: string | null;
   isPoster: boolean;
   createdAt: string;
-  /** This commenter's stable anonymous handle within this topic's thread (e.g. "SwiftFalcon482") — see anonymous_handles.ts. */
+  /** The commenter's display name. For a signed-in commenter, this is their persistent, followable Whisperer handle (users. whispererHandle) — the same one shown as their topic bylines elsewhere, so "who am I talking to" stays consistent across the whole app. For a purely anonymous (never-signed-in) commenter, it's the ordinary per-thread-only handle (anonymous_handles.ts). */
   handle: string;
   /** True when the caller's own visitorId matches this comment's author. */
   isOwnComment: boolean;
+  /**
+     * Whether the signed-in caller already follows this commenter. null when there's nothing followable here — the commenter has no account (purely anonymous), or the caller isn't signed in, or it's the caller's own comment.
+     * @nullable
+     */
+  commentAuthorFollowed: boolean | null;
   /**
      * Proxy-served URL for an attached image, or null if there is none or it was flagged by moderation and is pending review.
      * @nullable

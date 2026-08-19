@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { debateTopicsTable, debateTopicCommentsTable, debateTopicRewhispsTable } from "@workspace/db";
+import { debateTopicsTable, debateTopicCommentsTable, debateTopicRewhispsTable, followsTable } from "@workspace/db";
 import { eq, and, desc, lt, gt, count, inArray, isNull } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
 import { randomUUID } from "crypto";
@@ -11,6 +11,7 @@ import { canPostAnonymousComment, COMMENT_LIMIT_WINDOW_HOURS } from "../lib/plan
 import { createDebateTopicLimiter } from "../lib/rateLimit";
 import { moderateDebateTopicAsync, moderateDebateTopicCommentAsync, moderateCommentImageAsync } from "../lib/moderation";
 import { assignOrGetHandle, getHandlesFor, renameHandle } from "../lib/anonymousHandles";
+import { assignOrGetWhispererHandle, getOrBackfillWhispererHandles } from "../lib/whispererHandle";
 import { toggleReaction, reactionCountsFor, viewerReactionsFor } from "../lib/commentReactions";
 import { commentImageUpload, storeCommentImage } from "../lib/commentImages";
 import { notifyUserPersisted } from "../lib/push";
@@ -68,13 +69,15 @@ router.post("/debate-topics", requireAuth, createDebateTopicLimiter, async (req,
 
   void moderateDebateTopicAsync({ debateTopicId: id, authorId: user.id, text: parsed.data.topicText });
 
+  const authorHandle = await assignOrGetWhispererHandle(user.id);
+
   const topic = await db
     .select({ id: debateTopicsTable.id, topicText: debateTopicsTable.topicText, createdAt: debateTopicsTable.createdAt })
     .from(debateTopicsTable)
     .where(eq(debateTopicsTable.id, id))
     .then((r) => r[0]);
 
-  res.status(201).json({ ...topic, commentCount: 0 });
+  res.status(201).json({ ...topic, authorHandle, commentCount: 0, rewhispCount: 0 });
 });
 
 // DELETE /api/debate-topics/:id — the author retracts their own topic.
@@ -102,6 +105,91 @@ router.delete("/debate-topics/:id", requireAuth, async (req, res): Promise<void>
   await db.update(debateTopicsTable).set({ deletedByAuthorAt: new Date() }).where(eq(debateTopicsTable.id, topic.id));
 
   res.status(204).send();
+});
+
+// GET /api/debate-topics/following-feed — topics authored by accounts the
+// caller follows, newest first, cursor-paginated same as the public feed.
+// Authenticated: unlike the public feed, "who do I follow" is inherently
+// tied to an account.
+router.get("/debate-topics/following-feed", requireAuth, async (req, res): Promise<void> => {
+  const { userId: clerkId } = getAuth(req);
+  const viewer = await ensureUser(clerkId!, req);
+
+  const cursor = typeof req.query.cursor === "string" ? req.query.cursor : undefined;
+  let cursorDate: Date | undefined;
+  if (cursor) {
+    const parsedCursor = new Date(cursor);
+    if (!Number.isNaN(parsedCursor.getTime())) cursorDate = parsedCursor;
+  }
+
+  const followedIds = await db.select({ followedUserId: followsTable.followedUserId }).from(followsTable).where(eq(followsTable.followerUserId, viewer.id));
+  const followedUserIds = followedIds.map((r) => r.followedUserId);
+  if (!followedUserIds.length) {
+    res.json({ items: [], nextCursor: null });
+    return;
+  }
+
+  const baseCondition = and(notRetracted(), inArray(debateTopicsTable.authorId, followedUserIds));
+  const topics = await db
+    .select({ id: debateTopicsTable.id, topicText: debateTopicsTable.topicText, createdAt: debateTopicsTable.createdAt, authorId: debateTopicsTable.authorId })
+    .from(debateTopicsTable)
+    .where(cursorDate ? and(baseCondition, lt(debateTopicsTable.createdAt, cursorDate)) : baseCondition)
+    .orderBy(desc(debateTopicsTable.createdAt))
+    .limit(PAGE_SIZE);
+
+  const topicIds = topics.map((t) => t.id);
+  const [counts, rewhispCounts, authorHandles] = await Promise.all([
+    commentCountsFor(topicIds),
+    rewhispCountsFor(topicIds),
+    getOrBackfillWhispererHandles(topics.map((t) => t.authorId)),
+  ]);
+  const items = topics.map(({ authorId, ...t }) => ({
+    ...t,
+    authorHandle: authorHandles[authorId],
+    commentCount: counts[t.id] ?? 0,
+    rewhispCount: rewhispCounts[t.id] ?? 0,
+  }));
+  const nextCursor = topics.length === PAGE_SIZE ? topics[topics.length - 1]!.createdAt.toISOString() : null;
+
+  res.json({ items, nextCursor });
+});
+
+// GET /api/debate-topics/my-stats — the CALLER's own topic engagement
+// stats: how many topics they've posted, and how much engagement those
+// topics (and their own comments) have drawn. Follow counts live at
+// GET /api/follows/stats instead, kept separate since they're a distinct
+// concept the frontend combines as needed.
+router.get("/debate-topics/my-stats", requireAuth, async (req, res): Promise<void> => {
+  const { userId: clerkId } = getAuth(req);
+  const viewer = await ensureUser(clerkId!, req);
+
+  const [[{ count: topicsPosted } = { count: 0 }], myTopicIdsRows] = await Promise.all([
+    db.select({ count: count() }).from(debateTopicsTable).where(and(eq(debateTopicsTable.authorId, viewer.id), notRetracted())),
+    db.select({ id: debateTopicsTable.id }).from(debateTopicsTable).where(and(eq(debateTopicsTable.authorId, viewer.id), notRetracted())),
+  ]);
+  const myTopicIds = myTopicIdsRows.map((r) => r.id);
+
+  const [commentsReceived, rewhispsReceived, myCommentIdsRows] = await Promise.all([
+    myTopicIds.length
+      ? db.select({ count: count() }).from(debateTopicCommentsTable).where(and(inArray(debateTopicCommentsTable.topicId, myTopicIds), commentNotRemoved())).then((r) => r[0]?.count ?? 0)
+      : Promise.resolve(0),
+    myTopicIds.length
+      ? db.select({ count: count() }).from(debateTopicRewhispsTable).where(inArray(debateTopicRewhispsTable.debateTopicId, myTopicIds)).then((r) => r[0]?.count ?? 0)
+      : Promise.resolve(0),
+    db.select({ id: debateTopicCommentsTable.id }).from(debateTopicCommentsTable).where(eq(debateTopicCommentsTable.authorUserId, viewer.id)),
+  ]);
+  const myCommentIds = myCommentIdsRows.map((r) => r.id);
+
+  const commentLikeCounts = await reactionCountsFor("debate_topic_comment", myCommentIds);
+  const commentLikesReceived = Object.values(commentLikeCounts).reduce((sum, c) => sum + c.likeCount, 0);
+
+  res.json({
+    topicsPosted,
+    commentsReceived,
+    rewhispsReceived,
+    commentsPosted: myCommentIds.length,
+    commentLikesReceived,
+  });
 });
 
 async function commentCountsFor(topicIds: string[]): Promise<Record<string, number>> {
@@ -137,19 +225,29 @@ router.get("/public/debate-topics", async (req, res): Promise<void> => {
 
   const baseCondition = notRetracted();
 
-  // authorId deliberately excluded from every column selected below — a
-  // debate topic is posted anonymously, same as every other posting surface
-  // in this app.
+  // authorId is selected here ONLY to resolve it to the topic's public
+  // authorHandle byline below — it's stripped out of every item before the
+  // response goes out (see the .map() below), same anti-enumeration posture
+  // as everywhere else authorId is touched in this file.
   const topics = await db
-    .select({ id: debateTopicsTable.id, topicText: debateTopicsTable.topicText, createdAt: debateTopicsTable.createdAt })
+    .select({ id: debateTopicsTable.id, topicText: debateTopicsTable.topicText, createdAt: debateTopicsTable.createdAt, authorId: debateTopicsTable.authorId })
     .from(debateTopicsTable)
     .where(cursorDate ? and(baseCondition, lt(debateTopicsTable.createdAt, cursorDate)) : baseCondition)
     .orderBy(desc(debateTopicsTable.createdAt))
     .limit(PAGE_SIZE);
 
   const topicIds = topics.map((t) => t.id);
-  const [counts, rewhispCounts] = await Promise.all([commentCountsFor(topicIds), rewhispCountsFor(topicIds)]);
-  const items = topics.map((t) => ({ ...t, commentCount: counts[t.id] ?? 0, rewhispCount: rewhispCounts[t.id] ?? 0 }));
+  const [counts, rewhispCounts, authorHandles] = await Promise.all([
+    commentCountsFor(topicIds),
+    rewhispCountsFor(topicIds),
+    getOrBackfillWhispererHandles(topics.map((t) => t.authorId)),
+  ]);
+  const items = topics.map(({ authorId, ...t }) => ({
+    ...t,
+    authorHandle: authorHandles[authorId],
+    commentCount: counts[t.id] ?? 0,
+    rewhispCount: rewhispCounts[t.id] ?? 0,
+  }));
   const nextCursor = topics.length === PAGE_SIZE ? topics[topics.length - 1]!.createdAt.toISOString() : null;
 
   res.json({ items, nextCursor });
@@ -179,9 +277,10 @@ router.get("/public/debate-topics/:id", async (req, res): Promise<void> => {
   // (app.ts).
   const { userId: clerkId } = getAuth(req);
   let isOwnTopic = false;
+  let viewer: { id: string } | null = null;
   if (clerkId) {
-    const user = await ensureUser(clerkId, req);
-    isOwnTopic = user.id === topic.authorId;
+    viewer = await ensureUser(clerkId, req);
+    isOwnTopic = viewer.id === topic.authorId;
   }
 
   const visitorId = typeof req.query.visitorId === "string" ? req.query.visitorId : undefined;
@@ -201,14 +300,17 @@ router.get("/public/debate-topics/:id", async (req, res): Promise<void> => {
       imageModerationStatus: debateTopicCommentsTable.imageModerationStatus,
       createdAt: debateTopicCommentsTable.createdAt,
       visitorId: debateTopicCommentsTable.visitorId,
+      authorUserId: debateTopicCommentsTable.authorUserId,
     })
     .from(debateTopicCommentsTable)
     .where(and(eq(debateTopicCommentsTable.topicId, topic.id), commentNotRemoved()))
     .orderBy(debateTopicCommentsTable.createdAt);
 
   const commentIds = comments.map((c) => c.id);
-  const [handles, reactionCounts, viewerReactions, rewhispCounts] = await Promise.all([
-    getHandlesFor("debate_topic", topic.id, comments.map((c) => c.visitorId)),
+  const signedInCommenterIds = comments.map((c) => c.authorUserId).filter((id): id is string => !!id);
+  const [handles, whispererHandles, reactionCounts, viewerReactions, rewhispCounts] = await Promise.all([
+    getHandlesFor("debate_topic", topic.id, comments.filter((c) => !c.authorUserId).map((c) => c.visitorId)),
+    getOrBackfillWhispererHandles([topic.authorId, ...signedInCommenterIds]),
     reactionCountsFor("debate_topic_comment", commentIds),
     visitorId ? viewerReactionsFor("debate_topic_comment", commentIds, visitorId) : Promise.resolve({} as Record<string, "like" | "dislike">),
     rewhispCountsFor([topic.id]),
@@ -224,21 +326,44 @@ router.get("/public/debate-topics/:id", async (req, res): Promise<void> => {
     viewerRewhisped = !!row;
   }
 
+  // Follow state: only meaningful for a SIGNED-IN viewer looking at someone
+  // else's byline/comment — an anonymous reader or the author looking at
+  // their own topic gets `null` (not "false") so the frontend can tell
+  // "can't follow" apart from "not following yet".
+  const followableUserIds = [...new Set([topic.authorId, ...signedInCommenterIds])].filter((id) => id !== viewer?.id);
+  let followedSet = new Set<string>();
+  if (viewer && followableUserIds.length) {
+    const rows = await db
+      .select({ followedUserId: followsTable.followedUserId })
+      .from(followsTable)
+      .where(and(eq(followsTable.followerUserId, viewer.id), inArray(followsTable.followedUserId, followableUserIds)));
+    followedSet = new Set(rows.map((r) => r.followedUserId));
+  }
+  const [{ count: authorFollowerCount } = { count: 0 }] = await db.select({ count: count() }).from(followsTable).where(eq(followsTable.followedUserId, topic.authorId));
+
   res.json({
     id: topic.id,
     topicText: topic.topicText,
     createdAt: topic.createdAt,
     isOwnTopic,
+    authorHandle: whispererHandles[topic.authorId],
+    authorFollowed: viewer && !isOwnTopic ? followedSet.has(topic.authorId) : null,
+    authorFollowerCount,
     commentCount: comments.length,
     rewhispCount: rewhispCounts[topic.id] ?? 0,
     viewerRewhisped,
     // imageModerationStatus 'flagged' images are hidden from every reader
     // but the comment's own author (who can still see what they posted) —
     // never fully removed, just not surfaced while a human reviews it.
-    comments: comments.map(({ visitorId: commentVisitorId, imageObjectKey, imageModerationStatus, ...c }) => ({
+    comments: comments.map(({ visitorId: commentVisitorId, authorUserId: commentAuthorUserId, imageObjectKey, imageModerationStatus, ...c }) => ({
       ...c,
-      handle: handles[commentVisitorId] ?? "Anonymous",
+      // A signed-in commenter displays under their persistent, followable
+      // Whisperer handle instead of the per-thread-only anonymous one — see
+      // users.whispererHandle's comment for why that's the one deliberate
+      // exception to this app's usual per-thread anonymity.
+      handle: commentAuthorUserId ? whispererHandles[commentAuthorUserId] : (handles[commentVisitorId] ?? "Anonymous"),
       isOwnComment: visitorId ? commentVisitorId === visitorId : false,
+      commentAuthorFollowed: commentAuthorUserId ? (viewer && commentAuthorUserId !== viewer.id ? followedSet.has(commentAuthorUserId) : null) : null,
       imageUrl: imageObjectKey && imageModerationStatus !== "flagged" ? `/api/public/debate-topics/comments/${c.id}/image` : null,
       likeCount: reactionCounts[c.id]?.likeCount ?? 0,
       dislikeCount: reactionCounts[c.id]?.dislikeCount ?? 0,
@@ -339,7 +464,12 @@ router.post("/public/debate-topics/:id/comments", commentImageUpload, async (req
     imageModerationStatus: imageObjectKey ? null : "ok",
   });
 
-  const handle = await assignOrGetHandle("debate_topic", topic.id, parsed.data.visitorId);
+  // A signed-in commenter gets their persistent, followable Whisperer
+  // handle instead of a fresh per-thread one — see users.whispererHandle's
+  // comment for why. A purely anonymous (never-signed-in) commenter keeps
+  // the ordinary per-thread handle, since there's no account to attach a
+  // persistent identity to.
+  const handle = authorUserId ? await assignOrGetWhispererHandle(authorUserId) : await assignOrGetHandle("debate_topic", topic.id, parsed.data.visitorId);
 
   void moderateDebateTopicCommentAsync({
     debateTopicCommentId: id,
@@ -378,6 +508,9 @@ router.post("/public/debate-topics/:id/comments", commentImageUpload, async (req
     ...comment,
     handle,
     isOwnComment: true,
+    // Never true for the very comment you just posted — it's a foreign-
+    // account-only concept and this is your own.
+    commentAuthorFollowed: null,
     imageUrl: imageObjectKey ? `/api/public/debate-topics/comments/${id}/image` : null,
     likeCount: 0,
     dislikeCount: 0,

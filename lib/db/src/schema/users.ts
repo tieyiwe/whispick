@@ -70,6 +70,20 @@ export const usersTable = pgTable("users", {
   // signup keep getting email unless they explicitly turn it off in
   // Settings.
   emailNotificationsEnabled: boolean("email_notifications_enabled").notNull().default(true),
+  // A persistent, public, pseudonymous handle (e.g. "SwiftFalcon482") — a
+  // deliberate, narrow exception to this app's usual per-thread-only
+  // anonymity (see anonymous_handles.ts's schema comment for that default):
+  // it's the ONE identity that's meant to persist and be recognizable
+  // across Debate Topics, so a topic byline means something and "follow
+  // this person" (follows.ts) has something stable to point at. Lazily
+  // assigned (lib/whispererHandle.ts) the first time a user needs one —
+  // posting a topic, or commenting while signed in — never for a purely
+  // anonymous, never-signed-in visitor, who has no account to attach a
+  // persistent identity to and so can't be followed. Still not a real
+  // name: same random-word-plus-number generator as the per-thread
+  // handles, just uniquely scoped globally instead of per-thread. A user
+  // can rename their own.
+  whispererHandle: text("whisperer_handle").unique(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

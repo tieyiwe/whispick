@@ -19,6 +19,7 @@ import publicInvitesRouter from "./publicInvites";
 import publicTextWhispsRouter from "./publicTextWhisps";
 import textWhispsRouter from "./textWhisps";
 import debateTopicsRouter from "./debateTopics";
+import followsRouter from "./follows";
 import { publicEndpointLimiter } from "../lib/rateLimit";
 
 const router: IRouter = Router();
@@ -47,6 +48,7 @@ router.use("/public", publicTextWhispsRouter);
 // Mounted after the "/public" limiter registration so requests to its
 // public routes still pass through publicEndpointLimiter first.
 router.use(debateTopicsRouter);
+router.use("/follows", followsRouter);
 router.use("/circles", circlesRouter);
 router.use("/user", userRouter);
 router.use("/credits", creditsRouter);

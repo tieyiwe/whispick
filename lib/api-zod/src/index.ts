@@ -27,4 +27,5 @@ export type {
   RenameCircleHandleBody,
   RenameDebateTopicHandleBody,
   RewhispDebateTopicBody,
+  ToggleFollowBody,
 } from "./generated/types";

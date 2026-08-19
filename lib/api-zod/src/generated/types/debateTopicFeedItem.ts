@@ -7,11 +7,13 @@
  */
 
 /**
- * authorId is deliberately never included — a debate topic is posted anonymously, same as every other posting surface in this app.
+ * The raw account id is deliberately never included — only the public, followable authorHandle byline is.
  */
 export interface DebateTopicFeedItem {
   id: string;
   topicText: string;
+  /** The author's persistent, public, followable Whisperer handle (e.g. "SwiftFalcon482") — see users.whispererHandle. */
+  authorHandle: string;
   commentCount: number;
   rewhispCount: number;
   createdAt: string;

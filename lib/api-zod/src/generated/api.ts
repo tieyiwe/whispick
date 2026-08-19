@@ -1297,10 +1297,11 @@ export const CreateDebateTopicBody = zod.object({
 export const CreateDebateTopicResponse = zod.object({
   "id": zod.string(),
   "topicText": zod.string(),
+  "authorHandle": zod.string().describe('The author\'s persistent, public, followable Whisperer handle (e.g. \"SwiftFalcon482\") — see users.whispererHandle.'),
   "commentCount": zod.number(),
   "rewhispCount": zod.number(),
   "createdAt": zod.string()
-}).describe('authorId is deliberately never included — a debate topic is posted anonymously, same as every other posting surface in this app.')
+}).describe('The raw account id is deliberately never included — only the public, followable authorHandle byline is.')
 
 
 /**
@@ -1314,6 +1315,61 @@ export const DeleteDebateTopicResponse = zod.void()
 
 
 /**
+ * @summary Debate Topics posted by accounts you follow, newest first (signed in)
+ */
+export const ListFollowingDebateTopicsQueryParams = zod.object({
+  "cursor": zod.coerce.string().optional()
+})
+
+export const ListFollowingDebateTopicsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "topicText": zod.string(),
+  "authorHandle": zod.string().describe('The author\'s persistent, public, followable Whisperer handle (e.g. \"SwiftFalcon482\") — see users.whispererHandle.'),
+  "commentCount": zod.number(),
+  "rewhispCount": zod.number(),
+  "createdAt": zod.string()
+}).describe('The raw account id is deliberately never included — only the public, followable authorHandle byline is.')),
+  "nextCursor": zod.string().nullable()
+})
+
+
+/**
+ * @summary Your own topic-engagement stats — how much your topics and comments have drawn (signed in)
+ */
+export const GetMyDebateTopicStatsResponse = zod.object({
+  "topicsPosted": zod.number(),
+  "commentsReceived": zod.number().describe('Total (non-removed) comments across every topic this account has posted.'),
+  "rewhispsReceived": zod.number().describe('Total rewhisps across every topic this account has posted.'),
+  "commentsPosted": zod.number().describe('Total comments this account has posted, across every topic.'),
+  "commentLikesReceived": zod.number().describe('Total likes (not dislikes) this account\'s own comments have received, across every topic.')
+}).describe('The caller\'s own topic-engagement stats (GET \/debate-topics\/my-stats).')
+
+
+/**
+ * Idempotent toggle — following an already-followed handle unfollows it. Resolves by whispererHandle, never a raw user id, matching this app's anti-enumeration posture everywhere else. Rejects following yourself.
+ * @summary Follow or unfollow the account behind a public Whisperer handle (signed in)
+ */
+export const ToggleFollowBody = zod.object({
+  "handle": zod.string()
+})
+
+export const ToggleFollowResponse = zod.object({
+  "following": zod.boolean(),
+  "followerCount": zod.number()
+})
+
+
+/**
+ * @summary Your own follower/following counts (signed in)
+ */
+export const GetFollowStatsResponse = zod.object({
+  "followerCount": zod.number(),
+  "followingCount": zod.number()
+})
+
+
+/**
  * @summary Public Debate Topics feed (no auth required)
  */
 export const ListDebateTopicsQueryParams = zod.object({
@@ -1324,10 +1380,11 @@ export const ListDebateTopicsResponse = zod.object({
   "items": zod.array(zod.object({
   "id": zod.string(),
   "topicText": zod.string(),
+  "authorHandle": zod.string().describe('The author\'s persistent, public, followable Whisperer handle (e.g. \"SwiftFalcon482\") — see users.whispererHandle.'),
   "commentCount": zod.number(),
   "rewhispCount": zod.number(),
   "createdAt": zod.string()
-}).describe('authorId is deliberately never included — a debate topic is posted anonymously, same as every other posting surface in this app.')),
+}).describe('The raw account id is deliberately never included — only the public, followable authorHandle byline is.')),
   "nextCursor": zod.string().nullable()
 })
 
@@ -1348,6 +1405,9 @@ export const GetDebateTopicResponse = zod.object({
   "topicText": zod.string(),
   "createdAt": zod.string(),
   "isOwnTopic": zod.boolean().describe('True only when the caller is signed in and is this topic\'s own author — lets the author see a \"Retract\" control without revealing anything to anyone else.'),
+  "authorHandle": zod.string().describe('The author\'s persistent, public, followable Whisperer handle — see DebateTopicFeedItem.authorHandle.'),
+  "authorFollowed": zod.boolean().nullable().describe('Whether the signed-in caller already follows the author. null when the caller isn\'t signed in, or is the author themselves.'),
+  "authorFollowerCount": zod.number(),
   "commentCount": zod.number(),
   "rewhispCount": zod.number(),
   "viewerRewhisped": zod.boolean(),
@@ -1357,8 +1417,9 @@ export const GetDebateTopicResponse = zod.object({
   "parentCommentId": zod.string().nullable(),
   "isPoster": zod.boolean(),
   "createdAt": zod.string(),
-  "handle": zod.string().describe('This commenter\'s stable anonymous handle within this topic\'s thread (e.g. \"SwiftFalcon482\") — see anonymous_handles.ts.'),
+  "handle": zod.string().describe('The commenter\'s display name. For a signed-in commenter, this is their persistent, followable Whisperer handle (users. whispererHandle) — the same one shown as their topic bylines elsewhere, so \"who am I talking to\" stays consistent across the whole app. For a purely anonymous (never-signed-in) commenter, it\'s the ordinary per-thread-only handle (anonymous_handles.ts).'),
   "isOwnComment": zod.boolean().describe('True when the caller\'s own visitorId matches this comment\'s author.'),
+  "commentAuthorFollowed": zod.boolean().nullable().describe('Whether the signed-in caller already follows this commenter. null when there\'s nothing followable here — the commenter has no account (purely anonymous), or the caller isn\'t signed in, or it\'s the caller\'s own comment.'),
   "imageUrl": zod.string().nullable().describe('Proxy-served URL for an attached image, or null if there is none or it was flagged by moderation and is pending review.'),
   "likeCount": zod.number(),
   "dislikeCount": zod.number(),
@@ -1387,8 +1448,9 @@ export const PostDebateTopicCommentResponse = zod.object({
   "parentCommentId": zod.string().nullable(),
   "isPoster": zod.boolean(),
   "createdAt": zod.string(),
-  "handle": zod.string().describe('This commenter\'s stable anonymous handle within this topic\'s thread (e.g. \"SwiftFalcon482\") — see anonymous_handles.ts.'),
+  "handle": zod.string().describe('The commenter\'s display name. For a signed-in commenter, this is their persistent, followable Whisperer handle (users. whispererHandle) — the same one shown as their topic bylines elsewhere, so \"who am I talking to\" stays consistent across the whole app. For a purely anonymous (never-signed-in) commenter, it\'s the ordinary per-thread-only handle (anonymous_handles.ts).'),
   "isOwnComment": zod.boolean().describe('True when the caller\'s own visitorId matches this comment\'s author.'),
+  "commentAuthorFollowed": zod.boolean().nullable().describe('Whether the signed-in caller already follows this commenter. null when there\'s nothing followable here — the commenter has no account (purely anonymous), or the caller isn\'t signed in, or it\'s the caller\'s own comment.'),
   "imageUrl": zod.string().nullable().describe('Proxy-served URL for an attached image, or null if there is none or it was flagged by moderation and is pending review.'),
   "likeCount": zod.number(),
   "dislikeCount": zod.number(),

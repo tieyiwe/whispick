@@ -13,6 +13,14 @@ export interface DebateTopicDetail {
   createdAt: string;
   /** True only when the caller is signed in and is this topic's own author — lets the author see a "Retract" control without revealing anything to anyone else. */
   isOwnTopic: boolean;
+  /** The author's persistent, public, followable Whisperer handle — see DebateTopicFeedItem.authorHandle. */
+  authorHandle: string;
+  /**
+     * Whether the signed-in caller already follows the author. null when the caller isn't signed in, or is the author themselves.
+     * @nullable
+     */
+  authorFollowed: boolean | null;
+  authorFollowerCount: number;
   commentCount: number;
   rewhispCount: number;
   viewerRewhisped: boolean;

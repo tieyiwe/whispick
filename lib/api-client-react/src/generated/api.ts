@@ -64,8 +64,10 @@ import type {
   DebateTopicFeedItem,
   DebateTopicFeedResponse,
   DebateTopicInput,
+  DebateTopicStats,
   DeleteMedia200,
   GetDebateTopicParams,
+  GetFollowStats200,
   GetPublicWhispParams,
   GroupWhispSendDetail,
   GroupWhispSendSummary,
@@ -75,6 +77,7 @@ import type {
   JoinCircleInput,
   ListCircleFeedParams,
   ListDebateTopicsParams,
+  ListFollowingDebateTopicsParams,
   ListSuggestionsParams,
   ListWhispsParams,
   MatchStats,
@@ -126,6 +129,8 @@ import type {
   TextWhispReplyInput,
   ToggleCircleLike200,
   ToggleCircleLikeBody,
+  ToggleFollow200,
+  ToggleFollowBody,
   TrackingEventInput,
   TrackingResult,
   UnreadNotificationCountResponse,
@@ -4213,6 +4218,315 @@ export const useDeleteDebateTopic = <TError = ErrorType<ApiError>,
       > => {
       return useMutation(getDeleteDebateTopicMutationOptions(options));
     }
+
+export const getListFollowingDebateTopicsUrl = (params?: ListFollowingDebateTopicsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/debate-topics/following-feed?${stringifiedParams}` : `/api/debate-topics/following-feed`
+}
+
+/**
+ * @summary Debate Topics posted by accounts you follow, newest first (signed in)
+ */
+export const listFollowingDebateTopics = async (params?: ListFollowingDebateTopicsParams, options?: RequestInit): Promise<DebateTopicFeedResponse> => {
+
+  return customFetch<DebateTopicFeedResponse>(getListFollowingDebateTopicsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListFollowingDebateTopicsQueryKey = (params?: ListFollowingDebateTopicsParams,) => {
+    return [
+    `/api/debate-topics/following-feed`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListFollowingDebateTopicsQueryOptions = <TData = Awaited<ReturnType<typeof listFollowingDebateTopics>>, TError = ErrorType<unknown>>(params?: ListFollowingDebateTopicsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFollowingDebateTopics>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListFollowingDebateTopicsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFollowingDebateTopics>>> = ({ signal }) => listFollowingDebateTopics(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listFollowingDebateTopics>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListFollowingDebateTopicsQueryResult = NonNullable<Awaited<ReturnType<typeof listFollowingDebateTopics>>>
+export type ListFollowingDebateTopicsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Debate Topics posted by accounts you follow, newest first (signed in)
+ */
+
+export function useListFollowingDebateTopics<TData = Awaited<ReturnType<typeof listFollowingDebateTopics>>, TError = ErrorType<unknown>>(
+ params?: ListFollowingDebateTopicsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFollowingDebateTopics>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListFollowingDebateTopicsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetMyDebateTopicStatsUrl = () => {
+
+
+
+
+  return `/api/debate-topics/my-stats`
+}
+
+/**
+ * @summary Your own topic-engagement stats — how much your topics and comments have drawn (signed in)
+ */
+export const getMyDebateTopicStats = async ( options?: RequestInit): Promise<DebateTopicStats> => {
+
+  return customFetch<DebateTopicStats>(getGetMyDebateTopicStatsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyDebateTopicStatsQueryKey = () => {
+    return [
+    `/api/debate-topics/my-stats`
+    ] as const;
+    }
+
+
+export const getGetMyDebateTopicStatsQueryOptions = <TData = Awaited<ReturnType<typeof getMyDebateTopicStats>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyDebateTopicStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyDebateTopicStatsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyDebateTopicStats>>> = ({ signal }) => getMyDebateTopicStats({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyDebateTopicStats>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyDebateTopicStatsQueryResult = NonNullable<Awaited<ReturnType<typeof getMyDebateTopicStats>>>
+export type GetMyDebateTopicStatsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Your own topic-engagement stats — how much your topics and comments have drawn (signed in)
+ */
+
+export function useGetMyDebateTopicStats<TData = Awaited<ReturnType<typeof getMyDebateTopicStats>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyDebateTopicStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyDebateTopicStatsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getToggleFollowUrl = () => {
+
+
+
+
+  return `/api/follows`
+}
+
+/**
+ * Idempotent toggle — following an already-followed handle unfollows it. Resolves by whispererHandle, never a raw user id, matching this app's anti-enumeration posture everywhere else. Rejects following yourself.
+ * @summary Follow or unfollow the account behind a public Whisperer handle (signed in)
+ */
+export const toggleFollow = async (toggleFollowBody: ToggleFollowBody, options?: RequestInit): Promise<ToggleFollow200> => {
+
+  return customFetch<ToggleFollow200>(getToggleFollowUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(toggleFollowBody)
+  }
+);}
+
+
+
+
+export const getToggleFollowMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleFollow>>, TError,{data: BodyType<ToggleFollowBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof toggleFollow>>, TError,{data: BodyType<ToggleFollowBody>}, TContext> => {
+
+const mutationKey = ['toggleFollow'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof toggleFollow>>, {data: BodyType<ToggleFollowBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  toggleFollow(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ToggleFollowMutationResult = NonNullable<Awaited<ReturnType<typeof toggleFollow>>>
+    export type ToggleFollowMutationBody = BodyType<ToggleFollowBody>
+    export type ToggleFollowMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Follow or unfollow the account behind a public Whisperer handle (signed in)
+ */
+export const useToggleFollow = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleFollow>>, TError,{data: BodyType<ToggleFollowBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof toggleFollow>>,
+        TError,
+        {data: BodyType<ToggleFollowBody>},
+        TContext
+      > => {
+      return useMutation(getToggleFollowMutationOptions(options));
+    }
+
+export const getGetFollowStatsUrl = () => {
+
+
+
+
+  return `/api/follows/stats`
+}
+
+/**
+ * @summary Your own follower/following counts (signed in)
+ */
+export const getFollowStats = async ( options?: RequestInit): Promise<GetFollowStats200> => {
+
+  return customFetch<GetFollowStats200>(getGetFollowStatsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFollowStatsQueryKey = () => {
+    return [
+    `/api/follows/stats`
+    ] as const;
+    }
+
+
+export const getGetFollowStatsQueryOptions = <TData = Awaited<ReturnType<typeof getFollowStats>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFollowStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFollowStatsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFollowStats>>> = ({ signal }) => getFollowStats({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFollowStats>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFollowStatsQueryResult = NonNullable<Awaited<ReturnType<typeof getFollowStats>>>
+export type GetFollowStatsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Your own follower/following counts (signed in)
+ */
+
+export function useGetFollowStats<TData = Awaited<ReturnType<typeof getFollowStats>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFollowStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFollowStatsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getListDebateTopicsUrl = (params?: ListDebateTopicsParams,) => {
   const normalizedParams = new URLSearchParams();
