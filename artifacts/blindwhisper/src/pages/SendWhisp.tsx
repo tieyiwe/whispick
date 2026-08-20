@@ -57,7 +57,7 @@ import { SiWhatsapp } from "react-icons/si";
 import { PlatformIcon } from "@/components/shared/PlatformIcon";
 import { isContactPickerSupported, pickContact } from "@/lib/contactPicker";
 import { parseRecipients, tokenAtCaret, replaceTokenAt, recipientKey } from "@/lib/recipients";
-import { uploadMedia, UploadValidationError, type UploadedVideoResult } from "@/lib/uploadMedia";
+import { uploadMedia, UploadValidationError, MAX_UPLOAD_DURATION_SECONDS, type UploadedVideoResult } from "@/lib/uploadMedia";
 import { Thumbnail } from "@/components/shared/Thumbnail";
 import { CameraCapture } from "@/components/shared/CameraCapture";
 import { takePendingForward } from "@/lib/forwardVideo";
@@ -97,6 +97,17 @@ function formatSecondsAsTimestamp(seconds: number): string {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
   return `${mins}:${String(secs).padStart(2, "0")}`;
+}
+
+// "1 minute" / "90 seconds" — whichever reads naturally for whatever
+// MAX_UPLOAD_DURATION_SECONDS currently is, so this copy never goes stale
+// again the way the old hardcoded "under 2 minutes" text did.
+function formatMaxUploadDuration(): string {
+  if (MAX_UPLOAD_DURATION_SECONDS % 60 === 0) {
+    const minutes = MAX_UPLOAD_DURATION_SECONDS / 60;
+    return `${minutes} minute${minutes === 1 ? "" : "s"}`;
+  }
+  return `${MAX_UPLOAD_DURATION_SECONDS} seconds`;
 }
 
 const step1Schema = z.object({ videoUrl: z.string().url("Please enter a valid URL") });
@@ -785,7 +796,7 @@ export function SendWhisp() {
                   <>
                     <h2 className="text-xl font-serif font-semibold">Upload a video</h2>
                     <p className="text-sm text-muted-foreground">
-                      Under 2 minutes, MP4/WebM/MOV. Kept short so it loads fast for the recipient.
+                      Under {formatMaxUploadDuration()}, MP4/WebM/MOV. Kept short so it loads fast for the recipient.
                     </p>
                     <label
                       className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-border/60 rounded-xl py-10 cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
@@ -816,7 +827,7 @@ export function SendWhisp() {
                   <>
                     <h2 className="text-xl font-serif font-semibold">Use your camera</h2>
                     <p className="text-sm text-muted-foreground">
-                      Take a photo or record a video (under 2 minutes) right here — no need to leave the app.
+                      Take a photo or record a video (under {formatMaxUploadDuration()}) right here — no need to leave the app.
                     </p>
                     <CameraCapture onUploaded={handleCameraUploaded} />
                   </>

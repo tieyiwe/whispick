@@ -4,7 +4,11 @@ import { getAuthToken } from "@workspace/api-client-react";
 // caps ever change. The server re-enforces these; this is purely so a
 // sender finds out their clip is too long/large before spending time on an
 // upload that would just get rejected.
-export const MAX_UPLOAD_DURATION_SECONDS = 120;
+//
+// 60s for now, for every plan — the plan-differentiated cap (e.g. a longer
+// limit for paid plans) is a deliberate future change, not done yet; see
+// lib/plans.ts if/when that's built.
+export const MAX_UPLOAD_DURATION_SECONDS = 60;
 export const MAX_UPLOAD_VIDEO_BYTES = 30 * 1024 * 1024;
 export const ALLOWED_UPLOAD_VIDEO_MIME_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
 
@@ -58,9 +62,10 @@ function captureVideoMetadata(file: File): Promise<{ durationSeconds: number; th
       }
       if (durationSeconds > MAX_UPLOAD_DURATION_SECONDS) {
         cleanup();
+        const minutes = Math.floor(MAX_UPLOAD_DURATION_SECONDS / 60);
         reject(
           new UploadValidationError(
-            `Please keep uploads under ${Math.floor(MAX_UPLOAD_DURATION_SECONDS / 60)} minutes so they load fast for the recipient.`,
+            `Please keep uploads under ${minutes} minute${minutes === 1 ? "" : "s"} so they load fast for the recipient.`,
           ),
         );
         return;

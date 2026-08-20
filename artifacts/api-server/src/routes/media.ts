@@ -114,8 +114,9 @@ router.post(
       return;
     }
     if (durationSeconds > MAX_UPLOAD_DURATION_SECONDS) {
+      const minutes = Math.floor(MAX_UPLOAD_DURATION_SECONDS / 60);
       res.status(400).json({
-        error: `Please keep uploads under ${Math.floor(MAX_UPLOAD_DURATION_SECONDS / 60)} minutes so they load fast for the recipient.`,
+        error: `Please keep uploads under ${minutes} minute${minutes === 1 ? "" : "s"} so they load fast for the recipient.`,
         code: "video_too_long",
       });
       return;
