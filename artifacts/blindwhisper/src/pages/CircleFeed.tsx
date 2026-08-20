@@ -1,4 +1,5 @@
 import { AppLayout } from "@/components/layout/AppLayout";
+import { useTranslation } from "react-i18next";
 import { useListCircleFeed } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
@@ -9,6 +10,7 @@ import { savePendingForward } from "@/lib/forwardVideo";
 import { PlayCircle, Users, Send } from "lucide-react";
 
 export function CircleFeed() {
+  const { t } = useTranslation("circle");
   const { data, isLoading } = useListCircleFeed();
   const [, setLocation] = useLocation();
   const items = data?.items ?? [];
@@ -33,10 +35,10 @@ export function CircleFeed() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-3xl font-serif font-bold text-foreground flex items-center gap-3">
-              <Users className="w-7 h-7 text-primary" /> Blind Circle
+              <Users className="w-7 h-7 text-primary" /> {t("circleFeed.title")}
             </h1>
             <p className="text-muted-foreground mt-1">
-              Videos dropped anonymously into the community. No recipient, no algorithm — just organic discovery.
+              {t("circleFeed.description")}
             </p>
           </div>
           <CirclePostComposer />
@@ -59,7 +61,7 @@ export function CircleFeed() {
                 <Link href={`/w/${item.publicToken}`} className="cursor-pointer">
                   {item.videoThumbnail ? (
                     <div className="relative h-36 shrink-0">
-                      <img src={item.videoThumbnail} alt={item.videoTitle ?? "Video"} className="w-full h-full object-cover" />
+                      <img src={item.videoThumbnail} alt={item.videoTitle ?? t("circleFeed.videoAlt")} className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                         <PlayCircle className="w-9 h-9 text-white opacity-80" />
                       </div>
@@ -80,7 +82,7 @@ export function CircleFeed() {
                   </Link>
                   <div className="mt-auto flex items-center justify-between gap-2 pt-1">
                     <p className="text-xs text-muted-foreground truncate">
-                      {item.senderAlias ?? "Someone"} · {new Date(item.createdAt).toLocaleDateString()}
+                      {item.senderAlias ?? t("circleFeed.someone")} · {new Date(item.createdAt).toLocaleDateString()}
                     </p>
                     {/* Anything in the circle can be sent onward to someone who
                         needs it — which is the point of a discovery feed in an
@@ -91,7 +93,7 @@ export function CircleFeed() {
                       data-testid={`button-whisp-this-${item.id}`}
                       className="shrink-0 inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-primary/20"
                     >
-                      <Send className="w-3 h-3" /> Whisp this
+                      <Send className="w-3 h-3" /> {t("circleFeed.whispThis")}
                     </button>
                   </div>
                 </div>
@@ -101,9 +103,9 @@ export function CircleFeed() {
         ) : (
           <Card className="bg-card/50 border-dashed border-border py-16 text-center">
             <Users className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
-            <h3 className="text-xl font-medium text-foreground mb-2">Blind Circle is quiet right now</h3>
+            <h3 className="text-xl font-medium text-foreground mb-2">{t("circleFeed.emptyTitle")}</h3>
             <p className="text-muted-foreground max-w-md mx-auto">
-              Nobody's dropped a video into the community feed yet. Be the first — use Post to Blind Circle above.
+              {t("circleFeed.emptyDescription")}
             </p>
           </Card>
         )}

@@ -1,0 +1,38 @@
+{
+  "circleDetail": {
+    "backToMyCircles": "我的 Blind Circles",
+    "titleFallback": "Blind Circle",
+    "description": "私密发送到这个圈子里的 Whisps——仅圈子成员可见。",
+    "videoAlt": "视频",
+    "someone": "某人",
+    "emptyTitle": "这里还什么都没有",
+    "emptyDescription": "发送 whisp 时选择 Blind Circle，然后选这个圈子即可分享到这里。"
+  },
+  "circleFeed": {
+    "title": "Blind Circle",
+    "description": "匿名发布到社区里的视频。没有指定接收者，没有算法——只有自然发现。",
+    "videoAlt": "视频",
+    "someone": "某人",
+    "whispThis": "转发这个 Whisp",
+    "emptyTitle": "Blind Circle 现在有点冷清",
+    "emptyDescription": "还没有人在社区动态里发布视频。做第一个吧——点击上方的发布到 Blind Circle。"
+  },
+  "myCircles": {
+    "title": "我的 Blind Circles",
+    "description": "只限受邀加入的小群组，适合只想让少数人看到的 whisps。",
+    "createCircle": "创建一个圈子",
+    "createPlaceholder": "例如：读书会",
+    "create": "创建",
+    "joinWithCode": "使用邀请码加入",
+    "invitePlaceholder": "邀请码",
+    "join": "加入",
+    "toastCircleCreated": "Blind Circle 已创建",
+    "toastCreateFailed": "创建圈子失败",
+    "toastJoined": "已加入圈子",
+    "toastInvalidCode": "邀请码无效",
+    "toastCodeCopied": "邀请码已复制",
+    "tapToView": "点击查看动态",
+    "emptyTitle": "还没有圈子",
+    "emptyDescription": "创建一个圈子，与小群组匿名分享 whisps，或使用邀请码加入一个圈子。"
+  }
+}

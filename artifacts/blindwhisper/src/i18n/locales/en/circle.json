@@ -1,0 +1,38 @@
+{
+  "circleDetail": {
+    "backToMyCircles": "My Blind Circles",
+    "titleFallback": "Blind Circle",
+    "description": "Whisps dropped privately into this circle — visible only to its members.",
+    "videoAlt": "Video",
+    "someone": "Someone",
+    "emptyTitle": "Nothing here yet",
+    "emptyDescription": "Choose Blind Circle when sending a whisp, then pick this circle to share it here."
+  },
+  "circleFeed": {
+    "title": "Blind Circle",
+    "description": "Videos dropped anonymously into the community. No recipient, no algorithm — just organic discovery.",
+    "videoAlt": "Video",
+    "someone": "Someone",
+    "whispThis": "Whisp this",
+    "emptyTitle": "Blind Circle is quiet right now",
+    "emptyDescription": "Nobody's dropped a video into the community feed yet. Be the first — use Post to Blind Circle above."
+  },
+  "myCircles": {
+    "title": "My Blind Circles",
+    "description": "Small, invite-only groups for whisps you only want a few people to see.",
+    "createCircle": "Create a circle",
+    "createPlaceholder": "e.g. Book Club",
+    "create": "Create",
+    "joinWithCode": "Join with a code",
+    "invitePlaceholder": "Invite code",
+    "join": "Join",
+    "toastCircleCreated": "Blind Circle created",
+    "toastCreateFailed": "Failed to create circle",
+    "toastJoined": "Joined circle",
+    "toastInvalidCode": "Invalid invite code",
+    "toastCodeCopied": "Invite code copied",
+    "tapToView": "Tap to view feed",
+    "emptyTitle": "No circles yet",
+    "emptyDescription": "Create one to share whisps anonymously with a small group, or join one with an invite code."
+  }
+}

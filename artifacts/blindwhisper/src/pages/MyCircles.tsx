@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
   useListMyCircles,
@@ -16,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { VenetianMask, Plus, LogIn, Copy, Loader2, ChevronRight } from "lucide-react";
 
 export function MyCircles() {
+  const { t } = useTranslation("circle");
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [newCircleName, setNewCircleName] = useState("");
@@ -36,9 +38,9 @@ export function MyCircles() {
         onSuccess: () => {
           setNewCircleName("");
           queryClient.invalidateQueries({ queryKey: getListMyCirclesQueryKey() });
-          toast({ title: "Blind Circle created" });
+          toast({ title: t("myCircles.toastCircleCreated") });
         },
-        onError: () => toast({ title: "Failed to create circle", variant: "destructive" }),
+        onError: () => toast({ title: t("myCircles.toastCreateFailed"), variant: "destructive" }),
       }
     );
   }
@@ -52,15 +54,15 @@ export function MyCircles() {
         onSuccess: () => {
           setInviteCode("");
           queryClient.invalidateQueries({ queryKey: getListMyCirclesQueryKey() });
-          toast({ title: "Joined circle" });
+          toast({ title: t("myCircles.toastJoined") });
         },
-        onError: () => toast({ title: "Invalid invite code", variant: "destructive" }),
+        onError: () => toast({ title: t("myCircles.toastInvalidCode"), variant: "destructive" }),
       }
     );
   }
 
   function copyInviteCode(code: string) {
-    navigator.clipboard.writeText(code).then(() => toast({ title: "Invite code copied" }));
+    navigator.clipboard.writeText(code).then(() => toast({ title: t("myCircles.toastCodeCopied") }));
   }
 
   return (
@@ -68,10 +70,10 @@ export function MyCircles() {
       <div className="space-y-8">
         <div>
           <h1 className="text-3xl font-serif font-bold text-foreground flex items-center gap-3">
-            <VenetianMask className="w-7 h-7 text-primary" /> My Blind Circles
+            <VenetianMask className="w-7 h-7 text-primary" /> {t("myCircles.title")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Small, invite-only groups for whisps you only want a few people to see.
+            {t("myCircles.description")}
           </p>
         </div>
 
@@ -79,11 +81,11 @@ export function MyCircles() {
           <Card className="bg-card border-border/50">
             <CardContent className="p-5 space-y-3">
               <p className="font-medium text-foreground flex items-center gap-2">
-                <Plus className="w-4 h-4 text-primary" /> Create a circle
+                <Plus className="w-4 h-4 text-primary" /> {t("myCircles.createCircle")}
               </p>
               <div className="flex gap-2">
                 <Input
-                  placeholder="e.g. Book Club"
+                  placeholder={t("myCircles.createPlaceholder")}
                   className="bg-input/50 border-border/50 rounded-xl"
                   value={newCircleName}
                   onChange={(e) => setNewCircleName(e.target.value)}
@@ -96,7 +98,7 @@ export function MyCircles() {
                   className="rounded-xl shrink-0"
                   data-testid="button-create-circle"
                 >
-                  {createCircle.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create"}
+                  {createCircle.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : t("myCircles.create")}
                 </Button>
               </div>
             </CardContent>
@@ -105,11 +107,11 @@ export function MyCircles() {
           <Card className="bg-card border-border/50">
             <CardContent className="p-5 space-y-3">
               <p className="font-medium text-foreground flex items-center gap-2">
-                <LogIn className="w-4 h-4 text-primary" /> Join with a code
+                <LogIn className="w-4 h-4 text-primary" /> {t("myCircles.joinWithCode")}
               </p>
               <div className="flex gap-2">
                 <Input
-                  placeholder="Invite code"
+                  placeholder={t("myCircles.invitePlaceholder")}
                   className="bg-input/50 border-border/50 rounded-xl"
                   value={inviteCode}
                   onChange={(e) => setInviteCode(e.target.value)}
@@ -123,7 +125,7 @@ export function MyCircles() {
                   className="rounded-xl shrink-0"
                   data-testid="button-join-circle"
                 >
-                  {joinCircle.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Join"}
+                  {joinCircle.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : t("myCircles.join")}
                 </Button>
               </div>
             </CardContent>
@@ -145,7 +147,7 @@ export function MyCircles() {
                     </div>
                     <div className="min-w-0">
                       <p className="font-medium text-foreground truncate group-hover:text-primary transition-colors">{circle.name}</p>
-                      <p className="text-xs text-muted-foreground">Tap to view feed</p>
+                      <p className="text-xs text-muted-foreground">{t("myCircles.tapToView")}</p>
                     </div>
                   </Link>
                   <div className="flex items-center gap-1 shrink-0">
@@ -169,9 +171,9 @@ export function MyCircles() {
         ) : (
           <Card className="bg-card/50 border-dashed border-border py-16 text-center">
             <VenetianMask className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
-            <h3 className="text-xl font-medium text-foreground mb-2">No circles yet</h3>
+            <h3 className="text-xl font-medium text-foreground mb-2">{t("myCircles.emptyTitle")}</h3>
             <p className="text-muted-foreground max-w-md mx-auto">
-              Create one to share whisps anonymously with a small group, or join one with an invite code.
+              {t("myCircles.emptyDescription")}
             </p>
           </Card>
         )}

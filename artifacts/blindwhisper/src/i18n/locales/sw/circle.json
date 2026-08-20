@@ -1,0 +1,38 @@
+{
+  "circleDetail": {
+    "backToMyCircles": "Blind Circles Zangu",
+    "titleFallback": "Blind Circle",
+    "description": "Whisps zilizotumwa faraghani kwenye kikundi hiki — zinaonekana kwa wanachama wake pekee.",
+    "videoAlt": "Video",
+    "someone": "Mtu Fulani",
+    "emptyTitle": "Hakuna kitu bado",
+    "emptyDescription": "Chagua Blind Circle unapotuma whisp, kisha chagua kikundi hiki ili kuishiriki hapa."
+  },
+  "circleFeed": {
+    "title": "Blind Circle",
+    "description": "Video zilizotumwa bila jina kwenye jamii. Hakuna mpokeaji, hakuna algoriti — ni ugunduzi wa asili tu.",
+    "videoAlt": "Video",
+    "someone": "Mtu Fulani",
+    "whispThis": "Tuma Whisp hii",
+    "emptyTitle": "Blind Circle iko kimya kwa sasa",
+    "emptyDescription": "Bado hakuna aliyetuma video kwenye mtiririko wa jamii. Kuwa wa kwanza — tumia Chapisha kwenye Blind Circle hapo juu."
+  },
+  "myCircles": {
+    "title": "Blind Circles Zangu",
+    "description": "Vikundi vidogo, vya mwaliko tu, kwa whisps unazotaka watu wachache tu waone.",
+    "createCircle": "Unda kikundi",
+    "createPlaceholder": "mfano, Klabu ya Vitabu",
+    "create": "Unda",
+    "joinWithCode": "Jiunge na msimbo",
+    "invitePlaceholder": "Msimbo wa mwaliko",
+    "join": "Jiunge",
+    "toastCircleCreated": "Blind Circle imeundwa",
+    "toastCreateFailed": "Imeshindwa kuunda kikundi",
+    "toastJoined": "Umejiunga na kikundi",
+    "toastInvalidCode": "Msimbo wa mwaliko si sahihi",
+    "toastCodeCopied": "Msimbo wa mwaliko umenakiliwa",
+    "tapToView": "Gusa kuona mtiririko",
+    "emptyTitle": "Bado huna vikundi",
+    "emptyDescription": "Unda kimoja kushiriki whisps bila jina na kikundi kidogo, au jiunge na kimoja kwa msimbo wa mwaliko."
+  }
+}
