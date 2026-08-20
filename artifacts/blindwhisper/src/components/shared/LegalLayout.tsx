@@ -1,9 +1,12 @@
 import { ReactNode } from "react";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import { LogoLockup } from "@/components/ui/logo";
 import { ArrowLeft } from "lucide-react";
 
 export function LegalLayout({ title, updatedDate, children }: { title: string; updatedDate: string; children: ReactNode }) {
+  const { t } = useTranslation("sharedB");
+
   return (
     <div className="min-h-[100dvh] bg-background">
       <header
@@ -14,13 +17,13 @@ export function LegalLayout({ title, updatedDate, children }: { title: string; u
           <LogoLockup />
         </Link>
         <Link href="/" className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1">
-          <ArrowLeft className="w-4 h-4" /> Home
+          <ArrowLeft className="w-4 h-4" /> {t("legalLayout.home")}
         </Link>
       </header>
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
         <h1 className="text-3xl sm:text-4xl font-serif font-bold text-foreground mb-2">{title}</h1>
-        <p className="text-sm text-muted-foreground mb-10">Last updated: {updatedDate}</p>
+        <p className="text-sm text-muted-foreground mb-10">{t("legalLayout.lastUpdated", { date: updatedDate })}</p>
         <div className="legal-content space-y-6 text-foreground/90 leading-relaxed">{children}</div>
       </main>
     </div>

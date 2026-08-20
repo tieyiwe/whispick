@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { Logo } from "@/components/ui/logo";
 
 // How long the fading dots show before handing off to the logo pulse —
@@ -35,6 +36,7 @@ function SendingDots() {
  * to control timing.
  */
 export function WhispSentConfirmation() {
+  const { t } = useTranslation("sharedB");
   const [phase, setPhase] = useState<"dots" | "pulse">("dots");
 
   useEffect(() => {
@@ -44,7 +46,7 @@ export function WhispSentConfirmation() {
 
   return (
     <div className="relative h-32 flex items-center justify-center" role="status">
-      <span className="sr-only">Your whisp has been sent</span>
+      <span className="sr-only">{t("whispSentConfirmation.srOnlySent")}</span>
       <AnimatePresence mode="wait">
         {phase === "dots" ? (
           <motion.div

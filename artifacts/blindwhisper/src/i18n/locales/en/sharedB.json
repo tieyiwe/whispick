@@ -1,0 +1,116 @@
+{
+  "followButton": {
+    "following": "Following",
+    "follow": "Follow",
+    "couldntUpdateFollowStatus": "Couldn't update follow status"
+  },
+  "installAppPrompt": {
+    "dialogAriaLabel": "Install Blind Whisper",
+    "titleMobile": "Add Blind Whisper to your phone",
+    "titleDesktop": "Add Blind Whisper to this computer",
+    "descriptionIos": "Opens full screen, with no browser bars — like an app.",
+    "descriptionMobile": "Opens full screen from your home screen, like an app.",
+    "descriptionDesktop": "Launch it in one click next time, straight from your desktop or taskbar — no browser tabs to dig through.",
+    "notNow": "Not now",
+    "iosStepShare": "Tap <1>Share</1> at the bottom of Safari",
+    "iosStepAddHome": "Choose <1>Add to Home Screen</1>",
+    "installing": "Installing...",
+    "install": "Install"
+  },
+  "legalLayout": {
+    "home": "Home",
+    "lastUpdated": "Last updated: {{date}}"
+  },
+  "mfaNudgeBanner": {
+    "title": "Set up two-factor authentication for extra security",
+    "description": "Add a second step to sign-in so your account stays protected even if your password leaks.",
+    "skipForNow": "Skip for now",
+    "setUpNow": "Set up now"
+  },
+  "moodTag": {
+    "iSeeYou": "I See You",
+    "healTogether": "Heal Together",
+    "iLoveYou": "I Love You",
+    "thinkAboutThis": "Think About This",
+    "forYourGrowth": "For Your Growth",
+    "justBecause": "Just Because"
+  },
+  "notificationBell": {
+    "unreadAriaLabel": "{{count}} unread notifications",
+    "notifications": "Notifications",
+    "unreadCount": "{{count}} unread",
+    "markAllRead": "Mark all read",
+    "noNotificationsYet": "No notifications yet."
+  },
+  "phoneVerificationDialog": {
+    "title": "Verify your phone number",
+    "description": "Optional, but it helps whisps reach people faster and for free when they're already here.",
+    "maybeLater": "Maybe later"
+  },
+  "pinToTaskbarTip": {
+    "ariaLabel": "Pin Blind Whisper for one-click access",
+    "title": "Installed! One more step",
+    "description": "Pin it for one-click access next time: open Blind Whisper, then {{instructions}}",
+    "instructionsMac": "Right-click its Dock icon → Options → \"Keep in Dock.\"",
+    "instructionsWindows": "Right-click its taskbar icon → \"Pin to taskbar.\"",
+    "dismiss": "Dismiss"
+  },
+  "pullToRefresh": {
+    "refreshing": "Refreshing...",
+    "releaseToRefresh": "Release to refresh",
+    "pullToRefresh": "Pull to refresh"
+  },
+  "rankedBarChart": {
+    "count": "Count",
+    "noDataYet": "No data yet."
+  },
+  "replyThread": {
+    "seen": "Seen",
+    "sentAriaLabel": "Sent",
+    "aVideo": "a video",
+    "aMessage": "a message",
+    "whispedVideoBack": "Whisped a video back",
+    "reply": "Reply",
+    "you": "You",
+    "newMessages_one": "{{count}} new message",
+    "newMessages_other": "{{count}} new messages",
+    "jumpToLatest": "Jump to latest",
+    "replyingTo": "Replying to {{name}}",
+    "cancelReply": "Cancel reply",
+    "writeAReply": "Write a reply...",
+    "send": "Send"
+  },
+  "statusBadge": {
+    "pending": "Pending",
+    "scheduled": "Scheduled",
+    "delivered": "Delivered",
+    "opened": "Opened",
+    "watched": "Watched",
+    "replied": "Replied",
+    "failed": "Couldn't send"
+  },
+  "textWhispScroll": {
+    "sent": "Sent!",
+    "tapToOpenAriaLabel": "Tap to open this Text Whisp",
+    "tapTheBowToOpen": "Tap the bow to open",
+    "someoneAnonymous": "Someone anonymous"
+  },
+  "trendAreaChart": {
+    "count": "Count",
+    "noActivityYet": "No activity in this period yet."
+  },
+  "videoPlayer": {
+    "openOn": "Open on {{platform}}",
+    "openOriginal": "Open original",
+    "videoAlt": "Video",
+    "watchTheVideo": "Watch the video"
+  },
+  "whispSentConfirmation": {
+    "srOnlySent": "Your whisp has been sent"
+  },
+  "appErrorBoundary": {
+    "title": "Something went wrong loading this page.",
+    "description": "This usually clears up with a reload — often because a new version just went live.",
+    "reload": "Reload"
+  }
+}

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { PhoneVerificationFlow } from "./PhoneVerificationFlow";
@@ -22,15 +23,17 @@ export function PhoneVerificationDialog({
   onDismiss: () => void;
   onVerified: () => void;
 }) {
+  const { t } = useTranslation("sharedB");
+
   return (
     <Dialog open={open} onOpenChange={(next) => { if (!next) onDismiss(); }}>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="font-serif flex items-center gap-2">
-            <MessageCircle className="w-5 h-5 text-primary" /> Verify your phone number
+            <MessageCircle className="w-5 h-5 text-primary" /> {t("phoneVerificationDialog.title")}
           </DialogTitle>
           <DialogDescription>
-            Optional, but it helps whisps reach people faster and for free when they're already here.
+            {t("phoneVerificationDialog.description")}
           </DialogDescription>
         </DialogHeader>
         <div className="py-1">
@@ -38,7 +41,7 @@ export function PhoneVerificationDialog({
         </div>
         <DialogFooter>
           <Button variant="ghost" className="w-full rounded-full text-muted-foreground" onClick={onDismiss} data-testid="button-skip-phone-verification">
-            Maybe later
+            {t("phoneVerificationDialog.maybeLater")}
           </Button>
         </DialogFooter>
       </DialogContent>

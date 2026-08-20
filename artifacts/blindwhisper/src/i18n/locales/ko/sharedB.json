@@ -1,0 +1,115 @@
+{
+  "followButton": {
+    "following": "팔로잉 중",
+    "follow": "팔로우",
+    "couldntUpdateFollowStatus": "팔로우 상태를 업데이트하지 못했습니다"
+  },
+  "installAppPrompt": {
+    "dialogAriaLabel": "Blind Whisper 설치",
+    "titleMobile": "Blind Whisper를 휴대폰에 추가하기",
+    "titleDesktop": "Blind Whisper를 이 컴퓨터에 추가하기",
+    "descriptionIos": "브라우저 바 없이 전체 화면으로 열려요 — 마치 앱처럼요.",
+    "descriptionMobile": "홈 화면에서 전체 화면으로 열려요, 앱처럼요.",
+    "descriptionDesktop": "다음번엔 바탕화면이나 작업 표시줄에서 클릭 한 번으로 바로 열 수 있어요 — 브라우저 탭을 뒤질 필요 없이요.",
+    "notNow": "나중에",
+    "iosStepShare": "Safari 하단의 <1>공유</1>를 탭하세요",
+    "iosStepAddHome": "<1>홈 화면에 추가</1>를 선택하세요",
+    "installing": "설치 중...",
+    "install": "설치"
+  },
+  "legalLayout": {
+    "home": "홈",
+    "lastUpdated": "마지막 업데이트: {{date}}"
+  },
+  "mfaNudgeBanner": {
+    "title": "추가 보안을 위해 2단계 인증을 설정하세요",
+    "description": "로그인에 2단계를 추가하면 비밀번호가 유출되더라도 계정을 안전하게 지킬 수 있어요.",
+    "skipForNow": "나중에 하기",
+    "setUpNow": "지금 설정하기"
+  },
+  "moodTag": {
+    "iSeeYou": "당신을 봐요",
+    "healTogether": "함께 치유해요",
+    "iLoveYou": "사랑해요",
+    "thinkAboutThis": "생각해보세요",
+    "forYourGrowth": "당신의 성장을 위해",
+    "justBecause": "그냥"
+  },
+  "notificationBell": {
+    "unreadAriaLabel": "읽지 않은 알림 {{count}}개",
+    "notifications": "알림",
+    "unreadCount": "읽지 않음 {{count}}개",
+    "markAllRead": "모두 읽음으로 표시",
+    "noNotificationsYet": "아직 알림이 없어요."
+  },
+  "phoneVerificationDialog": {
+    "title": "전화번호를 인증하세요",
+    "description": "선택 사항이지만, 상대방이 이미 여기 있을 때 whisp가 더 빠르고 무료로 전달되도록 도와줘요.",
+    "maybeLater": "나중에 할게요"
+  },
+  "pinToTaskbarTip": {
+    "ariaLabel": "한 번의 클릭으로 열 수 있게 Blind Whisper를 고정하세요",
+    "title": "설치 완료! 한 단계 더",
+    "description": "다음번에 한 번의 클릭으로 열려면 고정해두세요: Blind Whisper를 연 다음 {{instructions}}",
+    "instructionsMac": "Dock 아이콘을 마우스 오른쪽 버튼으로 클릭 → 옵션 → \"Dock에 유지\"를 선택하세요.",
+    "instructionsWindows": "작업 표시줄 아이콘을 마우스 오른쪽 버튼으로 클릭 → \"작업 표시줄에 고정\"을 선택하세요.",
+    "dismiss": "닫기"
+  },
+  "pullToRefresh": {
+    "refreshing": "새로고침 중...",
+    "releaseToRefresh": "놓으면 새로고침",
+    "pullToRefresh": "당겨서 새로고침"
+  },
+  "rankedBarChart": {
+    "count": "개수",
+    "noDataYet": "아직 데이터가 없어요."
+  },
+  "replyThread": {
+    "seen": "읽음",
+    "sentAriaLabel": "전송됨",
+    "aVideo": "동영상",
+    "aMessage": "메시지",
+    "whispedVideoBack": "동영상으로 답장함",
+    "reply": "답장",
+    "you": "나",
+    "newMessages_other": "새 메시지 {{count}}개",
+    "jumpToLatest": "최신 메시지로 이동",
+    "replyingTo": "{{name}}님에게 답장 중",
+    "cancelReply": "답장 취소",
+    "writeAReply": "답장을 입력하세요...",
+    "send": "보내기"
+  },
+  "statusBadge": {
+    "pending": "대기 중",
+    "scheduled": "예약됨",
+    "delivered": "전달됨",
+    "opened": "열어봄",
+    "watched": "시청함",
+    "replied": "답장함",
+    "failed": "전송 실패"
+  },
+  "textWhispScroll": {
+    "sent": "전송 완료!",
+    "tapToOpenAriaLabel": "탭하여 이 텍스트 Whisp 열기",
+    "tapTheBowToOpen": "리본을 탭하여 열어보세요",
+    "someoneAnonymous": "익명의 누군가"
+  },
+  "trendAreaChart": {
+    "count": "개수",
+    "noActivityYet": "이 기간에는 아직 활동이 없어요."
+  },
+  "videoPlayer": {
+    "openOn": "{{platform}}에서 열기",
+    "openOriginal": "원본 열기",
+    "videoAlt": "동영상",
+    "watchTheVideo": "동영상 보기"
+  },
+  "whispSentConfirmation": {
+    "srOnlySent": "회원님의 whisp가 전송되었습니다"
+  },
+  "appErrorBoundary": {
+    "title": "이 페이지를 불러오는 중 문제가 발생했어요.",
+    "description": "새로고침하면 대부분 해결돼요 — 새 버전이 막 배포된 경우가 많거든요.",
+    "reload": "새로고침"
+  }
+}

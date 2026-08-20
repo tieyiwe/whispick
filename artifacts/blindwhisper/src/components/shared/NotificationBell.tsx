@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import {
   useGetMyNotifications,
   useGetMyUnreadNotificationCount,
@@ -19,6 +20,7 @@ import { Bell } from "lucide-react";
 // rather than websockets, matching the rest of this app's "no realtime
 // infra" posture.
 export function NotificationBell() {
+  const { t } = useTranslation("sharedB");
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
 
@@ -82,7 +84,7 @@ export function NotificationBell() {
             // the bell itself.
             <span
               className="absolute top-1 right-1 h-2.5 w-2.5 rounded-full bg-destructive ring-2 ring-background"
-              aria-label={`${unreadCount} unread notifications`}
+              aria-label={t("notificationBell.unreadAriaLabel", { count: unreadCount })}
               data-testid="badge-unread-notifications"
             />
           )}
@@ -90,10 +92,10 @@ export function NotificationBell() {
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-0 max-h-[70vh] overflow-y-auto">
         <div className="p-3 border-b border-border/50 flex items-center justify-between gap-2">
-          <p className="font-medium text-sm text-foreground">Notifications</p>
+          <p className="font-medium text-sm text-foreground">{t("notificationBell.notifications")}</p>
           {unreadCount > 0 && (
             <div className="flex items-center gap-2 shrink-0">
-              <span className="text-xs text-muted-foreground">{unreadCount} unread</span>
+              <span className="text-xs text-muted-foreground">{t("notificationBell.unreadCount", { count: unreadCount })}</span>
               <button
                 type="button"
                 onClick={handleMarkAllRead}
@@ -101,7 +103,7 @@ export function NotificationBell() {
                 className="text-xs text-primary hover:underline disabled:opacity-50"
                 data-testid="button-mark-all-read"
               >
-                Mark all read
+                {t("notificationBell.markAllRead")}
               </button>
             </div>
           )}
@@ -158,7 +160,7 @@ export function NotificationBell() {
             })}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground py-8 text-center">No notifications yet.</p>
+          <p className="text-sm text-muted-foreground py-8 text-center">{t("notificationBell.noNotificationsYet")}</p>
         )}
       </PopoverContent>
     </Popover>

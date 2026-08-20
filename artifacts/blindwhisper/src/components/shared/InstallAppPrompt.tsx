@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
 import { Download, X, Share, Plus } from "lucide-react";
@@ -51,6 +52,7 @@ const REFRESH_APPEAR_DELAY_MS = 3000;
  * open it from the home screen). Any of the three silences this permanently.
  */
 export function InstallAppPrompt() {
+  const { t } = useTranslation("sharedB");
   const [visible, setVisible] = useState(false);
   const [installing, setInstalling] = useState(false);
   const deferredRef = useRef<BeforeInstallPromptEvent | null>(null);
@@ -158,7 +160,7 @@ export function InstallAppPrompt() {
     <div
       className="fixed inset-x-3 z-[60] bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] md:bottom-4 md:left-auto md:right-4 md:w-96"
       role="dialog"
-      aria-label="Install Blind Whisper"
+      aria-label={t("installAppPrompt.dialogAriaLabel")}
       data-testid="install-app-prompt"
     >
       <div className="rounded-2xl border border-primary/30 bg-card/95 p-4 shadow-[0_8px_40px_rgba(0,0,0,0.45)] backdrop-blur">
@@ -166,20 +168,20 @@ export function InstallAppPrompt() {
           <Logo className="h-10 w-auto shrink-0 text-primary" aria-hidden />
           <div className="min-w-0 flex-1">
             <p className="font-serif text-base font-semibold text-foreground">
-              {ios || mobile ? "Add Blind Whisper to your phone" : "Add Blind Whisper to this computer"}
+              {ios || mobile ? t("installAppPrompt.titleMobile") : t("installAppPrompt.titleDesktop")}
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground">
               {ios
-                ? "Opens full screen, with no browser bars — like an app."
+                ? t("installAppPrompt.descriptionIos")
                 : mobile
-                  ? "Opens full screen from your home screen, like an app."
-                  : "Launch it in one click next time, straight from your desktop or taskbar — no browser tabs to dig through."}
+                  ? t("installAppPrompt.descriptionMobile")
+                  : t("installAppPrompt.descriptionDesktop")}
             </p>
           </div>
           <button
             type="button"
             onClick={handleDismiss}
-            aria-label="Not now"
+            aria-label={t("installAppPrompt.notNow")}
             data-testid="install-app-dismiss"
             className="shrink-0 rounded-full p-1 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
           >
@@ -195,23 +197,27 @@ export function InstallAppPrompt() {
               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-muted/60">
                 <Share className="h-3.5 w-3.5 text-primary" />
               </span>
-              Tap <span className="font-medium text-foreground">Share</span> at the bottom of Safari
+              <Trans i18nKey="installAppPrompt.iosStepShare" t={t}>
+                Tap <span className="font-medium text-foreground">Share</span> at the bottom of Safari
+              </Trans>
             </li>
             <li className="flex items-center gap-2">
               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-muted/60">
                 <Plus className="h-3.5 w-3.5 text-primary" />
               </span>
-              Choose <span className="font-medium text-foreground">Add to Home Screen</span>
+              <Trans i18nKey="installAppPrompt.iosStepAddHome" t={t}>
+                Choose <span className="font-medium text-foreground">Add to Home Screen</span>
+              </Trans>
             </li>
           </ol>
         ) : (
           <div className="mt-3 flex gap-2">
             <Button onClick={handleInstall} disabled={installing} className="flex-1" data-testid="install-app-confirm">
               <Download className="mr-1.5 h-4 w-4" />
-              {installing ? "Installing..." : "Install"}
+              {installing ? t("installAppPrompt.installing") : t("installAppPrompt.install")}
             </Button>
             <Button variant="ghost" onClick={handleDismiss} data-testid="install-app-later">
-              Not now
+              {t("installAppPrompt.notNow")}
             </Button>
           </div>
         )}

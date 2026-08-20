@@ -1,0 +1,116 @@
+{
+  "followButton": {
+    "following": "Abonné(e)",
+    "follow": "Suivre",
+    "couldntUpdateFollowStatus": "Impossible de mettre à jour le statut d'abonnement"
+  },
+  "installAppPrompt": {
+    "dialogAriaLabel": "Installer Blind Whisper",
+    "titleMobile": "Ajoute Blind Whisper à ton téléphone",
+    "titleDesktop": "Ajoute Blind Whisper à cet ordinateur",
+    "descriptionIos": "S'ouvre en plein écran, sans barres de navigateur — comme une vraie appli.",
+    "descriptionMobile": "S'ouvre en plein écran depuis ton écran d'accueil, comme une appli.",
+    "descriptionDesktop": "La prochaine fois, ouvre-la en un clic depuis ton bureau ou ta barre des tâches — plus besoin de fouiller dans tes onglets.",
+    "notNow": "Pas maintenant",
+    "iosStepShare": "Appuie sur <1>Partager</1> en bas de Safari",
+    "iosStepAddHome": "Choisis <1>Ajouter à l'écran d'accueil</1>",
+    "installing": "Installation...",
+    "install": "Installer"
+  },
+  "legalLayout": {
+    "home": "Accueil",
+    "lastUpdated": "Dernière mise à jour : {{date}}"
+  },
+  "mfaNudgeBanner": {
+    "title": "Active la double authentification pour plus de sécurité",
+    "description": "Ajoute une deuxième étape à la connexion pour que ton compte reste protégé même si ton mot de passe fuite.",
+    "skipForNow": "Ignorer pour l'instant",
+    "setUpNow": "Activer maintenant"
+  },
+  "moodTag": {
+    "iSeeYou": "Je Te Vois",
+    "healTogether": "Guérir Ensemble",
+    "iLoveYou": "Je T'Aime",
+    "thinkAboutThis": "Réfléchis-y",
+    "forYourGrowth": "Pour Ta Croissance",
+    "justBecause": "Juste Comme Ça"
+  },
+  "notificationBell": {
+    "unreadAriaLabel": "{{count}} notifications non lues",
+    "notifications": "Notifications",
+    "unreadCount": "{{count}} non lues",
+    "markAllRead": "Tout marquer comme lu",
+    "noNotificationsYet": "Pas encore de notifications."
+  },
+  "phoneVerificationDialog": {
+    "title": "Vérifie ton numéro de téléphone",
+    "description": "C'est facultatif, mais ça aide les whisps à arriver plus vite et gratuitement quand la personne est déjà ici.",
+    "maybeLater": "Peut-être plus tard"
+  },
+  "pinToTaskbarTip": {
+    "ariaLabel": "Épingle Blind Whisper pour y accéder en un clic",
+    "title": "Installée ! Encore une étape",
+    "description": "Épingle-la pour y accéder en un clic la prochaine fois : ouvre Blind Whisper, puis {{instructions}}",
+    "instructionsMac": "Fais un clic droit sur son icône dans le Dock → Options → « Garder dans le Dock ».",
+    "instructionsWindows": "Fais un clic droit sur son icône dans la barre des tâches → « Épingler à la barre des tâches ».",
+    "dismiss": "Fermer"
+  },
+  "pullToRefresh": {
+    "refreshing": "Actualisation...",
+    "releaseToRefresh": "Relâche pour actualiser",
+    "pullToRefresh": "Tire vers le bas pour actualiser"
+  },
+  "rankedBarChart": {
+    "count": "Nombre",
+    "noDataYet": "Pas encore de données."
+  },
+  "replyThread": {
+    "seen": "Vu",
+    "sentAriaLabel": "Envoyé",
+    "aVideo": "une vidéo",
+    "aMessage": "un message",
+    "whispedVideoBack": "A renvoyé une vidéo",
+    "reply": "Répondre",
+    "you": "Toi",
+    "newMessages_one": "{{count}} nouveau message",
+    "newMessages_other": "{{count}} nouveaux messages",
+    "jumpToLatest": "Aller au dernier message",
+    "replyingTo": "Réponse à {{name}}",
+    "cancelReply": "Annuler la réponse",
+    "writeAReply": "Écris une réponse...",
+    "send": "Envoyer"
+  },
+  "statusBadge": {
+    "pending": "En attente",
+    "scheduled": "Planifié",
+    "delivered": "Livré",
+    "opened": "Ouvert",
+    "watched": "Regardé",
+    "replied": "Répondu",
+    "failed": "Échec de l'envoi"
+  },
+  "textWhispScroll": {
+    "sent": "Envoyé !",
+    "tapToOpenAriaLabel": "Appuie pour ouvrir ce Whisp texte",
+    "tapTheBowToOpen": "Appuie sur le nœud pour ouvrir",
+    "someoneAnonymous": "Quelqu'un d'anonyme"
+  },
+  "trendAreaChart": {
+    "count": "Nombre",
+    "noActivityYet": "Pas encore d'activité sur cette période."
+  },
+  "videoPlayer": {
+    "openOn": "Ouvrir sur {{platform}}",
+    "openOriginal": "Ouvrir l'original",
+    "videoAlt": "Vidéo",
+    "watchTheVideo": "Regarder la vidéo"
+  },
+  "whispSentConfirmation": {
+    "srOnlySent": "Ton whisp a été envoyé"
+  },
+  "appErrorBoundary": {
+    "title": "Un problème est survenu lors du chargement de cette page.",
+    "description": "Ça se résout en général avec un rechargement — souvent parce qu'une nouvelle version vient de sortir.",
+    "reload": "Recharger"
+  }
+}

@@ -1,4 +1,5 @@
 import { Component, type ReactNode } from "react";
+import { withTranslation, type WithTranslation } from "react-i18next";
 import { Logo } from "@/components/ui/logo";
 import { Button } from "@/components/ui/button";
 
@@ -49,7 +50,10 @@ function markReloaded(): void {
   }
 }
 
-export class AppErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+// A class component can't call the useTranslation hook, so this reaches
+// react-i18next via the withTranslation HOC instead — it injects a `t` prop
+// (and keeps it current across language changes) rather than needing hooks.
+class AppErrorBoundaryBase extends Component<{ children: ReactNode } & WithTranslation, { error: Error | null }> {
   state = { error: null as Error | null };
 
   static getDerivedStateFromError(error: unknown): { error: Error } {
@@ -66,6 +70,8 @@ export class AppErrorBoundary extends Component<{ children: ReactNode }, { error
   render() {
     if (!this.state.error) return this.props.children;
 
+    const { t } = this.props;
+
     // A chunk-load error either just triggered the auto-reload above (this
     // renders for the brief instant before that lands) or already used up
     // its one auto-retry this session — either way, the same manual fallback
@@ -73,14 +79,16 @@ export class AppErrorBoundary extends Component<{ children: ReactNode }, { error
     return (
       <div className="min-h-[100dvh] flex flex-col items-center justify-center gap-4 bg-background px-6 text-center">
         <Logo className="h-10 w-auto text-primary" aria-hidden />
-        <p className="font-serif text-lg text-foreground">Something went wrong loading this page.</p>
+        <p className="font-serif text-lg text-foreground">{t("appErrorBoundary.title")}</p>
         <p className="text-sm text-muted-foreground max-w-xs">
-          This usually clears up with a reload — often because a new version just went live.
+          {t("appErrorBoundary.description")}
         </p>
         <Button onClick={() => window.location.reload()} className="rounded-full" data-testid="button-error-reload">
-          Reload
+          {t("appErrorBoundary.reload")}
         </Button>
       </div>
     );
   }
 }
+
+export const AppErrorBoundary = withTranslation("sharedB")(AppErrorBoundaryBase);

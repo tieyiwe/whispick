@@ -1,4 +1,5 @@
 import { useToggleFollow } from "@workspace/api-client-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, UserPlus, UserCheck } from "lucide-react";
@@ -24,6 +25,7 @@ export function FollowButton({
 }) {
   const { toast } = useToast();
   const toggleFollow = useToggleFollow();
+  const { t } = useTranslation("sharedB");
 
   function handleClick(e: React.MouseEvent) {
     e.preventDefault();
@@ -39,7 +41,7 @@ export function FollowButton({
         onSuccess: (result) => onToggled({ following: result.following, followerCount: result.followerCount }),
         onError: () => {
           onToggled({ following, followerCount });
-          toast({ title: "Couldn't update follow status", variant: "destructive" });
+          toast({ title: t("followButton.couldntUpdateFollowStatus"), variant: "destructive" });
         },
       },
     );
@@ -63,7 +65,7 @@ export function FollowButton({
       ) : (
         <UserPlus className={compact ? "w-2.5 h-2.5" : "w-3 h-3"} />
       )}
-      {following ? "Following" : "Follow"}
+      {following ? t("followButton.following") : t("followButton.follow")}
     </Button>
   );
 }

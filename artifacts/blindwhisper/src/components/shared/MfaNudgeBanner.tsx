@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import { useUser } from "@clerk/react";
 import { useGetUserProfile, useDismissMfaNudge } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,6 +20,7 @@ function shouldShowNudge(dismissedAt: string | null | undefined): boolean {
 }
 
 export function MfaNudgeBanner() {
+  const { t } = useTranslation("sharedB");
   const { isLoaded, user } = useUser();
   const { data: profile } = useGetUserProfile();
   const dismissMfaNudge = useDismissMfaNudge();
@@ -43,19 +45,19 @@ export function MfaNudgeBanner() {
         <div className="flex items-start gap-2.5">
           <ShieldCheck className="w-4 h-4 mt-0.5 shrink-0 text-primary" />
           <div>
-            <p className="text-sm font-medium text-foreground">Set up two-factor authentication for extra security</p>
+            <p className="text-sm font-medium text-foreground">{t("mfaNudgeBanner.title")}</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Add a second step to sign-in so your account stays protected even if your password leaks.
+              {t("mfaNudgeBanner.description")}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <Button variant="ghost" size="sm" className="rounded-full text-muted-foreground" onClick={handleSkip} data-testid="button-skip-mfa-nudge">
-            <X className="w-3.5 h-3.5 mr-1" /> Skip for now
+            <X className="w-3.5 h-3.5 mr-1" /> {t("mfaNudgeBanner.skipForNow")}
           </Button>
           <Link href="/account/security">
             <Button size="sm" className="rounded-full" data-testid="button-setup-mfa-nudge">
-              Set up now
+              {t("mfaNudgeBanner.setUpNow")}
             </Button>
           </Link>
         </div>

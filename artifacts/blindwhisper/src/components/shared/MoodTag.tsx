@@ -1,4 +1,5 @@
 import { Eye, HeartHandshake, Heart, BrainCircuit, Sprout, Sparkles } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 // Keyed by the stable id stored on a whisp (whisp.moodTag), not the display
 // label — labels can be reworded without breaking data already in the DB.
@@ -55,6 +56,20 @@ export const MOOD_CONFIG: Record<string, { label: string; icon: any; color: stri
 
 export const MOOD_TAGS = Object.keys(MOOD_CONFIG);
 
+// Translation keys for each mood, keyed the same way as MOOD_CONFIG. Kept
+// separate from MOOD_CONFIG.label (which other pages read directly as a
+// plain, untranslated string outside any i18n context — SendWhisp.tsx,
+// PublicWhispPage.tsx, CirclePostComposer.tsx) so this component alone can
+// render the translated label without changing that shared shape.
+const MOOD_LABEL_KEYS: Record<string, string> = {
+  "i-see-you": "moodTag.iSeeYou",
+  "heal-together": "moodTag.healTogether",
+  "i-love-you": "moodTag.iLoveYou",
+  "think-about-this": "moodTag.thinkAboutThis",
+  "for-your-growth": "moodTag.forYourGrowth",
+  "just-because": "moodTag.justBecause",
+};
+
 // The mood is the one piece of emotional framing a recipient sees before
 // they press play, so it's built from the mood's OWN colour rather than a
 // generic chip: a soft gradient in that hue, a matching rim, and a low glow
@@ -70,12 +85,14 @@ function withAlpha(hex: string, alpha: number): string {
 }
 
 export function MoodTag({ mood, className = "" }: { mood: string | null | undefined; className?: string }) {
+  const { t } = useTranslation("sharedB");
   if (!mood) return null;
 
   const config = MOOD_CONFIG[mood];
   if (!config) return null;
 
   const Icon = config.icon;
+  const label = MOOD_LABEL_KEYS[mood] ? t(MOOD_LABEL_KEYS[mood]) : config.label;
 
   return (
     <div
@@ -97,7 +114,7 @@ export function MoodTag({ mood, className = "" }: { mood: string | null | undefi
       >
         <Icon className="w-3.5 h-3.5" />
       </span>
-      <span className="tracking-wide">{config.label}</span>
+      <span className="tracking-wide">{label}</span>
     </div>
   );
 }

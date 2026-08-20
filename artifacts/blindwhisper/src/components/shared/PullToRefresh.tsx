@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { Loader2, ArrowDown } from "lucide-react";
 
 // Swipe-down-to-refresh for touch devices.
@@ -53,6 +54,7 @@ export function PullToRefresh({
   children: ReactNode;
   disabled?: boolean;
 }) {
+  const { t } = useTranslation("sharedB");
   const [pullDistance, setPullDistance] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const startYRef = useRef<number | null>(null);
@@ -226,7 +228,7 @@ export function PullToRefresh({
           {refreshing ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              Refreshing...
+              {t("pullToRefresh.refreshing")}
             </>
           ) : (
             <>
@@ -234,7 +236,7 @@ export function PullToRefresh({
                 className="w-4 h-4 transition-transform duration-200"
                 style={{ transform: ready ? "rotate(180deg)" : "none" }}
               />
-              {ready ? "Release to refresh" : "Pull to refresh"}
+              {ready ? t("pullToRefresh.releaseToRefresh") : t("pullToRefresh.pullToRefresh")}
             </>
           )}
         </div>

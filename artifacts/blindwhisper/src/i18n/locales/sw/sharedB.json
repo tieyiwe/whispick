@@ -1,0 +1,116 @@
+{
+  "followButton": {
+    "following": "Unamfuata",
+    "follow": "Fuata",
+    "couldntUpdateFollowStatus": "Imeshindikana kusasisha hali ya kufuata"
+  },
+  "installAppPrompt": {
+    "dialogAriaLabel": "Sakinisha Blind Whisper",
+    "titleMobile": "Ongeza Blind Whisper kwenye simu yako",
+    "titleDesktop": "Ongeza Blind Whisper kwenye kompyuta hii",
+    "descriptionIos": "Inafunguka skrini nzima, bila upau wa kivinjari — kama programu.",
+    "descriptionMobile": "Inafunguka skrini nzima kutoka skrini yako ya nyumbani, kama programu.",
+    "descriptionDesktop": "Wakati mwingine, ifungue kwa mbofyo mmoja moja kwa moja kutoka desktop au taskbar yako — bila kuchimba kati ya vichupo vya kivinjari.",
+    "notNow": "Sio sasa",
+    "iosStepShare": "Gusa <1>Shiriki</1> chini ya Safari",
+    "iosStepAddHome": "Chagua <1>Ongeza kwenye Skrini ya Nyumbani</1>",
+    "installing": "Inasakinisha...",
+    "install": "Sakinisha"
+  },
+  "legalLayout": {
+    "home": "Nyumbani",
+    "lastUpdated": "Ilisasishwa mwisho: {{date}}"
+  },
+  "mfaNudgeBanner": {
+    "title": "Weka uthibitishaji wa hatua mbili kwa usalama zaidi",
+    "description": "Ongeza hatua ya pili ya kuingia ili akaunti yako ibaki salama hata kama nenosiri lako litavuja.",
+    "skipForNow": "Ruka kwa sasa",
+    "setUpNow": "Weka sasa"
+  },
+  "moodTag": {
+    "iSeeYou": "Nakuona",
+    "healTogether": "Tuponyane Pamoja",
+    "iLoveYou": "Nakupenda",
+    "thinkAboutThis": "Fikiria Hili",
+    "forYourGrowth": "Kwa Ukuaji Wako",
+    "justBecause": "Kwa Sababu Tu"
+  },
+  "notificationBell": {
+    "unreadAriaLabel": "Arifa {{count}} ambazo hujazisoma",
+    "notifications": "Arifa",
+    "unreadCount": "{{count}} hazijasomwa",
+    "markAllRead": "Weka zote kama zimesomwa",
+    "noNotificationsYet": "Bado huna arifa."
+  },
+  "phoneVerificationDialog": {
+    "title": "Thibitisha nambari yako ya simu",
+    "description": "Ni hiari, lakini husaidia whisps kuwafikia watu haraka zaidi na bila malipo wanapokuwa tayari wako hapa.",
+    "maybeLater": "Labda baadaye"
+  },
+  "pinToTaskbarTip": {
+    "ariaLabel": "Bandika Blind Whisper kwa ufikiaji wa mbofyo mmoja",
+    "title": "Imesakinishwa! Hatua moja zaidi",
+    "description": "Ibandike kwa ufikiaji wa mbofyo mmoja wakati mwingine: fungua Blind Whisper kisha {{instructions}}",
+    "instructionsMac": "Bofya kulia aikoni yake ya Dock → Chaguo → \"Weka kwenye Dock.\"",
+    "instructionsWindows": "Bofya kulia aikoni yake ya taskbar → \"Bandika kwenye taskbar.\"",
+    "dismiss": "Funga"
+  },
+  "pullToRefresh": {
+    "refreshing": "Inasasisha...",
+    "releaseToRefresh": "Achilia ili kusasisha",
+    "pullToRefresh": "Vuta chini ili kusasisha"
+  },
+  "rankedBarChart": {
+    "count": "Idadi",
+    "noDataYet": "Bado hakuna data."
+  },
+  "replyThread": {
+    "seen": "Imeonwa",
+    "sentAriaLabel": "Imetumwa",
+    "aVideo": "video",
+    "aMessage": "ujumbe",
+    "whispedVideoBack": "Alijibu kwa video",
+    "reply": "Jibu",
+    "you": "Wewe",
+    "newMessages_one": "Ujumbe {{count}} mpya",
+    "newMessages_other": "Jumbe {{count}} mpya",
+    "jumpToLatest": "Nenda kwa mpya zaidi",
+    "replyingTo": "Unamjibu {{name}}",
+    "cancelReply": "Ghairi jibu",
+    "writeAReply": "Andika jibu...",
+    "send": "Tuma"
+  },
+  "statusBadge": {
+    "pending": "Inasubiri",
+    "scheduled": "Imeratibiwa",
+    "delivered": "Imefikishwa",
+    "opened": "Imefunguliwa",
+    "watched": "Imeangaliwa",
+    "replied": "Imejibiwa",
+    "failed": "Imeshindwa kutuma"
+  },
+  "textWhispScroll": {
+    "sent": "Imetumwa!",
+    "tapToOpenAriaLabel": "Gusa kufungua Whisp hii ya Maandishi",
+    "tapTheBowToOpen": "Gusa upinde kufungua",
+    "someoneAnonymous": "Mtu asiyejulikana"
+  },
+  "trendAreaChart": {
+    "count": "Idadi",
+    "noActivityYet": "Bado hakuna shughuli katika kipindi hiki."
+  },
+  "videoPlayer": {
+    "openOn": "Fungua kwenye {{platform}}",
+    "openOriginal": "Fungua asili",
+    "videoAlt": "Video",
+    "watchTheVideo": "Angalia video"
+  },
+  "whispSentConfirmation": {
+    "srOnlySent": "Whisp yako imetumwa"
+  },
+  "appErrorBoundary": {
+    "title": "Kuna hitilafu wakati wa kupakia ukurasa huu.",
+    "description": "Hii kwa kawaida hutatuliwa kwa kupakia upya — mara nyingi kwa sababu toleo jipya limetoka tu.",
+    "reload": "Pakia Upya"
+  }
+}

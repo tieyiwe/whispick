@@ -1,0 +1,116 @@
+{
+  "followButton": {
+    "following": "Gefolgt",
+    "follow": "Folgen",
+    "couldntUpdateFollowStatus": "Follow-Status konnte nicht aktualisiert werden"
+  },
+  "installAppPrompt": {
+    "dialogAriaLabel": "Blind Whisper installieren",
+    "titleMobile": "Blind Whisper zu deinem Handy hinzufügen",
+    "titleDesktop": "Blind Whisper zu diesem Computer hinzufügen",
+    "descriptionIos": "Öffnet sich im Vollbild, ganz ohne Browserleisten — wie eine echte App.",
+    "descriptionMobile": "Öffnet sich vom Startbildschirm aus im Vollbild, wie eine App.",
+    "descriptionDesktop": "Beim nächsten Mal startest du sie mit einem Klick direkt vom Desktop oder der Taskleiste — kein Wühlen durch Browser-Tabs mehr.",
+    "notNow": "Nicht jetzt",
+    "iosStepShare": "Tippe unten in Safari auf <1>Teilen</1>",
+    "iosStepAddHome": "Wähle <1>Zum Home-Bildschirm</1>",
+    "installing": "Wird installiert...",
+    "install": "Installieren"
+  },
+  "legalLayout": {
+    "home": "Start",
+    "lastUpdated": "Zuletzt aktualisiert: {{date}}"
+  },
+  "mfaNudgeBanner": {
+    "title": "Richte die Zwei-Faktor-Authentifizierung für mehr Sicherheit ein",
+    "description": "Füge der Anmeldung einen zweiten Schritt hinzu, damit dein Konto geschützt bleibt, selbst wenn dein Passwort mal durchsickert.",
+    "skipForNow": "Erst mal überspringen",
+    "setUpNow": "Jetzt einrichten"
+  },
+  "moodTag": {
+    "iSeeYou": "Ich Sehe Dich",
+    "healTogether": "Gemeinsam Heilen",
+    "iLoveYou": "Ich Liebe Dich",
+    "thinkAboutThis": "Denk Darüber Nach",
+    "forYourGrowth": "Für Dein Wachstum",
+    "justBecause": "Einfach So"
+  },
+  "notificationBell": {
+    "unreadAriaLabel": "{{count}} ungelesene Benachrichtigungen",
+    "notifications": "Benachrichtigungen",
+    "unreadCount": "{{count}} ungelesen",
+    "markAllRead": "Alle als gelesen markieren",
+    "noNotificationsYet": "Noch keine Benachrichtigungen."
+  },
+  "phoneVerificationDialog": {
+    "title": "Bestätige deine Telefonnummer",
+    "description": "Optional, aber es hilft Whisps, schneller und kostenlos anzukommen, wenn die Person schon hier ist.",
+    "maybeLater": "Vielleicht später"
+  },
+  "pinToTaskbarTip": {
+    "ariaLabel": "Blind Whisper anheften für Zugriff mit einem Klick",
+    "title": "Installiert! Nur noch ein Schritt",
+    "description": "Heft sie an, damit du sie beim nächsten Mal mit einem Klick öffnen kannst: Öffne Blind Whisper und dann {{instructions}}",
+    "instructionsMac": "Rechtsklick auf das Dock-Symbol → Optionen → „Im Dock behalten\".",
+    "instructionsWindows": "Rechtsklick auf das Taskleisten-Symbol → „An Taskleiste anheften\".",
+    "dismiss": "Schließen"
+  },
+  "pullToRefresh": {
+    "refreshing": "Wird aktualisiert...",
+    "releaseToRefresh": "Loslassen zum Aktualisieren",
+    "pullToRefresh": "Zum Aktualisieren nach unten ziehen"
+  },
+  "rankedBarChart": {
+    "count": "Anzahl",
+    "noDataYet": "Noch keine Daten."
+  },
+  "replyThread": {
+    "seen": "Gesehen",
+    "sentAriaLabel": "Gesendet",
+    "aVideo": "ein Video",
+    "aMessage": "eine Nachricht",
+    "whispedVideoBack": "Hat mit einem Video geantwortet",
+    "reply": "Antworten",
+    "you": "Du",
+    "newMessages_one": "{{count}} neue Nachricht",
+    "newMessages_other": "{{count}} neue Nachrichten",
+    "jumpToLatest": "Zum neuesten springen",
+    "replyingTo": "Antwort an {{name}}",
+    "cancelReply": "Antwort abbrechen",
+    "writeAReply": "Antwort schreiben...",
+    "send": "Senden"
+  },
+  "statusBadge": {
+    "pending": "Ausstehend",
+    "scheduled": "Geplant",
+    "delivered": "Zugestellt",
+    "opened": "Geöffnet",
+    "watched": "Angesehen",
+    "replied": "Beantwortet",
+    "failed": "Senden fehlgeschlagen"
+  },
+  "textWhispScroll": {
+    "sent": "Gesendet!",
+    "tapToOpenAriaLabel": "Tippen, um diesen Text-Whisp zu öffnen",
+    "tapTheBowToOpen": "Tippe auf die Schleife zum Öffnen",
+    "someoneAnonymous": "Jemand Anonymes"
+  },
+  "trendAreaChart": {
+    "count": "Anzahl",
+    "noActivityYet": "Noch keine Aktivität in diesem Zeitraum."
+  },
+  "videoPlayer": {
+    "openOn": "Auf {{platform}} öffnen",
+    "openOriginal": "Original öffnen",
+    "videoAlt": "Video",
+    "watchTheVideo": "Video ansehen"
+  },
+  "whispSentConfirmation": {
+    "srOnlySent": "Dein Whisp wurde gesendet"
+  },
+  "appErrorBoundary": {
+    "title": "Beim Laden dieser Seite ist etwas schiefgelaufen.",
+    "description": "Das lässt sich meist mit einem Neuladen beheben — oft, weil gerade eine neue Version veröffentlicht wurde.",
+    "reload": "Neu laden"
+  }
+}

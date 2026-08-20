@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Send, Sparkles } from "lucide-react";
 
 // The Text Whisp "fold/unfurl" moment — the one deliberately crafted visual
@@ -109,6 +110,7 @@ export function TextWhispScroll({
   initiallyOpen = false,
   className,
 }: TextWhispScrollProps) {
+  const { t } = useTranslation("sharedB");
   const [sendPhase, setSendPhase] = useState<SendPhase>("flat");
   const [openPhase, setOpenPhase] = useState<OpenPhase>(initiallyOpen ? "open" : "closed");
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -184,7 +186,7 @@ export function TextWhispScroll({
           data-testid="text-whisp-sent-confirmation"
         >
           <Send className="w-4 h-4" />
-          <span>Sent!</span>
+          <span>{t("textWhispScroll.sent")}</span>
           <Sparkles className="w-3.5 h-3.5" />
         </div>
       </div>
@@ -205,7 +207,7 @@ export function TextWhispScroll({
           disabled={openPhase !== "closed"}
           className="relative w-full max-w-sm h-28 flex items-center justify-center group"
           data-testid="button-untie-scroll"
-          aria-label="Tap to open this Text Whisp"
+          aria-label={t("textWhispScroll.tapToOpenAriaLabel")}
         >
           <div
             className="w-40"
@@ -219,7 +221,7 @@ export function TextWhispScroll({
             <BowSvg progress={untied ? 0 : 1} className="absolute inset-x-0 -top-2 h-8 w-full text-primary mx-auto left-1/2 -translate-x-1/2" />
           </div>
           {openPhase === "closed" && (
-            <span className="absolute -bottom-6 text-xs text-muted-foreground">Tap the bow to open</span>
+            <span className="absolute -bottom-6 text-xs text-muted-foreground">{t("textWhispScroll.tapTheBowToOpen")}</span>
           )}
         </button>
       )}
@@ -244,7 +246,7 @@ export function TextWhispScroll({
           >
             <p className="font-serif text-[hsl(30_35%_20%)] text-base leading-relaxed whitespace-pre-wrap">{messageText}</p>
             <div className="mt-3 pt-3 border-t border-[hsl(35_25%_65%)] flex items-center justify-between text-xs text-[hsl(30_20%_38%)]">
-              <span>— {senderAlias?.trim() || "Someone anonymous"}</span>
+              <span>— {senderAlias?.trim() || t("textWhispScroll.someoneAnonymous")}</span>
               {createdAt && <span>{formatWhen(createdAt)}</span>}
             </div>
           </div>

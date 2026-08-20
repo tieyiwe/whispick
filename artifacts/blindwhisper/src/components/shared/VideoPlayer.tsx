@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { PlayCircle, ExternalLink } from "lucide-react";
 import confetti from "canvas-confetti";
 
@@ -69,6 +70,7 @@ function loadYouTubeApi(): Promise<void> {
  * and can only ever know it was clicked, not watched.
  */
 export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, startSeconds, endSeconds, uploadSrc, onWatchEvent }: Props) {
+  const { t } = useTranslation("sharedB");
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const firedRef = useRef({ tenSec: false, halfway: false, complete: false });
@@ -229,7 +231,7 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
         <iframe
           ref={iframeRef}
           src={src}
-          title={title ?? "Video"}
+          title={title ?? t("videoPlayer.videoAlt")}
           className="absolute inset-0 w-full h-full"
           allow="autoplay; encrypted-media; picture-in-picture"
           allowFullScreen
@@ -247,7 +249,7 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
           className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/60 px-2.5 py-1 text-[11px] text-white/90 backdrop-blur transition-colors hover:bg-black/80 hover:text-white"
         >
           <ExternalLink className="w-3 h-3" />
-          {platform ? `Open on ${PLATFORM_LABELS[platform] ?? platform}` : "Open original"}
+          {platform ? t("videoPlayer.openOn", { platform: PLATFORM_LABELS[platform] ?? platform }) : t("videoPlayer.openOriginal")}
         </a>
       </div>
     );
@@ -292,7 +294,7 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
     <div className="relative">
       <img
         src={thumbnail}
-        alt={title ?? "Video"}
+        alt={title ?? t("videoPlayer.videoAlt")}
         className="w-full object-cover max-h-64"
         onError={() => setThumbnailFailed(true)}
       />
@@ -313,7 +315,7 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
       data-testid="button-watch-video-no-thumb"
     >
       <PlayCircle className="w-10 h-10 text-primary" />
-      <span className="text-sm text-muted-foreground">Watch the video</span>
+      <span className="text-sm text-muted-foreground">{t("videoPlayer.watchTheVideo")}</span>
     </button>
   );
 }

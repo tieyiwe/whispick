@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { PlayCircle, Loader2, Send, Reply as ReplyIcon, X, ArrowDown, Check, CheckCheck } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -34,10 +35,11 @@ export type ThreadReply = {
 // you *received* isn't a thing WhatsApp does either, and here it would just
 // be restating "yes, you can see this, since you're looking at it."
 function ReadReceipt({ read }: { read: boolean }) {
+  const { t } = useTranslation("sharedB");
   return read ? (
-    <CheckCheck className="w-3.5 h-3.5 text-[hsl(142_71%_45%)]" aria-label="Seen" />
+    <CheckCheck className="w-3.5 h-3.5 text-[hsl(142_71%_45%)]" aria-label={t("replyThread.seen")} />
   ) : (
-    <Check className="w-3.5 h-3.5 text-muted-foreground/70" aria-label="Sent" />
+    <Check className="w-3.5 h-3.5 text-muted-foreground/70" aria-label={t("replyThread.sentAriaLabel")} />
   );
 }
 
@@ -55,7 +57,8 @@ function QuotedParent({
   authorLabel: string;
   isOwn: boolean;
 }) {
-  const preview = parent.replyText?.trim() || (parent.videoUrl ? "a video" : "a message");
+  const { t } = useTranslation("sharedB");
+  const preview = parent.replyText?.trim() || (parent.videoUrl ? t("replyThread.aVideo") : t("replyThread.aMessage"));
   return (
     <div
       className={`mb-1.5 rounded-lg border-l-2 pl-2 pr-2 py-1 text-[11px] ${
@@ -111,6 +114,7 @@ function MessageBubble({
   parentAuthorLabel?: string;
   onReply?: (reply: ThreadReply) => void;
 }) {
+  const { t } = useTranslation("sharedB");
   return (
     <div
       data-testid={`reply-${reply.id}`}
@@ -157,7 +161,7 @@ function MessageBubble({
                 <PlayCircle className="w-5 h-5 opacity-70" />
               </div>
             )}
-            <span className="text-xs truncate">{reply.videoTitle || "Whisped a video back"}</span>
+            <span className="text-xs truncate">{reply.videoTitle || t("replyThread.whispedVideoBack")}</span>
           </a>
         )}
       </div>
@@ -173,7 +177,7 @@ function MessageBubble({
           className="mt-1 px-2 inline-flex items-center gap-1 text-[11px] text-muted-foreground opacity-60 group-hover:opacity-100 focus-visible:opacity-100 hover:text-foreground transition-opacity"
         >
           <ReplyIcon className="w-3 h-3" />
-          Reply
+          {t("replyThread.reply")}
         </button>
       )}
     </div>
@@ -183,7 +187,7 @@ function MessageBubble({
 export function ReplyThread({
   replies,
   viewerIsRecipient,
-  ownLabel = "You",
+  ownLabel,
   otherLabel,
   emptyState,
   composer,
@@ -205,6 +209,8 @@ export function ReplyThread({
   replyingTo?: ThreadReply | null;
   onReplyTo?: (reply: ThreadReply | null) => void;
 }) {
+  const { t } = useTranslation("sharedB");
+  const resolvedOwnLabel = ownLabel ?? t("replyThread.you");
   const endRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const previousCountRef = useRef(replies.length);
@@ -218,7 +224,7 @@ export function ReplyThread({
 
   const byId = useMemo(() => new Map(replies.map((r) => [r.id, r])), [replies]);
   const labelFor = (reply: ThreadReply) =>
-    (viewerIsRecipient ? reply.fromRecipient : !reply.fromRecipient) ? ownLabel : otherLabel;
+    (viewerIsRecipient ? reply.fromRecipient : !reply.fromRecipient) ? resolvedOwnLabel : otherLabel;
 
   function scrollToLatest(behavior: ScrollBehavior = "smooth") {
     const el = scrollRef.current;
@@ -290,7 +296,7 @@ export function ReplyThread({
                   key={reply.id}
                   reply={reply}
                   isOwn={isOwn}
-                  authorLabel={isOwn ? ownLabel : otherLabel}
+                  authorLabel={isOwn ? resolvedOwnLabel : otherLabel}
                   index={i}
                   parent={parent}
                   parentAuthorLabel={parent && labelFor(parent)}
@@ -311,8 +317,8 @@ export function ReplyThread({
             >
               <ArrowDown className="w-3 h-3" />
               {missedCount > 0
-                ? `${missedCount} new ${missedCount === 1 ? "message" : "messages"}`
-                : "Jump to latest"}
+                ? t("replyThread.newMessages", { count: missedCount })
+                : t("replyThread.jumpToLatest")}
             </button>
           )}
         </div>
@@ -323,15 +329,15 @@ export function ReplyThread({
           data-testid="thread-replying-to"
         >
           <div className="min-w-0 flex-1 text-[11px]">
-            <span className="font-medium text-primary">Replying to {labelFor(replyingTo)}</span>
+            <span className="font-medium text-primary">{t("replyThread.replyingTo", { name: labelFor(replyingTo) })}</span>
             <p className="line-clamp-1 text-muted-foreground">
-              {replyingTo.replyText?.trim() || (replyingTo.videoUrl ? "a video" : "a message")}
+              {replyingTo.replyText?.trim() || (replyingTo.videoUrl ? t("replyThread.aVideo") : t("replyThread.aMessage"))}
             </p>
           </div>
           <button
             type="button"
             onClick={() => onReplyTo(null)}
-            aria-label="Cancel reply"
+            aria-label={t("replyThread.cancelReply")}
             data-testid="thread-replying-to-cancel"
             className="shrink-0 rounded-full p-1 text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
           >
@@ -351,7 +357,7 @@ export function ThreadComposer({
   onChange,
   onSend,
   sending,
-  placeholder = "Write a reply...",
+  placeholder,
   maxLength = 300,
   testIdPrefix = "thread",
 }: {
@@ -363,6 +369,7 @@ export function ThreadComposer({
   maxLength?: number;
   testIdPrefix?: string;
 }) {
+  const { t } = useTranslation("sharedB");
   const canSend = !!value.trim() && !sending;
 
   return (
@@ -370,7 +377,7 @@ export function ThreadComposer({
       <div className="rounded-2xl border border-border/50 bg-input/40 focus-within:border-primary/50 transition-colors">
         <Textarea
           className="bg-transparent border-0 rounded-2xl resize-none min-h-[52px] max-h-40 focus-visible:ring-0 focus-visible:ring-offset-0"
-          placeholder={placeholder}
+          placeholder={placeholder ?? t("replyThread.writeAReply")}
           maxLength={maxLength}
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -396,7 +403,7 @@ export function ThreadComposer({
             data-testid={`${testIdPrefix}-composer-send`}
           >
             {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-            <span className="ml-1.5">Send</span>
+            <span className="ml-1.5">{t("replyThread.send")}</span>
           </Button>
         </div>
       </div>
