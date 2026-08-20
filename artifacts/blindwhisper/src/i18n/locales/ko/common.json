@@ -1,0 +1,26 @@
+{
+  "nav": {
+    "dashboard": "대시보드",
+    "sendWhisp": "Whisp 보내기",
+    "myWhisps": "내 Whisps",
+    "textWhisps": "텍스트 Whisps",
+    "suggestions": "추천",
+    "blindCircle": "Blind Circle",
+    "myBlindCircles": "내 Blind Circles",
+    "debateTopics": "Debate Topics",
+    "following": "팔로잉",
+    "whisperGroups": "Whisper 그룹",
+    "mediaLibrary": "미디어 라이브러리",
+    "replies": "답장",
+    "inviteAFriend": "친구 초대하기",
+    "creditsAndPlan": "크레딧 및 요금제",
+    "settings": "설정",
+    "admin": "관리자",
+    "home": "홈",
+    "more": "더보기"
+  },
+  "account": {
+    "settings": "설정",
+    "signOut": "로그아웃"
+  }
+}

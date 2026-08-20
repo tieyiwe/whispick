@@ -1,0 +1,26 @@
+{
+  "nav": {
+    "dashboard": "Dashibodi",
+    "sendWhisp": "Tuma Whisp",
+    "myWhisps": "Whisps Zangu",
+    "textWhisps": "Whisps za Maandishi",
+    "suggestions": "Mapendekezo",
+    "blindCircle": "Blind Circle",
+    "myBlindCircles": "Blind Circles Zangu",
+    "debateTopics": "Debate Topics",
+    "following": "Ninayemfuata",
+    "whisperGroups": "Vikundi vya Whisper",
+    "mediaLibrary": "Maktaba ya Media",
+    "replies": "Majibu",
+    "inviteAFriend": "Mwalike Rafiki",
+    "creditsAndPlan": "Mikopo na Mpango",
+    "settings": "Mipangilio",
+    "admin": "Msimamizi",
+    "home": "Nyumbani",
+    "more": "Zaidi"
+  },
+  "account": {
+    "settings": "Mipangilio",
+    "signOut": "Toka"
+  }
+}

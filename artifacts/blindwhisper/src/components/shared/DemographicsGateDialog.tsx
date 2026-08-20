@@ -8,6 +8,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { GENDER_OPTIONS, GENDER_LABELS, AGE_RANGE_OPTIONS, AGE_RANGE_LABELS } from "@/lib/demographics";
 import { SUPPORTED_LANGUAGES, LANGUAGE_LABELS, guessBrowserLanguage } from "@/lib/languages";
 import { Loader2 } from "lucide-react";
+import i18n from "@/i18n";
 
 // The one-time confirmation step for lib/demographics.ts's first-whisp gate
 // (mirrored server-side in POST /whisps and POST /whisper-groups/:id/send —
@@ -32,6 +33,10 @@ export function DemographicsGateDialog({ open, onConfirmed }: { open: boolean; o
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetUserProfileQueryKey() });
+          // Confirming this gate is effectively "finishing signup" from the
+          // language-preference's point of view — the app should land in
+          // the chosen language right away, not after a refetch.
+          void i18n.changeLanguage(preferredLanguage);
           onConfirmed();
         },
       },

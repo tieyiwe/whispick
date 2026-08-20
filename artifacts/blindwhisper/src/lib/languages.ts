@@ -1,6 +1,6 @@
 // Mirrors artifacts/api-server/src/lib/languages.ts — kept in sync by hand,
 // same pattern as GENDER_OPTIONS/VIDEO_CATEGORIES elsewhere in this app.
-export const SUPPORTED_LANGUAGES = ["en", "fr", "ar", "de", "es", "pt", "zh", "ja", "hi", "ru", "id", "bn", "sw"] as const;
+export const SUPPORTED_LANGUAGES = ["en", "fr", "ar", "de", "es", "pt", "zh", "ja", "hi", "ru", "id", "bn", "sw", "ko"] as const;
 export type LanguageCode = (typeof SUPPORTED_LANGUAGES)[number];
 
 export const RTL_LANGUAGES: readonly LanguageCode[] = ["ar"];
@@ -23,6 +23,7 @@ export const LANGUAGE_LABELS: Record<LanguageCode, string> = {
   id: "Bahasa Indonesia",
   bn: "বাংলা",
   sw: "Kiswahili",
+  ko: "한국어",
 };
 
 export function isSupportedLanguage(value: string | null | undefined): value is LanguageCode {

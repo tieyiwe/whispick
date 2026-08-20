@@ -26,4 +26,5 @@ export const UserProfileUpdatePreferredLanguage = {
   id: 'id',
   bn: 'bn',
   sw: 'sw',
+  ko: 'ko',
 } as const;

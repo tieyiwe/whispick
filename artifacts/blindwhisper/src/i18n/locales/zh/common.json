@@ -1,0 +1,26 @@
+{
+  "nav": {
+    "dashboard": "主页",
+    "sendWhisp": "发送 Whisp",
+    "myWhisps": "我的 Whisps",
+    "textWhisps": "文字 Whisps",
+    "suggestions": "推荐",
+    "blindCircle": "Blind Circle",
+    "myBlindCircles": "我的 Blind Circles",
+    "debateTopics": "Debate Topics",
+    "following": "关注中",
+    "whisperGroups": "Whisper 群组",
+    "mediaLibrary": "媒体库",
+    "replies": "回复",
+    "inviteAFriend": "邀请朋友",
+    "creditsAndPlan": "积分与套餐",
+    "settings": "设置",
+    "admin": "管理",
+    "home": "首页",
+    "more": "更多"
+  },
+  "account": {
+    "settings": "设置",
+    "signOut": "退出登录"
+  }
+}

@@ -4196,8 +4196,8 @@ components:
           description: >-
             ISO 639-1 code from lib/languages.ts's SUPPORTED_LANGUAGES ('en'
             | 'fr' | 'ar' | 'de' | 'es' | 'pt' | 'zh' | 'ja' | 'hi' | 'ru' |
-            'id' | 'bn' | 'sw'), or null (not yet answered). What the app
-            renders in, and what server-generated text (notifications,
+            'id' | 'bn' | 'sw' | 'ko'), or null (not yet answered). What the
+            app renders in, and what server-generated text (notifications,
             emails) is sent in — see users.preferredLanguage.
         whispererHandle:
           type: ["string", "null"]
@@ -4248,7 +4248,7 @@ components:
           type: ["string", "null"]
         preferredLanguage:
           type: string
-          enum: [en, fr, ar, de, es, pt, zh, ja, hi, ru, id, bn, sw]
+          enum: [en, fr, ar, de, es, pt, zh, ja, hi, ru, id, bn, sw, ko]
           description: Not nullable — unlike gender/ageRange there's no "prefer not to say" for the language the app actually renders in.
         whispererAvatarId:
           $ref: "#/components/schemas/AvatarId"

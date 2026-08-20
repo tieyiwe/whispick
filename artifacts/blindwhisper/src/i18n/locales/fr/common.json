@@ -1,0 +1,26 @@
+{
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "sendWhisp": "Envoyer un Whisp",
+    "myWhisps": "Mes Whisps",
+    "textWhisps": "Whisps texte",
+    "suggestions": "Suggestions",
+    "blindCircle": "Blind Circle",
+    "myBlindCircles": "Mes Blind Circles",
+    "debateTopics": "Debate Topics",
+    "following": "Abonnements",
+    "whisperGroups": "Groupes Whisper",
+    "mediaLibrary": "Bibliothèque multimédia",
+    "replies": "Réponses",
+    "inviteAFriend": "Inviter un ami",
+    "creditsAndPlan": "Crédits et forfait",
+    "settings": "Paramètres",
+    "admin": "Administration",
+    "home": "Accueil",
+    "more": "Plus"
+  },
+  "account": {
+    "settings": "Paramètres",
+    "signOut": "Déconnexion"
+  }
+}

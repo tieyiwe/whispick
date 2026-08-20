@@ -1,8 +1,10 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { LogoLockup } from "@/components/ui/logo";
 import { useUser, useClerk } from "@clerk/react";
 import { useGetUserProfile, useGetMyUnreadNotificationCount, getGetMyUnreadNotificationCountQueryKey } from "@workspace/api-client-react";
+import { isSupportedLanguage } from "@/lib/languages";
 import {
   LayoutDashboard,
   Send,
@@ -39,32 +41,36 @@ import { NotificationBell } from "@/components/shared/NotificationBell";
 import { PullToRefresh, reloadPage } from "@/components/shared/PullToRefresh";
 import { InstallAppPrompt } from "@/components/shared/InstallAppPrompt";
 
+// labelKey resolves against the "common" namespace's nav.* keys (see
+// src/i18n/locales/*/common.json) — the label itself is looked up at
+// render time via t(), not stored here, so it re-renders in the right
+// language the moment i18next's active language changes.
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/send", label: "Send Whisp", icon: Send },
-  { href: "/whisps", label: "My Whisps", icon: ListVideo },
-  { href: "/text-whisps", label: "Text Whisps", icon: ScrollText },
-  { href: "/suggestions", label: "Suggestions", icon: Sparkles },
-  { href: "/circle", label: "Blind Circle", icon: Users },
-  { href: "/circles", label: "My Blind Circles", icon: VenetianMask },
-  { href: "/debate-topics", label: "Debate Topics", icon: Swords },
-  { href: "/debate-topics/following", label: "Following", icon: UserCheck },
-  { href: "/whisper-groups", label: "Whisper Groups", icon: UsersRound },
-  { href: "/media-library", label: "Media Library", icon: Clapperboard },
-  { href: "/replies", label: "Replies", icon: MessageSquareHeart },
-  { href: "/invite", label: "Invite a Friend", icon: UserPlus },
-  { href: "/credits", label: "Credits & Plan", icon: CreditCard },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard },
+  { href: "/send", labelKey: "nav.sendWhisp", icon: Send },
+  { href: "/whisps", labelKey: "nav.myWhisps", icon: ListVideo },
+  { href: "/text-whisps", labelKey: "nav.textWhisps", icon: ScrollText },
+  { href: "/suggestions", labelKey: "nav.suggestions", icon: Sparkles },
+  { href: "/circle", labelKey: "nav.blindCircle", icon: Users },
+  { href: "/circles", labelKey: "nav.myBlindCircles", icon: VenetianMask },
+  { href: "/debate-topics", labelKey: "nav.debateTopics", icon: Swords },
+  { href: "/debate-topics/following", labelKey: "nav.following", icon: UserCheck },
+  { href: "/whisper-groups", labelKey: "nav.whisperGroups", icon: UsersRound },
+  { href: "/media-library", labelKey: "nav.mediaLibrary", icon: Clapperboard },
+  { href: "/replies", labelKey: "nav.replies", icon: MessageSquareHeart },
+  { href: "/invite", labelKey: "nav.inviteAFriend", icon: UserPlus },
+  { href: "/credits", labelKey: "nav.creditsAndPlan", icon: CreditCard },
+  { href: "/settings", labelKey: "nav.settings", icon: Settings },
 ];
 
 const MOBILE_TAB_ITEMS_LEFT = [
-  { href: "/dashboard", label: "Home", icon: LayoutDashboard },
-  { href: "/whisps", label: "Whisps", icon: ListVideo },
+  { href: "/dashboard", labelKey: "nav.home", icon: LayoutDashboard },
+  { href: "/whisps", labelKey: "nav.myWhisps", icon: ListVideo },
 ];
 
 const MOBILE_TAB_ITEMS_RIGHT = [
-  { href: "/circle", label: "Blind Circle", icon: Users },
-  { href: "/replies", label: "Replies", icon: MessageSquareHeart },
+  { href: "/circle", labelKey: "nav.blindCircle", icon: Users },
+  { href: "/replies", labelKey: "nav.replies", icon: MessageSquareHeart },
 ];
 
 function MobileTabLink({
@@ -92,7 +98,7 @@ function MobileTabLink({
         {badgeCount > 0 && (
           <span
             className="absolute -top-1 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-secondary text-[10px] font-semibold text-secondary-foreground flex items-center justify-center"
-            data-testid={`badge-mobile-${label.toLowerCase()}`}
+            data-testid={`badge-mobile-${href.replace(/\//g, "")}`}
           >
             {badgeCount > 9 ? "9+" : badgeCount}
           </span>
@@ -121,6 +127,7 @@ function AccountMenu({
 }) {
   const { user } = useUser();
   const { signOut } = useClerk();
+  const { t } = useTranslation();
 
   return (
     <DropdownMenu>
@@ -141,7 +148,7 @@ function AccountMenu({
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link href="/settings" className="cursor-pointer" data-testid="link-account-menu-settings">
-            <Settings className="w-4 h-4 mr-2" /> Settings
+            <Settings className="w-4 h-4 mr-2" /> {t("account.settings")}
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem
@@ -149,7 +156,7 @@ function AccountMenu({
           className="cursor-pointer text-destructive focus:text-destructive"
           data-testid="button-account-menu-signout"
         >
-          <LogOut className="w-4 h-4 mr-2" /> Sign Out
+          <LogOut className="w-4 h-4 mr-2" /> {t("account.signOut")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -162,6 +169,19 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const { signOut } = useClerk();
   const { data: profile } = useGetUserProfile();
   const isAdmin = profile?.role === "admin";
+  const { t, i18n } = useTranslation();
+
+  // The single place the app's rendered language gets synced to the
+  // account's saved preference — every authenticated page renders inside
+  // AppLayout, so this covers the whole app rather than needing a copy per
+  // page. Settings/the onboarding gate also call i18n.changeLanguage()
+  // directly on save so a change takes effect immediately, without waiting
+  // on this effect's next run.
+  useEffect(() => {
+    if (profile?.preferredLanguage && isSupportedLanguage(profile.preferredLanguage) && i18n.language !== profile.preferredLanguage) {
+      void i18n.changeLanguage(profile.preferredLanguage);
+    }
+  }, [profile?.preferredLanguage, i18n]);
 
   // Drives the Replies badge. Polled (no websockets anywhere in this app —
   // see NotificationBell's note) on the same 60s cadence as the bell, so a
@@ -178,7 +198,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const unreadReplyCount = unread?.unreadReplyCount ?? 0;
 
   const navItems = isAdmin
-    ? [...NAV_ITEMS, { href: "/admin", label: "Admin", icon: ShieldCheck }]
+    ? [...NAV_ITEMS, { href: "/admin", labelKey: "nav.admin", icon: ShieldCheck }]
     : NAV_ITEMS;
 
   // Everything not already reachable from one of the 4 fixed mobile tabs —
@@ -238,7 +258,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                 }`}
               >
                 <Icon className="w-5 h-5" />
-                <span className="flex-1">{item.label}</span>
+                <span className="flex-1">{t(item.labelKey)}</span>
                 {item.href === "/replies" && unreadReplyCount > 0 && (
                   <span
                     className="min-w-[20px] h-5 px-1.5 rounded-full bg-secondary text-xs font-semibold text-secondary-foreground flex items-center justify-center"
@@ -270,7 +290,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
             onClick={() => signOut({ redirectUrl: "/" })}
           >
             <LogOut className="w-5 h-5 mr-3" />
-            Sign Out
+            {t("account.signOut")}
           </Button>
         </div>
       </aside>
@@ -329,7 +349,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       >
         <div className="relative flex items-center justify-around px-1 py-1.5">
           {MOBILE_TAB_ITEMS_LEFT.map((item) => (
-            <MobileTabLink key={item.href} {...item} isActive={location === item.href} />
+            <MobileTabLink key={item.href} href={item.href} icon={item.icon} label={t(item.labelKey)} isActive={location === item.href} />
           ))}
 
           <Link href="/send" className="flex flex-col items-center -mt-6" data-testid="link-send-mobile">
@@ -341,7 +361,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
           {MOBILE_TAB_ITEMS_RIGHT.map((item) => (
             <MobileTabLink
               key={item.href}
-              {...item}
+              href={item.href}
+              icon={item.icon}
+              label={t(item.labelKey)}
               isActive={location === item.href}
               badgeCount={item.href === "/replies" ? unreadReplyCount : 0}
             />
@@ -356,7 +378,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
             }`}
           >
             <Menu className="w-6 h-6" />
-            <span className="text-[10px] font-medium leading-none">More</span>
+            <span className="text-[10px] font-medium leading-none">{t("nav.more")}</span>
           </button>
         </div>
       </nav>
@@ -364,7 +386,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
         <SheetContent side="bottom" className="md:hidden max-h-[80vh] overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>More</SheetTitle>
+            <SheetTitle>{t("nav.more")}</SheetTitle>
           </SheetHeader>
           <div className="grid grid-cols-3 gap-2 py-4">
             {moreNavItems.map((item) => (
@@ -379,7 +401,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                   }`}
                 >
                   <item.icon className="w-5 h-5" />
-                  <span className="text-xs font-medium leading-tight">{item.label}</span>
+                  <span className="text-xs font-medium leading-tight">{t(item.labelKey)}</span>
                 </Link>
               </SheetClose>
             ))}

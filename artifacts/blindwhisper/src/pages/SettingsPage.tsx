@@ -25,6 +25,7 @@ import { Loader2, User, Mail, Shield, Bell, Phone, ShieldCheck, Swords } from "l
 import { isPushSupported, getExistingPushSubscription, subscribeToPush, pushSubscriptionToJson } from "@/lib/push";
 import { GENDER_OPTIONS, GENDER_LABELS, AGE_RANGE_OPTIONS, AGE_RANGE_LABELS } from "@/lib/demographics";
 import { SUPPORTED_LANGUAGES, LANGUAGE_LABELS } from "@/lib/languages";
+import i18n from "@/i18n";
 import { PhoneVerificationFlow } from "@/components/shared/PhoneVerificationFlow";
 import { AvatarCircle } from "@/components/shared/AvatarCircle";
 import { AvatarPickerGrid } from "@/components/shared/AvatarPickerGrid";
@@ -149,6 +150,11 @@ export function SettingsPage() {
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetUserProfileQueryKey() });
+          // Switches the rendered UI immediately, ahead of AppLayout's own
+          // sync effect (which only fires once the invalidated query
+          // refetches) — the whole point of picking a language here is
+          // seeing it take effect right away, not on the next navigation.
+          if (preferredLanguage) void i18n.changeLanguage(preferredLanguage);
           toast({ title: "Profile updated" });
         },
         onError: () => toast({ title: "Failed to update profile", variant: "destructive" }),
