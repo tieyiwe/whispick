@@ -59,7 +59,7 @@ export function InvitePage() {
           queryClient.invalidateQueries({ queryKey: getListInvitesQueryKey() });
           toast({ title: "Invite sent anonymously" });
         },
-        onError: () => toast({ title: "Failed to send invite", variant: "destructive" }),
+        onError: (err: any) => toast({ title: err?.data?.error ?? "Failed to send invite", variant: "destructive" }),
       }
     );
   }
@@ -72,7 +72,7 @@ export function InvitePage() {
           queryClient.invalidateQueries({ queryKey: getListInvitesQueryKey() });
           toast({ title: "Reveal request sent" });
         },
-        onError: () => toast({ title: "Failed to request reveal", variant: "destructive" }),
+        onError: (err: any) => toast({ title: err?.data?.error ?? "Failed to request reveal", variant: "destructive" }),
       }
     );
   }
