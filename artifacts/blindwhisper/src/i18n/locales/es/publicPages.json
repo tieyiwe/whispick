@@ -1,0 +1,108 @@
+{
+  "landingPage": {
+    "header": {
+      "signIn": "Iniciar sesión",
+      "getStarted": "Empezar"
+    },
+    "hero": {
+      "badge": "Una nueva forma de compartir",
+      "headline": "Diles lo que <em>necesitan</em> oír.<br />Sin que resulte incómodo.",
+      "subtitle": "Una plataforma de recomendaciones de video anónima y cargada de emoción. Como deslizar una nota escrita a mano bajo la puerta de alguien, pero en la era digital."
+    },
+    "cta": {
+      "startSendingWhisps": "Empieza a enviar Whisps"
+    },
+    "features": {
+      "anonymous": {
+        "title": "Totalmente anónimo",
+        "desc": "No sabrán que eres tú, a menos que tú quieras. Un espacio seguro para recomendaciones genuinas."
+      },
+      "resonant": {
+        "title": "Emocionalmente auténtico",
+        "desc": "Añade la etiqueta de ánimo perfecta y una breve nota para dar contexto antes de que le den play."
+      },
+      "delivery": {
+        "title": "Tú eliges cómo enviarlo",
+        "desc": "Envía un enlace anónimo directo a esa persona, o compártelo en Blind Circle para que la comunidad lo descubra de forma orgánica."
+      }
+    },
+    "howItWorks": {
+      "heading": "De un enlace a enviado, en menos de un minuto",
+      "subheading": "Pega un video, di lo que piensas, y ya está en camino — de forma anónima.",
+      "steps": {
+        "paste": {
+          "title": "Pega el enlace de cualquier video",
+          "desc": "YouTube, TikTok, Instagram, Facebook, o sube el tuyo propio."
+        },
+        "note": {
+          "title": "Añade una nota y mantente en el anonimato",
+          "desc": "Di lo que piensas. Nunca sabrán que viene de ti."
+        },
+        "sent": {
+          "title": "Enviado, así de fácil",
+          "desc": "Te avisaremos en el momento en que lo vean."
+        }
+      }
+    },
+    "noAwkwardness": {
+      "badge": "Sin contacto visual incómodo",
+      "heading": "El mensaje llega. <em>El momento, no.</em>",
+      "body": "Cuando dices algo delicado en voz alta, también estás gestionando cómo reaccionan a que <em>tú</em> lo digas. Blind Whisper te saca de la sala, para que puedan quedarse de verdad con lo que quisiste decir, en lugar de estudiar tu cara mientras lo dices.",
+      "before": {
+        "label": "Decirlo en voz alta",
+        "desc": "Ellos se preparan para cómo vas a decirlo. Tú te preparas para cómo van a tomarlo. El mensaje se pierde en esa tensión."
+      },
+      "after": {
+        "label": "Enviarlo como un Whisp",
+        "desc": "Lo ven a solas, cuando quieren y a su propio ritmo. Solo el mensaje — sin actuar, sin prepararse, sin esa pausa incómoda después."
+      }
+    },
+    "useCases": {
+      "heading": "Las conversaciones que Blind Whisper hace más fáciles",
+      "subheading": "Cada relación tiene algo que es más fácil de enviar que de decir. Estos son los momentos en los que la gente usa Blind Whisper.",
+      "items": {
+        "parent": {
+          "relationship": "Un padre o una madre, a su hija",
+          "quote": "Quería hablarle de algo delicado, pero no quería que se concentrara en mi reacción en vez de en el mensaje. Lo vio cuando pudo, a su ritmo — y ya la he visto probar un enfoque nuevo. Cero incomodidad."
+        },
+        "friend": {
+          "relationship": "Un amigo, preguntando cómo estás",
+          "quote": "Estaba pasando por una ruptura y no sabía qué decirle sin que sonara a sermón. Le envié un video en su lugar. Después me dijo que era justo lo que necesitaba — y sintió que simplemente llegó, no que se lo hubiera dicho yo."
+        },
+        "partner": {
+          "relationship": "Una pareja, abriendo una conversación difícil",
+          "quote": "Hay una diferencia entre \"tenemos que hablar\" y simplemente... mostrarle algo. Envié esto en lugar de empezar una pelea. Abrió la puerta con suavidad, en vez de cerrarla de un portazo."
+        },
+        "colleague": {
+          "relationship": "Un colega, dando un empujoncito",
+          "quote": "Quería que un compañero viera algo sobre cómo dar buen feedback, sin que se sintiera como una evaluación de desempeño. El anonimato hizo que se sintiera como un empujoncito, no como una crítica directa."
+        },
+        "sibling": {
+          "relationship": "Un hermano, diciendo lo que nunca se dice",
+          "quote": "Nosotros no hablamos así, de esas cosas. Pero pude enviarle algo que decía lo que yo no sabía cómo poner en palabras."
+        }
+      },
+      "previewCaption": "Enviado de forma anónima · Blind Whisper",
+      "disclaimer": "Ejemplos ilustrativos de cómo la gente usa Blind Whisper, no reseñas verificadas de clientes."
+    },
+    "faq": {
+      "heading": "Preguntas frecuentes",
+      "subheading": "Todo lo que la gente suele querer saber antes de enviar su primer Whisp."
+    },
+    "closingCta": {
+      "heading": "¿Hay algo que llevas tiempo queriendo decir?",
+      "body": "No hace falta encontrar las palabras perfectas. Solo encuentra el video y deja que diga lo que querías decir.",
+      "notReadyPrefix": "¿Todavía no estás listo para enviar uno?",
+      "notReadyLink": "Recibe whisps anónimos sobre los temas que elijas"
+    },
+    "footer": {
+      "privacyPolicy": "Política de privacidad",
+      "termsOfService": "Términos del servicio",
+      "smsTerms": "Términos de SMS"
+    }
+  },
+  "notFound": {
+    "title": "404: página no encontrada",
+    "message": "¿Olvidaste añadir la página al enrutador?"
+  }
+}
