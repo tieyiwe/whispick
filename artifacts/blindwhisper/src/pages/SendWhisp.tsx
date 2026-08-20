@@ -1489,6 +1489,20 @@ export function SendWhisp() {
                     </label>
                   )}
 
+                  {/* A2P 10DLC-required disclosure, shown at the exact point
+                      a phone number is collected for SMS delivery — not just
+                      buried in the Terms. Only for the SMS path; WhatsApp
+                      delivery isn't carrier-regulated the same way. */}
+                  {hasPhoneRecipient && !preferWhatsApp && (
+                    <p className="text-xs text-muted-foreground" data-testid="text-sms-consent-disclosure">
+                      By sending to a phone number, you're texting them on your own behalf. Msg &amp; data rates may
+                      apply. Reply STOP to opt out, HELP for help. See our{" "}
+                      <a href="/sms-terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                        SMS Terms
+                      </a>.
+                    </p>
+                  )}
+
                   {isContactPickerSupported() && (
                     <>
                       <div className="flex items-center gap-2">

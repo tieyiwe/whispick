@@ -82,6 +82,15 @@ export function PhoneVerificationFlow({ onVerified }: { onVerified?: () => void 
           We'll verify your number so whisps sent to you deliver instantly if you're already on Blind Whisper — what
           you send and receive is still 100% anonymous, always.
         </p>
+        {/* A2P 10DLC-required disclosure, shown at the exact point the
+            number is entered — this form itself sends a one-time SMS
+            verification code. */}
+        <p className="text-xs text-muted-foreground" data-testid="text-sms-consent-disclosure">
+          Msg &amp; data rates may apply for the one-time verification code. See our{" "}
+          <a href="/sms-terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+            SMS Terms
+          </a>.
+        </p>
         <Button
           onClick={handleSendCode}
           disabled={!phone.trim() || startVerification.isPending}
