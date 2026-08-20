@@ -16,12 +16,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { uploadMedia, UploadValidationError } from "@/lib/uploadMedia";
 import { savePendingForward } from "@/lib/forwardVideo";
+import { useCredentialedMediaUrl } from "@/lib/useCredentialedMediaUrl";
 import { CirclePostComposer } from "@/components/shared/CirclePostComposer";
 import { Thumbnail } from "@/components/shared/Thumbnail";
-import { Clapperboard, Upload, Loader2, Send, Trash2, Clock, Users } from "lucide-react";
+import { Clapperboard, Upload, Loader2, Send, Trash2, Clock, Users, PlayCircle } from "lucide-react";
 
 function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
@@ -38,9 +40,14 @@ export function MediaLibrary() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [previewItem, setPreviewItem] = useState<{ id: string; originalFilename: string } | null>(null);
 
   const { data: media, isLoading } = useListMedia({ query: { queryKey: getListMediaQueryKey() } });
   const deleteMedia = useDeleteMedia();
+  // Only fetched while the preview dialog is actually open — see
+  // useCredentialedMediaUrl's own comment for why a plain <video src> can't
+  // be used against this owner-only, auth-header-gated route.
+  const preview = useCredentialedMediaUrl(previewItem ? `/api/media/${previewItem.id}/file` : null);
 
   async function handleFileSelect(file: File | undefined) {
     if (!file) return;
@@ -133,14 +140,25 @@ export function MediaLibrary() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {media.map((item) => (
               <Card key={item.id} className="bg-card border-border/50 overflow-hidden">
-                <div className="aspect-video bg-muted relative">
+                <button
+                  type="button"
+                  className="aspect-video bg-muted relative w-full block disabled:cursor-default"
+                  onClick={() => item.status === "ready" && setPreviewItem({ id: item.id, originalFilename: item.originalFilename })}
+                  disabled={item.status !== "ready"}
+                  data-testid={`button-preview-${item.id}`}
+                >
                   <Thumbnail src={`/api/media/${item.id}/thumbnail`} className="w-full h-full object-cover" />
+                  {item.status === "ready" && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-background/0 hover:bg-background/30 transition-colors">
+                      <PlayCircle className="w-9 h-9 text-white/90 drop-shadow" />
+                    </div>
+                  )}
                   {item.status !== "ready" && (
                     <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
                       <span className="text-xs text-muted-foreground">No longer available</span>
                     </div>
                   )}
-                </div>
+                </button>
                 <CardContent className="p-3 space-y-2">
                   <p className="text-sm font-medium text-foreground truncate">{item.originalFilename}</p>
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -215,6 +233,26 @@ export function MediaLibrary() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* A quick "is this the right video?" check before sending/posting/
+            deleting it — the thumbnail alone (a single frame) often isn't
+            enough to tell two similar clips apart. */}
+        <Dialog open={!!previewItem} onOpenChange={(open) => !open && setPreviewItem(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="truncate">{previewItem?.originalFilename}</DialogTitle>
+            </DialogHeader>
+            <div className="aspect-video bg-black rounded-lg overflow-hidden flex items-center justify-center">
+              {preview.error ? (
+                <p className="text-sm text-muted-foreground px-4 text-center">Couldn't load this video for preview.</p>
+              ) : preview.url ? (
+                <video src={preview.url} controls autoPlay className="w-full h-full" data-testid="video-media-preview" />
+              ) : (
+                <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </AppLayout>
   );
