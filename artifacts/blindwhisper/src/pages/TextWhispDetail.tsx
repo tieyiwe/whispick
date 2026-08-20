@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useParams, useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetTextWhisp,
@@ -38,6 +39,7 @@ export function TextWhispDetail() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { t } = useTranslation("textWhisp");
   const [replyText, setReplyText] = useState("");
   const [opened, setOpened] = useState(false);
 
@@ -66,9 +68,9 @@ export function TextWhispDetail() {
     return (
       <AppLayout>
         <div className="max-w-xl mx-auto text-center py-16">
-          <p className="text-muted-foreground">Text Whisp not found.</p>
+          <p className="text-muted-foreground">{t("textWhispDetail.notFound")}</p>
           <Button variant="ghost" onClick={() => setLocation("/text-whisps")} className="mt-4">
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back
+            <ArrowLeft className="w-4 h-4 mr-2" /> {t("textWhispDetail.backButton")}
           </Button>
         </div>
       </AppLayout>
@@ -92,7 +94,7 @@ export function TextWhispDetail() {
           setReplyText("");
           queryClient.invalidateQueries({ queryKey: getGetTextWhispQueryKey(id!) });
         },
-        onError: () => toast({ title: "Failed to send reply", variant: "destructive" }),
+        onError: () => toast({ title: t("textWhispDetail.toastReplyFailed"), variant: "destructive" }),
       },
     );
   }
@@ -103,9 +105,9 @@ export function TextWhispDetail() {
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetTextWhispQueryKey(id!) });
-          toast({ title: "Reveal request sent" });
+          toast({ title: t("textWhispDetail.toastRevealRequestSent") });
         },
-        onError: (err: any) => toast({ title: err?.data?.error ?? "Failed to request reveal", variant: "destructive" }),
+        onError: (err: any) => toast({ title: err?.data?.error ?? t("textWhispDetail.toastRevealRequestFailed"), variant: "destructive" }),
       },
     );
   }
@@ -116,9 +118,9 @@ export function TextWhispDetail() {
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetTextWhispQueryKey(id!) });
-          toast({ title: accepted ? "You accepted the reveal request" : "You declined the reveal request" });
+          toast({ title: accepted ? t("textWhispDetail.toastRevealAccepted") : t("textWhispDetail.toastRevealDeclined") });
         },
-        onError: () => toast({ title: "Failed to respond", variant: "destructive" }),
+        onError: () => toast({ title: t("textWhispDetail.toastRespondFailed"), variant: "destructive" }),
       },
     );
   }
@@ -130,9 +132,9 @@ export function TextWhispDetail() {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListTextWhispsQueryKey() });
           setLocation("/text-whisps");
-          toast({ title: "Text Whisp deleted" });
+          toast({ title: t("textWhispDetail.toastDeleted") });
         },
-        onError: () => toast({ title: "Failed to delete", variant: "destructive" }),
+        onError: () => toast({ title: t("textWhispDetail.toastDeleteFailed"), variant: "destructive" }),
       },
     );
   }
@@ -142,7 +144,7 @@ export function TextWhispDetail() {
       <div className="max-w-xl mx-auto space-y-5">
         <div className="flex items-center justify-between">
           <Button variant="ghost" onClick={() => setLocation("/text-whisps")} className="text-muted-foreground -ml-2" data-testid="button-back">
-            <ArrowLeft className="w-4 h-4 mr-1" /> Back
+            <ArrowLeft className="w-4 h-4 mr-1" /> {t("textWhispDetail.backButton")}
           </Button>
           {isSender && (
             <AlertDialog>
@@ -159,19 +161,19 @@ export function TextWhispDetail() {
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Delete this Text Whisp?</AlertDialogTitle>
+                  <AlertDialogTitle>{t("textWhispDetail.deleteDialogTitle")}</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This removes it from your Text Whisps. This can't be undone from your side.
+                    {t("textWhispDetail.deleteDialogDescription")}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogCancel>{t("textWhispDetail.cancelButton")}</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={handleDelete}
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     data-testid="button-confirm-delete-text-whisp"
                   >
-                    Delete
+                    {t("textWhispDetail.deleteButton")}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -199,7 +201,7 @@ export function TextWhispDetail() {
               <Card className="bg-card border-border/50">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base font-serif flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4 text-primary" /> Replies
+                    <MessageSquare className="w-4 h-4 text-primary" /> {t("textWhispDetail.repliesHeading")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -214,7 +216,7 @@ export function TextWhispDetail() {
                         <div className="flex items-center gap-2 mb-1">
                           <UserCircle2 className="w-3.5 h-3.5 text-muted-foreground" />
                           <span className="text-xs text-muted-foreground">
-                            {fromMe ? "You" : "Them"} · {new Date(reply.createdAt).toLocaleString()}
+                            {fromMe ? t("textWhispDetail.fromMe") : t("textWhispDetail.fromThem")} · {new Date(reply.createdAt).toLocaleString()}
                           </span>
                         </div>
                         <p className="text-foreground">{reply.replyText}</p>
@@ -228,12 +230,12 @@ export function TextWhispDetail() {
             {/* Reply box */}
             <Card className="bg-card border-border/50">
               <CardHeader className="pb-2">
-                <CardTitle className="text-base font-serif">Reply</CardTitle>
+                <CardTitle className="text-base font-serif">{t("textWhispDetail.replyCardTitle")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <Textarea
                   className="bg-input/50 border-border/50 rounded-xl resize-none min-h-[80px]"
-                  placeholder="Write a reply..."
+                  placeholder={t("textWhispDetail.replyPlaceholder")}
                   maxLength={REPLY_MAX_LENGTH}
                   value={replyText}
                   onChange={(e) => setReplyText(e.target.value)}
@@ -249,7 +251,7 @@ export function TextWhispDetail() {
                     data-testid="button-send-text-whisp-reply"
                   >
                     {createReply.isPending ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Send className="w-3 h-3 mr-1" />}
-                    Send
+                    {t("textWhispDetail.sendButton")}
                   </Button>
                 </div>
               </CardContent>
@@ -273,20 +275,20 @@ export function TextWhispDetail() {
                 data-testid="button-reveal-yourself-text-whisp"
               >
                 {requestReveal.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-                Reveal Yourself
+                {t("textWhispDetail.revealYourselfButton")}
               </Button>
             )}
             {isSender && textWhisp.revealRequested && (
               <Card className="bg-primary/10 border-primary/20">
                 <CardContent className="p-4 text-center">
                   <Eye className="w-6 h-6 text-primary mx-auto mb-2" />
-                  <p className="text-sm font-medium text-foreground">Reveal request sent</p>
+                  <p className="text-sm font-medium text-foreground">{t("textWhispDetail.revealRequestSentTitle")}</p>
                   <p className="text-xs text-muted-foreground mt-1">
                     {textWhisp.revealAccepted === true
-                      ? "They accepted! You can now tell them who you are — send a reply above."
+                      ? t("textWhispDetail.revealAcceptedMessage")
                       : textWhisp.revealAccepted === false
-                      ? "They declined the reveal."
-                      : "Waiting for them to respond..."}
+                      ? t("textWhispDetail.revealDeclinedMessage")
+                      : t("textWhispDetail.revealWaitingMessage")}
                   </p>
                 </CardContent>
               </Card>
@@ -296,10 +298,10 @@ export function TextWhispDetail() {
                 <CardContent className="p-4 space-y-3 text-center">
                   <Eye className="w-6 h-6 text-primary mx-auto" />
                   <p className="text-sm font-medium text-foreground">
-                    The person who sent you this wants to reveal who they are. Allow it?
+                    {t("textWhispDetail.revealAskMessage")}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    This only grants permission — they'll still have to tell you who they are.
+                    {t("textWhispDetail.revealPermissionNote")}
                   </p>
                   <div className="flex gap-2 justify-center">
                     <Button
@@ -310,7 +312,7 @@ export function TextWhispDetail() {
                       disabled={respondReveal.isPending}
                       data-testid="button-decline-reveal-text-whisp"
                     >
-                      <X className="w-3.5 h-3.5 mr-1" /> Decline
+                      <X className="w-3.5 h-3.5 mr-1" /> {t("textWhispDetail.declineButton")}
                     </Button>
                     <Button
                       size="sm"
@@ -319,7 +321,7 @@ export function TextWhispDetail() {
                       disabled={respondReveal.isPending}
                       data-testid="button-accept-reveal-text-whisp"
                     >
-                      <Check className="w-3.5 h-3.5 mr-1" /> Accept
+                      <Check className="w-3.5 h-3.5 mr-1" /> {t("textWhispDetail.acceptButton")}
                     </Button>
                   </div>
                 </CardContent>

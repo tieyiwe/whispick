@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useParams, useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { useGetPublicTextWhisp, getGetPublicTextWhispQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,6 +27,7 @@ function BlindWhisperLogoMark() {
 export function PublicTextWhisp() {
   const { token } = useParams<{ token: string }>();
   const [, setLocation] = useLocation();
+  const { t } = useTranslation("textWhisp");
 
   // Same "never indexable" treatment as PublicWhispPage.tsx / PublicInvitePage.tsx.
   useEffect(() => {
@@ -70,12 +72,12 @@ export function PublicTextWhisp() {
           </div>
         ) : !textWhisp ? (
           <div className="text-center py-20">
-            <p className="text-muted-foreground">This Text Whisp could not be found — the link may have expired or is no longer valid.</p>
+            <p className="text-muted-foreground">{t("publicTextWhisp.notFound")}</p>
           </div>
         ) : (
           <>
             <p className="text-center text-xl font-serif text-foreground leading-snug flex items-center justify-center gap-2">
-              <ScrollText className="w-5 h-5 text-primary shrink-0" /> You've received an anonymous Text Whisp
+              <ScrollText className="w-5 h-5 text-primary shrink-0" /> {t("publicTextWhisp.receivedHeading")}
             </p>
 
             <div className="rounded-2xl bg-gradient-to-b from-background to-card/60 border border-border/30 py-8 px-4">
@@ -89,21 +91,21 @@ export function PublicTextWhisp() {
                 <Sparkles className="w-6 h-6 text-primary" />
               </div>
               <div className="space-y-1.5">
-                <p className="font-medium text-foreground">Want to reply?</p>
+                <p className="font-medium text-foreground">{t("publicTextWhisp.wantToReplyTitle")}</p>
                 <p className="text-sm text-muted-foreground">
-                  Sign up free to reply the same way — anonymous, fold-and-unfurl included.
+                  {t("publicTextWhisp.wantToReplyDescription")}
                 </p>
               </div>
               <Button size="lg" className="rounded-full w-full" onClick={handleSignUp} data-testid="button-sign-up-to-reply">
-                <Sparkles className="w-4 h-4 mr-2" /> Sign up free
+                <Sparkles className="w-4 h-4 mr-2" /> {t("publicTextWhisp.signUpButton")}
               </Button>
             </div>
 
             <div className="rounded-2xl border border-border/40 p-4 text-center space-y-2">
               <p className="text-sm text-muted-foreground">
-                Send an anonymous Text Whisp of your own —{" "}
+                {t("publicTextWhisp.sendYourOwnPrefix")}{" "}
                 <button type="button" onClick={handleSignUp} className="text-primary hover:underline font-medium" data-testid="button-sign-up-to-send">
-                  sign up free
+                  {t("publicTextWhisp.signUpFreeInline")}
                 </button>
                 .
               </p>
@@ -116,11 +118,11 @@ export function PublicTextWhisp() {
             {textWhisp.revealRequested && (
               <div className="bg-card border border-primary/20 rounded-2xl p-4 text-center space-y-2">
                 <p className="text-sm font-medium text-foreground flex items-center justify-center gap-1.5">
-                  <Eye className="w-4 h-4 text-primary" /> Whoever sent this wants to reveal themselves.
+                  <Eye className="w-4 h-4 text-primary" /> {t("publicTextWhisp.revealRequestedMessage")}
                 </p>
-                <p className="text-xs text-muted-foreground">Sign up free to accept or decline.</p>
+                <p className="text-xs text-muted-foreground">{t("publicTextWhisp.revealSignUpNote")}</p>
                 <Button size="sm" className="rounded-full" onClick={handleSignUp} data-testid="button-sign-up-to-respond-reveal">
-                  Sign up free
+                  {t("publicTextWhisp.signUpButton")}
                 </Button>
               </div>
             )}
@@ -134,9 +136,9 @@ export function PublicTextWhisp() {
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1.25rem)" }}
       >
         <p className="text-xs text-muted-foreground">
-          Powered by{" "}
+          {t("publicTextWhisp.poweredByPrefix")}{" "}
           <a href="/" className="text-primary hover:underline">Blind Whisper</a>
-          {" "}— send what matters, without the awkward part.
+          {" "}{t("publicTextWhisp.poweredBySuffix")}
         </p>
       </footer>
       </div>
