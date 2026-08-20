@@ -1,0 +1,107 @@
+{
+  "createDebateTopic": {
+    "backButton": "Debate Topics로 돌아가기",
+    "title": "토론 주제 올리기",
+    "description": "공개 피드에 올라갈 짧고 헤드라인 같은 한마디예요. 익명으로 게시되며 — 다른 곳의 Reveal Flow에서 마주치지 않는 한 아무도 당신인 줄 몰라요.",
+    "helperText": "간결하게 — 사람들이 반응하고 싶어지는 헤드라인 한 줄이면 충분해요, 긴 문단은 필요 없어요.",
+    "submitButton": "익명으로 게시",
+    "inspirationLabel": "아이디어가 필요하신가요?",
+    "examples": {
+      "honesty": "정직은 언제나 최선의 정책일까요?",
+      "ageLimit": "소셜 미디어에 연령 제한이 있어야 할까요?",
+      "protectFeelings": "누군가의 감정을 지키기 위해 거짓말해도 괜찮을까요?"
+    },
+    "toast": {
+      "posted": "주제가 익명으로 게시되었습니다",
+      "postError": "주제를 게시하지 못했습니다"
+    }
+  },
+  "debateFollowing": {
+    "backButton": "Debate Topics로 돌아가기",
+    "title": "팔로잉",
+    "description": "내 팔로우 통계, 내 주제 참여도, 그리고 내가 팔로우하는 작성자와 댓글 작성자들의 주제예요.",
+    "stats": {
+      "followers": "팔로워",
+      "following": "팔로잉",
+      "topicsPosted": "게시한 주제",
+      "commentsReceived": "받은 댓글",
+      "rewhispsReceived": "받은 Rewhisps",
+      "commentsPosted": "작성한 댓글",
+      "commentLikesReceived": "받은 댓글 좋아요"
+    },
+    "feedTitle": "내가 팔로우하는 피드",
+    "emptyTitle": "아직 보여줄 게 없어요",
+    "emptyDescription": "작성자나 댓글 작성자를 팔로우하면 여기서 그들의 주제를 볼 수 있어요.",
+    "browseButton": "Debate Topics 둘러보기",
+    "newerButton": "최신순",
+    "moreButton": "주제 더 보기"
+  },
+  "debateTopicDetail": {
+    "backButton": "Debate Topics로 돌아가기",
+    "becomeWhisperer": "Whisperer 되기",
+    "notFound": "이 토론 주제를 찾을 수 없어요 — 삭제되었을 수도 있어요.",
+    "topicBadge": "토론 주제",
+    "followerCount_other": "팔로워 {{count}}명",
+    "whisperButton": "이 주제 공유하기",
+    "retractTriggerButton": "삭제",
+    "retractTitle": "이 주제를 삭제할까요?",
+    "retractDescription": "공개 피드와 해당 페이지에서 삭제됩니다. 이미 작성된 댓글은 기록으로 남지만, 더는 아무도 이 스레드를 읽거나 글을 남길 수 없어요.",
+    "cancelButton": "취소",
+    "retractConfirmButton": "주제 삭제",
+    "commentCount_other": "댓글 {{count}}개",
+    "commentingAsPrefix": "다음 이름으로 댓글 작성 중:",
+    "replyingToPrefix": "답글 대상:",
+    "commentPlaceholder": "의견을 남겨보세요 — 당신은 어느 쪽인가요?",
+    "keepKindText": "친절하게 — 싸움이 아니라 진솔하고 생산적인 토론이 되도록 해주세요.",
+    "addImageButton": "이미지 추가",
+    "changeImageButton": "이미지 변경",
+    "becomeWhispererCta": "Whisperer가 되면 제한 없이 언제든 댓글을 남길 수 있어요.",
+    "postButton": "게시",
+    "topicAuthorBadge": "주제 작성자",
+    "youBadge": "나",
+    "timeAgo": "{{time}} 전",
+    "altAttachedImage": "댓글에 첨부된 이미지",
+    "replyButton": "답글",
+    "handleRename": {
+      "ariaLabel": "이 스레드에서 사용할 이름 변경",
+      "title": "이 스레드에서 사용할 이름 변경",
+      "placeholder": "예: SwiftFalcon482",
+      "helperText": "실명이나 신원이 드러날 수 있는 정보는 사용하지 마세요 — 3~24자의 영문/숫자만 가능하며 공백이나 특수문자는 사용할 수 없어요. 이 이름은 Debate Topics에서만 사용돼요.",
+      "saveButton": "저장"
+    },
+    "avatarPicker": {
+      "ariaLabel": "이 스레드에서 사용할 아바타 변경",
+      "title": "이 스레드에서 사용할 아바타 변경"
+    },
+    "altAttachmentPreview": "첨부 파일 미리보기",
+    "ariaRemoveImage": "이미지 제거",
+    "shareTitle": "Blind Whisper — 토론 주제",
+    "toast": {
+      "handleUpdated": "이 스레드에서 사용할 이름이 업데이트되었습니다",
+      "handleUpdateErrorDefault": "이름을 업데이트하지 못했습니다",
+      "avatarUpdated": "이 스레드에서 사용할 아바타가 업데이트되었습니다",
+      "avatarUpdateError": "아바타를 업데이트하지 못했습니다",
+      "invalidImageType": "JPEG, PNG, WebP 또는 GIF 이미지를 첨부해 주세요",
+      "imageTooLarge": "이미지 첨부 파일은 5MB 이하로 유지해 주세요",
+      "postCommentErrorDefault": "댓글을 게시하지 못했습니다",
+      "reactionError": "반응을 업데이트하지 못했습니다",
+      "rewhispError": "이 주제를 Rewhisp하지 못했습니다",
+      "linkCopied": "링크가 복사되었습니다 — 공유해서 토론에 초대해 보세요",
+      "topicRetracted": "주제가 삭제되었습니다",
+      "retractError": "주제를 삭제하지 못했습니다"
+    }
+  },
+  "debateTopics": {
+    "followingButton": "팔로잉",
+    "postTopicButton": "주제 올리기",
+    "becomeWhisperer": "Whisperer 되기",
+    "pillLabel": "Debate Topics",
+    "heading": "당신은 어느 쪽인가요?",
+    "description": "Whisperers가 남긴 짧고 익명인 화두들이에요. 읽고, 의견을 남기고, 직접 올려보세요 — 계정 없이도 대화에 참여할 수 있어요.",
+    "becomeWhispererToPost": "주제를 올리려면 Whisperer가 되어야 해요",
+    "emptyTitle": "아직 토론이 없어요",
+    "emptyDescription": "첫 주제를 올려보세요 — 질문이든 의견이든, 토론할 가치가 있는 거라면 뭐든 좋아요.",
+    "newerButton": "최신순",
+    "moreButton": "주제 더 보기"
+  }
+}

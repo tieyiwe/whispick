@@ -1,0 +1,109 @@
+{
+  "createDebateTopic": {
+    "backButton": "Volver a Debate Topics",
+    "title": "Publica un tema de debate",
+    "description": "Una idea corta, tipo titular, para el feed público. Se publica de forma anónima: nadie sabrá que fuiste tú, a menos que te encuentren en un Reveal Flow en otra parte.",
+    "helperText": "Sé breve: un titular al que la gente reaccione, no un párrafo entero.",
+    "submitButton": "Publicar de forma anónima",
+    "inspirationLabel": "¿Necesitas inspiración?",
+    "examples": {
+      "honesty": "¿La honestidad es siempre la mejor política?",
+      "ageLimit": "¿Las redes sociales deberían tener un límite de edad?",
+      "protectFeelings": "¿Está bien mentir para proteger los sentimientos de alguien?"
+    },
+    "toast": {
+      "posted": "Tema publicado de forma anónima",
+      "postError": "No se pudo publicar el tema"
+    }
+  },
+  "debateFollowing": {
+    "backButton": "Volver a Debate Topics",
+    "title": "Siguiendo",
+    "description": "Tus estadísticas de seguimiento, tu interacción con los temas y los temas de los autores y comentaristas que sigues.",
+    "stats": {
+      "followers": "Seguidores",
+      "following": "Siguiendo",
+      "topicsPosted": "Temas publicados",
+      "commentsReceived": "Comentarios recibidos",
+      "rewhispsReceived": "Rewhisps recibidos",
+      "commentsPosted": "Comentarios publicados",
+      "commentLikesReceived": "Me gusta recibidos en comentarios"
+    },
+    "feedTitle": "Tu feed de seguidos",
+    "emptyTitle": "Aún no hay nadie que mostrar",
+    "emptyDescription": "Sigue a autores o comentaristas para ver sus temas aquí.",
+    "browseButton": "Explorar Debate Topics",
+    "newerButton": "Más recientes",
+    "moreButton": "Más temas"
+  },
+  "debateTopicDetail": {
+    "backButton": "Volver a Debate Topics",
+    "becomeWhisperer": "Conviértete en Whisperer",
+    "notFound": "No se pudo encontrar este tema de debate; puede que se haya retirado.",
+    "topicBadge": "Tema de debate",
+    "followerCount_one": "{{count}} seguidor",
+    "followerCount_other": "{{count}} seguidores",
+    "whisperButton": "Compartir este tema",
+    "retractTriggerButton": "Retirar",
+    "retractTitle": "¿Retirar este tema?",
+    "retractDescription": "Esto lo elimina del feed público y de su propia página. Los comentarios ya publicados se mantienen registrados, pero nadie podrá leer ni añadir nada más a este hilo.",
+    "cancelButton": "Cancelar",
+    "retractConfirmButton": "Retirar tema",
+    "commentCount_one": "{{count}} comentario",
+    "commentCount_other": "{{count}} comentarios",
+    "commentingAsPrefix": "Comentando como",
+    "replyingToPrefix": "Respondiendo a",
+    "commentPlaceholder": "Opina: ¿tú qué piensas?",
+    "keepKindText": "Sé amable: un debate genuino y productivo, no una pelea.",
+    "addImageButton": "Añadir imagen",
+    "changeImageButton": "Cambiar imagen",
+    "becomeWhispererCta": "Conviértete en Whisperer y comenta cuando quieras, sin límites.",
+    "postButton": "Publicar",
+    "topicAuthorBadge": "Autor del tema",
+    "youBadge": "Tú",
+    "timeAgo": "hace {{time}}",
+    "altAttachedImage": "Imagen adjunta al comentario",
+    "replyButton": "Responder",
+    "handleRename": {
+      "ariaLabel": "Cambia tu nombre en este hilo",
+      "title": "Cambia tu nombre en este hilo",
+      "placeholder": "p. ej. SwiftFalcon482",
+      "helperText": "No uses tu nombre real ni nada que pueda identificarte: de 3 a 24 letras o números, sin espacios ni símbolos. Este nombre solo se usa en Debate Topics.",
+      "saveButton": "Guardar"
+    },
+    "avatarPicker": {
+      "ariaLabel": "Cambia tu avatar en este hilo",
+      "title": "Cambia tu avatar en este hilo"
+    },
+    "altAttachmentPreview": "Vista previa del archivo adjunto",
+    "ariaRemoveImage": "Quitar imagen",
+    "shareTitle": "Blind Whisper — Tema de debate",
+    "toast": {
+      "handleUpdated": "Se actualizó tu nombre en este hilo",
+      "handleUpdateErrorDefault": "No se pudo actualizar tu nombre",
+      "avatarUpdated": "Se actualizó tu avatar en este hilo",
+      "avatarUpdateError": "No se pudo actualizar tu avatar",
+      "invalidImageType": "Adjunta una imagen JPEG, PNG, WebP o GIF",
+      "imageTooLarge": "El archivo adjunto debe pesar menos de 5 MB",
+      "postCommentErrorDefault": "No se pudo publicar el comentario",
+      "reactionError": "No se pudo actualizar tu reacción",
+      "rewhispError": "No se pudo hacer rewhisp de este tema",
+      "linkCopied": "Enlace copiado: envíalo para sumar a alguien al debate",
+      "topicRetracted": "Tema retirado",
+      "retractError": "No se pudo retirar el tema"
+    }
+  },
+  "debateTopics": {
+    "followingButton": "Siguiendo",
+    "postTopicButton": "Publicar un tema",
+    "becomeWhisperer": "Conviértete en Whisperer",
+    "pillLabel": "Debate Topics",
+    "heading": "¿Tú de qué lado estás?",
+    "description": "Ideas cortas y anónimas de Whisperers. Lee, opina o publica la tuya: no necesitas cuenta para unirte a la conversación.",
+    "becomeWhispererToPost": "Conviértete en Whisperer para publicar un tema",
+    "emptyTitle": "Todavía no hay debates",
+    "emptyDescription": "Sé el primero en publicar un tema: una pregunta, una opinión, algo que valga la pena discutir.",
+    "newerButton": "Más recientes",
+    "moreButton": "Más temas"
+  }
+}

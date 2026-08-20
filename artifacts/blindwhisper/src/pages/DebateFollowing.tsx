@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import {
   useGetFollowStats,
   useGetMyDebateTopicStats,
@@ -23,6 +24,7 @@ import {
 } from "lucide-react";
 
 export function DebateFollowing() {
+  const { t } = useTranslation("debateTopics");
   const [cursors, setCursors] = useState<string[]>([]);
   const cursor = cursors[cursors.length - 1];
 
@@ -32,15 +34,19 @@ export function DebateFollowing() {
   const items = data?.items ?? [];
   const statsLoading = followStatsLoading || engagementStatsLoading;
 
+  // `key` is a stable, language-independent id used only for the
+  // data-testid below — `title` is the translated display text, so the
+  // testid stays the same across locales instead of shifting with it.
   const statCards = [
-    { title: "Followers", value: followStats?.followerCount ?? 0, icon: Users, color: "text-primary", bg: "bg-primary/10" },
-    { title: "Following", value: followStats?.followingCount ?? 0, icon: UserPlus, color: "text-secondary", bg: "bg-secondary/10" },
-    { title: "Topics Posted", value: engagementStats?.topicsPosted ?? 0, icon: Swords, color: "text-blue-400", bg: "bg-blue-500/10" },
-    { title: "Comments Received", value: engagementStats?.commentsReceived ?? 0, icon: MessageCircle, color: "text-amber-400", bg: "bg-amber-500/10" },
-    { title: "Rewhisps Received", value: engagementStats?.rewhispsReceived ?? 0, icon: Repeat2, color: "text-emerald-400", bg: "bg-emerald-500/10" },
-    { title: "Comments Posted", value: engagementStats?.commentsPosted ?? 0, icon: MessageSquare, color: "text-[#EC4899]", bg: "bg-[#EC4899]/10" },
+    { key: "followers", title: t("debateFollowing.stats.followers"), value: followStats?.followerCount ?? 0, icon: Users, color: "text-primary", bg: "bg-primary/10" },
+    { key: "following", title: t("debateFollowing.stats.following"), value: followStats?.followingCount ?? 0, icon: UserPlus, color: "text-secondary", bg: "bg-secondary/10" },
+    { key: "topics-posted", title: t("debateFollowing.stats.topicsPosted"), value: engagementStats?.topicsPosted ?? 0, icon: Swords, color: "text-blue-400", bg: "bg-blue-500/10" },
+    { key: "comments-received", title: t("debateFollowing.stats.commentsReceived"), value: engagementStats?.commentsReceived ?? 0, icon: MessageCircle, color: "text-amber-400", bg: "bg-amber-500/10" },
+    { key: "rewhisps-received", title: t("debateFollowing.stats.rewhispsReceived"), value: engagementStats?.rewhispsReceived ?? 0, icon: Repeat2, color: "text-emerald-400", bg: "bg-emerald-500/10" },
+    { key: "comments-posted", title: t("debateFollowing.stats.commentsPosted"), value: engagementStats?.commentsPosted ?? 0, icon: MessageSquare, color: "text-[#EC4899]", bg: "bg-[#EC4899]/10" },
     {
-      title: "Comment Likes Received",
+      key: "comment-likes-received",
+      title: t("debateFollowing.stats.commentLikesReceived"),
       value: engagementStats?.commentLikesReceived ?? 0,
       icon: ThumbsUp,
       color: "text-gilded",
@@ -55,13 +61,11 @@ export function DebateFollowing() {
         <div>
           <Link href="/debate-topics">
             <Button variant="ghost" size="sm" className="-ml-2 text-muted-foreground hover:text-foreground" data-testid="button-back-debate-topics">
-              <ArrowLeft className="w-4 h-4 mr-1.5" /> Back to Debate Topics
+              <ArrowLeft className="w-4 h-4 mr-1.5" /> {t("debateFollowing.backButton")}
             </Button>
           </Link>
-          <h1 className="text-3xl font-serif font-bold text-foreground mt-2">Following</h1>
-          <p className="text-muted-foreground mt-1">
-            Your follow stats, your topic engagement, and topics from the authors and commentators you follow.
-          </p>
+          <h1 className="text-3xl font-serif font-bold text-foreground mt-2">{t("debateFollowing.title")}</h1>
+          <p className="text-muted-foreground mt-1">{t("debateFollowing.description")}</p>
         </div>
 
         {statsLoading ? (
@@ -78,7 +82,7 @@ export function DebateFollowing() {
                 className={`bg-card shadow-sm overflow-hidden relative ${
                   stat.highlight ? "border-gilded/25 shadow-[0_0_20px_rgba(232,200,110,0.08)]" : "border-border/50"
                 }`}
-                data-testid={`card-stat-${stat.title.toLowerCase().replace(/\s+/g, "-")}`}
+                data-testid={`card-stat-${stat.key}`}
               >
                 <div className={`absolute top-0 right-0 w-20 h-20 rounded-full ${stat.bg} blur-2xl -mr-8 -mt-8 pointer-events-none`} />
                 <CardContent className="p-5">
@@ -100,7 +104,7 @@ export function DebateFollowing() {
         )}
 
         <div className="space-y-4">
-          <h2 className="text-xl font-serif font-bold text-foreground">Your following feed</h2>
+          <h2 className="text-xl font-serif font-bold text-foreground">{t("debateFollowing.feedTitle")}</h2>
 
           {feedLoading ? (
             <div className="space-y-4">
@@ -117,13 +121,11 @@ export function DebateFollowing() {
           ) : (
             <div className="rounded-2xl border border-dashed border-border py-16 text-center bg-card/50">
               <Users className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
-              <h3 className="text-xl font-medium text-foreground mb-2">No one to show yet</h3>
-              <p className="text-muted-foreground max-w-md mx-auto">
-                Follow some authors or commentators to see their topics here.
-              </p>
+              <h3 className="text-xl font-medium text-foreground mb-2">{t("debateFollowing.emptyTitle")}</h3>
+              <p className="text-muted-foreground max-w-md mx-auto">{t("debateFollowing.emptyDescription")}</p>
               <Link href="/debate-topics">
                 <Button variant="outline" size="sm" className="rounded-full mt-4">
-                  Browse Debate Topics
+                  {t("debateFollowing.browseButton")}
                 </Button>
               </Link>
             </div>
@@ -133,7 +135,7 @@ export function DebateFollowing() {
             <div className="flex items-center justify-center gap-3 pt-2">
               {cursors.length > 0 && (
                 <Button variant="outline" size="sm" className="rounded-full" onClick={() => setCursors((c) => c.slice(0, -1))}>
-                  Newer
+                  {t("debateFollowing.newerButton")}
                 </Button>
               )}
               {data?.nextCursor && (
@@ -145,7 +147,7 @@ export function DebateFollowing() {
                   onClick={() => setCursors((c) => [...c, data.nextCursor!])}
                 >
                   {isFetching ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-                  More topics
+                  {t("debateFollowing.moreButton")}
                 </Button>
               )}
             </div>

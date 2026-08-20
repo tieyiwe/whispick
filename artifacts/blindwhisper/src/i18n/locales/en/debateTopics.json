@@ -1,0 +1,109 @@
+{
+  "createDebateTopic": {
+    "backButton": "Back to Debate Topics",
+    "title": "Post a Debate Topic",
+    "description": "A short, headline-length prompt for the public feed. Posted anonymously — nobody sees this was you unless they run into you in a Reveal Flow elsewhere.",
+    "helperText": "Keep it concise — a headline people react to, not a paragraph.",
+    "submitButton": "Post Anonymously",
+    "inspirationLabel": "Need inspiration?",
+    "examples": {
+      "honesty": "Is honesty always the best policy?",
+      "ageLimit": "Should social media have an age limit?",
+      "protectFeelings": "Is it ever okay to lie to protect someone's feelings?"
+    },
+    "toast": {
+      "posted": "Topic posted anonymously",
+      "postError": "Couldn't post that topic"
+    }
+  },
+  "debateFollowing": {
+    "backButton": "Back to Debate Topics",
+    "title": "Following",
+    "description": "Your follow stats, your topic engagement, and topics from the authors and commentators you follow.",
+    "stats": {
+      "followers": "Followers",
+      "following": "Following",
+      "topicsPosted": "Topics Posted",
+      "commentsReceived": "Comments Received",
+      "rewhispsReceived": "Rewhisps Received",
+      "commentsPosted": "Comments Posted",
+      "commentLikesReceived": "Comment Likes Received"
+    },
+    "feedTitle": "Your following feed",
+    "emptyTitle": "No one to show yet",
+    "emptyDescription": "Follow some authors or commentators to see their topics here.",
+    "browseButton": "Browse Debate Topics",
+    "newerButton": "Newer",
+    "moreButton": "More topics"
+  },
+  "debateTopicDetail": {
+    "backButton": "Back to Debate Topics",
+    "becomeWhisperer": "Become a Whisperer",
+    "notFound": "This debate topic could not be found — it may have been retracted.",
+    "topicBadge": "Debate Topic",
+    "followerCount_one": "{{count}} follower",
+    "followerCount_other": "{{count}} followers",
+    "whisperButton": "Whisper this topic",
+    "retractTriggerButton": "Retract",
+    "retractTitle": "Retract this topic?",
+    "retractDescription": "This removes it from the public feed and its own page. Comments already posted stay recorded, but nobody will be able to read or add to this thread again.",
+    "cancelButton": "Cancel",
+    "retractConfirmButton": "Retract topic",
+    "commentCount_one": "{{count}} comment",
+    "commentCount_other": "{{count}} comments",
+    "commentingAsPrefix": "Commenting as",
+    "replyingToPrefix": "Replying to",
+    "commentPlaceholder": "Weigh in — where do you stand?",
+    "keepKindText": "Keep it kind — genuine, productive debate, not a fight.",
+    "addImageButton": "Add image",
+    "changeImageButton": "Change image",
+    "becomeWhispererCta": "Become a Whisperer — comment anytime, no limits.",
+    "postButton": "Post",
+    "topicAuthorBadge": "Topic Author",
+    "youBadge": "You",
+    "timeAgo": "{{time}} ago",
+    "altAttachedImage": "Attached to comment",
+    "replyButton": "Reply",
+    "handleRename": {
+      "ariaLabel": "Change your name in this thread",
+      "title": "Change your name in this thread",
+      "placeholder": "e.g. SwiftFalcon482",
+      "helperText": "Don't use your real name or anything that could identify you — 3-24 letters/numbers, no spaces or symbols. This name is only used for Debate Topics.",
+      "saveButton": "Save"
+    },
+    "avatarPicker": {
+      "ariaLabel": "Change your avatar in this thread",
+      "title": "Change your avatar in this thread"
+    },
+    "altAttachmentPreview": "Attachment preview",
+    "ariaRemoveImage": "Remove image",
+    "shareTitle": "Blind Whisper — Debate Topic",
+    "toast": {
+      "handleUpdated": "Your name in this thread was updated",
+      "handleUpdateErrorDefault": "Couldn't update your name",
+      "avatarUpdated": "Your avatar in this thread was updated",
+      "avatarUpdateError": "Couldn't update your avatar",
+      "invalidImageType": "Please attach a JPEG, PNG, WebP, or GIF image",
+      "imageTooLarge": "Please keep image attachments under 5MB",
+      "postCommentErrorDefault": "Couldn't post that comment",
+      "reactionError": "Couldn't update your reaction",
+      "rewhispError": "Couldn't rewhisp this topic",
+      "linkCopied": "Link copied — send it to bring someone into the debate",
+      "topicRetracted": "Topic retracted",
+      "retractError": "Couldn't retract that topic"
+    }
+  },
+  "debateTopics": {
+    "followingButton": "Following",
+    "postTopicButton": "Post a Topic",
+    "becomeWhisperer": "Become a Whisperer",
+    "pillLabel": "Debate Topics",
+    "heading": "Where do you stand?",
+    "description": "Short, anonymous prompts from Whisperers. Read, weigh in, or post your own — no account needed to join the conversation.",
+    "becomeWhispererToPost": "Become a Whisperer to post a topic",
+    "emptyTitle": "No debates yet",
+    "emptyDescription": "Be the first to post a topic — a question, an opinion, anything worth arguing about.",
+    "newerButton": "Newer",
+    "moreButton": "More topics"
+  }
+}

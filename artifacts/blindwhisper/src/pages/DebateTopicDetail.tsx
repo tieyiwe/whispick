@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { useParams, useLocation, Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import { useUser } from "@clerk/react";
 import {
   useGetDebateTopic,
@@ -120,6 +121,7 @@ function HandleRenameControl({
   onRenamed: (handle: string) => void;
 }) {
   const { toast } = useToast();
+  const { t } = useTranslation("debateTopics");
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState(currentHandle);
   const rename = useRenameDebateTopicHandle();
@@ -132,11 +134,11 @@ function HandleRenameControl({
       {
         onSuccess: (res) => {
           onRenamed(res.handle);
-          toast({ title: "Your name in this thread was updated" });
+          toast({ title: t("debateTopicDetail.toast.handleUpdated") });
           setOpen(false);
         },
         onError: (err: any) => {
-          toast({ title: err?.data?.error ?? "Couldn't update your name", variant: "destructive" });
+          toast({ title: err?.data?.error ?? t("debateTopicDetail.toast.handleUpdateErrorDefault"), variant: "destructive" });
         },
       },
     );
@@ -154,24 +156,23 @@ function HandleRenameControl({
         <button
           type="button"
           className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors"
-          aria-label="Change your name in this thread"
+          aria-label={t("debateTopicDetail.handleRename.ariaLabel")}
           data-testid="button-edit-handle"
         >
           <Pencil className="w-3 h-3" />
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-72 space-y-3">
-        <p className="text-xs font-medium text-foreground">Change your name in this thread</p>
+        <p className="text-xs font-medium text-foreground">{t("debateTopicDetail.handleRename.title")}</p>
         <Input
           value={value}
           onChange={(e) => setValue(e.target.value.slice(0, 24))}
-          placeholder="e.g. SwiftFalcon482"
+          placeholder={t("debateTopicDetail.handleRename.placeholder")}
           data-testid="input-handle"
         />
         <p className="text-[11px] text-muted-foreground flex items-start gap-1.5 leading-relaxed">
           <Info className="w-3 h-3 mt-0.5 shrink-0" />
-          Don&apos;t use your real name or anything that could identify you — 3-24 letters/numbers, no spaces or
-          symbols. This name is only used for Debate Topics.
+          {t("debateTopicDetail.handleRename.helperText")}
         </p>
         <Button
           size="sm"
@@ -181,7 +182,7 @@ function HandleRenameControl({
           data-testid="button-save-handle"
         >
           {rename.isPending ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-          Save
+          {t("debateTopicDetail.handleRename.saveButton")}
         </Button>
       </PopoverContent>
     </Popover>
@@ -205,6 +206,7 @@ function AvatarPickerControl({
   onChanged: (avatarId: string | null) => void;
 }) {
   const { toast } = useToast();
+  const { t } = useTranslation("debateTopics");
   const [open, setOpen] = useState(false);
   const updateAvatar = useUpdateDebateTopicHandleAvatar();
 
@@ -214,10 +216,10 @@ function AvatarPickerControl({
       {
         onSuccess: (res) => {
           onChanged(res.avatarId);
-          toast({ title: "Your avatar in this thread was updated" });
+          toast({ title: t("debateTopicDetail.toast.avatarUpdated") });
           setOpen(false);
         },
-        onError: () => toast({ title: "Couldn't update your avatar", variant: "destructive" }),
+        onError: () => toast({ title: t("debateTopicDetail.toast.avatarUpdateError"), variant: "destructive" }),
       },
     );
   }
@@ -228,14 +230,14 @@ function AvatarPickerControl({
         <button
           type="button"
           className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors"
-          aria-label="Change your avatar in this thread"
+          aria-label={t("debateTopicDetail.avatarPicker.ariaLabel")}
           data-testid="button-edit-avatar"
         >
           <Palette className="w-3 h-3" />
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-80 space-y-3">
-        <p className="text-xs font-medium text-foreground">Change your avatar in this thread</p>
+        <p className="text-xs font-medium text-foreground">{t("debateTopicDetail.avatarPicker.title")}</p>
         <AvatarPickerGrid value={currentAvatarId} handle={handle} onSelect={submit} />
       </PopoverContent>
     </Popover>
@@ -260,6 +262,7 @@ function CommentCard({
   reactPending: boolean;
   onFollowToggle: (patch: { following: boolean; followerCount?: number }) => void;
 }) {
+  const { t } = useTranslation("debateTopics");
   return (
     <div
       className={`rounded-2xl border p-4 ${
@@ -289,22 +292,22 @@ function CommentCard({
             )}
             {comment.isPoster && (
               <span className="text-[10px] font-semibold uppercase tracking-wide text-primary px-2 py-0.5 rounded-full bg-primary/10">
-                Topic Author
+                {t("debateTopicDetail.topicAuthorBadge")}
               </span>
             )}
             {comment.isOwnComment && (
               <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground px-2 py-0.5 rounded-full bg-muted/50">
-                You
+                {t("debateTopicDetail.youBadge")}
               </span>
             )}
             <span className="text-xs text-muted-foreground ml-auto">
-              {formatDistanceToNowStrict(new Date(comment.createdAt))} ago
+              {t("debateTopicDetail.timeAgo", { time: formatDistanceToNowStrict(new Date(comment.createdAt)) })}
             </span>
           </div>
 
           {parentHandle && (
             <p className="text-xs text-muted-foreground">
-              Replying to <span className="text-primary/80">@{parentHandle}</span>
+              {t("debateTopicDetail.replyingToPrefix")} <span className="text-primary/80">@{parentHandle}</span>
             </p>
           )}
 
@@ -313,7 +316,7 @@ function CommentCard({
           {comment.imageUrl && (
             <img
               src={comment.imageUrl}
-              alt="Attached to comment"
+              alt={t("debateTopicDetail.altAttachedImage")}
               className="max-h-64 rounded-xl border border-border/50 object-cover"
               data-testid={`img-comment-${comment.id}`}
             />
@@ -351,7 +354,7 @@ function CommentCard({
               className="text-xs text-muted-foreground hover:text-primary transition-colors ml-auto"
               data-testid={`button-reply-${comment.id}`}
             >
-              Reply
+              {t("debateTopicDetail.replyButton")}
             </button>
           </div>
         </div>
@@ -364,6 +367,7 @@ export function DebateTopicDetail() {
   const { id } = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { t } = useTranslation("debateTopics");
   const queryClient = useQueryClient();
   const { isSignedIn } = useUser();
   const [commentText, setCommentText] = useState("");
@@ -449,7 +453,7 @@ export function DebateTopicDetail() {
             toast({ title: err.message, variant: "destructive" });
             return;
           }
-          toast({ title: err?.message ?? "Couldn't post that comment", variant: "destructive" });
+          toast({ title: err?.message ?? t("debateTopicDetail.toast.postCommentErrorDefault"), variant: "destructive" });
         })
         .finally(() => setIsPostingWithImage(false));
       return;
@@ -464,7 +468,7 @@ export function DebateTopicDetail() {
             toast({ title: err.data.error, variant: "destructive" });
             return;
           }
-          toast({ title: "Couldn't post that comment", variant: "destructive" });
+          toast({ title: t("debateTopicDetail.toast.postCommentErrorDefault"), variant: "destructive" });
         },
       },
     );
@@ -473,11 +477,11 @@ export function DebateTopicDetail() {
   function handleImageSelect(file: File | undefined) {
     if (!file) return;
     if (!ALLOWED_COMMENT_IMAGE_MIME_TYPES.includes(file.type)) {
-      toast({ title: "Please attach a JPEG, PNG, WebP, or GIF image", variant: "destructive" });
+      toast({ title: t("debateTopicDetail.toast.invalidImageType"), variant: "destructive" });
       return;
     }
     if (file.size > MAX_COMMENT_IMAGE_BYTES) {
-      toast({ title: "Please keep image attachments under 5MB", variant: "destructive" });
+      toast({ title: t("debateTopicDetail.toast.imageTooLarge"), variant: "destructive" });
       return;
     }
     setImageFile(file);
@@ -510,7 +514,7 @@ export function DebateTopicDetail() {
               : old,
           );
         },
-        onError: () => toast({ title: "Couldn't update your reaction", variant: "destructive" }),
+        onError: () => toast({ title: t("debateTopicDetail.toast.reactionError"), variant: "destructive" }),
       },
     );
   }
@@ -525,7 +529,7 @@ export function DebateTopicDetail() {
             old ? { ...old, rewhispCount: result.rewhispCount, viewerRewhisped: result.viewerRewhisped } : old,
           );
         },
-        onError: () => toast({ title: "Couldn't rewhisp this topic", variant: "destructive" }),
+        onError: () => toast({ title: t("debateTopicDetail.toast.rewhispError"), variant: "destructive" }),
       },
     );
   }
@@ -559,10 +563,10 @@ export function DebateTopicDetail() {
     if (!id) return;
     const url = `${window.location.origin}/debate-topics/${id}`;
     if (navigator.share) {
-      navigator.share({ title: "Blind Whisper — Debate Topic", text: topic?.topicText, url }).catch(() => {});
+      navigator.share({ title: t("debateTopicDetail.shareTitle"), text: topic?.topicText, url }).catch(() => {});
       return;
     }
-    navigator.clipboard.writeText(url).then(() => toast({ title: "Link copied — send it to bring someone into the debate" }));
+    navigator.clipboard.writeText(url).then(() => toast({ title: t("debateTopicDetail.toast.linkCopied") }));
   }
 
   function handleRetract() {
@@ -571,10 +575,10 @@ export function DebateTopicDetail() {
       { id },
       {
         onSuccess: () => {
-          toast({ title: "Topic retracted" });
+          toast({ title: t("debateTopicDetail.toast.topicRetracted") });
           setLocation("/debate-topics");
         },
-        onError: () => toast({ title: "Couldn't retract that topic", variant: "destructive" }),
+        onError: () => toast({ title: t("debateTopicDetail.toast.retractError"), variant: "destructive" }),
       },
     );
   }
@@ -591,7 +595,7 @@ export function DebateTopicDetail() {
         <BlindWhisperLogoMark />
         {!isSignedIn && (
           <a href="/sign-up" className="text-xs text-muted-foreground hover:text-primary transition-colors py-2">
-            Become a Whisperer
+            {t("debateTopicDetail.becomeWhisperer")}
           </a>
         )}
       </header>
@@ -604,7 +608,7 @@ export function DebateTopicDetail() {
           className="-ml-2 text-muted-foreground hover:text-foreground"
           data-testid="button-back"
         >
-          <ArrowLeft className="w-4 h-4 mr-1.5" /> Back to Debate Topics
+          <ArrowLeft className="w-4 h-4 mr-1.5" /> {t("debateTopicDetail.backButton")}
         </Button>
 
         {isLoading ? (
@@ -614,7 +618,7 @@ export function DebateTopicDetail() {
           </div>
         ) : !topic ? (
           <div className="text-center py-20">
-            <p className="text-muted-foreground">This debate topic could not be found — it may have been retracted.</p>
+            <p className="text-muted-foreground">{t("debateTopicDetail.notFound")}</p>
           </div>
         ) : (
           <>
@@ -627,7 +631,7 @@ export function DebateTopicDetail() {
               </div>
               <div className="relative space-y-4">
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-medium">
-                  <Swords className="w-3.5 h-3.5" /> Debate Topic
+                  <Swords className="w-3.5 h-3.5" /> {t("debateTopicDetail.topicBadge")}
                 </div>
                 {/* X/Twitter-style: avatar + handle/meta above the post
                     text, which then spans the full card width. */}
@@ -636,9 +640,9 @@ export function DebateTopicDetail() {
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{topic.authorHandle}</p>
                     <p className="text-xs text-muted-foreground">
-                      {formatDistanceToNowStrict(new Date(topic.createdAt))} ago
+                      {t("debateTopicDetail.timeAgo", { time: formatDistanceToNowStrict(new Date(topic.createdAt)) })}
                       {topic.authorFollowerCount > 0 &&
-                        ` · ${topic.authorFollowerCount} ${topic.authorFollowerCount === 1 ? "follower" : "followers"}`}
+                        ` · ${t("debateTopicDetail.followerCount", { count: topic.authorFollowerCount })}`}
                     </p>
                   </div>
                   {topic.authorFollowed !== null && (
@@ -677,32 +681,29 @@ export function DebateTopicDetail() {
                       className="rounded-full h-7 px-2.5 text-muted-foreground hover:text-primary hover:bg-primary/10"
                       data-testid="button-whisper-topic"
                     >
-                      <Share2 className="w-3.5 h-3.5 mr-1.5" /> Whisper this topic
+                      <Share2 className="w-3.5 h-3.5 mr-1.5" /> {t("debateTopicDetail.whisperButton")}
                     </Button>
                     {topic.isOwnTopic && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="ghost" size="sm" className="rounded-full text-muted-foreground hover:text-destructive h-7 px-2.5">
-                            <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Retract
+                            <Trash2 className="w-3.5 h-3.5 mr-1.5" /> {t("debateTopicDetail.retractTriggerButton")}
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Retract this topic?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This removes it from the public feed and its own page. Comments already posted stay
-                              recorded, but nobody will be able to read or add to this thread again.
-                            </AlertDialogDescription>
+                            <AlertDialogTitle>{t("debateTopicDetail.retractTitle")}</AlertDialogTitle>
+                            <AlertDialogDescription>{t("debateTopicDetail.retractDescription")}</AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogCancel>{t("debateTopicDetail.cancelButton")}</AlertDialogCancel>
                             <AlertDialogAction
                               onClick={handleRetract}
                               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                               disabled={deleteTopic.isPending}
                             >
                               {deleteTopic.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                              Retract topic
+                              {t("debateTopicDetail.retractConfirmButton")}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
@@ -717,13 +718,13 @@ export function DebateTopicDetail() {
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <p className="text-sm font-medium text-foreground flex items-center gap-2">
                   <MessageCircle className="w-4 h-4 text-primary" />
-                  {topic.commentCount} {topic.commentCount === 1 ? "comment" : "comments"}
+                  {t("debateTopicDetail.commentCount", { count: topic.commentCount })}
                 </p>
                 {myHandle && (
                   <div className="flex items-center gap-1.5">
                     <AvatarCircle avatarId={myAvatarId} handle={myHandle} size="sm" />
                     <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                      Commenting as <span className="font-medium text-foreground">{myHandle}</span>
+                      {t("debateTopicDetail.commentingAsPrefix")} <span className="font-medium text-foreground">{myHandle}</span>
                       <HandleRenameControl
                         topicId={id!}
                         visitorId={visitorId}
@@ -759,7 +760,7 @@ export function DebateTopicDetail() {
               {replyTo && (
                 <div className="flex items-center justify-between gap-2 text-xs bg-muted/40 rounded-lg px-3 py-2">
                   <span className="text-muted-foreground truncate">
-                    Replying to <span className="text-foreground font-medium">@{replyTo.handle}</span>
+                    {t("debateTopicDetail.replyingToPrefix")} <span className="text-foreground font-medium">@{replyTo.handle}</span>
                   </span>
                   <button onClick={() => setReplyTo(null)} className="text-muted-foreground hover:text-foreground shrink-0">
                     <X className="w-3.5 h-3.5" />
@@ -770,7 +771,7 @@ export function DebateTopicDetail() {
               <Textarea
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value.slice(0, MAX_COMMENT_TEXT_LENGTH + 40))}
-                placeholder="Weigh in — where do you stand?"
+                placeholder={t("debateTopicDetail.commentPlaceholder")}
                 rows={3}
                 className="resize-none bg-background/60 border-border/50 rounded-xl"
                 data-testid="input-comment-text"
@@ -792,7 +793,7 @@ export function DebateTopicDetail() {
                 <div className="relative inline-block">
                   <img
                     src={imagePreviewUrl}
-                    alt="Attachment preview"
+                    alt={t("debateTopicDetail.altAttachmentPreview")}
                     className="max-h-40 rounded-xl border border-border/50"
                     data-testid="img-comment-preview"
                   />
@@ -800,7 +801,7 @@ export function DebateTopicDetail() {
                     type="button"
                     onClick={clearImage}
                     className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-background border border-border flex items-center justify-center text-muted-foreground hover:text-destructive"
-                    aria-label="Remove image"
+                    aria-label={t("debateTopicDetail.ariaRemoveImage")}
                     data-testid="button-remove-image"
                   >
                     <X className="w-3.5 h-3.5" />
@@ -811,7 +812,7 @@ export function DebateTopicDetail() {
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <p className="text-xs text-muted-foreground flex items-center gap-1.5 max-w-sm">
                   <HeartHandshake className="w-3.5 h-3.5 shrink-0 text-primary/70" />
-                  Keep it kind — genuine, productive debate, not a fight.
+                  {t("debateTopicDetail.keepKindText")}
                 </p>
                 <span className={`text-xs ${remaining < 0 ? "text-destructive font-medium" : "text-muted-foreground"}`}>
                   {remaining}
@@ -826,11 +827,11 @@ export function DebateTopicDetail() {
                     className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors rounded-full border border-border/50 px-2.5 py-1.5"
                     data-testid="button-attach-image"
                   >
-                    <ImagePlus className="w-3.5 h-3.5" /> {imageFile ? "Change image" : "Add image"}
+                    <ImagePlus className="w-3.5 h-3.5" /> {imageFile ? t("debateTopicDetail.changeImageButton") : t("debateTopicDetail.addImageButton")}
                   </button>
                   {!isSignedIn && (
                     <a href="/sign-up" className="text-xs text-muted-foreground hover:text-primary transition-colors">
-                      Become a Whisperer — comment anytime, no limits.
+                      {t("debateTopicDetail.becomeWhispererCta")}
                     </a>
                   )}
                 </div>
@@ -846,7 +847,7 @@ export function DebateTopicDetail() {
                   ) : (
                     <Send className="w-3.5 h-3.5 mr-1.5" />
                   )}
-                  Post
+                  {t("debateTopicDetail.postButton")}
                 </Button>
               </div>
             </div>

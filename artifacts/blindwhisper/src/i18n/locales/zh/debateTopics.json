@@ -1,0 +1,107 @@
+{
+  "createDebateTopic": {
+    "backButton": "返回 Debate Topics",
+    "title": "发布一个辩论话题",
+    "description": "为公共动态发一句简短的标题式话题。匿名发布——除非你在别处的 Reveal Flow 中撞见对方，否则没人知道是你发的。",
+    "helperText": "简洁一点——写一句能让人忍不住回应的标题，而不是一整段话。",
+    "submitButton": "匿名发布",
+    "inspirationLabel": "需要点灵感？",
+    "examples": {
+      "honesty": "诚实永远是最好的策略吗？",
+      "ageLimit": "社交媒体应该设年龄限制吗？",
+      "protectFeelings": "为了照顾别人的感受而撒谎，可以吗？"
+    },
+    "toast": {
+      "posted": "话题已匿名发布",
+      "postError": "话题发布失败"
+    }
+  },
+  "debateFollowing": {
+    "backButton": "返回 Debate Topics",
+    "title": "关注中",
+    "description": "你的关注数据、话题互动情况，以及你关注的作者和评论者发布的话题。",
+    "stats": {
+      "followers": "粉丝",
+      "following": "关注中",
+      "topicsPosted": "已发布话题",
+      "commentsReceived": "收到的评论",
+      "rewhispsReceived": "收到的 Rewhisps",
+      "commentsPosted": "发表的评论",
+      "commentLikesReceived": "评论获赞数"
+    },
+    "feedTitle": "你关注的动态",
+    "emptyTitle": "暂时还没有内容",
+    "emptyDescription": "关注一些作者或评论者，他们的话题就会显示在这里。",
+    "browseButton": "浏览 Debate Topics",
+    "newerButton": "更新的",
+    "moreButton": "更多话题"
+  },
+  "debateTopicDetail": {
+    "backButton": "返回 Debate Topics",
+    "becomeWhisperer": "成为 Whisperer",
+    "notFound": "找不到这个辩论话题——它可能已被撤回。",
+    "topicBadge": "辩论话题",
+    "followerCount_other": "{{count}} 位粉丝",
+    "whisperButton": "分享这个话题",
+    "retractTriggerButton": "撤回",
+    "retractTitle": "要撤回这个话题吗？",
+    "retractDescription": "撤回后，它会从公共动态和自己的页面中消失。已发表的评论仍会保留记录，但不会再有人能查看或在这个讨论串中发言。",
+    "cancelButton": "取消",
+    "retractConfirmButton": "撤回话题",
+    "commentCount_other": "{{count}} 条评论",
+    "commentingAsPrefix": "以此身份评论：",
+    "replyingToPrefix": "回复",
+    "commentPlaceholder": "说说你的看法——你站哪边？",
+    "keepKindText": "友善一点——是真诚有意义的讨论，不是吵架。",
+    "addImageButton": "添加图片",
+    "changeImageButton": "更换图片",
+    "becomeWhispererCta": "成为 Whisperer——随时评论，没有限制。",
+    "postButton": "发布",
+    "topicAuthorBadge": "话题作者",
+    "youBadge": "你",
+    "timeAgo": "{{time}}前",
+    "altAttachedImage": "评论附带的图片",
+    "replyButton": "回复",
+    "handleRename": {
+      "ariaLabel": "修改你在这个讨论串中的名字",
+      "title": "修改你在这个讨论串中的名字",
+      "placeholder": "例如 SwiftFalcon482",
+      "helperText": "不要使用你的真实姓名或任何可能暴露身份的信息——3 到 24 位字母/数字，不能有空格或符号。这个名字仅用于 Debate Topics。",
+      "saveButton": "保存"
+    },
+    "avatarPicker": {
+      "ariaLabel": "修改你在这个讨论串中的头像",
+      "title": "修改你在这个讨论串中的头像"
+    },
+    "altAttachmentPreview": "附件预览",
+    "ariaRemoveImage": "移除图片",
+    "shareTitle": "Blind Whisper — 辩论话题",
+    "toast": {
+      "handleUpdated": "你在这个讨论串中的名字已更新",
+      "handleUpdateErrorDefault": "更新名字失败",
+      "avatarUpdated": "你在这个讨论串中的头像已更新",
+      "avatarUpdateError": "更新头像失败",
+      "invalidImageType": "请上传 JPEG、PNG、WebP 或 GIF 格式的图片",
+      "imageTooLarge": "图片附件请控制在 5MB 以内",
+      "postCommentErrorDefault": "评论发布失败",
+      "reactionError": "更新反应失败",
+      "rewhispError": "对这个话题执行 Rewhisp 失败",
+      "linkCopied": "链接已复制——发给朋友，拉他们加入讨论",
+      "topicRetracted": "话题已撤回",
+      "retractError": "撤回话题失败"
+    }
+  },
+  "debateTopics": {
+    "followingButton": "关注中",
+    "postTopicButton": "发布话题",
+    "becomeWhisperer": "成为 Whisperer",
+    "pillLabel": "Debate Topics",
+    "heading": "你站哪边？",
+    "description": "来自 Whisperers 的简短匿名话题。看看、说说你的看法，或者发布自己的话题——无需账号即可加入讨论。",
+    "becomeWhispererToPost": "成为 Whisperer 才能发布话题",
+    "emptyTitle": "暂时还没有辩论",
+    "emptyDescription": "抢先发布一个话题吧——一个问题、一个观点，任何值得讨论的东西都可以。",
+    "newerButton": "更新的",
+    "moreButton": "更多话题"
+  }
+}

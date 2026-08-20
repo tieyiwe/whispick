@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useCreateDebateTopic } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
@@ -12,17 +13,19 @@ import { Swords, Loader2, Sparkles, ArrowLeft } from "lucide-react";
 // api-server's routes/debateTopics.ts MAX_TOPIC_TEXT_LENGTH.
 const MAX_TOPIC_TEXT_LENGTH = 200;
 
-const EXAMPLES = [
-  "Is honesty always the best policy?",
-  "Should social media have an age limit?",
-  "Is it ever okay to lie to protect someone's feelings?",
-];
+// Keys into createDebateTopic.examples in the debateTopics namespace — the
+// display text itself is looked up via t() inside the component so it
+// re-renders in the right language when i18next's active language changes.
+const EXAMPLE_KEYS = ["honesty", "ageLimit", "protectFeelings"] as const;
 
 export function CreateDebateTopic() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { t } = useTranslation("debateTopics");
   const [topicText, setTopicText] = useState("");
   const createTopic = useCreateDebateTopic();
+
+  const examples = EXAMPLE_KEYS.map((key) => t(`createDebateTopic.examples.${key}`));
 
   const remaining = MAX_TOPIC_TEXT_LENGTH - topicText.length;
   const canSubmit = topicText.trim().length > 0 && remaining >= 0 && !createTopic.isPending;
@@ -34,10 +37,10 @@ export function CreateDebateTopic() {
       { data: { topicText: text } },
       {
         onSuccess: (topic) => {
-          toast({ title: "Topic posted anonymously" });
+          toast({ title: t("createDebateTopic.toast.posted") });
           setLocation(`/debate-topics/${topic.id}`);
         },
-        onError: () => toast({ title: "Couldn't post that topic", variant: "destructive" }),
+        onError: () => toast({ title: t("createDebateTopic.toast.postError"), variant: "destructive" }),
       },
     );
   }
@@ -52,17 +55,14 @@ export function CreateDebateTopic() {
           className="-ml-2 -mt-2 text-muted-foreground hover:text-foreground"
           data-testid="button-back"
         >
-          <ArrowLeft className="w-4 h-4 mr-1.5" /> Back to Debate Topics
+          <ArrowLeft className="w-4 h-4 mr-1.5" /> {t("createDebateTopic.backButton")}
         </Button>
 
         <div>
           <h1 className="text-3xl font-serif font-bold text-foreground flex items-center gap-3">
-            <Swords className="w-7 h-7 text-primary" /> Post a Debate Topic
+            <Swords className="w-7 h-7 text-primary" /> {t("createDebateTopic.title")}
           </h1>
-          <p className="text-muted-foreground mt-1">
-            A short, headline-length prompt for the public feed. Posted anonymously — nobody sees this was you
-            unless they run into you in a Reveal Flow elsewhere.
-          </p>
+          <p className="text-muted-foreground mt-1">{t("createDebateTopic.description")}</p>
         </div>
 
         <Card className="bg-card border-border/50 rounded-2xl p-6 space-y-4 glow-card">
@@ -70,7 +70,7 @@ export function CreateDebateTopic() {
             <Textarea
               value={topicText}
               onChange={(e) => setTopicText(e.target.value.slice(0, MAX_TOPIC_TEXT_LENGTH + 40))}
-              placeholder="Is honesty always the best policy?"
+              placeholder={examples[0]}
               rows={3}
               className="font-serif text-xl font-bold leading-snug tracking-tight resize-none bg-background/60 border-border/50 rounded-xl"
               data-testid="input-topic-text"
@@ -78,7 +78,7 @@ export function CreateDebateTopic() {
             />
             <div className="flex items-center justify-between text-xs">
               <span className="text-muted-foreground flex items-center gap-1">
-                <Sparkles className="w-3 h-3" /> Keep it concise — a headline people react to, not a paragraph.
+                <Sparkles className="w-3 h-3" /> {t("createDebateTopic.helperText")}
               </span>
               <span className={remaining < 0 ? "text-destructive font-medium" : "text-muted-foreground"}>{remaining}</span>
             </div>
@@ -91,14 +91,14 @@ export function CreateDebateTopic() {
             data-testid="button-post-topic"
           >
             {createTopic.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Swords className="w-4 h-4 mr-2" />}
-            Post Anonymously
+            {t("createDebateTopic.submitButton")}
           </Button>
         </Card>
 
         <div className="space-y-2">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Need inspiration?</p>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("createDebateTopic.inspirationLabel")}</p>
           <div className="flex flex-wrap gap-2">
-            {EXAMPLES.map((example) => (
+            {examples.map((example) => (
               <button
                 key={example}
                 type="button"

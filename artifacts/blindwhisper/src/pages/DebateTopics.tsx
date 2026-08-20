@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import { useUser } from "@clerk/react";
 import { useListDebateTopics } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ function BlindWhisperLogoMark() {
 }
 
 export function DebateTopics() {
+  const { t } = useTranslation("debateTopics");
   const { isSignedIn } = useUser();
   const [cursors, setCursors] = useState<string[]>([]);
   const cursor = cursors[cursors.length - 1];
@@ -39,18 +41,18 @@ export function DebateTopics() {
           <div className="flex items-center gap-2">
             <Link href="/debate-topics/following">
               <Button variant="outline" size="sm" className="rounded-full" data-testid="link-debate-following">
-                <Users className="w-3.5 h-3.5 mr-1.5" /> Following
+                <Users className="w-3.5 h-3.5 mr-1.5" /> {t("debateTopics.followingButton")}
               </Button>
             </Link>
             <Link href="/debate-topics/new">
               <Button size="sm" className="rounded-full shadow-[0_0_16px_rgba(124,92,252,0.3)]">
-                Post a Topic
+                {t("debateTopics.postTopicButton")}
               </Button>
             </Link>
           </div>
         ) : (
           <a href="/sign-up" className="text-xs text-muted-foreground hover:text-primary transition-colors py-2">
-            Become a Whisperer
+            {t("debateTopics.becomeWhisperer")}
           </a>
         )}
       </header>
@@ -59,20 +61,17 @@ export function DebateTopics() {
         <div className="text-center space-y-3">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-medium">
             <Swords className="w-3.5 h-3.5" />
-            <span>Debate Topics</span>
+            <span>{t("debateTopics.pillLabel")}</span>
           </div>
           <h1 className="text-3xl md:text-4xl font-serif font-bold text-foreground leading-tight tracking-tight">
-            Where do you stand?
+            {t("debateTopics.heading")}
           </h1>
-          <p className="text-muted-foreground max-w-md mx-auto">
-            Short, anonymous prompts from Whisperers. Read, weigh in, or post your own — no account needed to
-            join the conversation.
-          </p>
+          <p className="text-muted-foreground max-w-md mx-auto">{t("debateTopics.description")}</p>
           {!isSignedIn && (
             <div className="pt-1">
               <a href="/sign-up">
                 <Button variant="outline" size="sm" className="rounded-full">
-                  Become a Whisperer to post a topic
+                  {t("debateTopics.becomeWhispererToPost")}
                 </Button>
               </a>
             </div>
@@ -94,17 +93,15 @@ export function DebateTopics() {
         ) : (
           <div className="rounded-2xl border border-dashed border-border py-16 text-center bg-card/50">
             <Swords className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
-            <h3 className="text-xl font-medium text-foreground mb-2">No debates yet</h3>
-            <p className="text-muted-foreground max-w-md mx-auto">
-              Be the first to post a topic — a question, an opinion, anything worth arguing about.
-            </p>
+            <h3 className="text-xl font-medium text-foreground mb-2">{t("debateTopics.emptyTitle")}</h3>
+            <p className="text-muted-foreground max-w-md mx-auto">{t("debateTopics.emptyDescription")}</p>
           </div>
         )}
 
         <div className="flex items-center justify-center gap-3 pt-2">
           {cursors.length > 0 && (
             <Button variant="outline" size="sm" className="rounded-full" onClick={() => setCursors((c) => c.slice(0, -1))}>
-              Newer
+              {t("debateTopics.newerButton")}
             </Button>
           )}
           {data?.nextCursor && (
@@ -116,7 +113,7 @@ export function DebateTopics() {
               onClick={() => setCursors((c) => [...c, data.nextCursor!])}
             >
               {isFetching ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-              More topics
+              {t("debateTopics.moreButton")}
             </Button>
           )}
         </div>
