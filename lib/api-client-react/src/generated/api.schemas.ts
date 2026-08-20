@@ -1860,6 +1860,56 @@ export interface PostDebateTopicResult {
   id: string;
 }
 
+/**
+ * Singleton config + last-run-status row for the admin-controlled Blind Circle video-discovery posting agent ("Circle Scout").
+ */
+export interface CircleAgentSettings {
+  id: string;
+  enabled: boolean;
+  /** How many AI-discovered videos to post per scheduled sweep (1-10). */
+  dailyPostCount: number;
+  /** Short topic strings that steer what the agent searches for each run. */
+  topics: string[];
+  /** @nullable */
+  lastRunAt?: string | null;
+  lastRunOk: boolean;
+  /** @nullable */
+  lastErrorMessage?: string | null;
+  lowCreditSuspected: boolean;
+  consecutiveFailures: number;
+  /** @nullable */
+  updatedByAdminId?: string | null;
+  /** @nullable */
+  updatedAt?: string | null;
+}
+
+export interface UpdateCircleAgentConfigInput {
+  enabled?: boolean;
+  /**
+     * @minimum 1
+     * @maximum 10
+     */
+  dailyPostCount?: number;
+  /**
+     * @minItems 1
+     * @maxItems 20
+     */
+  topics?: string[];
+}
+
+export interface RunCircleAgentResult {
+  posted: number;
+  skipped: number;
+}
+
+export interface PostCircleVideoInput {
+  videoUrl: string;
+}
+
+export interface PostCircleVideoResult {
+  id: string;
+}
+
 export type ListWhispsParams = {
 status?: string;
 /**

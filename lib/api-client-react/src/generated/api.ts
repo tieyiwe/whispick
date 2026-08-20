@@ -49,6 +49,7 @@ import type {
   CheckoutRequest,
   CheckoutResponse,
   Circle,
+  CircleAgentSettings,
   CircleComment,
   CircleFeedResponse,
   ClaimInviteInput,
@@ -92,6 +93,8 @@ import type {
   PhoneVerificationResult,
   PinWhisp200,
   PostCircleCommentBody,
+  PostCircleVideoInput,
+  PostCircleVideoResult,
   PostDebateTopicInput,
   PostDebateTopicResult,
   PublicInvite,
@@ -114,6 +117,7 @@ import type {
   RevealResult,
   RewhispDebateTopic200,
   RewhispDebateTopicBody,
+  RunCircleAgentResult,
   RunDebateAgentResult,
   RunSuggestionAgentResult,
   SendGroupWhispInput,
@@ -143,6 +147,7 @@ import type {
   UnsubscribeFromMatching200,
   UnsubscribeFromMatchingParams,
   UpdateAdminUserInput,
+  UpdateCircleAgentConfigInput,
   UpdateDebateAgentConfigInput,
   UpdateDebateTopicHandleAvatar200,
   UpdateDebateTopicHandleAvatarBody,
@@ -8088,6 +8093,293 @@ export const useAdminPostDebateTopic = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getAdminPostDebateTopicMutationOptions(options));
+    }
+
+export const getAdminGetCircleAgentConfigUrl = () => {
+
+
+
+
+  return `/api/admin/circle-agent/config`
+}
+
+/**
+ * @summary Get the Blind Circle video-discovery posting agent's config + last run status, creating a default (disabled) row if none exists yet (admin only)
+ */
+export const adminGetCircleAgentConfig = async ( options?: RequestInit): Promise<CircleAgentSettings> => {
+
+  return customFetch<CircleAgentSettings>(getAdminGetCircleAgentConfigUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetCircleAgentConfigQueryKey = () => {
+    return [
+    `/api/admin/circle-agent/config`
+    ] as const;
+    }
+
+
+export const getAdminGetCircleAgentConfigQueryOptions = <TData = Awaited<ReturnType<typeof adminGetCircleAgentConfig>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetCircleAgentConfig>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetCircleAgentConfigQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetCircleAgentConfig>>> = ({ signal }) => adminGetCircleAgentConfig({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetCircleAgentConfig>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetCircleAgentConfigQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetCircleAgentConfig>>>
+export type AdminGetCircleAgentConfigQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the Blind Circle video-discovery posting agent's config + last run status, creating a default (disabled) row if none exists yet (admin only)
+ */
+
+export function useAdminGetCircleAgentConfig<TData = Awaited<ReturnType<typeof adminGetCircleAgentConfig>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetCircleAgentConfig>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetCircleAgentConfigQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminUpdateCircleAgentConfigUrl = () => {
+
+
+
+
+  return `/api/admin/circle-agent/config`
+}
+
+/**
+ * @summary Update the Blind Circle video-discovery posting agent's config — enabled, daily post count, and/or topics (admin only)
+ */
+export const adminUpdateCircleAgentConfig = async (updateCircleAgentConfigInput: UpdateCircleAgentConfigInput, options?: RequestInit): Promise<CircleAgentSettings> => {
+
+  return customFetch<CircleAgentSettings>(getAdminUpdateCircleAgentConfigUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateCircleAgentConfigInput)
+  }
+);}
+
+
+
+
+export const getAdminUpdateCircleAgentConfigMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateCircleAgentConfig>>, TError,{data: BodyType<UpdateCircleAgentConfigInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminUpdateCircleAgentConfig>>, TError,{data: BodyType<UpdateCircleAgentConfigInput>}, TContext> => {
+
+const mutationKey = ['adminUpdateCircleAgentConfig'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminUpdateCircleAgentConfig>>, {data: BodyType<UpdateCircleAgentConfigInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminUpdateCircleAgentConfig(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminUpdateCircleAgentConfigMutationResult = NonNullable<Awaited<ReturnType<typeof adminUpdateCircleAgentConfig>>>
+    export type AdminUpdateCircleAgentConfigMutationBody = BodyType<UpdateCircleAgentConfigInput>
+    export type AdminUpdateCircleAgentConfigMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Update the Blind Circle video-discovery posting agent's config — enabled, daily post count, and/or topics (admin only)
+ */
+export const useAdminUpdateCircleAgentConfig = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateCircleAgentConfig>>, TError,{data: BodyType<UpdateCircleAgentConfigInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminUpdateCircleAgentConfig>>,
+        TError,
+        {data: BodyType<UpdateCircleAgentConfigInput>},
+        TContext
+      > => {
+      return useMutation(getAdminUpdateCircleAgentConfigMutationOptions(options));
+    }
+
+export const getAdminRunCircleAgentNowUrl = () => {
+
+
+
+
+  return `/api/admin/circle-agent/run-now`
+}
+
+/**
+ * @summary Trigger a Blind Circle video-discovery agent posting sweep immediately, regardless of the enabled flag (admin only)
+ */
+export const adminRunCircleAgentNow = async ( options?: RequestInit): Promise<RunCircleAgentResult> => {
+
+  return customFetch<RunCircleAgentResult>(getAdminRunCircleAgentNowUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAdminRunCircleAgentNowMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRunCircleAgentNow>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminRunCircleAgentNow>>, TError,void, TContext> => {
+
+const mutationKey = ['adminRunCircleAgentNow'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminRunCircleAgentNow>>, void> = () => {
+
+
+          return  adminRunCircleAgentNow(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminRunCircleAgentNowMutationResult = NonNullable<Awaited<ReturnType<typeof adminRunCircleAgentNow>>>
+
+    export type AdminRunCircleAgentNowMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Trigger a Blind Circle video-discovery agent posting sweep immediately, regardless of the enabled flag (admin only)
+ */
+export const useAdminRunCircleAgentNow = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRunCircleAgentNow>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminRunCircleAgentNow>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getAdminRunCircleAgentNowMutationOptions(options));
+    }
+
+export const getAdminPostCircleVideoUrl = () => {
+
+
+
+
+  return `/api/admin/circle-agent/post`
+}
+
+/**
+ * @summary Manually post a specific video URL to the public Blind Circle feed under the system account, resolved/validated through the same allowlist every discovered candidate goes through (admin only)
+ */
+export const adminPostCircleVideo = async (postCircleVideoInput: PostCircleVideoInput, options?: RequestInit): Promise<PostCircleVideoResult> => {
+
+  return customFetch<PostCircleVideoResult>(getAdminPostCircleVideoUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(postCircleVideoInput)
+  }
+);}
+
+
+
+
+export const getAdminPostCircleVideoMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminPostCircleVideo>>, TError,{data: BodyType<PostCircleVideoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminPostCircleVideo>>, TError,{data: BodyType<PostCircleVideoInput>}, TContext> => {
+
+const mutationKey = ['adminPostCircleVideo'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminPostCircleVideo>>, {data: BodyType<PostCircleVideoInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminPostCircleVideo(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminPostCircleVideoMutationResult = NonNullable<Awaited<ReturnType<typeof adminPostCircleVideo>>>
+    export type AdminPostCircleVideoMutationBody = BodyType<PostCircleVideoInput>
+    export type AdminPostCircleVideoMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Manually post a specific video URL to the public Blind Circle feed under the system account, resolved/validated through the same allowlist every discovered candidate goes through (admin only)
+ */
+export const useAdminPostCircleVideo = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminPostCircleVideo>>, TError,{data: BodyType<PostCircleVideoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminPostCircleVideo>>,
+        TError,
+        {data: BodyType<PostCircleVideoInput>},
+        TContext
+      > => {
+      return useMutation(getAdminPostCircleVideoMutationOptions(options));
     }
 
 export const getListSuggestionsUrl = (params?: ListSuggestionsParams,) => {

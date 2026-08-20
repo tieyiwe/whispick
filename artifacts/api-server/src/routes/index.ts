@@ -11,6 +11,7 @@ import billingRouter from "./billing";
 import linkRouter from "./link";
 import adminRouter from "./admin";
 import adminDebateAgentRouter from "./adminDebateAgent";
+import adminCircleAgentRouter from "./adminCircleAgent";
 import whisperGroupsRouter from "./whisperGroups";
 import mediaRouter from "./media";
 import subscribeRouter from "./subscribe";
@@ -60,6 +61,10 @@ router.use("/admin", adminRouter);
 // own comment for why) but the same "/admin" base path, so its routes still
 // read as /api/admin/debate-agent/....
 router.use("/admin", adminDebateAgentRouter);
+// Same "/admin" base path, separate router/file for the same reason (see
+// routes/adminCircleAgent.ts's own comment) — its routes read as
+// /api/admin/circle-agent/....
+router.use("/admin", adminCircleAgentRouter);
 router.use("/whisper-groups", whisperGroupsRouter);
 router.use("/media", mediaRouter);
 router.use("/suggestions", suggestionsRouter);

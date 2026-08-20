@@ -2672,6 +2672,75 @@ export const AdminPostDebateTopicResponse = zod.object({
 
 
 /**
+ * @summary Get the Blind Circle video-discovery posting agent's config + last run status, creating a default (disabled) row if none exists yet (admin only)
+ */
+export const AdminGetCircleAgentConfigResponse = zod.object({
+  "id": zod.string(),
+  "enabled": zod.boolean(),
+  "dailyPostCount": zod.number().describe('How many AI-discovered videos to post per scheduled sweep (1-10).'),
+  "topics": zod.array(zod.string()).describe('Short topic strings that steer what the agent searches for each run.'),
+  "lastRunAt": zod.string().nullish(),
+  "lastRunOk": zod.boolean(),
+  "lastErrorMessage": zod.string().nullish(),
+  "lowCreditSuspected": zod.boolean(),
+  "consecutiveFailures": zod.number(),
+  "updatedByAdminId": zod.string().nullish(),
+  "updatedAt": zod.string().nullish()
+}).describe('Singleton config + last-run-status row for the admin-controlled Blind Circle video-discovery posting agent (\"Circle Scout\").')
+
+
+/**
+ * @summary Update the Blind Circle video-discovery posting agent's config — enabled, daily post count, and/or topics (admin only)
+ */
+export const adminUpdateCircleAgentConfigBodyDailyPostCountMax = 10;
+
+export const adminUpdateCircleAgentConfigBodyTopicsMax = 20;
+
+
+
+export const AdminUpdateCircleAgentConfigBody = zod.object({
+  "enabled": zod.boolean().optional(),
+  "dailyPostCount": zod.number().min(1).max(adminUpdateCircleAgentConfigBodyDailyPostCountMax).optional(),
+  "topics": zod.array(zod.string()).min(1).max(adminUpdateCircleAgentConfigBodyTopicsMax).optional()
+})
+
+export const AdminUpdateCircleAgentConfigResponse = zod.object({
+  "id": zod.string(),
+  "enabled": zod.boolean(),
+  "dailyPostCount": zod.number().describe('How many AI-discovered videos to post per scheduled sweep (1-10).'),
+  "topics": zod.array(zod.string()).describe('Short topic strings that steer what the agent searches for each run.'),
+  "lastRunAt": zod.string().nullish(),
+  "lastRunOk": zod.boolean(),
+  "lastErrorMessage": zod.string().nullish(),
+  "lowCreditSuspected": zod.boolean(),
+  "consecutiveFailures": zod.number(),
+  "updatedByAdminId": zod.string().nullish(),
+  "updatedAt": zod.string().nullish()
+}).describe('Singleton config + last-run-status row for the admin-controlled Blind Circle video-discovery posting agent (\"Circle Scout\").')
+
+
+/**
+ * @summary Trigger a Blind Circle video-discovery agent posting sweep immediately, regardless of the enabled flag (admin only)
+ */
+export const AdminRunCircleAgentNowResponse = zod.object({
+  "posted": zod.number(),
+  "skipped": zod.number()
+})
+
+
+/**
+ * @summary Manually post a specific video URL to the public Blind Circle feed under the system account, resolved/validated through the same allowlist every discovered candidate goes through (admin only)
+ */
+export const AdminPostCircleVideoBody = zod.object({
+  "videoUrl": zod.string()
+})
+
+export const AdminPostCircleVideoResponse = zod.object({
+  "id": zod.string()
+})
+
+
+/**
  * @summary Browse the published Suggestions Library gallery
  */
 export const ListSuggestionsQueryParams = zod.object({

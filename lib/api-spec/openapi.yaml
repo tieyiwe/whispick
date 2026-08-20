@@ -2770,6 +2770,80 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
 
+  /admin/circle-agent/config:
+    get:
+      operationId: adminGetCircleAgentConfig
+      tags: [admin]
+      summary: Get the Blind Circle video-discovery posting agent's config + last run status, creating a default (disabled) row if none exists yet (admin only)
+      responses:
+        "200":
+          description: Circle agent settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CircleAgentSettings"
+    patch:
+      operationId: adminUpdateCircleAgentConfig
+      tags: [admin]
+      summary: Update the Blind Circle video-discovery posting agent's config — enabled, daily post count, and/or topics (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCircleAgentConfigInput"
+      responses:
+        "200":
+          description: Updated circle agent settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CircleAgentSettings"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/circle-agent/run-now:
+    post:
+      operationId: adminRunCircleAgentNow
+      tags: [admin]
+      summary: Trigger a Blind Circle video-discovery agent posting sweep immediately, regardless of the enabled flag (admin only)
+      responses:
+        "200":
+          description: Run result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunCircleAgentResult"
+
+  /admin/circle-agent/post:
+    post:
+      operationId: adminPostCircleVideo
+      tags: [admin]
+      summary: Manually post a specific video URL to the public Blind Circle feed under the system account, resolved/validated through the same allowlist every discovered candidate goes through (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostCircleVideoInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostCircleVideoResult"
+        "400":
+          description: Bad request — the URL couldn't be resolved (unsupported host, private/restricted content, fetch failure)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /suggestions:
     get:
       operationId: listSuggestions
@@ -6296,6 +6370,88 @@ components:
         - topicText
 
     PostDebateTopicResult:
+      type: object
+      properties:
+        id:
+          type: string
+      required:
+        - id
+
+    CircleAgentSettings:
+      type: object
+      description: Singleton config + last-run-status row for the admin-controlled Blind Circle video-discovery posting agent ("Circle Scout").
+      properties:
+        id:
+          type: string
+        enabled:
+          type: boolean
+        dailyPostCount:
+          type: integer
+          description: How many AI-discovered videos to post per scheduled sweep (1-10).
+        topics:
+          type: array
+          items:
+            type: string
+          description: Short topic strings that steer what the agent searches for each run.
+        lastRunAt:
+          type: ["string", "null"]
+        lastRunOk:
+          type: boolean
+        lastErrorMessage:
+          type: ["string", "null"]
+        lowCreditSuspected:
+          type: boolean
+        consecutiveFailures:
+          type: integer
+        updatedByAdminId:
+          type: ["string", "null"]
+        updatedAt:
+          type: ["string", "null"]
+      required:
+        - id
+        - enabled
+        - dailyPostCount
+        - topics
+        - lastRunOk
+        - lowCreditSuspected
+        - consecutiveFailures
+
+    UpdateCircleAgentConfigInput:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        dailyPostCount:
+          type: integer
+          minimum: 1
+          maximum: 10
+        topics:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          maxItems: 20
+
+    RunCircleAgentResult:
+      type: object
+      properties:
+        posted:
+          type: integer
+        skipped:
+          type: integer
+      required:
+        - posted
+        - skipped
+
+    PostCircleVideoInput:
+      type: object
+      properties:
+        videoUrl:
+          type: string
+      required:
+        - videoUrl
+
+    PostCircleVideoResult:
       type: object
       properties:
         id:

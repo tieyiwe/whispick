@@ -8,6 +8,7 @@ import { startTakeawayScheduler } from "./lib/takeawayScheduler";
 import { startMatchScheduler } from "./lib/matchScheduler";
 import { startSuggestionAgentScheduler } from "./lib/suggestionAgentScheduler";
 import { startDebateAgentScheduler } from "./lib/debateAgentScheduler";
+import { startCircleAgentScheduler } from "./lib/circleAgentScheduler";
 
 const rawPort = process.env["PORT"];
 
@@ -40,3 +41,4 @@ startTakeawayScheduler();
 startMatchScheduler();
 startSuggestionAgentScheduler();
 startDebateAgentScheduler();
+startCircleAgentScheduler();
