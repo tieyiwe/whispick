@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, Sparkles, ShieldCheck } from "lucide-react";
+import confetti from "canvas-confetti";
 import { LogoLockup } from "@/components/ui/logo";
 import { PullToRefresh } from "@/components/shared/PullToRefresh";
 import { savePendingInvite } from "@/lib/pendingInvite";
@@ -44,12 +45,32 @@ export function PublicInvitePage() {
 
   const respondReveal = useRespondInviteReveal();
 
-  function handleJoin() {
+  function handleJoin(e: React.MouseEvent<HTMLButtonElement>) {
+    // The recipient's one celebratory moment on this page — they leave for
+    // the Clerk sign-up flow immediately after, so there's no later
+    // "success" screen to put this on instead. Same brand-colored burst,
+    // fired from the button itself, as VideoPlayer.tsx's own confetti.
+    const rect = e.currentTarget.getBoundingClientRect();
+    confetti({
+      particleCount: 80,
+      spread: 70,
+      startVelocity: 35,
+      origin: {
+        x: (rect.left + rect.width / 2) / window.innerWidth,
+        y: (rect.top + rect.height / 2) / window.innerHeight,
+      },
+      colors: ["#7C5CFC", "#FF6B6B", "#a78bfa", "#F5F0E8"],
+      disableForReducedMotion: true,
+    });
+
     // Carries this invite's token through the sign-up hop so the backend
     // can attribute the resulting account back to it — see
     // lib/pendingInvite.ts and ClaimPendingInvite.tsx.
     savePendingInvite(token!);
-    setLocation("/sign-up");
+    // A brief pause so the confetti is actually visible before this page's
+    // own DOM (canvas-confetti draws into) gets torn down by the route
+    // change — an instant navigate would cut the burst off before it's seen.
+    setTimeout(() => setLocation("/sign-up"), 450);
   }
 
   function handleRevealResponse(accepted: boolean) {
