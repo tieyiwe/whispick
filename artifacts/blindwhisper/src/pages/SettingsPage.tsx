@@ -23,7 +23,8 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, User, Mail, Shield, Bell, Phone, ShieldCheck, Swords } from "lucide-react";
 import { isPushSupported, getExistingPushSubscription, subscribeToPush, pushSubscriptionToJson } from "@/lib/push";
-import { GENDER_OPTIONS, GENDER_LABELS, AGE_RANGE_OPTIONS, AGE_RANGE_LABELS } from "@/lib/demographics";
+import { GENDER_OPTIONS, AGE_RANGE_OPTIONS } from "@/lib/demographics";
+import { useTranslation } from "react-i18next";
 import { SUPPORTED_LANGUAGES, LANGUAGE_LABELS } from "@/lib/languages";
 import i18n from "@/i18n";
 import { PhoneVerificationFlow } from "@/components/shared/PhoneVerificationFlow";
@@ -41,6 +42,7 @@ export function SettingsPage() {
   const { isLoaded: clerkLoaded, user } = useUser();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { t: tDemographics } = useTranslation("demographics");
   const [fullName, setFullName] = useState("");
   const [gender, setGender] = useState("");
   const [ageRange, setAgeRange] = useState("");
@@ -238,7 +240,7 @@ export function SettingsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {GENDER_OPTIONS.map((g) => (
-                      <SelectItem key={g} value={g}>{GENDER_LABELS[g]}</SelectItem>
+                      <SelectItem key={g} value={g}>{tDemographics(`gender.${g}`)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -251,7 +253,7 @@ export function SettingsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {AGE_RANGE_OPTIONS.map((a) => (
-                      <SelectItem key={a} value={a}>{AGE_RANGE_LABELS[a]}</SelectItem>
+                      <SelectItem key={a} value={a}>{tDemographics(`ageRange.${a}`)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

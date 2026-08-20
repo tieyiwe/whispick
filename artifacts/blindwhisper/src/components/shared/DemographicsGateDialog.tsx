@@ -5,9 +5,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUpdateUserProfile, getGetUserProfileQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { GENDER_OPTIONS, GENDER_LABELS, AGE_RANGE_OPTIONS, AGE_RANGE_LABELS } from "@/lib/demographics";
+import { GENDER_OPTIONS, AGE_RANGE_OPTIONS } from "@/lib/demographics";
 import { SUPPORTED_LANGUAGES, LANGUAGE_LABELS, guessBrowserLanguage } from "@/lib/languages";
 import { Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
 
 // The one-time confirmation step for lib/demographics.ts's first-whisp gate
@@ -25,6 +26,7 @@ export function DemographicsGateDialog({ open, onConfirmed }: { open: boolean; o
   const [preferredLanguage, setPreferredLanguage] = useState<string>(() => guessBrowserLanguage());
   const queryClient = useQueryClient();
   const updateProfile = useUpdateUserProfile();
+  const { t } = useTranslation("demographics");
 
   function handleConfirm() {
     if (!gender || !ageRange || !preferredLanguage) return;
@@ -79,7 +81,7 @@ export function DemographicsGateDialog({ open, onConfirmed }: { open: boolean; o
               </SelectTrigger>
               <SelectContent>
                 {GENDER_OPTIONS.map((g) => (
-                  <SelectItem key={g} value={g}>{GENDER_LABELS[g]}</SelectItem>
+                  <SelectItem key={g} value={g}>{t(`gender.${g}`)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -92,7 +94,7 @@ export function DemographicsGateDialog({ open, onConfirmed }: { open: boolean; o
               </SelectTrigger>
               <SelectContent>
                 {AGE_RANGE_OPTIONS.map((a) => (
-                  <SelectItem key={a} value={a}>{AGE_RANGE_LABELS[a]}</SelectItem>
+                  <SelectItem key={a} value={a}>{t(`ageRange.${a}`)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
