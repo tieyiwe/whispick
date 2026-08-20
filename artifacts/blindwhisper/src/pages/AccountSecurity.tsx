@@ -1,4 +1,5 @@
 import { UserProfile } from "@clerk/react";
+import { useTranslation } from "react-i18next";
 import { AppLayout } from "@/components/layout/AppLayout";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -10,13 +11,14 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 // App.tsx, so it needs to own the whole /account/security/* subtree for its
 // own internal navigation (see the matching "*?" wildcard route).
 export function AccountSecurity() {
+  const { t } = useTranslation("account");
   return (
     <AppLayout>
       <div className="max-w-3xl mx-auto space-y-4">
         <div>
-          <h1 className="text-3xl font-serif font-bold text-foreground">Account security</h1>
+          <h1 className="text-3xl font-serif font-bold text-foreground">{t("accountSecurityPage.title")}</h1>
           <p className="text-muted-foreground mt-1">
-            Manage two-factor authentication and other security settings for your account.
+            {t("accountSecurityPage.subtitle")}
           </p>
         </div>
         <div className="flex justify-center">

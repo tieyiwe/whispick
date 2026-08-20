@@ -42,6 +42,7 @@ export function SettingsPage() {
   const { isLoaded: clerkLoaded, user } = useUser();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { t } = useTranslation("account");
   const { t: tDemographics } = useTranslation("demographics");
   const [fullName, setFullName] = useState("");
   const [gender, setGender] = useState("");
@@ -83,7 +84,7 @@ export function SettingsPage() {
     try {
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
-        toast({ title: "Notification permission denied", variant: "destructive" });
+        toast({ title: t("settingsPage.toastNotificationPermissionDenied"), variant: "destructive" });
         return;
       }
       const { publicKey } = await getPushPublicKey.refetch().then((r) => {
@@ -99,9 +100,9 @@ export function SettingsPage() {
         );
       });
       setPushEnabled(true);
-      toast({ title: "Push notifications enabled" });
+      toast({ title: t("settingsPage.toastPushEnabled") });
     } catch {
-      toast({ title: "Couldn't enable push notifications", variant: "destructive" });
+      toast({ title: t("settingsPage.toastPushEnableFailed"), variant: "destructive" });
     } finally {
       setPushLoading(false);
     }
@@ -119,7 +120,7 @@ export function SettingsPage() {
         await subscription.unsubscribe();
       }
       setPushEnabled(false);
-      toast({ title: "Push notifications disabled" });
+      toast({ title: t("settingsPage.toastPushDisabled") });
     } finally {
       setPushLoading(false);
     }
@@ -131,9 +132,13 @@ export function SettingsPage() {
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetUserProfileQueryKey() });
-          toast({ title: enabled ? "Email notifications turned on" : "Email notifications turned off" });
+          toast({
+            title: enabled
+              ? t("settingsPage.toastEmailNotificationsOn")
+              : t("settingsPage.toastEmailNotificationsOff"),
+          });
         },
-        onError: () => toast({ title: "Couldn't update that", variant: "destructive" }),
+        onError: () => toast({ title: t("settingsPage.toastUpdateFailed"), variant: "destructive" }),
       }
     );
   }
@@ -157,9 +162,9 @@ export function SettingsPage() {
           // refetches) — the whole point of picking a language here is
           // seeing it take effect right away, not on the next navigation.
           if (preferredLanguage) void i18n.changeLanguage(preferredLanguage);
-          toast({ title: "Profile updated" });
+          toast({ title: t("settingsPage.toastProfileUpdated") });
         },
-        onError: () => toast({ title: "Failed to update profile", variant: "destructive" }),
+        onError: () => toast({ title: t("settingsPage.toastProfileUpdateFailed"), variant: "destructive" }),
       }
     );
   }
@@ -180,15 +185,15 @@ export function SettingsPage() {
     <AppLayout>
       <div className="max-w-xl mx-auto space-y-6">
         <div>
-          <h1 className="text-3xl font-serif font-bold text-foreground">Settings</h1>
-          <p className="text-muted-foreground mt-1">Manage your account and preferences.</p>
+          <h1 className="text-3xl font-serif font-bold text-foreground">{t("settingsPage.title")}</h1>
+          <p className="text-muted-foreground mt-1">{t("settingsPage.subtitle")}</p>
         </div>
 
         {/* Profile */}
         <Card className="bg-card border-border/50">
           <CardHeader>
             <CardTitle className="text-base font-serif flex items-center gap-2">
-              <User className="w-4 h-4 text-primary" /> Profile
+              <User className="w-4 h-4 text-primary" /> {t("settingsPage.profileCardTitle")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -200,17 +205,17 @@ export function SettingsPage() {
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
-                <p className="font-medium text-foreground truncate">{profile?.fullName || "No name set"}</p>
+                <p className="font-medium text-foreground truncate">{profile?.fullName || t("settingsPage.noNameSet")}</p>
                 <p className="text-sm text-muted-foreground truncate">{profile?.email}</p>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-muted-foreground" htmlFor="full-name">Display Name</Label>
+              <Label className="text-muted-foreground" htmlFor="full-name">{t("settingsPage.displayName")}</Label>
               <Input
                 id="full-name"
                 className="bg-input/50 border-border/50 rounded-xl"
-                placeholder="Your name"
+                placeholder={t("settingsPage.namePlaceholder")}
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 data-testid="input-full-name"
@@ -218,10 +223,10 @@ export function SettingsPage() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-muted-foreground">Language</Label>
+              <Label className="text-muted-foreground">{t("settingsPage.language")}</Label>
               <Select value={preferredLanguage} onValueChange={setPreferredLanguage}>
                 <SelectTrigger className="bg-input/50 border-border/50 rounded-xl" data-testid="select-settings-language">
-                  <SelectValue placeholder="Not set" />
+                  <SelectValue placeholder={t("settingsPage.notSet")} />
                 </SelectTrigger>
                 <SelectContent>
                   {SUPPORTED_LANGUAGES.map((code) => (
@@ -233,10 +238,10 @@ export function SettingsPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-muted-foreground">Gender</Label>
+                <Label className="text-muted-foreground">{t("settingsPage.gender")}</Label>
                 <Select value={gender} onValueChange={setGender}>
                   <SelectTrigger className="bg-input/50 border-border/50 rounded-xl" data-testid="select-settings-gender">
-                    <SelectValue placeholder="Not set" />
+                    <SelectValue placeholder={t("settingsPage.notSet")} />
                   </SelectTrigger>
                   <SelectContent>
                     {GENDER_OPTIONS.map((g) => (
@@ -246,10 +251,10 @@ export function SettingsPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="text-muted-foreground">Age range</Label>
+                <Label className="text-muted-foreground">{t("settingsPage.ageRange")}</Label>
                 <Select value={ageRange} onValueChange={setAgeRange}>
                   <SelectTrigger className="bg-input/50 border-border/50 rounded-xl" data-testid="select-settings-age-range">
-                    <SelectValue placeholder="Not set" />
+                    <SelectValue placeholder={t("settingsPage.notSet")} />
                   </SelectTrigger>
                   <SelectContent>
                     {AGE_RANGE_OPTIONS.map((a) => (
@@ -267,7 +272,7 @@ export function SettingsPage() {
               data-testid="button-save-profile"
             >
               {updateProfile.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              Save Changes
+              {t("settingsPage.saveChanges")}
             </Button>
           </CardContent>
         </Card>
@@ -281,7 +286,7 @@ export function SettingsPage() {
         <Card className="bg-card border-border/50">
           <CardHeader>
             <CardTitle className="text-base font-serif flex items-center gap-2">
-              <Swords className="w-4 h-4 text-primary" /> Debate Topics identity
+              <Swords className="w-4 h-4 text-primary" /> {t("settingsPage.debateIdentityCardTitle")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -292,16 +297,16 @@ export function SettingsPage() {
                 size="lg"
               />
               <div className="min-w-0">
-                <p className="font-medium text-foreground truncate">{profile?.whispererHandle || "Not assigned yet"}</p>
+                <p className="font-medium text-foreground truncate">{profile?.whispererHandle || t("settingsPage.handleNotAssigned")}</p>
                 <p className="text-xs text-muted-foreground">
                   {profile?.whispererHandle
-                    ? "Your persistent, public handle across every Debate Topic."
-                    : "Created automatically the first time you post or comment as a Whisperer."}
+                    ? t("settingsPage.handleDescriptionAssigned")
+                    : t("settingsPage.handleDescriptionUnassigned")}
                 </p>
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="text-muted-foreground">Avatar</Label>
+              <Label className="text-muted-foreground">{t("settingsPage.avatar")}</Label>
               <AvatarPickerGrid
                 value={whispererAvatarId}
                 handle={profile?.whispererHandle || profile?.email || "W"}
@@ -315,7 +320,7 @@ export function SettingsPage() {
               data-testid="button-save-avatar"
             >
               {updateProfile.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              Save Changes
+              {t("settingsPage.saveChanges")}
             </Button>
           </CardContent>
         </Card>
@@ -324,31 +329,33 @@ export function SettingsPage() {
         <Card className="bg-card border-border/50">
           <CardHeader>
             <CardTitle className="text-base font-serif flex items-center gap-2">
-              <Mail className="w-4 h-4 text-primary" /> Account
+              <Mail className="w-4 h-4 text-primary" /> {t("settingsPage.accountCardTitle")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center justify-between gap-3 py-2">
-              <span className="text-sm text-muted-foreground shrink-0">Email</span>
+              <span className="text-sm text-muted-foreground shrink-0">{t("settingsPage.email")}</span>
               <span className="text-sm text-foreground truncate min-w-0 text-right">{profile?.email}</span>
             </div>
             <div className="flex items-center justify-between gap-3 py-2">
-              <span className="text-sm text-muted-foreground shrink-0">Plan</span>
+              <span className="text-sm text-muted-foreground shrink-0">{t("settingsPage.plan")}</span>
               <span className="text-sm text-foreground capitalize truncate min-w-0 text-right">{profile?.plan}</span>
             </div>
             <div className="flex items-center justify-between gap-3 py-2">
-              <span className="text-sm text-muted-foreground shrink-0">Whisper Links Used</span>
+              <span className="text-sm text-muted-foreground shrink-0">{t("settingsPage.whisperLinksUsed")}</span>
               <span className="text-sm text-foreground truncate min-w-0 text-right">
                 {profile?.whisperLinksUsed}
-                {profile?.plan && WHISPER_LINK_LIMITS[profile.plan] != null ? ` / ${WHISPER_LINK_LIMITS[profile.plan]} this month` : " (unlimited)"}
+                {profile?.plan && WHISPER_LINK_LIMITS[profile.plan] != null
+                  ? t("settingsPage.whisperLinkLimit", { limit: WHISPER_LINK_LIMITS[profile.plan] })
+                  : t("settingsPage.unlimited")}
               </span>
             </div>
             <div className="flex items-center justify-between gap-3 py-2">
-              <span className="text-sm text-muted-foreground shrink-0">Ghost Boost Credits</span>
+              <span className="text-sm text-muted-foreground shrink-0">{t("settingsPage.ghostBoostCredits")}</span>
               <span className="text-sm text-foreground truncate min-w-0 text-right">{profile?.boostCredits}</span>
             </div>
             <div className="flex items-center justify-between gap-3 py-2">
-              <span className="text-sm text-muted-foreground shrink-0">Member since</span>
+              <span className="text-sm text-muted-foreground shrink-0">{t("settingsPage.memberSince")}</span>
               <span className="text-sm text-foreground truncate min-w-0 text-right">{profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : "—"}</span>
             </div>
           </CardContent>
@@ -361,24 +368,24 @@ export function SettingsPage() {
         <Card className="bg-card border-border/50">
           <CardHeader>
             <CardTitle className="text-base font-serif flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-primary" /> Security
+              <ShieldCheck className="w-4 h-4 text-primary" /> {t("settingsPage.securityCardTitle")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-sm font-medium text-foreground">Two-factor authentication</p>
+                <p className="text-sm font-medium text-foreground">{t("settingsPage.twoFactorAuth")}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {!clerkLoaded
-                    ? "Checking status…"
+                    ? t("settingsPage.checkingStatus")
                     : user?.twoFactorEnabled
-                      ? "Enabled — your account requires a second step at sign-in."
-                      : "Not set up — your account only requires a password to sign in."}
+                      ? t("settingsPage.twoFactorEnabled")
+                      : t("settingsPage.twoFactorNotSetUp")}
                 </p>
               </div>
               <Link href="/account/security">
                 <Button variant="outline" size="sm" className="rounded-full shrink-0" data-testid="button-manage-mfa">
-                  {user?.twoFactorEnabled ? "Manage" : "Set up"}
+                  {user?.twoFactorEnabled ? t("settingsPage.manage") : t("settingsPage.setUp")}
                 </Button>
               </Link>
             </div>
@@ -394,14 +401,14 @@ export function SettingsPage() {
         <Card className="bg-card border-border/50">
           <CardHeader>
             <CardTitle className="text-base font-serif flex items-center gap-2">
-              <Phone className="w-4 h-4 text-primary" /> Phone number
+              <Phone className="w-4 h-4 text-primary" /> {t("settingsPage.phoneNumberCardTitle")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {profile?.phoneVerifiedAt ? (
               <div className="flex items-center gap-2 text-sm text-foreground" data-testid="text-phone-verified">
                 <ShieldCheck className="w-4 h-4 text-primary shrink-0" />
-                <span>{profile.phone} is verified.</span>
+                <span>{t("settingsPage.phoneVerified", { phone: profile.phone })}</span>
               </div>
             ) : (
               <PhoneVerificationFlow />
@@ -413,16 +420,16 @@ export function SettingsPage() {
         <Card className="bg-card border-border/50">
           <CardHeader>
             <CardTitle className="text-base font-serif flex items-center gap-2">
-              <Bell className="w-4 h-4 text-primary" /> Notifications
+              <Bell className="w-4 h-4 text-primary" /> {t("settingsPage.notificationsCardTitle")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {isPushSupported() && (
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <p className="text-sm font-medium text-foreground">Push notifications</p>
+                  <p className="text-sm font-medium text-foreground">{t("settingsPage.pushNotifications")}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Get notified the moment a whisp is opened, watched, or replied to.
+                    {t("settingsPage.pushNotificationsDescription")}
                   </p>
                 </div>
                 <Button
@@ -434,16 +441,15 @@ export function SettingsPage() {
                   data-testid="button-toggle-push"
                 >
                   {pushLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : null}
-                  {pushEnabled ? "Disable" : "Enable"}
+                  {pushEnabled ? t("settingsPage.disable") : t("settingsPage.enable")}
                 </Button>
               </div>
             )}
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-sm font-medium text-foreground">Email notifications</p>
+                <p className="text-sm font-medium text-foreground">{t("settingsPage.emailNotifications")}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Get an email when someone whisps you. You'll always see it in the app either way — this only
-                  controls the extra email.
+                  {t("settingsPage.emailNotificationsDescription")}
                 </p>
               </div>
               <Switch
@@ -460,17 +466,17 @@ export function SettingsPage() {
         <Card className="bg-card border-border/50">
           <CardHeader>
             <CardTitle className="text-base font-serif flex items-center gap-2">
-              <Shield className="w-4 h-4 text-primary" /> Privacy
+              <Shield className="w-4 h-4 text-primary" /> {t("settingsPage.privacyCardTitle")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <p>All whisps are sent anonymously by default. Recipient contact information (email/phone) is used solely for delivery and is never shared with third parties.</p>
-            <p>Ghost Boost doesn't collect recipient contact info — it's a queued, boosted-reach send with no specific recipient, not a targeted ad.</p>
-            <p>You can request a full data export or account deletion by contacting support.</p>
+            <p>{t("settingsPage.privacyWhispsText")}</p>
+            <p>{t("settingsPage.privacyGhostBoostText")}</p>
+            <p>{t("settingsPage.privacyDataRequestText")}</p>
             <p className="flex items-center gap-3 pt-1">
-              <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link>
+              <Link href="/privacy" className="text-primary hover:underline">{t("settingsPage.privacyPolicyLink")}</Link>
               <span className="text-border">•</span>
-              <Link href="/terms" className="text-primary hover:underline">Terms of Service</Link>
+              <Link href="/terms" className="text-primary hover:underline">{t("settingsPage.termsOfServiceLink")}</Link>
             </p>
           </CardContent>
         </Card>

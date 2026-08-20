@@ -1,4 +1,5 @@
 import { useVerifySubscription, getVerifySubscriptionQueryKey } from "@workspace/api-client-react";
+import { useTranslation } from "react-i18next";
 import { LogoLockup } from "@/components/ui/logo";
 import { Loader2, Check, X } from "lucide-react";
 
@@ -8,6 +9,7 @@ export function VerifySubscriptionPage() {
     { token },
     { query: { enabled: !!token, retry: false, queryKey: getVerifySubscriptionQueryKey({ token }) } }
   );
+  const { t } = useTranslation("account");
 
   return (
     <div className="min-h-[100dvh] bg-background flex flex-col items-center justify-center px-5 text-center relative overflow-hidden">
@@ -20,9 +22,9 @@ export function VerifySubscriptionPage() {
             <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
               <X className="w-6 h-6 text-destructive" />
             </div>
-            <p className="font-medium text-foreground">Link not valid</p>
+            <p className="font-medium text-foreground">{t("verifySubscriptionPage.linkNotValid")}</p>
             <p className="text-sm text-muted-foreground">
-              This confirmation link looks broken or expired. Head back to the subscribe page to sign up again.
+              {t("verifySubscriptionPage.linkNotValidDescription")}
             </p>
           </>
         ) : isLoading ? (
@@ -32,10 +34,9 @@ export function VerifySubscriptionPage() {
             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
               <Check className="w-6 h-6 text-primary" />
             </div>
-            <p className="font-medium text-foreground">You're confirmed</p>
+            <p className="font-medium text-foreground">{t("verifySubscriptionPage.confirmed")}</p>
             <p className="text-sm text-muted-foreground">
-              You'll start getting anonymous whisps that match your topics. You can unsubscribe anytime from the link
-              in any email we send.
+              {t("verifySubscriptionPage.confirmedDescription")}
             </p>
           </>
         )}
