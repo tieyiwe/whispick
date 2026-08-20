@@ -16,6 +16,7 @@ import { requireAuth } from "../lib/auth";
 import { ensureUser } from "../lib/ensureUser";
 import { getVapidPublicKey } from "../lib/push";
 import { GENDER_OPTIONS, AGE_RANGE_OPTIONS } from "../lib/demographics";
+import { SUPPORTED_LANGUAGES } from "../lib/languages";
 import { normalizePhoneE164 } from "../lib/phone";
 import { startPhoneVerification, checkPhoneVerification } from "../lib/phoneVerification";
 import { phoneVerificationLimiter, confirmPhoneVerificationLimiter } from "../lib/rateLimit";
@@ -37,6 +38,7 @@ router.get("/profile", requireAuth, async (req, res): Promise<void> => {
     countryCode: user.countryCode,
     gender: user.gender,
     ageRange: user.ageRange,
+    preferredLanguage: user.preferredLanguage,
     plan: user.plan,
     boostCredits: user.boostCredits,
     whisperLinksUsed: user.whisperLinksUsed,
@@ -60,6 +62,7 @@ router.patch("/profile", requireAuth, async (req, res): Promise<void> => {
     ageRange: z.enum(AGE_RANGE_OPTIONS).nullable().optional(),
     emailNotificationsEnabled: z.boolean().optional(),
     countryCode: z.string().length(2).nullable().optional(),
+    preferredLanguage: z.enum(SUPPORTED_LANGUAGES).optional(),
   });
 
   const parsed = schema.safeParse(req.body);
@@ -85,6 +88,7 @@ router.patch("/profile", requireAuth, async (req, res): Promise<void> => {
     countryCode: updated.countryCode,
     gender: updated.gender,
     ageRange: updated.ageRange,
+    preferredLanguage: updated.preferredLanguage,
     plan: updated.plan,
     boostCredits: updated.boostCredits,
     whisperLinksUsed: updated.whisperLinksUsed,

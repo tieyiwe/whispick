@@ -1076,6 +1076,7 @@ export const GetUserProfileResponse = zod.object({
   "countryCode": zod.string().nullish().describe('ISO 3166-1 alpha-2, self-reported — captured from the country picker at phone-verification time (see users.countryCode), or set directly via PATCH \/user\/profile. Null until either happens.'),
   "gender": zod.string().nullish().describe('\'woman\' | \'man\' | \'nonbinary\' | \'prefer_not_to_say\' | null (not yet answered)'),
   "ageRange": zod.string().nullish().describe('\'13-17\' | \'18-24\' | \'25-34\' | \'35-44\' | \'45-54\' | \'55-64\' | \'65+\' | \'prefer_not_to_say\' | null (not yet answered)'),
+  "preferredLanguage": zod.string().nullish().describe('ISO 639-1 code from lib\/languages.ts\'s SUPPORTED_LANGUAGES (\'en\' | \'fr\' | \'ar\' | \'de\' | \'es\' | \'pt\' | \'zh\' | \'ja\' | \'hi\' | \'ru\' | \'id\' | \'bn\' | \'sw\'), or null (not yet answered). What the app renders in, and what server-generated text (notifications, emails) is sent in — see users.preferredLanguage.'),
   "plan": zod.string(),
   "boostCredits": zod.number(),
   "whisperLinksUsed": zod.number(),
@@ -1094,7 +1095,8 @@ export const UpdateUserProfileBody = zod.object({
   "gender": zod.string().nullish(),
   "ageRange": zod.string().nullish(),
   "emailNotificationsEnabled": zod.boolean().optional(),
-  "countryCode": zod.string().nullish()
+  "countryCode": zod.string().nullish(),
+  "preferredLanguage": zod.enum(['en', 'fr', 'ar', 'de', 'es', 'pt', 'zh', 'ja', 'hi', 'ru', 'id', 'bn', 'sw']).optional().describe('Not nullable — unlike gender\/ageRange there\'s no \"prefer not to say\" for the language the app actually renders in.')
 })
 
 export const UpdateUserProfileResponse = zod.object({
@@ -1108,6 +1110,7 @@ export const UpdateUserProfileResponse = zod.object({
   "countryCode": zod.string().nullish().describe('ISO 3166-1 alpha-2, self-reported — captured from the country picker at phone-verification time (see users.countryCode), or set directly via PATCH \/user\/profile. Null until either happens.'),
   "gender": zod.string().nullish().describe('\'woman\' | \'man\' | \'nonbinary\' | \'prefer_not_to_say\' | null (not yet answered)'),
   "ageRange": zod.string().nullish().describe('\'13-17\' | \'18-24\' | \'25-34\' | \'35-44\' | \'45-54\' | \'55-64\' | \'65+\' | \'prefer_not_to_say\' | null (not yet answered)'),
+  "preferredLanguage": zod.string().nullish().describe('ISO 639-1 code from lib\/languages.ts\'s SUPPORTED_LANGUAGES (\'en\' | \'fr\' | \'ar\' | \'de\' | \'es\' | \'pt\' | \'zh\' | \'ja\' | \'hi\' | \'ru\' | \'id\' | \'bn\' | \'sw\'), or null (not yet answered). What the app renders in, and what server-generated text (notifications, emails) is sent in — see users.preferredLanguage.'),
   "plan": zod.string(),
   "boostCredits": zod.number(),
   "whisperLinksUsed": zod.number(),

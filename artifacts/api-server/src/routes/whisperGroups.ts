@@ -356,7 +356,7 @@ router.post("/:id/send", requireAuth, createWhispLimiter, async (req, res): Prom
   // Same one-time demographic confirmation gate as POST /whisps — see
   // lib/demographics.ts.
   if (needsDemographics(user)) {
-    res.status(428).json({ error: "Please confirm your gender and age range before sending your first whisp.", code: "demographics_required" });
+    res.status(428).json({ error: "Please confirm your gender, age range, and preferred language before sending your first whisp.", code: "demographics_required" });
     return;
   }
 

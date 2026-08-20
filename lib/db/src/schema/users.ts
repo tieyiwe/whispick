@@ -84,6 +84,16 @@ export const usersTable = pgTable("users", {
   // handles, just uniquely scoped globally instead of per-thread. A user
   // can rename their own.
   whispererHandle: text("whisperer_handle").unique(),
+  // ISO 639-1 code (see lib/languages.ts's SUPPORTED_LANGUAGES) — captured
+  // once at onboarding (the same one-time gate demographics.ts already
+  // enforces before a user's first whisp send, extended to also require
+  // this) and editable later in Settings. Unlike gender/ageRange, which are
+  // optional-to-decline analytics, this one isn't skippable: it's what the
+  // whole app actually renders in (routes' notification/email text, and the
+  // frontend's i18next locale), so a real value is required, never
+  // "prefer_not_to_say". Null only before a user has ever completed
+  // onboarding.
+  preferredLanguage: text("preferred_language"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

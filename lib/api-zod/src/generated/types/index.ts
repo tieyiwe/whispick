@@ -173,6 +173,7 @@ export * from './updateSuggestionInput';
 export * from './uploadedVideo';
 export * from './userProfile';
 export * from './userProfileUpdate';
+export * from './userProfileUpdatePreferredLanguage';
 export * from './verifySubscription200';
 export * from './verifySubscriptionParams';
 export * from './videoMeta';

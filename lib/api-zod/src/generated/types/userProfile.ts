@@ -36,6 +36,11 @@ export interface UserProfile {
      * @nullable
      */
   ageRange?: string | null;
+  /**
+     * ISO 639-1 code from lib/languages.ts's SUPPORTED_LANGUAGES ('en' | 'fr' | 'ar' | 'de' | 'es' | 'pt' | 'zh' | 'ja' | 'hi' | 'ru' | 'id' | 'bn' | 'sw'), or null (not yet answered). What the app renders in, and what server-generated text (notifications, emails) is sent in — see users.preferredLanguage.
+     * @nullable
+     */
+  preferredLanguage?: string | null;
   plan: string;
   boostCredits: number;
   whisperLinksUsed: number;

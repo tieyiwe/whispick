@@ -23,6 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, User, Mail, Shield, Bell, Phone, ShieldCheck } from "lucide-react";
 import { isPushSupported, getExistingPushSubscription, subscribeToPush, pushSubscriptionToJson } from "@/lib/push";
 import { GENDER_OPTIONS, GENDER_LABELS, AGE_RANGE_OPTIONS, AGE_RANGE_LABELS } from "@/lib/demographics";
+import { SUPPORTED_LANGUAGES, LANGUAGE_LABELS } from "@/lib/languages";
 import { PhoneVerificationFlow } from "@/components/shared/PhoneVerificationFlow";
 
 const WHISPER_LINK_LIMITS: Record<string, number | null> = {
@@ -38,12 +39,14 @@ export function SettingsPage() {
   const [fullName, setFullName] = useState("");
   const [gender, setGender] = useState("");
   const [ageRange, setAgeRange] = useState("");
+  const [preferredLanguage, setPreferredLanguage] = useState("");
   const [initialized, setInitialized] = useState(false);
 
   if (profile && !initialized) {
     setFullName(profile.fullName ?? "");
     setGender(profile.gender ?? "");
     setAgeRange(profile.ageRange ?? "");
+    setPreferredLanguage(profile.preferredLanguage ?? "");
     setInitialized(true);
   }
 
@@ -128,7 +131,14 @@ export function SettingsPage() {
 
   function handleSave() {
     updateProfile.mutate(
-      { data: { fullName: fullName || null, gender: gender || null, ageRange: ageRange || null } },
+      {
+        data: {
+          fullName: fullName || null,
+          gender: gender || null,
+          ageRange: ageRange || null,
+          ...(preferredLanguage ? { preferredLanguage: preferredLanguage as any } : {}),
+        },
+      },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetUserProfileQueryKey() });
@@ -190,6 +200,20 @@ export function SettingsPage() {
                 onChange={(e) => setFullName(e.target.value)}
                 data-testid="input-full-name"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-muted-foreground">Language</Label>
+              <Select value={preferredLanguage} onValueChange={setPreferredLanguage}>
+                <SelectTrigger className="bg-input/50 border-border/50 rounded-xl" data-testid="select-settings-language">
+                  <SelectValue placeholder="Not set" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SUPPORTED_LANGUAGES.map((code) => (
+                    <SelectItem key={code} value={code}>{LANGUAGE_LABELS[code]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useUpdateUserProfile, getGetUserProfileQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { GENDER_OPTIONS, GENDER_LABELS, AGE_RANGE_OPTIONS, AGE_RANGE_LABELS } from "@/lib/demographics";
+import { SUPPORTED_LANGUAGES, LANGUAGE_LABELS, guessBrowserLanguage } from "@/lib/languages";
 import { Loader2 } from "lucide-react";
 
 // The one-time confirmation step for lib/demographics.ts's first-whisp gate
@@ -17,13 +18,17 @@ import { Loader2 } from "lucide-react";
 export function DemographicsGateDialog({ open, onConfirmed }: { open: boolean; onConfirmed: () => void }) {
   const [gender, setGender] = useState("");
   const [ageRange, setAgeRange] = useState("");
+  // Pre-selected from the browser's own language setting as a convenience —
+  // the user still has to explicitly confirm it, same as every other field
+  // here; this never silently locks in a language without them looking at it.
+  const [preferredLanguage, setPreferredLanguage] = useState<string>(() => guessBrowserLanguage());
   const queryClient = useQueryClient();
   const updateProfile = useUpdateUserProfile();
 
   function handleConfirm() {
-    if (!gender || !ageRange) return;
+    if (!gender || !ageRange || !preferredLanguage) return;
     updateProfile.mutate(
-      { data: { gender, ageRange } },
+      { data: { gender, ageRange, preferredLanguage: preferredLanguage as any } },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetUserProfileQueryKey() });
@@ -43,11 +48,24 @@ export function DemographicsGateDialog({ open, onConfirmed }: { open: boolean; o
         <DialogHeader>
           <DialogTitle className="font-serif">Just one quick thing</DialogTitle>
           <DialogDescription>
-            Before your first whisp goes out, help us understand who's using Blind Whisper. This is never shown to anyone you send to,
-            and you can change it later in Settings.
+            Before your first whisp goes out, help us understand who's using Blind Whisper, and pick the language the app should use.
+            None of this is ever shown to anyone you send to, and you can change it later in Settings.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <Label className="text-muted-foreground">Language</Label>
+            <Select value={preferredLanguage} onValueChange={setPreferredLanguage}>
+              <SelectTrigger className="bg-input/50 border-border/50 rounded-xl" data-testid="select-gate-language">
+                <SelectValue placeholder="Select..." />
+              </SelectTrigger>
+              <SelectContent>
+                {SUPPORTED_LANGUAGES.map((code) => (
+                  <SelectItem key={code} value={code}>{LANGUAGE_LABELS[code]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="space-y-1.5">
             <Label className="text-muted-foreground">Gender</Label>
             <Select value={gender} onValueChange={setGender}>
@@ -78,7 +96,7 @@ export function DemographicsGateDialog({ open, onConfirmed }: { open: boolean; o
         <DialogFooter>
           <Button
             onClick={handleConfirm}
-            disabled={!gender || !ageRange || updateProfile.isPending}
+            disabled={!gender || !ageRange || !preferredLanguage || updateProfile.isPending}
             className="w-full rounded-full"
             data-testid="button-confirm-demographics"
           >

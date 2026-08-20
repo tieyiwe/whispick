@@ -259,7 +259,7 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
   // intercepts this specific error to show a confirmation step, save via
   // PATCH /user/profile, then retry the same send.
   if (needsDemographics(user)) {
-    res.status(428).json({ error: "Please confirm your gender and age range before sending your first whisp.", code: "demographics_required" });
+    res.status(428).json({ error: "Please confirm your gender, age range, and preferred language before sending your first whisp.", code: "demographics_required" });
     return;
   }
 

@@ -547,6 +547,11 @@ export interface UserProfile {
      * @nullable
      */
   ageRange?: string | null;
+  /**
+     * ISO 639-1 code from lib/languages.ts's SUPPORTED_LANGUAGES ('en' | 'fr' | 'ar' | 'de' | 'es' | 'pt' | 'zh' | 'ja' | 'hi' | 'ru' | 'id' | 'bn' | 'sw'), or null (not yet answered). What the app renders in, and what server-generated text (notifications, emails) is sent in — see users.preferredLanguage.
+     * @nullable
+     */
+  preferredLanguage?: string | null;
   plan: string;
   boostCredits: number;
   whisperLinksUsed: number;
@@ -555,6 +560,28 @@ export interface UserProfile {
   emailNotificationsEnabled: boolean;
   createdAt: string;
 }
+
+/**
+ * Not nullable — unlike gender/ageRange there's no "prefer not to say" for the language the app actually renders in.
+ */
+export type UserProfileUpdatePreferredLanguage = typeof UserProfileUpdatePreferredLanguage[keyof typeof UserProfileUpdatePreferredLanguage];
+
+
+export const UserProfileUpdatePreferredLanguage = {
+  en: 'en',
+  fr: 'fr',
+  ar: 'ar',
+  de: 'de',
+  es: 'es',
+  pt: 'pt',
+  zh: 'zh',
+  ja: 'ja',
+  hi: 'hi',
+  ru: 'ru',
+  id: 'id',
+  bn: 'bn',
+  sw: 'sw',
+} as const;
 
 export interface UserProfileUpdate {
   /** @nullable */
@@ -568,6 +595,8 @@ export interface UserProfileUpdate {
   emailNotificationsEnabled?: boolean;
   /** @nullable */
   countryCode?: string | null;
+  /** Not nullable — unlike gender/ageRange there's no "prefer not to say" for the language the app actually renders in. */
+  preferredLanguage?: UserProfileUpdatePreferredLanguage;
 }
 
 export interface StartPhoneVerificationInput {
