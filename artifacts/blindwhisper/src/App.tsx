@@ -50,6 +50,7 @@ const WhispDetail = lazy(() => import("@/pages/WhispDetail").then((m) => ({ defa
 const RepliesInbox = lazy(() => import("@/pages/RepliesInbox").then((m) => ({ default: m.RepliesInbox })));
 const CreditsPage = lazy(() => import("@/pages/CreditsPage").then((m) => ({ default: m.CreditsPage })));
 const SettingsPage = lazy(() => import("@/pages/SettingsPage").then((m) => ({ default: m.SettingsPage })));
+const AccountSecurity = lazy(() => import("@/pages/AccountSecurity").then((m) => ({ default: m.AccountSecurity })));
 const PublicWhispPage = lazy(() => import("@/pages/PublicWhispPage").then((m) => ({ default: m.PublicWhispPage })));
 const InvitePage = lazy(() => import("@/pages/InvitePage").then((m) => ({ default: m.InvitePage })));
 const PublicInvitePage = lazy(() => import("@/pages/PublicInvitePage").then((m) => ({ default: m.PublicInvitePage })));
@@ -76,6 +77,9 @@ const AdminAnalytics = lazy(() => import("@/pages/admin/AdminAnalytics").then((m
 const AdminSuggestions = lazy(() => import("@/pages/admin/AdminSuggestions").then((m) => ({ default: m.AdminSuggestions })));
 const AdminModeration = lazy(() => import("@/pages/admin/AdminModeration").then((m) => ({ default: m.AdminModeration })));
 const AdminNotifications = lazy(() => import("@/pages/admin/AdminNotifications").then((m) => ({ default: m.AdminNotifications })));
+const AdminDebateAgent = lazy(() => import("@/pages/admin/AdminDebateAgent").then((m) => ({ default: m.AdminDebateAgent })));
+const AdminCircleAgent = lazy(() => import("@/pages/admin/AdminCircleAgent").then((m) => ({ default: m.AdminCircleAgent })));
+const AdminAuditLog = lazy(() => import("@/pages/admin/AdminAuditLog").then((m) => ({ default: m.AdminAuditLog })));
 
 // Route-level Suspense fallback — same full-page centered spinner AdminRoute
 // already uses while it waits on the user profile fetch, so a lazy chunk
@@ -283,6 +287,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/replies" component={() => <ProtectedRoute component={RepliesInbox} />} />
             <Route path="/credits" component={() => <ProtectedRoute component={CreditsPage} />} />
             <Route path="/settings" component={() => <ProtectedRoute component={SettingsPage} />} />
+            <Route path="/account/security/*?" component={() => <ProtectedRoute component={AccountSecurity} />} />
             <Route path="/invite" component={() => <ProtectedRoute component={InvitePage} />} />
             <Route path="/debate-topics/new" component={() => <ProtectedRoute component={CreateDebateTopic} />} />
             <Route path="/debate-topics/following" component={() => <ProtectedRoute component={DebateFollowing} />} />
@@ -298,6 +303,9 @@ function ClerkProviderWithRoutes() {
             <Route path="/admin/suggestions" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminSuggestions} />} />} />
             <Route path="/admin/moderation" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminModeration} />} />} />
             <Route path="/admin/notifications" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminNotifications} />} />} />
+            <Route path="/admin/debate-agent" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminDebateAgent} />} />} />
+            <Route path="/admin/circle-agent" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminCircleAgent} />} />} />
+            <Route path="/admin/audit-log" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminAuditLog} />} />} />
             <Route path="/admin" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminDashboard} />} />} />
 
             <Route path="/debate-topics/:id" component={DebateTopicDetail} />

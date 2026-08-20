@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { hasPendingForward, savePendingForward } from "@/lib/forwardVideo";
 import { hasDismissedPhoneVerificationDialog, dismissPhoneVerificationDialog } from "@/lib/phoneVerificationDialog";
 import { GHOST_BOOST_ENABLED } from "@/lib/featureFlags";
+import { MfaNudgeBanner } from "@/components/shared/MfaNudgeBanner";
 
 // Lazy, even though Dashboard itself deliberately isn't (see the code-split
 // comment in App.tsx): the phone verification flow pulls in libphonenumber-js
@@ -138,6 +139,8 @@ export function Dashboard() {
             </Button>
           </Link>
         </div>
+
+        <MfaNudgeBanner />
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {statCards.map((stat, i) => (

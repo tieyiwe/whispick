@@ -31,7 +31,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { deliveryLabel } from "@/lib/deliveryMethod";
-import { ArrowLeft, Loader2, MapPin, Trash2, PlayCircle, MessageSquareHeart, ShieldAlert } from "lucide-react";
+import { ArrowLeft, Loader2, MapPin, Trash2, PlayCircle, MessageSquareHeart, ShieldAlert, Swords } from "lucide-react";
 
 const WHISP_PAGE_SIZE = 15;
 
@@ -131,7 +131,7 @@ export function AdminUserDetail() {
     );
   }
 
-  const { user, totalWhisps, creditTransactions, statusCounts, totalReplies, moderationFlagCount, moderationFlags } = data;
+  const { user, totalWhisps, creditTransactions, statusCounts, totalReplies, moderationFlagCount, moderationFlags, debateTopics, debateTopicComments } = data;
 
   return (
     <AdminLayout>
@@ -400,6 +400,50 @@ export function AdminUserDetail() {
                   );
                 });
               })()}
+            </CardContent>
+          </Card>
+        )}
+
+        {(debateTopics.length > 0 || debateTopicComments.length > 0) && (
+          <Card className="bg-card border-border/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-serif flex items-center gap-1.5">
+                <Swords className="w-4 h-4 text-primary" /> Debate Topics activity
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              {debateTopics.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">Topics posted ({debateTopics.length})</p>
+                  {debateTopics.map((t) => (
+                    <div key={t.id} className="p-2.5 rounded-xl border border-border/30 bg-muted/10 text-sm" data-testid={`debate-topic-${t.id}`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="text-foreground flex-1 min-w-0">{t.topicText}</p>
+                        {t.removedByAdminAt ? (
+                          <Badge variant="destructive" className="shrink-0">Removed by admin</Badge>
+                        ) : t.deletedByAuthorAt ? (
+                          <Badge variant="outline" className="shrink-0 text-muted-foreground">Retracted</Badge>
+                        ) : null}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">{new Date(t.createdAt).toLocaleString()}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {debateTopicComments.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">Comments posted ({debateTopicComments.length})</p>
+                  {debateTopicComments.map((c) => (
+                    <div key={c.id} className="p-2.5 rounded-xl border border-border/30 bg-muted/10 text-sm" data-testid={`debate-topic-comment-${c.id}`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="text-foreground flex-1 min-w-0">{c.commentText}</p>
+                        {c.removedByAdminAt && <Badge variant="destructive" className="shrink-0">Removed by admin</Badge>}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">{new Date(c.createdAt).toLocaleString()}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         )}

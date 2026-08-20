@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
+import { useUser } from "@clerk/react";
 import {
   useGetUserProfile,
   useUpdateUserProfile,
@@ -36,6 +37,7 @@ const WHISPER_LINK_LIMITS: Record<string, number | null> = {
 
 export function SettingsPage() {
   const { data: profile, isLoading } = useGetUserProfile();
+  const { isLoaded: clerkLoaded, user } = useUser();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [fullName, setFullName] = useState("");
@@ -340,6 +342,37 @@ export function SettingsPage() {
             <div className="flex items-center justify-between gap-3 py-2">
               <span className="text-sm text-muted-foreground shrink-0">Member since</span>
               <span className="text-sm text-foreground truncate min-w-0 text-right">{profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : "—"}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Security — always visible regardless of whether the MFA nudge on
+            Dashboard has been dismissed, so an account can always see
+            (and act on) its 2FA status here even after skipping the nudge
+            for good. */}
+        <Card className="bg-card border-border/50">
+          <CardHeader>
+            <CardTitle className="text-base font-serif flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-primary" /> Security
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-foreground">Two-factor authentication</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {!clerkLoaded
+                    ? "Checking status…"
+                    : user?.twoFactorEnabled
+                      ? "Enabled — your account requires a second step at sign-in."
+                      : "Not set up — your account only requires a password to sign in."}
+                </p>
+              </div>
+              <Link href="/account/security">
+                <Button variant="outline" size="sm" className="rounded-full shrink-0" data-testid="button-manage-mfa">
+                  {user?.twoFactorEnabled ? "Manage" : "Set up"}
+                </Button>
+              </Link>
             </div>
           </CardContent>
         </Card>
