@@ -1,4 +1,5 @@
 import { Archive, ArchiveRestore, Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 
 interface ArchivedWhispGateProps {
@@ -18,24 +19,26 @@ interface ArchivedWhispGateProps {
 // into content they deliberately tucked away. Unarchiving is one tap, and
 // immediately reveals the real page underneath.
 export function ArchivedWhispGate({ videoTitle, onUnarchive, isUnarchiving, onBack }: ArchivedWhispGateProps) {
+  const { t } = useTranslation("sharedA");
+
   return (
     <div className="max-w-md mx-auto text-center py-16 px-6 space-y-5" data-testid="archived-whisp-gate">
       <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto">
         <Archive className="w-7 h-7 text-muted-foreground" />
       </div>
       <div className="space-y-1.5">
-        <h1 className="text-xl font-serif font-semibold text-foreground">This whisp is archived</h1>
+        <h1 className="text-xl font-serif font-semibold text-foreground">{t("archivedWhispGate.title")}</h1>
         <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-          {videoTitle ? `"${videoTitle}" is` : "It's"} tucked away in your Archive. Bring it back to view or reply to it again.
+          {videoTitle ? t("archivedWhispGate.descriptionWithTitle", { title: videoTitle }) : t("archivedWhispGate.description")}
         </p>
       </div>
       <div className="flex flex-col sm:flex-row gap-3 justify-center pt-1">
         <Button variant="outline" onClick={onBack} className="rounded-full" data-testid="button-archived-gate-back">
-          Back
+          {t("archivedWhispGate.back")}
         </Button>
         <Button onClick={onUnarchive} disabled={isUnarchiving} className="rounded-full" data-testid="button-archived-gate-unarchive">
           {isUnarchiving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <ArchiveRestore className="w-4 h-4 mr-2" />}
-          Unarchive to view
+          {t("archivedWhispGate.unarchive")}
         </Button>
       </div>
     </div>

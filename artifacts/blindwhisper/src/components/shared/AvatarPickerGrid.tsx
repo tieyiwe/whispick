@@ -1,4 +1,5 @@
 import { Check } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { AVATAR_IDS, avatarIcon, avatarBgClass, type AvatarId } from "@/lib/avatars";
 
@@ -19,13 +20,15 @@ export function AvatarPickerGrid({
   handle: string;
   onSelect: (avatarId: AvatarId | null) => void;
 }) {
+  const { t } = useTranslation("sharedA");
+
   return (
-    <div className="grid grid-cols-5 gap-2.5" role="listbox" aria-label="Choose an avatar">
+    <div className="grid grid-cols-5 gap-2.5" role="listbox" aria-label={t("avatarPickerGrid.chooseAvatar")}>
       <button
         type="button"
         onClick={() => onSelect(null)}
         aria-pressed={value === null}
-        aria-label="No avatar"
+        aria-label={t("avatarPickerGrid.noAvatar")}
         className={cn(
           "relative w-11 h-11 rounded-full flex items-center justify-center bg-muted text-muted-foreground font-serif font-bold text-base border-2 transition-colors",
           value === null ? "border-primary" : "border-transparent hover:border-border",

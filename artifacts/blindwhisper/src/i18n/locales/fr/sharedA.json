@@ -1,0 +1,99 @@
+{
+  "archivedWhispGate": {
+    "title": "Ce whisp est archivé",
+    "description": "Il est rangé dans vos Archives. Récupérez-le pour le voir ou y répondre à nouveau.",
+    "descriptionWithTitle": "« {{title}} » est rangé dans vos Archives. Récupérez-le pour le voir ou y répondre à nouveau.",
+    "back": "Retour",
+    "unarchive": "Désarchiver pour voir"
+  },
+  "avatarPickerGrid": {
+    "chooseAvatar": "Choisir un avatar",
+    "noAvatar": "Aucun avatar"
+  },
+  "cameraCapture": {
+    "modePhoto": "Photo",
+    "modeVideo": "Vidéo",
+    "photoPrepareUnsupported": "Ce navigateur ne peut pas préparer une photo à envoyer — essayez Vidéo à la place.",
+    "photoPrepareFailed": "Impossible de préparer cette photo pour l'envoi. Reprenez-la.",
+    "captureFailed": "Impossible de capturer une photo depuis la caméra.",
+    "photoClipUnsupported": "Les photos ne peuvent pas être préparées pour l'envoi sur ce navigateur — essayez Vidéo, ou reprenez la photo.",
+    "recordUnsupported": "Ce navigateur ne peut pas enregistrer de vidéo — essayez Photo ou Importer à la place.",
+    "recordStartFailed": "Impossible de démarrer l'enregistrement. Réessayez.",
+    "unsupportedFallback": "Utilisez Importer ou Coller un lien à la place.",
+    "deniedFallback": "Importer et Coller un lien restent disponibles si cela ne fonctionne pas.",
+    "idlePromptPhoto": "Prenez une photo avec votre caméra",
+    "idlePromptVideo": "Enregistrez une courte vidéo avec votre caméra",
+    "tryAgain": "Réessayer",
+    "enableCamera": "Activer la caméra",
+    "requestingAccess": "Demande d'accès à la caméra…",
+    "flipCamera": "Changer de caméra",
+    "takePhoto": "Prendre une photo",
+    "stop": "Arrêter",
+    "startRecording": "Démarrer l'enregistrement",
+    "capturedPhotoAlt": "Photo capturée",
+    "preparingPhoto": "Préparation de votre photo…",
+    "retake": "Reprendre",
+    "useThisPhoto": "Utiliser cette photo",
+    "useThisVideo": "Utiliser cette vidéo",
+    "uploading": "Envoi en cours…"
+  },
+  "circleCommentRow": {
+    "poster": "Auteur",
+    "you": "(vous)",
+    "reply": "Répondre",
+    "attachedImageAlt": "Jointe au commentaire"
+  },
+  "circlePostComposer": {
+    "trigger": "Publier sur Blind Circle",
+    "dialogTitle": "Publier sur Blind Circle",
+    "uploadFailedGeneric": "Échec de l'envoi — les vidéos doivent durer moins de {{seconds}} secondes",
+    "postedSuccess": "Publié sur Blind Circle",
+    "postFailedGeneric": "Impossible de publier sur Blind Circle",
+    "pasteLink": "Coller un lien",
+    "uploadVideo": "Importer une vidéo",
+    "fetch": "Récupérer",
+    "videoLinkPlaceholder": "Collez un lien vidéo...",
+    "removeVideo": "Retirer la vidéo",
+    "titleLabel": "Titre",
+    "titlePlaceholder": "Qu'est-ce que c'est ? Donnez-lui un titre",
+    "chooseVideo": "Choisir une vidéo",
+    "uploadingEllipsis": "Envoi en cours...",
+    "uploadHint": "Jusqu'à {{seconds}} secondes. MP4, WebM ou MOV.",
+    "notePlaceholderWithTitle": "Brève description (facultatif)",
+    "notePlaceholderNoTitle": "Dites-en un mot (facultatif)",
+    "moodLabel": "Humeur (facultatif)",
+    "aliasPlaceholder": "Signez comme... (facultatif)",
+    "destinationLabel": "Où cela doit-il aller ?",
+    "publicCircle": "Blind Circle public",
+    "anonymousDisclaimer": "Publié anonymement — votre nom n'est jamais associé. Toute personne pouvant voir ce cercle peut voir la publication.",
+    "postAnonymously": "Publier anonymement"
+  },
+  "countryPhoneInput": {
+    "searchCountry": "Rechercher un pays...",
+    "noCountryFound": "Aucun pays trouvé."
+  },
+  "debateTopicCard": {
+    "shareTitle": "Blind Whisper — Debate Topic",
+    "linkCopied": "Lien copié — envoyez-le pour inviter quelqu'un à rejoindre le débat",
+    "commentCount_one": "{{count}} commentaire",
+    "commentCount_other": "{{count}} commentaires",
+    "shareTopicAria": "Partager ce sujet",
+    "joinDebate": "Rejoindre le débat"
+  },
+  "demographicsGateDialog": {
+    "title": "Juste une petite chose",
+    "description": "Avant l'envoi de votre premier whisp, aidez-nous à comprendre qui utilise Blind Whisper, et choisissez la langue de l'application. Rien de tout cela n'est jamais montré aux personnes à qui vous envoyez, et vous pourrez le modifier plus tard dans les Paramètres.",
+    "languageLabel": "Langue",
+    "genderLabel": "Genre",
+    "ageRangeLabel": "Tranche d'âge",
+    "selectPlaceholder": "Sélectionner...",
+    "continue": "Continuer"
+  },
+  "enableNotificationsPrompt": {
+    "title": "Activer les notifications",
+    "description": "Soyez averti dès que quelqu'un vous envoie un whisp ou répond — directement sur votre appareil, comme n'importe quelle autre appli.",
+    "notNow": "Pas maintenant",
+    "enabling": "Activation...",
+    "enable": "Activer les notifications"
+  }
+}

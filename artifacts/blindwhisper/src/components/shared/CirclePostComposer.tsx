@@ -10,6 +10,7 @@ import {
   getListMediaQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +46,7 @@ export function CirclePostComposer({
   presetUpload?: { id: string; title: string };
   trigger?: React.ReactNode;
 } = {}) {
+  const { t } = useTranslation("sharedA");
   const [open, setOpen] = useState(false);
   const [source, setSource] = useState<"link" | "upload">(presetUpload ? "upload" : "link");
   const [videoUrl, setVideoUrl] = useState("");
@@ -130,7 +132,7 @@ export function CirclePostComposer({
         title:
           err instanceof UploadValidationError
             ? err.message
-            : `Upload failed — videos must be under ${MAX_UPLOAD_DURATION_SECONDS} seconds`,
+            : t("circlePostComposer.uploadFailedGeneric", { seconds: MAX_UPLOAD_DURATION_SECONDS }),
         variant: "destructive",
       });
     } finally {
@@ -163,7 +165,7 @@ export function CirclePostComposer({
       },
       {
         onSuccess: () => {
-          toast({ title: "Posted to Blind Circle" });
+          toast({ title: t("circlePostComposer.postedSuccess") });
           setOpen(false);
           reset();
           queryClient.invalidateQueries({ queryKey: getListCircleFeedQueryKey() });
@@ -171,7 +173,7 @@ export function CirclePostComposer({
           queryClient.invalidateQueries({ queryKey: getListWhispsQueryKey() });
         },
         onError: (err: any) =>
-          toast({ title: err?.data?.error ?? "Couldn't post to Blind Circle", variant: "destructive" }),
+          toast({ title: err?.data?.error ?? t("circlePostComposer.postFailedGeneric"), variant: "destructive" }),
       },
     );
   }
@@ -187,13 +189,13 @@ export function CirclePostComposer({
       <DialogTrigger asChild>
         {trigger ?? (
           <Button data-testid="button-open-circle-composer" className="rounded-full">
-            <Plus className="w-4 h-4 mr-1.5" /> Post to Blind Circle
+            <Plus className="w-4 h-4 mr-1.5" /> {t("circlePostComposer.trigger")}
           </Button>
         )}
       </DialogTrigger>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-serif">Post to Blind Circle</DialogTitle>
+          <DialogTitle className="font-serif">{t("circlePostComposer.dialogTitle")}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -210,7 +212,7 @@ export function CirclePostComposer({
                 source === "link" ? "border-primary bg-primary/10 text-foreground" : "border-border/50 text-muted-foreground"
               }`}
             >
-              <Link2 className="w-4 h-4" /> Paste a link
+              <Link2 className="w-4 h-4" /> {t("circlePostComposer.pasteLink")}
             </button>
             <button
               type="button"
@@ -220,7 +222,7 @@ export function CirclePostComposer({
                 source === "upload" ? "border-primary bg-primary/10 text-foreground" : "border-border/50 text-muted-foreground"
               }`}
             >
-              <Upload className="w-4 h-4" /> Upload a video
+              <Upload className="w-4 h-4" /> {t("circlePostComposer.uploadVideo")}
             </button>
           </div>
           )}
@@ -228,7 +230,7 @@ export function CirclePostComposer({
           {presetUpload ? null : source === "link" ? (
             <div className="flex gap-2">
               <Input
-                placeholder="Paste a video link..."
+                placeholder={t("circlePostComposer.videoLinkPlaceholder")}
                 value={videoUrl}
                 onChange={(e) => {
                   setVideoUrl(e.target.value);
@@ -245,7 +247,7 @@ export function CirclePostComposer({
                 disabled={!videoUrl.trim() || scrapeVideo.isPending}
                 data-testid="button-circle-fetch-video"
               >
-                {scrapeVideo.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Fetch"}
+                {scrapeVideo.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : t("circlePostComposer.fetch")}
               </Button>
             </div>
           ) : (
@@ -267,10 +269,10 @@ export function CirclePostComposer({
                 data-testid="button-circle-choose-file"
               >
                 {uploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
-                {uploading ? "Uploading..." : "Choose a video"}
+                {uploading ? t("circlePostComposer.uploadingEllipsis") : t("circlePostComposer.chooseVideo")}
               </Button>
               <p className="mt-1.5 text-xs text-muted-foreground">
-                Up to {MAX_UPLOAD_DURATION_SECONDS} seconds. MP4, WebM or MOV.
+                {t("circlePostComposer.uploadHint", { seconds: MAX_UPLOAD_DURATION_SECONDS })}
               </p>
             </div>
           )}
@@ -293,7 +295,7 @@ export function CirclePostComposer({
                   setVideoUrl("");
                   setTitle("");
                 }}
-                aria-label="Remove video"
+                aria-label={t("circlePostComposer.removeVideo")}
                 className="shrink-0 text-muted-foreground hover:text-destructive"
               >
                 <X className="h-4 w-4" />
@@ -308,13 +310,13 @@ export function CirclePostComposer({
             <div className="space-y-1">
               <div className="flex items-baseline justify-between">
                 <label htmlFor="circle-title" className="text-xs font-medium text-muted-foreground">
-                  Title <span className="text-destructive">*</span>
+                  {t("circlePostComposer.titleLabel")} <span className="text-destructive">*</span>
                 </label>
                 <span className="text-[11px] text-muted-foreground">{title.length}/120</span>
               </div>
               <Input
                 id="circle-title"
-                placeholder="What is it? Give it a title"
+                placeholder={t("circlePostComposer.titlePlaceholder")}
                 maxLength={120}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -325,7 +327,7 @@ export function CirclePostComposer({
 
           <Textarea
             className="min-h-[70px] resize-none rounded-xl"
-            placeholder={needsTitle ? "Short description (optional)" : "Say something about it (optional)"}
+            placeholder={needsTitle ? t("circlePostComposer.notePlaceholderWithTitle") : t("circlePostComposer.notePlaceholderNoTitle")}
             maxLength={500}
             value={note}
             onChange={(e) => setNote(e.target.value)}
@@ -333,7 +335,7 @@ export function CirclePostComposer({
           />
 
           <div className="space-y-1.5">
-            <p className="text-xs font-medium text-muted-foreground">Mood (optional)</p>
+            <p className="text-xs font-medium text-muted-foreground">{t("circlePostComposer.moodLabel")}</p>
             <div className="flex flex-wrap gap-1.5">
               {MOOD_TAGS.map((mood) => {
                 const config = MOOD_CONFIG[mood];
@@ -356,7 +358,7 @@ export function CirclePostComposer({
           </div>
 
           <Input
-            placeholder="Sign it as... (optional)"
+            placeholder={t("circlePostComposer.aliasPlaceholder")}
             maxLength={200}
             value={alias}
             onChange={(e) => setAlias(e.target.value)}
@@ -364,7 +366,7 @@ export function CirclePostComposer({
           />
 
           <div className="space-y-1.5">
-            <p className="text-xs font-medium text-muted-foreground">Where should it go?</p>
+            <p className="text-xs font-medium text-muted-foreground">{t("circlePostComposer.destinationLabel")}</p>
             <div className="grid grid-cols-1 gap-2">
               <button
                 type="button"
@@ -374,7 +376,7 @@ export function CirclePostComposer({
                   circleId === null ? "border-primary bg-primary/10 text-foreground" : "border-border/50 text-muted-foreground"
                 }`}
               >
-                <Globe className="h-4 w-4" /> Public Blind Circle
+                <Globe className="h-4 w-4" /> {t("circlePostComposer.publicCircle")}
               </button>
               {(myCircles ?? []).map((c) => (
                 <button
@@ -393,7 +395,7 @@ export function CirclePostComposer({
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Posted anonymously — your name is never attached. Anyone who can see this circle can see the post.
+            {t("circlePostComposer.anonymousDisclaimer")}
           </p>
 
           <Button
@@ -403,7 +405,7 @@ export function CirclePostComposer({
             data-testid="button-circle-post"
           >
             {createWhisp.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-            Post anonymously
+            {t("circlePostComposer.postAnonymously")}
           </Button>
         </div>
       </DialogContent>

@@ -1,0 +1,99 @@
+{
+  "archivedWhispGate": {
+    "title": "This whisp is archived",
+    "description": "It's tucked away in your Archive. Bring it back to view or reply to it again.",
+    "descriptionWithTitle": "\"{{title}}\" is tucked away in your Archive. Bring it back to view or reply to it again.",
+    "back": "Back",
+    "unarchive": "Unarchive to view"
+  },
+  "avatarPickerGrid": {
+    "chooseAvatar": "Choose an avatar",
+    "noAvatar": "No avatar"
+  },
+  "cameraCapture": {
+    "modePhoto": "Photo",
+    "modeVideo": "Video",
+    "photoPrepareUnsupported": "This browser can't prepare a photo for sending — try Video instead.",
+    "photoPrepareFailed": "Couldn't prepare that photo for sending. Please retake it.",
+    "captureFailed": "Couldn't capture a photo from the camera.",
+    "photoClipUnsupported": "Photos can't be prepared for sending in this browser — try Video instead, or Retake.",
+    "recordUnsupported": "This browser can't record video — try Photo or Upload instead.",
+    "recordStartFailed": "Couldn't start recording. Please try again.",
+    "unsupportedFallback": "Use Upload or Paste a link instead.",
+    "deniedFallback": "Upload and Paste a link are still available if this doesn't work.",
+    "idlePromptPhoto": "Take a photo with your camera",
+    "idlePromptVideo": "Record a short video with your camera",
+    "tryAgain": "Try again",
+    "enableCamera": "Enable camera",
+    "requestingAccess": "Requesting camera access…",
+    "flipCamera": "Flip camera",
+    "takePhoto": "Take Photo",
+    "stop": "Stop",
+    "startRecording": "Start Recording",
+    "capturedPhotoAlt": "Captured photo",
+    "preparingPhoto": "Preparing your photo…",
+    "retake": "Retake",
+    "useThisPhoto": "Use this photo",
+    "useThisVideo": "Use this video",
+    "uploading": "Uploading…"
+  },
+  "circleCommentRow": {
+    "poster": "Poster",
+    "you": "(you)",
+    "reply": "Reply",
+    "attachedImageAlt": "Attached to comment"
+  },
+  "circlePostComposer": {
+    "trigger": "Post to Blind Circle",
+    "dialogTitle": "Post to Blind Circle",
+    "uploadFailedGeneric": "Upload failed — videos must be under {{seconds}} seconds",
+    "postedSuccess": "Posted to Blind Circle",
+    "postFailedGeneric": "Couldn't post to Blind Circle",
+    "pasteLink": "Paste a link",
+    "uploadVideo": "Upload a video",
+    "fetch": "Fetch",
+    "videoLinkPlaceholder": "Paste a video link...",
+    "removeVideo": "Remove video",
+    "titleLabel": "Title",
+    "titlePlaceholder": "What is it? Give it a title",
+    "chooseVideo": "Choose a video",
+    "uploadingEllipsis": "Uploading...",
+    "uploadHint": "Up to {{seconds}} seconds. MP4, WebM or MOV.",
+    "notePlaceholderWithTitle": "Short description (optional)",
+    "notePlaceholderNoTitle": "Say something about it (optional)",
+    "moodLabel": "Mood (optional)",
+    "aliasPlaceholder": "Sign it as... (optional)",
+    "destinationLabel": "Where should it go?",
+    "publicCircle": "Public Blind Circle",
+    "anonymousDisclaimer": "Posted anonymously — your name is never attached. Anyone who can see this circle can see the post.",
+    "postAnonymously": "Post anonymously"
+  },
+  "countryPhoneInput": {
+    "searchCountry": "Search country...",
+    "noCountryFound": "No country found."
+  },
+  "debateTopicCard": {
+    "shareTitle": "Blind Whisper — Debate Topic",
+    "linkCopied": "Link copied — send it to bring someone into the debate",
+    "commentCount_one": "{{count}} comment",
+    "commentCount_other": "{{count}} comments",
+    "shareTopicAria": "Whisper this topic",
+    "joinDebate": "Join the debate"
+  },
+  "demographicsGateDialog": {
+    "title": "Just one quick thing",
+    "description": "Before your first whisp goes out, help us understand who's using Blind Whisper, and pick the language the app should use. None of this is ever shown to anyone you send to, and you can change it later in Settings.",
+    "languageLabel": "Language",
+    "genderLabel": "Gender",
+    "ageRangeLabel": "Age range",
+    "selectPlaceholder": "Select...",
+    "continue": "Continue"
+  },
+  "enableNotificationsPrompt": {
+    "title": "Turn on notifications",
+    "description": "Get notified the moment someone whisps you, or replies — right on your device, like any other app.",
+    "notNow": "Not now",
+    "enabling": "Enabling...",
+    "enable": "Enable notifications"
+  }
+}

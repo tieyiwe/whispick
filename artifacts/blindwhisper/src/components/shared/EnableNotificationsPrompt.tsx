@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Bell, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
   useGetPushPublicKey,
@@ -23,6 +24,7 @@ import { onJustInstalled, announceNotificationStepDone } from "@/lib/installApp"
 // (alongside ServiceWorkerRegistration/PinToTaskbarTip), so it fires
 // regardless of which page triggered the install.
 export function EnableNotificationsPrompt() {
+  const { t } = useTranslation("sharedA");
   const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -91,7 +93,7 @@ export function EnableNotificationsPrompt() {
     <div
       className="fixed inset-x-3 z-[60] bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] md:bottom-4 md:left-auto md:right-4 md:w-96"
       role="dialog"
-      aria-label="Turn on notifications"
+      aria-label={t("enableNotificationsPrompt.title")}
       data-testid="enable-notifications-prompt"
     >
       <div className="rounded-2xl border border-primary/30 bg-card/95 p-4 shadow-[0_8px_40px_rgba(0,0,0,0.45)] backdrop-blur">
@@ -100,15 +102,15 @@ export function EnableNotificationsPrompt() {
             <Bell className="h-5 w-5" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="font-serif text-base font-semibold text-foreground">Turn on notifications</p>
+            <p className="font-serif text-base font-semibold text-foreground">{t("enableNotificationsPrompt.title")}</p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Get notified the moment someone whisps you, or replies — right on your device, like any other app.
+              {t("enableNotificationsPrompt.description")}
             </p>
           </div>
           <button
             type="button"
             onClick={handleDismiss}
-            aria-label="Not now"
+            aria-label={t("enableNotificationsPrompt.notNow")}
             data-testid="enable-notifications-dismiss-icon"
             className="shrink-0 rounded-full p-1 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
           >
@@ -117,10 +119,10 @@ export function EnableNotificationsPrompt() {
         </div>
         <div className="mt-3 flex gap-2">
           <Button onClick={handleEnable} disabled={loading} className="flex-1" data-testid="enable-notifications-confirm">
-            {loading ? "Enabling..." : "Enable notifications"}
+            {loading ? t("enableNotificationsPrompt.enabling") : t("enableNotificationsPrompt.enable")}
           </Button>
           <Button variant="ghost" onClick={handleDismiss} data-testid="enable-notifications-later">
-            Not now
+            {t("enableNotificationsPrompt.notNow")}
           </Button>
         </div>
       </div>

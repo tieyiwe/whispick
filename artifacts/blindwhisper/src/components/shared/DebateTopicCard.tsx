@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import { useToast } from "@/hooks/use-toast";
 import { MessageCircle, Repeat2, Share2, ArrowRight } from "lucide-react";
 import type { DebateTopicFeedItem } from "@workspace/api-client-react";
@@ -24,6 +25,7 @@ function accentFor(id: string) {
 // identically wherever it shows up.
 export function DebateTopicCard({ topic }: { topic: DebateTopicFeedItem }) {
   const { toast } = useToast();
+  const { t } = useTranslation("sharedA");
   const accent = accentFor(topic.id);
 
   // Distinct from "rewhisp" (the retweet-style boost on the detail page) —
@@ -34,10 +36,12 @@ export function DebateTopicCard({ topic }: { topic: DebateTopicFeedItem }) {
     e.stopPropagation();
     const url = `${window.location.origin}/debate-topics/${topic.id}`;
     if (navigator.share) {
-      navigator.share({ title: "Blind Whisper — Debate Topic", url }).catch(() => {});
+      // Left in English in every language — this is a proper-noun share-sheet
+      // title (brand name + feature name), not a translatable sentence.
+      navigator.share({ title: t("debateTopicCard.shareTitle"), url }).catch(() => {});
       return;
     }
-    navigator.clipboard.writeText(url).then(() => toast({ title: "Link copied — send it to bring someone into the debate" }));
+    navigator.clipboard.writeText(url).then(() => toast({ title: t("debateTopicCard.linkCopied") }));
   }
 
   return (
@@ -69,7 +73,7 @@ export function DebateTopicCard({ topic }: { topic: DebateTopicFeedItem }) {
           <div className="flex items-center gap-3 min-w-0">
             <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${accent.text}`}>
               <MessageCircle className="w-3.5 h-3.5" />
-              {topic.commentCount} {topic.commentCount === 1 ? "comment" : "comments"}
+              {t("debateTopicCard.commentCount", { count: topic.commentCount })}
             </span>
             <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
               <Repeat2 className="w-3.5 h-3.5" />
@@ -80,14 +84,14 @@ export function DebateTopicCard({ topic }: { topic: DebateTopicFeedItem }) {
             <button
               type="button"
               onClick={handleShareTopic}
-              aria-label="Whisper this topic"
+              aria-label={t("debateTopicCard.shareTopicAria")}
               className="p-1.5 -m-1.5 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
               data-testid={`button-share-${topic.id}`}
             >
               <Share2 className="w-3.5 h-3.5" />
             </button>
             <span className="hidden sm:inline-flex items-center gap-1 text-xs text-muted-foreground group-hover:text-foreground transition-colors">
-              Join the debate <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+              {t("debateTopicCard.joinDebate")} <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
             </span>
           </div>
         </div>

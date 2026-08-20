@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AsYouType } from "libphonenumber-js/min";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -31,6 +32,7 @@ export function CountryPhoneInput({
   onCountryChange?: (iso2: string) => void;
   disabled?: boolean;
 }) {
+  const { t } = useTranslation("sharedA");
   const [country, setCountry] = useState(() => detectDefaultCountry());
   const [nationalNumber, setNationalNumber] = useState("");
   const [open, setOpen] = useState(false);
@@ -88,9 +90,9 @@ export function CountryPhoneInput({
         </PopoverTrigger>
         <PopoverContent className="w-72 p-0" align="start">
           <Command>
-            <CommandInput placeholder="Search country..." data-testid="input-country-search" />
+            <CommandInput placeholder={t("countryPhoneInput.searchCountry")} data-testid="input-country-search" />
             <CommandList>
-              <CommandEmpty>No country found.</CommandEmpty>
+              <CommandEmpty>{t("countryPhoneInput.noCountryFound")}</CommandEmpty>
               <CommandGroup>
                 {COUNTRIES.map((c) => (
                   <CommandItem

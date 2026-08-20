@@ -1,0 +1,99 @@
+{
+  "archivedWhispGate": {
+    "title": "이 Whisp는 보관되어 있어요",
+    "description": "보관함에 잘 보관되어 있어요. 다시 보거나 답장하려면 꺼내오세요.",
+    "descriptionWithTitle": "\"{{title}}\"이(가) 보관함에 잘 보관되어 있어요. 다시 보거나 답장하려면 꺼내오세요.",
+    "back": "뒤로",
+    "unarchive": "보관 취소하고 보기"
+  },
+  "avatarPickerGrid": {
+    "chooseAvatar": "아바타 선택",
+    "noAvatar": "아바타 없음"
+  },
+  "cameraCapture": {
+    "modePhoto": "사진",
+    "modeVideo": "동영상",
+    "photoPrepareUnsupported": "이 브라우저에서는 전송용 사진을 준비할 수 없어요 — 대신 동영상을 사용해 보세요.",
+    "photoPrepareFailed": "전송용 사진을 준비하지 못했어요. 다시 촬영해 주세요.",
+    "captureFailed": "카메라에서 사진을 캡처하지 못했어요.",
+    "photoClipUnsupported": "이 브라우저에서는 사진을 전송용으로 준비할 수 없어요 — 대신 동영상을 사용하거나 다시 촬영해 보세요.",
+    "recordUnsupported": "이 브라우저에서는 동영상을 녹화할 수 없어요 — 대신 사진이나 업로드를 사용해 보세요.",
+    "recordStartFailed": "녹화를 시작하지 못했어요. 다시 시도해 주세요.",
+    "unsupportedFallback": "대신 업로드나 링크 붙여넣기를 사용하세요.",
+    "deniedFallback": "이 방법이 안 되면 업로드와 링크 붙여넣기는 여전히 사용할 수 있어요.",
+    "idlePromptPhoto": "카메라로 사진을 찍어보세요",
+    "idlePromptVideo": "카메라로 짧은 동영상을 녹화해 보세요",
+    "tryAgain": "다시 시도",
+    "enableCamera": "카메라 켜기",
+    "requestingAccess": "카메라 접근 권한을 요청하는 중…",
+    "flipCamera": "카메라 전환",
+    "takePhoto": "사진 찍기",
+    "stop": "정지",
+    "startRecording": "녹화 시작",
+    "capturedPhotoAlt": "촬영된 사진",
+    "preparingPhoto": "사진을 준비하는 중…",
+    "retake": "다시 찍기",
+    "useThisPhoto": "이 사진 사용",
+    "useThisVideo": "이 동영상 사용",
+    "uploading": "업로드 중…"
+  },
+  "circleCommentRow": {
+    "poster": "작성자",
+    "you": "(나)",
+    "reply": "답글",
+    "attachedImageAlt": "댓글에 첨부됨"
+  },
+  "circlePostComposer": {
+    "trigger": "Blind Circle에 게시",
+    "dialogTitle": "Blind Circle에 게시",
+    "uploadFailedGeneric": "업로드 실패 — 동영상은 {{seconds}}초 미만이어야 해요",
+    "postedSuccess": "Blind Circle에 게시했어요",
+    "postFailedGeneric": "Blind Circle에 게시하지 못했어요",
+    "pasteLink": "링크 붙여넣기",
+    "uploadVideo": "동영상 업로드",
+    "fetch": "가져오기",
+    "videoLinkPlaceholder": "동영상 링크를 붙여넣으세요...",
+    "removeVideo": "동영상 제거",
+    "titleLabel": "제목",
+    "titlePlaceholder": "무엇인가요? 제목을 붙여주세요",
+    "chooseVideo": "동영상 선택",
+    "uploadingEllipsis": "업로드 중...",
+    "uploadHint": "최대 {{seconds}}초. MP4, WebM 또는 MOV.",
+    "notePlaceholderWithTitle": "짧은 설명 (선택 사항)",
+    "notePlaceholderNoTitle": "간단히 한마디 남겨보세요 (선택 사항)",
+    "moodLabel": "기분 (선택 사항)",
+    "aliasPlaceholder": "서명으로 사용할 이름... (선택 사항)",
+    "destinationLabel": "어디로 보낼까요?",
+    "publicCircle": "공개 Blind Circle",
+    "anonymousDisclaimer": "익명으로 게시돼요 — 당신의 이름은 절대 표시되지 않아요. 이 서클을 볼 수 있는 사람이라면 누구나 이 게시물을 볼 수 있어요.",
+    "postAnonymously": "익명으로 게시"
+  },
+  "countryPhoneInput": {
+    "searchCountry": "국가 검색...",
+    "noCountryFound": "일치하는 국가가 없어요."
+  },
+  "debateTopicCard": {
+    "shareTitle": "Blind Whisper — Debate Topic",
+    "linkCopied": "링크가 복사됐어요 — 전달해서 토론에 초대해 보세요",
+    "commentCount_one": "댓글 {{count}}개",
+    "commentCount_other": "댓글 {{count}}개",
+    "shareTopicAria": "이 주제 공유하기",
+    "joinDebate": "토론 참여하기"
+  },
+  "demographicsGateDialog": {
+    "title": "간단한 절차가 하나 더 있어요",
+    "description": "첫 whisp를 보내기 전에, Blind Whisper를 사용하는 분들을 이해할 수 있도록 도와주시고 앱에서 사용할 언어를 선택해 주세요. 이 정보는 상대방에게 절대 공개되지 않으며, 나중에 설정에서 언제든 변경할 수 있어요.",
+    "languageLabel": "언어",
+    "genderLabel": "성별",
+    "ageRangeLabel": "연령대",
+    "selectPlaceholder": "선택...",
+    "continue": "계속"
+  },
+  "enableNotificationsPrompt": {
+    "title": "알림 켜기",
+    "description": "누군가 whisp를 보내거나 답장할 때 바로 알려드려요 — 다른 앱과 마찬가지로 기기에서 바로요.",
+    "notNow": "나중에",
+    "enabling": "켜는 중...",
+    "enable": "알림 켜기"
+  }
+}

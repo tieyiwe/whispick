@@ -1,4 +1,5 @@
 import { PenLine, Reply as ReplyIcon, ThumbsUp, ThumbsDown } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { CircleComment } from "@workspace/api-client-react";
 
 // Same same-day-vs-older timestamp treatment as ReplyThread's own
@@ -32,12 +33,14 @@ export function CircleCommentRow({
   onReact?: (reaction: "like" | "dislike") => void;
   reactionPending?: boolean;
 }) {
+  const { t } = useTranslation("sharedA");
+
   return (
     <div data-testid={`comment-${comment.id}`} className="space-y-1">
       <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
         {comment.isPoster && (
           <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 font-medium text-primary">
-            <PenLine className="w-2.5 h-2.5" /> Poster
+            <PenLine className="w-2.5 h-2.5" /> {t("circleCommentRow.poster")}
           </span>
         )}
         {/* A stable per-thread handle (e.g. "SwiftFalcon482"), auto-assigned
@@ -47,7 +50,7 @@ export function CircleCommentRow({
         <span className="font-medium text-foreground" data-testid={`text-comment-handle-${comment.id}`}>
           {comment.handle}
         </span>
-        {comment.isOwnComment && <span className="text-primary">(you)</span>}
+        {comment.isOwnComment && <span className="text-primary">{t("circleCommentRow.you")}</span>}
         <span>·</span>
         <span>{formatCommentTimestamp(comment.createdAt)}</span>
       </div>
@@ -58,7 +61,7 @@ export function CircleCommentRow({
       {comment.imageUrl && (
         <img
           src={comment.imageUrl}
-          alt="Attached to comment"
+          alt={t("circleCommentRow.attachedImageAlt")}
           loading="lazy"
           className="mt-1 max-h-56 max-w-[75%] rounded-lg border border-border/40 object-cover"
           data-testid={`img-comment-${comment.id}`}
@@ -102,7 +105,7 @@ export function CircleCommentRow({
             data-testid={`button-reply-comment-${comment.id}`}
             className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors"
           >
-            <ReplyIcon className="w-3 h-3" /> Reply
+            <ReplyIcon className="w-3 h-3" /> {t("circleCommentRow.reply")}
           </button>
         )}
       </div>

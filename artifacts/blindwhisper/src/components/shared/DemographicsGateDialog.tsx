@@ -27,6 +27,7 @@ export function DemographicsGateDialog({ open, onConfirmed }: { open: boolean; o
   const queryClient = useQueryClient();
   const updateProfile = useUpdateUserProfile();
   const { t } = useTranslation("demographics");
+  const { t: tShared } = useTranslation("sharedA");
 
   function handleConfirm() {
     if (!gender || !ageRange || !preferredLanguage) return;
@@ -53,18 +54,17 @@ export function DemographicsGateDialog({ open, onConfirmed }: { open: boolean; o
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
         <DialogHeader>
-          <DialogTitle className="font-serif">Just one quick thing</DialogTitle>
+          <DialogTitle className="font-serif">{tShared("demographicsGateDialog.title")}</DialogTitle>
           <DialogDescription>
-            Before your first whisp goes out, help us understand who's using Blind Whisper, and pick the language the app should use.
-            None of this is ever shown to anyone you send to, and you can change it later in Settings.
+            {tShared("demographicsGateDialog.description")}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-1.5">
-            <Label className="text-muted-foreground">Language</Label>
+            <Label className="text-muted-foreground">{tShared("demographicsGateDialog.languageLabel")}</Label>
             <Select value={preferredLanguage} onValueChange={setPreferredLanguage}>
               <SelectTrigger className="bg-input/50 border-border/50 rounded-xl" data-testid="select-gate-language">
-                <SelectValue placeholder="Select..." />
+                <SelectValue placeholder={tShared("demographicsGateDialog.selectPlaceholder")} />
               </SelectTrigger>
               <SelectContent>
                 {SUPPORTED_LANGUAGES.map((code) => (
@@ -74,10 +74,10 @@ export function DemographicsGateDialog({ open, onConfirmed }: { open: boolean; o
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-muted-foreground">Gender</Label>
+            <Label className="text-muted-foreground">{tShared("demographicsGateDialog.genderLabel")}</Label>
             <Select value={gender} onValueChange={setGender}>
               <SelectTrigger className="bg-input/50 border-border/50 rounded-xl" data-testid="select-gate-gender">
-                <SelectValue placeholder="Select..." />
+                <SelectValue placeholder={tShared("demographicsGateDialog.selectPlaceholder")} />
               </SelectTrigger>
               <SelectContent>
                 {GENDER_OPTIONS.map((g) => (
@@ -87,10 +87,10 @@ export function DemographicsGateDialog({ open, onConfirmed }: { open: boolean; o
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-muted-foreground">Age range</Label>
+            <Label className="text-muted-foreground">{tShared("demographicsGateDialog.ageRangeLabel")}</Label>
             <Select value={ageRange} onValueChange={setAgeRange}>
               <SelectTrigger className="bg-input/50 border-border/50 rounded-xl" data-testid="select-gate-age-range">
-                <SelectValue placeholder="Select..." />
+                <SelectValue placeholder={tShared("demographicsGateDialog.selectPlaceholder")} />
               </SelectTrigger>
               <SelectContent>
                 {AGE_RANGE_OPTIONS.map((a) => (
@@ -108,7 +108,7 @@ export function DemographicsGateDialog({ open, onConfirmed }: { open: boolean; o
             data-testid="button-confirm-demographics"
           >
             {updateProfile.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-            Continue
+            {tShared("demographicsGateDialog.continue")}
           </Button>
         </DialogFooter>
       </DialogContent>
