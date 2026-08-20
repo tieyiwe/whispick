@@ -564,6 +564,11 @@ export interface UserProfile {
      */
   whispererHandle?: string | null;
   whispererAvatarId?: AvatarId | null;
+  /**
+     * When this account last dismissed the two-factor setup nudge. Whether 2FA is actually ON is never included here — read Clerk's own user.twoFactorEnabled client-side for that; this is only "did they say not now."
+     * @nullable
+     */
+  mfaNudgeDismissedAt?: string | null;
   plan: string;
   boostCredits: number;
   whisperLinksUsed: number;
@@ -881,6 +886,25 @@ export interface AdminUserListResponse {
  */
 export type AdminUserDetailStatusCounts = {[key: string]: number};
 
+export type AdminUserDetailDebateTopicsItem = {
+  id: string;
+  topicText: string;
+  createdAt: string;
+  /** @nullable */
+  deletedByAuthorAt: string | null;
+  /** @nullable */
+  removedByAdminAt: string | null;
+};
+
+export type AdminUserDetailDebateTopicCommentsItem = {
+  id: string;
+  topicId: string;
+  commentText: string;
+  createdAt: string;
+  /** @nullable */
+  removedByAdminAt: string | null;
+};
+
 export type ModerationFlagSeverity = typeof ModerationFlagSeverity[keyof typeof ModerationFlagSeverity];
 
 
@@ -975,6 +999,33 @@ export interface AdminUserDetail {
   /** Non-dismissed content-safety flags across this user's whisps. */
   moderationFlagCount: number;
   moderationFlags: ModerationFlag[];
+  /** Debate Topics this account authored (never shown publicly under their real account either — see debate_topics.ts), most recent 50. */
+  debateTopics: AdminUserDetailDebateTopicsItem[];
+  /** Debate Topic comments this account posted while signed in, most recent 50. */
+  debateTopicComments: AdminUserDetailDebateTopicCommentsItem[];
+}
+
+/**
+ * See lib/adminAudit.ts and admin_audit_log.ts — an append-only record of one sensitive admin action.
+ */
+export interface AdminAuditLogEntry {
+  id: string;
+  adminUserId: string;
+  /** e.g. 'user.update', 'user.delete', 'whisp.delete', 'content.remove', 'debate_agent.config_update'. */
+  action: string;
+  /** @nullable */
+  targetType: string | null;
+  /** @nullable */
+  targetId: string | null;
+  /** Action-specific detail — shape varies by action. */
+  metadata?: unknown;
+  createdAt: string;
+}
+
+export interface AdminAuditLogResponse {
+  items: AdminAuditLogEntry[];
+  page: number;
+  pageSize: number;
 }
 
 export interface ModerationFlagListResponse {
@@ -1958,6 +2009,19 @@ category?: string;
 featured?: string;
 page?: number;
 pageSize?: number;
+};
+
+export type AdminListAuditLogParams = {
+page?: number;
+pageSize?: number;
+/**
+ * Filter to actions taken by one admin account.
+ */
+adminUserId?: string;
+/**
+ * Filter to one target type, e.g. 'user', 'whisp', 'debate_topic'.
+ */
+targetType?: string;
 };
 
 export type ListSuggestionsParams = {

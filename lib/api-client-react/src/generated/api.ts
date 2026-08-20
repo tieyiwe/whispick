@@ -21,10 +21,12 @@ import type {
 
 import type {
   AddWhisperGroupMembersInput,
+  AdminAuditLogResponse,
   AdminCategoryStatsResponse,
   AdminDeliveryMethodStatsResponse,
   AdminDemographicStatsResponse,
   AdminFunnelStats,
+  AdminListAuditLogParams,
   AdminListModerationFlagsParams,
   AdminListNotificationsParams,
   AdminListSuggestionsParams,
@@ -3267,6 +3269,76 @@ export const useUpdateUserProfile = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpdateUserProfileMutationOptions(options));
+    }
+
+export const getDismissMfaNudgeUrl = () => {
+
+
+
+
+  return `/api/user/mfa-nudge/dismiss`
+}
+
+/**
+ * @summary "Skip for now" on the two-factor setup nudge — doesn't affect whether 2FA is actually enabled, only when the nudge is next shown
+ */
+export const dismissMfaNudge = async ( options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDismissMfaNudgeUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getDismissMfaNudgeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof dismissMfaNudge>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof dismissMfaNudge>>, TError,void, TContext> => {
+
+const mutationKey = ['dismissMfaNudge'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof dismissMfaNudge>>, void> = () => {
+
+
+          return  dismissMfaNudge(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DismissMfaNudgeMutationResult = NonNullable<Awaited<ReturnType<typeof dismissMfaNudge>>>
+
+    export type DismissMfaNudgeMutationError = ErrorType<unknown>
+
+    /**
+ * @summary "Skip for now" on the two-factor setup nudge — doesn't affect whether 2FA is actually enabled, only when the nudge is next shown
+ */
+export const useDismissMfaNudge = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof dismissMfaNudge>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof dismissMfaNudge>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getDismissMfaNudgeMutationOptions(options));
     }
 
 export const getGetPushPublicKeyUrl = () => {
@@ -7641,6 +7713,90 @@ export const useAdminDeleteSuggestion = <TError = ErrorType<ApiError>,
       > => {
       return useMutation(getAdminDeleteSuggestionMutationOptions(options));
     }
+
+export const getAdminListAuditLogUrl = (params?: AdminListAuditLogParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/audit-log?${stringifiedParams}` : `/api/admin/audit-log`
+}
+
+/**
+ * @summary The admin-accountability trail — who took which sensitive action, on what, and when (admin only)
+ */
+export const adminListAuditLog = async (params?: AdminListAuditLogParams, options?: RequestInit): Promise<AdminAuditLogResponse> => {
+
+  return customFetch<AdminAuditLogResponse>(getAdminListAuditLogUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListAuditLogQueryKey = (params?: AdminListAuditLogParams,) => {
+    return [
+    `/api/admin/audit-log`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getAdminListAuditLogQueryOptions = <TData = Awaited<ReturnType<typeof adminListAuditLog>>, TError = ErrorType<unknown>>(params?: AdminListAuditLogParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListAuditLog>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListAuditLogQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListAuditLog>>> = ({ signal }) => adminListAuditLog(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListAuditLog>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListAuditLogQueryResult = NonNullable<Awaited<ReturnType<typeof adminListAuditLog>>>
+export type AdminListAuditLogQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary The admin-accountability trail — who took which sensitive action, on what, and when (admin only)
+ */
+
+export function useAdminListAuditLog<TData = Awaited<ReturnType<typeof adminListAuditLog>>, TError = ErrorType<unknown>>(
+ params?: AdminListAuditLogParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListAuditLog>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListAuditLogQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getListSuggestionsUrl = (params?: ListSuggestionsParams,) => {
   const normalizedParams = new URLSearchParams();

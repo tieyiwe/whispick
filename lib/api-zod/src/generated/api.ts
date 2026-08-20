@@ -1079,6 +1079,7 @@ export const GetUserProfileResponse = zod.object({
   "preferredLanguage": zod.string().nullish().describe('ISO 639-1 code from lib\/languages.ts\'s SUPPORTED_LANGUAGES (\'en\' | \'fr\' | \'ar\' | \'de\' | \'es\' | \'pt\' | \'zh\' | \'ja\' | \'hi\' | \'ru\' | \'id\' | \'bn\' | \'sw\'), or null (not yet answered). What the app renders in, and what server-generated text (notifications, emails) is sent in — see users.preferredLanguage.'),
   "whispererHandle": zod.string().nullish().describe('This account\'s persistent, public, followable Debate Topics handle — see users.whispererHandle. Null until first assigned (posting a topic, or commenting while signed in).'),
   "whispererAvatarId": zod.string().nullish().describe('A preset id from the curated avatar library (api-server\'s lib\/avatars.ts), e.g. \"flame-violet\" — rendered as an icon-on-color circle by the frontend\'s matching catalog. Never a file upload. null means \"no avatar\" (a real, explicit choice — the frontend falls back to the handle\'s first letter), not \"not yet assigned.\"'),
+  "mfaNudgeDismissedAt": zod.string().nullish().describe('When this account last dismissed the two-factor setup nudge. Whether 2FA is actually ON is never included here — read Clerk\'s own user.twoFactorEnabled client-side for that; this is only \"did they say not now.\"'),
   "plan": zod.string(),
   "boostCredits": zod.number(),
   "whisperLinksUsed": zod.number(),
@@ -1116,6 +1117,7 @@ export const UpdateUserProfileResponse = zod.object({
   "preferredLanguage": zod.string().nullish().describe('ISO 639-1 code from lib\/languages.ts\'s SUPPORTED_LANGUAGES (\'en\' | \'fr\' | \'ar\' | \'de\' | \'es\' | \'pt\' | \'zh\' | \'ja\' | \'hi\' | \'ru\' | \'id\' | \'bn\' | \'sw\'), or null (not yet answered). What the app renders in, and what server-generated text (notifications, emails) is sent in — see users.preferredLanguage.'),
   "whispererHandle": zod.string().nullish().describe('This account\'s persistent, public, followable Debate Topics handle — see users.whispererHandle. Null until first assigned (posting a topic, or commenting while signed in).'),
   "whispererAvatarId": zod.string().nullish().describe('A preset id from the curated avatar library (api-server\'s lib\/avatars.ts), e.g. \"flame-violet\" — rendered as an icon-on-color circle by the frontend\'s matching catalog. Never a file upload. null means \"no avatar\" (a real, explicit choice — the frontend falls back to the handle\'s first letter), not \"not yet assigned.\"'),
+  "mfaNudgeDismissedAt": zod.string().nullish().describe('When this account last dismissed the two-factor setup nudge. Whether 2FA is actually ON is never included here — read Clerk\'s own user.twoFactorEnabled client-side for that; this is only \"did they say not now.\"'),
   "plan": zod.string(),
   "boostCredits": zod.number(),
   "whisperLinksUsed": zod.number(),
@@ -1123,6 +1125,12 @@ export const UpdateUserProfileResponse = zod.object({
   "emailNotificationsEnabled": zod.boolean().describe('Whether this Whisperer wants the \"you have a new whisp\" email in addition to the in-app notification. On by default — see PATCH \/user\/profile to change it.'),
   "createdAt": zod.string()
 })
+
+
+/**
+ * @summary "Skip for now" on the two-factor setup nudge — doesn't affect whether 2FA is actually enabled, only when the nudge is next shown
+ */
+export const DismissMfaNudgeResponse = zod.void()
 
 
 /**
@@ -1714,7 +1722,21 @@ export const AdminGetUserResponse = zod.object({
   "reviewedAt": zod.string().nullish(),
   "reviewedByAdminId": zod.string().nullish(),
   "createdAt": zod.string()
-}))
+})),
+  "debateTopics": zod.array(zod.object({
+  "id": zod.string(),
+  "topicText": zod.string(),
+  "createdAt": zod.string(),
+  "deletedByAuthorAt": zod.string().nullable(),
+  "removedByAdminAt": zod.string().nullable()
+})).describe('Debate Topics this account authored (never shown publicly under their real account either — see debate_topics.ts), most recent 50.'),
+  "debateTopicComments": zod.array(zod.object({
+  "id": zod.string(),
+  "topicId": zod.string(),
+  "commentText": zod.string(),
+  "createdAt": zod.string(),
+  "removedByAdminAt": zod.string().nullable()
+})).describe('Debate Topic comments this account posted while signed in, most recent 50.')
 })
 
 
@@ -2553,6 +2575,31 @@ export const AdminDeleteSuggestionParams = zod.object({
 })
 
 export const AdminDeleteSuggestionResponse = zod.void()
+
+
+/**
+ * @summary The admin-accountability trail — who took which sensitive action, on what, and when (admin only)
+ */
+export const AdminListAuditLogQueryParams = zod.object({
+  "page": zod.coerce.number().optional(),
+  "pageSize": zod.coerce.number().optional(),
+  "adminUserId": zod.coerce.string().optional().describe('Filter to actions taken by one admin account.'),
+  "targetType": zod.coerce.string().optional().describe('Filter to one target type, e.g. \'user\', \'whisp\', \'debate_topic\'.')
+})
+
+export const AdminListAuditLogResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "adminUserId": zod.string(),
+  "action": zod.string().describe('e.g. \'user.update\', \'user.delete\', \'whisp.delete\', \'content.remove\', \'debate_agent.config_update\'.'),
+  "targetType": zod.string().nullable(),
+  "targetId": zod.string().nullable(),
+  "metadata": zod.unknown().optional().describe('Action-specific detail — shape varies by action.'),
+  "createdAt": zod.string()
+}).describe('See lib\/adminAudit.ts and admin_audit_log.ts — an append-only record of one sensitive admin action.')),
+  "page": zod.number(),
+  "pageSize": zod.number()
+})
 
 
 /**

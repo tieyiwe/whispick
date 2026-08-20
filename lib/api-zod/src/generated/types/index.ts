@@ -7,6 +7,8 @@
  */
 
 export * from './addWhisperGroupMembersInput';
+export * from './adminAuditLogEntry';
+export * from './adminAuditLogResponse';
 export * from './adminCategoryStat';
 export * from './adminCategoryStatsResponse';
 export * from './adminChannelDeliveryStat';
@@ -25,6 +27,7 @@ export * from './adminFunnelStatsGhostBoost';
 export * from './adminFunnelStatsInvites';
 export * from './adminFunnelStatsPhoneMatchRouting';
 export * from './adminFunnelStatsTextWhisps';
+export * from './adminListAuditLogParams';
 export * from './adminListModerationFlagsParams';
 export * from './adminListNotificationsParams';
 export * from './adminListSuggestionsParams';
@@ -42,6 +45,8 @@ export * from './adminRegionStat';
 export * from './adminTrendPoint';
 export * from './adminUser';
 export * from './adminUserDetail';
+export * from './adminUserDetailDebateTopicCommentsItem';
+export * from './adminUserDetailDebateTopicsItem';
 export * from './adminUserDetailStatusCounts';
 export * from './adminUserListResponse';
 export * from './adminWhispDetail';

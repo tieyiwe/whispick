@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach } from "vitest";
 import request from "supertest";
 import app from "../app";
-import { TEST_USER_HEADER } from "./setup";
+import { TEST_USER_HEADER, clerkGetUserMock } from "./setup";
 
 const ADMIN_CLERK_ID = "clerk_admin";
 const ADMIN_EMAIL = `${ADMIN_CLERK_ID}@blindwhisper.com`;
@@ -117,6 +117,22 @@ describe("Admin: users", () => {
 
     const detail = await request(app).get(`/api/admin/users/${userId}`).set(adminHeaders);
     expect(detail.status).toBe(404);
+  });
+
+  it("includes this account's Debate Topics/comments in the investigation view", async () => {
+    const adminHeaders = await asAdmin();
+    const profile = await request(app).get("/api/user/profile").set(asUser(USER_A));
+
+    const topic = await request(app).post("/api/debate-topics").set(asUser(USER_A)).send({ topicText: "Is a hot dog a sandwich?" });
+    await request(app)
+      .post(`/api/public/debate-topics/${topic.body.id}/comments`)
+      .set(asUser(USER_A))
+      .send({ commentText: "Obviously not.", visitorId: "visitor-admin-check" });
+
+    const detail = await request(app).get(`/api/admin/users/${profile.body.id}`).set(adminHeaders);
+    expect(detail.status).toBe(200);
+    expect(detail.body.debateTopics.some((t: any) => t.id === topic.body.id)).toBe(true);
+    expect(detail.body.debateTopicComments.length).toBeGreaterThanOrEqual(1);
   });
 });
 
@@ -255,5 +271,44 @@ describe("Admin: stats", () => {
     const res = await request(app).get("/api/admin/stats/funnel").set(adminHeaders);
     expect(res.status).toBe(200);
     expect(res.body.phoneMatchRouting.inApp).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe("Admin: two-factor requirement", () => {
+  it("blocks an admin account that hasn't enabled 2FA", async () => {
+    const adminHeaders = await asAdmin();
+    clerkGetUserMock.mockResolvedValueOnce({ twoFactorEnabled: false });
+
+    const res = await request(app).get("/api/admin/users").set(adminHeaders);
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe("admin_mfa_required");
+  });
+
+  it("allows an admin account with 2FA enabled through (the default test mock)", async () => {
+    const adminHeaders = await asAdmin();
+    const res = await request(app).get("/api/admin/users").set(adminHeaders);
+    expect(res.status).toBe(200);
+  });
+});
+
+describe("Admin: audit log", () => {
+  it("records who banned a user, and lists it back", async () => {
+    const adminHeaders = await asAdmin();
+    const profile = await request(app).get("/api/user/profile").set(asUser(USER_A));
+
+    await request(app).patch(`/api/admin/users/${profile.body.id}`).set(adminHeaders).send({ banned: true });
+
+    const res = await request(app).get("/api/admin/audit-log").set(adminHeaders);
+    expect(res.status).toBe(200);
+    const entry = res.body.items.find((i: any) => i.action === "user.update" && i.targetId === profile.body.id);
+    expect(entry).toBeTruthy();
+  });
+
+  it("does not log a GET/list request as an admin action", async () => {
+    const adminHeaders = await asAdmin();
+    await request(app).get("/api/admin/users").set(adminHeaders);
+
+    const res = await request(app).get("/api/admin/audit-log").set(adminHeaders);
+    expect(res.body.items.some((i: any) => i.action.startsWith("users.list"))).toBe(false);
   });
 });

@@ -169,6 +169,12 @@ export const whispsTable = pgTable("whisps", {
   // no public feed to be pulled from), but not worth a second table for.
   // Excluded from the public feed (routes/circle.ts) once set.
   removedByAdminAt: timestamp("removed_by_admin_at", { withTimezone: true }),
+  // 'user' | 'admin_agent' — meaningful only for deliveryMethod='circle_drop',
+  // same reasoning as debate_topics.postedBy: tells the admin panel apart a
+  // real member's post from one the admin's scheduled content agent
+  // (lib/circleContentAgent.ts) pushed in under the reserved system account
+  // (lib/systemUser.ts). Never shown to public readers.
+  postedBy: text("posted_by").notNull().default("user"),
 }, (table) => [
   // publicToken already gets an index for free from its unique() constraint
   // above — not duplicated here. The rest back the admin panel's list/detail

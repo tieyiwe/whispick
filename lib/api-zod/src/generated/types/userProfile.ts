@@ -48,6 +48,11 @@ export interface UserProfile {
      */
   whispererHandle?: string | null;
   whispererAvatarId?: AvatarId | null;
+  /**
+     * When this account last dismissed the two-factor setup nudge. Whether 2FA is actually ON is never included here — read Clerk's own user.twoFactorEnabled client-side for that; this is only "did they say not now."
+     * @nullable
+     */
+  mfaNudgeDismissedAt?: string | null;
   plan: string;
   boostCredits: number;
   whisperLinksUsed: number;

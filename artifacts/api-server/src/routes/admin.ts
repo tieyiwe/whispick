@@ -27,6 +27,7 @@ import {
 } from "@workspace/db";
 import { and, asc, count, desc, eq, gte, ilike, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
 import { requireAdmin } from "../lib/adminAuth";
+import { logAdminAction, listAdminAuditLog } from "../lib/adminAudit";
 import { VIDEO_CATEGORIES } from "../lib/categorize";
 import { computeOpportunities } from "../lib/insights";
 import { resolveVideoMeta } from "../lib/videoMeta";
@@ -89,7 +90,7 @@ router.get("/users/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  const [recentWhisps, totalWhispsRow, creditTransactions, statusRows, totalRepliesRow, moderationFlagRows] = await Promise.all([
+  const [recentWhisps, totalWhispsRow, creditTransactions, statusRows, totalRepliesRow, moderationFlagRows, debateTopics, debateTopicComments] = await Promise.all([
     db.select().from(whispsTable).where(eq(whispsTable.senderId, user.id)).orderBy(desc(whispsTable.createdAt)).limit(50),
     db.select({ count: count() }).from(whispsTable).where(eq(whispsTable.senderId, user.id)).then((r) => r[0]),
     db.select().from(creditTransactionsTable).where(eq(creditTransactionsTable.userId, user.id)).orderBy(desc(creditTransactionsTable.createdAt)).limit(50),
@@ -139,6 +140,22 @@ router.get("/users/:id", async (req, res): Promise<void> => {
       .leftJoin(debateTopicCommentsTable, eq(moderationFlagsTable.debateTopicCommentId, debateTopicCommentsTable.id))
       .where(eq(moderationFlagsTable.userId, user.id))
       .orderBy(desc(moderationFlagsTable.createdAt)),
+    // Debate Topics/comments this account authored — never shown to the
+    // public (authorId is stripped everywhere in routes/debateTopics.ts),
+    // but useful for an investigation same as their whisps are. Bounded to
+    // the most recent 50, same posture as recentWhisps above.
+    db
+      .select({ id: debateTopicsTable.id, topicText: debateTopicsTable.topicText, createdAt: debateTopicsTable.createdAt, deletedByAuthorAt: debateTopicsTable.deletedByAuthorAt, removedByAdminAt: debateTopicsTable.removedByAdminAt })
+      .from(debateTopicsTable)
+      .where(eq(debateTopicsTable.authorId, user.id))
+      .orderBy(desc(debateTopicsTable.createdAt))
+      .limit(50),
+    db
+      .select({ id: debateTopicCommentsTable.id, topicId: debateTopicCommentsTable.topicId, commentText: debateTopicCommentsTable.commentText, createdAt: debateTopicCommentsTable.createdAt, removedByAdminAt: debateTopicCommentsTable.removedByAdminAt })
+      .from(debateTopicCommentsTable)
+      .where(eq(debateTopicCommentsTable.authorUserId, user.id))
+      .orderBy(desc(debateTopicCommentsTable.createdAt))
+      .limit(50),
   ]);
 
   res.json({
@@ -150,6 +167,8 @@ router.get("/users/:id", async (req, res): Promise<void> => {
     totalReplies: totalRepliesRow?.count ?? 0,
     moderationFlagCount: moderationFlagRows.filter((f) => !f.dismissed).length,
     moderationFlags: moderationFlagRows,
+    debateTopics,
+    debateTopicComments,
   });
 });
 
@@ -256,6 +275,11 @@ router.patch("/users/:id", async (req, res): Promise<void> => {
 
   await db.update(usersTable).set(parsed.data).where(eq(usersTable.id, target.id));
   const updated = await db.select().from(usersTable).where(eq(usersTable.id, target.id)).then((r) => r[0]);
+
+  if (parsed.data.banned !== undefined || parsed.data.role !== undefined || parsed.data.plan !== undefined || parsed.data.boostCredits !== undefined) {
+    logAdminAction(adminUser.id, "user.update", { type: "user", id: target.id }, { before: { banned: target.banned, role: target.role, plan: target.plan, boostCredits: target.boostCredits }, after: parsed.data });
+  }
+
   res.json(updated);
 });
 
@@ -292,6 +316,8 @@ router.delete("/users/:id", async (req, res): Promise<void> => {
   await db.delete(circleMembersTable).where(eq(circleMembersTable.userId, target.id));
   await db.delete(circlesTable).where(eq(circlesTable.ownerId, target.id));
   await db.delete(usersTable).where(eq(usersTable.id, target.id));
+
+  logAdminAction(adminUser.id, "user.delete", { type: "user", id: target.id }, { email: target.email });
 
   res.status(204).send();
 });
@@ -393,6 +419,9 @@ router.delete("/whisps/:id", async (req, res): Promise<void> => {
   await db.delete(whispRepliesTable).where(eq(whispRepliesTable.whispId, whisp.id));
   await db.delete(whispCategoriesTable).where(eq(whispCategoriesTable.whispId, whisp.id));
   await db.delete(whispsTable).where(eq(whispsTable.id, whisp.id));
+
+  const adminUser = (req as any).adminUser as User;
+  logAdminAction(adminUser.id, "whisp.delete", { type: "whisp", id: whisp.id }, { videoTitle: whisp.videoTitle, senderId: whisp.senderId });
 
   res.status(204).send();
 });
@@ -961,6 +990,8 @@ router.post("/moderation/flags/:id/remove-content", async (req, res): Promise<vo
     .set({ dismissed: false, reviewedAt: now, reviewedByAdminId: adminUser.id })
     .where(eq(moderationFlagsTable.id, flag.id));
 
+  logAdminAction(adminUser.id, "content.remove", { type: flag.contentType, id: flag.whispId ?? flag.circleCommentId ?? flag.debateTopicId ?? flag.debateTopicCommentId ?? flag.id }, { flagId: flag.id });
+
   const updated = await db.select().from(moderationFlagsTable).where(eq(moderationFlagsTable.id, flag.id)).then((r) => r[0]);
   res.json(updated);
 });
@@ -1172,6 +1203,22 @@ router.delete("/suggestions/:id", async (req, res): Promise<void> => {
 
   await db.delete(suggestedVideosTable).where(eq(suggestedVideosTable.id, existing.id));
   res.status(204).send();
+});
+
+// ---------------------------------------------------------------------------
+// Audit log
+// ---------------------------------------------------------------------------
+
+// GET /api/admin/audit-log — the admin-accountability trail (lib/adminAudit.ts):
+// who did what sensitive action, to what, and when. Optionally filtered to
+// one admin or one target type.
+router.get("/audit-log", async (req, res): Promise<void> => {
+  const { page, pageSize } = parsePagination(req);
+  const adminUserId = typeof req.query.adminUserId === "string" ? req.query.adminUserId : undefined;
+  const targetType = typeof req.query.targetType === "string" ? req.query.targetType : undefined;
+
+  const items = await listAdminAuditLog({ page, pageSize, adminUserId, targetType });
+  res.json({ items, page, pageSize });
 });
 
 export default router;

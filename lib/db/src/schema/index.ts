@@ -26,3 +26,4 @@ export * from "./anonymous_handles";
 export * from "./comment_reactions";
 export * from "./debate_topic_rewhisps";
 export * from "./follows";
+export * from "./admin_audit_log";

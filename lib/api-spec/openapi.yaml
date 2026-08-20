@@ -1178,6 +1178,15 @@ paths:
               schema:
                 $ref: "#/components/schemas/UserProfile"
 
+  /user/mfa-nudge/dismiss:
+    post:
+      operationId: dismissMfaNudge
+      tags: [user]
+      summary: "\"Skip for now\" on the two-factor setup nudge — doesn't affect whether 2FA is actually enabled, only when the nudge is next shown"
+      responses:
+        "204":
+          description: Dismissed
+
   /user/push-public-key:
     get:
       operationId: getPushPublicKey
@@ -2655,6 +2664,38 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
 
+  /admin/audit-log:
+    get:
+      operationId: adminListAuditLog
+      tags: [admin]
+      summary: The admin-accountability trail — who took which sensitive action, on what, and when (admin only)
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+        - in: query
+          name: adminUserId
+          schema:
+            type: string
+          description: Filter to actions taken by one admin account.
+        - in: query
+          name: targetType
+          schema:
+            type: string
+          description: Filter to one target type, e.g. 'user', 'whisp', 'debate_topic'.
+      responses:
+        "200":
+          description: Audit log page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAuditLogResponse"
+
   /suggestions:
     get:
       operationId: listSuggestions
@@ -4015,6 +4056,9 @@ components:
           description: This account's persistent, public, followable Debate Topics handle — see users.whispererHandle. Null until first assigned (posting a topic, or commenting while signed in).
         whispererAvatarId:
           $ref: "#/components/schemas/AvatarId"
+        mfaNudgeDismissedAt:
+          type: ["string", "null"]
+          description: When this account last dismissed the two-factor setup nudge. Whether 2FA is actually ON is never included here — read Clerk's own user.twoFactorEnabled client-side for that; this is only "did they say not now."
         plan:
           type: string
         boostCredits:
@@ -4567,6 +4611,40 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ModerationFlag"
+        debateTopics:
+          type: array
+          description: Debate Topics this account authored (never shown publicly under their real account either — see debate_topics.ts), most recent 50.
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              topicText:
+                type: string
+              createdAt:
+                type: string
+              deletedByAuthorAt:
+                type: ["string", "null"]
+              removedByAdminAt:
+                type: ["string", "null"]
+            required: [id, topicText, createdAt, deletedByAuthorAt, removedByAdminAt]
+        debateTopicComments:
+          type: array
+          description: Debate Topic comments this account posted while signed in, most recent 50.
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              topicId:
+                type: string
+              commentText:
+                type: string
+              createdAt:
+                type: string
+              removedByAdminAt:
+                type: ["string", "null"]
+            required: [id, topicId, commentText, createdAt, removedByAdminAt]
       required:
         - user
         - recentWhisps
@@ -4576,6 +4654,51 @@ components:
         - totalReplies
         - moderationFlagCount
         - moderationFlags
+        - debateTopics
+        - debateTopicComments
+
+    AdminAuditLogEntry:
+      type: object
+      description: See lib/adminAudit.ts and admin_audit_log.ts — an append-only record of one sensitive admin action.
+      properties:
+        id:
+          type: string
+        adminUserId:
+          type: string
+        action:
+          type: string
+          description: e.g. 'user.update', 'user.delete', 'whisp.delete', 'content.remove', 'debate_agent.config_update'.
+        targetType:
+          type: ["string", "null"]
+        targetId:
+          type: ["string", "null"]
+        metadata:
+          description: Action-specific detail — shape varies by action.
+        createdAt:
+          type: string
+      required:
+        - id
+        - adminUserId
+        - action
+        - targetType
+        - targetId
+        - createdAt
+
+    AdminAuditLogResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminAuditLogEntry"
+        page:
+          type: integer
+        pageSize:
+          type: integer
+      required:
+        - items
+        - page
+        - pageSize
 
     ModerationFlag:
       type: object

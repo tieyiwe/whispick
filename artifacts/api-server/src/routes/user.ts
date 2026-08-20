@@ -42,6 +42,7 @@ router.get("/profile", requireAuth, async (req, res): Promise<void> => {
     preferredLanguage: user.preferredLanguage,
     whispererHandle: user.whispererHandle,
     whispererAvatarId: user.whispererAvatarId,
+    mfaNudgeDismissedAt: user.mfaNudgeDismissedAt,
     plan: user.plan,
     boostCredits: user.boostCredits,
     whisperLinksUsed: user.whisperLinksUsed,
@@ -49,6 +50,19 @@ router.get("/profile", requireAuth, async (req, res): Promise<void> => {
     emailNotificationsEnabled: user.emailNotificationsEnabled,
     createdAt: user.createdAt,
   });
+});
+
+// POST /api/user/mfa-nudge/dismiss — "skip for now" on the two-factor setup
+// nudge. Whether 2FA is actually enabled is never asked here or stored by
+// this app at all — that's Clerk's own user.twoFactorEnabled, read directly
+// client-side — this endpoint only remembers a skip, so it doesn't nag again
+// on another device until the next natural prompt point (see
+// users.mfaNudgeDismissedAt's schema comment).
+router.post("/mfa-nudge/dismiss", requireAuth, async (req, res): Promise<void> => {
+  const { userId } = getAuth(req);
+  const user = await ensureUser(userId!, req);
+  await db.update(usersTable).set({ mfaNudgeDismissedAt: new Date() }).where(eq(usersTable.id, user.id));
+  res.status(204).send();
 });
 
 // PATCH /api/user/profile — also how the one-time demographic gate (see
@@ -104,6 +118,7 @@ router.patch("/profile", requireAuth, async (req, res): Promise<void> => {
     preferredLanguage: updated.preferredLanguage,
     whispererHandle: updated.whispererHandle,
     whispererAvatarId: updated.whispererAvatarId,
+    mfaNudgeDismissedAt: updated.mfaNudgeDismissedAt,
     plan: updated.plan,
     boostCredits: updated.boostCredits,
     whisperLinksUsed: updated.whisperLinksUsed,

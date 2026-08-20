@@ -35,6 +35,13 @@ export const debateTopicsTable = pgTable("debate_topics", {
   // need to be able to tell which one happened. Set via POST
   // /admin/moderation/flags/:id/remove-content (routes/admin.ts).
   removedByAdminAt: timestamp("removed_by_admin_at", { withTimezone: true }),
+  // 'user' | 'admin_agent' — whether a person posted this, or the admin's
+  // scheduled debate-topic agent did (lib/debateAgent.ts). authorId alone
+  // can't answer this (it's never exposed publicly either way, and the
+  // agent posts under its own reserved system account — see
+  // lib/systemUser.ts), so admin tooling needs this to tell them apart.
+  // Never shown to public readers, only in the admin panel.
+  postedBy: text("posted_by").notNull().default("user"),
 }, (table) => [
   // Powers the cursor-paginated public feed, newest first.
   index("debate_topics_created_at_idx").on(table.createdAt),

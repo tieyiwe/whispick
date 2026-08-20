@@ -105,6 +105,13 @@ export const usersTable = pgTable("users", {
   // "prefer_not_to_say". Null only before a user has ever completed
   // onboarding.
   preferredLanguage: text("preferred_language"),
+  // When this account last dismissed ("skip for now") the two-factor-
+  // authentication setup nudge — persisted (not just client-side) so a
+  // skip made on one device doesn't nag again on another. Whether 2FA is
+  // actually ENABLED is never duplicated here: that lives in Clerk itself
+  // (user.twoFactorEnabled, read client-side) and is the single source of
+  // truth — this column only ever answers "did they say not now."
+  mfaNudgeDismissedAt: timestamp("mfa_nudge_dismissed_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
