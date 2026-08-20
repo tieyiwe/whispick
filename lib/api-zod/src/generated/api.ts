@@ -2603,6 +2603,75 @@ export const AdminListAuditLogResponse = zod.object({
 
 
 /**
+ * @summary Get the Debate Topic posting agent's config + last run status, creating a default (disabled) row if none exists yet (admin only)
+ */
+export const AdminGetDebateAgentConfigResponse = zod.object({
+  "id": zod.string(),
+  "enabled": zod.boolean(),
+  "dailyPostCount": zod.number().describe('How many AI-generated debate topics to post per scheduled sweep (1-10).'),
+  "topics": zod.array(zod.string()).describe('Short theme\/category strings that steer what the agent generates each run.'),
+  "lastRunAt": zod.string().nullish(),
+  "lastRunOk": zod.boolean(),
+  "lastErrorMessage": zod.string().nullish(),
+  "lowCreditSuspected": zod.boolean(),
+  "consecutiveFailures": zod.number(),
+  "updatedByAdminId": zod.string().nullish(),
+  "updatedAt": zod.string().nullish()
+}).describe('Singleton config + last-run-status row for the admin-controlled Debate Topic posting agent.')
+
+
+/**
+ * @summary Update the Debate Topic posting agent's config — enabled, daily post count, and/or topic themes (admin only)
+ */
+export const adminUpdateDebateAgentConfigBodyDailyPostCountMax = 10;
+
+export const adminUpdateDebateAgentConfigBodyTopicsMax = 20;
+
+
+
+export const AdminUpdateDebateAgentConfigBody = zod.object({
+  "enabled": zod.boolean().optional(),
+  "dailyPostCount": zod.number().min(1).max(adminUpdateDebateAgentConfigBodyDailyPostCountMax).optional(),
+  "topics": zod.array(zod.string()).min(1).max(adminUpdateDebateAgentConfigBodyTopicsMax).optional()
+})
+
+export const AdminUpdateDebateAgentConfigResponse = zod.object({
+  "id": zod.string(),
+  "enabled": zod.boolean(),
+  "dailyPostCount": zod.number().describe('How many AI-generated debate topics to post per scheduled sweep (1-10).'),
+  "topics": zod.array(zod.string()).describe('Short theme\/category strings that steer what the agent generates each run.'),
+  "lastRunAt": zod.string().nullish(),
+  "lastRunOk": zod.boolean(),
+  "lastErrorMessage": zod.string().nullish(),
+  "lowCreditSuspected": zod.boolean(),
+  "consecutiveFailures": zod.number(),
+  "updatedByAdminId": zod.string().nullish(),
+  "updatedAt": zod.string().nullish()
+}).describe('Singleton config + last-run-status row for the admin-controlled Debate Topic posting agent.')
+
+
+/**
+ * @summary Trigger a Debate Topic agent posting sweep immediately, regardless of the enabled flag (admin only)
+ */
+export const AdminRunDebateAgentNowResponse = zod.object({
+  "posted": zod.number(),
+  "skipped": zod.number()
+})
+
+
+/**
+ * @summary Manually compose and publish a single Debate Topic under the system account, through the same moderation pass as every other topic (admin only)
+ */
+export const AdminPostDebateTopicBody = zod.object({
+  "topicText": zod.string()
+})
+
+export const AdminPostDebateTopicResponse = zod.object({
+  "id": zod.string()
+})
+
+
+/**
  * @summary Browse the published Suggestions Library gallery
  */
 export const ListSuggestionsQueryParams = zod.object({

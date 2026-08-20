@@ -10,6 +10,7 @@ import creditsRouter from "./credits";
 import billingRouter from "./billing";
 import linkRouter from "./link";
 import adminRouter from "./admin";
+import adminDebateAgentRouter from "./adminDebateAgent";
 import whisperGroupsRouter from "./whisperGroups";
 import mediaRouter from "./media";
 import subscribeRouter from "./subscribe";
@@ -55,6 +56,10 @@ router.use("/credits", creditsRouter);
 router.use("/billing", billingRouter);
 router.use("/l", publicEndpointLimiter, linkRouter);
 router.use("/admin", adminRouter);
+// Separate router/file from adminRouter (see routes/adminDebateAgent.ts's
+// own comment for why) but the same "/admin" base path, so its routes still
+// read as /api/admin/debate-agent/....
+router.use("/admin", adminDebateAgentRouter);
 router.use("/whisper-groups", whisperGroupsRouter);
 router.use("/media", mediaRouter);
 router.use("/suggestions", suggestionsRouter);

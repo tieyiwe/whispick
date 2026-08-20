@@ -1810,6 +1810,56 @@ export interface RunSuggestionAgentResult {
   status?: SuggestionAgentStatus;
 }
 
+/**
+ * Singleton config + last-run-status row for the admin-controlled Debate Topic posting agent.
+ */
+export interface DebateAgentSettings {
+  id: string;
+  enabled: boolean;
+  /** How many AI-generated debate topics to post per scheduled sweep (1-10). */
+  dailyPostCount: number;
+  /** Short theme/category strings that steer what the agent generates each run. */
+  topics: string[];
+  /** @nullable */
+  lastRunAt?: string | null;
+  lastRunOk: boolean;
+  /** @nullable */
+  lastErrorMessage?: string | null;
+  lowCreditSuspected: boolean;
+  consecutiveFailures: number;
+  /** @nullable */
+  updatedByAdminId?: string | null;
+  /** @nullable */
+  updatedAt?: string | null;
+}
+
+export interface UpdateDebateAgentConfigInput {
+  enabled?: boolean;
+  /**
+     * @minimum 1
+     * @maximum 10
+     */
+  dailyPostCount?: number;
+  /**
+     * @minItems 1
+     * @maxItems 20
+     */
+  topics?: string[];
+}
+
+export interface RunDebateAgentResult {
+  posted: number;
+  skipped: number;
+}
+
+export interface PostDebateTopicInput {
+  topicText: string;
+}
+
+export interface PostDebateTopicResult {
+  id: string;
+}
+
 export type ListWhispsParams = {
 status?: string;
 /**

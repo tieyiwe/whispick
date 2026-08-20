@@ -7,6 +7,7 @@ import { startMediaRetentionScheduler } from "./lib/mediaRetentionScheduler";
 import { startTakeawayScheduler } from "./lib/takeawayScheduler";
 import { startMatchScheduler } from "./lib/matchScheduler";
 import { startSuggestionAgentScheduler } from "./lib/suggestionAgentScheduler";
+import { startDebateAgentScheduler } from "./lib/debateAgentScheduler";
 
 const rawPort = process.env["PORT"];
 
@@ -38,3 +39,4 @@ startMediaRetentionScheduler();
 startTakeawayScheduler();
 startMatchScheduler();
 startSuggestionAgentScheduler();
+startDebateAgentScheduler();

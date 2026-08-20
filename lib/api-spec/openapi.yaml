@@ -2696,6 +2696,80 @@ paths:
               schema:
                 $ref: "#/components/schemas/AdminAuditLogResponse"
 
+  /admin/debate-agent/config:
+    get:
+      operationId: adminGetDebateAgentConfig
+      tags: [admin, debateTopics]
+      summary: Get the Debate Topic posting agent's config + last run status, creating a default (disabled) row if none exists yet (admin only)
+      responses:
+        "200":
+          description: Debate agent settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DebateAgentSettings"
+    patch:
+      operationId: adminUpdateDebateAgentConfig
+      tags: [admin, debateTopics]
+      summary: Update the Debate Topic posting agent's config — enabled, daily post count, and/or topic themes (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateDebateAgentConfigInput"
+      responses:
+        "200":
+          description: Updated debate agent settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DebateAgentSettings"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/debate-agent/run-now:
+    post:
+      operationId: adminRunDebateAgentNow
+      tags: [admin, debateTopics]
+      summary: Trigger a Debate Topic agent posting sweep immediately, regardless of the enabled flag (admin only)
+      responses:
+        "200":
+          description: Run result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunDebateAgentResult"
+
+  /admin/debate-agent/post:
+    post:
+      operationId: adminPostDebateTopic
+      tags: [admin, debateTopics]
+      summary: Manually compose and publish a single Debate Topic under the system account, through the same moderation pass as every other topic (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostDebateTopicInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostDebateTopicResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /suggestions:
     get:
       operationId: listSuggestions
@@ -6146,3 +6220,85 @@ components:
       required:
         - inserted
         - skipped
+
+    DebateAgentSettings:
+      type: object
+      description: Singleton config + last-run-status row for the admin-controlled Debate Topic posting agent.
+      properties:
+        id:
+          type: string
+        enabled:
+          type: boolean
+        dailyPostCount:
+          type: integer
+          description: How many AI-generated debate topics to post per scheduled sweep (1-10).
+        topics:
+          type: array
+          items:
+            type: string
+          description: Short theme/category strings that steer what the agent generates each run.
+        lastRunAt:
+          type: ["string", "null"]
+        lastRunOk:
+          type: boolean
+        lastErrorMessage:
+          type: ["string", "null"]
+        lowCreditSuspected:
+          type: boolean
+        consecutiveFailures:
+          type: integer
+        updatedByAdminId:
+          type: ["string", "null"]
+        updatedAt:
+          type: ["string", "null"]
+      required:
+        - id
+        - enabled
+        - dailyPostCount
+        - topics
+        - lastRunOk
+        - lowCreditSuspected
+        - consecutiveFailures
+
+    UpdateDebateAgentConfigInput:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        dailyPostCount:
+          type: integer
+          minimum: 1
+          maximum: 10
+        topics:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          maxItems: 20
+
+    RunDebateAgentResult:
+      type: object
+      properties:
+        posted:
+          type: integer
+        skipped:
+          type: integer
+      required:
+        - posted
+        - skipped
+
+    PostDebateTopicInput:
+      type: object
+      properties:
+        topicText:
+          type: string
+      required:
+        - topicText
+
+    PostDebateTopicResult:
+      type: object
+      properties:
+        id:
+          type: string
+      required:
+        - id

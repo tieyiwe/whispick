@@ -60,6 +60,7 @@ import type {
   CreateCircleInput,
   CreateSuggestionInput,
   CreditTransaction,
+  DebateAgentSettings,
   DebateTopicComment,
   DebateTopicCommentInput,
   DebateTopicDetail,
@@ -91,6 +92,8 @@ import type {
   PhoneVerificationResult,
   PinWhisp200,
   PostCircleCommentBody,
+  PostDebateTopicInput,
+  PostDebateTopicResult,
   PublicInvite,
   PublicReplyInput,
   PublicTextWhisp,
@@ -111,6 +114,7 @@ import type {
   RevealResult,
   RewhispDebateTopic200,
   RewhispDebateTopicBody,
+  RunDebateAgentResult,
   RunSuggestionAgentResult,
   SendGroupWhispInput,
   SendGroupWhispResult,
@@ -139,6 +143,7 @@ import type {
   UnsubscribeFromMatching200,
   UnsubscribeFromMatchingParams,
   UpdateAdminUserInput,
+  UpdateDebateAgentConfigInput,
   UpdateDebateTopicHandleAvatar200,
   UpdateDebateTopicHandleAvatarBody,
   UpdateModerationFlagInput,
@@ -7797,6 +7802,293 @@ export function useAdminListAuditLog<TData = Awaited<ReturnType<typeof adminList
 
 
 
+
+export const getAdminGetDebateAgentConfigUrl = () => {
+
+
+
+
+  return `/api/admin/debate-agent/config`
+}
+
+/**
+ * @summary Get the Debate Topic posting agent's config + last run status, creating a default (disabled) row if none exists yet (admin only)
+ */
+export const adminGetDebateAgentConfig = async ( options?: RequestInit): Promise<DebateAgentSettings> => {
+
+  return customFetch<DebateAgentSettings>(getAdminGetDebateAgentConfigUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetDebateAgentConfigQueryKey = () => {
+    return [
+    `/api/admin/debate-agent/config`
+    ] as const;
+    }
+
+
+export const getAdminGetDebateAgentConfigQueryOptions = <TData = Awaited<ReturnType<typeof adminGetDebateAgentConfig>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetDebateAgentConfig>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetDebateAgentConfigQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetDebateAgentConfig>>> = ({ signal }) => adminGetDebateAgentConfig({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetDebateAgentConfig>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetDebateAgentConfigQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetDebateAgentConfig>>>
+export type AdminGetDebateAgentConfigQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the Debate Topic posting agent's config + last run status, creating a default (disabled) row if none exists yet (admin only)
+ */
+
+export function useAdminGetDebateAgentConfig<TData = Awaited<ReturnType<typeof adminGetDebateAgentConfig>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetDebateAgentConfig>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetDebateAgentConfigQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminUpdateDebateAgentConfigUrl = () => {
+
+
+
+
+  return `/api/admin/debate-agent/config`
+}
+
+/**
+ * @summary Update the Debate Topic posting agent's config — enabled, daily post count, and/or topic themes (admin only)
+ */
+export const adminUpdateDebateAgentConfig = async (updateDebateAgentConfigInput: UpdateDebateAgentConfigInput, options?: RequestInit): Promise<DebateAgentSettings> => {
+
+  return customFetch<DebateAgentSettings>(getAdminUpdateDebateAgentConfigUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateDebateAgentConfigInput)
+  }
+);}
+
+
+
+
+export const getAdminUpdateDebateAgentConfigMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateDebateAgentConfig>>, TError,{data: BodyType<UpdateDebateAgentConfigInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminUpdateDebateAgentConfig>>, TError,{data: BodyType<UpdateDebateAgentConfigInput>}, TContext> => {
+
+const mutationKey = ['adminUpdateDebateAgentConfig'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminUpdateDebateAgentConfig>>, {data: BodyType<UpdateDebateAgentConfigInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminUpdateDebateAgentConfig(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminUpdateDebateAgentConfigMutationResult = NonNullable<Awaited<ReturnType<typeof adminUpdateDebateAgentConfig>>>
+    export type AdminUpdateDebateAgentConfigMutationBody = BodyType<UpdateDebateAgentConfigInput>
+    export type AdminUpdateDebateAgentConfigMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Update the Debate Topic posting agent's config — enabled, daily post count, and/or topic themes (admin only)
+ */
+export const useAdminUpdateDebateAgentConfig = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateDebateAgentConfig>>, TError,{data: BodyType<UpdateDebateAgentConfigInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminUpdateDebateAgentConfig>>,
+        TError,
+        {data: BodyType<UpdateDebateAgentConfigInput>},
+        TContext
+      > => {
+      return useMutation(getAdminUpdateDebateAgentConfigMutationOptions(options));
+    }
+
+export const getAdminRunDebateAgentNowUrl = () => {
+
+
+
+
+  return `/api/admin/debate-agent/run-now`
+}
+
+/**
+ * @summary Trigger a Debate Topic agent posting sweep immediately, regardless of the enabled flag (admin only)
+ */
+export const adminRunDebateAgentNow = async ( options?: RequestInit): Promise<RunDebateAgentResult> => {
+
+  return customFetch<RunDebateAgentResult>(getAdminRunDebateAgentNowUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAdminRunDebateAgentNowMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRunDebateAgentNow>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminRunDebateAgentNow>>, TError,void, TContext> => {
+
+const mutationKey = ['adminRunDebateAgentNow'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminRunDebateAgentNow>>, void> = () => {
+
+
+          return  adminRunDebateAgentNow(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminRunDebateAgentNowMutationResult = NonNullable<Awaited<ReturnType<typeof adminRunDebateAgentNow>>>
+
+    export type AdminRunDebateAgentNowMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Trigger a Debate Topic agent posting sweep immediately, regardless of the enabled flag (admin only)
+ */
+export const useAdminRunDebateAgentNow = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRunDebateAgentNow>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminRunDebateAgentNow>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getAdminRunDebateAgentNowMutationOptions(options));
+    }
+
+export const getAdminPostDebateTopicUrl = () => {
+
+
+
+
+  return `/api/admin/debate-agent/post`
+}
+
+/**
+ * @summary Manually compose and publish a single Debate Topic under the system account, through the same moderation pass as every other topic (admin only)
+ */
+export const adminPostDebateTopic = async (postDebateTopicInput: PostDebateTopicInput, options?: RequestInit): Promise<PostDebateTopicResult> => {
+
+  return customFetch<PostDebateTopicResult>(getAdminPostDebateTopicUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(postDebateTopicInput)
+  }
+);}
+
+
+
+
+export const getAdminPostDebateTopicMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminPostDebateTopic>>, TError,{data: BodyType<PostDebateTopicInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminPostDebateTopic>>, TError,{data: BodyType<PostDebateTopicInput>}, TContext> => {
+
+const mutationKey = ['adminPostDebateTopic'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminPostDebateTopic>>, {data: BodyType<PostDebateTopicInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminPostDebateTopic(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminPostDebateTopicMutationResult = NonNullable<Awaited<ReturnType<typeof adminPostDebateTopic>>>
+    export type AdminPostDebateTopicMutationBody = BodyType<PostDebateTopicInput>
+    export type AdminPostDebateTopicMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Manually compose and publish a single Debate Topic under the system account, through the same moderation pass as every other topic (admin only)
+ */
+export const useAdminPostDebateTopic = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminPostDebateTopic>>, TError,{data: BodyType<PostDebateTopicInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminPostDebateTopic>>,
+        TError,
+        {data: BodyType<PostDebateTopicInput>},
+        TContext
+      > => {
+      return useMutation(getAdminPostDebateTopicMutationOptions(options));
+    }
 
 export const getListSuggestionsUrl = (params?: ListSuggestionsParams,) => {
   const normalizedParams = new URLSearchParams();

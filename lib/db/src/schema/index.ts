@@ -27,3 +27,4 @@ export * from "./comment_reactions";
 export * from "./debate_topic_rewhisps";
 export * from "./follows";
 export * from "./admin_audit_log";
+export * from "./debate_agent_settings";
