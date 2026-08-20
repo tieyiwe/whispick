@@ -20,11 +20,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, User, Mail, Shield, Bell, Phone, ShieldCheck } from "lucide-react";
+import { Loader2, User, Mail, Shield, Bell, Phone, ShieldCheck, Swords } from "lucide-react";
 import { isPushSupported, getExistingPushSubscription, subscribeToPush, pushSubscriptionToJson } from "@/lib/push";
 import { GENDER_OPTIONS, GENDER_LABELS, AGE_RANGE_OPTIONS, AGE_RANGE_LABELS } from "@/lib/demographics";
 import { SUPPORTED_LANGUAGES, LANGUAGE_LABELS } from "@/lib/languages";
 import { PhoneVerificationFlow } from "@/components/shared/PhoneVerificationFlow";
+import { AvatarCircle } from "@/components/shared/AvatarCircle";
+import { AvatarPickerGrid } from "@/components/shared/AvatarPickerGrid";
 
 const WHISPER_LINK_LIMITS: Record<string, number | null> = {
   free: 3,
@@ -40,6 +42,7 @@ export function SettingsPage() {
   const [gender, setGender] = useState("");
   const [ageRange, setAgeRange] = useState("");
   const [preferredLanguage, setPreferredLanguage] = useState("");
+  const [whispererAvatarId, setWhispererAvatarId] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
 
   if (profile && !initialized) {
@@ -47,6 +50,7 @@ export function SettingsPage() {
     setGender(profile.gender ?? "");
     setAgeRange(profile.ageRange ?? "");
     setPreferredLanguage(profile.preferredLanguage ?? "");
+    setWhispererAvatarId(profile.whispererAvatarId ?? null);
     setInitialized(true);
   }
 
@@ -137,6 +141,7 @@ export function SettingsPage() {
           gender: gender || null,
           ageRange: ageRange || null,
           ...(preferredLanguage ? { preferredLanguage: preferredLanguage as any } : {}),
+          whispererAvatarId,
         },
       },
       {
@@ -250,6 +255,54 @@ export function SettingsPage() {
               disabled={updateProfile.isPending}
               className="rounded-full"
               data-testid="button-save-profile"
+            >
+              {updateProfile.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Save Changes
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Debate Topics identity — the persistent, cross-topic Whisperer
+            handle/avatar shown as the byline on every topic and comment this
+            account posts while signed in (see DebateTopicComment.handle's
+            schema comment). The handle itself is assigned automatically
+            (posting a topic, or commenting while signed in) — only the
+            avatar is editable here. */}
+        <Card className="bg-card border-border/50">
+          <CardHeader>
+            <CardTitle className="text-base font-serif flex items-center gap-2">
+              <Swords className="w-4 h-4 text-primary" /> Debate Topics identity
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-3">
+              <AvatarCircle
+                avatarId={whispererAvatarId}
+                handle={profile?.whispererHandle || profile?.email || "W"}
+                size="lg"
+              />
+              <div className="min-w-0">
+                <p className="font-medium text-foreground truncate">{profile?.whispererHandle || "Not assigned yet"}</p>
+                <p className="text-xs text-muted-foreground">
+                  {profile?.whispererHandle
+                    ? "Your persistent, public handle across every Debate Topic."
+                    : "Created automatically the first time you post or comment as a Whisperer."}
+                </p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-muted-foreground">Avatar</Label>
+              <AvatarPickerGrid
+                value={whispererAvatarId}
+                handle={profile?.whispererHandle || profile?.email || "W"}
+                onSelect={setWhispererAvatarId}
+              />
+            </div>
+            <Button
+              onClick={handleSave}
+              disabled={updateProfile.isPending}
+              className="rounded-full"
+              data-testid="button-save-avatar"
             >
               {updateProfile.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               Save Changes

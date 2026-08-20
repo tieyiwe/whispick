@@ -8,6 +8,7 @@ import {
   useReactToDebateTopicComment,
   useRewhispDebateTopic,
   useRenameDebateTopicHandle,
+  useUpdateDebateTopicHandleAvatar,
   getGetDebateTopicQueryKey,
   getAuthToken,
   type DebateTopicComment,
@@ -23,6 +24,8 @@ import { Logo } from "@/components/ui/logo";
 import { useToast } from "@/hooks/use-toast";
 import { getVisitorId } from "@/lib/anonymousVisitor";
 import { FollowButton } from "@/components/shared/FollowButton";
+import { AvatarCircle } from "@/components/shared/AvatarCircle";
+import { AvatarPickerGrid } from "@/components/shared/AvatarPickerGrid";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   AlertDialog,
@@ -51,6 +54,7 @@ import {
   Pencil,
   Share2,
   Info,
+  Palette,
 } from "lucide-react";
 
 const MAX_COMMENT_TEXT_LENGTH = 500;
@@ -184,6 +188,60 @@ function HandleRenameControl({
   );
 }
 
+// Adjacent to HandleRenameControl, same trigger-a-popover pattern — but the
+// avatar has no "confirm" step: tapping a preset (or "no avatar") saves
+// immediately, same as tapping a preset color/icon anywhere else in the app.
+function AvatarPickerControl({
+  topicId,
+  visitorId,
+  currentAvatarId,
+  handle,
+  onChanged,
+}: {
+  topicId: string;
+  visitorId: string;
+  currentAvatarId: string | null;
+  handle: string;
+  onChanged: (avatarId: string | null) => void;
+}) {
+  const { toast } = useToast();
+  const [open, setOpen] = useState(false);
+  const updateAvatar = useUpdateDebateTopicHandleAvatar();
+
+  function submit(avatarId: string | null) {
+    updateAvatar.mutate(
+      { id: topicId, data: { visitorId, avatarId } },
+      {
+        onSuccess: (res) => {
+          onChanged(res.avatarId);
+          toast({ title: "Your avatar in this thread was updated" });
+          setOpen(false);
+        },
+        onError: () => toast({ title: "Couldn't update your avatar", variant: "destructive" }),
+      },
+    );
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors"
+          aria-label="Change your avatar in this thread"
+          data-testid="button-edit-avatar"
+        >
+          <Palette className="w-3 h-3" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80 space-y-3">
+        <p className="text-xs font-medium text-foreground">Change your avatar in this thread</p>
+        <AvatarPickerGrid value={currentAvatarId} handle={handle} onSelect={submit} />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 // Twitter-reply-style comment card. parentCommentId is a flat quote reference
 // (see DebateTopicComment's schema comment), not a real tree — so this just
 // renders "Replying to @handle" as context, no recursive nesting.
@@ -204,92 +262,99 @@ function CommentCard({
 }) {
   return (
     <div
-      className={`rounded-2xl border p-4 space-y-2 ${
+      className={`rounded-2xl border p-4 ${
         comment.isPoster ? "border-primary/30 bg-primary/5" : "border-border/50 bg-card"
       }`}
       data-testid={`comment-${comment.id}`}
     >
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-sm font-medium text-foreground" data-testid={`text-handle-${comment.id}`}>
-          {comment.handle}
-        </span>
-        {/* commentAuthorFollowed is null when there's nothing followable here —
-            purely anonymous commenter, caller not signed in, or it's the
-            caller's own comment. No affordance shows in any of those cases. */}
-        {comment.commentAuthorFollowed !== null && (
-          <FollowButton
-            handle={comment.handle}
-            following={comment.commentAuthorFollowed}
-            compact
-            onToggled={onFollowToggle}
-          />
-        )}
-        {comment.isPoster && (
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-primary px-2 py-0.5 rounded-full bg-primary/10">
-            Topic Author
-          </span>
-        )}
-        {comment.isOwnComment && (
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground px-2 py-0.5 rounded-full bg-muted/50">
-            You
-          </span>
-        )}
-        <span className="text-xs text-muted-foreground ml-auto">
-          {formatDistanceToNowStrict(new Date(comment.createdAt))} ago
-        </span>
-      </div>
+      {/* X/Twitter-style: avatar in the top-left, handle/meta beside it,
+          body text spanning the full width below. */}
+      <div className="flex items-start gap-3">
+        <AvatarCircle avatarId={comment.avatarId} handle={comment.handle} size="sm" />
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-medium text-foreground" data-testid={`text-handle-${comment.id}`}>
+              {comment.handle}
+            </span>
+            {/* commentAuthorFollowed is null when there's nothing followable here —
+                purely anonymous commenter, caller not signed in, or it's the
+                caller's own comment. No affordance shows in any of those cases. */}
+            {comment.commentAuthorFollowed !== null && (
+              <FollowButton
+                handle={comment.handle}
+                following={comment.commentAuthorFollowed}
+                compact
+                onToggled={onFollowToggle}
+              />
+            )}
+            {comment.isPoster && (
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-primary px-2 py-0.5 rounded-full bg-primary/10">
+                Topic Author
+              </span>
+            )}
+            {comment.isOwnComment && (
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground px-2 py-0.5 rounded-full bg-muted/50">
+                You
+              </span>
+            )}
+            <span className="text-xs text-muted-foreground ml-auto">
+              {formatDistanceToNowStrict(new Date(comment.createdAt))} ago
+            </span>
+          </div>
 
-      {parentHandle && (
-        <p className="text-xs text-muted-foreground">
-          Replying to <span className="text-primary/80">@{parentHandle}</span>
-        </p>
-      )}
+          {parentHandle && (
+            <p className="text-xs text-muted-foreground">
+              Replying to <span className="text-primary/80">@{parentHandle}</span>
+            </p>
+          )}
 
-      <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{comment.commentText}</p>
+          <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{comment.commentText}</p>
 
-      {comment.imageUrl && (
-        <img
-          src={comment.imageUrl}
-          alt="Attached to comment"
-          className="max-h-64 rounded-xl border border-border/50 object-cover"
-          data-testid={`img-comment-${comment.id}`}
-        />
-      )}
+          {comment.imageUrl && (
+            <img
+              src={comment.imageUrl}
+              alt="Attached to comment"
+              className="max-h-64 rounded-xl border border-border/50 object-cover"
+              data-testid={`img-comment-${comment.id}`}
+            />
+          )}
 
-      <div className="flex items-center gap-4 pt-0.5">
-        <button
-          type="button"
-          onClick={() => onReact("like")}
-          disabled={reactPending}
-          aria-pressed={comment.viewerReaction === "like"}
-          className={`inline-flex items-center gap-1.5 text-xs transition-colors disabled:opacity-60 ${
-            comment.viewerReaction === "like" ? "text-primary" : "text-muted-foreground hover:text-primary"
-          }`}
-          data-testid={`button-like-${comment.id}`}
-        >
-          <ThumbsUp className={`w-3.5 h-3.5 ${comment.viewerReaction === "like" ? "fill-primary/25" : ""}`} />
-          {comment.likeCount}
-        </button>
-        <button
-          type="button"
-          onClick={() => onReact("dislike")}
-          disabled={reactPending}
-          aria-pressed={comment.viewerReaction === "dislike"}
-          className={`inline-flex items-center gap-1.5 text-xs transition-colors disabled:opacity-60 ${
-            comment.viewerReaction === "dislike" ? "text-destructive" : "text-muted-foreground hover:text-destructive"
-          }`}
-          data-testid={`button-dislike-${comment.id}`}
-        >
-          <ThumbsDown className={`w-3.5 h-3.5 ${comment.viewerReaction === "dislike" ? "fill-destructive/25" : ""}`} />
-          {comment.dislikeCount}
-        </button>
-        <button
-          onClick={onReply}
-          className="text-xs text-muted-foreground hover:text-primary transition-colors ml-auto"
-          data-testid={`button-reply-${comment.id}`}
-        >
-          Reply
-        </button>
+          <div className="flex items-center gap-4 pt-0.5">
+            <button
+              type="button"
+              onClick={() => onReact("like")}
+              disabled={reactPending}
+              aria-pressed={comment.viewerReaction === "like"}
+              className={`inline-flex items-center gap-1.5 text-xs transition-colors disabled:opacity-60 ${
+                comment.viewerReaction === "like" ? "text-primary" : "text-muted-foreground hover:text-primary"
+              }`}
+              data-testid={`button-like-${comment.id}`}
+            >
+              <ThumbsUp className={`w-3.5 h-3.5 ${comment.viewerReaction === "like" ? "fill-primary/25" : ""}`} />
+              {comment.likeCount}
+            </button>
+            <button
+              type="button"
+              onClick={() => onReact("dislike")}
+              disabled={reactPending}
+              aria-pressed={comment.viewerReaction === "dislike"}
+              className={`inline-flex items-center gap-1.5 text-xs transition-colors disabled:opacity-60 ${
+                comment.viewerReaction === "dislike" ? "text-destructive" : "text-muted-foreground hover:text-destructive"
+              }`}
+              data-testid={`button-dislike-${comment.id}`}
+            >
+              <ThumbsDown className={`w-3.5 h-3.5 ${comment.viewerReaction === "dislike" ? "fill-destructive/25" : ""}`} />
+              {comment.dislikeCount}
+            </button>
+            <button
+              onClick={onReply}
+              className="text-xs text-muted-foreground hover:text-primary transition-colors ml-auto"
+              data-testid={`button-reply-${comment.id}`}
+            >
+              Reply
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -353,7 +418,9 @@ export function DebateTopicDetail() {
     return roots.map((root) => ({ root, replies: repliesByRoot.get(root.id) ?? [] }));
   }, [topic, commentsById]);
 
-  const myHandle = topic?.comments.find((c) => c.isOwnComment)?.handle;
+  const myComment = topic?.comments.find((c) => c.isOwnComment);
+  const myHandle = myComment?.handle;
+  const myAvatarId = myComment?.avatarId ?? null;
 
   const remaining = MAX_COMMENT_TEXT_LENGTH - commentText.length;
   const canSubmit =
@@ -562,27 +629,31 @@ export function DebateTopicDetail() {
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-medium">
                   <Swords className="w-3.5 h-3.5" /> Debate Topic
                 </div>
-                <h1 className="font-serif text-3xl md:text-4xl font-bold text-foreground leading-[1.15] tracking-tight">
-                  {topic.topicText}
-                </h1>
-                <div className="flex items-center justify-between gap-3 pt-1 flex-wrap">
-                  <div className="flex items-center gap-2 flex-wrap" data-testid="text-topic-author">
-                    <span className="text-xs text-muted-foreground">
-                      Posted by <span className="text-foreground font-medium">{topic.authorHandle}</span> ·{" "}
+                {/* X/Twitter-style: avatar + handle/meta above the post
+                    text, which then spans the full card width. */}
+                <div className="flex items-center gap-3 flex-wrap" data-testid="text-topic-author">
+                  <AvatarCircle avatarId={topic.authorAvatarId} handle={topic.authorHandle} size="md" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{topic.authorHandle}</p>
+                    <p className="text-xs text-muted-foreground">
                       {formatDistanceToNowStrict(new Date(topic.createdAt))} ago
                       {topic.authorFollowerCount > 0 &&
                         ` · ${topic.authorFollowerCount} ${topic.authorFollowerCount === 1 ? "follower" : "followers"}`}
-                    </span>
-                    {topic.authorFollowed !== null && (
-                      <FollowButton
-                        handle={topic.authorHandle}
-                        following={topic.authorFollowed}
-                        followerCount={topic.authorFollowerCount}
-                        onToggled={handleAuthorFollowToggled}
-                      />
-                    )}
+                    </p>
                   </div>
-                  <div className="flex items-center gap-1.5">
+                  {topic.authorFollowed !== null && (
+                    <FollowButton
+                      handle={topic.authorHandle}
+                      following={topic.authorFollowed}
+                      followerCount={topic.authorFollowerCount}
+                      onToggled={handleAuthorFollowToggled}
+                    />
+                  )}
+                </div>
+                <h1 className="font-serif text-3xl md:text-4xl font-bold text-foreground leading-[1.15] tracking-tight">
+                  {topic.topicText}
+                </h1>
+                <div className="flex items-center justify-end gap-1.5 pt-1 flex-wrap">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -637,7 +708,6 @@ export function DebateTopicDetail() {
                         </AlertDialogContent>
                       </AlertDialog>
                     )}
-                  </div>
                 </div>
               </div>
             </div>
@@ -650,22 +720,39 @@ export function DebateTopicDetail() {
                   {topic.commentCount} {topic.commentCount === 1 ? "comment" : "comments"}
                 </p>
                 {myHandle && (
-                  <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                    Commenting as <span className="font-medium text-foreground">{myHandle}</span>
-                    <HandleRenameControl
-                      topicId={id!}
-                      visitorId={visitorId}
-                      currentHandle={myHandle}
-                      onRenamed={(handle) => {
-                        if (!id) return;
-                        queryClient.setQueryData<DebateTopicDetailResponse>(getGetDebateTopicQueryKey(id, { visitorId }), (old) =>
-                          old
-                            ? { ...old, comments: old.comments.map((c) => (c.isOwnComment ? { ...c, handle } : c)) }
-                            : old,
-                        );
-                      }}
-                    />
-                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <AvatarCircle avatarId={myAvatarId} handle={myHandle} size="sm" />
+                    <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                      Commenting as <span className="font-medium text-foreground">{myHandle}</span>
+                      <HandleRenameControl
+                        topicId={id!}
+                        visitorId={visitorId}
+                        currentHandle={myHandle}
+                        onRenamed={(handle) => {
+                          if (!id) return;
+                          queryClient.setQueryData<DebateTopicDetailResponse>(getGetDebateTopicQueryKey(id, { visitorId }), (old) =>
+                            old
+                              ? { ...old, comments: old.comments.map((c) => (c.isOwnComment ? { ...c, handle } : c)) }
+                              : old,
+                          );
+                        }}
+                      />
+                      <AvatarPickerControl
+                        topicId={id!}
+                        visitorId={visitorId}
+                        currentAvatarId={myAvatarId}
+                        handle={myHandle}
+                        onChanged={(avatarId) => {
+                          if (!id) return;
+                          queryClient.setQueryData<DebateTopicDetailResponse>(getGetDebateTopicQueryKey(id, { visitorId }), (old) =>
+                            old
+                              ? { ...old, comments: old.comments.map((c) => (c.isOwnComment ? { ...c, avatarId } : c)) }
+                              : old,
+                          );
+                        }}
+                      />
+                    </p>
+                  </div>
                 )}
               </div>
 

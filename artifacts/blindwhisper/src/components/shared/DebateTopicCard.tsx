@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { MessageCircle, Repeat2, Share2, ArrowRight } from "lucide-react";
 import type { DebateTopicFeedItem } from "@workspace/api-client-react";
+import { AvatarCircle } from "@/components/shared/AvatarCircle";
 
 // Deterministic-ish "randomness" (by id) so the same topic doesn't jump
 // between accent colors on every re-render/refetch — purely decorative, a
@@ -55,11 +56,14 @@ export function DebateTopicCard({ topic }: { topic: DebateTopicFeedItem }) {
         >
           &rdquo;
         </div>
+        {/* X/Twitter-style byline — avatar left of the handle, post text
+            below spanning the full card width. */}
+        <div className="relative flex items-center gap-2.5 mb-2" data-testid={`text-author-${topic.id}`}>
+          <AvatarCircle avatarId={topic.authorAvatarId} handle={topic.authorHandle} size="sm" />
+          <span className="text-sm font-medium text-foreground">{topic.authorHandle}</span>
+        </div>
         <p className="relative font-serif text-xl md:text-2xl font-bold text-foreground leading-snug tracking-tight pr-6">
           {topic.topicText}
-        </p>
-        <p className="relative text-xs text-muted-foreground mt-1.5" data-testid={`text-author-${topic.id}`}>
-          by <span className="text-foreground font-medium">{topic.authorHandle}</span>
         </p>
         <div className="relative flex items-center justify-between gap-3 mt-4">
           <div className="flex items-center gap-3 min-w-0">
