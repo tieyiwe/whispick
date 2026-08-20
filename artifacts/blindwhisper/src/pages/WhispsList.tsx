@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
   useListWhisps,
@@ -61,6 +62,7 @@ const LONG_PRESS_MS = 500;
 const LONG_PRESS_MOVE_TOLERANCE_PX = 10;
 
 export function WhispsList() {
+  const { t } = useTranslation("whisp");
   const [box, setBox] = useState<Box>("sent");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -139,9 +141,9 @@ export function WhispsList() {
       {
         onSuccess: () => {
           invalidateAllBoxes();
-          toast({ title: currentlyPinned ? "Unpinned" : "Pinned to top" });
+          toast({ title: currentlyPinned ? t("whispsList.toast.unpinned") : t("whispsList.toast.pinnedToTop") });
         },
-        onError: () => toast({ title: "Couldn't update that", variant: "destructive" }),
+        onError: () => toast({ title: t("shared.couldntUpdateThat"), variant: "destructive" }),
       },
     );
   }
@@ -153,9 +155,9 @@ export function WhispsList() {
       {
         onSuccess: () => {
           invalidateAllBoxes();
-          toast({ title: currentlyArchived ? "Moved back to your list" : "Archived" });
+          toast({ title: currentlyArchived ? t("shared.movedBackToList") : t("whispsList.toast.archived") });
         },
-        onError: () => toast({ title: "Couldn't update that", variant: "destructive" }),
+        onError: () => toast({ title: t("shared.couldntUpdateThat"), variant: "destructive" }),
       },
     );
   }
@@ -169,9 +171,9 @@ export function WhispsList() {
       {
         onSuccess: () => {
           invalidateAllBoxes();
-          toast({ title: "Whisp deleted" });
+          toast({ title: t("shared.whispDeleted") });
         },
-        onError: () => toast({ title: "Couldn't delete that", variant: "destructive" }),
+        onError: () => toast({ title: t("whispsList.toast.couldntDelete"), variant: "destructive" }),
       },
     );
   }
@@ -232,8 +234,8 @@ export function WhispsList() {
     <AppLayout>
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-serif font-bold text-foreground">My Whisps</h1>
-          <p className="text-muted-foreground mt-1">Everything you've sent, and everything sent to you.</p>
+          <h1 className="text-3xl font-serif font-bold text-foreground">{t("whispsList.title")}</h1>
+          <p className="text-muted-foreground mt-1">{t("whispsList.subtitle")}</p>
         </div>
 
         {/* Sent / Received / Archived — three clearly different collections,
@@ -249,7 +251,7 @@ export function WhispsList() {
               box === "sent" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Send className="w-3.5 h-3.5" /> Sent
+            <Send className="w-3.5 h-3.5" /> {t("whispsList.tabs.sent")}
           </button>
           <button
             type="button"
@@ -259,7 +261,7 @@ export function WhispsList() {
               box === "received" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Inbox className="w-3.5 h-3.5" /> Received
+            <Inbox className="w-3.5 h-3.5" /> {t("whispsList.tabs.received")}
             {newReceivedCount > 0 && (
               <span
                 className={`ml-0.5 inline-flex items-center justify-center rounded-full text-[10px] font-semibold min-w-[18px] h-[18px] px-1 ${
@@ -279,7 +281,7 @@ export function WhispsList() {
               box === "archived" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Archive className="w-3.5 h-3.5" /> Archived
+            <Archive className="w-3.5 h-3.5" /> {t("whispsList.tabs.archived")}
           </button>
         </div>
 
@@ -287,7 +289,7 @@ export function WhispsList() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder={box === "sent" ? "Search by title or recipient..." : "Search by title..."}
+              placeholder={box === "sent" ? t("whispsList.searchPlaceholderSent") : t("whispsList.searchPlaceholderOther")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9 bg-card border-border/50 rounded-full"
@@ -297,16 +299,16 @@ export function WhispsList() {
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full sm:w-[180px] bg-card border-border/50 rounded-full">
                 <Filter className="w-4 h-4 mr-2 text-muted-foreground" />
-                <SelectValue placeholder="All Statuses" />
+                <SelectValue placeholder={t("whispsList.filter.allStatuses")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="scheduled">Scheduled</SelectItem>
-                <SelectItem value="delivered">Delivered</SelectItem>
-                <SelectItem value="opened">Opened</SelectItem>
-                <SelectItem value="watched">Watched</SelectItem>
-                <SelectItem value="replied">Replied</SelectItem>
+                <SelectItem value="all">{t("whispsList.filter.allStatuses")}</SelectItem>
+                <SelectItem value="pending">{t("whispsList.filter.pending")}</SelectItem>
+                <SelectItem value="scheduled">{t("whispsList.filter.scheduled")}</SelectItem>
+                <SelectItem value="delivered">{t("whispsList.filter.delivered")}</SelectItem>
+                <SelectItem value="opened">{t("whispsList.filter.opened")}</SelectItem>
+                <SelectItem value="watched">{t("whispsList.filter.watched")}</SelectItem>
+                <SelectItem value="replied">{t("whispsList.filter.replied")}</SelectItem>
               </SelectContent>
             </Select>
           )}
@@ -359,7 +361,7 @@ export function WhispsList() {
                   <div className="flex flex-col sm:flex-row h-full">
                     {whisp.videoThumbnail ? (
                       <div className="w-full sm:w-48 h-36 sm:h-auto shrink-0 relative">
-                        <img src={whisp.videoThumbnail} alt={whisp.videoTitle || "Video"} className="w-full h-full object-cover" />
+                        <img src={whisp.videoThumbnail} alt={whisp.videoTitle || t("whispsList.videoAlt")} className="w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                           <PlayCircle className="w-10 h-10 text-white opacity-80" />
                         </div>
@@ -371,14 +373,14 @@ export function WhispsList() {
                     )}
                     <div className="p-5 flex-1 flex flex-col justify-center min-w-0">
                       <div className="flex items-start justify-between gap-4 mb-2">
-                        <h3 className="font-semibold text-foreground text-lg truncate">{whisp.videoTitle || "Video Link"}</h3>
+                        <h3 className="font-semibold text-foreground text-lg truncate">{whisp.videoTitle || t("whispsList.videoLinkFallback")}</h3>
                         <div className="flex items-center gap-1 shrink-0">
                           {isNew && (
                             <span
                               className="inline-flex items-center gap-1 rounded-full bg-gilded/15 text-gilded text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 mr-1"
                               data-testid={`badge-new-${whisp.id}`}
                             >
-                              <Sparkles className="w-2.5 h-2.5" /> New
+                              <Sparkles className="w-2.5 h-2.5" /> {t("whispsList.newBadge")}
                             </span>
                           )}
                           {whisp.appreciationResponse === "yes" && (
@@ -392,7 +394,7 @@ export function WhispsList() {
                           <button
                             type="button"
                             onClick={(e) => handleTogglePin(e, whisp.id, whisp.pinned)}
-                            aria-label={whisp.pinned ? "Unpin" : "Pin to top"}
+                            aria-label={whisp.pinned ? t("whispsList.unpin") : t("whispsList.pinToTop")}
                             aria-pressed={whisp.pinned}
                             data-testid={`button-pin-${whisp.id}`}
                             className={`p-1.5 rounded-full transition-colors ${
@@ -412,7 +414,7 @@ export function WhispsList() {
                                   e.preventDefault();
                                   e.stopPropagation();
                                 }}
-                                aria-label="More options"
+                                aria-label={t("whispsList.moreOptions")}
                                 data-testid={`button-menu-${whisp.id}`}
                                 className="p-1.5 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                               >
@@ -424,7 +426,7 @@ export function WhispsList() {
                                 onClick={(e) => handleTogglePin(e as unknown as React.MouseEvent, whisp.id, whisp.pinned)}
                                 data-testid={`menu-pin-${whisp.id}`}
                               >
-                                <Pin className="w-4 h-4 mr-2" /> {whisp.pinned ? "Unpin" : "Pin to top"}
+                                <Pin className="w-4 h-4 mr-2" /> {whisp.pinned ? t("whispsList.unpin") : t("whispsList.pinToTop")}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => handleToggleArchive(whisp.id, whisp.archived)}
@@ -432,11 +434,11 @@ export function WhispsList() {
                               >
                                 {whisp.archived ? (
                                   <>
-                                    <ArchiveRestore className="w-4 h-4 mr-2" /> Move back to list
+                                    <ArchiveRestore className="w-4 h-4 mr-2" /> {t("whispsList.moveBackToList")}
                                   </>
                                 ) : (
                                   <>
-                                    <Archive className="w-4 h-4 mr-2" /> Archive
+                                    <Archive className="w-4 h-4 mr-2" /> {t("whispsList.archive")}
                                   </>
                                 )}
                               </DropdownMenuItem>
@@ -449,7 +451,7 @@ export function WhispsList() {
                                   className="text-destructive focus:text-destructive"
                                   data-testid={`menu-delete-${whisp.id}`}
                                 >
-                                  <Trash2 className="w-4 h-4 mr-2" /> Delete
+                                  <Trash2 className="w-4 h-4 mr-2" /> {t("shared.delete")}
                                 </DropdownMenuItem>
                               )}
                             </DropdownMenuContent>
@@ -460,23 +462,26 @@ export function WhispsList() {
                         {isReceivedItem ? (
                           <span className="truncate flex items-center gap-1.5">
                             <Inbox className="w-3.5 h-3.5 text-primary/70 shrink-0" />
-                            From: {whisp.senderAlias || "Someone anonymous"}
+                            {t("whispsList.from", { sender: whisp.senderAlias || t("whispsList.someoneAnonymous") })}
                           </span>
                         ) : (
                           <span className="truncate">
-                            To: {whisp.recipientEmail || whisp.recipientPhone || (
-                              whisp.deliveryMethod === "circle_drop"
-                                ? "Blind Circle feed"
-                                : whisp.deliveryMethod === "circle_dm"
-                                  ? "An anonymous Circle visitor"
-                                  : "Ghost Boost audience"
-                            )}
+                            {t("whispsList.to", {
+                              recipient:
+                                whisp.recipientEmail || whisp.recipientPhone || (
+                                  whisp.deliveryMethod === "circle_drop"
+                                    ? t("shared.blindCircleFeed")
+                                    : whisp.deliveryMethod === "circle_dm"
+                                      ? t("whispsList.anonymousCircleVisitor")
+                                      : t("shared.ghostBoostAudience")
+                                ),
+                            })}
                           </span>
                         )}
                         <span className="mx-2">•</span>
                         <span>{new Date(whisp.createdAt).toLocaleDateString()}</span>
                         <span className="mx-2">•</span>
-                        <span>via {deliveryLabel(whisp.deliveryMethod, whisp.whisperChannel)}</span>
+                        <span>{t("whispsList.via", { method: deliveryLabel(whisp.deliveryMethod, whisp.whisperChannel) })}</span>
                       </div>
                       <div className="mt-auto flex items-center justify-between gap-3">
                         {whisp.moodTag ? <MoodTag mood={whisp.moodTag} className="scale-90 origin-left" /> : <span />}
@@ -488,7 +493,7 @@ export function WhispsList() {
                             onClick={(e) => handleWhispAgain(e, whisp)}
                             data-testid={`button-whisp-again-${whisp.id}`}
                           >
-                            <Repeat className="w-3.5 h-3.5 mr-1.5" /> Whisp to someone else
+                            <Repeat className="w-3.5 h-3.5 mr-1.5" /> {t("shared.whispToSomeoneElse")}
                           </Button>
                         )}
                       </div>
@@ -501,20 +506,20 @@ export function WhispsList() {
           </div>
         ) : (
           <Card className="bg-card/50 border-dashed border-border py-16 text-center">
-            <h3 className="text-xl font-medium text-foreground mb-2">No whisps found</h3>
+            <h3 className="text-xl font-medium text-foreground mb-2">{t("whispsList.emptyState.title")}</h3>
             <p className="text-muted-foreground max-w-md mx-auto mb-6">
               {searchQuery || statusFilter !== "all"
-                ? "Try adjusting your filters to find what you're looking for."
+                ? t("whispsList.emptyState.adjustFilters")
                 : box === "received"
-                  ? "Nothing's landed in your inbox yet — when a fellow Whisperer sends you something, it'll show up here."
+                  ? t("whispsList.emptyState.noneReceived")
                   : box === "archived"
-                    ? "Nothing archived — pin, archive, or delete a whisp from its options menu (or press and hold its card)."
-                    : "You haven't sent any whisps yet."}
+                    ? t("whispsList.emptyState.noneArchived")
+                    : t("whispsList.emptyState.noneSent")}
             </p>
             {!searchQuery && statusFilter === "all" && box === "sent" && (
               <Link href="/send">
                 <Button className="rounded-full shadow-[0_0_15px_rgba(124,92,252,0.3)]">
-                  Send Your First Whisp
+                  {t("whispsList.emptyState.cta")}
                 </Button>
               </Link>
             )}
@@ -525,16 +530,15 @@ export function WhispsList() {
       <AlertDialog open={deleteTargetId !== null} onOpenChange={(open) => !open && setDeleteTargetId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this whisp?</AlertDialogTitle>
+            <AlertDialogTitle>{t("whispsList.deleteDialog.title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              This hides it from your own list — the recipient's link, and their view of it, keeps working as
-              already delivered. This can't be undone from your side.
+              {t("whispsList.deleteDialog.description")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("shared.cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
+              {t("shared.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

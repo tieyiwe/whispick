@@ -1,4 +1,5 @@
 import { useEffect, useState, lazy, Suspense } from "react";
+import { useTranslation } from "react-i18next";
 import { useGetWhispStats, useListSuggestions, getListSuggestionsQueryKey, useGetUserProfile } from "@workspace/api-client-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +27,7 @@ const PhoneVerificationDialog = lazy(() =>
 const FEATURED_SUGGESTIONS_PARAMS = { featured: "true" };
 
 export function Dashboard() {
+  const { t } = useTranslation("whisp");
   const { data: stats, isLoading } = useGetWhispStats();
   const { data: profile } = useGetUserProfile();
   const { data: suggestionsData } = useListSuggestions(FEATURED_SUGGESTIONS_PARAMS, {
@@ -106,17 +108,17 @@ export function Dashboard() {
   }
 
   const statCards = [
-    { title: "Sent Whisps", value: stats?.totalSent || 0, icon: Send, color: "text-primary", bg: "bg-primary/10" },
-    { title: "Open Rate", value: `${Math.round(stats?.openRate || 0)}%`, icon: Eye, color: "text-blue-400", bg: "bg-blue-500/10" },
-    { title: "Videos Watched", value: stats?.totalWatched || 0, icon: PlayCircle, color: "text-secondary", bg: "bg-secondary/10" },
-    { title: "Replies Received", value: stats?.totalReplied || 0, icon: MessageSquareHeart, color: "text-amber-400", bg: "bg-amber-500/10" },
+    { title: t("dashboard.stats.sentWhisps"), value: stats?.totalSent || 0, icon: Send, color: "text-primary", bg: "bg-primary/10" },
+    { title: t("dashboard.stats.openRate"), value: `${Math.round(stats?.openRate || 0)}%`, icon: Eye, color: "text-blue-400", bg: "bg-blue-500/10" },
+    { title: t("dashboard.stats.videosWatched"), value: stats?.totalWatched || 0, icon: PlayCircle, color: "text-secondary", bg: "bg-secondary/10" },
+    { title: t("dashboard.stats.repliesReceived"), value: stats?.totalReplied || 0, icon: MessageSquareHeart, color: "text-amber-400", bg: "bg-amber-500/10" },
     // The recipient's own "was this something you needed to hear?" signal,
     // rolled up — previously visible only one whisp at a time, buried on
     // each individual detail page, with no sense of overall impact. Given
     // the gilded accent because it's the one number that measures the thing
     // the app exists to do; the others are mechanics by comparison.
     {
-      title: "Whisps That Helped",
+      title: t("dashboard.stats.whispsThatHelped"),
       value: stats?.totalAppreciated || 0,
       icon: Heart,
       color: "text-gilded",
@@ -130,12 +132,12 @@ export function Dashboard() {
       <div className="space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-serif font-bold text-foreground">Dashboard</h1>
-            <p className="text-muted-foreground mt-1">Here's how your whisps are performing.</p>
+            <h1 className="text-3xl font-serif font-bold text-foreground">{t("dashboard.title")}</h1>
+            <p className="text-muted-foreground mt-1">{t("dashboard.subtitle")}</p>
           </div>
           <Link href="/send">
             <Button className="rounded-full shadow-[0_0_15px_rgba(124,92,252,0.3)]">
-              <Send className="w-4 h-4 mr-2" /> Send New Whisp
+              <Send className="w-4 h-4 mr-2" /> {t("dashboard.sendNewWhisp")}
             </Button>
           </Link>
         </div>
@@ -171,8 +173,8 @@ export function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-serif font-semibold">Recent Whisps</h2>
-              <Link href="/whisps" className="text-sm text-primary hover:underline">View all</Link>
+              <h2 className="text-xl font-serif font-semibold">{t("dashboard.recentWhisps")}</h2>
+              <Link href="/whisps" className="text-sm text-primary hover:underline">{t("dashboard.viewAll")}</Link>
             </div>
             
             <div className="space-y-3">
@@ -183,7 +185,7 @@ export function Dashboard() {
                       <div className="flex flex-col sm:flex-row h-full">
                         {whisp.videoThumbnail ? (
                           <div className="w-full sm:w-40 h-32 sm:h-auto shrink-0 relative">
-                            <img src={whisp.videoThumbnail} alt={whisp.videoTitle || "Video"} className="w-full h-full object-cover" />
+                            <img src={whisp.videoThumbnail} alt={whisp.videoTitle || t("dashboard.videoAlt")} className="w-full h-full object-cover" />
                             <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                               <PlayCircle className="w-8 h-8 text-white opacity-80" />
                             </div>
@@ -195,12 +197,17 @@ export function Dashboard() {
                         )}
                         <div className="p-4 flex-1 flex flex-col justify-center min-w-0">
                           <div className="flex items-start justify-between gap-4 mb-2">
-                            <h4 className="font-medium text-foreground truncate">{whisp.videoTitle || "Video Link"}</h4>
+                            <h4 className="font-medium text-foreground truncate">{whisp.videoTitle || t("dashboard.videoLinkFallback")}</h4>
                             <StatusBadge status={whisp.status} />
                           </div>
                           <div className="flex items-center text-sm text-muted-foreground mb-3">
                             <span className="truncate">
-                              Sent to {whisp.recipientEmail || whisp.recipientPhone || (whisp.deliveryMethod === "circle_drop" ? "Blind Circle feed" : "Ghost Boost audience")}
+                              {t("dashboard.sentTo", {
+                                destination:
+                                  whisp.recipientEmail ||
+                                  whisp.recipientPhone ||
+                                  (whisp.deliveryMethod === "circle_drop" ? t("shared.blindCircleFeed") : t("shared.ghostBoostAudience")),
+                              })}
                             </span>
                             <span className="mx-2">•</span>
                             <span>{new Date(whisp.createdAt).toLocaleDateString()}</span>
@@ -215,7 +222,7 @@ export function Dashboard() {
                                 onClick={(e) => handleWhispAgain(e, whisp)}
                                 data-testid={`button-whisp-again-${whisp.id}`}
                               >
-                                <Repeat className="w-3.5 h-3.5 mr-1.5" /> Whisp to someone else
+                                <Repeat className="w-3.5 h-3.5 mr-1.5" /> {t("shared.whispToSomeoneElse")}
                               </Button>
                             )}
                           </div>
@@ -229,12 +236,12 @@ export function Dashboard() {
                   <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                     <Send className="w-8 h-8 text-primary" />
                   </div>
-                  <h3 className="text-lg font-medium text-foreground mb-2">No whisps sent yet</h3>
+                  <h3 className="text-lg font-medium text-foreground mb-2">{t("dashboard.emptyState.title")}</h3>
                   <p className="text-muted-foreground max-w-md mx-auto mb-6">
-                    Start sharing meaningful videos with the people you care about.
+                    {t("dashboard.emptyState.description")}
                   </p>
                   <Link href="/send">
-                    <Button variant="outline" className="rounded-full">Create Your First Whisp</Button>
+                    <Button variant="outline" className="rounded-full">{t("dashboard.emptyState.cta")}</Button>
                   </Link>
                 </Card>
               )}
@@ -244,7 +251,7 @@ export function Dashboard() {
           <div className="space-y-4">
             {GHOST_BOOST_ENABLED && (
               <>
-                <h2 className="text-xl font-serif font-semibold">Ghost Boosts</h2>
+                <h2 className="text-xl font-serif font-semibold">{t("dashboard.ghostBoosts.title")}</h2>
                 <Card className="bg-card border-border/50 relative overflow-hidden">
                   <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] bg-primary/10 rounded-full blur-[60px] pointer-events-none" />
                   <CardContent className="p-6 text-center">
@@ -252,15 +259,15 @@ export function Dashboard() {
                       <Ghost className="w-8 h-8 text-primary" />
                     </div>
                     <h3 className="text-3xl font-bold text-foreground mb-1">{stats?.boostCredits || 0}</h3>
-                    <p className="text-muted-foreground text-sm mb-6">Boost Credits Available</p>
+                    <p className="text-muted-foreground text-sm mb-6">{t("dashboard.ghostBoosts.creditsAvailable")}</p>
 
                     <p className="text-xs text-muted-foreground mb-6">
-                      Ghost Boost queues a whisp for boosted, wider-reach delivery instead of a direct message — it doesn't guarantee it reaches one specific person the way Whisper Link does.
+                      {t("dashboard.ghostBoosts.description")}
                     </p>
 
                     <Link href="/credits">
                       <Button variant="outline" className="w-full rounded-full border-primary/30 hover:bg-primary/10 hover:text-primary">
-                        Get More Credits
+                        {t("dashboard.ghostBoosts.getMoreCredits")}
                       </Button>
                     </Link>
                   </CardContent>
@@ -268,7 +275,7 @@ export function Dashboard() {
               </>
             )}
 
-            <h2 className="text-xl font-serif font-semibold pt-2">Suggestions Library</h2>
+            <h2 className="text-xl font-serif font-semibold pt-2">{t("dashboard.suggestions.title")}</h2>
             <Card className="bg-card border-border/50 relative overflow-hidden" data-testid="card-suggestions-nudge">
               <CardContent className="p-6 space-y-4">
                 {featuredSuggestion ? (
@@ -281,17 +288,17 @@ export function Dashboard() {
                           <Sparkles className="w-5 h-5 text-muted-foreground" />
                         </div>
                       )}
-                      <p className="text-sm font-medium text-foreground line-clamp-2">{featuredSuggestion.videoTitle || "A video worth sharing"}</p>
+                      <p className="text-sm font-medium text-foreground line-clamp-2">{featuredSuggestion.videoTitle || t("dashboard.suggestions.videoWorthSharing")}</p>
                     </div>
                     {featuredSuggestion.aiSummary && (
                       <p className="text-xs text-muted-foreground line-clamp-2">{featuredSuggestion.aiSummary}</p>
                     )}
                     <div className="flex gap-2">
                       <Button variant="outline" className="flex-1 rounded-full" onClick={() => setLocation("/suggestions")}>
-                        Browse library
+                        {t("dashboard.suggestions.browseLibrary")}
                       </Button>
                       <Button className="flex-1 rounded-full" onClick={handleWhisperFeatured} data-testid="button-whisper-featured-suggestion">
-                        Whisper this
+                        {t("dashboard.suggestions.whisperThis")}
                       </Button>
                     </div>
                   </>
@@ -301,10 +308,10 @@ export function Dashboard() {
                       <Sparkles className="w-8 h-8 text-primary" />
                     </div>
                     <p className="text-sm text-muted-foreground text-center">
-                      Browse a curated library of videos and whisper one to someone in your circle who could use it.
+                      {t("dashboard.suggestions.description")}
                     </p>
                     <Link href="/suggestions">
-                      <Button variant="outline" className="w-full rounded-full">Browse Suggestions</Button>
+                      <Button variant="outline" className="w-full rounded-full">{t("dashboard.suggestions.browse")}</Button>
                     </Link>
                   </>
                 )}

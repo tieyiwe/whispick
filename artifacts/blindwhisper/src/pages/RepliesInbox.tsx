@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import {
   useListWhisps,
   useGetMyNotifications,
@@ -24,6 +25,7 @@ function whispIdFromNotificationUrl(url: string | null | undefined): string | nu
 }
 
 export function RepliesInbox() {
+  const { t } = useTranslation("whisp");
   const { data: whisps, isLoading } = useListWhisps({ status: "replied" });
   const queryClient = useQueryClient();
   const { data: notifications } = useGetMyNotifications({
@@ -89,8 +91,8 @@ export function RepliesInbox() {
     <AppLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-serif font-bold text-foreground">Replies</h1>
-          <p className="text-muted-foreground mt-1">Anonymous responses from the people you reached.</p>
+          <h1 className="text-3xl font-serif font-bold text-foreground">{t("repliesInbox.title")}</h1>
+          <p className="text-muted-foreground mt-1">{t("repliesInbox.subtitle")}</p>
         </div>
 
         {repliedWhisps.length === 0 ? (
@@ -98,9 +100,9 @@ export function RepliesInbox() {
             <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
               <MessageSquareHeart className="w-8 h-8 text-primary" />
             </div>
-            <h3 className="text-lg font-serif font-medium text-foreground mb-2">No replies yet</h3>
+            <h3 className="text-lg font-serif font-medium text-foreground mb-2">{t("repliesInbox.emptyState.title")}</h3>
             <p className="text-muted-foreground max-w-sm mx-auto">
-              When someone replies to your whisp, it'll appear here — anonymously.
+              {t("repliesInbox.emptyState.description")}
             </p>
           </Card>
         ) : (
@@ -116,7 +118,7 @@ export function RepliesInbox() {
                       {whisp.videoThumbnail ? (
                         <img
                           src={whisp.videoThumbnail}
-                          alt="Video"
+                          alt={t("repliesInbox.videoFallback")}
                           className="w-16 h-12 object-cover rounded-xl flex-shrink-0"
                         />
                       ) : (
@@ -132,15 +134,15 @@ export function RepliesInbox() {
                         <p className="font-medium text-foreground truncate" data-testid={`reply-from-${whisp.id}`}>
                           {who ? (
                             <>
-                              <span className="text-gilded">{who}</span> replied
+                              <span className="text-gilded">{who}</span> {t("repliesInbox.repliedSuffix")}
                             </>
                           ) : (
-                            "Someone replied anonymously"
+                            t("repliesInbox.someoneRepliedAnonymously")
                           )}
                         </p>
                         <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                           <UserCircle2 className="w-3 h-3 flex-shrink-0" />
-                          <span className="truncate">{whisp.videoTitle || "Video"}</span>
+                          <span className="truncate">{whisp.videoTitle || t("repliesInbox.videoFallback")}</span>
                           <span>·</span>
                           <span className="flex-shrink-0">{new Date(when).toLocaleDateString()}</span>
                         </div>

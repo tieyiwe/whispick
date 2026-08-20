@@ -1,0 +1,554 @@
+{
+  "shared": {
+    "back": "뒤로",
+    "cancel": "취소",
+    "delete": "삭제",
+    "save": "저장",
+    "memberCount_one": "멤버 {{count}}명",
+    "memberCount_other": "멤버 {{count}}명",
+    "blindCircleFeed": "Blind Circle 피드",
+    "ghostBoostAudience": "Ghost Boost 대상",
+    "whispToSomeoneElse": "다른 사람에게 Whisp 보내기",
+    "couldntUpdateThat": "업데이트하지 못했어요",
+    "movedBackToList": "목록으로 다시 이동했어요",
+    "whispDeleted": "Whisp가 삭제됐어요"
+  },
+  "dashboard": {
+    "title": "대시보드",
+    "subtitle": "지금까지 whisp 성과는 이래요.",
+    "sendNewWhisp": "새 Whisp 보내기",
+    "stats": {
+      "sentWhisps": "보낸 Whisp",
+      "openRate": "열람률",
+      "videosWatched": "시청한 영상",
+      "repliesReceived": "받은 답장",
+      "whispsThatHelped": "도움이 된 Whisp"
+    },
+    "recentWhisps": "최근 Whisp",
+    "viewAll": "전체 보기",
+    "videoAlt": "영상",
+    "videoLinkFallback": "영상 링크",
+    "sentTo": "{{destination}}에게 보냄",
+    "emptyState": {
+      "title": "아직 보낸 whisp가 없어요",
+      "description": "소중한 사람에게 의미 있는 영상을 보내보세요.",
+      "cta": "첫 Whisp 만들기"
+    },
+    "ghostBoosts": {
+      "title": "Ghost Boost",
+      "creditsAvailable": "사용 가능한 Boost 크레딧",
+      "description": "Ghost Boost는 whisp를 직접 메시지가 아니라 더 넓게 도달하는 방식으로 발송 대기열에 넣어요 — Whisper Link처럼 특정 한 사람에게 도달하는 걸 보장하지는 않아요.",
+      "getMoreCredits": "크레딧 더 받기"
+    },
+    "suggestions": {
+      "title": "추천 라이브러리",
+      "videoWorthSharing": "공유할 만한 영상",
+      "browseLibrary": "라이브러리 둘러보기",
+      "whisperThis": "이거 Whisper하기",
+      "description": "엄선된 영상 라이브러리를 둘러보고, 필요할 것 같은 주변 사람에게 whisper해보세요.",
+      "browse": "추천 둘러보기"
+    }
+  },
+  "sendWhisp": {
+    "channels": {
+      "email": "이메일",
+      "sms": "문자",
+      "whatsapp": "WhatsApp"
+    },
+    "senderAliases": {
+      "someoneWhoCares": "당신을 아끼는 사람",
+      "aFriend": "친구",
+      "someoneWhoLovesYou": "당신을 사랑하는 사람",
+      "anAdmirer": "당신을 흠모하는 사람"
+    },
+    "maxDurationMinutes_one": "{{count}}분",
+    "maxDurationMinutes_other": "{{count}}분",
+    "maxDurationSeconds_one": "{{count}}초",
+    "maxDurationSeconds_other": "{{count}}초",
+    "header": {
+      "title": "Whisp 보내기",
+      "subtitle": "소중한 사람에게 영상을 익명으로 공유하세요."
+    },
+    "stepIndicator": "{{total}}단계 중 {{step}}단계",
+    "steps": {
+      "video": "영상",
+      "mood": "분위기",
+      "note": "메모",
+      "delivery": "전달 방식",
+      "recipient": "받는 사람",
+      "send": "보내기"
+    },
+    "tabs": {
+      "concierge": "잘 모르겠나요? 설명해주세요",
+      "url": "링크 붙여넣기",
+      "upload": "업로드",
+      "camera": "카메라",
+      "library": "내 라이브러리"
+    },
+    "url": {
+      "heading": "영상 링크 붙여넣기",
+      "description": "YouTube, TikTok, Instagram, Facebook, Vimeo — 공개된 영상 URL이면 무엇이든 가능해요.",
+      "placeholder": "https://youtube.com/watch?v=..."
+    },
+    "upload": {
+      "heading": "영상 업로드하기",
+      "description": "{{duration}} 이내, MP4/WebM/MOV 형식. 받는 사람이 빠르게 불러올 수 있도록 짧게 유지하세요.",
+      "processing": "영상을 처리하는 중…",
+      "tapToChoose": "탭해서 기기에서 영상을 선택하세요",
+      "genericError": "업로드에 실패했어요. 다시 시도해주세요."
+    },
+    "camera": {
+      "heading": "카메라 사용하기",
+      "description": "여기서 바로 사진을 찍거나 영상을 녹화하세요({{duration}} 이내) — 앱을 나갈 필요 없어요."
+    },
+    "library": {
+      "heading": "내 미디어 라이브러리",
+      "description": "이미 업로드한 클립을 다시 사용하세요.",
+      "empty": "아직 아무것도 없어요 — 영상을 업로드해서 추가해보세요.",
+      "notAvailable": "더 이상 사용할 수 없어요"
+    },
+    "concierge": {
+      "heading": "뭘 보내야 할지 모르겠나요?",
+      "description": "상황을 설명해주시면 추천 라이브러리에서 영상을 추천하고, 함께 보낼 익명 메모도 작성해드릴게요.",
+      "placeholder": "예: 형에게 자랑스럽다고 말하고 싶은데 어떻게 해야 할지 모르겠어요",
+      "tryAgain": "다시 시도",
+      "getSuggestions": "추천 받기",
+      "resultsHeading": "어울릴 만한 영상 몇 가지예요:",
+      "videoThumbnailAlt": "영상 썸네일",
+      "untitledVideo": "제목 없는 영상",
+      "noMatch": "이 상황에 딱 맞는 영상은 라이브러리에 없었어요 — 대신 아래에 메모 초안이 있어요. 다른 탭에서 직접 영상을 고르면 그대로 이어져요.",
+      "draftedNote": "작성된 메모:",
+      "useNoteOnly": "이 메모 사용하고, 영상은 직접 고를게요"
+    },
+    "step2": {
+      "passingForward": "이걸 다시 전달하는 중",
+      "suggestedForSituation": "당신의 상황에 맞춰 추천됨",
+      "platformLink": "{{platform}} 링크",
+      "noPreviewDescription": "{{platform}} 링크는 미리보기를 생성할 수 없지만, 그래도 보낼 수 있어요 — 링크가 제대로 작동하는지 한 번 확인해보세요.",
+      "videoFallback": "영상",
+      "trimHeading": "클립 자르기(선택 사항)",
+      "startPlaceholder": "시작 mm:ss",
+      "to": "부터",
+      "endPlaceholder": "끝 mm:ss",
+      "trimHint": "예: 1:24처럼 좋은 부분으로 바로 넘어가서 거기서 멈추면, 전체를 다 봐야 한다는 부담을 주지 않아요.",
+      "moodHeading": "분위기 태그 선택하기",
+      "moodSubtitle": "선택 사항 — 받는 사람이 느낄 감정적 분위기를 설정해요."
+    },
+    "step3": {
+      "heading": "익명 메모 추가하기",
+      "subtitle": "선택 사항 — 최대 200자. 받는 사람은 당신인 걸 알 수 없어요.",
+      "placeholder": "다정하거나, 솔직하거나, 용기 있는 말을 적어보세요...",
+      "suggestMore": "더 추천받기",
+      "helpFindWords": "적절한 말 찾기 도와줘",
+      "regenerate": "다시 생성",
+      "signAs": "서명:",
+      "customAliasPlaceholder": "또는 직접 별칭을 입력하세요..."
+    },
+    "step4": {
+      "heading": "어떻게 전달할까요?",
+      "whisperLink": {
+        "description": "바로 전달 — 직접적이고 즉각적이며 전달이 보장돼요",
+        "price": "무료(월 3회)"
+      },
+      "groupWhisper": {
+        "title": "그룹 Whisper",
+        "description": "저장된 연락처 그룹에 같은 익명 whisp를 한 번에 보내요",
+        "price": "Whisper Link 크레딧 사용, 멤버당 1회",
+        "whichGroup": "어떤 그룹인가요?",
+        "noGroupsCreate": "아직 그룹이 없어요 — 하나 만들어보세요"
+      },
+      "ghostBoost": {
+        "description": "이런 주제에 관심이 있어 구독한 낯선 사람과 매칭돼요 — 양쪽 모두 익명이에요. 도달은 보장되지 않으며, 현재 구독자 수에 따라 달라져요.",
+        "price": "크레딧 1개($6.99)"
+      },
+      "scheduleTitle": "나중으로 예약하기",
+      "scheduleDescription": "지금 보내거나, 나중 날짜와 시간을 선택하세요"
+    },
+    "step5": {
+      "heading": "누가 받게 될까요?",
+      "description": "이메일이나 전화번호를 입력하세요(국제 형식, 예: +1 555 123 4567). 여러 개면 쉼표로 구분하세요.",
+      "placeholder": "sam@example.com, +1 555 123 4567",
+      "matchingContacts": "일치하는 연락처",
+      "recentlySentTo": "최근에 보낸 곳",
+      "invalidRecipients": "유효한 이메일이나 전화번호가 아니에요: {{list}}",
+      "groupNoticeBold": "이건 Whisper Group으로 저장돼요({{count}}명)",
+      "groupNoticeRest": "나중에 다시 사용할 수 있도록요. 각자 자신만의 비공개 whisp를 받게 되고 — 서로 보이지 않으며, 각각 당신 플랜의 Whisper Link 하나를 사용해요.",
+      "preferWhatsApp": "전화번호는 SMS 대신 WhatsApp으로 보내기",
+      "smsDisclosure": "전화번호로 보내면 당신 이름으로 문자를 보내는 거예요. 메시지 및 데이터 요금이 부과될 수 있어요. 수신 거부는 STOP, 도움이 필요하면 HELP로 답장하세요. 자세한 내용은",
+      "smsTermsLinkText": "SMS 약관",
+      "or": "또는",
+      "chooseFromContacts": "연락처에서 선택"
+    },
+    "step6": {
+      "heading": "보낼 준비가 됐나요?",
+      "mood": "분위기",
+      "signedAs": "서명",
+      "delivery": "전달 방식",
+      "groupWhisperChannel": "그룹 Whisper({{channel}})",
+      "to": "받는 사람",
+      "matchedSubscribers": "이 주제에 관심 있는 매칭된 구독자",
+      "groupSummary": "{{name}}({{members}})",
+      "groupFallback": "그룹",
+      "startsAt": "시작 지점",
+      "endsAt": "끝 지점",
+      "when": "발송 시점",
+      "rightNow": "지금 바로",
+      "yourNote": "당신의 메모",
+      "sendButton": "Whisp 보내기"
+    },
+    "sent": {
+      "title_one": "Whisp가 전송되고 있어요",
+      "title_other": "Whisp들이 전송되고 있어요",
+      "description_one": "전송됐어요. 확인하면 알려드릴게요.",
+      "description_other": "{{count}}명에게 전송됐어요. 각자 확인할 때마다 알려드릴게요.",
+      "trackButton_one": "이 whisp 추적하기",
+      "trackButton_other": "이 whisp들 추적하기",
+      "sendAnother": "하나 더 보내기"
+    },
+    "common": {
+      "back": "뒤로",
+      "next": "다음",
+      "review": "검토"
+    },
+    "validation": {
+      "invalidUrl": "유효한 URL을 입력해주세요",
+      "invalidTimeFormat": "시간 형식이 올바르지 않아요",
+      "endTimeMustBeGreaterThanZero": "끝 시간은 0:00보다 커야 해요",
+      "endTimeAfterStart": "끝 시간은 시작 시간보다 늦어야 해요"
+    },
+    "toast": {
+      "conciergeNoResults": "지금은 딱히 떠오르는 게 없어요",
+      "noSuggestions": "지금은 추천을 만들어낼 수 없어요",
+      "noContactInfo": "해당 연락처에는 이메일이나 전화번호가 없어요",
+      "failedToSendGroup": "그룹 whisp 전송에 실패했어요",
+      "failedToSend": "whisp 전송에 실패했어요",
+      "failedToSendFallback": "전송 실패",
+      "partialSendTitle": "{{succeeded}}명에게 전송, {{failed}}명에게는 실패",
+      "membersSkipped_one": "{{count}}명의 멤버를 건너뛰었어요",
+      "membersSkipped_other": "{{count}}명의 멤버를 건너뛰었어요",
+      "membersSkippedDescription": "이 채널에 필요한 연락처 정보가 없었어요."
+    }
+  },
+  "whispDetail": {
+    "notFound": "Whisp를 찾을 수 없어요.",
+    "backToWhisps": "whisp 목록으로",
+    "deleteDialog": {
+      "title": "이 whisp를 삭제할까요?",
+      "descriptionWithReplies_one": "이 whisp에는 받는 사람의 답장이 하나 있어요. 삭제하면 그 답장까지 함께 whisp 목록에서 제거돼요. 이 작업은 당신 쪽에서 되돌릴 수 없어요.",
+      "descriptionWithReplies_other": "이 whisp에는 받는 사람의 답장 {{count}}개가 있어요. 삭제하면 그 답장 스레드까지 함께 whisp 목록에서 제거돼요. 이 작업은 당신 쪽에서 되돌릴 수 없어요.",
+      "descriptionNoReplies": "이 whisp를 목록에서 제거해요. 이 작업은 당신 쪽에서 되돌릴 수 없어요."
+    },
+    "videoFallback": "영상",
+    "matchedToSubscribers_one": "구독자 {{count}}명과 매칭됨",
+    "matchedToSubscribers_other": "구독자 {{count}}명과 매칭됨",
+    "noMatchingSubscribers": "제시간에 맞는 구독자를 찾지 못했어요",
+    "lookingForMatch": "구독자 중에서 매칭을 찾는 중...",
+    "sentTo": "{{destination}}에게 보냄",
+    "genericRecipient": "받는 사람",
+    "via": "{{method}} 통해",
+    "scheduledToSend": "{{date}}에 전송 예약됨",
+    "stats": {
+      "matched": "{{count}}명 매칭됨",
+      "opened": "{{count}}명 열람",
+      "watched": "{{count}}명 시청",
+      "replied": "{{count}}명 답장",
+      "appreciated": "{{count}}명 좋았다고 응답",
+      "views_one": "조회 {{count}}회",
+      "views_other": "조회 {{count}}회",
+      "likes_one": "좋아요 {{count}}개",
+      "likes_other": "좋아요 {{count}}개",
+      "comments_one": "댓글 {{count}}개",
+      "comments_other": "댓글 {{count}}개"
+    },
+    "appreciationYes": "꼭 필요했던 이야기였다고 했어요",
+    "appreciationNo": "딱 필요했던 건 아니었다고 했어요",
+    "takeawayHeading": "상대방이 얻은 것",
+    "deliveryTimeline": "전달 타임라인",
+    "timeline": {
+      "sent": "보냄",
+      "delivered": "전달됨",
+      "opened": "열람함",
+      "watched": "시청함",
+      "watchedAll": "전체 시청함",
+      "watchedFull": "시청 시작함",
+      "watchedAllFull": "끝까지 다 봤어요",
+      "replied": "답장함"
+    },
+    "anonymousConversation": "익명 대화",
+    "outOfReplies": {
+      "title": "익명 답장을 모두 사용했어요.",
+      "description": "답장 횟수를 추가하거나 상대방이 무료 계정을 만들지 않으면 더 이상 답장할 수 없어요. 후속 메시지는 계속 보낼 수 있어요.",
+      "comingSoonButton": "답장 횟수 추가하기(곧 제공 예정)"
+    },
+    "oneReplyLeft": "익명 답장이 1회 남았어요.",
+    "recipientLabel": "받는 사람",
+    "noRepliesYet": "아직 답장이 없어요. 아래에서 다른 익명 메시지를 보낼 수 있어요.",
+    "composerPlaceholder": "다른 익명 메시지 보내기...",
+    "commentsHeading": "댓글({{count}}개)",
+    "noComments": "아직 댓글이 없어요.",
+    "replyingToComment": "댓글에 답장하는 중",
+    "cancelReplyAriaLabel": "답장 취소",
+    "replyAsPosterPlaceholder": "게시자로서 답글...",
+    "privateConversationsHeading": "비공개 대화({{count}}개)",
+    "anonymousVisitorWantsToTalk": "익명 방문자가 대화를 원해요",
+    "revealYourself": "정체 공개하기",
+    "revealRequestSent": "정체 공개 요청을 보냈어요",
+    "revealAccepted": "수락했어요! 이제 정체를 공개할 수 있어요.",
+    "revealDeclined": "정체 공개를 거절했어요.",
+    "revealWaiting": "받는 사람의 응답을 기다리는 중...",
+    "toast": {
+      "followUpSent": "후속 메시지를 보냈어요",
+      "failedToSend": "전송 실패",
+      "couldntPostComment": "댓글을 게시하지 못했어요",
+      "failedToRequestReveal": "정체 공개 요청에 실패했어요",
+      "failedToDelete": "삭제에 실패했어요"
+    }
+  },
+  "whispsList": {
+    "title": "내 Whisp",
+    "subtitle": "당신이 보낸 것과 받은 것 전부예요.",
+    "tabs": {
+      "sent": "보낸 항목",
+      "received": "받은 항목",
+      "archived": "보관됨"
+    },
+    "searchPlaceholderSent": "제목이나 받는 사람으로 검색...",
+    "searchPlaceholderOther": "제목으로 검색...",
+    "filter": {
+      "allStatuses": "모든 상태",
+      "pending": "대기 중",
+      "scheduled": "예약됨",
+      "delivered": "전달됨",
+      "opened": "열람함",
+      "watched": "시청함",
+      "replied": "답장함"
+    },
+    "videoAlt": "영상",
+    "videoLinkFallback": "영상 링크",
+    "newBadge": "신규",
+    "unpin": "고정 해제",
+    "pinToTop": "상단 고정",
+    "moreOptions": "더 보기",
+    "moveBackToList": "목록으로 이동",
+    "archive": "보관",
+    "from": "보낸 사람: {{sender}}",
+    "to": "받는 사람: {{recipient}}",
+    "someoneAnonymous": "익명의 누군가",
+    "anonymousCircleVisitor": "익명 Circle 방문자",
+    "via": "{{method}} 통해",
+    "emptyState": {
+      "title": "whisp를 찾을 수 없어요",
+      "adjustFilters": "필터를 조정해서 원하는 걸 찾아보세요.",
+      "noneReceived": "아직 받은 편지함에 아무것도 없어요 — 다른 Whisperer가 뭔가 보내면 여기 나타나요.",
+      "noneArchived": "보관된 게 없어요 — 옵션 메뉴에서 whisp를 고정, 보관, 삭제해보세요(또는 카드를 길게 눌러보세요).",
+      "noneSent": "아직 보낸 whisp가 없어요.",
+      "cta": "첫 Whisp 보내기"
+    },
+    "deleteDialog": {
+      "title": "이 whisp를 삭제할까요?",
+      "description": "당신 목록에서만 숨겨져요 — 받는 사람의 링크와 화면은 이미 전달된 것처럼 계속 작동해요. 이 작업은 당신 쪽에서 되돌릴 수 없어요."
+    },
+    "toast": {
+      "unpinned": "고정 해제됨",
+      "pinnedToTop": "상단에 고정됨",
+      "archived": "보관됨",
+      "couldntDelete": "삭제하지 못했어요"
+    }
+  },
+  "repliesInbox": {
+    "title": "답장",
+    "subtitle": "당신이 닿았던 사람들의 익명 답장이에요.",
+    "emptyState": {
+      "title": "아직 답장이 없어요",
+      "description": "누군가 당신의 whisp에 답장하면 여기에 익명으로 나타나요."
+    },
+    "repliedSuffix": "답장함",
+    "someoneRepliedAnonymously": "누군가 익명으로 답장했어요",
+    "videoFallback": "영상"
+  },
+  "groupSendDetail": {
+    "notFound": "그룹 전송 기록을 찾을 수 없어요.",
+    "whisperGroupsLink": "Whisper Groups",
+    "videoFallback": "영상",
+    "groupFallback": "그룹",
+    "stats": {
+      "opened": "{{count}}명 열람",
+      "watched": "{{count}}명 시청",
+      "replied": "{{count}}명 답장",
+      "appreciated": "{{count}}명 좋았다고 응답"
+    },
+    "perMemberStatus": "멤버별 상태",
+    "unknownRecipient": "알 수 없음",
+    "whispedVideoBack": "영상으로 답장했어요"
+  },
+  "whisperGroupDetail": {
+    "notFound": "그룹을 찾을 수 없어요.",
+    "whisperGroupsLink": "Whisper Groups",
+    "deleteDialog": {
+      "title": "\"{{name}}\"을(를) 삭제할까요?",
+      "description": "저장된 그룹과 멤버 목록이 삭제돼요. 이 그룹에 이미 보낸 whisp에는 영향이 없어요."
+    },
+    "sendAWhisp": "Whisp 보내기",
+    "addMembers": "멤버 추가",
+    "addFromContacts": "연락처에서 추가",
+    "orAddManually": "또는 직접 추가",
+    "namePlaceholder": "이름(선택 사항)",
+    "emailPlaceholder": "이메일",
+    "phonePlaceholder": "전화번호",
+    "addMember": "멤버 추가",
+    "unnamedContact": "이름 없는 연락처",
+    "noMembersYet": "아직 멤버가 없어요 — 위에서 추가해보세요.",
+    "toast": {
+      "addEmailOrPhone": "이메일이나 전화번호를 추가하세요",
+      "memberAdded": "멤버가 추가됐어요",
+      "failedToAddMember": "멤버 추가에 실패했어요",
+      "noneHadContactInfo": "해당 연락처 중 이메일이나 전화번호가 있는 항목이 없어요",
+      "membersAdded_one": "멤버 {{count}}명이 추가됐어요",
+      "membersAdded_other": "멤버 {{count}}명이 추가됐어요",
+      "failedToAddMembers": "멤버 추가에 실패했어요",
+      "memberRemoved": "멤버가 제거됐어요",
+      "failedToRemoveMember": "멤버 제거에 실패했어요",
+      "groupDeleted": "그룹이 삭제됐어요",
+      "failedToDeleteGroup": "그룹 삭제에 실패했어요"
+    }
+  },
+  "whisperGroups": {
+    "title": "Whisper Groups",
+    "subtitle": "연락처 그룹을 한 번 저장해두고, 모두에게 같은 익명 whisp를 한 번에 보내보세요.",
+    "tabs": {
+      "groups": "그룹",
+      "sentBatches": "보낸 묶음"
+    },
+    "createAGroup": "그룹 만들기",
+    "namePlaceholder": "예: 대학 친구들",
+    "create": "만들기",
+    "emptyGroups": "아직 그룹이 없어요 — 위에서 하나 만들어 시작해보세요.",
+    "emptySends": "아직 보낸 그룹 whisp가 없어요.",
+    "groupFallback": "그룹",
+    "sendRow": {
+      "summary": "{{group}} · {{members}} · {{via}} 통해",
+      "scheduled": "예약됨",
+      "stats": "열람 {{opened}} · 시청 {{watched}} · 답장 {{replied}}"
+    },
+    "toast": {
+      "groupCreated": "그룹이 생성됐어요",
+      "failedToCreateGroup": "그룹 생성에 실패했어요"
+    }
+  },
+  "publicWhisp": {
+    "takeaway": "핵심 메시지",
+    "backToDashboard": "대시보드",
+    "becomeAWhisperer": "Whisperer 되기",
+    "lead": {
+      "group": "당신의 주변 사람이 이걸 익명으로 보냈어요 — 당신은 이걸 받은 {{count}}명 중 한 명이에요 👀",
+      "individual": "당신을 아끼는 누군가가 이걸 꼭 봐야 한다고 생각했어요 👀"
+    },
+    "expired": {
+      "title": "이 whisp는 만료됐어요",
+      "description": "보낸 사람은 언제든 새로 보낼 수 있어요."
+    },
+    "expiresIn": "{{time}} 후 만료",
+    "appreciation": {
+      "yesResponse": "이게 당신에게 닿았다니 기뻐요.",
+      "noResponse": "알려줘서 고마워요.",
+      "prompt": "이게 당신이 듣고 싶었던 이야기였나요?",
+      "knowSomeone": "이걸 필요로 할 만한 사람이 또 있나요?",
+      "passItForward": "전달하기",
+      "yesButton": "네",
+      "noButton": "그다지"
+    },
+    "circle": {
+      "like": "좋아요",
+      "messagePosterPrivately": "게시자에게 비공개 메시지",
+      "commentCount_one": "댓글 {{count}}개",
+      "commentCount_other": "댓글 {{count}}개",
+      "beFirstToComment": "첫 댓글을 남겨보세요",
+      "commentPlaceholder": "댓글 추가...(익명)",
+      "moreCommentOptionsAriaLabel": "사진 첨부를 포함한 더 많은 댓글 옵션",
+      "commentingAs": "{{handle}}(으)로 댓글 작성 중",
+      "anonymousHandle": "익명",
+      "changeName": "이름 변경",
+      "renamePlaceholder": "새 이름(영문자와 숫자만)",
+      "renameWarning": "실명이나 신원이 드러날 만한 정보는 사용하지 마세요.",
+      "replyingTo": "{{target}}에게 답장 중",
+      "thePoster": "게시자",
+      "aComment": "댓글",
+      "cancelReplyAriaLabel": "답장 취소",
+      "attachmentPreviewAlt": "첨부 파일 미리보기",
+      "removeImageAriaLabel": "이미지 제거",
+      "attachPhoto": "사진 첨부",
+      "couldntAttachImage": "해당 이미지를 첨부하지 못했어요",
+      "keepItKind": "친절하게 대해주세요 — 여기의 목표는 진솔하고 생산적인 대화예요.",
+      "unlimitedCommentsSuffix": "무제한 댓글을 이용해보세요."
+    },
+    "reply": {
+      "headerConversation": "익명 대화",
+      "headerWantToReply": "익명으로 답장하시겠어요?",
+      "theSender": "보낸 사람",
+      "expiredNotice": "이 whisp는 만료돼서 더 이상 답장할 수 없어요.",
+      "limitReached": {
+        "title": "여기서 익명 답장을 모두 사용했어요.",
+        "description": "무료 계정을 만들면 이 대화를 계속할 수 있어요 — 상대방에게는 여전히 익명이에요.",
+        "signUpButton": "가입하고 계속 답장하기"
+      },
+      "compactPlaceholder": "익명으로 답장하기...",
+      "moreReplyOptionsAriaLabel": "영상 답장을 포함한 더 많은 답장 옵션",
+      "replyingToPrefix": "답장 대상:",
+      "thisVideoFallback": "이 영상",
+      "orWriteYourOwn": "또는 직접 작성하기",
+      "fullPlaceholder": "답장을 입력하세요...(익명)",
+      "whispVideoBack": "영상으로 답장하기",
+      "videoLockedDescription": "무료 계정이 필요해요 — 텍스트 답장은 계속 이용할 수 있어요",
+      "videoUnlockedDescription": "답장에 영상을 첨부하세요 — 여전히 익명이에요",
+      "videoThumbnailAlt": "썸네일",
+      "videoUrlPlaceholder": "영상 링크 붙여넣기...",
+      "addVideoButton": "추가",
+      "lastReplyWarning": "마지막 익명 답장이에요 — 계속하려면 무료로 가입하세요.",
+      "repliesLeft_one": "익명 답장이 {{count}}회 남았어요.",
+      "repliesLeft_other": "익명 답장이 {{count}}회 남았어요.",
+      "sendButton": "답장 보내기"
+    },
+    "reveal": {
+      "viewerAccepted": "정체를 공개해도 좋다고 알렸어요.",
+      "viewerDeclined": "계속 익명으로 남기로 선택했어요.",
+      "prompt": "이걸 보낸 사람이 정체를 공개하고 싶어해요.",
+      "question": "누가 이걸 보냈는지 알고 싶으세요?",
+      "accept": "수락",
+      "decline": "거절"
+    },
+    "reminder": {
+      "finalNotice": "마지막으로 한 번 더 알려드릴게요 — 그 이후에는 이 whisp를 더 이상 볼 수 없어요.",
+      "notice": "이 whisp가 만료되기 전에 알려드릴게요.",
+      "pickerHeading": "언제 알려드릴까요?",
+      "button": "나중에 알림 받기"
+    },
+    "signupCta": {
+      "heading": "하고 싶은 말이 있지만, 소리 내어 말하긴 어려운가요?",
+      "description": "필요한 사람에게 영상을 보내보세요 — 익명으로, 직접 말하는 어색함 없이요. 당신이 원하지 않는 한 상대방은 절대 알 수 없어요.",
+      "button": "지금 Whisperer 되기",
+      "disclaimer": "무료로 시작 — 카드 등록 필요 없어요."
+    },
+    "subscribeCta": {
+      "heading": "당신에게 맞춘 더 많은 콘텐츠를 원하나요?",
+      "description": "선택한 주제와 일치할 때 이런 익명 whisp를 받은 편지함으로 받아보세요."
+    },
+    "footer": {
+      "poweredByPrefix": "제공:",
+      "poweredBySuffix": "— 어색함 없이, 중요한 걸 전하세요."
+    },
+    "toast": {
+      "couldntScheduleReminder": "해당 알림을 예약하지 못했어요",
+      "somethingWentWrong": "문제가 발생했어요",
+      "replySentAnonymously": "답장을 익명으로 보냈어요",
+      "failedToSendReply": "답장 전송에 실패했어요",
+      "createAccountToWhispVideo": "영상으로 답장하려면 무료 계정을 만드세요",
+      "senderNotified": "보낸 사람에게도 알렸어요 — 당신을 위해 영상 답장을 잠금 해제할 수 있어요.",
+      "freeCommentsUsed": "지금은 무료 댓글을 모두 사용했어요",
+      "signUpToComment": "가입하면 언제든 댓글을 남길 수 있어요, 또는 24시간 후 다시 확인해보세요.",
+      "couldntPostComment": "댓글을 게시하지 못했어요",
+      "nameUpdated": "이름이 업데이트됐어요",
+      "couldntUpdateName": "해당 이름을 업데이트하지 못했어요",
+      "couldntStartConversation": "해당 대화를 시작하지 못했어요"
+    }
+  }
+}

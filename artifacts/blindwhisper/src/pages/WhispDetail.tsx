@@ -1,4 +1,5 @@
 import { useParams, useLocation, Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import {
   useGetWhisp,
   useCreateWhispReply,
@@ -131,6 +132,7 @@ function TimelineTrack({ steps }: { steps: TimelineStepData[] }) {
 }
 
 export function WhispDetail() {
+  const { t } = useTranslation("whisp");
   const { id } = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -183,9 +185,9 @@ export function WhispDetail() {
     return (
       <AppLayout>
         <div className="max-w-2xl mx-auto text-center py-16">
-          <p className="text-muted-foreground">Whisp not found.</p>
+          <p className="text-muted-foreground">{t("whispDetail.notFound")}</p>
           <Button variant="ghost" onClick={() => setLocation("/whisps")} className="mt-4">
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back to whisps
+            <ArrowLeft className="w-4 h-4 mr-2" /> {t("whispDetail.backToWhisps")}
           </Button>
         </div>
       </AppLayout>
@@ -201,9 +203,9 @@ export function WhispDetail() {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetWhispQueryKey(id!) });
           queryClient.invalidateQueries({ queryKey: getListWhispsQueryKey() });
-          toast({ title: "Moved back to your list" });
+          toast({ title: t("shared.movedBackToList") });
         },
-        onError: () => toast({ title: "Couldn't update that", variant: "destructive" }),
+        onError: () => toast({ title: t("shared.couldntUpdateThat"), variant: "destructive" }),
       },
     );
   }
@@ -243,9 +245,9 @@ export function WhispDetail() {
           setReplyText("");
           setReplyingTo(null);
           queryClient.invalidateQueries({ queryKey: getGetWhispQueryKey(id!) });
-          toast({ title: "Follow-up sent" });
+          toast({ title: t("whispDetail.toast.followUpSent") });
         },
-        onError: () => toast({ title: "Failed to send", variant: "destructive" }),
+        onError: () => toast({ title: t("whispDetail.toast.failedToSend"), variant: "destructive" }),
       }
     );
   }
@@ -268,7 +270,7 @@ export function WhispDetail() {
           setPosterCommentReplyingTo(null);
           queryClient.invalidateQueries({ queryKey: getGetWhispQueryKey(id!) });
         },
-        onError: () => toast({ title: "Couldn't post that comment", variant: "destructive" }),
+        onError: () => toast({ title: t("whispDetail.toast.couldntPostComment"), variant: "destructive" }),
       }
     );
   }
@@ -279,9 +281,9 @@ export function WhispDetail() {
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetWhispQueryKey(id!) });
-          toast({ title: "Reveal request sent" });
+          toast({ title: t("whispDetail.revealRequestSent") });
         },
-        onError: () => toast({ title: "Failed to request reveal", variant: "destructive" }),
+        onError: () => toast({ title: t("whispDetail.toast.failedToRequestReveal"), variant: "destructive" }),
       }
     );
   }
@@ -294,9 +296,9 @@ export function WhispDetail() {
           queryClient.invalidateQueries({ queryKey: getListWhispsQueryKey() });
           queryClient.invalidateQueries({ queryKey: getGetWhispStatsQueryKey() });
           setLocation("/whisps");
-          toast({ title: "Whisp deleted" });
+          toast({ title: t("shared.whispDeleted") });
         },
-        onError: () => toast({ title: "Failed to delete", variant: "destructive" }),
+        onError: () => toast({ title: t("whispDetail.toast.failedToDelete"), variant: "destructive" }),
       }
     );
   }
@@ -309,10 +311,10 @@ export function WhispDetail() {
   const watchedInFull = eventTypes.includes("watched_complete");
 
   const timelineSteps: TimelineStepData[] = [
-    { label: "Sent", time: whisp.createdAt, done: true },
-    { label: "Delivered", time: whisp.deliveredAt, done: !!whisp.deliveredAt },
+    { label: t("whispDetail.timeline.sent"), time: whisp.createdAt, done: true },
+    { label: t("whispDetail.timeline.delivered"), time: whisp.deliveredAt, done: !!whisp.deliveredAt },
     {
-      label: "Opened",
+      label: t("whispDetail.timeline.opened"),
       time: whisp.openedAt,
       done: !!whisp.openedAt,
       active: !!whisp.deliveredAt && !whisp.openedAt,
@@ -326,14 +328,14 @@ export function WhispDetail() {
       // tell us. Only YouTube, Vimeo and native uploads report completion, and
       // when one does the label says so rather than adding a stage that stays
       // permanently grey for everything else.
-      label: watchedInFull ? "Watched all" : "Watched",
-      fullLabel: watchedInFull ? "Watched all the way through" : "Started watching",
+      label: watchedInFull ? t("whispDetail.timeline.watchedAll") : t("whispDetail.timeline.watched"),
+      fullLabel: watchedInFull ? t("whispDetail.timeline.watchedAllFull") : t("whispDetail.timeline.watchedFull"),
       time: whisp.watchedAt,
       done: !!whisp.watchedAt,
       active: !!whisp.openedAt && !whisp.watchedAt,
     },
     {
-      label: "Replied",
+      label: t("whispDetail.timeline.replied"),
       time: replies.find((r) => r.fromRecipient)?.createdAt,
       done: recipientReplied,
       active: !!whisp.openedAt && !recipientReplied,
@@ -348,7 +350,7 @@ export function WhispDetail() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <Button variant="ghost" onClick={() => setLocation("/whisps")} className="text-muted-foreground -ml-2" data-testid="button-back">
-            <ArrowLeft className="w-4 h-4 mr-1" /> Back
+            <ArrowLeft className="w-4 h-4 mr-1" /> {t("shared.back")}
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -364,21 +366,21 @@ export function WhispDetail() {
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Delete this whisp?</AlertDialogTitle>
+                <AlertDialogTitle>{t("whispDetail.deleteDialog.title")}</AlertDialogTitle>
                 <AlertDialogDescription>
                   {replies.length > 0
-                    ? `This whisp has ${replies.length === 1 ? "a reply" : `${replies.length} replies`} from the recipient. Deleting it removes it — and that ${replies.length === 1 ? "reply" : "reply thread"} — from your whisps. This can't be undone from your side.`
-                    : "This removes the whisp from your whisps. This can't be undone from your side."}
+                    ? t("whispDetail.deleteDialog.descriptionWithReplies", { count: replies.length })
+                    : t("whispDetail.deleteDialog.descriptionNoReplies")}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogCancel>{t("shared.cancel")}</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={handleDelete}
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   data-testid="button-confirm-delete-whisp"
                 >
-                  Delete
+                  {t("shared.delete")}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -389,7 +391,7 @@ export function WhispDetail() {
         <Card className="bg-card border-border/50 overflow-hidden">
           {whisp.videoThumbnail ? (
             <div className="relative h-48 overflow-hidden">
-              <img src={whisp.videoThumbnail} alt="Video" className="w-full h-full object-cover" />
+              <img src={whisp.videoThumbnail} alt={t("whispDetail.videoFallback")} className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                 <a
                   href={whisp.videoPlatform === "upload" ? `/api/public/w/${whisp.publicToken}/media` : whisp.videoUrl}
@@ -406,43 +408,50 @@ export function WhispDetail() {
           <CardContent className="p-5">
             <div className="flex items-start justify-between gap-3 mb-3">
               <div>
-                <h2 className="font-serif font-semibold text-lg text-foreground">{whisp.videoTitle || "Video"}</h2>
+                <h2 className="font-serif font-semibold text-lg text-foreground">{whisp.videoTitle || t("whispDetail.videoFallback")}</h2>
                 <p className="text-sm text-muted-foreground">
                   {isGhostBoost
                     ? matchStats && matchStats.matchedCount > 0
-                      ? `Matched to ${matchStats.matchedCount} subscriber${matchStats.matchedCount === 1 ? "" : "s"}`
+                      ? t("whispDetail.matchedToSubscribers", { count: matchStats.matchedCount })
                       : whisp.status === "failed"
-                      ? "No matching subscribers were found in time"
-                      : "Looking for a match among subscribers..."
-                    : `Sent to ${whisp.recipientEmail || whisp.recipientPhone || (whisp.deliveryMethod === "circle_drop" ? "Blind Circle feed" : "recipient")}`}
+                      ? t("whispDetail.noMatchingSubscribers")
+                      : t("whispDetail.lookingForMatch")
+                    : t("whispDetail.sentTo", {
+                        destination:
+                          whisp.recipientEmail ||
+                          whisp.recipientPhone ||
+                          (whisp.deliveryMethod === "circle_drop" ? t("shared.blindCircleFeed") : t("whispDetail.genericRecipient")),
+                      })}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Via {deliveryLabel(whisp.deliveryMethod, whisp.whisperChannel)} · {new Date(whisp.createdAt).toLocaleDateString()}
+                  {t("whispDetail.via", { method: deliveryLabel(whisp.deliveryMethod, whisp.whisperChannel) })} · {new Date(whisp.createdAt).toLocaleDateString()}
                 </p>
               </div>
               <StatusBadge status={whisp.status} />
             </div>
             {whisp.status === "scheduled" && whisp.scheduledAt && (
               <p className="text-xs text-violet-400 mb-2">
-                Scheduled to send {new Date(whisp.scheduledAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
+                {t("whispDetail.scheduledToSend", {
+                  date: new Date(whisp.scheduledAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }),
+                })}
               </p>
             )}
             {isGhostBoost && matchStats && matchStats.matchedCount > 0 && (
               <div className="flex items-center gap-4 text-sm text-muted-foreground pt-1 pb-2 flex-wrap" data-testid="ghost-boost-match-stats">
-                <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" /> {matchStats.matchedCount} matched</span>
-                <span className="flex items-center gap-1"><Eye className="w-3.5 h-3.5" /> {matchStats.openedCount} opened</span>
-                <span className="flex items-center gap-1"><PlayCircle className="w-3.5 h-3.5" /> {matchStats.watchedCount} watched</span>
-                <span className="flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5" /> {matchStats.repliedCount} replied</span>
+                <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" /> {t("whispDetail.stats.matched", { count: matchStats.matchedCount })}</span>
+                <span className="flex items-center gap-1"><Eye className="w-3.5 h-3.5" /> {t("whispDetail.stats.opened", { count: matchStats.openedCount })}</span>
+                <span className="flex items-center gap-1"><PlayCircle className="w-3.5 h-3.5" /> {t("whispDetail.stats.watched", { count: matchStats.watchedCount })}</span>
+                <span className="flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5" /> {t("whispDetail.stats.replied", { count: matchStats.repliedCount })}</span>
                 {matchStats.appreciatedCount > 0 && (
-                  <span className="flex items-center gap-1 text-primary"><HeartHandshake className="w-3.5 h-3.5" /> {matchStats.appreciatedCount} appreciated</span>
+                  <span className="flex items-center gap-1 text-primary"><HeartHandshake className="w-3.5 h-3.5" /> {t("whispDetail.stats.appreciated", { count: matchStats.appreciatedCount })}</span>
                 )}
               </div>
             )}
             {whisp.deliveryMethod === "circle_drop" && (
               <div className="flex items-center gap-4 text-sm text-muted-foreground pt-1 pb-2 flex-wrap" data-testid="circle-post-stats">
-                <span className="flex items-center gap-1"><Eye className="w-3.5 h-3.5" /> {viewCount} view{viewCount === 1 ? "" : "s"}</span>
-                <span className="flex items-center gap-1"><Heart className="w-3.5 h-3.5" /> {likeCount} like{likeCount === 1 ? "" : "s"}</span>
-                <span className="flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5" /> {comments.length} comment{comments.length === 1 ? "" : "s"}</span>
+                <span className="flex items-center gap-1"><Eye className="w-3.5 h-3.5" /> {t("whispDetail.stats.views", { count: viewCount })}</span>
+                <span className="flex items-center gap-1"><Heart className="w-3.5 h-3.5" /> {t("whispDetail.stats.likes", { count: likeCount })}</span>
+                <span className="flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5" /> {t("whispDetail.stats.comments", { count: comments.length })}</span>
               </div>
             )}
             {whisp.moodTag && <MoodTag mood={whisp.moodTag} className="mb-2" />}
@@ -463,18 +472,18 @@ export function WhispDetail() {
                 <span className="flex items-center justify-center w-7 h-7 rounded-full bg-gilded/15 shrink-0">
                   <HeartHandshake className="w-4 h-4 text-gilded" />
                 </span>
-                <p className="text-sm text-foreground">They said this was something they needed to hear</p>
+                <p className="text-sm text-foreground">{t("whispDetail.appreciationYes")}</p>
               </div>
             ) : whisp.appreciationResponse ? (
               <p className="text-sm flex items-center gap-1.5 text-muted-foreground">
                 <HeartHandshake className="w-4 h-4" />
-                They said this wasn't quite what they needed
+                {t("whispDetail.appreciationNo")}
               </p>
             ) : null}
             {whisp.aiTakeawayStatus === "ready" && whisp.aiTakeaway && (
               <div className="mt-3 rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-1">
                 <p className="text-xs font-semibold tracking-wide text-primary uppercase flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" /> Takeaway they got
+                  <Sparkles className="w-3.5 h-3.5" /> {t("whispDetail.takeawayHeading")}
                 </p>
                 <p className="text-sm text-foreground font-serif leading-relaxed">{whisp.aiTakeaway}</p>
               </div>
@@ -498,7 +507,7 @@ export function WhispDetail() {
             data-testid="button-toggle-timeline"
             className="flex w-full items-center gap-2 px-6 py-4 text-left"
           >
-            <CardTitle className="text-base font-serif">Delivery Timeline</CardTitle>
+            <CardTitle className="text-base font-serif">{t("whispDetail.deliveryTimeline")}</CardTitle>
             {/* Collapsing shouldn't cost the headline fact, so the furthest
                 stage reached comes up into the header to replace it. */}
             {!timelineOpen && currentStage && (
@@ -530,7 +539,7 @@ export function WhispDetail() {
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-serif flex items-center gap-2">
                 <MessageSquare className="w-4 h-4 text-primary" />
-                Anonymous conversation
+                {t("whispDetail.anonymousConversation")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -544,11 +553,10 @@ export function WhispDetail() {
                 >
                   <p className="text-sm text-foreground flex items-center gap-2">
                     <Lock className="w-3.5 h-3.5 text-secondary shrink-0" />
-                    They've used all their anonymous replies.
+                    {t("whispDetail.outOfReplies.title")}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    They can't reply again unless you add more replies, or they create a free account. You can still
-                    send follow-ups.
+                    {t("whispDetail.outOfReplies.description")}
                   </p>
                   <Button
                     size="sm"
@@ -557,24 +565,24 @@ export function WhispDetail() {
                     disabled
                     data-testid="button-buy-more-replies"
                   >
-                    Add more replies (coming soon)
+                    {t("whispDetail.outOfReplies.comingSoonButton")}
                   </Button>
                 </div>
               )}
               {typeof recipientRepliesRemaining === "number" && recipientRepliesRemaining === 1 && (
                 <p className="mb-3 text-xs text-muted-foreground" data-testid="text-recipient-replies-remaining">
-                  They have 1 anonymous reply left.
+                  {t("whispDetail.oneReplyLeft")}
                 </p>
               )}
               <ReplyThread
                 replies={replies}
                 viewerIsRecipient={false}
-                otherLabel="Recipient"
+                otherLabel={t("whispDetail.recipientLabel")}
                 replyingTo={replyingTo}
                 onReplyTo={setReplyingTo}
                 emptyState={
                   <p className="text-xs text-muted-foreground text-center py-3">
-                    No replies yet. You can send another anonymous message below.
+                    {t("whispDetail.noRepliesYet")}
                   </p>
                 }
                 composer={
@@ -583,7 +591,7 @@ export function WhispDetail() {
                     onChange={setReplyText}
                     onSend={handleSendFollowUp}
                     sending={createReply.isPending}
-                    placeholder="Send another anonymous message..."
+                    placeholder={t("whispDetail.composerPlaceholder")}
                     testIdPrefix="follow-up"
                   />
                 }
@@ -602,12 +610,12 @@ export function WhispDetail() {
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-serif flex items-center gap-2">
                 <MessageSquare className="w-4 h-4 text-primary" />
-                Comments ({comments.length})
+                {t("whispDetail.commentsHeading", { count: comments.length })}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {comments.length === 0 ? (
-                <p className="text-xs text-muted-foreground text-center py-3">No comments yet.</p>
+                <p className="text-xs text-muted-foreground text-center py-3">{t("whispDetail.noComments")}</p>
               ) : (
                 <div className="space-y-3">
                   {comments
@@ -629,11 +637,11 @@ export function WhispDetail() {
 
               {posterCommentReplyingTo && (
                 <div className="flex items-center justify-between gap-2 rounded-lg border-l-2 border-primary/60 bg-primary/5 px-3 py-1.5">
-                  <span className="text-[11px] text-muted-foreground">Replying to a comment</span>
+                  <span className="text-[11px] text-muted-foreground">{t("whispDetail.replyingToComment")}</span>
                   <button
                     type="button"
                     onClick={() => setPosterCommentReplyingTo(null)}
-                    aria-label="Cancel reply"
+                    aria-label={t("whispDetail.cancelReplyAriaLabel")}
                     className="text-muted-foreground hover:text-foreground"
                   >
                     <X className="w-3.5 h-3.5" />
@@ -643,7 +651,7 @@ export function WhispDetail() {
               <div className="flex gap-2">
                 <Textarea
                   className="bg-input/40 border-border/50 rounded-xl resize-none min-h-[44px]"
-                  placeholder="Reply as the poster..."
+                  placeholder={t("whispDetail.replyAsPosterPlaceholder")}
                   maxLength={500}
                   value={posterCommentText}
                   onChange={(e) => setPosterCommentText(e.target.value)}
@@ -672,7 +680,7 @@ export function WhispDetail() {
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-serif flex items-center gap-2">
                 <MessageSquare className="w-4 h-4 text-primary" />
-                Private conversations ({circleConversations.length})
+                {t("whispDetail.privateConversationsHeading", { count: circleConversations.length })}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-1">
@@ -683,7 +691,7 @@ export function WhispDetail() {
                   className="flex items-center justify-between gap-2 rounded-lg px-2 py-2 text-sm text-foreground hover:bg-muted/40 transition-colors"
                   data-testid={`link-circle-conversation-${conversation.id}`}
                 >
-                  <span>An anonymous visitor wants to talk</span>
+                  <span>{t("whispDetail.anonymousVisitorWantsToTalk")}</span>
                   <span className="text-xs text-muted-foreground shrink-0">
                     {new Date(conversation.createdAt).toLocaleDateString()}
                   </span>
@@ -703,20 +711,20 @@ export function WhispDetail() {
             data-testid="button-reveal-yourself"
           >
             {requestReveal.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-            Reveal Yourself
+            {t("whispDetail.revealYourself")}
           </Button>
         )}
         {!isGhostBoost && whisp.revealRequested && (
           <Card className="bg-primary/10 border-primary/20">
             <CardContent className="p-4 text-center">
               <Eye className="w-6 h-6 text-primary mx-auto mb-2" />
-              <p className="text-sm font-medium text-foreground">Reveal request sent</p>
+              <p className="text-sm font-medium text-foreground">{t("whispDetail.revealRequestSent")}</p>
               <p className="text-xs text-muted-foreground mt-1">
                 {whisp.revealAccepted === true
-                  ? "They accepted! You can now reveal your identity."
+                  ? t("whispDetail.revealAccepted")
                   : whisp.revealAccepted === false
-                  ? "They declined the reveal."
-                  : "Waiting for the recipient to respond..."}
+                  ? t("whispDetail.revealDeclined")
+                  : t("whispDetail.revealWaiting")}
               </p>
             </CardContent>
           </Card>

@@ -1,0 +1,554 @@
+{
+  "shared": {
+    "back": "Back",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "save": "Save",
+    "memberCount_one": "{{count}} member",
+    "memberCount_other": "{{count}} members",
+    "blindCircleFeed": "Blind Circle feed",
+    "ghostBoostAudience": "Ghost Boost audience",
+    "whispToSomeoneElse": "Whisp to someone else",
+    "couldntUpdateThat": "Couldn't update that",
+    "movedBackToList": "Moved back to your list",
+    "whispDeleted": "Whisp deleted"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Here's how your whisps are performing.",
+    "sendNewWhisp": "Send New Whisp",
+    "stats": {
+      "sentWhisps": "Sent Whisps",
+      "openRate": "Open Rate",
+      "videosWatched": "Videos Watched",
+      "repliesReceived": "Replies Received",
+      "whispsThatHelped": "Whisps That Helped"
+    },
+    "recentWhisps": "Recent Whisps",
+    "viewAll": "View all",
+    "videoAlt": "Video",
+    "videoLinkFallback": "Video Link",
+    "sentTo": "Sent to {{destination}}",
+    "emptyState": {
+      "title": "No whisps sent yet",
+      "description": "Start sharing meaningful videos with the people you care about.",
+      "cta": "Create Your First Whisp"
+    },
+    "ghostBoosts": {
+      "title": "Ghost Boosts",
+      "creditsAvailable": "Boost Credits Available",
+      "description": "Ghost Boost queues a whisp for boosted, wider-reach delivery instead of a direct message — it doesn't guarantee it reaches one specific person the way Whisper Link does.",
+      "getMoreCredits": "Get More Credits"
+    },
+    "suggestions": {
+      "title": "Suggestions Library",
+      "videoWorthSharing": "A video worth sharing",
+      "browseLibrary": "Browse library",
+      "whisperThis": "Whisper this",
+      "description": "Browse a curated library of videos and whisper one to someone in your circle who could use it.",
+      "browse": "Browse Suggestions"
+    }
+  },
+  "sendWhisp": {
+    "channels": {
+      "email": "Email",
+      "sms": "Text",
+      "whatsapp": "WhatsApp"
+    },
+    "senderAliases": {
+      "someoneWhoCares": "Someone who cares",
+      "aFriend": "A friend",
+      "someoneWhoLovesYou": "Someone who loves you",
+      "anAdmirer": "An admirer"
+    },
+    "maxDurationMinutes_one": "{{count}} minute",
+    "maxDurationMinutes_other": "{{count}} minutes",
+    "maxDurationSeconds_one": "{{count}} second",
+    "maxDurationSeconds_other": "{{count}} seconds",
+    "header": {
+      "title": "Send a Whisp",
+      "subtitle": "Share a video anonymously with someone you care about."
+    },
+    "stepIndicator": "Step {{step}} of {{total}}",
+    "steps": {
+      "video": "Video",
+      "mood": "Mood",
+      "note": "Note",
+      "delivery": "Delivery",
+      "recipient": "Recipient",
+      "send": "Send"
+    },
+    "tabs": {
+      "concierge": "Not sure? Describe it",
+      "url": "Paste a link",
+      "upload": "Upload",
+      "camera": "Camera",
+      "library": "My library"
+    },
+    "url": {
+      "heading": "Paste a video link",
+      "description": "YouTube, TikTok, Instagram, Facebook, Vimeo — any public video URL.",
+      "placeholder": "https://youtube.com/watch?v=..."
+    },
+    "upload": {
+      "heading": "Upload a video",
+      "description": "Under {{duration}}, MP4/WebM/MOV. Kept short so it loads fast for the recipient.",
+      "processing": "Processing your video…",
+      "tapToChoose": "Tap to choose a video from your device",
+      "genericError": "Upload failed. Please try again."
+    },
+    "camera": {
+      "heading": "Use your camera",
+      "description": "Take a photo or record a video (under {{duration}}) right here — no need to leave the app."
+    },
+    "library": {
+      "heading": "Your Media Library",
+      "description": "Reuse a clip you've already uploaded.",
+      "empty": "Nothing here yet — upload a video to add one.",
+      "notAvailable": "No longer available"
+    },
+    "concierge": {
+      "heading": "Not sure what to send?",
+      "description": "Describe the situation and we'll suggest a video from our Suggestions Library and draft an anonymous note to go with it.",
+      "placeholder": "e.g. I want to tell my brother I'm proud of him but don't know how",
+      "tryAgain": "Try again",
+      "getSuggestions": "Get suggestions",
+      "resultsHeading": "A few videos that might fit:",
+      "videoThumbnailAlt": "Video thumbnail",
+      "untitledVideo": "Untitled video",
+      "noMatch": "No strong match in our library for this one — but here's a note draft below. Pick your own video from another tab and it'll carry over.",
+      "draftedNote": "Drafted note:",
+      "useNoteOnly": "Use this note, I'll pick a video"
+    },
+    "step2": {
+      "passingForward": "Passing this one forward",
+      "suggestedForSituation": "Suggested for your situation",
+      "platformLink": "{{platform}} link",
+      "noPreviewDescription": "We can't generate a preview for {{platform}} links, but you can still send it — just double-check the link works for you.",
+      "videoFallback": "Video",
+      "trimHeading": "Trim the clip (optional)",
+      "startPlaceholder": "Start mm:ss",
+      "to": "to",
+      "endPlaceholder": "End mm:ss",
+      "trimHint": "Jump straight to the good part, e.g. 1:24, and stop there instead of implying they watch the whole thing.",
+      "moodHeading": "Choose a mood tag",
+      "moodSubtitle": "Optional — sets the emotional tone for the recipient."
+    },
+    "step3": {
+      "heading": "Add an anonymous note",
+      "subtitle": "Optional — max 200 characters. The recipient won't know it's you.",
+      "placeholder": "Write something kind, honest, or brave...",
+      "suggestMore": "Suggest more",
+      "helpFindWords": "Help me find the words",
+      "regenerate": "Regenerate",
+      "signAs": "Sign as:",
+      "customAliasPlaceholder": "Or type a custom alias..."
+    },
+    "step4": {
+      "heading": "How should it be delivered?",
+      "whisperLink": {
+        "description": "Send straight to them — direct, instant, guaranteed delivery",
+        "price": "Free (3/month)"
+      },
+      "groupWhisper": {
+        "title": "Group Whisper",
+        "description": "Send the same anonymous whisp to a saved group of your contacts at once",
+        "price": "Uses Whisper Link credits, 1 per member",
+        "whichGroup": "Which group?",
+        "noGroupsCreate": "You don't have any groups yet — create one"
+      },
+      "ghostBoost": {
+        "description": "Matched to strangers who opted in to hear about topics like this one — anonymous both ways. Reach isn't guaranteed; it depends on how many people are subscribed right now.",
+        "price": "1 Credit ($6.99)"
+      },
+      "scheduleTitle": "Schedule for later",
+      "scheduleDescription": "Send now, or pick a future date and time"
+    },
+    "step5": {
+      "heading": "Who should receive it?",
+      "description": "Enter an email or a phone number (in international format, e.g. +1 555 123 4567). Add commas if more than one.",
+      "placeholder": "sam@example.com, +1 555 123 4567",
+      "matchingContacts": "Matching contacts",
+      "recentlySentTo": "Recently sent to",
+      "invalidRecipients": "Not a valid email or phone number: {{list}}",
+      "groupNoticeBold": "This will be saved as a Whisper Group ({{count}} people)",
+      "groupNoticeRest": "so you can reuse it later. Everyone gets their own private whisp — they won't see each other, and each one uses a Whisper Link from your plan.",
+      "preferWhatsApp": "Send to phone numbers on WhatsApp instead of SMS",
+      "smsDisclosure": "By sending to a phone number, you're texting them on your own behalf. Msg & data rates may apply. Reply STOP to opt out, HELP for help. See our",
+      "smsTermsLinkText": "SMS Terms",
+      "or": "or",
+      "chooseFromContacts": "Choose from Contacts"
+    },
+    "step6": {
+      "heading": "Ready to send?",
+      "mood": "Mood",
+      "signedAs": "Signed as",
+      "delivery": "Delivery",
+      "groupWhisperChannel": "Group Whisper ({{channel}})",
+      "to": "To",
+      "matchedSubscribers": "Matched subscribers interested in this topic",
+      "groupSummary": "{{name}} ({{members}})",
+      "groupFallback": "Group",
+      "startsAt": "Starts at",
+      "endsAt": "Ends at",
+      "when": "When",
+      "rightNow": "Right now",
+      "yourNote": "Your note",
+      "sendButton": "Send Whisp"
+    },
+    "sent": {
+      "title_one": "Your whisp is on its way",
+      "title_other": "Your whisps are on their way",
+      "description_one": "It's been sent. We'll let you know when it's seen.",
+      "description_other": "Sent to {{count}} people. We'll let you know as each one is seen.",
+      "trackButton_one": "Track this whisp",
+      "trackButton_other": "Track these whisps",
+      "sendAnother": "Send another"
+    },
+    "common": {
+      "back": "Back",
+      "next": "Next",
+      "review": "Review"
+    },
+    "validation": {
+      "invalidUrl": "Please enter a valid URL",
+      "invalidTimeFormat": "Invalid time format",
+      "endTimeMustBeGreaterThanZero": "End time must be greater than 0:00",
+      "endTimeAfterStart": "End time must be after the start time"
+    },
+    "toast": {
+      "conciergeNoResults": "Couldn't come up with anything for that just now",
+      "noSuggestions": "Couldn't come up with suggestions right now",
+      "noContactInfo": "That contact has no email or phone number on file",
+      "failedToSendGroup": "Failed to send group whisp",
+      "failedToSend": "Failed to send whisp",
+      "failedToSendFallback": "Failed to send",
+      "partialSendTitle": "Sent to {{succeeded}}, couldn't reach {{failed}}",
+      "membersSkipped_one": "{{count}} member skipped",
+      "membersSkipped_other": "{{count}} members skipped",
+      "membersSkippedDescription": "They didn't have the contact info this channel needs."
+    }
+  },
+  "whispDetail": {
+    "notFound": "Whisp not found.",
+    "backToWhisps": "Back to whisps",
+    "deleteDialog": {
+      "title": "Delete this whisp?",
+      "descriptionWithReplies_one": "This whisp has a reply from the recipient. Deleting it removes it — and that reply — from your whisps. This can't be undone from your side.",
+      "descriptionWithReplies_other": "This whisp has {{count}} replies from the recipient. Deleting it removes it — and that reply thread — from your whisps. This can't be undone from your side.",
+      "descriptionNoReplies": "This removes the whisp from your whisps. This can't be undone from your side."
+    },
+    "videoFallback": "Video",
+    "matchedToSubscribers_one": "Matched to {{count}} subscriber",
+    "matchedToSubscribers_other": "Matched to {{count}} subscribers",
+    "noMatchingSubscribers": "No matching subscribers were found in time",
+    "lookingForMatch": "Looking for a match among subscribers...",
+    "sentTo": "Sent to {{destination}}",
+    "genericRecipient": "recipient",
+    "via": "Via {{method}}",
+    "scheduledToSend": "Scheduled to send {{date}}",
+    "stats": {
+      "matched": "{{count}} matched",
+      "opened": "{{count}} opened",
+      "watched": "{{count}} watched",
+      "replied": "{{count}} replied",
+      "appreciated": "{{count}} appreciated",
+      "views_one": "{{count}} view",
+      "views_other": "{{count}} views",
+      "likes_one": "{{count}} like",
+      "likes_other": "{{count}} likes",
+      "comments_one": "{{count}} comment",
+      "comments_other": "{{count}} comments"
+    },
+    "appreciationYes": "They said this was something they needed to hear",
+    "appreciationNo": "They said this wasn't quite what they needed",
+    "takeawayHeading": "Takeaway they got",
+    "deliveryTimeline": "Delivery Timeline",
+    "timeline": {
+      "sent": "Sent",
+      "delivered": "Delivered",
+      "opened": "Opened",
+      "watched": "Watched",
+      "watchedAll": "Watched all",
+      "watchedFull": "Started watching",
+      "watchedAllFull": "Watched all the way through",
+      "replied": "Replied"
+    },
+    "anonymousConversation": "Anonymous conversation",
+    "outOfReplies": {
+      "title": "They've used all their anonymous replies.",
+      "description": "They can't reply again unless you add more replies, or they create a free account. You can still send follow-ups.",
+      "comingSoonButton": "Add more replies (coming soon)"
+    },
+    "oneReplyLeft": "They have 1 anonymous reply left.",
+    "recipientLabel": "Recipient",
+    "noRepliesYet": "No replies yet. You can send another anonymous message below.",
+    "composerPlaceholder": "Send another anonymous message...",
+    "commentsHeading": "Comments ({{count}})",
+    "noComments": "No comments yet.",
+    "replyingToComment": "Replying to a comment",
+    "cancelReplyAriaLabel": "Cancel reply",
+    "replyAsPosterPlaceholder": "Reply as the poster...",
+    "privateConversationsHeading": "Private conversations ({{count}})",
+    "anonymousVisitorWantsToTalk": "An anonymous visitor wants to talk",
+    "revealYourself": "Reveal Yourself",
+    "revealRequestSent": "Reveal request sent",
+    "revealAccepted": "They accepted! You can now reveal your identity.",
+    "revealDeclined": "They declined the reveal.",
+    "revealWaiting": "Waiting for the recipient to respond...",
+    "toast": {
+      "followUpSent": "Follow-up sent",
+      "failedToSend": "Failed to send",
+      "couldntPostComment": "Couldn't post that comment",
+      "failedToRequestReveal": "Failed to request reveal",
+      "failedToDelete": "Failed to delete"
+    }
+  },
+  "whispsList": {
+    "title": "My Whisps",
+    "subtitle": "Everything you've sent, and everything sent to you.",
+    "tabs": {
+      "sent": "Sent",
+      "received": "Received",
+      "archived": "Archived"
+    },
+    "searchPlaceholderSent": "Search by title or recipient...",
+    "searchPlaceholderOther": "Search by title...",
+    "filter": {
+      "allStatuses": "All Statuses",
+      "pending": "Pending",
+      "scheduled": "Scheduled",
+      "delivered": "Delivered",
+      "opened": "Opened",
+      "watched": "Watched",
+      "replied": "Replied"
+    },
+    "videoAlt": "Video",
+    "videoLinkFallback": "Video Link",
+    "newBadge": "New",
+    "unpin": "Unpin",
+    "pinToTop": "Pin to top",
+    "moreOptions": "More options",
+    "moveBackToList": "Move back to list",
+    "archive": "Archive",
+    "from": "From: {{sender}}",
+    "to": "To: {{recipient}}",
+    "someoneAnonymous": "Someone anonymous",
+    "anonymousCircleVisitor": "An anonymous Circle visitor",
+    "via": "via {{method}}",
+    "emptyState": {
+      "title": "No whisps found",
+      "adjustFilters": "Try adjusting your filters to find what you're looking for.",
+      "noneReceived": "Nothing's landed in your inbox yet — when a fellow Whisperer sends you something, it'll show up here.",
+      "noneArchived": "Nothing archived — pin, archive, or delete a whisp from its options menu (or press and hold its card).",
+      "noneSent": "You haven't sent any whisps yet.",
+      "cta": "Send Your First Whisp"
+    },
+    "deleteDialog": {
+      "title": "Delete this whisp?",
+      "description": "This hides it from your own list — the recipient's link, and their view of it, keeps working as already delivered. This can't be undone from your side."
+    },
+    "toast": {
+      "unpinned": "Unpinned",
+      "pinnedToTop": "Pinned to top",
+      "archived": "Archived",
+      "couldntDelete": "Couldn't delete that"
+    }
+  },
+  "repliesInbox": {
+    "title": "Replies",
+    "subtitle": "Anonymous responses from the people you reached.",
+    "emptyState": {
+      "title": "No replies yet",
+      "description": "When someone replies to your whisp, it'll appear here — anonymously."
+    },
+    "repliedSuffix": "replied",
+    "someoneRepliedAnonymously": "Someone replied anonymously",
+    "videoFallback": "Video"
+  },
+  "groupSendDetail": {
+    "notFound": "Group send not found.",
+    "whisperGroupsLink": "Whisper Groups",
+    "videoFallback": "Video",
+    "groupFallback": "Group",
+    "stats": {
+      "opened": "{{count}} opened",
+      "watched": "{{count}} watched",
+      "replied": "{{count}} replied",
+      "appreciated": "{{count}} appreciated"
+    },
+    "perMemberStatus": "Per-member status",
+    "unknownRecipient": "Unknown",
+    "whispedVideoBack": "whisped a video back"
+  },
+  "whisperGroupDetail": {
+    "notFound": "Group not found.",
+    "whisperGroupsLink": "Whisper Groups",
+    "deleteDialog": {
+      "title": "Delete \"{{name}}\"?",
+      "description": "This removes the saved group and its member list. Whisps you've already sent to this group aren't affected."
+    },
+    "sendAWhisp": "Send a Whisp",
+    "addMembers": "Add members",
+    "addFromContacts": "Add from Contacts",
+    "orAddManually": "or add manually",
+    "namePlaceholder": "Name (optional)",
+    "emailPlaceholder": "Email",
+    "phonePlaceholder": "Phone",
+    "addMember": "Add member",
+    "unnamedContact": "Unnamed contact",
+    "noMembersYet": "No members yet — add some above.",
+    "toast": {
+      "addEmailOrPhone": "Add an email or a phone number",
+      "memberAdded": "Member added",
+      "failedToAddMember": "Failed to add member",
+      "noneHadContactInfo": "None of those contacts had an email or phone number",
+      "membersAdded_one": "{{count}} member added",
+      "membersAdded_other": "{{count}} members added",
+      "failedToAddMembers": "Failed to add members",
+      "memberRemoved": "Member removed",
+      "failedToRemoveMember": "Failed to remove member",
+      "groupDeleted": "Group deleted",
+      "failedToDeleteGroup": "Failed to delete group"
+    }
+  },
+  "whisperGroups": {
+    "title": "Whisper Groups",
+    "subtitle": "Save a group of contacts once, then send the same anonymous whisp to all of them at once.",
+    "tabs": {
+      "groups": "Groups",
+      "sentBatches": "Sent Batches"
+    },
+    "createAGroup": "Create a group",
+    "namePlaceholder": "e.g. College Friends",
+    "create": "Create",
+    "emptyGroups": "No groups yet — create one above to get started.",
+    "emptySends": "No group whisps sent yet.",
+    "groupFallback": "Group",
+    "sendRow": {
+      "summary": "{{group}} · {{members}} · via {{via}}",
+      "scheduled": "Scheduled",
+      "stats": "{{opened}} opened · {{watched}} watched · {{replied}} replied"
+    },
+    "toast": {
+      "groupCreated": "Group created",
+      "failedToCreateGroup": "Failed to create group"
+    }
+  },
+  "publicWhisp": {
+    "takeaway": "Takeaway",
+    "backToDashboard": "Dashboard",
+    "becomeAWhisperer": "Become a Whisperer",
+    "lead": {
+      "group": "Someone in your circle sent this anonymously — you're one of {{count}} people who got it 👀",
+      "individual": "Someone who cares about you thought you needed to see this 👀"
+    },
+    "expired": {
+      "title": "This whisp has expired",
+      "description": "Whoever sent it can always send you a new one."
+    },
+    "expiresIn": "Expires in {{time}}",
+    "appreciation": {
+      "yesResponse": "Glad this reached you.",
+      "noResponse": "Thanks for letting them know.",
+      "prompt": "Was this something you needed to hear?",
+      "knowSomeone": "Know someone who needs this too?",
+      "passItForward": "Pass it forward",
+      "yesButton": "Yes",
+      "noButton": "Not really"
+    },
+    "circle": {
+      "like": "Like",
+      "messagePosterPrivately": "Message the poster privately",
+      "commentCount_one": "{{count}} comment",
+      "commentCount_other": "{{count}} comments",
+      "beFirstToComment": "Be the first to comment",
+      "commentPlaceholder": "Add a comment... (anonymous)",
+      "moreCommentOptionsAriaLabel": "More comment options, including a photo attachment",
+      "commentingAs": "Commenting as {{handle}}",
+      "anonymousHandle": "Anonymous",
+      "changeName": "Change name",
+      "renamePlaceholder": "New name (letters and numbers only)",
+      "renameWarning": "Don't use your real name or anything that could identify you.",
+      "replyingTo": "Replying to {{target}}",
+      "thePoster": "the poster",
+      "aComment": "a comment",
+      "cancelReplyAriaLabel": "Cancel reply",
+      "attachmentPreviewAlt": "Attachment preview",
+      "removeImageAriaLabel": "Remove image",
+      "attachPhoto": "Attach a photo",
+      "couldntAttachImage": "Couldn't attach that image",
+      "keepItKind": "Keep it kind — the goal here is genuine, productive conversation.",
+      "unlimitedCommentsSuffix": "for unlimited comments."
+    },
+    "reply": {
+      "headerConversation": "Anonymous conversation",
+      "headerWantToReply": "Want to reply anonymously?",
+      "theSender": "The sender",
+      "expiredNotice": "This whisp has expired, so you can't reply anymore.",
+      "limitReached": {
+        "title": "You've used all your anonymous replies here.",
+        "description": "Create a free account to keep this conversation going — you'll still be anonymous to them.",
+        "signUpButton": "Sign up to keep replying"
+      },
+      "compactPlaceholder": "Reply anonymously...",
+      "moreReplyOptionsAriaLabel": "More reply options, including a video reply",
+      "replyingToPrefix": "Replying to",
+      "thisVideoFallback": "this video",
+      "orWriteYourOwn": "or write your own",
+      "fullPlaceholder": "Type your reply... (anonymous)",
+      "whispVideoBack": "Whisp a video back",
+      "videoLockedDescription": "Needs a free account — your text replies still work",
+      "videoUnlockedDescription": "Send a video with your reply — still anonymous",
+      "videoThumbnailAlt": "thumbnail",
+      "videoUrlPlaceholder": "Paste a video link...",
+      "addVideoButton": "Add",
+      "lastReplyWarning": "This is your last anonymous reply — sign up free to keep going.",
+      "repliesLeft_one": "{{count}} anonymous reply left.",
+      "repliesLeft_other": "{{count}} anonymous replies left.",
+      "sendButton": "Send Reply"
+    },
+    "reveal": {
+      "viewerAccepted": "You've let them know it's okay to reveal themselves.",
+      "viewerDeclined": "You've chosen to keep this anonymous.",
+      "prompt": "The person who sent this wants to reveal themselves.",
+      "question": "Do you want to know who sent this to you?",
+      "accept": "Accept",
+      "decline": "Decline"
+    },
+    "reminder": {
+      "finalNotice": "We'll remind you one last time — after that this whisp won't be available anymore.",
+      "notice": "We'll remind you before this whisp expires.",
+      "pickerHeading": "When should we remind you?",
+      "button": "Remind me about this later"
+    },
+    "signupCta": {
+      "heading": "Got something to say, but not out loud?",
+      "description": "Send a video to someone who needs it — anonymously, without the awkward part of saying it yourself. They'll never know it was you, unless you want them to.",
+      "button": "Become a Whisperer Now",
+      "disclaimer": "Free to start — no card required."
+    },
+    "subscribeCta": {
+      "heading": "Want more, matched to you?",
+      "description": "Get anonymous whisps like this sent to your inbox when they match topics you pick."
+    },
+    "footer": {
+      "poweredByPrefix": "Powered by",
+      "poweredBySuffix": "— send what matters, without the awkward part."
+    },
+    "toast": {
+      "couldntScheduleReminder": "Couldn't schedule that reminder",
+      "somethingWentWrong": "Something went wrong",
+      "replySentAnonymously": "Reply sent anonymously",
+      "failedToSendReply": "Failed to send reply",
+      "createAccountToWhispVideo": "Create a free account to whisp a video back",
+      "senderNotified": "We've let the sender know too — they can unlock video replies for you.",
+      "freeCommentsUsed": "You've used your free comments for now",
+      "signUpToComment": "Sign up to comment anytime, or check back in 24 hours.",
+      "couldntPostComment": "Couldn't post that comment",
+      "nameUpdated": "Name updated",
+      "couldntUpdateName": "Couldn't update that name",
+      "couldntStartConversation": "Couldn't start that conversation"
+    }
+  }
+}

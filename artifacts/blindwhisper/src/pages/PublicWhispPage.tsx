@@ -1,5 +1,6 @@
 import { useParams, useLocation } from "wouter";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { useUser } from "@clerk/react";
 import {
@@ -61,6 +62,7 @@ function splitSentences(text: string): string[] {
 }
 
 function TakeawayCard({ text }: { text: string }) {
+  const { t } = useTranslation("whisp");
   const sentences = splitSentences(text);
   return (
     <motion.div
@@ -70,7 +72,7 @@ function TakeawayCard({ text }: { text: string }) {
       className="relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card p-5 space-y-2.5"
     >
       <div className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-primary uppercase">
-        <Sparkles className="w-3.5 h-3.5" /> Takeaway
+        <Sparkles className="w-3.5 h-3.5" /> {t("publicWhisp.takeaway")}
       </div>
       <div className="space-y-2">
         {sentences.map((sentence, i) => (
@@ -90,6 +92,7 @@ function TakeawayCard({ text }: { text: string }) {
 }
 
 export function PublicWhispPage() {
+  const { t } = useTranslation("whisp");
   const { token } = useParams<{ token: string }>();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -254,9 +257,9 @@ export function PublicWhispPage() {
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetPublicWhispQueryKey(token!) });
-          toast({ title: "Moved back to your list" });
+          toast({ title: t("shared.movedBackToList") });
         },
-        onError: () => toast({ title: "Couldn't update that", variant: "destructive" }),
+        onError: () => toast({ title: t("shared.couldntUpdateThat"), variant: "destructive" }),
       },
     );
   }
@@ -304,7 +307,7 @@ export function PublicWhispPage() {
           setReminderScheduled({ nextReminderAt: result.nextReminderAt, isFinal: result.isFinal });
           setShowReminderPicker(false);
         },
-        onError: () => toast({ title: "Couldn't schedule that reminder", variant: "destructive" }),
+        onError: () => toast({ title: t("publicWhisp.toast.couldntScheduleReminder"), variant: "destructive" }),
       }
     );
   }
@@ -314,7 +317,7 @@ export function PublicWhispPage() {
       { token: token!, data: { appreciated } },
       {
         onSuccess: () => setLocalAppreciation(appreciated ? "yes" : "no"),
-        onError: () => toast({ title: "Something went wrong", variant: "destructive" }),
+        onError: () => toast({ title: t("publicWhisp.toast.somethingWentWrong"), variant: "destructive" }),
       }
     );
   }
@@ -339,7 +342,7 @@ export function PublicWhispPage() {
       { id: whisp.id, data: { accepted } },
       {
         onSuccess: () => setRevealResponse(accepted ? "accepted" : "declined"),
-        onError: () => toast({ title: "Something went wrong", variant: "destructive" }),
+        onError: () => toast({ title: t("publicWhisp.toast.somethingWentWrong"), variant: "destructive" }),
       }
     );
   }
@@ -377,9 +380,9 @@ export function PublicWhispPage() {
           setReplyVideoUrl("");
           setReplyVideoMeta(null);
           queryClient.invalidateQueries({ queryKey: getGetPublicWhispQueryKey(token!) });
-          toast({ title: "Reply sent anonymously" });
+          toast({ title: t("publicWhisp.toast.replySentAnonymously") });
         },
-        onError: () => toast({ title: "Failed to send reply", variant: "destructive" }),
+        onError: () => toast({ title: t("publicWhisp.toast.failedToSendReply"), variant: "destructive" }),
       }
     );
   }
@@ -427,8 +430,8 @@ export function PublicWhispPage() {
     // and shouldn't wait on it, and the server ignores repeats anyway.
     requestVideoReply.mutate({ token: token! });
     toast({
-      title: "Create a free account to whisp a video back",
-      description: "We've let the sender know too — they can unlock video replies for you.",
+      title: t("publicWhisp.toast.createAccountToWhispVideo"),
+      description: t("publicWhisp.toast.senderNotified"),
     });
     setLocation("/sign-up");
   }
@@ -457,7 +460,7 @@ export function PublicWhispPage() {
     try {
       validateCommentImage(file);
     } catch (err) {
-      setCommentImageError(err instanceof CommentImageValidationError ? err.message : "Couldn't attach that image");
+      setCommentImageError(err instanceof CommentImageValidationError ? err.message : t("publicWhisp.circle.couldntAttachImage"));
       if (commentFileRef.current) commentFileRef.current.value = "";
       return;
     }
@@ -485,13 +488,13 @@ export function PublicWhispPage() {
       onError: (err: any) => {
         if (err?.data?.code === "comment_limit_reached") {
           toast({
-            title: "You've used your free comments for now",
-            description: "Sign up to comment anytime, or check back in 24 hours.",
+            title: t("publicWhisp.toast.freeCommentsUsed"),
+            description: t("publicWhisp.toast.signUpToComment"),
             variant: "destructive",
           });
           return;
         }
-        toast({ title: err?.data?.error ?? "Couldn't post that comment", variant: "destructive" });
+        toast({ title: err?.data?.error ?? t("publicWhisp.toast.couldntPostComment"), variant: "destructive" });
       },
     };
     if (commentImage) {
@@ -537,9 +540,9 @@ export function PublicWhispPage() {
         onSuccess: () => {
           setRenamingHandle(false);
           queryClient.invalidateQueries({ queryKey: getGetPublicWhispQueryKey(token!) });
-          toast({ title: "Name updated" });
+          toast({ title: t("publicWhisp.toast.nameUpdated") });
         },
-        onError: (err: any) => toast({ title: err?.data?.error ?? "Couldn't update that name", variant: "destructive" }),
+        onError: (err: any) => toast({ title: err?.data?.error ?? t("publicWhisp.toast.couldntUpdateName"), variant: "destructive" }),
       }
     );
   }
@@ -561,7 +564,7 @@ export function PublicWhispPage() {
           saveCircleDmToken(whisp.id, result.publicToken);
           setLocation(`/w/${result.publicToken}`);
         },
-        onError: () => toast({ title: "Couldn't start that conversation", variant: "destructive" }),
+        onError: () => toast({ title: t("publicWhisp.toast.couldntStartConversation"), variant: "destructive" }),
       }
     );
   }
@@ -623,14 +626,14 @@ export function PublicWhispPage() {
             data-testid="button-back-to-dashboard"
             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors py-2"
           >
-            <ChevronLeft className="w-3.5 h-3.5" /> Dashboard
+            <ChevronLeft className="w-3.5 h-3.5" /> {t("publicWhisp.backToDashboard")}
           </button>
         ) : (
           <a
             href="/sign-up"
             className="text-xs text-muted-foreground hover:text-primary transition-colors py-2"
           >
-            Become a Whisperer
+            {t("publicWhisp.becomeAWhisperer")}
           </a>
         )}
       </header>
@@ -676,8 +679,8 @@ export function PublicWhispPage() {
             {/* Lead text — keep in sync with api-server's lib/copy.ts HOOK_LINE/groupHookLine */}
             <p className="text-center text-xl font-serif text-foreground leading-snug">
               {whisp.groupSize
-                ? `Someone in your circle sent this anonymously — you're one of ${whisp.groupSize} people who got it 👀`
-                : "Someone who cares about you thought you needed to see this 👀"}
+                ? t("publicWhisp.lead.group", { count: whisp.groupSize })
+                : t("publicWhisp.lead.individual")}
             </p>
 
             {expired ? (
@@ -685,9 +688,9 @@ export function PublicWhispPage() {
                 <div className="w-12 h-12 rounded-full bg-muted/60 flex items-center justify-center mx-auto">
                   <Clock className="w-6 h-6 text-muted-foreground" />
                 </div>
-                <p className="font-medium text-foreground">This whisp has expired</p>
+                <p className="font-medium text-foreground">{t("publicWhisp.expired.title")}</p>
                 <p className="text-sm text-muted-foreground">
-                  Whoever sent it can always send you a new one.
+                  {t("publicWhisp.expired.description")}
                 </p>
               </div>
             ) : (
@@ -699,7 +702,7 @@ export function PublicWhispPage() {
                 data-testid="text-expiry-countdown"
               >
                 <Clock className="w-3.5 h-3.5" />
-                Expires in {formatDistanceToNowStrict(expiresAtMs!)}
+                {t("publicWhisp.expiresIn", { time: formatDistanceToNowStrict(expiresAtMs!) })}
               </div>
             )}
 
@@ -776,9 +779,9 @@ export function PublicWhispPage() {
                   {appreciationResponse && <HeartHandshake className="w-4 h-4 text-primary shrink-0" />}
                   {appreciationResponse
                     ? appreciationResponse === "yes"
-                      ? "Glad this reached you."
-                      : "Thanks for letting them know."
-                    : "Was this something you needed to hear?"}
+                      ? t("publicWhisp.appreciation.yesResponse")
+                      : t("publicWhisp.appreciation.noResponse")
+                    : t("publicWhisp.appreciation.prompt")}
                 </span>
                 <ChevronDown
                   className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform ${reactionExpanded ? "rotate-180" : ""}`}
@@ -789,7 +792,7 @@ export function PublicWhispPage() {
                   {appreciationResponse ? (
                     appreciationResponse === "yes" && whisp.videoPlatform !== "upload" && (
                       <div className="space-y-1.5">
-                        <p className="text-xs text-muted-foreground">Know someone who needs this too?</p>
+                        <p className="text-xs text-muted-foreground">{t("publicWhisp.appreciation.knowSomeone")}</p>
                         <Button
                           size="sm"
                           variant="outline"
@@ -797,7 +800,7 @@ export function PublicWhispPage() {
                           onClick={handlePassItForward}
                           data-testid="button-pass-it-forward"
                         >
-                          <Send className="w-3.5 h-3.5 mr-1.5" /> Pass it forward
+                          <Send className="w-3.5 h-3.5 mr-1.5" /> {t("publicWhisp.appreciation.passItForward")}
                         </Button>
                       </div>
                     )
@@ -810,7 +813,7 @@ export function PublicWhispPage() {
                         disabled={submitAppreciation.isPending}
                         data-testid="button-appreciation-yes"
                       >
-                        Yes
+                        {t("publicWhisp.appreciation.yesButton")}
                       </Button>
                       <Button
                         size="sm"
@@ -820,7 +823,7 @@ export function PublicWhispPage() {
                         disabled={submitAppreciation.isPending}
                         data-testid="button-appreciation-no"
                       >
-                        Not really
+                        {t("publicWhisp.appreciation.noButton")}
                       </Button>
                     </div>
                   )}
@@ -850,7 +853,7 @@ export function PublicWhispPage() {
                     }`}
                   >
                     <Heart className={`w-4 h-4 ${whisp.viewerHasLiked ? "fill-primary" : ""}`} />
-                    {whisp.likeCount > 0 ? whisp.likeCount : "Like"}
+                    {whisp.likeCount > 0 ? whisp.likeCount : t("publicWhisp.circle.like")}
                   </button>
                   <Button
                     variant="outline"
@@ -865,7 +868,7 @@ export function PublicWhispPage() {
                     ) : (
                       <MessageCircle className="w-3.5 h-3.5 mr-1.5" />
                     )}
-                    Message the poster privately
+                    {t("publicWhisp.circle.messagePosterPrivately")}
                   </Button>
                 </div>
 
@@ -874,8 +877,8 @@ export function PublicWhispPage() {
                     <div className="flex-1 h-px bg-border/40" />
                     <span className="text-xs text-muted-foreground">
                       {whisp.comments.length > 0
-                        ? `${whisp.comments.length} comment${whisp.comments.length === 1 ? "" : "s"}`
-                        : "Be the first to comment"}
+                        ? t("publicWhisp.circle.commentCount", { count: whisp.comments.length })
+                        : t("publicWhisp.circle.beFirstToComment")}
                     </span>
                     <div className="flex-1 h-px bg-border/40" />
                   </div>
@@ -917,7 +920,7 @@ export function PublicWhispPage() {
                     <div className="flex items-center gap-2">
                       <Input
                         className="flex-1 h-10 bg-card border-border/50 rounded-full px-4 text-sm"
-                        placeholder="Add a comment... (anonymous)"
+                        placeholder={t("publicWhisp.circle.commentPlaceholder")}
                         value={commentText}
                         onChange={(e) => setCommentText(e.target.value)}
                         onFocus={() => setCommentComposerExpanded(true)}
@@ -929,7 +932,7 @@ export function PublicWhispPage() {
                         variant="outline"
                         className="rounded-full h-10 w-10 shrink-0"
                         onClick={() => setCommentComposerExpanded(true)}
-                        aria-label="More comment options, including a photo attachment"
+                        aria-label={t("publicWhisp.circle.moreCommentOptionsAriaLabel")}
                         data-testid="button-expand-comment-composer"
                       >
                         <ImagePlus className="h-4 w-4" />
@@ -942,7 +945,7 @@ export function PublicWhispPage() {
                           for this thread only — not a global setting. */}
                       <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
                         <span>
-                          Commenting as <span className="font-medium text-foreground">{ownHandle ?? "Anonymous"}</span>
+                          {t("publicWhisp.circle.commentingAs", { handle: ownHandle ?? t("publicWhisp.circle.anonymousHandle") })}
                         </span>
                         <button
                           type="button"
@@ -950,7 +953,7 @@ export function PublicWhispPage() {
                           className="inline-flex items-center gap-1 text-primary hover:underline"
                           data-testid="button-change-handle"
                         >
-                          <PenLine className="w-3 h-3" /> Change name
+                          <PenLine className="w-3 h-3" /> {t("publicWhisp.circle.changeName")}
                         </button>
                       </div>
 
@@ -958,14 +961,14 @@ export function PublicWhispPage() {
                         <div className="space-y-1.5 rounded-lg border border-border/50 bg-muted/20 p-3" data-testid="handle-rename-form">
                           <Input
                             className="h-9 bg-card border-border/50 rounded-lg text-sm"
-                            placeholder="New name (letters and numbers only)"
+                            placeholder={t("publicWhisp.circle.renamePlaceholder")}
                             maxLength={24}
                             value={handleDraft}
                             onChange={(e) => setHandleDraft(e.target.value)}
                             data-testid="input-handle-rename"
                           />
                           <p className="text-[11px] text-destructive">
-                            Don't use your real name or anything that could identify you.
+                            {t("publicWhisp.circle.renameWarning")}
                           </p>
                           <div className="flex justify-end gap-2">
                             <Button
@@ -975,7 +978,7 @@ export function PublicWhispPage() {
                               onClick={() => setRenamingHandle(false)}
                               data-testid="button-cancel-handle-rename"
                             >
-                              Cancel
+                              {t("shared.cancel")}
                             </Button>
                             <Button
                               type="button"
@@ -985,7 +988,7 @@ export function PublicWhispPage() {
                               disabled={!handleDraft.trim() || renameHandle.isPending}
                               data-testid="button-save-handle-rename"
                             >
-                              {renameHandle.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Save"}
+                              {renameHandle.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : t("shared.save")}
                             </Button>
                           </div>
                         </div>
@@ -997,12 +1000,14 @@ export function PublicWhispPage() {
                           data-testid="comment-replying-to"
                         >
                           <span className="text-[11px] text-muted-foreground">
-                            Replying to {commentReplyingTo.isPoster ? "the poster" : "a comment"}
+                            {t("publicWhisp.circle.replyingTo", {
+                              target: commentReplyingTo.isPoster ? t("publicWhisp.circle.thePoster") : t("publicWhisp.circle.aComment"),
+                            })}
                           </span>
                           <button
                             type="button"
                             onClick={() => setCommentReplyingTo(null)}
-                            aria-label="Cancel reply"
+                            aria-label={t("publicWhisp.circle.cancelReplyAriaLabel")}
                             className="text-muted-foreground hover:text-foreground"
                           >
                             <X className="w-3.5 h-3.5" />
@@ -1013,7 +1018,7 @@ export function PublicWhispPage() {
                       <Textarea
                         ref={commentTextareaRef}
                         className="bg-card border-border/50 rounded-xl resize-none min-h-[60px]"
-                        placeholder="Add a comment... (anonymous)"
+                        placeholder={t("publicWhisp.circle.commentPlaceholder")}
                         maxLength={500}
                         value={commentText}
                         onChange={(e) => setCommentText(e.target.value)}
@@ -1028,13 +1033,13 @@ export function PublicWhispPage() {
                         <div className="relative inline-block" data-testid="comment-image-preview">
                           <img
                             src={commentImagePreview}
-                            alt="Attachment preview"
+                            alt={t("publicWhisp.circle.attachmentPreviewAlt")}
                             className="max-h-32 rounded-lg border border-border/50 object-cover"
                           />
                           <button
                             type="button"
                             onClick={handleRemoveCommentImage}
-                            aria-label="Remove image"
+                            aria-label={t("publicWhisp.circle.removeImageAriaLabel")}
                             className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-background border border-border/60 text-muted-foreground hover:text-destructive"
                           >
                             <X className="w-3.5 h-3.5" />
@@ -1056,7 +1061,7 @@ export function PublicWhispPage() {
                             className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
                             data-testid="button-attach-comment-image"
                           >
-                            <ImagePlus className="w-3.5 h-3.5" /> Attach a photo
+                            <ImagePlus className="w-3.5 h-3.5" /> {t("publicWhisp.circle.attachPhoto")}
                           </button>
                         </div>
                       )}
@@ -1072,8 +1077,8 @@ export function PublicWhispPage() {
                             are anonymous by default, but signing up lifts the
                             rate limit entirely (see the toast on a 403 above). */}
                         <p className="text-[11px] text-muted-foreground leading-snug">
-                          Keep it kind — the goal here is genuine, productive conversation.{" "}
-                          <a href="/sign-up" className="text-primary hover:underline">Become a Whisperer</a> for unlimited comments.
+                          {t("publicWhisp.circle.keepItKind")}{" "}
+                          <a href="/sign-up" className="text-primary hover:underline">{t("publicWhisp.becomeAWhisperer")}</a> {t("publicWhisp.circle.unlimitedCommentsSuffix")}
                         </p>
                         <Button
                           size="sm"
@@ -1096,7 +1101,7 @@ export function PublicWhispPage() {
               <div className="flex items-center gap-2">
                 <div className="flex-1 h-px bg-border/40" />
                 <span className="text-xs text-muted-foreground">
-                  {whisp.replies.length > 0 ? "Anonymous conversation" : "Want to reply anonymously?"}
+                  {whisp.replies.length > 0 ? t("publicWhisp.reply.headerConversation") : t("publicWhisp.reply.headerWantToReply")}
                 </span>
                 <div className="flex-1 h-px bg-border/40" />
               </div>
@@ -1105,7 +1110,7 @@ export function PublicWhispPage() {
                 <ReplyThread
                   replies={whisp.replies}
                   viewerIsRecipient
-                  otherLabel={whisp.senderAlias || "The sender"}
+                  otherLabel={whisp.senderAlias || t("publicWhisp.reply.theSender")}
                   replyingTo={replyingTo}
                   // No per-message Reply affordance when the composer below
                   // isn't going to be there — offering to answer a message
@@ -1135,7 +1140,7 @@ export function PublicWhispPage() {
                 if (disabled) {
                   return (
                     <p className="text-xs text-muted-foreground text-center py-2">
-                      This whisp has expired, so you can't reply anymore.
+                      {t("publicWhisp.reply.expiredNotice")}
                     </p>
                   );
                 }
@@ -1147,12 +1152,12 @@ export function PublicWhispPage() {
                 if (remaining === 0) {
                   return (
                     <div className="rounded-2xl border border-primary/25 bg-primary/5 p-4 text-center space-y-2" data-testid="reply-limit-reached">
-                      <p className="text-sm text-foreground">You've used all your anonymous replies here.</p>
+                      <p className="text-sm text-foreground">{t("publicWhisp.reply.limitReached.title")}</p>
                       <p className="text-xs text-muted-foreground">
-                        Create a free account to keep this conversation going — you'll still be anonymous to them.
+                        {t("publicWhisp.reply.limitReached.description")}
                       </p>
                       <Button size="sm" className="rounded-full" onClick={() => setLocation("/sign-up")} data-testid="button-signup-for-replies">
-                        Sign up to keep replying
+                        {t("publicWhisp.reply.limitReached.signUpButton")}
                       </Button>
                     </div>
                   );
@@ -1187,7 +1192,7 @@ export function PublicWhispPage() {
                       <div className="flex items-center gap-2">
                         <Input
                           className="flex-1 h-11 bg-card border-border/50 rounded-full px-4"
-                          placeholder="Reply anonymously..."
+                          placeholder={t("publicWhisp.reply.compactPlaceholder")}
                           value={replyText}
                           onChange={(e) => setReplyText(e.target.value)}
                           onFocus={() => setComposerExpanded(true)}
@@ -1199,7 +1204,7 @@ export function PublicWhispPage() {
                           className="rounded-full h-11 w-11 shrink-0"
                           onClick={() => setComposerExpanded(true)}
                           data-testid="button-expand-composer"
-                          aria-label="More reply options, including a video reply"
+                          aria-label={t("publicWhisp.reply.moreReplyOptionsAriaLabel")}
                         >
                           <Video className="h-4 w-4" />
                         </Button>
@@ -1230,7 +1235,7 @@ export function PublicWhispPage() {
                       </div>
                     )}
                     <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
-                      Replying to <span className="text-foreground">{whisp.videoTitle || "this video"}</span>
+                      {t("publicWhisp.reply.replyingToPrefix")} <span className="text-foreground">{whisp.videoTitle || t("publicWhisp.reply.thisVideoFallback")}</span>
                     </p>
                   </div>
 
@@ -1252,13 +1257,13 @@ export function PublicWhispPage() {
                   )}
                   <div className="flex items-center gap-2">
                     <div className="flex-1 h-px bg-border/40" />
-                    <span className="text-xs text-muted-foreground">or write your own</span>
+                    <span className="text-xs text-muted-foreground">{t("publicWhisp.reply.orWriteYourOwn")}</span>
                     <div className="flex-1 h-px bg-border/40" />
                   </div>
                   <Textarea
                     ref={replyTextareaRef}
                     className="bg-card border-border/50 rounded-xl resize-none min-h-[80px]"
-                    placeholder="Type your reply... (anonymous)"
+                    placeholder={t("publicWhisp.reply.fullPlaceholder")}
                     maxLength={300}
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
@@ -1293,11 +1298,11 @@ export function PublicWhispPage() {
                         {videoRepliesLocked ? <Lock className="h-4 w-4" /> : <Video className="h-4 w-4" />}
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block text-sm font-medium text-foreground">Whisp a video back</span>
+                        <span className="block text-sm font-medium text-foreground">{t("publicWhisp.reply.whispVideoBack")}</span>
                         <span className="block text-xs text-muted-foreground">
                           {videoRepliesLocked
-                            ? "Needs a free account — your text replies still work"
-                            : "Send a video with your reply — still anonymous"}
+                            ? t("publicWhisp.reply.videoLockedDescription")
+                            : t("publicWhisp.reply.videoUnlockedDescription")}
                         </span>
                       </span>
                       <PlayCircle className="h-4 w-4 shrink-0 text-primary/60 transition-colors group-hover:text-primary" />
@@ -1309,7 +1314,7 @@ export function PublicWhispPage() {
                           <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/15 text-primary">
                             <Video className="h-3.5 w-3.5" />
                           </span>
-                          Whisp a video back
+                          {t("publicWhisp.reply.whispVideoBack")}
                         </span>
                         <button
                           type="button"
@@ -1327,7 +1332,7 @@ export function PublicWhispPage() {
                       {replyVideoMeta ? (
                         <div className="flex gap-2 p-2 bg-card rounded-lg items-center">
                           {replyVideoMeta.thumbnail && (
-                            <img src={replyVideoMeta.thumbnail} className="w-14 h-10 object-cover rounded" alt="thumbnail" />
+                            <img src={replyVideoMeta.thumbnail} className="w-14 h-10 object-cover rounded" alt={t("publicWhisp.reply.videoThumbnailAlt")} />
                           )}
                           <p className="text-xs text-foreground truncate flex-1">{replyVideoMeta.title || replyVideoUrl}</p>
                         </div>
@@ -1338,7 +1343,7 @@ export function PublicWhispPage() {
                               <Link2 className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                               <Input
                                 className="pl-8 h-9 text-xs bg-card border-border/50 rounded-lg"
-                                placeholder="Paste a video link..."
+                                placeholder={t("publicWhisp.reply.videoUrlPlaceholder")}
                                 value={replyVideoUrl}
                                 onChange={(e) => { setReplyVideoUrl(e.target.value); setReplyVideoError(null); }}
                                 data-testid="input-reply-video-url"
@@ -1353,7 +1358,7 @@ export function PublicWhispPage() {
                               disabled={!replyVideoUrl.trim() || scrapeReplyVideo.isPending}
                               data-testid="button-fetch-reply-video"
                             >
-                              {scrapeReplyVideo.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Add"}
+                              {scrapeReplyVideo.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : t("publicWhisp.reply.addVideoButton")}
                             </Button>
                           </div>
                           {replyVideoError && (
@@ -1371,8 +1376,8 @@ export function PublicWhispPage() {
                   {typeof remaining === "number" && remaining > 0 && remaining <= 2 && (
                     <p className="text-xs text-muted-foreground text-center" data-testid="text-replies-remaining">
                       {remaining === 1
-                        ? "This is your last anonymous reply — sign up free to keep going."
-                        : `${remaining} anonymous replies left.`}
+                        ? t("publicWhisp.reply.lastReplyWarning")
+                        : t("publicWhisp.reply.repliesLeft", { count: remaining })}
                     </p>
                   )}
 
@@ -1390,7 +1395,7 @@ export function PublicWhispPage() {
                       ) : (
                         <Send className="w-3 h-3 mr-1" />
                       )}
-                      Send Reply
+                      {t("publicWhisp.reply.sendButton")}
                     </Button>
                   </div>
                 </div>
@@ -1405,16 +1410,16 @@ export function PublicWhispPage() {
                 {revealResponse ? (
                   <p className="text-sm text-muted-foreground">
                     {revealResponse === "accepted"
-                      ? "You've let them know it's okay to reveal themselves."
-                      : "You've chosen to keep this anonymous."}
+                      ? t("publicWhisp.reveal.viewerAccepted")
+                      : t("publicWhisp.reveal.viewerDeclined")}
                   </p>
                 ) : (
                   <>
                     <p className="text-sm font-medium text-foreground">
-                      The person who sent this wants to reveal themselves.
+                      {t("publicWhisp.reveal.prompt")}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Do you want to know who sent this to you?
+                      {t("publicWhisp.reveal.question")}
                     </p>
                     <div className="flex gap-2 justify-center pt-1">
                       <Button
@@ -1424,7 +1429,7 @@ export function PublicWhispPage() {
                         disabled={respondReveal.isPending}
                         data-testid="button-accept-reveal"
                       >
-                        Accept
+                        {t("publicWhisp.reveal.accept")}
                       </Button>
                       <Button
                         size="sm"
@@ -1434,7 +1439,7 @@ export function PublicWhispPage() {
                         disabled={respondReveal.isPending}
                         data-testid="button-decline-reveal"
                       >
-                        Decline
+                        {t("publicWhisp.reveal.decline")}
                       </Button>
                     </div>
                   </>
@@ -1447,13 +1452,13 @@ export function PublicWhispPage() {
               <p className="text-center text-xs text-muted-foreground flex items-center justify-center gap-1.5">
                 <BellRing className="w-3.5 h-3.5 text-primary" />
                 {reminderScheduled.isFinal
-                  ? "We'll remind you one last time — after that this whisp won't be available anymore."
-                  : "We'll remind you before this whisp expires."}
+                  ? t("publicWhisp.reminder.finalNotice")
+                  : t("publicWhisp.reminder.notice")}
               </p>
             ) : canRemind && availablePresets.length > 0 ? (
               showReminderPicker ? (
                 <div className="bg-card border border-border/50 rounded-2xl p-4 text-center space-y-2">
-                  <p className="text-sm font-medium text-foreground">When should we remind you?</p>
+                  <p className="text-sm font-medium text-foreground">{t("publicWhisp.reminder.pickerHeading")}</p>
                   <div className="flex flex-wrap gap-2 justify-center pt-1">
                     {availablePresets.map((preset) => (
                       <button
@@ -1476,7 +1481,7 @@ export function PublicWhispPage() {
                   data-testid="button-show-remind-picker"
                   className="mx-auto flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
                 >
-                  <BellRing className="w-3.5 h-3.5" /> Remind me about this later
+                  <BellRing className="w-3.5 h-3.5" /> {t("publicWhisp.reminder.button")}
                 </button>
               )
             ) : null}
@@ -1497,11 +1502,10 @@ export function PublicWhispPage() {
               <Sparkles className="w-6 h-6 text-primary mx-auto relative" />
               <div className="relative space-y-1.5">
                 <p className="font-serif text-lg font-semibold text-foreground">
-                  Got something to say, but not out loud?
+                  {t("publicWhisp.signupCta.heading")}
                 </p>
                 <p className="text-sm text-muted-foreground max-w-xs mx-auto leading-relaxed">
-                  Send a video to someone who needs it — anonymously, without the awkward part of saying it
-                  yourself. They'll never know it was you, unless you want them to.
+                  {t("publicWhisp.signupCta.description")}
                 </p>
               </div>
               <Button
@@ -1510,9 +1514,9 @@ export function PublicWhispPage() {
                 onClick={() => setLocation("/sign-up")}
                 data-testid="button-become-whisperer"
               >
-                <Sparkles className="w-4 h-4 mr-2" /> Become a Whisperer Now
+                <Sparkles className="w-4 h-4 mr-2" /> {t("publicWhisp.signupCta.button")}
               </Button>
-              <p className="relative text-xs text-muted-foreground">Free to start — no card required.</p>
+              <p className="relative text-xs text-muted-foreground">{t("publicWhisp.signupCta.disclaimer")}</p>
             </div>
 
             {/* Ghost Boost matching CTA — a recipient who just felt what an
@@ -1522,9 +1526,9 @@ export function PublicWhispPage() {
               className="flex items-center justify-between gap-3 rounded-2xl border border-border/50 bg-card hover:bg-card/70 transition-colors p-4"
             >
               <div>
-                <p className="text-sm font-medium text-foreground">Want more, matched to you?</p>
+                <p className="text-sm font-medium text-foreground">{t("publicWhisp.subscribeCta.heading")}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Get anonymous whisps like this sent to your inbox when they match topics you pick.
+                  {t("publicWhisp.subscribeCta.description")}
                 </p>
               </div>
               <BellRing className="w-5 h-5 text-muted-foreground shrink-0" />
@@ -1539,9 +1543,9 @@ export function PublicWhispPage() {
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1.25rem)" }}
       >
         <p className="text-xs text-muted-foreground">
-          Powered by{" "}
+          {t("publicWhisp.footer.poweredByPrefix")}{" "}
           <a href="/" className="text-primary hover:underline">Blind Whisper</a>
-          {" "}— send what matters, without the awkward part.
+          {" "}{t("publicWhisp.footer.poweredBySuffix")}
         </p>
       </footer>
     </div>
