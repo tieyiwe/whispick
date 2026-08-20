@@ -219,7 +219,16 @@ export function SendWhisp() {
   useEffect(() => {
     const forward = takePendingForward();
     if (!forward) return;
-    setVideoUrl(forward.videoUrl);
+    if (forward.uploadedVideoId) {
+      // An uploaded/recorded clip forwarded from Media Library's "Whisp It"
+      // button — identified by id, same as handleLibrarySelect below, not
+      // by URL (there isn't a real navigable one for an upload).
+      setUploadedVideoId(forward.uploadedVideoId);
+      setVideoUrl("");
+    } else {
+      setVideoUrl(forward.videoUrl);
+      setUploadedVideoId(null);
+    }
     setVideoMeta({
       title: forward.videoTitle,
       thumbnail: forward.videoThumbnail,

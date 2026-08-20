@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Link } from "wouter";
+import { useLocation } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useListMedia, useDeleteMedia, getListMediaQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { uploadMedia, UploadValidationError } from "@/lib/uploadMedia";
+import { savePendingForward } from "@/lib/forwardVideo";
 import { CirclePostComposer } from "@/components/shared/CirclePostComposer";
 import { Thumbnail } from "@/components/shared/Thumbnail";
 import { Clapperboard, Upload, Loader2, Send, Trash2, Clock, Users } from "lucide-react";
@@ -32,6 +33,7 @@ function daysUntil(dateString: string): number {
 
 export function MediaLibrary() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -56,6 +58,21 @@ export function MediaLibrary() {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
+  }
+
+  // "Whisp It" — stages this exact upload (by id, not a re-scraped URL) via
+  // the same sessionStorage "pass it forward" hand-off WhispsList.tsx's
+  // "Whisp again" uses, then drops the sender straight into step 2 of the
+  // composer with it already selected — see forwardVideo.ts.
+  function handleWhispIt(item: { id: string; originalFilename: string }) {
+    savePendingForward({
+      videoUrl: "",
+      uploadedVideoId: item.id,
+      videoTitle: item.originalFilename,
+      videoThumbnail: `/api/media/${item.id}/thumbnail`,
+      videoPlatform: "upload",
+    });
+    setLocation("/send");
   }
 
   function handleDelete() {
@@ -137,11 +154,15 @@ export function MediaLibrary() {
                   )}
                   <div className="flex items-center gap-2 pt-1">
                     {item.status === "ready" && (
-                      <Link href="/send" className="flex-1">
-                        <Button size="sm" variant="outline" className="w-full rounded-full" data-testid={`button-use-${item.id}`}>
-                          <Send className="w-3.5 h-3.5 mr-1" /> Send
-                        </Button>
-                      </Link>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 w-full rounded-full"
+                        onClick={() => handleWhispIt(item)}
+                        data-testid={`button-whisp-it-${item.id}`}
+                      >
+                        <Send className="w-3.5 h-3.5 mr-1" /> Whisp It
+                      </Button>
                     )}
                     {/* Posts this exact upload to the community feed without
                         re-uploading it — the composer takes the existing media
