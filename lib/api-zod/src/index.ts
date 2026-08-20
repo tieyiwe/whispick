@@ -29,3 +29,5 @@ export type {
   RewhispDebateTopicBody,
   ToggleFollowBody,
 } from "./generated/types";
+// Same collision, added with the Debate Topics avatar-picker endpoint.
+export type { UpdateDebateTopicHandleAvatarBody } from "./generated/types";
