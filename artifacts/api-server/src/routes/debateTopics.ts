@@ -10,8 +10,8 @@ import { ensureUser } from "../lib/ensureUser";
 import { canPostAnonymousComment, COMMENT_LIMIT_WINDOW_HOURS } from "../lib/plans";
 import { createDebateTopicLimiter } from "../lib/rateLimit";
 import { moderateDebateTopicAsync, moderateDebateTopicCommentAsync, moderateCommentImageAsync } from "../lib/moderation";
-import { assignOrGetHandle, getHandlesFor, renameHandle } from "../lib/anonymousHandles";
-import { assignOrGetWhispererHandle, getOrBackfillWhispererHandles } from "../lib/whispererHandle";
+import { assignOrGetHandle, getHandlesFor, renameHandle, updateHandleAvatar } from "../lib/anonymousHandles";
+import { assignOrGetWhispererIdentity, getOrBackfillWhispererIdentities } from "../lib/whispererHandle";
 import { toggleReaction, reactionCountsFor, viewerReactionsFor } from "../lib/commentReactions";
 import { commentImageUpload, storeCommentImage } from "../lib/commentImages";
 import { notifyUserPersisted } from "../lib/push";
@@ -69,7 +69,7 @@ router.post("/debate-topics", requireAuth, createDebateTopicLimiter, async (req,
 
   void moderateDebateTopicAsync({ debateTopicId: id, authorId: user.id, text: parsed.data.topicText });
 
-  const authorHandle = await assignOrGetWhispererHandle(user.id);
+  const authorIdentity = await assignOrGetWhispererIdentity(user.id);
 
   const topic = await db
     .select({ id: debateTopicsTable.id, topicText: debateTopicsTable.topicText, createdAt: debateTopicsTable.createdAt })
@@ -77,7 +77,7 @@ router.post("/debate-topics", requireAuth, createDebateTopicLimiter, async (req,
     .where(eq(debateTopicsTable.id, id))
     .then((r) => r[0]);
 
-  res.status(201).json({ ...topic, authorHandle, commentCount: 0, rewhispCount: 0 });
+  res.status(201).json({ ...topic, authorHandle: authorIdentity.handle, authorAvatarId: authorIdentity.avatarId, commentCount: 0, rewhispCount: 0 });
 });
 
 // DELETE /api/debate-topics/:id — the author retracts their own topic.
@@ -138,14 +138,15 @@ router.get("/debate-topics/following-feed", requireAuth, async (req, res): Promi
     .limit(PAGE_SIZE);
 
   const topicIds = topics.map((t) => t.id);
-  const [counts, rewhispCounts, authorHandles] = await Promise.all([
+  const [counts, rewhispCounts, authorIdentities] = await Promise.all([
     commentCountsFor(topicIds),
     rewhispCountsFor(topicIds),
-    getOrBackfillWhispererHandles(topics.map((t) => t.authorId)),
+    getOrBackfillWhispererIdentities(topics.map((t) => t.authorId)),
   ]);
   const items = topics.map(({ authorId, ...t }) => ({
     ...t,
-    authorHandle: authorHandles[authorId],
+    authorHandle: authorIdentities[authorId]?.handle,
+    authorAvatarId: authorIdentities[authorId]?.avatarId ?? null,
     commentCount: counts[t.id] ?? 0,
     rewhispCount: rewhispCounts[t.id] ?? 0,
   }));
@@ -237,14 +238,15 @@ router.get("/public/debate-topics", async (req, res): Promise<void> => {
     .limit(PAGE_SIZE);
 
   const topicIds = topics.map((t) => t.id);
-  const [counts, rewhispCounts, authorHandles] = await Promise.all([
+  const [counts, rewhispCounts, authorIdentities] = await Promise.all([
     commentCountsFor(topicIds),
     rewhispCountsFor(topicIds),
-    getOrBackfillWhispererHandles(topics.map((t) => t.authorId)),
+    getOrBackfillWhispererIdentities(topics.map((t) => t.authorId)),
   ]);
   const items = topics.map(({ authorId, ...t }) => ({
     ...t,
-    authorHandle: authorHandles[authorId],
+    authorHandle: authorIdentities[authorId]?.handle,
+    authorAvatarId: authorIdentities[authorId]?.avatarId ?? null,
     commentCount: counts[t.id] ?? 0,
     rewhispCount: rewhispCounts[t.id] ?? 0,
   }));
@@ -308,9 +310,9 @@ router.get("/public/debate-topics/:id", async (req, res): Promise<void> => {
 
   const commentIds = comments.map((c) => c.id);
   const signedInCommenterIds = comments.map((c) => c.authorUserId).filter((id): id is string => !!id);
-  const [handles, whispererHandles, reactionCounts, viewerReactions, rewhispCounts] = await Promise.all([
+  const [handles, whispererIdentities, reactionCounts, viewerReactions, rewhispCounts] = await Promise.all([
     getHandlesFor("debate_topic", topic.id, comments.filter((c) => !c.authorUserId).map((c) => c.visitorId)),
-    getOrBackfillWhispererHandles([topic.authorId, ...signedInCommenterIds]),
+    getOrBackfillWhispererIdentities([topic.authorId, ...signedInCommenterIds]),
     reactionCountsFor("debate_topic_comment", commentIds),
     visitorId ? viewerReactionsFor("debate_topic_comment", commentIds, visitorId) : Promise.resolve({} as Record<string, "like" | "dislike">),
     rewhispCountsFor([topic.id]),
@@ -346,7 +348,8 @@ router.get("/public/debate-topics/:id", async (req, res): Promise<void> => {
     topicText: topic.topicText,
     createdAt: topic.createdAt,
     isOwnTopic,
-    authorHandle: whispererHandles[topic.authorId],
+    authorHandle: whispererIdentities[topic.authorId]?.handle,
+    authorAvatarId: whispererIdentities[topic.authorId]?.avatarId ?? null,
     authorFollowed: viewer && !isOwnTopic ? followedSet.has(topic.authorId) : null,
     authorFollowerCount,
     commentCount: comments.length,
@@ -361,7 +364,8 @@ router.get("/public/debate-topics/:id", async (req, res): Promise<void> => {
       // Whisperer handle instead of the per-thread-only anonymous one — see
       // users.whispererHandle's comment for why that's the one deliberate
       // exception to this app's usual per-thread anonymity.
-      handle: commentAuthorUserId ? whispererHandles[commentAuthorUserId] : (handles[commentVisitorId] ?? "Anonymous"),
+      handle: commentAuthorUserId ? whispererIdentities[commentAuthorUserId]?.handle : (handles[commentVisitorId]?.handle ?? "Anonymous"),
+      avatarId: commentAuthorUserId ? (whispererIdentities[commentAuthorUserId]?.avatarId ?? null) : (handles[commentVisitorId]?.avatarId ?? null),
       isOwnComment: visitorId ? commentVisitorId === visitorId : false,
       commentAuthorFollowed: commentAuthorUserId ? (viewer && commentAuthorUserId !== viewer.id ? followedSet.has(commentAuthorUserId) : null) : null,
       imageUrl: imageObjectKey && imageModerationStatus !== "flagged" ? `/api/public/debate-topics/comments/${c.id}/image` : null,
@@ -469,7 +473,7 @@ router.post("/public/debate-topics/:id/comments", commentImageUpload, async (req
   // comment for why. A purely anonymous (never-signed-in) commenter keeps
   // the ordinary per-thread handle, since there's no account to attach a
   // persistent identity to.
-  const handle = authorUserId ? await assignOrGetWhispererHandle(authorUserId) : await assignOrGetHandle("debate_topic", topic.id, parsed.data.visitorId);
+  const identity = authorUserId ? await assignOrGetWhispererIdentity(authorUserId) : await assignOrGetHandle("debate_topic", topic.id, parsed.data.visitorId);
 
   void moderateDebateTopicCommentAsync({
     debateTopicCommentId: id,
@@ -506,7 +510,8 @@ router.post("/public/debate-topics/:id/comments", commentImageUpload, async (req
 
   res.status(201).json({
     ...comment,
-    handle,
+    handle: identity.handle,
+    avatarId: identity.avatarId,
     isOwnComment: true,
     // Never true for the very comment you just posted — it's a foreign-
     // account-only concept and this is your own.
@@ -564,6 +569,25 @@ router.patch("/public/debate-topics/:id/handle", async (req, res): Promise<void>
   }
 
   res.json({ handle: result.handle });
+});
+
+// PATCH /api/public/debate-topics/:id/avatar — a visitor picks their own
+// preset avatar (or clears it) within this one thread. `avatarId: null` is a
+// real, explicit choice — see avatars.ts's schema comment.
+router.patch("/public/debate-topics/:id/avatar", async (req, res): Promise<void> => {
+  const parsed = z.object({ visitorId: z.string().min(1).max(100), avatarId: z.string().max(50).nullable() }).safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const result = await updateHandleAvatar("debate_topic", req.params.id, parsed.data.visitorId, parsed.data.avatarId);
+  if (!result.ok) {
+    res.status(400).json({ error: "Not a valid avatar." });
+    return;
+  }
+
+  res.json({ avatarId: result.avatarId });
 });
 
 // POST /api/public/debate-topics/:id/comments/:commentId/reactions — like or

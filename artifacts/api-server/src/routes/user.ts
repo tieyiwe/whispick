@@ -17,6 +17,7 @@ import { ensureUser } from "../lib/ensureUser";
 import { getVapidPublicKey } from "../lib/push";
 import { GENDER_OPTIONS, AGE_RANGE_OPTIONS } from "../lib/demographics";
 import { SUPPORTED_LANGUAGES } from "../lib/languages";
+import { updateWhispererAvatar } from "../lib/whispererHandle";
 import { normalizePhoneE164 } from "../lib/phone";
 import { startPhoneVerification, checkPhoneVerification } from "../lib/phoneVerification";
 import { phoneVerificationLimiter, confirmPhoneVerificationLimiter } from "../lib/rateLimit";
@@ -39,6 +40,8 @@ router.get("/profile", requireAuth, async (req, res): Promise<void> => {
     gender: user.gender,
     ageRange: user.ageRange,
     preferredLanguage: user.preferredLanguage,
+    whispererHandle: user.whispererHandle,
+    whispererAvatarId: user.whispererAvatarId,
     plan: user.plan,
     boostCredits: user.boostCredits,
     whisperLinksUsed: user.whisperLinksUsed,
@@ -63,6 +66,7 @@ router.patch("/profile", requireAuth, async (req, res): Promise<void> => {
     emailNotificationsEnabled: z.boolean().optional(),
     countryCode: z.string().length(2).nullable().optional(),
     preferredLanguage: z.enum(SUPPORTED_LANGUAGES).optional(),
+    whispererAvatarId: z.string().max(50).nullable().optional(),
   });
 
   const parsed = schema.safeParse(req.body);
@@ -70,10 +74,19 @@ router.patch("/profile", requireAuth, async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  const { whispererAvatarId, ...profileFields } = parsed.data;
+
+  if (whispererAvatarId !== undefined) {
+    const result = await updateWhispererAvatar(user.id, whispererAvatarId);
+    if (!result.ok) {
+      res.status(400).json({ error: "Not a valid avatar." });
+      return;
+    }
+  }
 
   await db
     .update(usersTable)
-    .set({ ...parsed.data, ...(parsed.data.countryCode ? { countryCode: parsed.data.countryCode.toUpperCase() } : {}) })
+    .set({ ...profileFields, ...(profileFields.countryCode ? { countryCode: profileFields.countryCode.toUpperCase() } : {}) })
     .where(eq(usersTable.id, user.id));
   const updated = await db.select().from(usersTable).where(eq(usersTable.id, user.id)).then(r => r[0]);
 
@@ -89,6 +102,8 @@ router.patch("/profile", requireAuth, async (req, res): Promise<void> => {
     gender: updated.gender,
     ageRange: updated.ageRange,
     preferredLanguage: updated.preferredLanguage,
+    whispererHandle: updated.whispererHandle,
+    whispererAvatarId: updated.whispererAvatarId,
     plan: updated.plan,
     boostCredits: updated.boostCredits,
     whisperLinksUsed: updated.whisperLinksUsed,

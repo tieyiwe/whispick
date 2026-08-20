@@ -5,6 +5,7 @@
  * Blind Whisper API — anonymous video recommendation platform
  * OpenAPI spec version: 0.1.0
  */
+import type { AvatarId } from './avatarId';
 
 export interface UserProfile {
   id: string;
@@ -41,6 +42,12 @@ export interface UserProfile {
      * @nullable
      */
   preferredLanguage?: string | null;
+  /**
+     * This account's persistent, public, followable Debate Topics handle — see users.whispererHandle. Null until first assigned (posting a topic, or commenting while signed in).
+     * @nullable
+     */
+  whispererHandle?: string | null;
+  whispererAvatarId?: AvatarId | null;
   plan: string;
   boostCredits: number;
   whisperLinksUsed: number;

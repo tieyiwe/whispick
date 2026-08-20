@@ -5,6 +5,7 @@
  * Blind Whisper API — anonymous video recommendation platform
  * OpenAPI spec version: 0.1.0
  */
+import type { AvatarId } from './avatarId';
 import type { DebateTopicComment } from './debateTopicComment';
 
 export interface DebateTopicDetail {
@@ -15,6 +16,7 @@ export interface DebateTopicDetail {
   isOwnTopic: boolean;
   /** The author's persistent, public, followable Whisperer handle — see DebateTopicFeedItem.authorHandle. */
   authorHandle: string;
+  authorAvatarId: AvatarId | null;
   /**
      * Whether the signed-in caller already follows the author. null when the caller isn't signed in, or is the author themselves.
      * @nullable

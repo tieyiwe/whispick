@@ -5,6 +5,7 @@
  * Blind Whisper API — anonymous video recommendation platform
  * OpenAPI spec version: 0.1.0
  */
+import type { AvatarId } from './avatarId';
 
 /**
  * The raw account id is deliberately never included — only the public, followable authorHandle byline is.
@@ -14,6 +15,7 @@ export interface DebateTopicFeedItem {
   topicText: string;
   /** The author's persistent, public, followable Whisperer handle (e.g. "SwiftFalcon482") — see users.whispererHandle. */
   authorHandle: string;
+  authorAvatarId: AvatarId | null;
   commentCount: number;
   rewhispCount: number;
   createdAt: string;

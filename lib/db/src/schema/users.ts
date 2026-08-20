@@ -84,6 +84,17 @@ export const usersTable = pgTable("users", {
   // handles, just uniquely scoped globally instead of per-thread. A user
   // can rename their own.
   whispererHandle: text("whisperer_handle").unique(),
+  // A preset avatar id from lib/avatars.ts's curated library — assigned
+  // randomly the moment whispererHandle itself is (same write). Explicitly
+  // separate from avatarUrl above (this account's REAL Clerk profile
+  // photo, shown in the authenticated app's own account menu/Settings):
+  // that photo must never appear anywhere near the anonymous Debate Topics
+  // identity, so this is its own column, its own small closed set of
+  // options, and no file upload path at all — a user can only ever pick
+  // from the library or explicitly choose none. Null means "no avatar" —
+  // a deliberate choice (falls back to the handle's first letter), not
+  // "not yet assigned"; assignment always sets a real value up front.
+  whispererAvatarId: text("whisperer_avatar_id"),
   // ISO 639-1 code (see lib/languages.ts's SUPPORTED_LANGUAGES) — captured
   // once at onboarding (the same one-time gate demographics.ts already
   // enforces before a user's first whisp send, extended to also require

@@ -517,6 +517,12 @@ export interface PublicReplyInput {
   parentReplyId?: string | null;
 }
 
+/**
+ * A preset id from the curated avatar library (api-server's lib/avatars.ts), e.g. "flame-violet" — rendered as an icon-on-color circle by the frontend's matching catalog. Never a file upload. null means "no avatar" (a real, explicit choice — the frontend falls back to the handle's first letter), not "not yet assigned."
+ * @nullable
+ */
+export type AvatarId = string | null;
+
 export interface UserProfile {
   id: string;
   clerkId: string;
@@ -552,6 +558,12 @@ export interface UserProfile {
      * @nullable
      */
   preferredLanguage?: string | null;
+  /**
+     * This account's persistent, public, followable Debate Topics handle — see users.whispererHandle. Null until first assigned (posting a topic, or commenting while signed in).
+     * @nullable
+     */
+  whispererHandle?: string | null;
+  whispererAvatarId?: AvatarId | null;
   plan: string;
   boostCredits: number;
   whisperLinksUsed: number;
@@ -597,6 +609,8 @@ export interface UserProfileUpdate {
   countryCode?: string | null;
   /** Not nullable — unlike gender/ageRange there's no "prefer not to say" for the language the app actually renders in. */
   preferredLanguage?: UserProfileUpdatePreferredLanguage;
+  /** Sets (or, if null, clears) this account's own Debate Topics avatar — see UserProfile.whispererAvatarId. */
+  whispererAvatarId?: AvatarId | null;
 }
 
 export interface StartPhoneVerificationInput {
@@ -669,6 +683,7 @@ export interface DebateTopicFeedItem {
   topicText: string;
   /** The author's persistent, public, followable Whisperer handle (e.g. "SwiftFalcon482") — see users.whispererHandle. */
   authorHandle: string;
+  authorAvatarId: AvatarId | null;
   commentCount: number;
   rewhispCount: number;
   createdAt: string;
@@ -703,6 +718,7 @@ export interface DebateTopicComment {
   createdAt: string;
   /** The commenter's display name. For a signed-in commenter, this is their persistent, followable Whisperer handle (users. whispererHandle) — the same one shown as their topic bylines elsewhere, so "who am I talking to" stays consistent across the whole app. For a purely anonymous (never-signed-in) commenter, it's the ordinary per-thread-only handle (anonymous_handles.ts). */
   handle: string;
+  avatarId: AvatarId | null;
   /** True when the caller's own visitorId matches this comment's author. */
   isOwnComment: boolean;
   /**
@@ -737,6 +753,7 @@ export interface DebateTopicDetail {
   isOwnTopic: boolean;
   /** The author's persistent, public, followable Whisperer handle — see DebateTopicFeedItem.authorHandle. */
   authorHandle: string;
+  authorAvatarId: AvatarId | null;
   /**
      * Whether the signed-in caller already follows the author. null when the caller isn't signed in, or is the author themselves.
      * @nullable
@@ -1856,6 +1873,15 @@ export type RenameDebateTopicHandleBody = {
 
 export type RenameDebateTopicHandle200 = {
   handle: string;
+};
+
+export type UpdateDebateTopicHandleAvatarBody = {
+  visitorId: string;
+  avatarId: AvatarId | null;
+};
+
+export type UpdateDebateTopicHandleAvatar200 = {
+  avatarId: AvatarId | null;
 };
 
 export type ReactToDebateTopicCommentBodyReaction = typeof ReactToDebateTopicCommentBodyReaction[keyof typeof ReactToDebateTopicCommentBodyReaction];

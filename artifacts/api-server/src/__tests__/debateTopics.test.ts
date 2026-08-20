@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import request from "supertest";
 import app from "../app";
 import { TEST_USER_HEADER } from "./setup";
+import { AVATAR_IDS } from "../lib/avatars";
 
 function asUser(userId: string) {
   return { [TEST_USER_HEADER]: userId };
@@ -42,6 +43,52 @@ describe("POST /api/debate-topics", () => {
   it("accepts a topic right at the cap", async () => {
     const res = await createTopic("clerk_debate_author_4", { topicText: "x".repeat(200) });
     expect(res.status).toBe(201);
+  });
+});
+
+describe("Debate Topics avatars", () => {
+  it("assigns a random preset avatar to a topic's author alongside their handle", async () => {
+    const res = await createTopic("clerk_debate_avatar_author");
+    expect(res.status).toBe(201);
+    expect(typeof res.body.authorHandle).toBe("string");
+    expect(AVATAR_IDS).toContain(res.body.authorAvatarId);
+  });
+
+  it("assigns a random preset avatar to an anonymous commenter", async () => {
+    const created = await createTopic("clerk_debate_avatar_comment_topic");
+    const res = await request(app)
+      .post(`/api/public/debate-topics/${created.body.id}/comments`)
+      .send({ commentText: "Interesting take.", visitorId: "visitor-avatar-1" });
+    expect(res.status).toBe(201);
+    expect(AVATAR_IDS).toContain(res.body.avatarId);
+  });
+
+  it("lets an anonymous visitor pick (and clear) their own avatar in a thread", async () => {
+    const created = await createTopic("clerk_debate_avatar_pick_topic");
+    await request(app)
+      .post(`/api/public/debate-topics/${created.body.id}/comments`)
+      .send({ commentText: "First comment.", visitorId: "visitor-avatar-picker" });
+
+    const chosen = AVATAR_IDS[0];
+    const pick = await request(app)
+      .patch(`/api/public/debate-topics/${created.body.id}/avatar`)
+      .send({ visitorId: "visitor-avatar-picker", avatarId: chosen });
+    expect(pick.status).toBe(200);
+    expect(pick.body.avatarId).toBe(chosen);
+
+    const clear = await request(app)
+      .patch(`/api/public/debate-topics/${created.body.id}/avatar`)
+      .send({ visitorId: "visitor-avatar-picker", avatarId: null });
+    expect(clear.status).toBe(200);
+    expect(clear.body.avatarId).toBeNull();
+  });
+
+  it("rejects an avatar id that isn't in the preset library", async () => {
+    const created = await createTopic("clerk_debate_avatar_invalid_topic");
+    const res = await request(app)
+      .patch(`/api/public/debate-topics/${created.body.id}/avatar`)
+      .send({ visitorId: "visitor-avatar-invalid", avatarId: "not-a-real-avatar" });
+    expect(res.status).toBe(400);
   });
 });
 

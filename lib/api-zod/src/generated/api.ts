@@ -1077,6 +1077,8 @@ export const GetUserProfileResponse = zod.object({
   "gender": zod.string().nullish().describe('\'woman\' | \'man\' | \'nonbinary\' | \'prefer_not_to_say\' | null (not yet answered)'),
   "ageRange": zod.string().nullish().describe('\'13-17\' | \'18-24\' | \'25-34\' | \'35-44\' | \'45-54\' | \'55-64\' | \'65+\' | \'prefer_not_to_say\' | null (not yet answered)'),
   "preferredLanguage": zod.string().nullish().describe('ISO 639-1 code from lib\/languages.ts\'s SUPPORTED_LANGUAGES (\'en\' | \'fr\' | \'ar\' | \'de\' | \'es\' | \'pt\' | \'zh\' | \'ja\' | \'hi\' | \'ru\' | \'id\' | \'bn\' | \'sw\'), or null (not yet answered). What the app renders in, and what server-generated text (notifications, emails) is sent in — see users.preferredLanguage.'),
+  "whispererHandle": zod.string().nullish().describe('This account\'s persistent, public, followable Debate Topics handle — see users.whispererHandle. Null until first assigned (posting a topic, or commenting while signed in).'),
+  "whispererAvatarId": zod.string().nullish().describe('A preset id from the curated avatar library (api-server\'s lib\/avatars.ts), e.g. \"flame-violet\" — rendered as an icon-on-color circle by the frontend\'s matching catalog. Never a file upload. null means \"no avatar\" (a real, explicit choice — the frontend falls back to the handle\'s first letter), not \"not yet assigned.\"'),
   "plan": zod.string(),
   "boostCredits": zod.number(),
   "whisperLinksUsed": zod.number(),
@@ -1096,7 +1098,8 @@ export const UpdateUserProfileBody = zod.object({
   "ageRange": zod.string().nullish(),
   "emailNotificationsEnabled": zod.boolean().optional(),
   "countryCode": zod.string().nullish(),
-  "preferredLanguage": zod.enum(['en', 'fr', 'ar', 'de', 'es', 'pt', 'zh', 'ja', 'hi', 'ru', 'id', 'bn', 'sw']).optional().describe('Not nullable — unlike gender\/ageRange there\'s no \"prefer not to say\" for the language the app actually renders in.')
+  "preferredLanguage": zod.enum(['en', 'fr', 'ar', 'de', 'es', 'pt', 'zh', 'ja', 'hi', 'ru', 'id', 'bn', 'sw']).optional().describe('Not nullable — unlike gender\/ageRange there\'s no \"prefer not to say\" for the language the app actually renders in.'),
+  "whispererAvatarId": zod.string().nullish().describe('Sets (or, if null, clears) this account\'s own Debate Topics avatar — see UserProfile.whispererAvatarId.')
 })
 
 export const UpdateUserProfileResponse = zod.object({
@@ -1111,6 +1114,8 @@ export const UpdateUserProfileResponse = zod.object({
   "gender": zod.string().nullish().describe('\'woman\' | \'man\' | \'nonbinary\' | \'prefer_not_to_say\' | null (not yet answered)'),
   "ageRange": zod.string().nullish().describe('\'13-17\' | \'18-24\' | \'25-34\' | \'35-44\' | \'45-54\' | \'55-64\' | \'65+\' | \'prefer_not_to_say\' | null (not yet answered)'),
   "preferredLanguage": zod.string().nullish().describe('ISO 639-1 code from lib\/languages.ts\'s SUPPORTED_LANGUAGES (\'en\' | \'fr\' | \'ar\' | \'de\' | \'es\' | \'pt\' | \'zh\' | \'ja\' | \'hi\' | \'ru\' | \'id\' | \'bn\' | \'sw\'), or null (not yet answered). What the app renders in, and what server-generated text (notifications, emails) is sent in — see users.preferredLanguage.'),
+  "whispererHandle": zod.string().nullish().describe('This account\'s persistent, public, followable Debate Topics handle — see users.whispererHandle. Null until first assigned (posting a topic, or commenting while signed in).'),
+  "whispererAvatarId": zod.string().nullish().describe('A preset id from the curated avatar library (api-server\'s lib\/avatars.ts), e.g. \"flame-violet\" — rendered as an icon-on-color circle by the frontend\'s matching catalog. Never a file upload. null means \"no avatar\" (a real, explicit choice — the frontend falls back to the handle\'s first letter), not \"not yet assigned.\"'),
   "plan": zod.string(),
   "boostCredits": zod.number(),
   "whisperLinksUsed": zod.number(),
@@ -1301,6 +1306,7 @@ export const CreateDebateTopicResponse = zod.object({
   "id": zod.string(),
   "topicText": zod.string(),
   "authorHandle": zod.string().describe('The author\'s persistent, public, followable Whisperer handle (e.g. \"SwiftFalcon482\") — see users.whispererHandle.'),
+  "authorAvatarId": zod.string().nullable().describe('A preset id from the curated avatar library (api-server\'s lib\/avatars.ts), e.g. \"flame-violet\" — rendered as an icon-on-color circle by the frontend\'s matching catalog. Never a file upload. null means \"no avatar\" (a real, explicit choice — the frontend falls back to the handle\'s first letter), not \"not yet assigned.\"'),
   "commentCount": zod.number(),
   "rewhispCount": zod.number(),
   "createdAt": zod.string()
@@ -1329,6 +1335,7 @@ export const ListFollowingDebateTopicsResponse = zod.object({
   "id": zod.string(),
   "topicText": zod.string(),
   "authorHandle": zod.string().describe('The author\'s persistent, public, followable Whisperer handle (e.g. \"SwiftFalcon482\") — see users.whispererHandle.'),
+  "authorAvatarId": zod.string().nullable().describe('A preset id from the curated avatar library (api-server\'s lib\/avatars.ts), e.g. \"flame-violet\" — rendered as an icon-on-color circle by the frontend\'s matching catalog. Never a file upload. null means \"no avatar\" (a real, explicit choice — the frontend falls back to the handle\'s first letter), not \"not yet assigned.\"'),
   "commentCount": zod.number(),
   "rewhispCount": zod.number(),
   "createdAt": zod.string()
@@ -1384,6 +1391,7 @@ export const ListDebateTopicsResponse = zod.object({
   "id": zod.string(),
   "topicText": zod.string(),
   "authorHandle": zod.string().describe('The author\'s persistent, public, followable Whisperer handle (e.g. \"SwiftFalcon482\") — see users.whispererHandle.'),
+  "authorAvatarId": zod.string().nullable().describe('A preset id from the curated avatar library (api-server\'s lib\/avatars.ts), e.g. \"flame-violet\" — rendered as an icon-on-color circle by the frontend\'s matching catalog. Never a file upload. null means \"no avatar\" (a real, explicit choice — the frontend falls back to the handle\'s first letter), not \"not yet assigned.\"'),
   "commentCount": zod.number(),
   "rewhispCount": zod.number(),
   "createdAt": zod.string()
@@ -1409,6 +1417,7 @@ export const GetDebateTopicResponse = zod.object({
   "createdAt": zod.string(),
   "isOwnTopic": zod.boolean().describe('True only when the caller is signed in and is this topic\'s own author — lets the author see a \"Retract\" control without revealing anything to anyone else.'),
   "authorHandle": zod.string().describe('The author\'s persistent, public, followable Whisperer handle — see DebateTopicFeedItem.authorHandle.'),
+  "authorAvatarId": zod.string().nullable().describe('A preset id from the curated avatar library (api-server\'s lib\/avatars.ts), e.g. \"flame-violet\" — rendered as an icon-on-color circle by the frontend\'s matching catalog. Never a file upload. null means \"no avatar\" (a real, explicit choice — the frontend falls back to the handle\'s first letter), not \"not yet assigned.\"'),
   "authorFollowed": zod.boolean().nullable().describe('Whether the signed-in caller already follows the author. null when the caller isn\'t signed in, or is the author themselves.'),
   "authorFollowerCount": zod.number(),
   "commentCount": zod.number(),
@@ -1421,6 +1430,7 @@ export const GetDebateTopicResponse = zod.object({
   "isPoster": zod.boolean(),
   "createdAt": zod.string(),
   "handle": zod.string().describe('The commenter\'s display name. For a signed-in commenter, this is their persistent, followable Whisperer handle (users. whispererHandle) — the same one shown as their topic bylines elsewhere, so \"who am I talking to\" stays consistent across the whole app. For a purely anonymous (never-signed-in) commenter, it\'s the ordinary per-thread-only handle (anonymous_handles.ts).'),
+  "avatarId": zod.string().nullable().describe('A preset id from the curated avatar library (api-server\'s lib\/avatars.ts), e.g. \"flame-violet\" — rendered as an icon-on-color circle by the frontend\'s matching catalog. Never a file upload. null means \"no avatar\" (a real, explicit choice — the frontend falls back to the handle\'s first letter), not \"not yet assigned.\"'),
   "isOwnComment": zod.boolean().describe('True when the caller\'s own visitorId matches this comment\'s author.'),
   "commentAuthorFollowed": zod.boolean().nullable().describe('Whether the signed-in caller already follows this commenter. null when there\'s nothing followable here — the commenter has no account (purely anonymous), or the caller isn\'t signed in, or it\'s the caller\'s own comment.'),
   "imageUrl": zod.string().nullable().describe('Proxy-served URL for an attached image, or null if there is none or it was flagged by moderation and is pending review.'),
@@ -1452,6 +1462,7 @@ export const PostDebateTopicCommentResponse = zod.object({
   "isPoster": zod.boolean(),
   "createdAt": zod.string(),
   "handle": zod.string().describe('The commenter\'s display name. For a signed-in commenter, this is their persistent, followable Whisperer handle (users. whispererHandle) — the same one shown as their topic bylines elsewhere, so \"who am I talking to\" stays consistent across the whole app. For a purely anonymous (never-signed-in) commenter, it\'s the ordinary per-thread-only handle (anonymous_handles.ts).'),
+  "avatarId": zod.string().nullable().describe('A preset id from the curated avatar library (api-server\'s lib\/avatars.ts), e.g. \"flame-violet\" — rendered as an icon-on-color circle by the frontend\'s matching catalog. Never a file upload. null means \"no avatar\" (a real, explicit choice — the frontend falls back to the handle\'s first letter), not \"not yet assigned.\"'),
   "isOwnComment": zod.boolean().describe('True when the caller\'s own visitorId matches this comment\'s author.'),
   "commentAuthorFollowed": zod.boolean().nullable().describe('Whether the signed-in caller already follows this commenter. null when there\'s nothing followable here — the commenter has no account (purely anonymous), or the caller isn\'t signed in, or it\'s the caller\'s own comment.'),
   "imageUrl": zod.string().nullable().describe('Proxy-served URL for an attached image, or null if there is none or it was flagged by moderation and is pending review.'),
@@ -1485,6 +1496,23 @@ export const RenameDebateTopicHandleBody = zod.object({
 
 export const RenameDebateTopicHandleResponse = zod.object({
   "handle": zod.string()
+})
+
+
+/**
+ * @summary Pick (or clear) the caller's own preset avatar in this topic's comment thread
+ */
+export const UpdateDebateTopicHandleAvatarParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UpdateDebateTopicHandleAvatarBody = zod.object({
+  "visitorId": zod.string(),
+  "avatarId": zod.string().nullable().describe('A preset id from the curated avatar library (api-server\'s lib\/avatars.ts), e.g. \"flame-violet\" — rendered as an icon-on-color circle by the frontend\'s matching catalog. Never a file upload. null means \"no avatar\" (a real, explicit choice — the frontend falls back to the handle\'s first letter), not \"not yet assigned.\"')
+})
+
+export const UpdateDebateTopicHandleAvatarResponse = zod.object({
+  "avatarId": zod.string().nullable().describe('A preset id from the curated avatar library (api-server\'s lib\/avatars.ts), e.g. \"flame-violet\" — rendered as an icon-on-color circle by the frontend\'s matching catalog. Never a file upload. null means \"no avatar\" (a real, explicit choice — the frontend falls back to the handle\'s first letter), not \"not yet assigned.\"')
 })
 
 

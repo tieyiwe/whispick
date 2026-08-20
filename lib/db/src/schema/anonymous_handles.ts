@@ -26,6 +26,11 @@ export const anonymousHandlesTable = pgTable("anonymous_handles", {
   rootId: text("root_id").notNull(), // whisps.id (circle_drop) or debate_topics.id
   visitorId: text("visitor_id").notNull(),
   handle: text("handle").notNull(),
+  // Same preset-library avatar concept as users.whispererAvatarId, just
+  // scoped per-thread like the handle itself — assigned randomly at the
+  // same insert. Null means "no avatar" (falls back to the handle's first
+  // letter), a real choice a visitor can make, not "unset."
+  avatarId: text("avatar_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   uniqueIndex("anonymous_handles_thread_visitor_idx").on(table.contentType, table.rootId, table.visitorId),

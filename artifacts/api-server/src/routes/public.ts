@@ -226,7 +226,7 @@ router.get("/w/:token", async (req, res): Promise<void> => {
 
     comments = rawComments.map(({ visitorId: commentVisitorId, imageObjectKey, imageModerationStatus, ...c }) => ({
       ...c,
-      handle: handles[commentVisitorId] ?? "Anonymous",
+      handle: handles[commentVisitorId]?.handle ?? "Anonymous",
       isOwnComment: visitorId ? commentVisitorId === visitorId : false,
       imageUrl: imageObjectKey && imageModerationStatus !== "flagged" ? `/api/public/w/${whisp.publicToken}/comments/${c.id}/image` : null,
       likeCount: reactionCounts[c.id]?.likeCount ?? 0,
@@ -455,7 +455,7 @@ router.post("/w/:token/comments", commentImageUpload, async (req, res): Promise<
     imageModerationStatus: imageObjectKey ? null : "ok",
   });
 
-  const handle = await assignOrGetHandle("circle_drop", whisp.id, parsed.data.visitorId);
+  const { handle } = await assignOrGetHandle("circle_drop", whisp.id, parsed.data.visitorId);
 
   void moderateCircleCommentAsync({
     circleCommentId: id,

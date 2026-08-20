@@ -5,6 +5,7 @@
  * Blind Whisper API — anonymous video recommendation platform
  * OpenAPI spec version: 0.1.0
  */
+import type { AvatarId } from './avatarId';
 import type { DebateTopicCommentViewerReaction } from './debateTopicCommentViewerReaction';
 
 /**
@@ -19,6 +20,7 @@ export interface DebateTopicComment {
   createdAt: string;
   /** The commenter's display name. For a signed-in commenter, this is their persistent, followable Whisperer handle (users. whispererHandle) — the same one shown as their topic bylines elsewhere, so "who am I talking to" stays consistent across the whole app. For a purely anonymous (never-signed-in) commenter, it's the ordinary per-thread-only handle (anonymous_handles.ts). */
   handle: string;
+  avatarId: AvatarId | null;
   /** True when the caller's own visitorId matches this comment's author. */
   isOwnComment: boolean;
   /**

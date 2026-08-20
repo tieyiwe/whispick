@@ -137,6 +137,8 @@ import type {
   UnsubscribeFromMatching200,
   UnsubscribeFromMatchingParams,
   UpdateAdminUserInput,
+  UpdateDebateTopicHandleAvatar200,
+  UpdateDebateTopicHandleAvatarBody,
   UpdateModerationFlagInput,
   UpdateSuggestionInput,
   UploadedVideo,
@@ -4919,6 +4921,77 @@ export const useRenameDebateTopicHandle = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getRenameDebateTopicHandleMutationOptions(options));
+    }
+
+export const getUpdateDebateTopicHandleAvatarUrl = (id: string,) => {
+
+
+
+
+  return `/api/public/debate-topics/${id}/avatar`
+}
+
+/**
+ * @summary Pick (or clear) the caller's own preset avatar in this topic's comment thread
+ */
+export const updateDebateTopicHandleAvatar = async (id: string,
+    updateDebateTopicHandleAvatarBody: UpdateDebateTopicHandleAvatarBody, options?: RequestInit): Promise<UpdateDebateTopicHandleAvatar200> => {
+
+  return customFetch<UpdateDebateTopicHandleAvatar200>(getUpdateDebateTopicHandleAvatarUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateDebateTopicHandleAvatarBody)
+  }
+);}
+
+
+
+
+export const getUpdateDebateTopicHandleAvatarMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDebateTopicHandleAvatar>>, TError,{id: string;data: BodyType<UpdateDebateTopicHandleAvatarBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateDebateTopicHandleAvatar>>, TError,{id: string;data: BodyType<UpdateDebateTopicHandleAvatarBody>}, TContext> => {
+
+const mutationKey = ['updateDebateTopicHandleAvatar'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateDebateTopicHandleAvatar>>, {id: string;data: BodyType<UpdateDebateTopicHandleAvatarBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateDebateTopicHandleAvatar(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateDebateTopicHandleAvatarMutationResult = NonNullable<Awaited<ReturnType<typeof updateDebateTopicHandleAvatar>>>
+    export type UpdateDebateTopicHandleAvatarMutationBody = BodyType<UpdateDebateTopicHandleAvatarBody>
+    export type UpdateDebateTopicHandleAvatarMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Pick (or clear) the caller's own preset avatar in this topic's comment thread
+ */
+export const useUpdateDebateTopicHandleAvatar = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDebateTopicHandleAvatar>>, TError,{id: string;data: BodyType<UpdateDebateTopicHandleAvatarBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateDebateTopicHandleAvatar>>,
+        TError,
+        {id: string;data: BodyType<UpdateDebateTopicHandleAvatarBody>},
+        TContext
+      > => {
+      return useMutation(getUpdateDebateTopicHandleAvatarMutationOptions(options));
     }
 
 export const getReactToDebateTopicCommentUrl = (id: string,

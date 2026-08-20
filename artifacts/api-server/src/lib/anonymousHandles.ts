@@ -1,6 +1,7 @@
 import { randomUUID, randomInt } from "crypto";
 import { db, anonymousHandlesTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
+import { isValidAvatarId, randomAvatarId, type AvatarId } from "./avatars";
 
 // Deliberately plain, unremarkable words — nothing evocative enough to
 // double as an identity clue, per the product ask that a handle must never
@@ -26,33 +27,40 @@ function randomHandle(): string {
 
 export type AnonymousHandleContentType = "circle_drop" | "debate_topic";
 
-// Assigns (or returns the existing) anonymous handle for this visitor within
-// this one thread — see anonymous_handles.ts's schema comment for why it's
-// scoped per-thread rather than global. Retries on the rare unique-index
-// collision (two visitors racing for the exact same generated string).
-export async function assignOrGetHandle(contentType: AnonymousHandleContentType, rootId: string, visitorId: string): Promise<string> {
+export interface AnonymousIdentity {
+  handle: string;
+  avatarId: AvatarId | null;
+}
+
+// Assigns (or returns the existing) anonymous handle + avatar for this
+// visitor within this one thread — see anonymous_handles.ts's schema comment
+// for why it's scoped per-thread rather than global. Retries on the rare
+// unique-index collision (two visitors racing for the exact same generated
+// string).
+export async function assignOrGetHandle(contentType: AnonymousHandleContentType, rootId: string, visitorId: string): Promise<AnonymousIdentity> {
   const existing = await db
-    .select({ handle: anonymousHandlesTable.handle })
+    .select({ handle: anonymousHandlesTable.handle, avatarId: anonymousHandlesTable.avatarId })
     .from(anonymousHandlesTable)
     .where(and(eq(anonymousHandlesTable.contentType, contentType), eq(anonymousHandlesTable.rootId, rootId), eq(anonymousHandlesTable.visitorId, visitorId)))
     .then((r) => r[0]);
-  if (existing) return existing.handle;
+  if (existing) return { handle: existing.handle, avatarId: existing.avatarId as AvatarId | null };
 
   for (let attempt = 0; attempt < 5; attempt++) {
     try {
       const handle = randomHandle();
-      await db.insert(anonymousHandlesTable).values({ id: randomUUID(), contentType, rootId, visitorId, handle });
-      return handle;
+      const avatarId = randomAvatarId();
+      await db.insert(anonymousHandlesTable).values({ id: randomUUID(), contentType, rootId, visitorId, handle, avatarId });
+      return { handle, avatarId };
     } catch {
       // Unique violation — either this visitor raced itself (a concurrent
       // duplicate insert) or the generated string collided. Re-check for
       // the former before generating another string for the latter.
       const raced = await db
-        .select({ handle: anonymousHandlesTable.handle })
+        .select({ handle: anonymousHandlesTable.handle, avatarId: anonymousHandlesTable.avatarId })
         .from(anonymousHandlesTable)
         .where(and(eq(anonymousHandlesTable.contentType, contentType), eq(anonymousHandlesTable.rootId, rootId), eq(anonymousHandlesTable.visitorId, visitorId)))
         .then((r) => r[0]);
-      if (raced) return raced.handle;
+      if (raced) return { handle: raced.handle, avatarId: raced.avatarId as AvatarId | null };
     }
   }
   throw new Error("Failed to assign an anonymous handle after several attempts");
@@ -60,19 +68,34 @@ export async function assignOrGetHandle(contentType: AnonymousHandleContentType,
 
 // Batch lookup for rendering a whole thread's comments at once — one query
 // instead of one per comment.
-export async function getHandlesFor(contentType: AnonymousHandleContentType, rootId: string, visitorIds: string[]): Promise<Record<string, string>> {
+export async function getHandlesFor(contentType: AnonymousHandleContentType, rootId: string, visitorIds: string[]): Promise<Record<string, AnonymousIdentity>> {
   if (!visitorIds.length) return {};
   const unique = [...new Set(visitorIds)];
   const rows = await db
-    .select({ visitorId: anonymousHandlesTable.visitorId, handle: anonymousHandlesTable.handle })
+    .select({ visitorId: anonymousHandlesTable.visitorId, handle: anonymousHandlesTable.handle, avatarId: anonymousHandlesTable.avatarId })
     .from(anonymousHandlesTable)
     .where(and(eq(anonymousHandlesTable.contentType, contentType), eq(anonymousHandlesTable.rootId, rootId)));
-  const byVisitor = Object.fromEntries(rows.map((r) => [r.visitorId, r.handle]));
+  const byVisitor = Object.fromEntries(rows.map((r) => [r.visitorId, { handle: r.handle, avatarId: r.avatarId as AvatarId | null }]));
   // A visitor who somehow has no row yet (shouldn't happen once
   // assignOrGetHandle runs on every comment write, but defensive for older
   // rows written before this feature existed) falls back to a stable,
   // non-identifying placeholder rather than blank.
-  return Object.fromEntries(unique.map((id) => [id, byVisitor[id] ?? "Anonymous"]));
+  return Object.fromEntries(unique.map((id) => [id, byVisitor[id] ?? { handle: "Anonymous", avatarId: null }]));
+}
+
+export type UpdateHandleAvatarResult = { ok: true; avatarId: AvatarId | null } | { ok: false; error: "invalid" };
+
+// A visitor picking their own avatar within one thread — same "null is a
+// real, explicit choice" contract as whispererHandle.ts's
+// updateWhispererAvatar.
+export async function updateHandleAvatar(contentType: AnonymousHandleContentType, rootId: string, visitorId: string, avatarId: string | null): Promise<UpdateHandleAvatarResult> {
+  if (avatarId !== null && !isValidAvatarId(avatarId)) return { ok: false, error: "invalid" };
+  await assignOrGetHandle(contentType, rootId, visitorId); // ensures a row exists to update
+  await db
+    .update(anonymousHandlesTable)
+    .set({ avatarId })
+    .where(and(eq(anonymousHandlesTable.contentType, contentType), eq(anonymousHandlesTable.rootId, rootId), eq(anonymousHandlesTable.visitorId, visitorId)));
+  return { ok: true, avatarId: avatarId as AvatarId | null };
 }
 
 export type RenameHandleResult = { ok: true; handle: string } | { ok: false; error: "invalid" | "taken" };

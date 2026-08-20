@@ -5,6 +5,7 @@
  * Blind Whisper API — anonymous video recommendation platform
  * OpenAPI spec version: 0.1.0
  */
+import type { AvatarId } from './avatarId';
 import type { UserProfileUpdatePreferredLanguage } from './userProfileUpdatePreferredLanguage';
 
 export interface UserProfileUpdate {
@@ -21,4 +22,6 @@ export interface UserProfileUpdate {
   countryCode?: string | null;
   /** Not nullable — unlike gender/ageRange there's no "prefer not to say" for the language the app actually renders in. */
   preferredLanguage?: UserProfileUpdatePreferredLanguage;
+  /** Sets (or, if null, clears) this account's own Debate Topics avatar — see UserProfile.whispererAvatarId. */
+  whispererAvatarId?: AvatarId | null;
 }
