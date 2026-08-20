@@ -1,0 +1,36 @@
+{
+  "mediaLibrary": {
+    "title": "Media Library",
+    "description": "Videos you've uploaded from your device, ready to reuse in a whisp.",
+    "uploadButton": "Upload a video",
+    "uploadSuccess": "Video uploaded",
+    "uploadFailedDefault": "Upload failed. Please try again.",
+    "deleteSuccess": "Video removed",
+    "deleteError": "Failed to remove video",
+    "emptyState": "No uploads yet — add a video to get started.",
+    "unavailable": "No longer available",
+    "usageCount_one": "{{count}} whisp",
+    "usageCount_other": "{{count}} whisps",
+    "expiresIn": "Removed in {{days}}d",
+    "whispIt": "Whisp It",
+    "postToCircle": "Blind Circle",
+    "removeDialog": {
+      "title": "Remove this video?",
+      "description": "Any whisp that already used it will show \"no longer available\" instead of the video.",
+      "cancel": "Cancel",
+      "confirm": "Remove"
+    },
+    "previewError": "Couldn't load this video for preview."
+  },
+  "suggestionsLibrary": {
+    "title": "Suggestions Library",
+    "description": "Videos worth passing along. Find one that fits someone in your circle and whisper it to them anonymously.",
+    "filterAll": "All",
+    "filterFeatured": "Featured",
+    "featuredBadge": "Featured",
+    "untitledVideo": "Untitled video",
+    "watch": "Watch",
+    "whisperThis": "Whisper this",
+    "emptyState": "Nothing here yet — check back soon."
+  }
+}

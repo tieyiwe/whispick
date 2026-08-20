@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useListMedia, useDeleteMedia, getListMediaQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -34,6 +35,7 @@ function daysUntil(dateString: string): number {
 }
 
 export function MediaLibrary() {
+  const { t } = useTranslation("media");
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
@@ -55,10 +57,10 @@ export function MediaLibrary() {
     try {
       await uploadMedia(file);
       queryClient.invalidateQueries({ queryKey: getListMediaQueryKey() });
-      toast({ title: "Video uploaded" });
+      toast({ title: t("mediaLibrary.uploadSuccess") });
     } catch (err) {
       toast({
-        title: err instanceof UploadValidationError ? err.message : "Upload failed. Please try again.",
+        title: err instanceof UploadValidationError ? err.message : t("mediaLibrary.uploadFailedDefault"),
         variant: "destructive",
       });
     } finally {
@@ -90,9 +92,9 @@ export function MediaLibrary() {
         onSuccess: () => {
           setPendingDeleteId(null);
           queryClient.invalidateQueries({ queryKey: getListMediaQueryKey() });
-          toast({ title: "Video removed" });
+          toast({ title: t("mediaLibrary.deleteSuccess") });
         },
-        onError: () => toast({ title: "Failed to remove video", variant: "destructive" }),
+        onError: () => toast({ title: t("mediaLibrary.deleteError"), variant: "destructive" }),
       }
     );
   }
@@ -103,15 +105,15 @@ export function MediaLibrary() {
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
             <h1 className="text-3xl font-serif font-bold text-foreground flex items-center gap-3">
-              <Clapperboard className="w-7 h-7 text-primary" /> Media Library
+              <Clapperboard className="w-7 h-7 text-primary" /> {t("mediaLibrary.title")}
             </h1>
             <p className="text-muted-foreground mt-1">
-              Videos you've uploaded from your device, ready to reuse in a whisp.
+              {t("mediaLibrary.description")}
             </p>
           </div>
           <Button onClick={() => fileInputRef.current?.click()} disabled={isUploading} className="rounded-full" data-testid="button-upload-media">
             {isUploading ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <Upload className="w-4 h-4 mr-1.5" />}
-            Upload a video
+            {t("mediaLibrary.uploadButton")}
           </Button>
           <input
             ref={fileInputRef}
@@ -133,7 +135,7 @@ export function MediaLibrary() {
           <Card className="bg-card border-border/50">
             <CardContent className="p-10 text-center space-y-2">
               <Clapperboard className="w-8 h-8 text-muted-foreground mx-auto" />
-              <p className="text-muted-foreground">No uploads yet — add a video to get started.</p>
+              <p className="text-muted-foreground">{t("mediaLibrary.emptyState")}</p>
             </CardContent>
           </Card>
         ) : (
@@ -155,7 +157,7 @@ export function MediaLibrary() {
                   )}
                   {item.status !== "ready" && (
                     <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
-                      <span className="text-xs text-muted-foreground">No longer available</span>
+                      <span className="text-xs text-muted-foreground">{t("mediaLibrary.unavailable")}</span>
                     </div>
                   )}
                 </button>
@@ -163,11 +165,11 @@ export function MediaLibrary() {
                   <p className="text-sm font-medium text-foreground truncate">{item.originalFilename}</p>
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>{formatSize(item.sizeBytes)}</span>
-                    <span>{item.usageCount} whisp{item.usageCount === 1 ? "" : "s"}</span>
+                    <span>{t("mediaLibrary.usageCount", { count: item.usageCount })}</span>
                   </div>
                   {item.status === "ready" && (
                     <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-                      <Clock className="w-3 h-3" /> Removed in {daysUntil(item.expiresAt)}d
+                      <Clock className="w-3 h-3" /> {t("mediaLibrary.expiresIn", { days: daysUntil(item.expiresAt) })}
                     </p>
                   )}
                   <div className="flex items-center gap-2 pt-1">
@@ -179,7 +181,7 @@ export function MediaLibrary() {
                         onClick={() => handleWhispIt(item)}
                         data-testid={`button-whisp-it-${item.id}`}
                       >
-                        <Send className="w-3.5 h-3.5 mr-1" /> Whisp It
+                        <Send className="w-3.5 h-3.5 mr-1" /> {t("mediaLibrary.whispIt")}
                       </Button>
                     )}
                     {/* Posts this exact upload to the community feed without
@@ -196,7 +198,7 @@ export function MediaLibrary() {
                             className="flex-1 w-full rounded-full"
                             data-testid={`button-post-circle-${item.id}`}
                           >
-                            <Users className="w-3.5 h-3.5 mr-1" /> Blind Circle
+                            <Users className="w-3.5 h-3.5 mr-1" /> {t("mediaLibrary.postToCircle")}
                           </Button>
                         }
                       />
@@ -220,15 +222,15 @@ export function MediaLibrary() {
         <AlertDialog open={!!pendingDeleteId} onOpenChange={(open) => !open && setPendingDeleteId(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Remove this video?</AlertDialogTitle>
+              <AlertDialogTitle>{t("mediaLibrary.removeDialog.title")}</AlertDialogTitle>
               <AlertDialogDescription>
-                Any whisp that already used it will show "no longer available" instead of the video.
+                {t("mediaLibrary.removeDialog.description")}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogCancel>{t("mediaLibrary.removeDialog.cancel")}</AlertDialogCancel>
               <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                Remove
+                {t("mediaLibrary.removeDialog.confirm")}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -244,7 +246,7 @@ export function MediaLibrary() {
             </DialogHeader>
             <div className="aspect-video bg-black rounded-lg overflow-hidden flex items-center justify-center">
               {preview.error ? (
-                <p className="text-sm text-muted-foreground px-4 text-center">Couldn't load this video for preview.</p>
+                <p className="text-sm text-muted-foreground px-4 text-center">{t("mediaLibrary.previewError")}</p>
               ) : preview.url ? (
                 <video src={preview.url} controls autoPlay className="w-full h-full" data-testid="video-media-preview" />
               ) : (
