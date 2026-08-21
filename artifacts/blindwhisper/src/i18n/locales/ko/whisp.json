@@ -364,7 +364,9 @@
     },
     "repliedSuffix": "답장함",
     "someoneRepliedAnonymously": "누군가 익명으로 답장했어요",
-    "videoFallback": "영상"
+    "videoFallback": "영상",
+    "videoWhispsHeading": "비디오 Whisps 답장",
+    "textWhispsHeading": "문자 Whisps 답장"
   },
   "groupSendDetail": {
     "notFound": "그룹 전송 기록을 찾을 수 없어요.",

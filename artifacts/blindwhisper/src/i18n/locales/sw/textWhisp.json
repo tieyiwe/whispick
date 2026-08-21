@@ -62,7 +62,10 @@
     "receivedEmpty": "Hakuna kitu hapa bado.",
     "sentHeading": "Zilizotumwa ({{count}})",
     "sentEmpty": "Bado hujatuma yoyote.",
-    "newBadge": "Mpya"
+    "newBadge": "Mpya",
+    "fromPrefix": "Kutoka:",
+    "toPrefix": "Kwa:",
+    "anonymousSender": "Mtu asiyejulikana"
   },
   "publicTextWhisp": {
     "notFound": "Whisp hii ya Maandishi haikupatikana — kiungo huenda kimeisha muda au si sahihi tena.",

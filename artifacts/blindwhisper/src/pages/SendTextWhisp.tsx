@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { TextWhispScroll } from "@/components/shared/TextWhispScroll";
+import { useMobileSendAction } from "@/contexts/MobileSendAction";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, ArrowRight, Phone, Loader2, ScrollText } from "lucide-react";
 
@@ -61,6 +62,18 @@ export function SendTextWhisp() {
     );
   }
 
+  const remaining = MESSAGE_MAX_LENGTH - messageText.length;
+  const canSend = phone.trim().length > 0 && messageText.trim().length > 0 && remaining >= 0;
+
+  // Drives the mobile bottom nav's raised round button while this page is
+  // composing — see AppLayout.tsx and contexts/MobileSendAction.tsx. Without
+  // this, that button stayed a live link to the (unrelated) video-whisp
+  // composer the whole time, so tapping it mid-compose here abandoned the
+  // Text Whisp draft and opened a different flow instead of sending it.
+  // Cleared (falls back to the default /send link) once sending completes —
+  // there's nothing left on this page for it to submit.
+  useMobileSendAction(sent ? null : { onClick: handleSend, disabled: !canSend || createTextWhisp.isPending });
+
   if (sent) {
     return (
       <AppLayout>
@@ -98,9 +111,6 @@ export function SendTextWhisp() {
       </AppLayout>
     );
   }
-
-  const remaining = MESSAGE_MAX_LENGTH - messageText.length;
-  const canSend = phone.trim().length > 0 && messageText.trim().length > 0 && remaining >= 0;
 
   return (
     <AppLayout>

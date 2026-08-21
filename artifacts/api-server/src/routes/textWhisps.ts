@@ -7,6 +7,7 @@ import { z } from "zod";
 import { requireAuth } from "../lib/auth";
 import { ensureUser } from "../lib/ensureUser";
 import { findVerifiedRecipient, deliverInApp } from "../lib/deliver";
+import { notifyUserPersisted } from "../lib/push";
 import { moderateTextWhispAsync } from "../lib/moderation";
 import { createTextWhispLimiter, textWhispRevealLimiter } from "../lib/rateLimit";
 import { normalizePhoneE164 } from "../lib/phone";
@@ -291,10 +292,13 @@ router.post("/:id/replies", requireAuth, async (req, res): Promise<void> => {
   // "notify them of" until they've joined and have a real recipientUserId).
   const notifyUserId = isFromRecipient ? textWhisp.senderId : textWhisp.recipientUserId;
   if (notifyUserId) {
-    void deliverInApp(notifyUserId, "New reply on your Text Whisp", textWhispReplyHookLine(), `/text-whisps/${textWhisp.id}`, notifyUserId, {
-      whispId: null,
-      purpose: "text_whisp_reply",
-    });
+    // kind: "reply" — same kind video-whisp replies use (see
+    // lib/replyNotificationScheduler.ts), not the deliverInApp path the rest
+    // of this file's notifications use. That's what makes a Text Whisp reply
+    // count toward the Replies tab's unread badge (routes/user.ts's
+    // unread-count query filters on kind = "reply") and show up in
+    // RepliesInbox.tsx, which previously only knew about video whisps.
+    void notifyUserPersisted(notifyUserId, "New reply on your Text Whisp", textWhispReplyHookLine(), `/text-whisps/${textWhisp.id}`, "reply");
   }
 
   void moderateTextWhispAsync({ textWhispId: textWhisp.id, senderId: user.id, text: parsed.data.replyText });

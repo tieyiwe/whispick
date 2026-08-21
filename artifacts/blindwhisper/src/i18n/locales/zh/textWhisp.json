@@ -62,7 +62,10 @@
     "receivedEmpty": "这里还什么都没有。",
     "sentHeading": "已发送（{{count}}）",
     "sentEmpty": "你还没有发送过任何内容。",
-    "newBadge": "新"
+    "newBadge": "新",
+    "fromPrefix": "来自：",
+    "toPrefix": "发给：",
+    "anonymousSender": "匿名人士"
   },
   "publicTextWhisp": {
     "notFound": "未找到这条文字 Whisp——链接可能已过期或已失效。",

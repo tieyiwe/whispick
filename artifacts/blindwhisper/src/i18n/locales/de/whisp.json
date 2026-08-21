@@ -364,7 +364,9 @@
     },
     "repliedSuffix": "hat geantwortet",
     "someoneRepliedAnonymously": "Jemand hat anonym geantwortet",
-    "videoFallback": "Video"
+    "videoFallback": "Video",
+    "videoWhispsHeading": "Antworten auf Video-Whisps",
+    "textWhispsHeading": "Antworten auf Text-Whisps"
   },
   "groupSendDetail": {
     "notFound": "Gruppen-Sendung nicht gefunden.",

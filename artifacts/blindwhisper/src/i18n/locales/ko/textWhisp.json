@@ -62,7 +62,10 @@
     "receivedEmpty": "아직 아무것도 없어요.",
     "sentHeading": "보낸 메시지 ({{count}})",
     "sentEmpty": "아직 보낸 게 없어요.",
-    "newBadge": "새 메시지"
+    "newBadge": "새 메시지",
+    "fromPrefix": "보낸 사람:",
+    "toPrefix": "받는 사람:",
+    "anonymousSender": "익명의 누군가"
   },
   "publicTextWhisp": {
     "notFound": "이 문자 Whisp를 찾을 수 없어요 — 링크가 만료됐거나 더 이상 유효하지 않을 수 있어요.",

@@ -364,7 +364,9 @@
     },
     "repliedSuffix": "回复了",
     "someoneRepliedAnonymously": "有人匿名回复了",
-    "videoFallback": "视频"
+    "videoFallback": "视频",
+    "videoWhispsHeading": "视频 Whisps 回复",
+    "textWhispsHeading": "文字 Whisps 回复"
   },
   "groupSendDetail": {
     "notFound": "未找到该群组发送记录。",

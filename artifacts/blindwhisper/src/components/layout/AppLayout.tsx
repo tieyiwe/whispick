@@ -40,6 +40,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/comp
 import { NotificationBell } from "@/components/shared/NotificationBell";
 import { PullToRefresh, reloadPage } from "@/components/shared/PullToRefresh";
 import { InstallAppPrompt } from "@/components/shared/InstallAppPrompt";
+import { useMobileSendActionValue } from "@/contexts/MobileSendAction";
 
 // labelKey resolves against the "common" namespace's nav.* keys (see
 // src/i18n/locales/*/common.json) — the label itself is looked up at
@@ -170,6 +171,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const { data: profile } = useGetUserProfile();
   const isAdmin = profile?.role === "admin";
   const { t, i18n } = useTranslation();
+  // Set when the current page (e.g. Send Text Whisp) wants the raised round
+  // button below to drive ITS submit instead of the default /send link — see
+  // contexts/MobileSendAction.tsx for why.
+  const mobileSendAction = useMobileSendActionValue();
 
   // The single place the app's rendered language gets synced to the
   // account's saved preference — every authenticated page renders inside
@@ -352,11 +357,31 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <MobileTabLink key={item.href} href={item.href} icon={item.icon} label={t(item.labelKey)} isActive={location === item.href} />
           ))}
 
-          <Link href="/send" className="flex flex-col items-center -mt-6" data-testid="link-send-mobile">
-            <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center shadow-[0_0_20px_rgba(124,92,252,0.5)] active:scale-95 transition-transform border-4 border-background">
-              <Send className="w-6 h-6 text-primary-foreground" />
-            </div>
-          </Link>
+          {mobileSendAction ? (
+            <button
+              type="button"
+              onClick={mobileSendAction.onClick}
+              disabled={mobileSendAction.disabled}
+              className="flex flex-col items-center -mt-6"
+              data-testid="link-send-mobile"
+            >
+              <div
+                className={`w-14 h-14 rounded-full flex items-center justify-center transition-all border-4 border-background ${
+                  mobileSendAction.disabled
+                    ? "bg-muted"
+                    : "bg-primary shadow-[0_0_20px_rgba(124,92,252,0.5)] active:scale-95"
+                }`}
+              >
+                <Send className={`w-6 h-6 ${mobileSendAction.disabled ? "text-muted-foreground" : "text-primary-foreground"}`} />
+              </div>
+            </button>
+          ) : (
+            <Link href="/send" className="flex flex-col items-center -mt-6" data-testid="link-send-mobile">
+              <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center shadow-[0_0_20px_rgba(124,92,252,0.5)] active:scale-95 transition-transform border-4 border-background">
+                <Send className="w-6 h-6 text-primary-foreground" />
+              </div>
+            </Link>
+          )}
 
           {MOBILE_TAB_ITEMS_RIGHT.map((item) => (
             <MobileTabLink

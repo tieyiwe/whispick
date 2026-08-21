@@ -364,7 +364,9 @@
     },
     "repliedSuffix": "a répondu",
     "someoneRepliedAnonymously": "Quelqu'un a répondu de façon anonyme",
-    "videoFallback": "Vidéo"
+    "videoFallback": "Vidéo",
+    "videoWhispsHeading": "Réponses aux Whisps vidéo",
+    "textWhispsHeading": "Réponses aux Whisps texte"
   },
   "groupSendDetail": {
     "notFound": "Envoi de groupe introuvable.",

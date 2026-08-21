@@ -196,7 +196,10 @@ export function TextWhispScroll({
             }}
           >
             <ScrollCylinder />
-            <BowSvg progress={tied ? 1 : 0} className="absolute inset-x-0 -top-2 h-8 w-full text-primary" />
+            {/* Centered on the cylinder itself (top-1/2 + -translate-y-1/2),
+                not offset above it — a "-top-2" nudge here used to leave the
+                knot noticeably off-center inside the frame. */}
+            <BowSvg progress={tied ? 1 : 0} className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-8 w-full text-primary" />
           </div>
         </div>
 
@@ -240,7 +243,11 @@ export function TextWhispScroll({
           aria-label={t("textWhispScroll.tapToOpenAriaLabel")}
         >
           <div
-            className="w-40"
+            // relative so BowSvg (absolute) anchors to this box — which is
+            // exactly the cylinder's own footprint — rather than escaping to
+            // the button ancestor and losing track of where the cylinder
+            // actually sits.
+            className="relative w-40"
             style={{
               opacity: unrolled ? 0 : 1,
               transform: `scale(${openPhase === "closed" ? 1 : 0.9})`,
@@ -248,7 +255,7 @@ export function TextWhispScroll({
             }}
           >
             <ScrollCylinder className="transition-transform group-hover:scale-[1.03] group-active:scale-95" />
-            <BowSvg progress={untied ? 0 : 1} className="absolute inset-x-0 -top-2 h-8 w-full text-primary mx-auto left-1/2 -translate-x-1/2" />
+            <BowSvg progress={untied ? 0 : 1} className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-8 w-full text-primary" />
           </div>
           {openPhase === "closed" && (
             <span className="absolute -bottom-6 text-xs text-muted-foreground">{t("textWhispScroll.tapTheBowToOpen")}</span>

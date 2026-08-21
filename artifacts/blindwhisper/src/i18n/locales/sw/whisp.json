@@ -364,7 +364,9 @@
     },
     "repliedSuffix": "amejibu",
     "someoneRepliedAnonymously": "Mtu amejibu bila kujulikana",
-    "videoFallback": "Video"
+    "videoFallback": "Video",
+    "videoWhispsHeading": "Majibu ya Whisp za Video",
+    "textWhispsHeading": "Majibu ya Whisp za Maandishi"
   },
   "groupSendDetail": {
     "notFound": "Utumaji wa kikundi haukupatikana.",

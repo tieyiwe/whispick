@@ -62,7 +62,10 @@
     "receivedEmpty": "Rien ici pour l'instant.",
     "sentHeading": "Envoyés ({{count}})",
     "sentEmpty": "Vous n'en avez encore envoyé aucun.",
-    "newBadge": "Nouveau"
+    "newBadge": "Nouveau",
+    "fromPrefix": "De :",
+    "toPrefix": "À :",
+    "anonymousSender": "Quelqu'un d'anonyme"
   },
   "publicTextWhisp": {
     "notFound": "Ce Whisp texte est introuvable — le lien a peut-être expiré ou n'est plus valide.",

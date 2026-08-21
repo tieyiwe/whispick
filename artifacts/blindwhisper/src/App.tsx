@@ -13,6 +13,7 @@ import "@/lib/installApp";
 import { PinToTaskbarTip } from "@/components/shared/PinToTaskbarTip";
 import { EnableNotificationsPrompt } from "@/components/shared/EnableNotificationsPrompt";
 import { AppErrorBoundary } from "@/components/shared/AppErrorBoundary";
+import { MobileSendActionProvider } from "@/contexts/MobileSendAction";
 import { watchForUpdates, isUpdateAvailable } from "@/lib/appUpdate";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
 import { dark } from '@clerk/themes';
@@ -342,7 +343,9 @@ function ClerkProviderWithRoutes() {
 export default function App() {
   return (
     <WouterRouter base={basePath}>
-      <ClerkProviderWithRoutes />
+      <MobileSendActionProvider>
+        <ClerkProviderWithRoutes />
+      </MobileSendActionProvider>
     </WouterRouter>
   );
 }
