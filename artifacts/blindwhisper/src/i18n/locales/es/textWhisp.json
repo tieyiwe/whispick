@@ -67,6 +67,7 @@
     "newBadge": "Nuevo",
     "fromPrefix": "De:",
     "toPrefix": "Para:",
+    "receivedAtPrefix": "Recibido en:",
     "anonymousSender": "Alguien anónimo"
   },
   "publicTextWhisp": {

@@ -67,6 +67,7 @@
     "newBadge": "Mpya",
     "fromPrefix": "Kutoka:",
     "toPrefix": "Kwa:",
+    "receivedAtPrefix": "Imepokewa kwa:",
     "anonymousSender": "Mtu asiyejulikana"
   },
   "publicTextWhisp": {

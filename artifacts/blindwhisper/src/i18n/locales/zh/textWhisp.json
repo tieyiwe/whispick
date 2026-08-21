@@ -67,6 +67,7 @@
     "newBadge": "新",
     "fromPrefix": "来自：",
     "toPrefix": "发给：",
+    "receivedAtPrefix": "接收号码：",
     "anonymousSender": "匿名人士"
   },
   "publicTextWhisp": {

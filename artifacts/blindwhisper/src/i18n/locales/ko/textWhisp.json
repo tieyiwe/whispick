@@ -67,6 +67,7 @@
     "newBadge": "새 메시지",
     "fromPrefix": "보낸 사람:",
     "toPrefix": "받는 사람:",
+    "receivedAtPrefix": "받은 번호:",
     "anonymousSender": "익명의 누군가"
   },
   "publicTextWhisp": {
