@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import confetti from "canvas-confetti";
 import { Send, Sparkles } from "lucide-react";
 
 // The Text Whisp "fold/unfurl" moment — the one deliberately crafted visual
@@ -135,13 +136,31 @@ export function TextWhispScroll({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, autoPlay]);
 
-  function handleUntie() {
+  function handleUntie(e: React.MouseEvent<HTMLButtonElement>) {
     if (openPhase !== "closed") return;
+    // Captured now, not inside the later timeout — by the time the scroll
+    // finishes unrolling the button itself is gone from the DOM (replaced by
+    // the parchment card below), so there's no currentTarget left to read.
+    const rect = e.currentTarget.getBoundingClientRect();
     setOpenPhase("untying");
     timers.current.push(setTimeout(() => setOpenPhase("unrolling"), TIE_MS));
     timers.current.push(
       setTimeout(() => {
         setOpenPhase("open");
+        // The reveal payoff — same brand-colored burst as PublicInvitePage's
+        // own celebratory moment, timed to when the message is actually
+        // visible rather than the tap that started the unroll.
+        confetti({
+          particleCount: 80,
+          spread: 70,
+          startVelocity: 35,
+          origin: {
+            x: (rect.left + rect.width / 2) / window.innerWidth,
+            y: (rect.top + rect.height / 2) / window.innerHeight,
+          },
+          colors: ["#7C5CFC", "#FF6B6B", "#a78bfa", "#F5F0E8"],
+          disableForReducedMotion: true,
+        });
         onOpened?.();
       }, TIE_MS + UNROLL_MS),
     );
