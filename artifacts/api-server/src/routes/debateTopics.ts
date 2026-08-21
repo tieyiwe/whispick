@@ -490,10 +490,10 @@ router.post("/public/debate-topics/:id/comments", commentImageUpload, async (req
   // anonymous never-signed-in commenter has nowhere to be notified. Never
   // self-notify.
   if (parentAuthorUserId && parentAuthorUserId !== authorUserId) {
-    void notifyUserPersisted(parentAuthorUserId, "New reply to your comment 💬", "Someone replied to your comment on a Debate Topic.", topicUrl(topic.id), "debate_comment_reply");
+    void notifyUserPersisted(parentAuthorUserId, "New reply to your comment 💬", "Someone replied to your comment on Debate Now.", topicUrl(topic.id), "debate_comment_reply");
   }
   if (topic.authorId !== authorUserId && !isPoster) {
-    void notifyUserPersisted(topic.authorId, "New comment on your Debate Topic 🗣️", "Someone joined the debate on a topic you posted.", topicUrl(topic.id), "debate_topic_comment");
+    void notifyUserPersisted(topic.authorId, "New comment on your Debate Now post 🗣️", "Someone joined the debate on a topic you posted.", topicUrl(topic.id), "debate_topic_comment");
   }
 
   const comment = await db
@@ -612,7 +612,7 @@ router.post("/public/debate-topics/:id/comments/:commentId/reactions", async (re
   const result = await toggleReaction("debate_topic_comment", comment.id, parsed.data.visitorId, parsed.data.reaction);
 
   if (result.viewerReaction === "like" && comment.authorUserId) {
-    void notifyUserPersisted(comment.authorUserId, "Someone liked your comment 👍", "Your comment on a Debate Topic got a reaction.", topicUrl(req.params.id), "debate_comment_reaction");
+    void notifyUserPersisted(comment.authorUserId, "Someone liked your comment 👍", "Your comment on Debate Now got a reaction.", topicUrl(req.params.id), "debate_comment_reaction");
   }
 
   res.json(result);

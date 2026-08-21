@@ -1,7 +1,7 @@
 {
   "createDebateTopic": {
-    "backButton": "返回 Debate Topics",
-    "title": "发布一个辩论话题",
+    "backButton": "返回 Debate Now",
+    "title": "发布到 Debate Now",
     "description": "为公共动态发一句简短的标题式话题。匿名发布——除非你在别处的 Reveal Flow 中撞见对方，否则没人知道是你发的。",
     "helperText": "简洁一点——写一句能让人忍不住回应的标题，而不是一整段话。",
     "submitButton": "匿名发布",
@@ -17,7 +17,7 @@
     }
   },
   "debateFollowing": {
-    "backButton": "返回 Debate Topics",
+    "backButton": "返回 Debate Now",
     "title": "关注中",
     "description": "你的关注数据、话题互动情况，以及你关注的作者和评论者发布的话题。",
     "stats": {
@@ -32,15 +32,15 @@
     "feedTitle": "你关注的动态",
     "emptyTitle": "暂时还没有内容",
     "emptyDescription": "关注一些作者或评论者，他们的话题就会显示在这里。",
-    "browseButton": "浏览 Debate Topics",
+    "browseButton": "浏览 Debate Now",
     "newerButton": "更新的",
     "moreButton": "更多话题"
   },
   "debateTopicDetail": {
-    "backButton": "返回 Debate Topics",
+    "backButton": "返回 Debate Now",
     "becomeWhisperer": "成为 Whisperer",
     "notFound": "找不到这个辩论话题——它可能已被撤回。",
-    "topicBadge": "辩论话题",
+    "topicBadge": "Debate Now",
     "followerCount_other": "{{count}} 位粉丝",
     "whisperButton": "分享这个话题",
     "retractTriggerButton": "撤回",
@@ -66,7 +66,7 @@
       "ariaLabel": "修改你在这个讨论串中的名字",
       "title": "修改你在这个讨论串中的名字",
       "placeholder": "例如 SwiftFalcon482",
-      "helperText": "不要使用你的真实姓名或任何可能暴露身份的信息——3 到 24 位字母/数字，不能有空格或符号。这个名字仅用于 Debate Topics。",
+      "helperText": "不要使用你的真实姓名或任何可能暴露身份的信息——3 到 24 位字母/数字，不能有空格或符号。这个名字仅用于 Debate Now。",
       "saveButton": "保存"
     },
     "avatarPicker": {
@@ -95,7 +95,7 @@
     "followingButton": "关注中",
     "postTopicButton": "发布话题",
     "becomeWhisperer": "成为 Whisperer",
-    "pillLabel": "Debate Topics",
+    "pillLabel": "Debate Now",
     "heading": "你站哪边？",
     "description": "来自 Whisperers 的简短匿名话题。看看、说说你的看法，或者发布自己的话题——无需账号即可加入讨论。",
     "becomeWhispererToPost": "成为 Whisperer 才能发布话题",

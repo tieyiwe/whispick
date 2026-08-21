@@ -43,9 +43,9 @@ function flagContentDescriptor(f: ModerationFlag): { label: string; text: string
     case "circle_comment":
       return { label: "Blind Circle comment", text: f.circleCommentText ?? null };
     case "debate_topic":
-      return { label: "Debate Topic", text: f.debateTopicText ?? null };
+      return { label: "Debate Now", text: f.debateTopicText ?? null };
     case "debate_topic_comment":
-      return { label: "Debate Topic comment", text: f.debateTopicCommentText ?? null };
+      return { label: "Debate Now comment", text: f.debateTopicCommentText ?? null };
     default:
       return { label: "Whisp", text: f.videoTitle ?? null };
   }
@@ -113,7 +113,7 @@ export function AdminModeration() {
           </h1>
           <p className="text-muted-foreground mt-1">
             Content an automated pass flagged as possibly sexual/explicit, or — for Blind Circle comments and
-            Debate Topics — dangerous/harmful language. A signal worth a look, not a verdict.
+            Debate Now — dangerous/harmful language. A signal worth a look, not a verdict.
             {data ? ` ${data.total} matching this filter.` : ""}
           </p>
         </div>
@@ -172,14 +172,14 @@ export function AdminModeration() {
                         </span>
                       ) : f.contentType === "debate_topic" ? (
                         <span className="font-medium text-foreground truncate">
-                          Debate Topic: "{(f.debateTopicText ?? "").slice(0, 60)}{(f.debateTopicText?.length ?? 0) > 60 ? "…" : ""}"
+                          Debate Now: "{(f.debateTopicText ?? "").slice(0, 60)}{(f.debateTopicText?.length ?? 0) > 60 ? "…" : ""}"
                         </span>
                       ) : f.contentType === "debate_topic_comment" ? (
                         // Same reasoning as Text Whisp above — no dedicated
                         // detail page for a single comment, so show the
                         // excerpt instead of linking anywhere.
                         <span className="font-medium text-foreground truncate">
-                          Debate Topic comment: "{(f.debateTopicCommentText ?? "").slice(0, 60)}{(f.debateTopicCommentText?.length ?? 0) > 60 ? "…" : ""}"
+                          Debate Now comment: "{(f.debateTopicCommentText ?? "").slice(0, 60)}{(f.debateTopicCommentText?.length ?? 0) > 60 ? "…" : ""}"
                         </span>
                       ) : (
                         <Link href={`/admin/whisps/${f.whispId}`} className="font-medium text-foreground hover:text-primary transition-colors truncate">

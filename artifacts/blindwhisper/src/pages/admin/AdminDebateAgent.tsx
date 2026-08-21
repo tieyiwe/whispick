@@ -97,7 +97,7 @@ export function AdminDebateAgent() {
         onSuccess: () => {
           invalidate();
           setManualTopicText("");
-          toast({ title: "Topic posted to Debate Topics" });
+          toast({ title: "Topic posted to Debate Now" });
         },
         onError: (err: any) => toast({ title: err?.data?.error ?? "Couldn't post that topic", variant: "destructive" }),
       }
@@ -124,7 +124,7 @@ export function AdminDebateAgent() {
             <Megaphone className="w-7 h-7 text-primary" /> Town Crier
           </h1>
           <p className="text-muted-foreground mt-1">
-            The AI agent that generates and posts Debate Topics automatically.
+            The AI agent that generates and posts to Debate Now automatically.
           </p>
         </div>
 
@@ -199,7 +199,7 @@ export function AdminDebateAgent() {
                   <AlertDialogHeader>
                     <AlertDialogTitle>Publish this topic?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      This posts immediately to the public Debate Topics feed under the system account. It can be
+                      This posts immediately to the public Debate Now feed under the system account. It can be
                       retracted afterward like any topic, but this action itself can't be undone from here.
                     </AlertDialogDescription>
                   </AlertDialogHeader>

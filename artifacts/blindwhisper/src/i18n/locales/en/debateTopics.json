@@ -1,7 +1,7 @@
 {
   "createDebateTopic": {
-    "backButton": "Back to Debate Topics",
-    "title": "Post a Debate Topic",
+    "backButton": "Back to Debate Now",
+    "title": "Post to Debate Now",
     "description": "A short, headline-length prompt for the public feed. Posted anonymously — nobody sees this was you unless they run into you in a Reveal Flow elsewhere.",
     "helperText": "Keep it concise — a headline people react to, not a paragraph.",
     "submitButton": "Post Anonymously",
@@ -17,7 +17,7 @@
     }
   },
   "debateFollowing": {
-    "backButton": "Back to Debate Topics",
+    "backButton": "Back to Debate Now",
     "title": "Following",
     "description": "Your follow stats, your topic engagement, and topics from the authors and commentators you follow.",
     "stats": {
@@ -32,15 +32,15 @@
     "feedTitle": "Your following feed",
     "emptyTitle": "No one to show yet",
     "emptyDescription": "Follow some authors or commentators to see their topics here.",
-    "browseButton": "Browse Debate Topics",
+    "browseButton": "Browse Debate Now",
     "newerButton": "Newer",
     "moreButton": "More topics"
   },
   "debateTopicDetail": {
-    "backButton": "Back to Debate Topics",
+    "backButton": "Back to Debate Now",
     "becomeWhisperer": "Become a Whisperer",
     "notFound": "This debate topic could not be found — it may have been retracted.",
-    "topicBadge": "Debate Topic",
+    "topicBadge": "Debate Now",
     "followerCount_one": "{{count}} follower",
     "followerCount_other": "{{count}} followers",
     "whisperButton": "Whisper this topic",
@@ -68,7 +68,7 @@
       "ariaLabel": "Change your name in this thread",
       "title": "Change your name in this thread",
       "placeholder": "e.g. SwiftFalcon482",
-      "helperText": "Don't use your real name or anything that could identify you — 3-24 letters/numbers, no spaces or symbols. This name is only used for Debate Topics.",
+      "helperText": "Don't use your real name or anything that could identify you — 3-24 letters/numbers, no spaces or symbols. This name is only used for Debate Now.",
       "saveButton": "Save"
     },
     "avatarPicker": {
@@ -77,7 +77,7 @@
     },
     "altAttachmentPreview": "Attachment preview",
     "ariaRemoveImage": "Remove image",
-    "shareTitle": "Blind Whisper — Debate Topic",
+    "shareTitle": "Blind Whisper — Debate Now",
     "toast": {
       "handleUpdated": "Your name in this thread was updated",
       "handleUpdateErrorDefault": "Couldn't update your name",
@@ -97,7 +97,7 @@
     "followingButton": "Following",
     "postTopicButton": "Post a Topic",
     "becomeWhisperer": "Become a Whisperer",
-    "pillLabel": "Debate Topics",
+    "pillLabel": "Debate Now",
     "heading": "Where do you stand?",
     "description": "Short, anonymous prompts from Whisperers. Read, weigh in, or post your own — no account needed to join the conversation.",
     "becomeWhispererToPost": "Become a Whisperer to post a topic",

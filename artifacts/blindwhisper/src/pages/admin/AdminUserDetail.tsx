@@ -408,7 +408,7 @@ export function AdminUserDetail() {
           <Card className="bg-card border-border/50">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-serif flex items-center gap-1.5">
-                <Swords className="w-4 h-4 text-primary" /> Debate Topics activity
+                <Swords className="w-4 h-4 text-primary" /> Debate Now activity
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-5">

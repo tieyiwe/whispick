@@ -1,7 +1,7 @@
 {
   "createDebateTopic": {
-    "backButton": "Rudi kwenye Debate Topics",
-    "title": "Chapisha Mada ya Mjadala",
+    "backButton": "Rudi kwenye Debate Now",
+    "title": "Chapisha kwenye Debate Now",
     "description": "Wazo fupi, kama kichwa cha habari, kwa mtiririko wa umma. Linachapishwa bila kujulikana — hakuna atakayejua ni wewe isipokuwa akikutana nawe mahali pengine kwenye Reveal Flow.",
     "helperText": "Kuwa mfupi — kichwa cha habari ambacho watu wataitikia, si aya ndefu.",
     "submitButton": "Chapisha Bila Kujulikana",
@@ -17,7 +17,7 @@
     }
   },
   "debateFollowing": {
-    "backButton": "Rudi kwenye Debate Topics",
+    "backButton": "Rudi kwenye Debate Now",
     "title": "Ninayemfuata",
     "description": "Takwimu zako za wafuasi, ushiriki wako kwenye mada, na mada kutoka kwa waandishi na watoa maoni unaowafuata.",
     "stats": {
@@ -32,15 +32,15 @@
     "feedTitle": "Mtiririko wako wa unaowafuata",
     "emptyTitle": "Bado hakuna wa kuonyesha",
     "emptyDescription": "Fuata waandishi au watoa maoni ili uone mada zao hapa.",
-    "browseButton": "Vinjari Debate Topics",
+    "browseButton": "Vinjari Debate Now",
     "newerButton": "Mpya Zaidi",
     "moreButton": "Mada Zaidi"
   },
   "debateTopicDetail": {
-    "backButton": "Rudi kwenye Debate Topics",
+    "backButton": "Rudi kwenye Debate Now",
     "becomeWhisperer": "Kuwa Whisperer",
     "notFound": "Mada hii ya mjadala haikupatikana — huenda iliondolewa.",
-    "topicBadge": "Mada ya Mjadala",
+    "topicBadge": "Debate Now",
     "followerCount_one": "{{count}} mfuasi",
     "followerCount_other": "{{count}} wafuasi",
     "whisperButton": "Shiriki Mada Hii",
@@ -68,7 +68,7 @@
       "ariaLabel": "Badilisha jina lako kwenye mjadala huu",
       "title": "Badilisha jina lako kwenye mjadala huu",
       "placeholder": "mfano, SwiftFalcon482",
-      "helperText": "Usitumie jina lako halisi au chochote kinachoweza kukutambulisha — herufi/namba 3-24, bila nafasi au alama. Jina hili linatumika tu kwa Debate Topics.",
+      "helperText": "Usitumie jina lako halisi au chochote kinachoweza kukutambulisha — herufi/namba 3-24, bila nafasi au alama. Jina hili linatumika tu kwa Debate Now.",
       "saveButton": "Hifadhi"
     },
     "avatarPicker": {
@@ -97,7 +97,7 @@
     "followingButton": "Ninayemfuata",
     "postTopicButton": "Chapisha Mada",
     "becomeWhisperer": "Kuwa Whisperer",
-    "pillLabel": "Debate Topics",
+    "pillLabel": "Debate Now",
     "heading": "Wewe unasimama upande gani?",
     "description": "Mawazo mafupi, yasiyojulikana kutoka kwa Whisperers. Soma, toa maoni, au chapisha lako — hakuna akaunti inahitajika kujiunga na mazungumzo.",
     "becomeWhispererToPost": "Kuwa Whisperer ili kuchapisha mada",

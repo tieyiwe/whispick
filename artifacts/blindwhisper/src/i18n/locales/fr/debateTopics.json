@@ -1,7 +1,7 @@
 {
   "createDebateTopic": {
-    "backButton": "Retour à Debate Topics",
-    "title": "Publier un sujet de débat",
+    "backButton": "Retour à Debate Now",
+    "title": "Publier sur Debate Now",
     "description": "Une accroche courte, façon titre, pour le fil public. Publiée anonymement — personne ne saura que c'était toi, sauf si on te reconnaît ailleurs dans un Reveal Flow.",
     "helperText": "Reste concis : une accroche qui donne envie de réagir, pas un roman.",
     "submitButton": "Publier anonymement",
@@ -17,7 +17,7 @@
     }
   },
   "debateFollowing": {
-    "backButton": "Retour à Debate Topics",
+    "backButton": "Retour à Debate Now",
     "title": "Abonnements",
     "description": "Tes statistiques d'abonnement, ton engagement sur les sujets, et les sujets des auteurs et commentateurs que tu suis.",
     "stats": {
@@ -32,15 +32,15 @@
     "feedTitle": "Ton fil des abonnements",
     "emptyTitle": "Rien à afficher pour l'instant",
     "emptyDescription": "Abonne-toi à des auteurs ou des commentateurs pour voir leurs sujets ici.",
-    "browseButton": "Parcourir Debate Topics",
+    "browseButton": "Parcourir Debate Now",
     "newerButton": "Plus récents",
     "moreButton": "Plus de sujets"
   },
   "debateTopicDetail": {
-    "backButton": "Retour à Debate Topics",
+    "backButton": "Retour à Debate Now",
     "becomeWhisperer": "Devenir Whisperer",
     "notFound": "Ce sujet de débat est introuvable — il a peut-être été retiré.",
-    "topicBadge": "Sujet de débat",
+    "topicBadge": "Debate Now",
     "followerCount_one": "{{count}} abonné",
     "followerCount_other": "{{count}} abonnés",
     "whisperButton": "Partager ce sujet",
@@ -68,7 +68,7 @@
       "ariaLabel": "Change ton nom dans ce fil",
       "title": "Change ton nom dans ce fil",
       "placeholder": "ex. SwiftFalcon482",
-      "helperText": "N'utilise pas ton vrai nom ni rien qui puisse t'identifier — 3 à 24 lettres/chiffres, sans espaces ni symboles. Ce nom n'est utilisé que pour Debate Topics.",
+      "helperText": "N'utilise pas ton vrai nom ni rien qui puisse t'identifier — 3 à 24 lettres/chiffres, sans espaces ni symboles. Ce nom n'est utilisé que pour Debate Now.",
       "saveButton": "Enregistrer"
     },
     "avatarPicker": {
@@ -97,7 +97,7 @@
     "followingButton": "Abonnements",
     "postTopicButton": "Publier un sujet",
     "becomeWhisperer": "Devenir Whisperer",
-    "pillLabel": "Debate Topics",
+    "pillLabel": "Debate Now",
     "heading": "De quel côté es-tu ?",
     "description": "Des messages courts et anonymes de Whisperers. Lis, donne ton avis ou publie le tien — aucun compte requis pour rejoindre la conversation.",
     "becomeWhispererToPost": "Deviens Whisperer pour publier un sujet",
