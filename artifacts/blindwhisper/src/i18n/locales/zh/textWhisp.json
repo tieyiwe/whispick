@@ -16,6 +16,8 @@
     "recipientLabel": "这是给谁的？",
     "recipientDisclosure": "如果对方已经在 Blind Whisper 上，会立即在应用内送达。如果没有，他们会收到一条带链接的短信来阅读——也可以注册后用同样的方式回复。",
     "phonePlaceholder": "+1 555 123 4567",
+    "smsDisclosure": "发送到电话号码时,你是以自己的名义给对方发短信。可能会产生消息和流量费用。回复 STOP 可退订,回复 HELP 获取帮助。请查看我们的",
+    "smsTermsLinkText": "短信条款",
     "sendButton": "发送文字 Whisp",
     "backButton": "返回文字 Whisps",
     "viewButton": "查看这条文字 Whisp",

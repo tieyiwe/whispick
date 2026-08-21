@@ -16,6 +16,8 @@
     "recipientLabel": "Ni ya nani?",
     "recipientDisclosure": "Ikiwa tayari yuko kwenye Blind Whisper, itafika mara moja ndani ya programu. Ikiwa siyo, atapokea ujumbe wenye kiungo cha kuusoma — na anaweza kujiunga ili kujibu kwa njia hiyo hiyo.",
     "phonePlaceholder": "+1 555 123 4567",
+    "smsDisclosure": "Kwa kutuma kwa namba ya simu, unamtumia ujumbe kwa jina lako mwenyewe. Gharama za ujumbe na data zinaweza kutumika. Jibu STOP kujitoa, HELP kwa msaada. Angalia",
+    "smsTermsLinkText": "Masharti ya SMS",
     "sendButton": "Tuma Whisp ya Maandishi",
     "backButton": "Rudi kwenye Whisps za Maandishi",
     "viewButton": "Angalia Whisp hii ya Maandishi",

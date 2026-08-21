@@ -16,6 +16,8 @@
     "recipientLabel": "Für wen ist es?",
     "recipientDisclosure": "Wenn die Person schon bei Blind Whisper ist, kommt es sofort in der App an. Wenn nicht, bekommt sie eine SMS mit einem Link zum Lesen — und kann sich anmelden, um genauso zu antworten.",
     "phonePlaceholder": "+1 555 123 4567",
+    "smsDisclosure": "Wenn du an eine Telefonnummer sendest, schreibst du ihr in deinem eigenen Namen. Es können Nachrichten- und Datenkosten anfallen. Antworte mit STOP zum Abbestellen, HELP für Hilfe. Siehe unsere",
+    "smsTermsLinkText": "SMS-Bedingungen",
     "sendButton": "Text-Whisp senden",
     "backButton": "Zurück zu Text-Whisps",
     "viewButton": "Diesen Text-Whisp ansehen",

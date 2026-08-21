@@ -199,6 +199,20 @@ export function SendTextWhisp() {
                   data-testid="input-text-whisp-recipient-phone"
                 />
               </div>
+              {/* A2P 10DLC-required disclosure, shown at the exact point a
+                  phone number is collected for SMS delivery — mirrors
+                  SendWhisp.tsx's own step5.smsDisclosure. Unconditional here
+                  (unlike SendWhisp, which gates on a WhatsApp/SMS channel
+                  toggle) since a Text Whisp recipient is always a phone
+                  number and, for anyone not already a verified Blind Whisper
+                  user, always delivered by SMS (see textWhispGuestSmsBody in
+                  lib/sms.ts). */}
+              <p className="text-xs text-muted-foreground" data-testid="text-sms-consent-disclosure">
+                {t("sendTextWhisp.smsDisclosure")}{" "}
+                <a href="/sms-terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  {t("sendTextWhisp.smsTermsLinkText")}
+                </a>.
+              </p>
             </div>
 
             <Button

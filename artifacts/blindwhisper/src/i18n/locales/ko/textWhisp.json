@@ -16,6 +16,8 @@
     "recipientLabel": "누구에게 보낼까요?",
     "recipientDisclosure": "상대방이 이미 Blind Whisper를 쓰고 있다면 앱으로 바로 전달돼요. 아니라면 읽을 수 있는 링크가 담긴 문자를 받고, 같은 방식으로 답장하려면 가입하면 돼요.",
     "phonePlaceholder": "+1 555 123 4567",
+    "smsDisclosure": "전화번호로 보내면 당신 이름으로 문자를 보내는 거예요. 메시지 및 데이터 요금이 부과될 수 있어요. 수신 거부는 STOP, 도움이 필요하면 HELP로 답장하세요. 자세한 내용은",
+    "smsTermsLinkText": "SMS 약관",
     "sendButton": "문자 Whisp 보내기",
     "backButton": "문자 Whisps로 돌아가기",
     "viewButton": "이 문자 Whisp 보기",
