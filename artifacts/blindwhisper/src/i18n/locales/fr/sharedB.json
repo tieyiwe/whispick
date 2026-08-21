@@ -112,5 +112,21 @@
     "title": "Un problème est survenu lors du chargement de cette page.",
     "description": "Ça se résout en général avec un rechargement — souvent parce qu'une nouvelle version vient de sortir.",
     "reload": "Recharger"
+  },
+  "phoneVerificationFlow": {
+    "explainer": "Nous vérifierons votre numéro pour que les whisps qui vous sont envoyés arrivent instantanément si vous êtes déjà sur Blind Whisper — ce que vous envoyez et recevez reste toujours 100% anonyme.",
+    "smsDisclosure": "Des frais de messagerie et de données peuvent s'appliquer pour le code de vérification à usage unique. Consultez nos",
+    "smsTermsLink": "Conditions SMS",
+    "sendCode": "Envoyer le code de vérification",
+    "enterCode": "Saisissez le code à 6 chiffres envoyé par SMS au {{phone}}.",
+    "changeNumber": "Changer de numéro",
+    "verify": "Vérifier",
+    "toastCodeSent": "Code envoyé",
+    "toastCodeSentDescription": "Nous avons envoyé un code à 6 chiffres au {{phone}}.",
+    "toastSendFailed": "Impossible d'envoyer un code",
+    "toastSendFailedDescription": "Vérifiez le numéro et réessayez.",
+    "toastVerified": "Numéro de téléphone vérifié",
+    "toastConfirmFailed": "Ce code n'a pas fonctionné",
+    "toastConfirmFailedDescription": "Veuillez réessayer."
   }
 }

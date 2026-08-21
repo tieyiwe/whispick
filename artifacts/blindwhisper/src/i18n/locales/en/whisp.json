@@ -549,6 +549,7 @@
       "nameUpdated": "Name updated",
       "couldntUpdateName": "Couldn't update that name",
       "couldntStartConversation": "Couldn't start that conversation"
-    }
+    },
+    "notFound": "This whisp could not be found."
   }
 }

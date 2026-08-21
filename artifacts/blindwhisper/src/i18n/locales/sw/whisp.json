@@ -549,6 +549,7 @@
       "nameUpdated": "Jina limesasishwa",
       "couldntUpdateName": "Imeshindwa kusasisha jina hilo",
       "couldntStartConversation": "Imeshindwa kuanzisha mazungumzo hayo"
-    }
+    },
+    "notFound": "Whisp hii haikupatikana."
   }
 }

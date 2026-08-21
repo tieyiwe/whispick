@@ -660,7 +660,7 @@ export function PublicWhispPage() {
           </div>
         ) : !whisp ? (
           <div className="text-center py-20">
-            <p className="text-muted-foreground">This whisp could not be found.</p>
+            <p className="text-muted-foreground">{t("publicWhisp.notFound")}</p>
           </div>
         ) : whisp.viewerArchived ? (
           // Only ever true for a signed-in viewer who is this whisp's own

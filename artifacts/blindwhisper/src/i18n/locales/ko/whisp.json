@@ -549,6 +549,7 @@
       "nameUpdated": "이름이 업데이트됐어요",
       "couldntUpdateName": "해당 이름을 업데이트하지 못했어요",
       "couldntStartConversation": "해당 대화를 시작하지 못했어요"
-    }
+    },
+    "notFound": "이 whisp를 찾을 수 없습니다."
   }
 }

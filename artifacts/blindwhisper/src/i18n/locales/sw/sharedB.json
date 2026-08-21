@@ -112,5 +112,21 @@
     "title": "Kuna hitilafu wakati wa kupakia ukurasa huu.",
     "description": "Hii kwa kawaida hutatuliwa kwa kupakia upya — mara nyingi kwa sababu toleo jipya limetoka tu.",
     "reload": "Pakia Upya"
+  },
+  "phoneVerificationFlow": {
+    "explainer": "Tutathibitisha nambari yako ili whisps zinazotumwa kwako zifike papo hapo ikiwa tayari uko Blind Whisper — unachotuma na kupokea bado ni siri 100%, kila wakati.",
+    "smsDisclosure": "Gharama za ujumbe na data zinaweza kutumika kwa msimbo wa uthibitisho wa mara moja. Angalia",
+    "smsTermsLink": "Masharti ya SMS",
+    "sendCode": "Tuma msimbo wa uthibitisho",
+    "enterCode": "Weka msimbo wa tarakimu 6 tuliokutumia kwa {{phone}}.",
+    "changeNumber": "Badilisha nambari",
+    "verify": "Thibitisha",
+    "toastCodeSent": "Msimbo umetumwa",
+    "toastCodeSentDescription": "Tumekutumia msimbo wa tarakimu 6 kwa {{phone}}.",
+    "toastSendFailed": "Imeshindwa kutuma msimbo",
+    "toastSendFailedDescription": "Tafadhali angalia nambari na ujaribu tena.",
+    "toastVerified": "Nambari ya simu imethibitishwa",
+    "toastConfirmFailed": "Msimbo huo haukufanya kazi",
+    "toastConfirmFailedDescription": "Tafadhali jaribu tena."
   }
 }

@@ -111,5 +111,21 @@
     "title": "加载此页面时出了点问题。",
     "description": "刷新页面通常就能解决——往往是因为刚发布了新版本。",
     "reload": "重新加载"
+  },
+  "phoneVerificationFlow": {
+    "explainer": "我们会验证你的号码，这样如果你已经是 Blind Whisper 用户，发给你的 whisp 会立即送达——你发送和接收的内容始终保持 100% 匿名。",
+    "smsDisclosure": "一次性验证码可能产生短信和流量费用。请查看我们的",
+    "smsTermsLink": "短信条款",
+    "sendCode": "发送验证码",
+    "enterCode": "输入我们发送到 {{phone}} 的 6 位验证码。",
+    "changeNumber": "更改号码",
+    "verify": "验证",
+    "toastCodeSent": "验证码已发送",
+    "toastCodeSentDescription": "我们已向 {{phone}} 发送了 6 位验证码。",
+    "toastSendFailed": "验证码发送失败",
+    "toastSendFailedDescription": "请检查号码后重试。",
+    "toastVerified": "手机号码已验证",
+    "toastConfirmFailed": "验证码不正确",
+    "toastConfirmFailedDescription": "请重试。"
   }
 }

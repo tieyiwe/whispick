@@ -112,5 +112,21 @@
     "title": "Beim Laden dieser Seite ist etwas schiefgelaufen.",
     "description": "Das lässt sich meist mit einem Neuladen beheben — oft, weil gerade eine neue Version veröffentlicht wurde.",
     "reload": "Neu laden"
+  },
+  "phoneVerificationFlow": {
+    "explainer": "Wir verifizieren deine Nummer, damit Whisps, die dir gesendet werden, sofort ankommen, falls du bereits bei Blind Whisper bist — was du sendest und empfängst, bleibt trotzdem immer 100% anonym.",
+    "smsDisclosure": "Für den einmaligen Verifizierungscode können Nachrichten- und Datengebühren anfallen. Siehe unsere",
+    "smsTermsLink": "SMS-Bedingungen",
+    "sendCode": "Verifizierungscode senden",
+    "enterCode": "Gib den 6-stelligen Code ein, den wir an {{phone}} gesendet haben.",
+    "changeNumber": "Nummer ändern",
+    "verify": "Verifizieren",
+    "toastCodeSent": "Code gesendet",
+    "toastCodeSentDescription": "Wir haben einen 6-stelligen Code an {{phone}} gesendet.",
+    "toastSendFailed": "Code konnte nicht gesendet werden",
+    "toastSendFailedDescription": "Bitte überprüfe die Nummer und versuche es erneut.",
+    "toastVerified": "Telefonnummer verifiziert",
+    "toastConfirmFailed": "Dieser Code hat nicht funktioniert",
+    "toastConfirmFailedDescription": "Bitte versuche es erneut."
   }
 }

@@ -112,5 +112,21 @@
     "title": "Algo salió mal al cargar esta página.",
     "description": "Esto suele solucionarse recargando la página, a menudo porque acaba de salir una nueva versión.",
     "reload": "Recargar"
+  },
+  "phoneVerificationFlow": {
+    "explainer": "Verificaremos tu número para que los whisps que te envíen lleguen al instante si ya estás en Blind Whisper — lo que envías y recibes sigue siendo 100% anónimo, siempre.",
+    "smsDisclosure": "Pueden aplicarse tarifas de mensajes y datos por el código de verificación de un solo uso. Consulta nuestros",
+    "smsTermsLink": "Términos de SMS",
+    "sendCode": "Enviar código de verificación",
+    "enterCode": "Ingresa el código de 6 dígitos que enviamos a {{phone}}.",
+    "changeNumber": "Cambiar número",
+    "verify": "Verificar",
+    "toastCodeSent": "Código enviado",
+    "toastCodeSentDescription": "Enviamos un código de 6 dígitos a {{phone}}.",
+    "toastSendFailed": "No se pudo enviar el código",
+    "toastSendFailedDescription": "Verifica el número e inténtalo de nuevo.",
+    "toastVerified": "Número de teléfono verificado",
+    "toastConfirmFailed": "Ese código no funcionó",
+    "toastConfirmFailedDescription": "Inténtalo de nuevo."
   }
 }

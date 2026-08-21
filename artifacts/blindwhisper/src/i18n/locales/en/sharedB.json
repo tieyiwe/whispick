@@ -112,5 +112,21 @@
     "title": "Something went wrong loading this page.",
     "description": "This usually clears up with a reload — often because a new version just went live.",
     "reload": "Reload"
+  },
+  "phoneVerificationFlow": {
+    "explainer": "We'll verify your number so whisps sent to you deliver instantly if you're already on Blind Whisper — what you send and receive is still 100% anonymous, always.",
+    "smsDisclosure": "Msg & data rates may apply for the one-time verification code. See our",
+    "smsTermsLink": "SMS Terms",
+    "sendCode": "Send verification code",
+    "enterCode": "Enter the 6-digit code we texted to {{phone}}.",
+    "changeNumber": "Change number",
+    "verify": "Verify",
+    "toastCodeSent": "Code sent",
+    "toastCodeSentDescription": "We texted a 6-digit code to {{phone}}.",
+    "toastSendFailed": "Couldn't send a code",
+    "toastSendFailedDescription": "Please check the number and try again.",
+    "toastVerified": "Phone number verified",
+    "toastConfirmFailed": "That code didn't work",
+    "toastConfirmFailedDescription": "Please try again."
   }
 }

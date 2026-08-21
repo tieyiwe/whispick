@@ -8,6 +8,7 @@ import { useStartPhoneVerification, useConfirmPhoneVerification, getGetUserProfi
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ShieldCheck } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 // Pretty-prints an E.164 number for display only (e.g. "+1 555 123 4567")
 // — the value sent to the server is always the raw E.164 string from
@@ -32,6 +33,7 @@ export function PhoneVerificationFlow({ onVerified }: { onVerified?: () => void 
   const queryClient = useQueryClient();
   const startVerification = useStartPhoneVerification();
   const confirmVerification = useConfirmPhoneVerification();
+  const { t } = useTranslation("sharedB");
 
   function handleSendCode() {
     if (!phone.trim()) return;
@@ -40,12 +42,12 @@ export function PhoneVerificationFlow({ onVerified }: { onVerified?: () => void 
       {
         onSuccess: () => {
           setStep("code");
-          toast({ title: "Code sent", description: `We texted a 6-digit code to ${formatForDisplay(phone.trim())}.` });
+          toast({ title: t("phoneVerificationFlow.toastCodeSent"), description: t("phoneVerificationFlow.toastCodeSentDescription", { phone: formatForDisplay(phone.trim()) }) });
         },
         onError: (err: any) => {
           toast({
-            title: "Couldn't send a code",
-            description: err?.data?.error ?? "Please check the number and try again.",
+            title: t("phoneVerificationFlow.toastSendFailed"),
+            description: err?.data?.error ?? t("phoneVerificationFlow.toastSendFailedDescription"),
             variant: "destructive",
           });
         },
@@ -60,13 +62,13 @@ export function PhoneVerificationFlow({ onVerified }: { onVerified?: () => void 
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetUserProfileQueryKey() });
-          toast({ title: "Phone number verified" });
+          toast({ title: t("phoneVerificationFlow.toastVerified") });
           onVerified?.();
         },
         onError: (err: any) => {
           toast({
-            title: "That code didn't work",
-            description: err?.data?.error ?? "Please try again.",
+            title: t("phoneVerificationFlow.toastConfirmFailed"),
+            description: err?.data?.error ?? t("phoneVerificationFlow.toastConfirmFailedDescription"),
             variant: "destructive",
           });
         },
@@ -79,16 +81,15 @@ export function PhoneVerificationFlow({ onVerified }: { onVerified?: () => void 
       <div className="space-y-3">
         <CountryPhoneInput onChange={setPhone} onCountryChange={setCountry} disabled={startVerification.isPending} />
         <p className="text-xs text-muted-foreground">
-          We'll verify your number so whisps sent to you deliver instantly if you're already on Blind Whisper — what
-          you send and receive is still 100% anonymous, always.
+          {t("phoneVerificationFlow.explainer")}
         </p>
         {/* A2P 10DLC-required disclosure, shown at the exact point the
             number is entered — this form itself sends a one-time SMS
             verification code. */}
         <p className="text-xs text-muted-foreground" data-testid="text-sms-consent-disclosure">
-          Msg &amp; data rates may apply for the one-time verification code. See our{" "}
+          {t("phoneVerificationFlow.smsDisclosure")}{" "}
           <a href="/sms-terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-            SMS Terms
+            {t("phoneVerificationFlow.smsTermsLink")}
           </a>.
         </p>
         <Button
@@ -98,7 +99,7 @@ export function PhoneVerificationFlow({ onVerified }: { onVerified?: () => void 
           data-testid="button-send-verification-code"
         >
           {startVerification.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-          Send verification code
+          {t("phoneVerificationFlow.sendCode")}
         </Button>
       </div>
     );
@@ -106,7 +107,7 @@ export function PhoneVerificationFlow({ onVerified }: { onVerified?: () => void 
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-muted-foreground">Enter the 6-digit code we texted to {phone.trim()}.</p>
+      <p className="text-sm text-muted-foreground">{t("phoneVerificationFlow.enterCode", { phone: phone.trim() })}</p>
       {/* inputMode/pattern get mobile browsers to show a numeric keypad
           instead of a full keyboard; autoComplete="one-time-code" is what
           actually lets iOS/Android offer a tap-to-fill suggestion from the
@@ -139,7 +140,7 @@ export function PhoneVerificationFlow({ onVerified }: { onVerified?: () => void 
           }}
           data-testid="button-change-phone-number"
         >
-          Change number
+          {t("phoneVerificationFlow.changeNumber")}
         </Button>
         <Button
           onClick={handleConfirmCode}
@@ -148,7 +149,7 @@ export function PhoneVerificationFlow({ onVerified }: { onVerified?: () => void 
           data-testid="button-confirm-verification-code"
         >
           {confirmVerification.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ShieldCheck className="w-4 h-4 mr-2" />}
-          Verify
+          {t("phoneVerificationFlow.verify")}
         </Button>
       </div>
     </div>

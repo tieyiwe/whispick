@@ -549,6 +549,7 @@
       "nameUpdated": "Nombre actualizado",
       "couldntUpdateName": "No se pudo actualizar ese nombre",
       "couldntStartConversation": "No se pudo iniciar esa conversación"
-    }
+    },
+    "notFound": "No se pudo encontrar este whisp."
   }
 }

@@ -549,6 +549,7 @@
       "nameUpdated": "昵称已更新",
       "couldntUpdateName": "无法更新该昵称",
       "couldntStartConversation": "无法开始该对话"
-    }
+    },
+    "notFound": "找不到这个 whisp。"
   }
 }

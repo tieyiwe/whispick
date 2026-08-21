@@ -111,5 +111,21 @@
     "title": "이 페이지를 불러오는 중 문제가 발생했어요.",
     "description": "새로고침하면 대부분 해결돼요 — 새 버전이 막 배포된 경우가 많거든요.",
     "reload": "새로고침"
+  },
+  "phoneVerificationFlow": {
+    "explainer": "번호를 인증하면 이미 Blind Whisper를 사용 중인 경우 회원님에게 보내진 whisp가 즉시 전달됩니다 — 보내고 받는 내용은 언제나 100% 익명으로 유지됩니다.",
+    "smsDisclosure": "일회용 인증 코드에 대해 메시지 및 데이터 요금이 부과될 수 있습니다. 자세한 내용은",
+    "smsTermsLink": "SMS 약관",
+    "sendCode": "인증 코드 보내기",
+    "enterCode": "{{phone}}(으)로 보낸 6자리 코드를 입력하세요.",
+    "changeNumber": "번호 변경",
+    "verify": "인증",
+    "toastCodeSent": "코드 전송됨",
+    "toastCodeSentDescription": "{{phone}}(으)로 6자리 코드를 보냈습니다.",
+    "toastSendFailed": "코드를 보낼 수 없습니다",
+    "toastSendFailedDescription": "번호를 확인한 후 다시 시도해 주세요.",
+    "toastVerified": "전화번호가 인증되었습니다",
+    "toastConfirmFailed": "코드가 올바르지 않습니다",
+    "toastConfirmFailedDescription": "다시 시도해 주세요."
   }
 }
