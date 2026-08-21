@@ -597,6 +597,27 @@ paths:
               schema:
                 $ref: "#/components/schemas/TextWhispReply"
 
+  /text-whisps/{id}/typing:
+    post:
+      operationId: pingTextWhispTyping
+      tags: [textWhisps]
+      summary: Signal that the caller is currently typing a reply — sender or recipient only. Purely ephemeral presence (see TextWhisp.otherPartyTyping); no request body.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Recorded
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /text-whisps/{id}/reveal:
     post:
       operationId: requestTextWhispReveal
@@ -3796,6 +3817,9 @@ components:
           type: ["string", "null"]
         createdAt:
           type: string
+        otherPartyTyping:
+          type: boolean
+          description: True only while the OTHER party (never the caller's own ping echoed back) sent a typing ping within the last ~8s. See POST /text-whisps/{id}/typing.
       required:
         - id
         - senderId
@@ -3806,6 +3830,7 @@ components:
         - status
         - revealRequested
         - createdAt
+        - otherPartyTyping
 
     TextWhispInput:
       type: object
@@ -3846,6 +3871,12 @@ components:
         replyText:
           type: string
           maxLength: 260
+        parentReplyId:
+          type: ["string", "null"]
+          description: The earlier reply in this same thread this one answers, if any — feeds the quoted-message UI in the shared ReplyThread component.
+        readAt:
+          type: ["string", "null"]
+          description: When the OTHER party opened the thread after this reply was sent. Null means sent but not yet seen.
         createdAt:
           type: string
       required:
@@ -3861,6 +3892,8 @@ components:
         replyText:
           type: string
           maxLength: 260
+        parentReplyId:
+          type: ["string", "null"]
       required:
         - replyText
 

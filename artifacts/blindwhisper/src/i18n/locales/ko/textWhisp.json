@@ -34,6 +34,8 @@
     "repliesHeading": "답장",
     "fromMe": "나",
     "fromThem": "상대방",
+    "noRepliesYet": "아직 답장이 없어요.",
+    "typingIndicator": "입력 중…",
     "replyCardTitle": "답장",
     "replyPlaceholder": "답장을 입력하세요...",
     "sendButton": "보내기",

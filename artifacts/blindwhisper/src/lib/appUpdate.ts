@@ -89,4 +89,41 @@ export function watchForUpdates(registration: ServiceWorkerRegistration): void {
     };
     document.addEventListener("visibilitychange", onVisibilityChange);
   });
+
+  wireClickReload();
+}
+
+// Catches the other half of "seamless": App.tsx's own location-change effect
+// (isUpdateAvailable() check on every wouter navigation) only fires when a
+// click actually changes the route — a same-page action (submitting a reply
+// inline, toggling a setting, dismissing a dialog) never does, so an update
+// could sit pending indefinitely on a page the user keeps using without ever
+// navigating away. This is the general form: once an update is known to be
+// pending, the next click on an actual control (a button or a link, not a
+// stray tap on the page background) reloads shortly after.
+//
+// Deliberately DEFERRED, not immediate — the click's own handler (its own
+// fetch, its own toast, its own local state update) needs a moment to
+// actually finish before the page is torn down under it, same reasoning as
+// the visibility-based path above not reloading while the page might be
+// suspended: reloading mid-request would abort that request client-side and
+// read as the action having silently failed, which is a worse glitch than
+// the stale-bundle problem this is fixing. 600ms comfortably covers this
+// app's own request latencies without making the update feel delayed.
+function wireClickReload(): void {
+  let reloadScheduled = false;
+  document.addEventListener(
+    "click",
+    (event) => {
+      if (!updateAvailable || reloadScheduled) return;
+      const target = event.target;
+      if (!(target instanceof Element) || !target.closest("button, a[href]")) return;
+      reloadScheduled = true;
+      setTimeout(() => window.location.reload(), 600);
+    },
+    // Capture phase: still sees the click even when a handler further down
+    // the tree (a Radix dialog/dropdown trigger) calls stopPropagation —
+    // a bubble-phase listener would otherwise never run for those.
+    { capture: true },
+  );
 }

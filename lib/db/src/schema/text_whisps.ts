@@ -73,6 +73,18 @@ export const textWhispsTable = pgTable("text_whisps", {
   // routes/admin.ts, which never filters on this). Doesn't affect the
   // recipient's own view — they keep seeing it as before.
   deletedBySenderAt: timestamp("deleted_by_sender_at", { withTimezone: true }),
+  // "Is typing…" — purely ephemeral presence, not conversation history.
+  // typingUserId records WHICH of the two parties last pinged (either can);
+  // typingAt is when. routes/textWhisps.ts's toResponse() turns this into a
+  // single viewer-relative otherPartyTyping boolean (true only while it's
+  // both the OTHER party and recent — see its own TYPING_TTL_MS), the same
+  // "compute a relative fact server-side, never hand back the raw row" shape
+  // viewerIsRecipient already uses. No separate "stopped typing" event: it
+  // just ages out after the TTL, and POST /:id/replies also clears it
+  // immediately on send so the indicator doesn't linger past the message
+  // that made it moot.
+  typingUserId: text("typing_user_id"),
+  typingAt: timestamp("typing_at", { withTimezone: true }),
 }, (table) => [
   index("text_whisps_sender_id_idx").on(table.senderId),
   index("text_whisps_recipient_user_id_idx").on(table.recipientUserId),

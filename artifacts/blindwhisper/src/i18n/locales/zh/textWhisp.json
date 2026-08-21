@@ -34,6 +34,8 @@
     "repliesHeading": "回复",
     "fromMe": "你",
     "fromThem": "对方",
+    "noRepliesYet": "还没有回复。",
+    "typingIndicator": "对方正在输入…",
     "replyCardTitle": "回复",
     "replyPlaceholder": "写一条回复……",
     "sendButton": "发送",

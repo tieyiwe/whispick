@@ -366,7 +366,9 @@
     "someoneRepliedAnonymously": "Jemand hat anonym geantwortet",
     "videoFallback": "Video",
     "videoWhispsHeading": "Antworten auf Video-Whisps",
-    "textWhispsHeading": "Antworten auf Text-Whisps"
+    "textWhispsHeading": "Antworten auf Text-Whisps",
+    "videoWhispsEmpty": "Noch keine Antworten auf deine Video-Whisps.",
+    "textWhispsEmpty": "Noch keine Antworten auf deine Text-Whisps."
   },
   "groupSendDetail": {
     "notFound": "Gruppen-Sendung nicht gefunden.",

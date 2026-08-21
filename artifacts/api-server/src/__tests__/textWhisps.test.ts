@@ -41,6 +41,25 @@ async function setupSenderAndVerifiedRecipient() {
   return { senderId, recipientId };
 }
 
+// Same shape as setupSenderAndVerifiedRecipient, but with a fresh, uniquely
+// generated clerk id pair each call instead of the fixed USER_A/USER_B
+// reused by most of this file's tests. createTextWhispLimiter
+// (lib/rateLimit.ts) caps POST /text-whisps at 30/hour PER AUTHENTICATED
+// USER — that's in-memory middleware state, not touched by the afterEach DB
+// truncate, so it accumulates across every test in this file that sends as
+// USER_A regardless of pass/fail. A test that needs several of its own text
+// whisps (rather than exercising USER_A/B's own established relationship)
+// should use this instead, so it draws from its own separate budget rather
+// than eating into USER_A's and starving whatever test happens to run after
+// it in the same file.
+async function setupFreshSenderAndVerifiedRecipient() {
+  const senderClerkId = `clerk_text_whisp_fresh_sender_${randomUUID()}`;
+  const recipientClerkId = `clerk_text_whisp_fresh_recipient_${randomUUID()}`;
+  const senderId = await insertUser(senderClerkId);
+  const recipientId = await insertUser(recipientClerkId, { phone: RECIPIENT_PHONE, phoneVerifiedAt: new Date() });
+  return { senderClerkId, recipientClerkId, senderId, recipientId };
+}
+
 describe("POST /api/text-whisps", () => {
   it("rejects unauthenticated requests", async () => {
     const res = await request(app).post("/api/text-whisps").send({ recipientPhone: RECIPIENT_PHONE, messageText: "hi" });
@@ -340,6 +359,131 @@ describe("Text Whisp replies", () => {
 
     const stored = await db.select().from(textWhispRepliesTable).where(eq(textWhispRepliesTable.id, res.body.id)).then((r) => r[0]);
     expect(stored.senderId).toBe(recipient.id);
+  });
+
+  it("quotes a valid parent reply from the same thread", async () => {
+    const { senderClerkId, recipientClerkId } = await setupFreshSenderAndVerifiedRecipient();
+    const create = await request(app)
+      .post("/api/text-whisps")
+      .set(asUser(senderClerkId))
+      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "hi there" });
+    const id = create.body.id as string;
+
+    const first = await request(app).post(`/api/text-whisps/${id}/replies`).set(asUser(recipientClerkId)).send({ replyText: "first" });
+
+    const second = await request(app)
+      .post(`/api/text-whisps/${id}/replies`)
+      .set(asUser(senderClerkId))
+      .send({ replyText: "answering", parentReplyId: first.body.id });
+
+    expect(second.status).toBe(201);
+    expect(second.body.parentReplyId).toBe(first.body.id);
+  });
+
+  it("degrades to an unquoted reply for a parentReplyId from a different thread", async () => {
+    const { senderClerkId, recipientClerkId } = await setupFreshSenderAndVerifiedRecipient();
+    async function sendTextWhisp() {
+      const res = await request(app)
+        .post("/api/text-whisps")
+        .set(asUser(senderClerkId))
+        .send({ recipientPhone: RECIPIENT_PHONE, messageText: "hi there" });
+      return res.body.id as string;
+    }
+    const idA = await sendTextWhisp();
+    const idB = await sendTextWhisp();
+    const foreignReply = await request(app)
+      .post(`/api/text-whisps/${idB}/replies`)
+      .set(asUser(recipientClerkId))
+      .send({ replyText: "elsewhere" });
+
+    const res = await request(app)
+      .post(`/api/text-whisps/${idA}/replies`)
+      .set(asUser(senderClerkId))
+      .send({ replyText: "hi", parentReplyId: foreignReply.body.id });
+
+    expect(res.status).toBe(201);
+    expect(res.body.parentReplyId).toBeNull();
+  });
+
+  it("marks the other party's replies read when the viewer opens the thread, never their own", async () => {
+    const { senderClerkId, recipientClerkId } = await setupFreshSenderAndVerifiedRecipient();
+    const create = await request(app)
+      .post("/api/text-whisps")
+      .set(asUser(senderClerkId))
+      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "hi there" });
+    const id = create.body.id as string;
+
+    const reply = await request(app).post(`/api/text-whisps/${id}/replies`).set(asUser(recipientClerkId)).send({ replyText: "hi" });
+
+    const beforeOpen = await db.select().from(textWhispRepliesTable).where(eq(textWhispRepliesTable.id, reply.body.id)).then((r) => r[0]);
+    expect(beforeOpen.readAt).toBeNull();
+
+    await request(app).get(`/api/text-whisps/${id}`).set(asUser(senderClerkId));
+
+    const afterOpen = await db.select().from(textWhispRepliesTable).where(eq(textWhispRepliesTable.id, reply.body.id)).then((r) => r[0]);
+    expect(afterOpen.readAt).not.toBeNull();
+  });
+
+  it("never marks the viewer's own reply read from their own GET call", async () => {
+    const { senderClerkId } = await setupFreshSenderAndVerifiedRecipient();
+    const create = await request(app)
+      .post("/api/text-whisps")
+      .set(asUser(senderClerkId))
+      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "hi there" });
+    const id = create.body.id as string;
+
+    const ownReply = await request(app).post(`/api/text-whisps/${id}/replies`).set(asUser(senderClerkId)).send({ replyText: "from the sender" });
+
+    await request(app).get(`/api/text-whisps/${id}`).set(asUser(senderClerkId));
+
+    const row = await db.select().from(textWhispRepliesTable).where(eq(textWhispRepliesTable.id, ownReply.body.id)).then((r) => r[0]);
+    expect(row.readAt).toBeNull();
+  });
+});
+
+describe("Text Whisp typing indicator", () => {
+  async function createTextWhisp() {
+    const { senderClerkId, recipientClerkId } = await setupFreshSenderAndVerifiedRecipient();
+    const res = await request(app)
+      .post("/api/text-whisps")
+      .set(asUser(senderClerkId))
+      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "hi there" });
+    return { id: res.body.id as string, senderClerkId, recipientClerkId };
+  }
+
+  it("shows otherPartyTyping to the OTHER party only, never the pinger's own view", async () => {
+    const { id, senderClerkId, recipientClerkId } = await createTextWhisp();
+    const ping = await request(app).post(`/api/text-whisps/${id}/typing`).set(asUser(recipientClerkId));
+    expect(ping.status).toBe(204);
+
+    const senderView = await request(app).get(`/api/text-whisps/${id}`).set(asUser(senderClerkId));
+    expect(senderView.body.textWhisp.otherPartyTyping).toBe(true);
+
+    const recipientView = await request(app).get(`/api/text-whisps/${id}`).set(asUser(recipientClerkId));
+    expect(recipientView.body.textWhisp.otherPartyTyping).toBe(false);
+  });
+
+  it("clears once the pinger actually sends their reply", async () => {
+    const { id, senderClerkId, recipientClerkId } = await createTextWhisp();
+    await request(app).post(`/api/text-whisps/${id}/typing`).set(asUser(recipientClerkId));
+    await request(app).post(`/api/text-whisps/${id}/replies`).set(asUser(recipientClerkId)).send({ replyText: "here it is" });
+
+    const senderView = await request(app).get(`/api/text-whisps/${id}`).set(asUser(senderClerkId));
+    expect(senderView.body.textWhisp.otherPartyTyping).toBe(false);
+  });
+
+  it("rejects a typing ping from an unrelated third party", async () => {
+    const { id } = await createTextWhisp();
+    const outsiderClerkId = `clerk_text_whisp_outsider_${randomUUID()}`;
+    await insertUser(outsiderClerkId);
+    const res = await request(app).post(`/api/text-whisps/${id}/typing`).set(asUser(outsiderClerkId));
+    expect(res.status).toBe(404);
+  });
+
+  it("rejects an unauthenticated typing ping", async () => {
+    const { id } = await createTextWhisp();
+    const res = await request(app).post(`/api/text-whisps/${id}/typing`);
+    expect(res.status).toBe(401);
   });
 });
 

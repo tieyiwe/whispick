@@ -9,4 +9,6 @@
 export interface TextWhispReplyInput {
   /** @maxLength 260 */
   replyText: string;
+  /** @nullable */
+  parentReplyId?: string | null;
 }

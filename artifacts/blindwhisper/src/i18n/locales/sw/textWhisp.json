@@ -34,6 +34,8 @@
     "repliesHeading": "Majibu",
     "fromMe": "Wewe",
     "fromThem": "Wao",
+    "noRepliesYet": "Bado hakuna majibu.",
+    "typingIndicator": "Anaandika…",
     "replyCardTitle": "Jibu",
     "replyPlaceholder": "Andika jibu...",
     "sendButton": "Tuma",

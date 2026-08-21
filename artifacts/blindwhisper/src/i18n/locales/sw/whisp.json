@@ -366,7 +366,9 @@
     "someoneRepliedAnonymously": "Mtu amejibu bila kujulikana",
     "videoFallback": "Video",
     "videoWhispsHeading": "Majibu ya Whisp za Video",
-    "textWhispsHeading": "Majibu ya Whisp za Maandishi"
+    "textWhispsHeading": "Majibu ya Whisp za Maandishi",
+    "videoWhispsEmpty": "Bado hakuna majibu kwa Whisp zako za Video.",
+    "textWhispsEmpty": "Bado hakuna majibu kwa Whisp zako za Maandishi."
   },
   "groupSendDetail": {
     "notFound": "Utumaji wa kikundi haukupatikana.",

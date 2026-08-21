@@ -318,6 +318,8 @@ export interface TextWhisp {
   /** @nullable */
   readAt?: string | null;
   createdAt: string;
+  /** True only while the OTHER party (never the caller's own ping echoed back) sent a typing ping within the last ~8s. See POST /text-whisps/{id}/typing. */
+  otherPartyTyping: boolean;
 }
 
 export interface TextWhispInput {
@@ -334,6 +336,16 @@ export interface TextWhispReply {
   senderId: string;
   /** @maxLength 260 */
   replyText: string;
+  /**
+     * The earlier reply in this same thread this one answers, if any — feeds the quoted-message UI in the shared ReplyThread component.
+     * @nullable
+     */
+  parentReplyId?: string | null;
+  /**
+     * When the OTHER party opened the thread after this reply was sent. Null means sent but not yet seen.
+     * @nullable
+     */
+  readAt?: string | null;
   createdAt: string;
 }
 
@@ -345,6 +357,8 @@ export interface TextWhispDetail {
 export interface TextWhispReplyInput {
   /** @maxLength 260 */
   replyText: string;
+  /** @nullable */
+  parentReplyId?: string | null;
 }
 
 export interface Invite {

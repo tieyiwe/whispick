@@ -2038,6 +2038,76 @@ export const useCreateTextWhispReply = <TError = ErrorType<unknown>,
       return useMutation(getCreateTextWhispReplyMutationOptions(options));
     }
 
+export const getPingTextWhispTypingUrl = (id: string,) => {
+
+
+
+
+  return `/api/text-whisps/${id}/typing`
+}
+
+/**
+ * @summary Signal that the caller is currently typing a reply — sender or recipient only. Purely ephemeral presence (see TextWhisp.otherPartyTyping); no request body.
+ */
+export const pingTextWhispTyping = async (id: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getPingTextWhispTypingUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getPingTextWhispTypingMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pingTextWhispTyping>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof pingTextWhispTyping>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['pingTextWhispTyping'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof pingTextWhispTyping>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  pingTextWhispTyping(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PingTextWhispTypingMutationResult = NonNullable<Awaited<ReturnType<typeof pingTextWhispTyping>>>
+
+    export type PingTextWhispTypingMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Signal that the caller is currently typing a reply — sender or recipient only. Purely ephemeral presence (see TextWhisp.otherPartyTyping); no request body.
+ */
+export const usePingTextWhispTyping = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pingTextWhispTyping>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof pingTextWhispTyping>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getPingTextWhispTypingMutationOptions(options));
+    }
+
 export const getRequestTextWhispRevealUrl = (id: string,) => {
 
 

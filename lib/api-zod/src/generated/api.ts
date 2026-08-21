@@ -588,7 +588,8 @@ export const ListTextWhispsResponseItem = zod.object({
   "revealRequested": zod.boolean(),
   "revealAccepted": zod.boolean().nullish(),
   "readAt": zod.string().nullish(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "otherPartyTyping": zod.boolean().describe('True only while the OTHER party (never the caller\'s own ping echoed back) sent a typing ping within the last ~8s. See POST \/text-whisps\/{id}\/typing.')
 })
 export const ListTextWhispsResponse = zod.array(ListTextWhispsResponseItem)
 
@@ -622,7 +623,8 @@ export const CreateTextWhispResponse = zod.object({
   "revealRequested": zod.boolean(),
   "revealAccepted": zod.boolean().nullish(),
   "readAt": zod.string().nullish(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "otherPartyTyping": zod.boolean().describe('True only while the OTHER party (never the caller\'s own ping echoed back) sent a typing ping within the last ~8s. See POST \/text-whisps\/{id}\/typing.')
 })
 
 
@@ -652,13 +654,16 @@ export const GetTextWhispResponse = zod.object({
   "revealRequested": zod.boolean(),
   "revealAccepted": zod.boolean().nullish(),
   "readAt": zod.string().nullish(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "otherPartyTyping": zod.boolean().describe('True only while the OTHER party (never the caller\'s own ping echoed back) sent a typing ping within the last ~8s. See POST \/text-whisps\/{id}\/typing.')
 }),
   "replies": zod.array(zod.object({
   "id": zod.string(),
   "textWhispId": zod.string(),
   "senderId": zod.string(),
   "replyText": zod.string().max(getTextWhispResponseRepliesItemReplyTextMax),
+  "parentReplyId": zod.string().nullish().describe('The earlier reply in this same thread this one answers, if any — feeds the quoted-message UI in the shared ReplyThread component.'),
+  "readAt": zod.string().nullish().describe('When the OTHER party opened the thread after this reply was sent. Null means sent but not yet seen.'),
   "createdAt": zod.string()
 }))
 })
@@ -690,6 +695,8 @@ export const ListTextWhispRepliesResponseItem = zod.object({
   "textWhispId": zod.string(),
   "senderId": zod.string(),
   "replyText": zod.string().max(listTextWhispRepliesResponseReplyTextMax),
+  "parentReplyId": zod.string().nullish().describe('The earlier reply in this same thread this one answers, if any — feeds the quoted-message UI in the shared ReplyThread component.'),
+  "readAt": zod.string().nullish().describe('When the OTHER party opened the thread after this reply was sent. Null means sent but not yet seen.'),
   "createdAt": zod.string()
 })
 export const ListTextWhispRepliesResponse = zod.array(ListTextWhispRepliesResponseItem)
@@ -707,7 +714,8 @@ export const createTextWhispReplyBodyReplyTextMax = 260;
 
 
 export const CreateTextWhispReplyBody = zod.object({
-  "replyText": zod.string().max(createTextWhispReplyBodyReplyTextMax)
+  "replyText": zod.string().max(createTextWhispReplyBodyReplyTextMax),
+  "parentReplyId": zod.string().nullish()
 })
 
 export const createTextWhispReplyResponseReplyTextMax = 260;
@@ -719,8 +727,20 @@ export const CreateTextWhispReplyResponse = zod.object({
   "textWhispId": zod.string(),
   "senderId": zod.string(),
   "replyText": zod.string().max(createTextWhispReplyResponseReplyTextMax),
+  "parentReplyId": zod.string().nullish().describe('The earlier reply in this same thread this one answers, if any — feeds the quoted-message UI in the shared ReplyThread component.'),
+  "readAt": zod.string().nullish().describe('When the OTHER party opened the thread after this reply was sent. Null means sent but not yet seen.'),
   "createdAt": zod.string()
 })
+
+
+/**
+ * @summary Signal that the caller is currently typing a reply — sender or recipient only. Purely ephemeral presence (see TextWhisp.otherPartyTyping); no request body.
+ */
+export const PingTextWhispTypingParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const PingTextWhispTypingResponse = zod.void()
 
 
 /**
@@ -746,7 +766,8 @@ export const RequestTextWhispRevealResponse = zod.object({
   "revealRequested": zod.boolean(),
   "revealAccepted": zod.boolean().nullish(),
   "readAt": zod.string().nullish(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "otherPartyTyping": zod.boolean().describe('True only while the OTHER party (never the caller\'s own ping echoed back) sent a typing ping within the last ~8s. See POST \/text-whisps\/{id}\/typing.')
 })
 
 

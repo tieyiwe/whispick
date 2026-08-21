@@ -34,6 +34,8 @@
     "repliesHeading": "Antworten",
     "fromMe": "Du",
     "fromThem": "Sie",
+    "noRepliesYet": "Noch keine Antworten.",
+    "typingIndicator": "Schreibt gerade…",
     "replyCardTitle": "Antworten",
     "replyPlaceholder": "Schreib eine Antwort...",
     "sendButton": "Senden",

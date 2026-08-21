@@ -1,20 +1,24 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetTextWhisp,
   useCreateTextWhispReply,
+  usePingTextWhispTyping,
   useRequestTextWhispReveal,
   useRespondTextWhispReveal,
   useDeleteTextWhisp,
   useGetUserProfile,
+  useGetMyNotifications,
+  useMarkNotificationRead,
   getGetTextWhispQueryKey,
   getListTextWhispsQueryKey,
+  getGetMyNotificationsQueryKey,
+  getGetMyUnreadNotificationCountQueryKey,
 } from "@workspace/api-client-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -29,9 +33,23 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { TextWhispScroll } from "@/components/shared/TextWhispScroll";
+import { ReplyThread, ThreadComposer, type ThreadReply } from "@/components/shared/ReplyThread";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Eye, Loader2, Send, MessageSquare, Trash2, UserCircle2, Check, X } from "lucide-react";
+import { ArrowLeft, Eye, Loader2, MessageSquare, Trash2, Check, X } from "lucide-react";
 
+// A reply that arrives while the page is open should feel instant, the way
+// WhatsApp does, not like a page you have to leave and re-enter — and the
+// same poll is what carries the other party's typing ping (see
+// otherPartyTyping below). 4s, faster than WhispDetail's 15s: a video Whisp
+// thread is occasional back-and-forth where sub-15s latency buys nothing,
+// but a typing indicator that lags 15s behind reality just looks broken.
+const LIVE_POLL_MS = 4_000;
+// Debounces the "I'm typing…" ping (POST /:id/typing) to roughly once per
+// this many ms of active typing, rather than one per keystroke — the ping's
+// own TYPING_TTL_MS server-side (routes/textWhisps.ts) is 8s, so pinging
+// more often than every ~3s wouldn't make the other party's indicator
+// noticeably fresher, just noisier.
+const TYPING_PING_THROTTLE_MS = 3_000;
 const REPLY_MAX_LENGTH = 260;
 
 export function TextWhispDetail() {
@@ -41,17 +59,68 @@ export function TextWhispDetail() {
   const queryClient = useQueryClient();
   const { t } = useTranslation("textWhisp");
   const [replyText, setReplyText] = useState("");
+  const [replyingTo, setReplyingTo] = useState<ThreadReply | null>(null);
   const [opened, setOpened] = useState(false);
 
   const { data: profile } = useGetUserProfile();
+  // Polled while this page is open — see LIVE_POLL_MS above — so a reply (or
+  // the other party's typing ping) that arrives while the sender/recipient
+  // is already reading the thread shows up on its own, the way a live chat
+  // does, instead of only appearing after a manual reload.
   const { data, isLoading } = useGetTextWhisp(id!, {
-    query: { enabled: !!id, queryKey: getGetTextWhispQueryKey(id!) },
+    query: { enabled: !!id, queryKey: getGetTextWhispQueryKey(id!), refetchInterval: LIVE_POLL_MS, refetchIntervalInBackground: false },
   });
 
   const createReply = useCreateTextWhispReply();
+  const pingTyping = usePingTextWhispTyping();
   const requestReveal = useRequestTextWhispReveal();
   const respondReveal = useRespondTextWhispReveal();
   const deleteTextWhisp = useDeleteTextWhisp();
+
+  // Same live cadence as the thread itself, so a reply notification for
+  // THIS thread that lands while the viewer is already looking at it gets
+  // cleared (see the effect below) about as fast as the reply itself
+  // appears — not just whenever the notification bell's own 60s poll
+  // happens to catch up.
+  const { data: notifications } = useGetMyNotifications({
+    query: { queryKey: getGetMyNotificationsQueryKey(), refetchInterval: LIVE_POLL_MS, refetchIntervalInBackground: false },
+  });
+  const markRead = useMarkNotificationRead();
+  const markReadAsync = markRead.mutateAsync;
+  // Which notification ids this page has already asked the server to mark
+  // read — NOT a permanent one-shot latch like RepliesInbox's own version,
+  // since staying on this page across several live-arriving replies should
+  // keep clearing each NEW one as it shows up, not just whatever was
+  // already unread at mount.
+  const markedNotificationIdsRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!id || !notifications?.items) return;
+    const url = `/text-whisps/${id}`;
+    const toMark = notifications.items.filter(
+      (n) => n.kind === "reply" && !n.read && n.url === url && !markedNotificationIdsRef.current.has(n.id),
+    );
+    if (toMark.length === 0) return;
+    toMark.forEach((n) => markedNotificationIdsRef.current.add(n.id));
+    // A reply notification for the thread the viewer is DIRECTLY looking at
+    // right now is, by definition, already seen — leaving it unread would
+    // show a red/yellow dot on the Replies tab and a badge in the bell for
+    // something the viewer has already read live, seconds after it arrived.
+    void Promise.allSettled(toMark.map((n) => markReadAsync({ id: n.id }))).then(() => {
+      queryClient.invalidateQueries({ queryKey: getGetMyNotificationsQueryKey() });
+      queryClient.invalidateQueries({ queryKey: getGetMyUnreadNotificationCountQueryKey() });
+    });
+  }, [id, notifications, markReadAsync, queryClient]);
+
+  const lastTypingPingAtRef = useRef(0);
+  function handleReplyTextChange(value: string) {
+    setReplyText(value);
+    if (!value.trim() || !id) return;
+    const now = Date.now();
+    if (now - lastTypingPingAtRef.current < TYPING_PING_THROTTLE_MS) return;
+    lastTypingPingAtRef.current = now;
+    pingTyping.mutate({ id });
+  }
 
   if (isLoading) {
     return (
@@ -85,13 +154,28 @@ export function TextWhispDetail() {
   // the person who wrote it.
   const startsClosed = isRecipient && !opened;
 
+  // fromRecipient is derivable purely from senderId, without any dedicated
+  // field on the reply itself: a Text Whisp thread only ever has two
+  // possible authors, and textWhisp.senderId (never anti-enumeration-masked
+  // — only recipientUserId is) already identifies one of them, so "not the
+  // original sender" always means "the recipient" here.
+  const threadReplies: ThreadReply[] = replies.map((reply) => ({
+    id: reply.id,
+    replyText: reply.replyText,
+    fromRecipient: reply.senderId !== textWhisp.senderId,
+    parentReplyId: reply.parentReplyId,
+    createdAt: reply.createdAt,
+    readAt: reply.readAt,
+  }));
+
   function handleReply() {
     if (!replyText.trim()) return;
     createReply.mutate(
-      { id: textWhisp.id, data: { replyText: replyText.trim() } },
+      { id: textWhisp.id, data: { replyText: replyText.trim(), ...(replyingTo ? { parentReplyId: replyingTo.id } : {}) } },
       {
         onSuccess: () => {
           setReplyText("");
+          setReplyingTo(null);
           queryClient.invalidateQueries({ queryKey: getGetTextWhispQueryKey(id!) });
         },
         onError: () => toast({ title: t("textWhispDetail.toastReplyFailed"), variant: "destructive" }),
@@ -196,64 +280,52 @@ export function TextWhispDetail() {
 
         {(!isRecipient || opened) && (
           <>
-            {/* Replies */}
-            {replies.length > 0 && (
-              <Card className="bg-card border-border/50">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base font-serif flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4 text-primary" /> {t("textWhispDetail.repliesHeading")}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {replies.map((reply) => {
-                    const fromMe = reply.senderId === profile?.id;
-                    return (
-                      <div
-                        key={reply.id}
-                        data-testid={`text-whisp-reply-${reply.id}`}
-                        className={`p-3 rounded-xl text-sm ${fromMe ? "bg-muted/30 border border-border/50 ml-8" : "bg-primary/10 border border-primary/20"}`}
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <UserCircle2 className="w-3.5 h-3.5 text-muted-foreground" />
-                          <span className="text-xs text-muted-foreground">
-                            {fromMe ? t("textWhispDetail.fromMe") : t("textWhispDetail.fromThem")} · {new Date(reply.createdAt).toLocaleString()}
-                          </span>
-                        </div>
-                        <p className="text-foreground">{reply.replyText}</p>
-                      </div>
-                    );
-                  })}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Reply box */}
+            {/* The anonymous conversation — thread and composer in one card,
+                same shared component (and same "reply-to-a-specific-message"
+                threading) WhispDetail's video-Whisp conversation uses, so the
+                two feel like the same product rather than two different
+                reply experiences. */}
             <Card className="bg-card border-border/50">
               <CardHeader className="pb-2">
-                <CardTitle className="text-base font-serif">{t("textWhispDetail.replyCardTitle")}</CardTitle>
+                <CardTitle className="text-base font-serif flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-primary" /> {t("textWhispDetail.repliesHeading")}
+                </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <Textarea
-                  className="bg-input/50 border-border/50 rounded-xl resize-none min-h-[80px]"
-                  placeholder={t("textWhispDetail.replyPlaceholder")}
-                  maxLength={REPLY_MAX_LENGTH}
-                  value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
-                  data-testid="textarea-text-whisp-reply"
+              <CardContent>
+                {textWhisp.otherPartyTyping && (
+                  <p className="mb-3 flex items-center gap-1.5 text-xs text-muted-foreground" data-testid="text-other-party-typing">
+                    <span className="flex gap-0.5">
+                      <span className="w-1 h-1 rounded-full bg-primary typing-dot" />
+                      <span className="w-1 h-1 rounded-full bg-primary typing-dot" />
+                      <span className="w-1 h-1 rounded-full bg-primary typing-dot" />
+                    </span>
+                    {t("textWhispDetail.typingIndicator")}
+                  </p>
+                )}
+                <ReplyThread
+                  replies={threadReplies}
+                  viewerIsRecipient={isRecipient}
+                  ownLabel={t("textWhispDetail.fromMe")}
+                  otherLabel={t("textWhispDetail.fromThem")}
+                  replyingTo={replyingTo}
+                  onReplyTo={setReplyingTo}
+                  emptyState={
+                    <p className="text-xs text-muted-foreground text-center py-3">
+                      {t("textWhispDetail.noRepliesYet")}
+                    </p>
+                  }
+                  composer={
+                    <ThreadComposer
+                      value={replyText}
+                      onChange={handleReplyTextChange}
+                      onSend={handleReply}
+                      sending={createReply.isPending}
+                      placeholder={t("textWhispDetail.replyPlaceholder")}
+                      maxLength={REPLY_MAX_LENGTH}
+                      testIdPrefix="text-whisp"
+                    />
+                  }
                 />
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">{replyText.length}/{REPLY_MAX_LENGTH}</span>
-                  <Button
-                    onClick={handleReply}
-                    disabled={!replyText.trim() || createReply.isPending}
-                    className="rounded-full"
-                    size="sm"
-                    data-testid="button-send-text-whisp-reply"
-                  >
-                    {createReply.isPending ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Send className="w-3 h-3 mr-1" />}
-                    {t("textWhispDetail.sendButton")}
-                  </Button>
-                </div>
               </CardContent>
             </Card>
 

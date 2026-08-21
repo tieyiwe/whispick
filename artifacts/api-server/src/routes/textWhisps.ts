@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { getAuth } from "@clerk/express";
 import { db, textWhispsTable, textWhispRepliesTable, type TextWhisp } from "@workspace/db";
-import { eq, and, or, isNull, asc, desc } from "drizzle-orm";
+import { eq, and, or, ne, isNull, asc, desc } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { z } from "zod";
 import { requireAuth } from "../lib/auth";
@@ -67,9 +67,21 @@ async function loadTextWhispForUser(id: string, userId: string) {
 // observable is POST /:id/reveal's success/400 response — see its own
 // comment and textWhispRevealLimiter for why that's an acceptable,
 // deliberately narrower and rate-limited exception.
+// How long an "I'm typing" ping (POST /:id/typing) stays fresh before the
+// other party stops seeing the indicator — long enough to survive a normal
+// pause between keystrokes, short enough that walking away without sending
+// doesn't leave a stale "typing…" showing indefinitely.
+const TYPING_TTL_MS = 8_000;
+
 function toResponse(textWhisp: TextWhisp, viewerId: string) {
-  const { recipientUserId, ...rest } = textWhisp;
-  return { ...rest, viewerIsRecipient: recipientUserId === viewerId };
+  const { recipientUserId, typingUserId, typingAt, ...rest } = textWhisp;
+  // Same shape as viewerIsRecipient: a raw typingUserId would tell a viewer
+  // WHO is typing even when it's their own ping echoed back, so this
+  // resolves it to the one fact the other party's UI actually needs —
+  // "is the OTHER side typing, right now" — server-side.
+  const otherPartyTyping =
+    !!typingUserId && typingUserId !== viewerId && !!typingAt && Date.now() - typingAt.getTime() < TYPING_TTL_MS;
+  return { ...rest, viewerIsRecipient: recipientUserId === viewerId, otherPartyTyping };
 }
 
 // GET /api/text-whisps — the authenticated user's own text whisps, sent and
@@ -184,6 +196,25 @@ router.get("/:id", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
+  // Opening the thread IS reading the other party's messages — same
+  // "viewing counts as reading" receipt routes/whisps.ts's GET /:id gives
+  // its own thread, mirrored for both directions here since (unlike a video
+  // Whisp's anonymous public recipient) both parties on a Text Whisp are
+  // authenticated in-app users hitting this same authenticated route. Marked
+  // before the select below so this response already reflects it, and
+  // scoped to still-null readAt so re-visiting an already-read thread is a
+  // no-op — same discipline as whisps.ts's identical block.
+  await db
+    .update(textWhispRepliesTable)
+    .set({ readAt: new Date() })
+    .where(
+      and(
+        eq(textWhispRepliesTable.textWhispId, textWhisp.id),
+        ne(textWhispRepliesTable.senderId, user.id),
+        isNull(textWhispRepliesTable.readAt),
+      ),
+    );
+
   const replies = await db
     .select()
     .from(textWhispRepliesTable)
@@ -251,7 +282,14 @@ router.get("/:id/replies", requireAuth, async (req, res): Promise<void> => {
 // tells sender from recipient by comparing it against the parent row's
 // senderId/recipientUserId, no separate boolean needed (see
 // text_whisp_replies.ts).
-const replyTextWhispSchema = z.object({ replyText: z.string().min(1).max(MESSAGE_MAX_LENGTH) });
+const replyTextWhispSchema = z.object({
+  replyText: z.string().min(1).max(MESSAGE_MAX_LENGTH),
+  // Which earlier message in this thread the reply quotes, if any — same
+  // optional field and same same-thread validation as whisps.ts's POST
+  // /:id/replies (see below), feeding the same shared ReplyThread component
+  // on the frontend.
+  parentReplyId: z.string().max(64).nullable().optional(),
+});
 
 router.post("/:id/replies", requireAuth, async (req, res): Promise<void> => {
   const { userId } = getAuth(req);
@@ -269,13 +307,34 @@ router.post("/:id/replies", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
+  // Same-thread check as whisps.ts's identical block: an unvalidated parent
+  // id would let a reply quote a message from a different Text Whisp, and
+  // the quoted text renders to whoever opens this one. A stale id degrades
+  // to an ordinary, unquoted reply rather than failing the send.
+  let parentReplyId: string | null = null;
+  if (parsed.data.parentReplyId) {
+    const parent = await db
+      .select({ id: textWhispRepliesTable.id })
+      .from(textWhispRepliesTable)
+      .where(and(eq(textWhispRepliesTable.id, parsed.data.parentReplyId), eq(textWhispRepliesTable.textWhispId, textWhisp.id)))
+      .then((r) => r[0]);
+    parentReplyId = parent?.id ?? null;
+  }
+
   const id = randomUUID();
   await db.insert(textWhispRepliesTable).values({
     id,
     textWhispId: textWhisp.id,
     senderId: user.id,
     replyText: parsed.data.replyText,
+    parentReplyId,
   });
+
+  // Sending IS the end of "typing" — clears it immediately rather than
+  // waiting out TYPING_TTL_MS, so the indicator doesn't linger on the other
+  // party's screen after the very message it was announcing has already
+  // arrived.
+  await db.update(textWhispsTable).set({ typingUserId: null, typingAt: null }).where(eq(textWhispsTable.id, textWhisp.id));
 
   const isFromRecipient = user.id === textWhisp.recipientUserId;
   if (isFromRecipient) {
@@ -302,6 +361,27 @@ router.post("/:id/replies", requireAuth, async (req, res): Promise<void> => {
   }
 
   void moderateTextWhispAsync({ textWhispId: textWhisp.id, senderId: user.id, text: parsed.data.replyText });
+});
+
+// POST /api/text-whisps/:id/typing — ephemeral "I'm typing…" presence ping,
+// sender or recipient. No response body: this is fire-and-forget (the
+// caller already knows they're typing) and picked up by the OTHER party's
+// next GET /:id poll via toResponse()'s otherPartyTyping. Deliberately no
+// dedicated rate limiter — the frontend debounces its own calls (see
+// TextWhispDetail.tsx), and a single UPDATE by primary key is cheap enough
+// that an unthrottled caller still costs nothing worth guarding against.
+router.post("/:id/typing", requireAuth, async (req, res): Promise<void> => {
+  const { userId } = getAuth(req);
+  const user = await ensureUser(userId!, req);
+
+  const textWhisp = await loadTextWhispForUser(req.params.id, user.id);
+  if (!textWhisp) {
+    res.status(404).json({ error: "Text Whisp not found" });
+    return;
+  }
+
+  await db.update(textWhispsTable).set({ typingUserId: user.id, typingAt: new Date() }).where(eq(textWhispsTable.id, textWhisp.id));
+  res.status(204).send();
 });
 
 // POST /api/text-whisps/:id/reveal — sender requests. requireAuth-gated to

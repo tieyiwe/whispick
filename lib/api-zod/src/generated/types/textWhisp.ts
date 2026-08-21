@@ -27,4 +27,6 @@ export interface TextWhisp {
   /** @nullable */
   readAt?: string | null;
   createdAt: string;
+  /** True only while the OTHER party (never the caller's own ping echoed back) sent a typing ping within the last ~8s. See POST /text-whisps/{id}/typing. */
+  otherPartyTyping: boolean;
 }
