@@ -28,6 +28,12 @@ const ROLL_MS = 550;
 const TIE_MS = 450;
 const UNROLL_MS = 600;
 
+// Matches .logo-wave-twice's own 1.7s cycle in index.css, played twice, plus
+// a buffer for the third arc's own 0.3s --wave-delay so the fade-out timer
+// never cuts off the last arc mid-pulse.
+const WAVE_CYCLE_MS = 1700;
+const WAVE_ARC_MAX_DELAY_MS = 300;
+
 // A little rope/bow, drawn as two loops crossed by a knot line. pathLength
 // normalizes each element's own stroke-dasharray/dashoffset math to [0, 1]
 // regardless of its real geometry, so "tied" vs "untied" is just dashoffset
@@ -114,6 +120,7 @@ export function TextWhispScroll({
 }: TextWhispScrollProps) {
   const { t } = useTranslation("sharedB");
   const [sendPhase, setSendPhase] = useState<SendPhase>("flat");
+  const [logoWaveDone, setLogoWaveDone] = useState(false);
   const [openPhase, setOpenPhase] = useState<OpenPhase>(initiallyOpen ? "open" : "closed");
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -132,6 +139,16 @@ export function TextWhispScroll({
       setTimeout(() => {
         setSendPhase("sent");
         onSendAnimationComplete?.();
+        // The logo mounts fresh right here (see the conditional render
+        // below) rather than sitting in the DOM the whole time with its
+        // opacity toggled — mounting is what makes its CSS wave animation
+        // actually start now instead of back at component-mount time, which
+        // used to run the pulse to completion while the mark was still
+        // hidden behind opacity:0. Fading it back out is scheduled the same
+        // way: relative to this moment, not to mount.
+        timers.current.push(
+          setTimeout(() => setLogoWaveDone(true), 2 * WAVE_CYCLE_MS + WAVE_ARC_MAX_DELAY_MS),
+        );
       }, 250 + ROLL_MS + TIE_MS),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -214,14 +231,15 @@ export function TextWhispScroll({
         </div>
 
         {/* The same mark-pulse payoff WhispSentConfirmation gives the video-whisp
-            send flow, reused here as the scroll's own last beat — fades in just
-            after "Sent!" so the bow-tie finishes reading before it takes over. */}
-        <div
-          style={{ opacity: sendPhase === "sent" ? 1 : 0, transition: `opacity 400ms ease ${sendPhase === "sent" ? 200 : 0}ms` }}
-          aria-hidden="true"
-        >
-          <Logo waveOnce className="h-16 w-auto text-primary" />
-        </div>
+            send flow, reused here as the scroll's own last beat — mounted only
+            once "Sent!" appears (not hidden-but-present earlier) so its two
+            wave pulses are actually visible instead of finishing off-screen,
+            then fades away smoothly once they're done. */}
+        {sendPhase === "sent" && (
+          <div style={{ opacity: logoWaveDone ? 0 : 1, transition: "opacity 600ms ease" }} aria-hidden="true">
+            <Logo waveTwice className="h-16 w-auto text-primary" />
+          </div>
+        )}
       </div>
     );
   }
@@ -233,62 +251,78 @@ export function TextWhispScroll({
 
   return (
     <div className={`flex flex-col items-center gap-5 ${className ?? ""}`} data-testid="text-whisp-open-scroll">
-      {!opened && (
-        <button
-          type="button"
-          onClick={handleUntie}
-          disabled={openPhase !== "closed"}
-          className="relative w-full max-w-sm h-28 flex items-center justify-center group"
-          data-testid="button-untie-scroll"
-          aria-label={t("textWhispScroll.tapToOpenAriaLabel")}
-        >
-          <div
-            // relative so BowSvg (absolute) anchors to this box — which is
-            // exactly the cylinder's own footprint — rather than escaping to
-            // the button ancestor and losing track of where the cylinder
-            // actually sits.
-            className="relative w-40"
-            style={{
-              opacity: unrolled ? 0 : 1,
-              transform: `scale(${openPhase === "closed" ? 1 : 0.9})`,
-              transition: `opacity ${UNROLL_MS * 0.4}ms ease, transform ${TIE_MS}ms ease`,
-            }}
+      {/* Button and card share this single stage box and overlap inside it
+          (both absolutely positioned) rather than sitting one above the
+          other in normal flow — they used to be flex siblings, which meant
+          the still-fading-out cylinder and the already-unrolling card were
+          both visible at once, stacked in a column: a fully faded (but still
+          space-reserving) grey pill above a thin, mid-unroll strip of
+          parchment, reading as a layout glitch instead of one continuous
+          scroll. min-h-28 only while the button still needs a footprint to
+          overlap into — once opened, the card is the only child and gets to
+          size the stage from its own (message-length-dependent) content. */}
+      <div className={`relative w-full max-w-sm ${opened ? "" : "min-h-28"}`}>
+        {!opened && (
+          <button
+            type="button"
+            onClick={handleUntie}
+            disabled={openPhase !== "closed"}
+            className="absolute inset-0 flex items-center justify-center group"
+            data-testid="button-untie-scroll"
+            aria-label={t("textWhispScroll.tapToOpenAriaLabel")}
           >
-            <ScrollCylinder className="transition-transform group-hover:scale-[1.03] group-active:scale-95" />
-            <BowSvg progress={untied ? 0 : 1} className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-8 w-full text-primary" />
-          </div>
-          {openPhase === "closed" && (
-            <span className="absolute -bottom-6 text-xs text-muted-foreground">{t("textWhispScroll.tapTheBowToOpen")}</span>
-          )}
-        </button>
-      )}
+            <div
+              // relative so BowSvg (absolute) anchors to this box — which is
+              // exactly the cylinder's own footprint — rather than escaping
+              // to the button ancestor and losing track of where the
+              // cylinder actually sits.
+              className="relative w-40"
+              style={{
+                opacity: unrolled ? 0 : 1,
+                transform: `scale(${openPhase === "closed" ? 1 : 0.9})`,
+                transition: `opacity ${UNROLL_MS * 0.4}ms ease, transform ${TIE_MS}ms ease`,
+              }}
+            >
+              <ScrollCylinder className="transition-transform group-hover:scale-[1.03] group-active:scale-95" />
+              <BowSvg progress={untied ? 0 : 1} className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-8 w-full text-primary" />
+            </div>
+            {openPhase === "closed" && (
+              <span className="absolute -bottom-6 text-xs text-muted-foreground">{t("textWhispScroll.tapTheBowToOpen")}</span>
+            )}
+          </button>
+        )}
 
-      {/* The unrolling sheet + revealed message — starts as the same thin
-          roll, scales back out to full width, and the parchment message
-          card fades in once it's flat again. */}
-      {unrolled && (
-        <div
-          className="relative w-full max-w-sm rounded-2xl bg-[hsl(38_42%_88%)] shadow-[0_8px_28px_rgba(0,0,0,0.4)] p-5"
-          style={{
-            transform: `scaleX(${opened ? 1 : 0.12})`,
-            transition: `transform ${UNROLL_MS}ms cubic-bezier(0.16,1,0.3,1)`,
-          }}
-          data-testid="text-whisp-parchment-card"
-        >
+        {/* The unrolling sheet + revealed message — starts as the same thin
+            roll, scales back out to full width, and the parchment message
+            card fades in once it's flat again. Overlaps the button above
+            (absolute inset-x-0 top-0) for as long as the button is still
+            fading out; once opened, it switches to normal flow so the page
+            around it lays out against its real height instead of the
+            button's fixed one. */}
+        {unrolled && (
           <div
+            className={`${opened ? "" : "absolute inset-x-0 top-0"} rounded-2xl bg-[hsl(38_42%_88%)] shadow-[0_8px_28px_rgba(0,0,0,0.4)] p-5`}
             style={{
-              opacity: opened ? 1 : 0,
-              transition: `opacity 400ms ease ${opened ? UNROLL_MS * 0.5 : 0}ms`,
+              transform: `scaleX(${opened ? 1 : 0.12})`,
+              transition: `transform ${UNROLL_MS}ms cubic-bezier(0.16,1,0.3,1)`,
             }}
+            data-testid="text-whisp-parchment-card"
           >
-            <p className="font-serif text-[hsl(30_35%_20%)] text-base leading-relaxed whitespace-pre-wrap">{messageText}</p>
-            <div className="mt-3 pt-3 border-t border-[hsl(35_25%_65%)] flex items-center justify-between text-xs text-[hsl(30_20%_38%)]">
-              <span>— {senderAlias?.trim() || t("textWhispScroll.someoneAnonymous")}</span>
-              {createdAt && <span>{formatWhen(createdAt)}</span>}
+            <div
+              style={{
+                opacity: opened ? 1 : 0,
+                transition: `opacity 400ms ease ${opened ? UNROLL_MS * 0.5 : 0}ms`,
+              }}
+            >
+              <p className="font-serif text-[hsl(30_35%_20%)] text-base leading-relaxed whitespace-pre-wrap">{messageText}</p>
+              <div className="mt-3 pt-3 border-t border-[hsl(35_25%_65%)] flex items-center justify-between text-xs text-[hsl(30_20%_38%)]">
+                <span>— {senderAlias?.trim() || t("textWhispScroll.someoneAnonymous")}</span>
+                {createdAt && <span>{formatWhen(createdAt)}</span>}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

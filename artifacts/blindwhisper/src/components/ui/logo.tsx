@@ -23,6 +23,7 @@ import { SVGProps } from "react";
  */
 export function Logo({
   waveOnce = false,
+  waveTwice = false,
   ...props
 }: SVGProps<SVGSVGElement> & {
   /** Plays the arc pulse through a single cycle instead of looping forever —
@@ -30,8 +31,11 @@ export function Logo({
    *  confirmation) rather than the ambient loop every other use of the mark
    *  wants. */
   waveOnce?: boolean;
+  /** Same one-off idea as waveOnce, but two cycles instead of one — see
+   *  .logo-wave-twice in index.css. Takes precedence if both are set. */
+  waveTwice?: boolean;
 }) {
-  const waveClassName = waveOnce ? "logo-wave-once" : "logo-wave";
+  const waveClassName = waveTwice ? "logo-wave-twice" : waveOnce ? "logo-wave-once" : "logo-wave";
   return (
     <svg viewBox="88 74 112 138" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
       <g stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" fill="none">
