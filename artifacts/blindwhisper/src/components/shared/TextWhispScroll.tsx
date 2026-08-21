@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import confetti from "canvas-confetti";
 import { Send, Sparkles } from "lucide-react";
+import { Logo } from "@/components/ui/logo";
 
 // The Text Whisp "fold/unfurl" moment — the one deliberately crafted visual
 // in this feature (see routes/textWhisps.ts for the plumbing). Used two
@@ -207,6 +208,16 @@ export function TextWhispScroll({
           <Send className="w-4 h-4" />
           <span>{t("textWhispScroll.sent")}</span>
           <Sparkles className="w-3.5 h-3.5" />
+        </div>
+
+        {/* The same mark-pulse payoff WhispSentConfirmation gives the video-whisp
+            send flow, reused here as the scroll's own last beat — fades in just
+            after "Sent!" so the bow-tie finishes reading before it takes over. */}
+        <div
+          style={{ opacity: sendPhase === "sent" ? 1 : 0, transition: `opacity 400ms ease ${sendPhase === "sent" ? 200 : 0}ms` }}
+          aria-hidden="true"
+        >
+          <Logo waveOnce className="h-16 w-auto text-primary" />
         </div>
       </div>
     );
