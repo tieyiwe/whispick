@@ -148,7 +148,11 @@ export function CirclePostComposer({
         data: {
           videoUrl: uploadedVideoId ? null : videoUrl.trim(),
           videoTitle: needsTitle ? title.trim() : videoMeta?.title ?? null,
-          videoThumbnail: videoMeta?.thumbnail ?? null,
+          // A relative /api/media/:id/thumbnail path when uploadedVideoId is
+          // set — real for the local preview, but not a valid http(s) URL
+          // for the API, which derives the real thumbnail server-side from
+          // the upload anyway (see routes/whisps.ts).
+          videoThumbnail: uploadedVideoId ? null : videoMeta?.thumbnail ?? null,
           videoEmbedUrl: uploadedVideoId ? null : videoMeta?.embedUrl ?? null,
           videoPlatform: videoMeta?.platform ?? null,
           uploadedVideoId,

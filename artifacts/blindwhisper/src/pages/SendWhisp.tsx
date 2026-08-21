@@ -396,7 +396,11 @@ export function SendWhisp() {
           data: {
             videoUrl: uploadedVideoId ? null : videoUrl,
             videoTitle: videoMeta?.title ?? null,
-            videoThumbnail: videoMeta?.thumbnail ?? null,
+            // A relative /api/media/:id/thumbnail path when uploadedVideoId
+            // is set — real for the frontend's own preview, but not a valid
+            // http(s) URL for the API, which derives the real thumbnail
+            // server-side from the upload anyway (see routes/whisps.ts).
+            videoThumbnail: uploadedVideoId ? null : videoMeta?.thumbnail ?? null,
             videoEmbedUrl: uploadedVideoId ? null : videoMeta?.embedUrl ?? null,
             videoPlatform: videoMeta?.platform ?? null,
             uploadedVideoId,
@@ -437,7 +441,9 @@ export function SendWhisp() {
     const sharedPayload = {
       videoUrl: uploadedVideoId ? null : videoUrl,
       videoTitle: videoMeta?.title ?? null,
-      videoThumbnail: videoMeta?.thumbnail ?? null,
+      // See the group_whisper branch above for why this is nulled for an
+      // upload — a relative preview path, not a valid http(s) URL.
+      videoThumbnail: uploadedVideoId ? null : videoMeta?.thumbnail ?? null,
       videoEmbedUrl: uploadedVideoId ? null : videoMeta?.embedUrl ?? null,
       videoPlatform: videoMeta?.platform ?? null,
       uploadedVideoId,
