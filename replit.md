@@ -1,6 +1,6 @@
 # Blind Whisper
 
-An anonymous video recommendation platform — paste a video URL, add a mood tag and optional note, then send it to a known person via Whisper Link (guaranteed anonymous delivery), post it to Circle for organic community discovery, or queue it as a Ghost Boost for wider, best-effort reach — without revealing your identity.
+An anonymous video recommendation platform — paste a video URL, add a mood tag and optional note, then send it to a known person via Whisper Link (guaranteed anonymous delivery) or post it to Circle for organic community discovery — without revealing your identity. (Ghost Boost, a third delivery method, is paused — see the delivery-methods bullet below.)
 
 ## Run & Operate
 

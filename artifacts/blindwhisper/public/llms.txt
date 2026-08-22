@@ -9,7 +9,6 @@ Blind Whisper lets someone send a video, or a short text message, with an option
 - **Whisper Link**: an anonymous video sent by email, SMS, or WhatsApp to one chosen person. Expires 48 hours after delivery.
 - **Whisper Groups**: the same anonymous video sent to several saved recipients at once.
 - **Text Whisp**: a short (up to 260 character) anonymous written message sent privately to a specific phone number. If the number belongs to a verified Blind Whisper user it delivers instantly inside the app; otherwise the recipient gets a link by SMS and can sign up to reply the same way.
-- **Ghost Boost**: a video matched to Blind Whisper's own pool of people who opted in to receive anonymous recommendations on topics/moods they picked — not a targeted ad product, and not run through any third-party ad platform.
 - **Circle**: a public or invite-only feed where a sender can post a video anonymously for a community to see, rather than delivering it to one person.
 - **Invite a friend**: an anonymous invitation to join Blind Whisper, sent by email, SMS, or WhatsApp.
 - **Reveal Flow**: an optional, consent-based way for a sender to disclose their identity to a recipient (on a Whisper Link, Text Whisp, or invite), which the recipient can accept or decline. Available only once the recipient is a signed-up account holder.
@@ -22,7 +21,7 @@ Automated delivery never discloses a sender's identity to a recipient. Phone-num
 ## Pages
 
 - [Homepage](https://blindwhisper.com/): what Blind Whisper is, its core features, and how to get started.
-- [Subscribe](https://blindwhisper.com/subscribe): opt in to receive anonymous video recommendations matched to topics you choose (Ghost Boost).
+- [Subscribe](https://blindwhisper.com/subscribe): opt in to receive anonymous video recommendations matched to topics you choose.
 - [Privacy Policy](https://blindwhisper.com/privacy): what data is collected and how it's used.
 - [Terms of Service](https://blindwhisper.com/terms): the rules of using the platform.
 
