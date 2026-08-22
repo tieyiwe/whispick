@@ -2,6 +2,7 @@ import { describe, it, expect, afterEach } from "vitest";
 import request from "supertest";
 import app from "../app";
 import { TEST_USER_HEADER, clerkGetUserMock } from "./setup";
+import { adminHeaders } from "./adminTestUtils";
 
 const ADMIN_CLERK_ID = "clerk_admin";
 const ADMIN_EMAIL = `${ADMIN_CLERK_ID}@blindwhisper.com`;
@@ -13,10 +14,9 @@ function asUser(userId: string) {
 }
 
 async function asAdmin() {
-  process.env.ADMIN_EMAILS = ADMIN_EMAIL;
-  // Any authenticated request runs ensureUser, which promotes on match.
-  await request(app).get("/api/user/profile").set(asUser(ADMIN_CLERK_ID));
-  return asUser(ADMIN_CLERK_ID);
+  // Promotes, enrolls the app's own admin TOTP, verifies a real code, and
+  // returns headers carrying the unlock token — see adminTestUtils.ts.
+  return adminHeaders(ADMIN_CLERK_ID, ADMIN_EMAIL);
 }
 
 afterEach(() => {
@@ -275,16 +275,18 @@ describe("Admin: stats", () => {
 });
 
 describe("Admin: two-factor requirement", () => {
-  it("blocks an admin account that hasn't enabled 2FA", async () => {
+  // The gate itself (enrollment, codes, tokens) is covered in depth by
+  // adminMfa.test.ts — this pins that /admin/* actually sits behind it.
+  it("blocks an enrolled admin whose request carries no unlock token", async () => {
     const adminHeaders = await asAdmin();
-    clerkGetUserMock.mockResolvedValueOnce({ twoFactorEnabled: false });
+    const { "x-admin-mfa": _token, ...withoutToken } = adminHeaders;
 
-    const res = await request(app).get("/api/admin/users").set(adminHeaders);
+    const res = await request(app).get("/api/admin/users").set(withoutToken);
     expect(res.status).toBe(403);
-    expect(res.body.code).toBe("admin_mfa_required");
+    expect(res.body.code).toBe("admin_mfa_code_required");
   });
 
-  it("allows an admin account with 2FA enabled through (the default test mock)", async () => {
+  it("allows an enrolled admin through with the unlock token", async () => {
     const adminHeaders = await asAdmin();
     const res = await request(app).get("/api/admin/users").set(adminHeaders);
     expect(res.status).toBe(200);

@@ -1,8 +1,9 @@
 import { QueryCache, MutationCache, QueryClient } from "@tanstack/react-query";
-import { isAdminMfaRequiredError, markAdminMfaRequired } from "./adminMfaGate";
+import { adminMfaStateFromError, markAdminMfaState } from "./adminMfaGate";
 
 function handlePossibleAdminMfaError(error: unknown): void {
-  if (isAdminMfaRequiredError(error)) markAdminMfaRequired();
+  const state = adminMfaStateFromError(error);
+  if (state) markAdminMfaState(state);
 }
 
 export const queryClient = new QueryClient({

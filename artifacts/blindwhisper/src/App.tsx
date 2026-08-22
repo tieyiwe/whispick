@@ -15,7 +15,8 @@ import { EnableNotificationsPrompt } from "@/components/shared/EnableNotificatio
 import { AppErrorBoundary } from "@/components/shared/AppErrorBoundary";
 import { MobileSendActionProvider } from "@/contexts/MobileSendAction";
 import { watchForUpdates, isUpdateAvailable } from "@/lib/appUpdate";
-import { setAuthTokenGetter } from "@workspace/api-client-react";
+import { setAuthTokenGetter, setExtraHeadersGetter } from "@workspace/api-client-react";
+import { getAdminMfaToken } from "@/lib/adminMfaGate";
 import { dark } from '@clerk/themes';
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from 'wouter';
 import { Loader2 } from "lucide-react";
@@ -187,7 +188,16 @@ function ClerkAuthTokenBridge() {
 
   useEffect(() => {
     setAuthTokenGetter(() => getToken());
-    return () => setAuthTokenGetter(null);
+    // The admin panel's second-factor unlock token rides on every request
+    // as X-Admin-Mfa (harmless on non-admin routes, required by /admin/*).
+    setExtraHeadersGetter(() => {
+      const token = getAdminMfaToken();
+      return token ? { "X-Admin-Mfa": token } : null;
+    });
+    return () => {
+      setAuthTokenGetter(null);
+      setExtraHeadersGetter(null);
+    };
   }, [getToken]);
 
   return null;

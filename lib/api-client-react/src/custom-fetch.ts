@@ -17,6 +17,7 @@ const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 
 let _baseUrl: string | null = null;
 let _authTokenGetter: AuthTokenGetter | null = null;
+let _extraHeadersGetter: (() => Record<string, string> | null) | null = null;
 
 /**
  * Set a base URL that is prepended to every relative request URL
@@ -53,6 +54,16 @@ export function setAuthTokenGetter(getter: AuthTokenGetter | null): void {
  * such request falls back to cookie-only auth and 401s wherever cookies
  * aren't the working credential.
  */
+/**
+ * Register a getter for additional headers attached to every request —
+ * e.g. the X-Admin-Mfa unlock token the admin panel's second factor uses.
+ * Returned headers never override ones a call sets explicitly. Pass `null`
+ * to clear.
+ */
+export function setExtraHeadersGetter(getter: (() => Record<string, string> | null) | null): void {
+  _extraHeadersGetter = getter;
+}
+
 export async function getAuthToken(): Promise<string | null> {
   if (!_authTokenGetter) return null;
   return (await _authTokenGetter()) ?? null;
@@ -361,6 +372,15 @@ export async function customFetch<T = unknown>(
 
   if (responseType === "json" && !headers.has("accept")) {
     headers.set("accept", DEFAULT_JSON_ACCEPT);
+  }
+
+  if (_extraHeadersGetter) {
+    const extra = _extraHeadersGetter();
+    if (extra) {
+      for (const [key, value] of Object.entries(extra)) {
+        if (!headers.has(key)) headers.set(key, value);
+      }
+    }
   }
 
   // Attach bearer token when an auth getter is configured and no

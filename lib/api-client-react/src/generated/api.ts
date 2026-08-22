@@ -35,6 +35,10 @@ import type {
   AdminListUsersParams,
   AdminListWhispsParams,
   AdminLocationStatsResponse,
+  AdminMfaSetupResponse,
+  AdminMfaStatus,
+  AdminMfaVerifyInput,
+  AdminMfaVerifyResponse,
   AdminNotificationListResponse,
   AdminOpportunitiesResponse,
   AdminOverviewStats,
@@ -7352,6 +7356,225 @@ export const useReportContent = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getReportContentMutationOptions(options));
+    }
+
+export const getGetAdminMfaStatusUrl = () => {
+
+
+
+
+  return `/api/admin-mfa/status`
+}
+
+/**
+ * @summary Whether this admin account has finished authenticator enrollment (admin role only)
+ */
+export const getAdminMfaStatus = async ( options?: RequestInit): Promise<AdminMfaStatus> => {
+
+  return customFetch<AdminMfaStatus>(getGetAdminMfaStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminMfaStatusQueryKey = () => {
+    return [
+    `/api/admin-mfa/status`
+    ] as const;
+    }
+
+
+export const getGetAdminMfaStatusQueryOptions = <TData = Awaited<ReturnType<typeof getAdminMfaStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminMfaStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminMfaStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminMfaStatus>>> = ({ signal }) => getAdminMfaStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminMfaStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdminMfaStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminMfaStatus>>>
+export type GetAdminMfaStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Whether this admin account has finished authenticator enrollment (admin role only)
+ */
+
+export function useGetAdminMfaStatus<TData = Awaited<ReturnType<typeof getAdminMfaStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminMfaStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdminMfaStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSetupAdminMfaUrl = () => {
+
+
+
+
+  return `/api/admin-mfa/setup`
+}
+
+/**
+ * Never overwrites an already-enabled enrollment (409). Re-running while enrollment is still pending issues a fresh secret.
+ * @summary Start authenticator enrollment — returns the TOTP secret and otpauth URI (admin role only)
+ */
+export const setupAdminMfa = async ( options?: RequestInit): Promise<AdminMfaSetupResponse> => {
+
+  return customFetch<AdminMfaSetupResponse>(getSetupAdminMfaUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getSetupAdminMfaMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setupAdminMfa>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setupAdminMfa>>, TError,void, TContext> => {
+
+const mutationKey = ['setupAdminMfa'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setupAdminMfa>>, void> = () => {
+
+
+          return  setupAdminMfa(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetupAdminMfaMutationResult = NonNullable<Awaited<ReturnType<typeof setupAdminMfa>>>
+
+    export type SetupAdminMfaMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Start authenticator enrollment — returns the TOTP secret and otpauth URI (admin role only)
+ */
+export const useSetupAdminMfa = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setupAdminMfa>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setupAdminMfa>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getSetupAdminMfaMutationOptions(options));
+    }
+
+export const getVerifyAdminMfaUrl = () => {
+
+
+
+
+  return `/api/admin-mfa/verify`
+}
+
+/**
+ * The first successful verification activates the enrollment and returns the one-time backup codes. Every success returns a signed unlock token to send as the X-Admin-Mfa header on admin requests.
+ * @summary Confirm an authenticator code (or backup code) and receive an admin unlock token (admin role only)
+ */
+export const verifyAdminMfa = async (adminMfaVerifyInput: AdminMfaVerifyInput, options?: RequestInit): Promise<AdminMfaVerifyResponse> => {
+
+  return customFetch<AdminMfaVerifyResponse>(getVerifyAdminMfaUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(adminMfaVerifyInput)
+  }
+);}
+
+
+
+
+export const getVerifyAdminMfaMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyAdminMfa>>, TError,{data: BodyType<AdminMfaVerifyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof verifyAdminMfa>>, TError,{data: BodyType<AdminMfaVerifyInput>}, TContext> => {
+
+const mutationKey = ['verifyAdminMfa'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof verifyAdminMfa>>, {data: BodyType<AdminMfaVerifyInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  verifyAdminMfa(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VerifyAdminMfaMutationResult = NonNullable<Awaited<ReturnType<typeof verifyAdminMfa>>>
+    export type VerifyAdminMfaMutationBody = BodyType<AdminMfaVerifyInput>
+    export type VerifyAdminMfaMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Confirm an authenticator code (or backup code) and receive an admin unlock token (admin role only)
+ */
+export const useVerifyAdminMfa = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyAdminMfa>>, TError,{data: BodyType<AdminMfaVerifyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof verifyAdminMfa>>,
+        TError,
+        {data: BodyType<AdminMfaVerifyInput>},
+        TContext
+      > => {
+      return useMutation(getVerifyAdminMfaMutationOptions(options));
     }
 
 export const getAdminListContentReportsUrl = (params?: AdminListContentReportsParams,) => {

@@ -2453,6 +2453,39 @@ export const ReportContentResponse = zod.object({
 
 
 /**
+ * @summary Whether this admin account has finished authenticator enrollment (admin role only)
+ */
+export const GetAdminMfaStatusResponse = zod.object({
+  "enrolled": zod.boolean()
+})
+
+
+/**
+ * Never overwrites an already-enabled enrollment (409). Re-running while enrollment is still pending issues a fresh secret.
+ * @summary Start authenticator enrollment — returns the TOTP secret and otpauth URI (admin role only)
+ */
+export const SetupAdminMfaResponse = zod.object({
+  "secret": zod.string().describe('Base32 TOTP secret, for manual entry into an authenticator app.'),
+  "otpauthUrl": zod.string().describe('otpauth:\/\/ provisioning URI — render as a QR code for scanning.')
+})
+
+
+/**
+ * The first successful verification activates the enrollment and returns the one-time backup codes. Every success returns a signed unlock token to send as the X-Admin-Mfa header on admin requests.
+ * @summary Confirm an authenticator code (or backup code) and receive an admin unlock token (admin role only)
+ */
+export const VerifyAdminMfaBody = zod.object({
+  "code": zod.string().describe('6-digit authenticator code, or (once enrolled) a one-time backup code.')
+})
+
+export const VerifyAdminMfaResponse = zod.object({
+  "token": zod.string().describe('Signed unlock token — send as the X-Admin-Mfa header on \/admin\/\* requests. Self-expires.'),
+  "backupCodes": zod.array(zod.string()).optional().describe('Present only on the first successful verification (enrollment activation) — the only time these exist in plaintext.'),
+  "backupCodesRemaining": zod.number().optional().describe('Present when a backup code was consumed — how many remain.')
+})
+
+
+/**
  * User-filed reports against Debate Now content, ordered critical → high → medium → low and oldest-first within a priority. The openByPriority summary always reflects the full unresolved queue regardless of the current filter.
  * @summary Community report queue, ordered by triage priority (admin only)
  */

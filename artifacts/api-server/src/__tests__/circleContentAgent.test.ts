@@ -4,6 +4,7 @@ import app from "../app";
 import { db, whispsTable, circleAgentSettingsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { TEST_USER_HEADER, anthropicMessagesCreateMock } from "./setup";
+import { adminHeaders } from "./adminTestUtils";
 import { runCircleContentAgentSweep } from "../lib/circleContentAgent";
 
 const ADMIN_CLERK_ID = "clerk_circle_agent_admin";
@@ -17,10 +18,9 @@ function asUser(userId: string) {
 }
 
 async function asAdmin() {
-  process.env.ADMIN_EMAILS = ADMIN_EMAIL;
-  // Any authenticated request runs ensureUser, which promotes on match.
-  await request(app).get("/api/user/profile").set(asUser(ADMIN_CLERK_ID));
-  return asUser(ADMIN_CLERK_ID);
+  // Promotes, enrolls the app's own admin TOTP, verifies a real code, and
+  // returns headers carrying the unlock token — see adminTestUtils.ts.
+  return adminHeaders(ADMIN_CLERK_ID, ADMIN_EMAIL);
 }
 
 afterEach(() => {

@@ -10,6 +10,7 @@ import creditsRouter from "./credits";
 import billingRouter from "./billing";
 import linkRouter from "./link";
 import adminRouter from "./admin";
+import adminMfaRouter from "./adminMfa";
 import adminDebateAgentRouter from "./adminDebateAgent";
 import adminCircleAgentRouter from "./adminCircleAgent";
 import whisperGroupsRouter from "./whisperGroups";
@@ -60,6 +61,10 @@ router.use("/user", userRouter);
 router.use("/credits", creditsRouter);
 router.use("/billing", billingRouter);
 router.use("/l", publicEndpointLimiter, linkRouter);
+// Mounted OUTSIDE the /admin router's requireAdmin chain on purpose: these
+// are the enrollment/unlock endpoints the MFA gate sends a locked-out
+// admin through (they do their own signed-in + admin-role check inline).
+router.use("/admin-mfa", adminMfaRouter);
 router.use("/admin", adminRouter);
 // Separate router/file from adminRouter (see routes/adminDebateAgent.ts's
 // own comment for why) but the same "/admin" base path, so its routes still

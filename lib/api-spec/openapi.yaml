@@ -2540,6 +2540,70 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
 
+  /admin-mfa/status:
+    get:
+      operationId: getAdminMfaStatus
+      tags: [adminMfa]
+      summary: Whether this admin account has finished authenticator enrollment (admin role only)
+      responses:
+        "200":
+          description: Enrollment status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMfaStatus"
+
+  /admin-mfa/setup:
+    post:
+      operationId: setupAdminMfa
+      tags: [adminMfa]
+      summary: Start authenticator enrollment — returns the TOTP secret and otpauth URI (admin role only)
+      description: >-
+        Never overwrites an already-enabled enrollment (409). Re-running
+        while enrollment is still pending issues a fresh secret.
+      responses:
+        "200":
+          description: Provisioning material for the authenticator app
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMfaSetupResponse"
+        "409":
+          description: Already enrolled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin-mfa/verify:
+    post:
+      operationId: verifyAdminMfa
+      tags: [adminMfa]
+      summary: Confirm an authenticator code (or backup code) and receive an admin unlock token (admin role only)
+      description: >-
+        The first successful verification activates the enrollment and
+        returns the one-time backup codes. Every success returns a signed
+        unlock token to send as the X-Admin-Mfa header on admin requests.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminMfaVerifyInput"
+      responses:
+        "200":
+          description: Unlock token (plus backup codes on first activation)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMfaVerifyResponse"
+        "400":
+          description: Code didn't match, or enrollment hasn't been set up
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /admin/content-reports:
     get:
       operationId: adminListContentReports
@@ -5158,6 +5222,53 @@ components:
           type: boolean
       required:
         - dismissed
+
+    AdminMfaStatus:
+      type: object
+      properties:
+        enrolled:
+          type: boolean
+      required:
+        - enrolled
+
+    AdminMfaSetupResponse:
+      type: object
+      properties:
+        secret:
+          type: string
+          description: Base32 TOTP secret, for manual entry into an authenticator app.
+        otpauthUrl:
+          type: string
+          description: otpauth:// provisioning URI — render as a QR code for scanning.
+      required:
+        - secret
+        - otpauthUrl
+
+    AdminMfaVerifyInput:
+      type: object
+      properties:
+        code:
+          type: string
+          description: 6-digit authenticator code, or (once enrolled) a one-time backup code.
+      required:
+        - code
+
+    AdminMfaVerifyResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: Signed unlock token — send as the X-Admin-Mfa header on /admin/* requests. Self-expires.
+        backupCodes:
+          type: array
+          items:
+            type: string
+          description: Present only on the first successful verification (enrollment activation) — the only time these exist in plaintext.
+        backupCodesRemaining:
+          type: integer
+          description: Present when a backup code was consumed — how many remain.
+      required:
+        - token
 
     CreateContentReportInput:
       type: object

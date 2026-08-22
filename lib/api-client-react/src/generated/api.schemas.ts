@@ -1064,6 +1064,31 @@ export interface UpdateModerationFlagInput {
   dismissed: boolean;
 }
 
+export interface AdminMfaStatus {
+  enrolled: boolean;
+}
+
+export interface AdminMfaSetupResponse {
+  /** Base32 TOTP secret, for manual entry into an authenticator app. */
+  secret: string;
+  /** otpauth:// provisioning URI — render as a QR code for scanning. */
+  otpauthUrl: string;
+}
+
+export interface AdminMfaVerifyInput {
+  /** 6-digit authenticator code, or (once enrolled) a one-time backup code. */
+  code: string;
+}
+
+export interface AdminMfaVerifyResponse {
+  /** Signed unlock token — send as the X-Admin-Mfa header on /admin/* requests. Self-expires. */
+  token: string;
+  /** Present only on the first successful verification (enrollment activation) — the only time these exist in plaintext. */
+  backupCodes?: string[];
+  /** Present when a backup code was consumed — how many remain. */
+  backupCodesRemaining?: number;
+}
+
 export type CreateContentReportInputContentType = typeof CreateContentReportInputContentType[keyof typeof CreateContentReportInputContentType];
 
 
