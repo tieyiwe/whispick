@@ -13,8 +13,11 @@ import { Logo } from "@/components/ui/logo";
 //   visually rolls itself up into a small tied scroll and confirms "Sent!".
 //
 //   mode="open" — the recipient sees a closed, tied scroll; tapping the bow
-//   unties it, the scroll unrolls, and the message fades in on a warm
-//   parchment card underneath.
+//   immediately reveals the message on a warm parchment card, with a
+//   confetti burst at the same instant. Deliberately NO untie/unroll
+//   animation here (there used to be one) — a multi-hundred-ms sequence
+//   between the tap and the payoff read as a stall rather than a flourish,
+//   so the reveal is synchronous with the click instead.
 //
 // Deliberately plain CSS transitions/keyframes (no animation library) —
 // consistent with this app's existing lightweight-dependency approach.
@@ -22,11 +25,10 @@ import { Logo } from "@/components/ui/logo";
 // dashoffset math stays "0 to 1" regardless of the bow path's real length.
 
 type SendPhase = "flat" | "rolling" | "tying" | "sent";
-type OpenPhase = "closed" | "untying" | "unrolling" | "open";
+type OpenPhase = "closed" | "open";
 
 const ROLL_MS = 550;
 const TIE_MS = 450;
-const UNROLL_MS = 600;
 
 // Matches .logo-wave-twice's own 1.7s cycle in index.css, played twice, plus
 // a buffer for the third arc's own 0.3s --wave-delay so the fade-out timer
@@ -156,32 +158,27 @@ export function TextWhispScroll({
 
   function handleUntie(e: React.MouseEvent<HTMLButtonElement>) {
     if (openPhase !== "closed") return;
-    // Captured now, not inside the later timeout — by the time the scroll
-    // finishes unrolling the button itself is gone from the DOM (replaced by
-    // the parchment card below), so there's no currentTarget left to read.
+    // Captured now, before the state update swaps the button out for the
+    // parchment card in this same tick — by the next render there's no
+    // currentTarget left to read a position from.
     const rect = e.currentTarget.getBoundingClientRect();
-    setOpenPhase("untying");
-    timers.current.push(setTimeout(() => setOpenPhase("unrolling"), TIE_MS));
-    timers.current.push(
-      setTimeout(() => {
-        setOpenPhase("open");
-        // The reveal payoff — same brand-colored burst as PublicInvitePage's
-        // own celebratory moment, timed to when the message is actually
-        // visible rather than the tap that started the unroll.
-        confetti({
-          particleCount: 80,
-          spread: 70,
-          startVelocity: 35,
-          origin: {
-            x: (rect.left + rect.width / 2) / window.innerWidth,
-            y: (rect.top + rect.height / 2) / window.innerHeight,
-          },
-          colors: ["#7C5CFC", "#FF6B6B", "#a78bfa", "#F5F0E8"],
-          disableForReducedMotion: true,
-        });
-        onOpened?.();
-      }, TIE_MS + UNROLL_MS),
-    );
+    setOpenPhase("open");
+    // The reveal payoff — same brand-colored burst as PublicInvitePage's own
+    // celebratory moment, fired synchronously with the tap rather than after
+    // an untie/unroll animation plays out, so there's no gap between
+    // "clicked" and "confetti + message."
+    confetti({
+      particleCount: 80,
+      spread: 70,
+      startVelocity: 35,
+      origin: {
+        x: (rect.left + rect.width / 2) / window.innerWidth,
+        y: (rect.top + rect.height / 2) / window.innerHeight,
+      },
+      colors: ["#7C5CFC", "#FF6B6B", "#a78bfa", "#F5F0E8"],
+      disableForReducedMotion: true,
+    });
+    onOpened?.();
   }
 
   if (mode === "send") {
@@ -244,85 +241,39 @@ export function TextWhispScroll({
     );
   }
 
-  // mode === "open"
-  const untied = openPhase === "untying" || openPhase === "unrolling" || openPhase === "open";
-  const unrolled = openPhase === "unrolling" || openPhase === "open";
+  // mode === "open" — a plain two-state swap, button or card, never both:
+  // no shared "stage" box and no transition between them, since there's
+  // nothing left to overlap or animate once the reveal is instant.
   const opened = openPhase === "open";
 
   return (
     <div className={`flex flex-col items-center gap-5 ${className ?? ""}`} data-testid="text-whisp-open-scroll">
-      {/* Button and card share this single stage box and overlap inside it
-          (both absolutely positioned) rather than sitting one above the
-          other in normal flow — they used to be flex siblings, which meant
-          the still-fading-out cylinder and the already-unrolling card were
-          both visible at once, stacked in a column: a fully faded (but still
-          space-reserving) grey pill above a thin, mid-unroll strip of
-          parchment, reading as a layout glitch instead of one continuous
-          scroll. min-h-28 only while the button still needs a footprint to
-          overlap into — once opened, the card is the only child and gets to
-          size the stage from its own (message-length-dependent) content. */}
-      <div className={`relative w-full max-w-sm ${opened ? "" : "min-h-28"}`}>
-        {!opened && (
-          <button
-            type="button"
-            onClick={handleUntie}
-            disabled={openPhase !== "closed"}
-            className="absolute inset-0 flex items-center justify-center group"
-            data-testid="button-untie-scroll"
-            aria-label={t("textWhispScroll.tapToOpenAriaLabel")}
-          >
-            <div
-              // relative so BowSvg (absolute) anchors to this box — which is
-              // exactly the cylinder's own footprint — rather than escaping
-              // to the button ancestor and losing track of where the
-              // cylinder actually sits.
-              className="relative w-40"
-              style={{
-                opacity: unrolled ? 0 : 1,
-                transform: `scale(${openPhase === "closed" ? 1 : 0.9})`,
-                transition: `opacity ${UNROLL_MS * 0.4}ms ease, transform ${TIE_MS}ms ease`,
-              }}
-            >
-              <ScrollCylinder className="transition-transform group-hover:scale-[1.03] group-active:scale-95" />
-              <BowSvg progress={untied ? 0 : 1} className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-8 w-full text-primary" />
-            </div>
-            {openPhase === "closed" && (
-              <span className="absolute -bottom-6 text-xs text-muted-foreground">{t("textWhispScroll.tapTheBowToOpen")}</span>
-            )}
-          </button>
-        )}
-
-        {/* The unrolling sheet + revealed message — starts as the same thin
-            roll, scales back out to full width, and the parchment message
-            card fades in once it's flat again. Overlaps the button above
-            (absolute inset-x-0 top-0) for as long as the button is still
-            fading out; once opened, it switches to normal flow so the page
-            around it lays out against its real height instead of the
-            button's fixed one. */}
-        {unrolled && (
-          <div
-            className={`${opened ? "" : "absolute inset-x-0 top-0"} rounded-2xl bg-[hsl(38_42%_88%)] shadow-[0_8px_28px_rgba(0,0,0,0.4)] p-5`}
-            style={{
-              transform: `scaleX(${opened ? 1 : 0.12})`,
-              transition: `transform ${UNROLL_MS}ms cubic-bezier(0.16,1,0.3,1)`,
-            }}
-            data-testid="text-whisp-parchment-card"
-          >
-            <div
-              style={{
-                opacity: opened ? 1 : 0,
-                transition: `opacity 400ms ease ${opened ? UNROLL_MS * 0.5 : 0}ms`,
-              }}
-            >
-              <p className="font-serif text-[hsl(30_35%_20%)] text-base leading-relaxed whitespace-pre-wrap">{messageText}</p>
-              <div className="mt-3 pt-3 border-t border-[hsl(35_25%_65%)] flex items-center justify-between text-xs text-[hsl(30_20%_38%)]">
-                <span>— {senderAlias?.trim() || t("textWhispScroll.someoneAnonymous")}</span>
-                {createdAt && <span>{formatWhen(createdAt)}</span>}
-              </div>
-            </div>
+      {!opened ? (
+        <button
+          type="button"
+          onClick={handleUntie}
+          className="relative w-full max-w-sm h-28 flex items-center justify-center group"
+          data-testid="button-untie-scroll"
+          aria-label={t("textWhispScroll.tapToOpenAriaLabel")}
+        >
+          <div className="relative w-40">
+            <ScrollCylinder className="transition-transform group-hover:scale-[1.03] group-active:scale-95" />
+            <BowSvg progress={1} className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-8 w-full text-primary" />
           </div>
-        )}
-      </div>
+          <span className="absolute -bottom-6 text-xs text-muted-foreground">{t("textWhispScroll.tapTheBowToOpen")}</span>
+        </button>
+      ) : (
+        <div
+          className="relative w-full max-w-sm rounded-2xl bg-[hsl(38_42%_88%)] shadow-[0_8px_28px_rgba(0,0,0,0.4)] p-5"
+          data-testid="text-whisp-parchment-card"
+        >
+          <p className="font-serif text-[hsl(30_35%_20%)] text-base leading-relaxed whitespace-pre-wrap">{messageText}</p>
+          <div className="mt-3 pt-3 border-t border-[hsl(35_25%_65%)] flex items-center justify-between text-xs text-[hsl(30_20%_38%)]">
+            <span>— {senderAlias?.trim() || t("textWhispScroll.someoneAnonymous")}</span>
+            {createdAt && <span>{formatWhen(createdAt)}</span>}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
