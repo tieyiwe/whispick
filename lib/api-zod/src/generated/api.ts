@@ -2436,6 +2436,156 @@ export const AdminRemoveFlaggedContentResponse = zod.object({
 
 
 /**
+ * Files a user report against a debate topic or one of its comments, with a reason and optional free-text detail (capped at 300 words). Requires a signed-in account — the admin team's resolution is sent back to the reporter as an in-app notification. One open report per reporter per piece of content; re-reporting the same content while a previous report is still open returns 409.
+ * @summary Report a piece of Debate Now content for violating the Community Guidelines
+ */
+export const ReportContentBody = zod.object({
+  "contentType": zod.enum(['debate_topic', 'debate_topic_comment']),
+  "contentId": zod.string(),
+  "reason": zod.enum(['child_safety', 'threat_or_violence', 'sexual_content', 'hate_speech', 'self_harm', 'harassment', 'inappropriate', 'misinformation', 'spam_or_scam', 'other']),
+  "detail": zod.string().nullish().describe('Optional free-text elaboration from the reporter, capped at 300 words server-side.')
+})
+
+export const ReportContentResponse = zod.object({
+  "id": zod.string(),
+  "status": zod.string()
+})
+
+
+/**
+ * User-filed reports against Debate Now content, ordered critical → high → medium → low and oldest-first within a priority. The openByPriority summary always reflects the full unresolved queue regardless of the current filter.
+ * @summary Community report queue, ordered by triage priority (admin only)
+ */
+export const AdminListContentReportsQueryParams = zod.object({
+  "status": zod.coerce.string().optional().describe('\'unresolved\' (default: open + in_review), \'open\', \'in_review\', \'resolved\', or \'all\'.'),
+  "priority": zod.coerce.string().optional().describe('Filter to one of \'critical\' | \'high\' | \'medium\' | \'low\'.'),
+  "reason": zod.coerce.string().optional(),
+  "page": zod.coerce.number().optional(),
+  "pageSize": zod.coerce.number().optional()
+})
+
+export const AdminListContentReportsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "contentType": zod.string().describe('\'debate_topic\' | \'debate_topic_comment\''),
+  "debateTopicId": zod.string().nullish(),
+  "debateTopicCommentId": zod.string().nullish(),
+  "reporterUserId": zod.string(),
+  "reason": zod.string(),
+  "detail": zod.string().nullish(),
+  "priority": zod.string().describe('\'critical\' | \'high\' | \'medium\' | \'low\' — derived from reason at filing time, admin-overridable afterward.'),
+  "status": zod.string().describe('\'open\' | \'in_review\' | \'resolved\''),
+  "resolution": zod.string().nullish().describe('Set once resolved: \'removed\' | \'no_violation\'.'),
+  "adminNotes": zod.string().nullish(),
+  "adminReplyMessage": zod.string().nullish().describe('The message actually sent back to the reporter at resolve time.'),
+  "authorWarnedAt": zod.string().nullish(),
+  "resolvedAt": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "reporterEmail": zod.string().nullish().describe('Joined for admin display; null if the reporter account was since deleted.'),
+  "debateTopicText": zod.string().nullish().describe('The reported topic\'s text, denormalized for display. Null unless contentType is \'debate_topic\'.'),
+  "debateTopicAuthorId": zod.string().nullish(),
+  "topicRemovedByAdminAt": zod.string().nullish(),
+  "topicDeletedByAuthorAt": zod.string().nullish(),
+  "debateTopicCommentText": zod.string().nullish().describe('The reported comment\'s text. Null unless contentType is \'debate_topic_comment\'.'),
+  "commentAuthorUserId": zod.string().nullish().describe('Null when the comment came from an anonymous no-account visitor — such an author can\'t be warned.'),
+  "commentRemovedByAdminAt": zod.string().nullish()
+})),
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number(),
+  "openByPriority": zod.object({
+  "critical": zod.number(),
+  "high": zod.number(),
+  "medium": zod.number(),
+  "low": zod.number()
+}).describe('Unresolved (open + in_review) report counts per priority, independent of the current filter — the triage summary.')
+})
+
+
+/**
+ * @summary Review/triage tool — re-rank priority, claim into review, keep working notes (admin only)
+ */
+export const AdminUpdateContentReportParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const AdminUpdateContentReportBody = zod.object({
+  "priority": zod.enum(['critical', 'high', 'medium', 'low']).optional(),
+  "status": zod.enum(['open', 'in_review']).optional().describe('Only the working states — \'resolved\' is reachable exclusively through the resolve endpoint.'),
+  "adminNotes": zod.string().nullish()
+})
+
+export const AdminUpdateContentReportResponse = zod.object({
+  "id": zod.string(),
+  "contentType": zod.string().describe('\'debate_topic\' | \'debate_topic_comment\''),
+  "debateTopicId": zod.string().nullish(),
+  "debateTopicCommentId": zod.string().nullish(),
+  "reporterUserId": zod.string(),
+  "reason": zod.string(),
+  "detail": zod.string().nullish(),
+  "priority": zod.string().describe('\'critical\' | \'high\' | \'medium\' | \'low\' — derived from reason at filing time, admin-overridable afterward.'),
+  "status": zod.string().describe('\'open\' | \'in_review\' | \'resolved\''),
+  "resolution": zod.string().nullish().describe('Set once resolved: \'removed\' | \'no_violation\'.'),
+  "adminNotes": zod.string().nullish(),
+  "adminReplyMessage": zod.string().nullish().describe('The message actually sent back to the reporter at resolve time.'),
+  "authorWarnedAt": zod.string().nullish(),
+  "resolvedAt": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "reporterEmail": zod.string().nullish().describe('Joined for admin display; null if the reporter account was since deleted.'),
+  "debateTopicText": zod.string().nullish().describe('The reported topic\'s text, denormalized for display. Null unless contentType is \'debate_topic\'.'),
+  "debateTopicAuthorId": zod.string().nullish(),
+  "topicRemovedByAdminAt": zod.string().nullish(),
+  "topicDeletedByAuthorAt": zod.string().nullish(),
+  "debateTopicCommentText": zod.string().nullish().describe('The reported comment\'s text. Null unless contentType is \'debate_topic_comment\'.'),
+  "commentAuthorUserId": zod.string().nullish().describe('Null when the comment came from an anonymous no-account visitor — such an author can\'t be warned.'),
+  "commentRemovedByAdminAt": zod.string().nullish()
+})
+
+
+/**
+ * resolution 'removed' sets removedByAdminAt on the reported content (excluding it from every public read); 'no_violation' leaves it up. Either way the reporter receives an in-app notification — the custom replyToReporter message when provided, an honest default for the chosen resolution otherwise. warnAuthor, when present, is delivered to the content author's account as a Community Guidelines warning; authorWarned is false in the response when the author has no account to deliver to (anonymous commenter).
+ * @summary Resolve a report — optionally take the content down, always notify the reporter, optionally warn the author (admin only)
+ */
+export const AdminResolveContentReportParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const AdminResolveContentReportBody = zod.object({
+  "resolution": zod.enum(['removed', 'no_violation']),
+  "replyToReporter": zod.string().optional().describe('Optional custom message to the reporter; a default template for the resolution is sent when omitted.'),
+  "warnAuthor": zod.string().optional().describe('When present, delivered to the content author\'s account as a Community Guidelines warning.')
+})
+
+export const AdminResolveContentReportResponse = zod.object({
+  "id": zod.string(),
+  "contentType": zod.string().describe('\'debate_topic\' | \'debate_topic_comment\''),
+  "debateTopicId": zod.string().nullish(),
+  "debateTopicCommentId": zod.string().nullish(),
+  "reporterUserId": zod.string(),
+  "reason": zod.string(),
+  "detail": zod.string().nullish(),
+  "priority": zod.string().describe('\'critical\' | \'high\' | \'medium\' | \'low\' — derived from reason at filing time, admin-overridable afterward.'),
+  "status": zod.string().describe('\'open\' | \'in_review\' | \'resolved\''),
+  "resolution": zod.string().nullish().describe('Set once resolved: \'removed\' | \'no_violation\'.'),
+  "adminNotes": zod.string().nullish(),
+  "adminReplyMessage": zod.string().nullish().describe('The message actually sent back to the reporter at resolve time.'),
+  "authorWarnedAt": zod.string().nullish(),
+  "resolvedAt": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "reporterEmail": zod.string().nullish().describe('Joined for admin display; null if the reporter account was since deleted.'),
+  "debateTopicText": zod.string().nullish().describe('The reported topic\'s text, denormalized for display. Null unless contentType is \'debate_topic\'.'),
+  "debateTopicAuthorId": zod.string().nullish(),
+  "topicRemovedByAdminAt": zod.string().nullish(),
+  "topicDeletedByAuthorAt": zod.string().nullish(),
+  "debateTopicCommentText": zod.string().nullish().describe('The reported comment\'s text. Null unless contentType is \'debate_topic_comment\'.'),
+  "commentAuthorUserId": zod.string().nullish().describe('Null when the comment came from an anonymous no-account visitor — such an author can\'t be warned.'),
+  "commentRemovedByAdminAt": zod.string().nullish()
+}).and(zod.object({
+  "authorWarned": zod.boolean().describe('False when a warning was requested but the author has no account to deliver it to.')
+}))
+
+
+/**
  * @summary List Suggestions Library videos, including pending AI-agent finds (admin only)
  */
 export const AdminListSuggestionsQueryParams = zod.object({

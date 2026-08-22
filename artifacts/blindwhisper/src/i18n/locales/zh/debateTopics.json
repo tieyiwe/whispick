@@ -14,7 +14,9 @@
     "toast": {
       "posted": "话题已匿名发布",
       "postError": "话题发布失败"
-    }
+    },
+    "guidelinesNotice": "发布即表示你同意我们的",
+    "guidelinesLinkText": "社区准则"
   },
   "debateFollowing": {
     "backButton": "返回 Debate Now",
@@ -102,6 +104,38 @@
     "emptyTitle": "暂时还没有辩论",
     "emptyDescription": "抢先发布一个话题吧——一个问题、一个观点，任何值得讨论的东西都可以。",
     "newerButton": "更新的",
-    "moreButton": "更多话题"
+    "moreButton": "更多话题",
+    "guidelinesLink": "社区准则"
+  },
+  "reportDialog": {
+    "triggerLabel": "举报",
+    "title": "举报此内容",
+    "description": "告诉我们问题所在。举报是保密的——作者永远不会看到是谁举报的。",
+    "reasonLabel": "你为什么举报它?",
+    "reasons": {
+      "inappropriate": "不当内容",
+      "sexual_content": "色情内容",
+      "harassment": "骚扰或欺凌",
+      "hate_speech": "仇恨言论",
+      "threat_or_violence": "威胁或暴力",
+      "child_safety": "虐待或危害儿童",
+      "self_harm": "自残或自杀",
+      "misinformation": "虚假信息",
+      "spam_or_scam": "垃圾信息或诈骗",
+      "other": "其他"
+    },
+    "detailLabel": "补充细节(可选)",
+    "detailPlaceholder": "任何能帮助我们团队了解问题的信息...",
+    "wordCount": "{{used}}/{{max}} 词",
+    "guidelinesPrefix": "不确定是否越界?请阅读我们的",
+    "guidelinesLinkText": "社区准则",
+    "submitButton": "提交举报",
+    "cancelButton": "取消",
+    "signInPrompt": "你需要登录才能举报内容——这样我们的团队才能告知你举报的处理结果。",
+    "signInButton": "登录",
+    "toastSubmittedTitle": "举报已提交",
+    "toastSubmittedDescription": "我们的团队将进行审核,并通知你处理结果。",
+    "toastAlreadyReported": "你已经举报过了——我们的团队正在处理。",
+    "toastFailed": "无法提交举报"
   }
 }

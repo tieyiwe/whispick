@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Logo } from "@/components/ui/logo";
 import { DebateTopicCard } from "@/components/shared/DebateTopicCard";
-import { Swords, Users, Loader2 } from "lucide-react";
+import { Swords, Users, Loader2, ShieldCheck } from "lucide-react";
 
 function BlindWhisperLogoMark() {
   return (
@@ -67,6 +67,11 @@ export function DebateTopics() {
             {t("debateTopics.heading")}
           </h1>
           <p className="text-muted-foreground max-w-md mx-auto">{t("debateTopics.description")}</p>
+          <p className="text-xs text-muted-foreground">
+            <Link href="/community-guidelines" className="inline-flex items-center gap-1 hover:text-primary transition-colors underline underline-offset-2" data-testid="link-community-guidelines">
+              <ShieldCheck className="w-3.5 h-3.5" /> {t("debateTopics.guidelinesLink")}
+            </Link>
+          </p>
           {!isSignedIn && (
             <div className="pt-1">
               <a href="/sign-up">

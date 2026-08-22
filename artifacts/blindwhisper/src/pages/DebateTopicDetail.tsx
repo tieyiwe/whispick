@@ -26,6 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getVisitorId } from "@/lib/anonymousVisitor";
 import { FollowButton } from "@/components/shared/FollowButton";
 import { AvatarCircle } from "@/components/shared/AvatarCircle";
+import { ReportContentDialog } from "@/components/shared/ReportContentDialog";
 import { AvatarPickerGrid } from "@/components/shared/AvatarPickerGrid";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
@@ -356,6 +357,10 @@ function CommentCard({
             >
               {t("debateTopicDetail.replyButton")}
             </button>
+            {/* No flag on your own comment — the report queue isn't a
+                self-service delete button (the author has no retraction
+                path for comments by design; see debate_topic_comments.ts). */}
+            {!comment.isOwnComment && <ReportContentDialog contentType="debate_topic_comment" contentId={comment.id} compact />}
           </div>
         </div>
       </div>
@@ -683,6 +688,7 @@ export function DebateTopicDetail() {
                     >
                       <Share2 className="w-3.5 h-3.5 mr-1.5" /> {t("debateTopicDetail.whisperButton")}
                     </Button>
+                    {!topic.isOwnTopic && <ReportContentDialog contentType="debate_topic" contentId={topic.id} />}
                     {topic.isOwnTopic && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>

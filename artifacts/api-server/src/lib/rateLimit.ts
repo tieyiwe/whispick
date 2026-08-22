@@ -134,6 +134,20 @@ export const createDebateTopicLimiter = rateLimit({
   keyGenerator: authKeyGenerator,
 });
 
+// Filing a content report (routes/contentReports.ts) is free and writes a
+// row an admin has to personally read — the classic shape for both
+// griefing (mass-reporting someone you disagree with) and queue-flooding.
+// 20/hour is far beyond what any good-faith reporter needs while keeping
+// one account from burying the admin queue; the per-content dedup check in
+// the route itself handles repeat reports of the same post separately.
+export const reportContentLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: authKeyGenerator,
+});
+
 // POST /:id/reveal (routes/textWhisps.ts) is the one remaining place a
 // sender can learn whether a Text Whisp's recipient phone number matched a
 // verified account: it 400s with "hasn't joined yet" if not, succeeds (and

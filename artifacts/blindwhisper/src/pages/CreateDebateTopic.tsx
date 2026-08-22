@@ -93,6 +93,13 @@ export function CreateDebateTopic() {
             {createTopic.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Swords className="w-4 h-4 mr-2" />}
             {t("createDebateTopic.submitButton")}
           </Button>
+
+          <p className="text-[11px] text-muted-foreground text-center">
+            {t("createDebateTopic.guidelinesNotice")}{" "}
+            <a href="/community-guidelines" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline" data-testid="link-guidelines-from-composer">
+              {t("createDebateTopic.guidelinesLinkText")}
+            </a>
+          </p>
         </Card>
 
         <div className="space-y-2">

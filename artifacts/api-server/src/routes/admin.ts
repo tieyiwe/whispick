@@ -23,6 +23,7 @@ import {
   circleCommentsTable,
   debateTopicsTable,
   debateTopicCommentsTable,
+  contentReportsTable,
   type User,
 } from "@workspace/db";
 import { and, asc, count, desc, eq, gte, ilike, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
@@ -33,7 +34,7 @@ import { computeOpportunities } from "../lib/insights";
 import { resolveVideoMeta } from "../lib/videoMeta";
 import { generateSuggestionSummaryAsync } from "../lib/suggestionSummary";
 import { runSuggestionDiscoveryAgent } from "../lib/suggestionAgent";
-import { notifyUser, notifyAllUsers } from "../lib/push";
+import { notifyUser, notifyAllUsers, notifyUserPersisted } from "../lib/push";
 import { httpUrlString, isHttpUrlOrAppPath } from "../lib/safeUrl";
 
 const router = Router();
@@ -994,6 +995,244 @@ router.post("/moderation/flags/:id/remove-content", async (req, res): Promise<vo
 
   const updated = await db.select().from(moderationFlagsTable).where(eq(moderationFlagsTable.id, flag.id)).then((r) => r[0]);
   res.json(updated);
+});
+
+// ---------------------------------------------------------------------------
+// Community reports — the user-filed queue (content_reports.ts), distinct
+// from the automated moderation_flags queue above. Reports arrive
+// pre-categorized (reason → stored priority, see routes/contentReports.ts's
+// REASON_PRIORITY) and this queue orders itself by that priority so the
+// worst things surface first; an admin can re-triage, take a report into
+// review, keep working notes, and finally resolve it — which is also the
+// moment the reporter hears back and (optionally) the author gets warned.
+// ---------------------------------------------------------------------------
+
+// Sorts critical → high → medium → low; anything unexpected sinks to the
+// bottom rather than breaking the queue.
+const reportPriorityRank = sql`CASE ${contentReportsTable.priority} WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 ELSE 4 END`;
+
+const REPORT_PRIORITIES = ["critical", "high", "medium", "low"] as const;
+
+// GET /api/admin/content-reports
+router.get("/content-reports", async (req, res): Promise<void> => {
+  const { page, pageSize } = parsePagination(req);
+  const statusFilter = typeof req.query.status === "string" ? req.query.status : "unresolved";
+  const priorityFilter = typeof req.query.priority === "string" ? req.query.priority : undefined;
+  const reasonFilter = typeof req.query.reason === "string" ? req.query.reason : undefined;
+
+  const conditions = [];
+  // "unresolved" (the default view) is the working queue: open + in_review.
+  if (statusFilter === "unresolved") conditions.push(inArray(contentReportsTable.status, ["open", "in_review"]));
+  else if (statusFilter !== "all") conditions.push(eq(contentReportsTable.status, statusFilter));
+  if (priorityFilter) conditions.push(eq(contentReportsTable.priority, priorityFilter));
+  if (reasonFilter) conditions.push(eq(contentReportsTable.reason, reasonFilter));
+  const where = conditions.length ? and(...conditions) : undefined;
+
+  const [rows, totalRow, summaryRows] = await Promise.all([
+    db
+      .select({
+        id: contentReportsTable.id,
+        contentType: contentReportsTable.contentType,
+        debateTopicId: contentReportsTable.debateTopicId,
+        debateTopicCommentId: contentReportsTable.debateTopicCommentId,
+        reporterUserId: contentReportsTable.reporterUserId,
+        reason: contentReportsTable.reason,
+        detail: contentReportsTable.detail,
+        priority: contentReportsTable.priority,
+        status: contentReportsTable.status,
+        resolution: contentReportsTable.resolution,
+        adminNotes: contentReportsTable.adminNotes,
+        adminReplyMessage: contentReportsTable.adminReplyMessage,
+        authorWarnedAt: contentReportsTable.authorWarnedAt,
+        resolvedAt: contentReportsTable.resolvedAt,
+        createdAt: contentReportsTable.createdAt,
+        reporterEmail: usersTable.email,
+        debateTopicText: debateTopicsTable.topicText,
+        debateTopicAuthorId: debateTopicsTable.authorId,
+        topicRemovedByAdminAt: debateTopicsTable.removedByAdminAt,
+        topicDeletedByAuthorAt: debateTopicsTable.deletedByAuthorAt,
+        debateTopicCommentText: debateTopicCommentsTable.commentText,
+        commentAuthorUserId: debateTopicCommentsTable.authorUserId,
+        commentRemovedByAdminAt: debateTopicCommentsTable.removedByAdminAt,
+      })
+      .from(contentReportsTable)
+      .leftJoin(usersTable, eq(contentReportsTable.reporterUserId, usersTable.id))
+      .leftJoin(debateTopicsTable, eq(contentReportsTable.debateTopicId, debateTopicsTable.id))
+      .leftJoin(debateTopicCommentsTable, eq(contentReportsTable.debateTopicCommentId, debateTopicCommentsTable.id))
+      .where(where)
+      // Priority first (critical work surfaces regardless of arrival
+      // order), oldest first within a priority — the report that's waited
+      // longest at the same severity gets looked at next, plain FIFO.
+      .orderBy(reportPriorityRank, asc(contentReportsTable.createdAt))
+      .limit(pageSize)
+      .offset((page - 1) * pageSize),
+    db.select({ count: count() }).from(contentReportsTable).where(where).then((r) => r[0]),
+    // The triage summary deliberately IGNORES the current filter: its
+    // whole job is "what's still waiting, at what severity," which should
+    // stay visible (and alarming, when critical > 0) even while the admin
+    // is browsing resolved history.
+    db
+      .select({ priority: contentReportsTable.priority, count: count() })
+      .from(contentReportsTable)
+      .where(inArray(contentReportsTable.status, ["open", "in_review"]))
+      .groupBy(contentReportsTable.priority),
+  ]);
+
+  const openByPriority: Record<string, number> = { critical: 0, high: 0, medium: 0, low: 0 };
+  for (const row of summaryRows) {
+    if (row.priority in openByPriority) openByPriority[row.priority] = row.count;
+  }
+
+  res.json({ items: rows, total: totalRow?.count ?? 0, page, pageSize, openByPriority });
+});
+
+const updateContentReportSchema = z.object({
+  priority: z.enum(REPORT_PRIORITIES).optional(),
+  // Only the two working states are settable here — "resolved" is reachable
+  // exclusively through POST /:id/resolve below, which is what enforces the
+  // notify-the-reporter step a resolution is supposed to carry.
+  status: z.enum(["open", "in_review"]).optional(),
+  adminNotes: z.string().max(2000).nullable().optional(),
+});
+
+// PATCH /api/admin/content-reports/:id — the review/triage tool: re-rank a
+// report's priority, claim it into review, keep working notes.
+router.patch("/content-reports/:id", async (req, res): Promise<void> => {
+  const report = await db.select().from(contentReportsTable).where(eq(contentReportsTable.id, req.params.id)).then((r) => r[0]);
+  if (!report) {
+    res.status(404).json({ error: "Report not found" });
+    return;
+  }
+  if (report.status === "resolved") {
+    res.status(409).json({ error: "This report is already resolved." });
+    return;
+  }
+
+  const parsed = updateContentReportSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const updates: Record<string, unknown> = {};
+  if (parsed.data.priority !== undefined) updates.priority = parsed.data.priority;
+  if (parsed.data.status !== undefined) updates.status = parsed.data.status;
+  if (parsed.data.adminNotes !== undefined) updates.adminNotes = parsed.data.adminNotes;
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json({ error: "Nothing to update" });
+    return;
+  }
+
+  await db.update(contentReportsTable).set(updates).where(eq(contentReportsTable.id, report.id));
+
+  const adminUser = (req as any).adminUser as User;
+  logAdminAction(adminUser.id, "report.update", { type: "content_report", id: report.id }, { before: { priority: report.priority, status: report.status }, after: parsed.data });
+
+  const updated = await db.select().from(contentReportsTable).where(eq(contentReportsTable.id, report.id)).then((r) => r[0]);
+  res.json(updated);
+});
+
+const resolveContentReportSchema = z.object({
+  resolution: z.enum(["removed", "no_violation"]),
+  // Optional custom message to the reporter — when omitted, a default
+  // template for the chosen resolution is sent instead. The reporter ALWAYS
+  // hears back; what's optional is only whether an admin personalizes it.
+  replyToReporter: z.string().trim().max(1000).optional(),
+  // When present, the content's author receives this as a Community
+  // Guidelines warning notification. Only possible when the author has an
+  // account — see the authorWarned flag in the response.
+  warnAuthor: z.string().trim().max(1000).optional(),
+});
+
+// POST /api/admin/content-reports/:id/resolve — closes the loop the report
+// opened: optionally takes the content down, always tells the reporter what
+// happened, optionally warns the author.
+router.post("/content-reports/:id/resolve", async (req, res): Promise<void> => {
+  const report = await db.select().from(contentReportsTable).where(eq(contentReportsTable.id, req.params.id)).then((r) => r[0]);
+  if (!report) {
+    res.status(404).json({ error: "Report not found" });
+    return;
+  }
+  if (report.status === "resolved") {
+    res.status(409).json({ error: "This report is already resolved." });
+    return;
+  }
+
+  const parsed = resolveContentReportSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const { resolution } = parsed.data;
+  const replyToReporter = parsed.data.replyToReporter?.trim() || null;
+  const warnAuthor = parsed.data.warnAuthor?.trim() || null;
+
+  const now = new Date();
+
+  // Resolve the content row + its author's account id (null = anonymous
+  // no-account commenter, who can't be warned).
+  let authorUserId: string | null = null;
+  if (report.contentType === "debate_topic" && report.debateTopicId) {
+    const topic = await db.select().from(debateTopicsTable).where(eq(debateTopicsTable.id, report.debateTopicId)).then((r) => r[0]);
+    authorUserId = topic?.authorId ?? null;
+    if (resolution === "removed" && topic && !topic.removedByAdminAt) {
+      await db.update(debateTopicsTable).set({ removedByAdminAt: now }).where(eq(debateTopicsTable.id, topic.id));
+    }
+  } else if (report.contentType === "debate_topic_comment" && report.debateTopicCommentId) {
+    const comment = await db.select().from(debateTopicCommentsTable).where(eq(debateTopicCommentsTable.id, report.debateTopicCommentId)).then((r) => r[0]);
+    authorUserId = comment?.authorUserId ?? null;
+    if (resolution === "removed" && comment && !comment.removedByAdminAt) {
+      await db.update(debateTopicCommentsTable).set({ removedByAdminAt: now }).where(eq(debateTopicCommentsTable.id, comment.id));
+    }
+  }
+
+  // The reporter always hears the outcome — a custom reply when the admin
+  // wrote one, an honest default otherwise. Silence is the one thing this
+  // endpoint refuses to do with a resolution.
+  const reporterBody =
+    replyToReporter ??
+    (resolution === "removed"
+      ? "Thanks for your report. We reviewed the content and removed it for violating our Community Guidelines."
+      : "Thanks for your report. We reviewed the content and found it doesn't violate our Community Guidelines, so it will stay up. We appreciate you looking out for the community.");
+  await notifyUserPersisted(report.reporterUserId, "Update on your report", reporterBody, "/community-guidelines", "report_update");
+
+  let authorWarned = false;
+  if (warnAuthor) {
+    if (authorUserId) {
+      await notifyUserPersisted(
+        authorUserId,
+        "Community Guidelines warning",
+        `${warnAuthor}\n\nPlease review our Community Guidelines. Repeated violations may result in account suspension.`,
+        "/community-guidelines",
+        "moderation_warning",
+      );
+      authorWarned = true;
+    }
+    // else: anonymous no-account author — nowhere to deliver a warning, so
+    // it's skipped; authorWarned:false in the response tells the admin so.
+  }
+
+  await db
+    .update(contentReportsTable)
+    .set({
+      status: "resolved",
+      resolution,
+      adminReplyMessage: reporterBody,
+      authorWarnedAt: authorWarned ? now : null,
+      resolvedAt: now,
+      resolvedByAdminId: ((req as any).adminUser as User).id,
+    })
+    .where(eq(contentReportsTable.id, report.id));
+
+  const adminUser = (req as any).adminUser as User;
+  logAdminAction(
+    adminUser.id,
+    "report.resolve",
+    { type: "content_report", id: report.id },
+    { resolution, contentType: report.contentType, contentId: report.debateTopicId ?? report.debateTopicCommentId, authorWarned, repliedWithCustomMessage: !!replyToReporter },
+  );
+
+  const updated = await db.select().from(contentReportsTable).where(eq(contentReportsTable.id, report.id)).then((r) => r[0]);
+  res.json({ ...updated, authorWarned });
 });
 
 // ---------------------------------------------------------------------------

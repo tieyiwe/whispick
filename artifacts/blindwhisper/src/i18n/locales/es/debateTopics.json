@@ -14,7 +14,9 @@
     "toast": {
       "posted": "Tema publicado de forma anónima",
       "postError": "No se pudo publicar el tema"
-    }
+    },
+    "guidelinesNotice": "Al publicar, aceptas nuestras",
+    "guidelinesLinkText": "Normas de la comunidad"
   },
   "debateFollowing": {
     "backButton": "Volver a Debate Now",
@@ -104,6 +106,38 @@
     "emptyTitle": "Todavía no hay debates",
     "emptyDescription": "Sé el primero en publicar un tema: una pregunta, una opinión, algo que valga la pena discutir.",
     "newerButton": "Más recientes",
-    "moreButton": "Más temas"
+    "moreButton": "Más temas",
+    "guidelinesLink": "Normas de la comunidad"
+  },
+  "reportDialog": {
+    "triggerLabel": "Denunciar",
+    "title": "Denunciar este contenido",
+    "description": "Cuéntanos qué está mal. Las denuncias son confidenciales: el autor nunca ve quién lo denunció.",
+    "reasonLabel": "¿Por qué lo denuncias?",
+    "reasons": {
+      "inappropriate": "Inapropiado",
+      "sexual_content": "Contenido sexual",
+      "harassment": "Acoso o intimidación",
+      "hate_speech": "Discurso de odio",
+      "threat_or_violence": "Amenaza o violencia",
+      "child_safety": "Abuso o peligro para menores",
+      "self_harm": "Autolesión o suicidio",
+      "misinformation": "Desinformación",
+      "spam_or_scam": "Spam o estafa",
+      "other": "Otra cosa"
+    },
+    "detailLabel": "Añade detalles (opcional)",
+    "detailPlaceholder": "Cualquier cosa que ayude a nuestro equipo a entender qué está mal...",
+    "wordCount": "{{used}}/{{max}} palabras",
+    "guidelinesPrefix": "¿No sabes si cruza la línea? Lee nuestras",
+    "guidelinesLinkText": "Normas de la comunidad",
+    "submitButton": "Enviar denuncia",
+    "cancelButton": "Cancelar",
+    "signInPrompt": "Debes iniciar sesión para denunciar contenido: así nuestro equipo puede informarte del resultado de tu denuncia.",
+    "signInButton": "Iniciar sesión",
+    "toastSubmittedTitle": "Denuncia enviada",
+    "toastSubmittedDescription": "Nuestro equipo la revisará y te notificará el resultado.",
+    "toastAlreadyReported": "Ya has denunciado esto: nuestro equipo se está encargando.",
+    "toastFailed": "No se pudo enviar la denuncia"
   }
 }

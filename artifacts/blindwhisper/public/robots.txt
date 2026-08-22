@@ -5,6 +5,7 @@ Allow: /privacy-policy
 Allow: /terms
 Allow: /terms-and-conditions
 Allow: /sms-terms
+Allow: /community-guidelines
 Allow: /subscribe
 Disallow: /w/
 Disallow: /invite
@@ -35,6 +36,7 @@ Allow: /privacy-policy
 Allow: /terms
 Allow: /terms-and-conditions
 Allow: /sms-terms
+Allow: /community-guidelines
 Allow: /subscribe
 Disallow: /w/
 Disallow: /invite
@@ -65,6 +67,7 @@ Allow: /privacy-policy
 Allow: /terms
 Allow: /terms-and-conditions
 Allow: /sms-terms
+Allow: /community-guidelines
 Allow: /subscribe
 Disallow: /w/
 Disallow: /invite
@@ -95,6 +98,7 @@ Allow: /privacy-policy
 Allow: /terms
 Allow: /terms-and-conditions
 Allow: /sms-terms
+Allow: /community-guidelines
 Allow: /subscribe
 Disallow: /w/
 Disallow: /invite
@@ -125,6 +129,7 @@ Allow: /privacy-policy
 Allow: /terms
 Allow: /terms-and-conditions
 Allow: /sms-terms
+Allow: /community-guidelines
 Allow: /subscribe
 Disallow: /w/
 Disallow: /invite
@@ -155,6 +160,7 @@ Allow: /privacy-policy
 Allow: /terms
 Allow: /terms-and-conditions
 Allow: /sms-terms
+Allow: /community-guidelines
 Allow: /subscribe
 Disallow: /w/
 Disallow: /invite
@@ -185,6 +191,7 @@ Allow: /privacy-policy
 Allow: /terms
 Allow: /terms-and-conditions
 Allow: /sms-terms
+Allow: /community-guidelines
 Allow: /subscribe
 Disallow: /w/
 Disallow: /invite
@@ -215,6 +222,7 @@ Allow: /privacy-policy
 Allow: /terms
 Allow: /terms-and-conditions
 Allow: /sms-terms
+Allow: /community-guidelines
 Allow: /subscribe
 Disallow: /w/
 Disallow: /invite
@@ -245,6 +253,7 @@ Allow: /privacy-policy
 Allow: /terms
 Allow: /terms-and-conditions
 Allow: /sms-terms
+Allow: /community-guidelines
 Allow: /subscribe
 Disallow: /w/
 Disallow: /invite
@@ -275,6 +284,7 @@ Allow: /privacy-policy
 Allow: /terms
 Allow: /terms-and-conditions
 Allow: /sms-terms
+Allow: /community-guidelines
 Allow: /subscribe
 Disallow: /w/
 Disallow: /invite
@@ -305,6 +315,7 @@ Allow: /privacy-policy
 Allow: /terms
 Allow: /terms-and-conditions
 Allow: /sms-terms
+Allow: /community-guidelines
 Allow: /subscribe
 Disallow: /w/
 Disallow: /invite
@@ -335,6 +346,7 @@ Allow: /privacy-policy
 Allow: /terms
 Allow: /terms-and-conditions
 Allow: /sms-terms
+Allow: /community-guidelines
 Allow: /subscribe
 Disallow: /w/
 Disallow: /invite
@@ -365,6 +377,7 @@ Allow: /privacy-policy
 Allow: /terms
 Allow: /terms-and-conditions
 Allow: /sms-terms
+Allow: /community-guidelines
 Allow: /subscribe
 Disallow: /w/
 Disallow: /invite
@@ -395,6 +408,7 @@ Allow: /privacy-policy
 Allow: /terms
 Allow: /terms-and-conditions
 Allow: /sms-terms
+Allow: /community-guidelines
 Allow: /subscribe
 Disallow: /w/
 Disallow: /invite
@@ -425,6 +439,7 @@ Allow: /privacy-policy
 Allow: /terms
 Allow: /terms-and-conditions
 Allow: /sms-terms
+Allow: /community-guidelines
 Allow: /subscribe
 Disallow: /w/
 Disallow: /invite
@@ -455,6 +470,7 @@ Allow: /privacy-policy
 Allow: /terms
 Allow: /terms-and-conditions
 Allow: /sms-terms
+Allow: /community-guidelines
 Allow: /subscribe
 Disallow: /w/
 Disallow: /invite
@@ -485,6 +501,7 @@ Allow: /privacy-policy
 Allow: /terms
 Allow: /terms-and-conditions
 Allow: /sms-terms
+Allow: /community-guidelines
 Allow: /subscribe
 Disallow: /w/
 Disallow: /invite
@@ -515,6 +532,7 @@ Allow: /privacy-policy
 Allow: /terms
 Allow: /terms-and-conditions
 Allow: /sms-terms
+Allow: /community-guidelines
 Allow: /subscribe
 Disallow: /w/
 Disallow: /invite

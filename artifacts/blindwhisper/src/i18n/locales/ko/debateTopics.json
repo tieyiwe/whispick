@@ -14,7 +14,9 @@
     "toast": {
       "posted": "주제가 익명으로 게시되었습니다",
       "postError": "주제를 게시하지 못했습니다"
-    }
+    },
+    "guidelinesNotice": "게시하면 다음에 동의하는 것입니다:",
+    "guidelinesLinkText": "커뮤니티 가이드라인"
   },
   "debateFollowing": {
     "backButton": "Debate Now로 돌아가기",
@@ -102,6 +104,38 @@
     "emptyTitle": "아직 토론이 없어요",
     "emptyDescription": "첫 주제를 올려보세요 — 질문이든 의견이든, 토론할 가치가 있는 거라면 뭐든 좋아요.",
     "newerButton": "최신순",
-    "moreButton": "주제 더 보기"
+    "moreButton": "주제 더 보기",
+    "guidelinesLink": "커뮤니티 가이드라인"
+  },
+  "reportDialog": {
+    "triggerLabel": "신고",
+    "title": "이 콘텐츠 신고하기",
+    "description": "무엇이 문제인지 알려주세요. 신고는 비공개입니다 — 작성자는 누가 신고했는지 절대 알 수 없습니다.",
+    "reasonLabel": "신고하는 이유가 무엇인가요?",
+    "reasons": {
+      "inappropriate": "부적절함",
+      "sexual_content": "성적인 콘텐츠",
+      "harassment": "괴롭힘 또는 따돌림",
+      "hate_speech": "혐오 발언",
+      "threat_or_violence": "위협 또는 폭력",
+      "child_safety": "아동 학대 또는 위험",
+      "self_harm": "자해 또는 자살",
+      "misinformation": "허위 정보",
+      "spam_or_scam": "스팸 또는 사기",
+      "other": "기타"
+    },
+    "detailLabel": "세부 내용 추가 (선택)",
+    "detailPlaceholder": "저희 팀이 문제를 이해하는 데 도움이 될 내용을 적어주세요...",
+    "wordCount": "{{used}}/{{max}} 단어",
+    "guidelinesPrefix": "선을 넘는지 확실하지 않나요? 다음을 읽어보세요:",
+    "guidelinesLinkText": "커뮤니티 가이드라인",
+    "submitButton": "신고 제출",
+    "cancelButton": "취소",
+    "signInPrompt": "콘텐츠를 신고하려면 로그인해야 합니다 — 그래야 저희 팀이 신고 처리 결과를 알려드릴 수 있습니다.",
+    "signInButton": "로그인",
+    "toastSubmittedTitle": "신고가 제출되었습니다",
+    "toastSubmittedDescription": "저희 팀이 검토한 후 결과를 알려드리겠습니다.",
+    "toastAlreadyReported": "이미 신고하셨습니다 — 저희 팀이 처리 중입니다.",
+    "toastFailed": "신고를 제출하지 못했습니다"
   }
 }

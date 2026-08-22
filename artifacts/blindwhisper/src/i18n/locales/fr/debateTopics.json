@@ -14,7 +14,9 @@
     "toast": {
       "posted": "Sujet publié anonymement",
       "postError": "Impossible de publier ce sujet"
-    }
+    },
+    "guidelinesNotice": "En publiant, tu acceptes nos",
+    "guidelinesLinkText": "Règles de la communauté"
   },
   "debateFollowing": {
     "backButton": "Retour à Debate Now",
@@ -104,6 +106,38 @@
     "emptyTitle": "Pas encore de débats",
     "emptyDescription": "Sois le premier à publier un sujet — une question, une opinion, un sujet qui vaut la peine d'être débattu.",
     "newerButton": "Plus récents",
-    "moreButton": "Plus de sujets"
+    "moreButton": "Plus de sujets",
+    "guidelinesLink": "Règles de la communauté"
+  },
+  "reportDialog": {
+    "triggerLabel": "Signaler",
+    "title": "Signaler ce contenu",
+    "description": "Dis-nous ce qui ne va pas. Les signalements sont confidentiels — l'auteur ne voit jamais qui l'a signalé.",
+    "reasonLabel": "Pourquoi signales-tu ce contenu ?",
+    "reasons": {
+      "inappropriate": "Inapproprié",
+      "sexual_content": "Contenu sexuel",
+      "harassment": "Harcèlement ou intimidation",
+      "hate_speech": "Discours haineux",
+      "threat_or_violence": "Menace ou violence",
+      "child_safety": "Abus ou mise en danger d'enfants",
+      "self_harm": "Automutilation ou suicide",
+      "misinformation": "Désinformation",
+      "spam_or_scam": "Spam ou arnaque",
+      "other": "Autre chose"
+    },
+    "detailLabel": "Ajoute des détails (facultatif)",
+    "detailPlaceholder": "Tout ce qui peut aider notre équipe à comprendre le problème...",
+    "wordCount": "{{used}}/{{max}} mots",
+    "guidelinesPrefix": "Pas sûr que la limite soit franchie ? Lis nos",
+    "guidelinesLinkText": "Règles de la communauté",
+    "submitButton": "Envoyer le signalement",
+    "cancelButton": "Annuler",
+    "signInPrompt": "Tu dois être connecté pour signaler un contenu — c'est ainsi que notre équipe peut t'informer du résultat de ton signalement.",
+    "signInButton": "Se connecter",
+    "toastSubmittedTitle": "Signalement envoyé",
+    "toastSubmittedDescription": "Notre équipe va l'examiner et t'informer du résultat.",
+    "toastAlreadyReported": "Tu as déjà signalé ce contenu — notre équipe s'en occupe.",
+    "toastFailed": "Impossible d'envoyer le signalement"
   }
 }

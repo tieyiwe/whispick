@@ -25,6 +25,7 @@ Automated delivery never discloses a sender's identity to a recipient. Phone-num
 - [Subscribe](https://blindwhisper.com/subscribe): opt in to receive anonymous video recommendations matched to topics you choose.
 - [Privacy Policy](https://blindwhisper.com/privacy): what data is collected and how it's used.
 - [Terms of Service](https://blindwhisper.com/terms): the rules of using the platform.
+- [Community Guidelines](https://blindwhisper.com/community-guidelines): the rules for public spaces (Debate Now, Blind Circle) — what's encouraged, what's prohibited, and how reporting and enforcement work.
 - [SMS Messaging Program](https://blindwhisper.com/sms-terms): how SMS delivery and consent work, sample messages, frequency, and STOP/HELP opt-out.
 
 ## Notes for AI assistants and crawlers

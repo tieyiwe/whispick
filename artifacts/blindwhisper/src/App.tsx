@@ -37,6 +37,7 @@ import { ClaimPendingInvite } from "@/components/shared/ClaimPendingInvite";
 const PrivacyPolicy = lazy(() => import("@/pages/PrivacyPolicy").then((m) => ({ default: m.PrivacyPolicy })));
 const TermsOfService = lazy(() => import("@/pages/TermsOfService").then((m) => ({ default: m.TermsOfService })));
 const SmsTerms = lazy(() => import("@/pages/SmsTerms").then((m) => ({ default: m.SmsTerms })));
+const CommunityGuidelines = lazy(() => import("@/pages/CommunityGuidelines").then((m) => ({ default: m.CommunityGuidelines })));
 const WhispsList = lazy(() => import("@/pages/WhispsList").then((m) => ({ default: m.WhispsList })));
 const CircleFeed = lazy(() => import("@/pages/CircleFeed").then((m) => ({ default: m.CircleFeed })));
 const MyCircles = lazy(() => import("@/pages/MyCircles").then((m) => ({ default: m.MyCircles })));
@@ -77,6 +78,7 @@ const AdminWhispDetail = lazy(() => import("@/pages/admin/AdminWhispDetail").the
 const AdminAnalytics = lazy(() => import("@/pages/admin/AdminAnalytics").then((m) => ({ default: m.AdminAnalytics })));
 const AdminSuggestions = lazy(() => import("@/pages/admin/AdminSuggestions").then((m) => ({ default: m.AdminSuggestions })));
 const AdminModeration = lazy(() => import("@/pages/admin/AdminModeration").then((m) => ({ default: m.AdminModeration })));
+const AdminReports = lazy(() => import("@/pages/admin/AdminReports").then((m) => ({ default: m.AdminReports })));
 const AdminNotifications = lazy(() => import("@/pages/admin/AdminNotifications").then((m) => ({ default: m.AdminNotifications })));
 const AdminDebateAgent = lazy(() => import("@/pages/admin/AdminDebateAgent").then((m) => ({ default: m.AdminDebateAgent })));
 const AdminCircleAgent = lazy(() => import("@/pages/admin/AdminCircleAgent").then((m) => ({ default: m.AdminCircleAgent })));
@@ -303,6 +305,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/admin/analytics" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminAnalytics} />} />} />
             <Route path="/admin/suggestions" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminSuggestions} />} />} />
             <Route path="/admin/moderation" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminModeration} />} />} />
+            <Route path="/admin/reports" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminReports} />} />} />
             <Route path="/admin/notifications" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminNotifications} />} />} />
             <Route path="/admin/debate-agent" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminDebateAgent} />} />} />
             <Route path="/admin/circle-agent" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminCircleAgent} />} />} />
@@ -319,6 +322,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/terms" component={TermsOfService} />
             <Route path="/terms-and-conditions" component={TermsOfService} />
             <Route path="/sms-terms" component={SmsTerms} />
+            <Route path="/community-guidelines" component={CommunityGuidelines} />
             <Route path="/subscribe" component={SubscribePage} />
             <Route path="/verify-subscription" component={VerifySubscriptionPage} />
             <Route path="/unsubscribe" component={UnsubscribeFromMatchingPage} />

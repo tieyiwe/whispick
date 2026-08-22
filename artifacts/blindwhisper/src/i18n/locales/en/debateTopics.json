@@ -14,7 +14,9 @@
     "toast": {
       "posted": "Topic posted anonymously",
       "postError": "Couldn't post that topic"
-    }
+    },
+    "guidelinesNotice": "By posting, you agree to our",
+    "guidelinesLinkText": "Community Guidelines"
   },
   "debateFollowing": {
     "backButton": "Back to Debate Now",
@@ -104,6 +106,38 @@
     "emptyTitle": "No debates yet",
     "emptyDescription": "Be the first to post a topic — a question, an opinion, anything worth arguing about.",
     "newerButton": "Newer",
-    "moreButton": "More topics"
+    "moreButton": "More topics",
+    "guidelinesLink": "Community Guidelines"
+  },
+  "reportDialog": {
+    "triggerLabel": "Report",
+    "title": "Report this content",
+    "description": "Tell us what's wrong. Reports are confidential — the author never sees who reported them.",
+    "reasonLabel": "Why are you reporting this?",
+    "reasons": {
+      "inappropriate": "Inappropriate",
+      "sexual_content": "Sexual content",
+      "harassment": "Harassment or bullying",
+      "hate_speech": "Hate speech",
+      "threat_or_violence": "Threat or violence",
+      "child_safety": "Child abuse or endangerment",
+      "self_harm": "Self-harm or suicide",
+      "misinformation": "Misinformation",
+      "spam_or_scam": "Spam or scam",
+      "other": "Something else"
+    },
+    "detailLabel": "Add detail (optional)",
+    "detailPlaceholder": "Anything that helps our team understand what's wrong...",
+    "wordCount": "{{used}}/{{max}} words",
+    "guidelinesPrefix": "Not sure if it crosses the line? Read our",
+    "guidelinesLinkText": "Community Guidelines",
+    "submitButton": "Submit report",
+    "cancelButton": "Cancel",
+    "signInPrompt": "You need to be signed in to report content — that's how our team can let you know the outcome of your report.",
+    "signInButton": "Sign in",
+    "toastSubmittedTitle": "Report submitted",
+    "toastSubmittedDescription": "Our team will review it and notify you of the outcome.",
+    "toastAlreadyReported": "You've already reported this — our team is on it.",
+    "toastFailed": "Couldn't submit the report"
   }
 }

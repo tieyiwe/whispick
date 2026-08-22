@@ -1064,6 +1064,178 @@ export interface UpdateModerationFlagInput {
   dismissed: boolean;
 }
 
+export type CreateContentReportInputContentType = typeof CreateContentReportInputContentType[keyof typeof CreateContentReportInputContentType];
+
+
+export const CreateContentReportInputContentType = {
+  debate_topic: 'debate_topic',
+  debate_topic_comment: 'debate_topic_comment',
+} as const;
+
+export type CreateContentReportInputReason = typeof CreateContentReportInputReason[keyof typeof CreateContentReportInputReason];
+
+
+export const CreateContentReportInputReason = {
+  child_safety: 'child_safety',
+  threat_or_violence: 'threat_or_violence',
+  sexual_content: 'sexual_content',
+  hate_speech: 'hate_speech',
+  self_harm: 'self_harm',
+  harassment: 'harassment',
+  inappropriate: 'inappropriate',
+  misinformation: 'misinformation',
+  spam_or_scam: 'spam_or_scam',
+  other: 'other',
+} as const;
+
+export interface CreateContentReportInput {
+  contentType: CreateContentReportInputContentType;
+  contentId: string;
+  reason: CreateContentReportInputReason;
+  /**
+     * Optional free-text elaboration from the reporter, capped at 300 words server-side.
+     * @nullable
+     */
+  detail?: string | null;
+}
+
+export interface CreateContentReportResponse {
+  id: string;
+  status: string;
+}
+
+export interface ContentReport {
+  id: string;
+  /** 'debate_topic' | 'debate_topic_comment' */
+  contentType: string;
+  /** @nullable */
+  debateTopicId?: string | null;
+  /** @nullable */
+  debateTopicCommentId?: string | null;
+  reporterUserId: string;
+  reason: string;
+  /** @nullable */
+  detail?: string | null;
+  /** 'critical' | 'high' | 'medium' | 'low' — derived from reason at filing time, admin-overridable afterward. */
+  priority: string;
+  /** 'open' | 'in_review' | 'resolved' */
+  status: string;
+  /**
+     * Set once resolved: 'removed' | 'no_violation'.
+     * @nullable
+     */
+  resolution?: string | null;
+  /** @nullable */
+  adminNotes?: string | null;
+  /**
+     * The message actually sent back to the reporter at resolve time.
+     * @nullable
+     */
+  adminReplyMessage?: string | null;
+  /** @nullable */
+  authorWarnedAt?: string | null;
+  /** @nullable */
+  resolvedAt?: string | null;
+  createdAt: string;
+  /**
+     * Joined for admin display; null if the reporter account was since deleted.
+     * @nullable
+     */
+  reporterEmail?: string | null;
+  /**
+     * The reported topic's text, denormalized for display. Null unless contentType is 'debate_topic'.
+     * @nullable
+     */
+  debateTopicText?: string | null;
+  /** @nullable */
+  debateTopicAuthorId?: string | null;
+  /** @nullable */
+  topicRemovedByAdminAt?: string | null;
+  /** @nullable */
+  topicDeletedByAuthorAt?: string | null;
+  /**
+     * The reported comment's text. Null unless contentType is 'debate_topic_comment'.
+     * @nullable
+     */
+  debateTopicCommentText?: string | null;
+  /**
+     * Null when the comment came from an anonymous no-account visitor — such an author can't be warned.
+     * @nullable
+     */
+  commentAuthorUserId?: string | null;
+  /** @nullable */
+  commentRemovedByAdminAt?: string | null;
+}
+
+/**
+ * Unresolved (open + in_review) report counts per priority, independent of the current filter — the triage summary.
+ */
+export type ContentReportListResponseOpenByPriority = {
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
+};
+
+export interface ContentReportListResponse {
+  items: ContentReport[];
+  total: number;
+  page: number;
+  pageSize: number;
+  /** Unresolved (open + in_review) report counts per priority, independent of the current filter — the triage summary. */
+  openByPriority: ContentReportListResponseOpenByPriority;
+}
+
+export type UpdateContentReportInputPriority = typeof UpdateContentReportInputPriority[keyof typeof UpdateContentReportInputPriority];
+
+
+export const UpdateContentReportInputPriority = {
+  critical: 'critical',
+  high: 'high',
+  medium: 'medium',
+  low: 'low',
+} as const;
+
+/**
+ * Only the working states — 'resolved' is reachable exclusively through the resolve endpoint.
+ */
+export type UpdateContentReportInputStatus = typeof UpdateContentReportInputStatus[keyof typeof UpdateContentReportInputStatus];
+
+
+export const UpdateContentReportInputStatus = {
+  open: 'open',
+  in_review: 'in_review',
+} as const;
+
+export interface UpdateContentReportInput {
+  priority?: UpdateContentReportInputPriority;
+  /** Only the working states — 'resolved' is reachable exclusively through the resolve endpoint. */
+  status?: UpdateContentReportInputStatus;
+  /** @nullable */
+  adminNotes?: string | null;
+}
+
+export type ResolveContentReportInputResolution = typeof ResolveContentReportInputResolution[keyof typeof ResolveContentReportInputResolution];
+
+
+export const ResolveContentReportInputResolution = {
+  removed: 'removed',
+  no_violation: 'no_violation',
+} as const;
+
+export interface ResolveContentReportInput {
+  resolution: ResolveContentReportInputResolution;
+  /** Optional custom message to the reporter; a default template for the resolution is sent when omitted. */
+  replyToReporter?: string;
+  /** When present, delivered to the content author's account as a Community Guidelines warning. */
+  warnAuthor?: string;
+}
+
+export type ResolveContentReportResponse = ContentReport & {
+  /** False when a warning was requested but the author has no account to deliver it to. */
+  authorWarned: boolean;
+};
+
 export type UpdateAdminUserInputRole = typeof UpdateAdminUserInputRole[keyof typeof UpdateAdminUserInputRole];
 
 
@@ -2122,6 +2294,20 @@ export type AdminListModerationFlagsParams = {
  */
 dismissed?: string;
 severity?: string;
+page?: number;
+pageSize?: number;
+};
+
+export type AdminListContentReportsParams = {
+/**
+ * 'unresolved' (default: open + in_review), 'open', 'in_review', 'resolved', or 'all'.
+ */
+status?: string;
+/**
+ * Filter to one of 'critical' | 'high' | 'medium' | 'low'.
+ */
+priority?: string;
+reason?: string;
 page?: number;
 pageSize?: number;
 };

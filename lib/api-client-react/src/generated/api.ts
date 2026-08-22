@@ -27,6 +27,7 @@ import type {
   AdminDemographicStatsResponse,
   AdminFunnelStats,
   AdminListAuditLogParams,
+  AdminListContentReportsParams,
   AdminListModerationFlagsParams,
   AdminListNotificationsParams,
   AdminListSuggestionsParams,
@@ -58,7 +59,11 @@ import type {
   ConciergeInput,
   ConciergeResult,
   ConfirmPhoneVerificationInput,
+  ContentReport,
+  ContentReportListResponse,
   CreateCircleInput,
+  CreateContentReportInput,
+  CreateContentReportResponse,
   CreateSuggestionInput,
   CreditTransaction,
   DebateAgentSettings,
@@ -113,6 +118,8 @@ import type {
   RenameCircleHandleBody,
   RenameDebateTopicHandle200,
   RenameDebateTopicHandleBody,
+  ResolveContentReportInput,
+  ResolveContentReportResponse,
   RevealResponse,
   RevealResult,
   RewhispDebateTopic200,
@@ -148,6 +155,7 @@ import type {
   UnsubscribeFromMatchingParams,
   UpdateAdminUserInput,
   UpdateCircleAgentConfigInput,
+  UpdateContentReportInput,
   UpdateDebateAgentConfigInput,
   UpdateDebateTopicHandleAvatar200,
   UpdateDebateTopicHandleAvatarBody,
@@ -7273,6 +7281,305 @@ export const useAdminRemoveFlaggedContent = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getAdminRemoveFlaggedContentMutationOptions(options));
+    }
+
+export const getReportContentUrl = () => {
+
+
+
+
+  return `/api/content-reports`
+}
+
+/**
+ * Files a user report against a debate topic or one of its comments, with a reason and optional free-text detail (capped at 300 words). Requires a signed-in account — the admin team's resolution is sent back to the reporter as an in-app notification. One open report per reporter per piece of content; re-reporting the same content while a previous report is still open returns 409.
+ * @summary Report a piece of Debate Now content for violating the Community Guidelines
+ */
+export const reportContent = async (createContentReportInput: CreateContentReportInput, options?: RequestInit): Promise<CreateContentReportResponse> => {
+
+  return customFetch<CreateContentReportResponse>(getReportContentUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createContentReportInput)
+  }
+);}
+
+
+
+
+export const getReportContentMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportContent>>, TError,{data: BodyType<CreateContentReportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reportContent>>, TError,{data: BodyType<CreateContentReportInput>}, TContext> => {
+
+const mutationKey = ['reportContent'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reportContent>>, {data: BodyType<CreateContentReportInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  reportContent(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReportContentMutationResult = NonNullable<Awaited<ReturnType<typeof reportContent>>>
+    export type ReportContentMutationBody = BodyType<CreateContentReportInput>
+    export type ReportContentMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Report a piece of Debate Now content for violating the Community Guidelines
+ */
+export const useReportContent = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportContent>>, TError,{data: BodyType<CreateContentReportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reportContent>>,
+        TError,
+        {data: BodyType<CreateContentReportInput>},
+        TContext
+      > => {
+      return useMutation(getReportContentMutationOptions(options));
+    }
+
+export const getAdminListContentReportsUrl = (params?: AdminListContentReportsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/content-reports?${stringifiedParams}` : `/api/admin/content-reports`
+}
+
+/**
+ * User-filed reports against Debate Now content, ordered critical → high → medium → low and oldest-first within a priority. The openByPriority summary always reflects the full unresolved queue regardless of the current filter.
+ * @summary Community report queue, ordered by triage priority (admin only)
+ */
+export const adminListContentReports = async (params?: AdminListContentReportsParams, options?: RequestInit): Promise<ContentReportListResponse> => {
+
+  return customFetch<ContentReportListResponse>(getAdminListContentReportsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListContentReportsQueryKey = (params?: AdminListContentReportsParams,) => {
+    return [
+    `/api/admin/content-reports`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getAdminListContentReportsQueryOptions = <TData = Awaited<ReturnType<typeof adminListContentReports>>, TError = ErrorType<unknown>>(params?: AdminListContentReportsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListContentReports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListContentReportsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListContentReports>>> = ({ signal }) => adminListContentReports(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListContentReports>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListContentReportsQueryResult = NonNullable<Awaited<ReturnType<typeof adminListContentReports>>>
+export type AdminListContentReportsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Community report queue, ordered by triage priority (admin only)
+ */
+
+export function useAdminListContentReports<TData = Awaited<ReturnType<typeof adminListContentReports>>, TError = ErrorType<unknown>>(
+ params?: AdminListContentReportsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListContentReports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListContentReportsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminUpdateContentReportUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/content-reports/${id}`
+}
+
+/**
+ * @summary Review/triage tool — re-rank priority, claim into review, keep working notes (admin only)
+ */
+export const adminUpdateContentReport = async (id: string,
+    updateContentReportInput: UpdateContentReportInput, options?: RequestInit): Promise<ContentReport> => {
+
+  return customFetch<ContentReport>(getAdminUpdateContentReportUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateContentReportInput)
+  }
+);}
+
+
+
+
+export const getAdminUpdateContentReportMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateContentReport>>, TError,{id: string;data: BodyType<UpdateContentReportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminUpdateContentReport>>, TError,{id: string;data: BodyType<UpdateContentReportInput>}, TContext> => {
+
+const mutationKey = ['adminUpdateContentReport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminUpdateContentReport>>, {id: string;data: BodyType<UpdateContentReportInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  adminUpdateContentReport(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminUpdateContentReportMutationResult = NonNullable<Awaited<ReturnType<typeof adminUpdateContentReport>>>
+    export type AdminUpdateContentReportMutationBody = BodyType<UpdateContentReportInput>
+    export type AdminUpdateContentReportMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Review/triage tool — re-rank priority, claim into review, keep working notes (admin only)
+ */
+export const useAdminUpdateContentReport = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateContentReport>>, TError,{id: string;data: BodyType<UpdateContentReportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminUpdateContentReport>>,
+        TError,
+        {id: string;data: BodyType<UpdateContentReportInput>},
+        TContext
+      > => {
+      return useMutation(getAdminUpdateContentReportMutationOptions(options));
+    }
+
+export const getAdminResolveContentReportUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/content-reports/${id}/resolve`
+}
+
+/**
+ * resolution 'removed' sets removedByAdminAt on the reported content (excluding it from every public read); 'no_violation' leaves it up. Either way the reporter receives an in-app notification — the custom replyToReporter message when provided, an honest default for the chosen resolution otherwise. warnAuthor, when present, is delivered to the content author's account as a Community Guidelines warning; authorWarned is false in the response when the author has no account to deliver to (anonymous commenter).
+ * @summary Resolve a report — optionally take the content down, always notify the reporter, optionally warn the author (admin only)
+ */
+export const adminResolveContentReport = async (id: string,
+    resolveContentReportInput: ResolveContentReportInput, options?: RequestInit): Promise<ResolveContentReportResponse> => {
+
+  return customFetch<ResolveContentReportResponse>(getAdminResolveContentReportUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(resolveContentReportInput)
+  }
+);}
+
+
+
+
+export const getAdminResolveContentReportMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminResolveContentReport>>, TError,{id: string;data: BodyType<ResolveContentReportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminResolveContentReport>>, TError,{id: string;data: BodyType<ResolveContentReportInput>}, TContext> => {
+
+const mutationKey = ['adminResolveContentReport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminResolveContentReport>>, {id: string;data: BodyType<ResolveContentReportInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  adminResolveContentReport(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminResolveContentReportMutationResult = NonNullable<Awaited<ReturnType<typeof adminResolveContentReport>>>
+    export type AdminResolveContentReportMutationBody = BodyType<ResolveContentReportInput>
+    export type AdminResolveContentReportMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Resolve a report — optionally take the content down, always notify the reporter, optionally warn the author (admin only)
+ */
+export const useAdminResolveContentReport = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminResolveContentReport>>, TError,{id: string;data: BodyType<ResolveContentReportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminResolveContentReport>>,
+        TError,
+        {id: string;data: BodyType<ResolveContentReportInput>},
+        TContext
+      > => {
+      return useMutation(getAdminResolveContentReportMutationOptions(options));
     }
 
 export const getAdminListSuggestionsUrl = (params?: AdminListSuggestionsParams,) => {

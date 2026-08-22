@@ -14,7 +14,9 @@
     "toast": {
       "posted": "Thema anonym gepostet",
       "postError": "Thema konnte nicht gepostet werden"
-    }
+    },
+    "guidelinesNotice": "Mit dem Posten stimmst du unseren",
+    "guidelinesLinkText": "Community-Richtlinien zu"
   },
   "debateFollowing": {
     "backButton": "Zurück zu Debate Now",
@@ -104,6 +106,38 @@
     "emptyTitle": "Noch keine Debatten",
     "emptyDescription": "Sei die/der Erste, die/der ein Thema postet — eine Frage, eine Meinung, irgendetwas, worüber es sich zu streiten lohnt.",
     "newerButton": "Neuere",
-    "moreButton": "Mehr Themen"
+    "moreButton": "Mehr Themen",
+    "guidelinesLink": "Community-Richtlinien"
+  },
+  "reportDialog": {
+    "triggerLabel": "Melden",
+    "title": "Diesen Inhalt melden",
+    "description": "Sag uns, was nicht stimmt. Meldungen sind vertraulich — die Autorin oder der Autor sieht nie, wer gemeldet hat.",
+    "reasonLabel": "Warum meldest du das?",
+    "reasons": {
+      "inappropriate": "Unangemessen",
+      "sexual_content": "Sexuelle Inhalte",
+      "harassment": "Belästigung oder Mobbing",
+      "hate_speech": "Hassrede",
+      "threat_or_violence": "Drohung oder Gewalt",
+      "child_safety": "Kindesmissbrauch oder -gefährdung",
+      "self_harm": "Selbstverletzung oder Suizid",
+      "misinformation": "Falschinformation",
+      "spam_or_scam": "Spam oder Betrug",
+      "other": "Etwas anderes"
+    },
+    "detailLabel": "Details hinzufügen (optional)",
+    "detailPlaceholder": "Alles, was unserem Team hilft zu verstehen, was nicht stimmt...",
+    "wordCount": "{{used}}/{{max}} Wörter",
+    "guidelinesPrefix": "Nicht sicher, ob es die Grenze überschreitet? Lies unsere",
+    "guidelinesLinkText": "Community-Richtlinien",
+    "submitButton": "Meldung absenden",
+    "cancelButton": "Abbrechen",
+    "signInPrompt": "Du musst angemeldet sein, um Inhalte zu melden — so kann dir unser Team das Ergebnis deiner Meldung mitteilen.",
+    "signInButton": "Anmelden",
+    "toastSubmittedTitle": "Meldung gesendet",
+    "toastSubmittedDescription": "Unser Team prüft sie und benachrichtigt dich über das Ergebnis.",
+    "toastAlreadyReported": "Du hast das bereits gemeldet — unser Team kümmert sich darum.",
+    "toastFailed": "Meldung konnte nicht gesendet werden"
   }
 }

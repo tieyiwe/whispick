@@ -78,6 +78,14 @@ const PAGES = [
     isHome: false,
   },
   {
+    routePath: "/community-guidelines",
+    outFile: "community-guidelines/index.html",
+    title: "Community Guidelines — Blind Whisper",
+    description:
+      "The rules for Blind Whisper's public spaces: what honest, anonymous debate is for, the hard limits — no sexual content, threats, harassment, hate speech, or child endangerment — and how reporting and enforcement work.",
+    isHome: false,
+  },
+  {
     routePath: "/sms-terms",
     outFile: "sms-terms/index.html",
     title: "SMS Messaging Program — Blind Whisper",
@@ -180,12 +188,13 @@ async function main() {
   });
 
   try {
-    const [{ LandingPage }, { PrivacyPolicy }, { TermsOfService }, { SmsTerms }, { SubscribePage }, { FAQ_ITEMS }] =
+    const [{ LandingPage }, { PrivacyPolicy }, { TermsOfService }, { SmsTerms }, { CommunityGuidelines }, { SubscribePage }, { FAQ_ITEMS }] =
       await Promise.all([
         server.ssrLoadModule("/src/pages/LandingPage.tsx"),
         server.ssrLoadModule("/src/pages/PrivacyPolicy.tsx"),
         server.ssrLoadModule("/src/pages/TermsOfService.tsx"),
         server.ssrLoadModule("/src/pages/SmsTerms.tsx"),
+        server.ssrLoadModule("/src/pages/CommunityGuidelines.tsx"),
         server.ssrLoadModule("/src/pages/SubscribePage.tsx"),
         server.ssrLoadModule("/src/lib/faqContent.ts"),
       ]);
@@ -195,6 +204,7 @@ async function main() {
       "/privacy": PrivacyPolicy,
       "/terms": TermsOfService,
       "/sms-terms": SmsTerms,
+      "/community-guidelines": CommunityGuidelines,
       "/subscribe": SubscribePage,
     };
 

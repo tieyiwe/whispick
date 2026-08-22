@@ -2496,6 +2496,179 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
 
+  /content-reports:
+    post:
+      operationId: reportContent
+      tags: [contentReports]
+      summary: Report a piece of Debate Now content for violating the Community Guidelines
+      description: >-
+        Files a user report against a debate topic or one of its comments,
+        with a reason and optional free-text detail (capped at 300 words).
+        Requires a signed-in account — the admin team's resolution is sent
+        back to the reporter as an in-app notification. One open report per
+        reporter per piece of content; re-reporting the same content while a
+        previous report is still open returns 409.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateContentReportInput"
+      responses:
+        "201":
+          description: Report filed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateContentReportResponse"
+        "400":
+          description: Invalid reason, or detail over the word cap
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: The content doesn't exist or is no longer publicly visible
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: This reporter already has an open report on this content
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/content-reports:
+    get:
+      operationId: adminListContentReports
+      tags: [admin]
+      summary: Community report queue, ordered by triage priority (admin only)
+      description: >-
+        User-filed reports against Debate Now content, ordered critical →
+        high → medium → low and oldest-first within a priority. The
+        openByPriority summary always reflects the full unresolved queue
+        regardless of the current filter.
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+          required: false
+          description: "'unresolved' (default: open + in_review), 'open', 'in_review', 'resolved', or 'all'."
+        - in: query
+          name: priority
+          schema:
+            type: string
+          required: false
+          description: "Filter to one of 'critical' | 'high' | 'medium' | 'low'."
+        - in: query
+          name: reason
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: page
+          schema:
+            type: integer
+          required: false
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+          required: false
+      responses:
+        "200":
+          description: Reports page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContentReportListResponse"
+
+  /admin/content-reports/{id}:
+    patch:
+      operationId: adminUpdateContentReport
+      tags: [admin]
+      summary: Review/triage tool — re-rank priority, claim into review, keep working notes (admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateContentReportInput"
+      responses:
+        "200":
+          description: Updated report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContentReport"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Report already resolved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/content-reports/{id}/resolve:
+    post:
+      operationId: adminResolveContentReport
+      tags: [admin]
+      summary: Resolve a report — optionally take the content down, always notify the reporter, optionally warn the author (admin only)
+      description: >-
+        resolution 'removed' sets removedByAdminAt on the reported content
+        (excluding it from every public read); 'no_violation' leaves it up.
+        Either way the reporter receives an in-app notification — the custom
+        replyToReporter message when provided, an honest default for the
+        chosen resolution otherwise. warnAuthor, when present, is delivered
+        to the content author's account as a Community Guidelines warning;
+        authorWarned is false in the response when the author has no account
+        to deliver to (anonymous commenter).
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResolveContentReportInput"
+      responses:
+        "200":
+          description: Resolved report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResolveContentReportResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Report already resolved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /admin/suggestions:
     get:
       operationId: adminListSuggestions
@@ -4985,6 +5158,179 @@ components:
           type: boolean
       required:
         - dismissed
+
+    CreateContentReportInput:
+      type: object
+      properties:
+        contentType:
+          type: string
+          enum: [debate_topic, debate_topic_comment]
+        contentId:
+          type: string
+        reason:
+          type: string
+          enum: [child_safety, threat_or_violence, sexual_content, hate_speech, self_harm, harassment, inappropriate, misinformation, spam_or_scam, other]
+        detail:
+          type: ["string", "null"]
+          description: Optional free-text elaboration from the reporter, capped at 300 words server-side.
+      required:
+        - contentType
+        - contentId
+        - reason
+
+    CreateContentReportResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+      required:
+        - id
+        - status
+
+    ContentReport:
+      type: object
+      properties:
+        id:
+          type: string
+        contentType:
+          type: string
+          description: "'debate_topic' | 'debate_topic_comment'"
+        debateTopicId:
+          type: ["string", "null"]
+        debateTopicCommentId:
+          type: ["string", "null"]
+        reporterUserId:
+          type: string
+        reason:
+          type: string
+        detail:
+          type: ["string", "null"]
+        priority:
+          type: string
+          description: "'critical' | 'high' | 'medium' | 'low' — derived from reason at filing time, admin-overridable afterward."
+        status:
+          type: string
+          description: "'open' | 'in_review' | 'resolved'"
+        resolution:
+          type: ["string", "null"]
+          description: "Set once resolved: 'removed' | 'no_violation'."
+        adminNotes:
+          type: ["string", "null"]
+        adminReplyMessage:
+          type: ["string", "null"]
+          description: The message actually sent back to the reporter at resolve time.
+        authorWarnedAt:
+          type: ["string", "null"]
+        resolvedAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        reporterEmail:
+          type: ["string", "null"]
+          description: Joined for admin display; null if the reporter account was since deleted.
+        debateTopicText:
+          type: ["string", "null"]
+          description: The reported topic's text, denormalized for display. Null unless contentType is 'debate_topic'.
+        debateTopicAuthorId:
+          type: ["string", "null"]
+        topicRemovedByAdminAt:
+          type: ["string", "null"]
+        topicDeletedByAuthorAt:
+          type: ["string", "null"]
+        debateTopicCommentText:
+          type: ["string", "null"]
+          description: The reported comment's text. Null unless contentType is 'debate_topic_comment'.
+        commentAuthorUserId:
+          type: ["string", "null"]
+          description: Null when the comment came from an anonymous no-account visitor — such an author can't be warned.
+        commentRemovedByAdminAt:
+          type: ["string", "null"]
+      required:
+        - id
+        - contentType
+        - reporterUserId
+        - reason
+        - priority
+        - status
+        - createdAt
+
+    ContentReportListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContentReport"
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        openByPriority:
+          type: object
+          description: Unresolved (open + in_review) report counts per priority, independent of the current filter — the triage summary.
+          properties:
+            critical:
+              type: integer
+            high:
+              type: integer
+            medium:
+              type: integer
+            low:
+              type: integer
+          required:
+            - critical
+            - high
+            - medium
+            - low
+      required:
+        - items
+        - total
+        - page
+        - pageSize
+        - openByPriority
+
+    UpdateContentReportInput:
+      type: object
+      properties:
+        priority:
+          type: string
+          enum: [critical, high, medium, low]
+        status:
+          type: string
+          enum: [open, in_review]
+          description: Only the working states — 'resolved' is reachable exclusively through the resolve endpoint.
+        adminNotes:
+          type: ["string", "null"]
+
+    ResolveContentReportInput:
+      type: object
+      properties:
+        resolution:
+          type: string
+          enum: [removed, no_violation]
+        replyToReporter:
+          type: string
+          description: Optional custom message to the reporter; a default template for the resolution is sent when omitted.
+        warnAuthor:
+          type: string
+          description: When present, delivered to the content author's account as a Community Guidelines warning.
+      required:
+        - resolution
+
+    ResolveContentReportResponse:
+      allOf:
+        - $ref: "#/components/schemas/ContentReport"
+        - type: object
+          properties:
+            authorWarned:
+              type: boolean
+              description: False when a warning was requested but the author has no account to deliver it to.
+          required:
+            - authorWarned
 
     UpdateAdminUserInput:
       type: object

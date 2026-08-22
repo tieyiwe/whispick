@@ -22,6 +22,7 @@ import publicTextWhispsRouter from "./publicTextWhisps";
 import textWhispsRouter from "./textWhisps";
 import debateTopicsRouter from "./debateTopics";
 import followsRouter from "./follows";
+import contentReportsRouter from "./contentReports";
 import { publicEndpointLimiter } from "../lib/rateLimit";
 
 const router: IRouter = Router();
@@ -51,6 +52,9 @@ router.use("/public", publicTextWhispsRouter);
 // public routes still pass through publicEndpointLimiter first.
 router.use(debateTopicsRouter);
 router.use("/follows", followsRouter);
+// No prefix, same reasoning as debateTopicsRouter above — it defines its
+// own full "/content-reports" path.
+router.use(contentReportsRouter);
 router.use("/circles", circlesRouter);
 router.use("/user", userRouter);
 router.use("/credits", creditsRouter);
