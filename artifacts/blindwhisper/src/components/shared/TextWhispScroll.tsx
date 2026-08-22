@@ -13,11 +13,15 @@ import { Logo } from "@/components/ui/logo";
 //   visually rolls itself up into a small tied scroll and confirms "Sent!".
 //
 //   mode="open" — the recipient sees a closed, tied scroll; tapping the bow
-//   immediately reveals the message on a warm parchment card, with a
-//   confetti burst at the same instant. Deliberately NO untie/unroll
-//   animation here (there used to be one) — a multi-hundred-ms sequence
-//   between the tap and the payoff read as a stall rather than a flourish,
-//   so the reveal is synchronous with the click instead.
+//   fires the confetti burst and reveals the message immediately (the click
+//   handler does both synchronously — no setTimeout gating either one), and
+//   the parchment card itself unrolls into view as a fast CSS transition
+//   starting on the very next frame. That distinction matters: an earlier
+//   version staged confetti behind a multi-hundred-ms untie-then-unroll
+//   sequence, which read as a stall before the payoff rather than part of
+//   it. Now nothing is gated behind the animation — the animation is just
+//   the card's own reveal, playing alongside a confetti burst that already
+//   fired.
 //
 // Deliberately plain CSS transitions/keyframes (no animation library) —
 // consistent with this app's existing lightweight-dependency approach.
@@ -29,6 +33,11 @@ type OpenPhase = "closed" | "open";
 
 const ROLL_MS = 550;
 const TIE_MS = 450;
+// How long the parchment card takes to unroll from a thin roll to full
+// width once opened. Purely a mount-triggered CSS transition (see
+// cardRevealed below) — it never delays the confetti or the message text
+// itself, both of which are already on screen the instant this starts.
+const CARD_UNROLL_MS = 500;
 
 // Matches .logo-wave-twice's own 1.7s cycle in index.css, played twice, plus
 // a buffer for the third arc's own 0.3s --wave-delay so the fade-out timer
@@ -124,11 +133,27 @@ export function TextWhispScroll({
   const [sendPhase, setSendPhase] = useState<SendPhase>("flat");
   const [logoWaveDone, setLogoWaveDone] = useState(false);
   const [openPhase, setOpenPhase] = useState<OpenPhase>(initiallyOpen ? "open" : "closed");
+  // Starts the card's unroll transition (scaleX 0.12 → 1) already true when
+  // the sender's own view mounts pre-opened (initiallyOpen) — there's no
+  // "reveal" for the person who wrote it, so it should just render flat, not
+  // animate from rolled every time they revisit their own sent message.
+  const [cardRevealed, setCardRevealed] = useState(initiallyOpen);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => {
     return () => timers.current.forEach(clearTimeout);
   }, []);
+
+  useEffect(() => {
+    if (openPhase !== "open" || cardRevealed) return;
+    // One frame, not a setTimeout — this is what lets the CSS transition
+    // below actually transition (mounting already-at-scaleX-1 wouldn't
+    // animate anything) without introducing any perceptible gap: the
+    // confetti and the message text both already rendered synchronously in
+    // handleUntie, before this even runs.
+    const raf = requestAnimationFrame(() => setCardRevealed(true));
+    return () => cancelAnimationFrame(raf);
+  }, [openPhase, cardRevealed]);
 
   useEffect(() => {
     if (mode !== "send" || !autoPlay) return;
@@ -264,11 +289,27 @@ export function TextWhispScroll({
         </button>
       ) : (
         <div
-          className="relative w-full max-w-sm rounded-2xl bg-[hsl(38_42%_88%)] shadow-[0_8px_28px_rgba(0,0,0,0.4)] p-5"
+          // scaleX-from-a-thin-roll, same technique (and easing) the send-mode
+          // sheet above uses — but here it's a pure mount transition (see
+          // cardRevealed), never something the confetti or the message text
+          // waits behind. overflow-hidden keeps the squished text from
+          // visibly spilling past the edges during the brief thin phase.
+          className="relative w-full max-w-sm rounded-2xl bg-gradient-to-b from-[hsl(38_48%_94%)] via-[hsl(38_42%_88%)] to-[hsl(38_35%_82%)] shadow-[0_8px_28px_rgba(0,0,0,0.4)] p-5 overflow-hidden"
+          style={{
+            transform: `scaleX(${cardRevealed ? 1 : 0.12})`,
+            transition: `transform ${CARD_UNROLL_MS}ms cubic-bezier(0.16,1,0.3,1)`,
+          }}
           data-testid="text-whisp-parchment-card"
         >
-          <p className="font-serif text-[hsl(30_35%_20%)] text-base leading-relaxed whitespace-pre-wrap">{messageText}</p>
-          <div className="mt-3 pt-3 border-t border-[hsl(35_25%_65%)] flex items-center justify-between text-xs text-[hsl(30_20%_38%)]">
+          {/* Rolled-paper edge highlights, top and bottom — the same pale
+              paper-edge tone ScrollCylinder's own caps use on the closed
+              scroll, so the unrolled card still reads as the same physical
+              piece of parchment rather than a plain card that happens to
+              hold the message. */}
+          <div className="absolute inset-x-0 top-0 h-2 bg-[hsl(38_50%_95%)]/70" aria-hidden="true" />
+          <div className="absolute inset-x-0 bottom-0 h-2 bg-[hsl(38_30%_76%)]/60" aria-hidden="true" />
+          <p className="relative font-serif text-[hsl(30_35%_20%)] text-base leading-relaxed whitespace-pre-wrap">{messageText}</p>
+          <div className="relative mt-3 pt-3 border-t border-[hsl(35_25%_65%)] flex items-center justify-between text-xs text-[hsl(30_20%_38%)]">
             <span>— {senderAlias?.trim() || t("textWhispScroll.someoneAnonymous")}</span>
             {createdAt && <span>{formatWhen(createdAt)}</span>}
           </div>
