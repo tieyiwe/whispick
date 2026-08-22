@@ -1,6 +1,6 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
-import { SUPPORTED_LANGUAGES } from "@/lib/languages";
+import { SUPPORTED_LANGUAGES, RTL_LANGUAGES } from "@/lib/languages";
 
 // Auto-discovers every locale/namespace JSON file instead of listing them
 // by hand — adding a new namespace (e.g. src/i18n/locales/en/whisp.json +
@@ -34,6 +34,17 @@ void i18n.use(initReactI18next).init({
   // languages.ts's phased-coverage comment), not a bug to surface loudly.
   returnEmptyString: false,
   saveMissing: false,
+});
+
+// Keep the document's direction (and lang attribute) in step with the
+// active language — Arabic strings rendered LTR are half-broken no matter
+// how good the translation is. Guarded for non-browser contexts: this
+// module also loads under Node during the build's prerender pass (see
+// scripts/prerender.mjs), where there's no document to flip.
+i18n.on("languageChanged", (lng) => {
+  if (typeof document === "undefined") return;
+  document.documentElement.dir = (RTL_LANGUAGES as readonly string[]).includes(lng) ? "rtl" : "ltr";
+  document.documentElement.lang = lng;
 });
 
 export default i18n;

@@ -1,1 +1,137 @@
-{}
+{
+  "followButton": {
+    "following": "متابَع",
+    "follow": "متابعة",
+    "couldntUpdateFollowStatus": "تعذّر تحديث حالة المتابعة"
+  },
+  "installAppPrompt": {
+    "dialogAriaLabel": "تثبيت Blind Whisper",
+    "titleMobile": "أضف Blind Whisper إلى هاتفك",
+    "titleDesktop": "أضف Blind Whisper إلى هذا الكمبيوتر",
+    "descriptionIos": "يفتح بملء الشاشة، دون أشرطة المتصفح — تمامًا مثل أي تطبيق.",
+    "descriptionMobile": "يفتح بملء الشاشة من شاشتك الرئيسية، تمامًا مثل أي تطبيق.",
+    "descriptionDesktop": "شغّله بنقرة واحدة في المرة القادمة، مباشرة من سطح المكتب أو شريط المهام — دون البحث بين علامات تبويب المتصفح.",
+    "notNow": "ليس الآن",
+    "iosStepShare": "اضغط على <1>مشاركة</1> في أسفل Safari",
+    "iosStepAddHome": "اختر <1>إضافة إلى الشاشة الرئيسية</1>",
+    "installing": "جارٍ التثبيت...",
+    "install": "تثبيت"
+  },
+  "legalLayout": {
+    "home": "الرئيسية",
+    "lastUpdated": "آخر تحديث: {{date}}"
+  },
+  "mfaNudgeBanner": {
+    "title": "فعّل المصادقة الثنائية لمزيد من الأمان",
+    "description": "أضف خطوة ثانية لتسجيل الدخول ليبقى حسابك محميًا حتى لو تسرّبت كلمة مرورك.",
+    "skipForNow": "تخطَّ الآن",
+    "setUpNow": "فعّلها الآن"
+  },
+  "moodTag": {
+    "iSeeYou": "أراك",
+    "healTogether": "لنتعافَ معًا",
+    "iLoveYou": "أحبك",
+    "thinkAboutThis": "فكّر في هذا",
+    "forYourGrowth": "من أجل نموك",
+    "justBecause": "هكذا، بلا سبب"
+  },
+  "notificationBell": {
+    "unreadAriaLabel": "{{count}} إشعارات غير مقروءة",
+    "notifications": "الإشعارات",
+    "unreadCount": "{{count}} غير مقروءة",
+    "markAllRead": "تحديد الكل كمقروء",
+    "noNotificationsYet": "لا إشعارات بعد."
+  },
+  "phoneVerificationDialog": {
+    "title": "وثّق رقم هاتفك",
+    "description": "اختياري، لكنه يساعد الـ Whisps على الوصول إلى الناس أسرع ومجانًا عندما يكونون هنا بالفعل.",
+    "maybeLater": "ربما لاحقًا"
+  },
+  "pinToTaskbarTip": {
+    "ariaLabel": "ثبّت Blind Whisper للوصول بنقرة واحدة",
+    "title": "تم التثبيت! خطوة واحدة أخيرة",
+    "description": "ثبّته للوصول بنقرة واحدة في المرة القادمة: افتح Blind Whisper، ثم {{instructions}}",
+    "instructionsMac": "انقر بزر الفأرة الأيمن على أيقونته في الـ Dock ← الخيارات ← \"الإبقاء في الـ Dock\".",
+    "instructionsWindows": "انقر بزر الفأرة الأيمن على أيقونته في شريط المهام ← \"تثبيت على شريط المهام\".",
+    "dismiss": "إغلاق"
+  },
+  "pullToRefresh": {
+    "refreshing": "جارٍ التحديث...",
+    "releaseToRefresh": "أفلت للتحديث",
+    "pullToRefresh": "اسحب للتحديث"
+  },
+  "rankedBarChart": {
+    "count": "العدد",
+    "noDataYet": "لا بيانات بعد."
+  },
+  "replyThread": {
+    "seen": "تمت المشاهدة",
+    "sentAriaLabel": "أُرسلت",
+    "aVideo": "فيديو",
+    "aMessage": "رسالة",
+    "whispedVideoBack": "ردّ عليك بفيديو",
+    "reply": "رد",
+    "you": "أنت",
+    "newMessages_zero": "لا رسائل جديدة",
+    "newMessages_one": "رسالة جديدة واحدة",
+    "newMessages_two": "رسالتان جديدتان",
+    "newMessages_few": "{{count}} رسائل جديدة",
+    "newMessages_many": "{{count}} رسالة جديدة",
+    "newMessages_other": "{{count}} رسالة جديدة",
+    "jumpToLatest": "انتقل إلى الأحدث",
+    "replyingTo": "جارٍ الرد على {{name}}",
+    "cancelReply": "إلغاء الرد",
+    "writeAReply": "اكتب ردًا...",
+    "send": "إرسال"
+  },
+  "statusBadge": {
+    "pending": "قيد الانتظار",
+    "scheduled": "مجدولة",
+    "delivered": "تم التسليم",
+    "opened": "فُتحت",
+    "watched": "شوهدت",
+    "replied": "تم الرد",
+    "failed": "تعذّر الإرسال"
+  },
+  "textWhispScroll": {
+    "sent": "أُرسلت!",
+    "scheduled": "تمت الجدولة!",
+    "tapToOpenAriaLabel": "اضغط لفتح هذه الـ Text Whisp",
+    "tapTheBowToOpen": "اضغط على الشريطة لتفتحها",
+    "someoneAnonymous": "شخص مجهول"
+  },
+  "trendAreaChart": {
+    "count": "العدد",
+    "noActivityYet": "لا نشاط في هذه الفترة بعد."
+  },
+  "videoPlayer": {
+    "openOn": "افتح على {{platform}}",
+    "openOriginal": "افتح الأصل",
+    "videoAlt": "فيديو",
+    "watchTheVideo": "شاهد الفيديو"
+  },
+  "whispSentConfirmation": {
+    "srOnlySent": "أُرسلت الـ Whisp الخاصة بك"
+  },
+  "appErrorBoundary": {
+    "title": "حدث خطأ ما أثناء تحميل هذه الصفحة.",
+    "description": "عادةً ما يُحل هذا بإعادة التحميل — غالبًا لأن نسخة جديدة صدرت للتو.",
+    "reload": "إعادة التحميل"
+  },
+  "phoneVerificationFlow": {
+    "explainer": "سنوثّق رقمك حتى تصلك الـ Whisps المرسلة إليك فورًا إذا كنت على Blind Whisper بالفعل — وما ترسله وتستقبله يبقى مجهول الهوية 100%، دائمًا.",
+    "smsDisclosure": "قد تُطبَّق رسوم الرسائل والبيانات على رمز التحقق لمرة واحدة. راجع",
+    "smsTermsLink": "شروط SMS",
+    "sendCode": "إرسال رمز التحقق",
+    "enterCode": "أدخل الرمز المكوّن من 6 أرقام الذي أرسلناه إلى {{phone}}.",
+    "changeNumber": "تغيير الرقم",
+    "verify": "تحقق",
+    "toastCodeSent": "تم إرسال الرمز",
+    "toastCodeSentDescription": "أرسلنا رمزًا من 6 أرقام إلى {{phone}}.",
+    "toastSendFailed": "تعذّر إرسال الرمز",
+    "toastSendFailedDescription": "تحقق من الرقم وحاول مرة أخرى من فضلك.",
+    "toastVerified": "تم توثيق رقم الهاتف",
+    "toastConfirmFailed": "هذا الرمز لم يعمل",
+    "toastConfirmFailedDescription": "حاول مرة أخرى من فضلك."
+  }
+}

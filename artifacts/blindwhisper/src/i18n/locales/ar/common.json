@@ -1,1 +1,26 @@
-{}
+{
+  "nav": {
+    "dashboard": "لوحة التحكم",
+    "sendWhisp": "إرسال Whisp",
+    "myWhisps": "‏Whisps الخاصة بي",
+    "textWhisps": "‏Whisps نصية",
+    "suggestions": "الاقتراحات",
+    "blindCircle": "Blind Circle",
+    "myBlindCircles": "‏Blind Circles الخاصة بي",
+    "debateTopics": "Debate Now",
+    "following": "المتابَعون",
+    "whisperGroups": "مجموعات Whisper",
+    "mediaLibrary": "مكتبة الوسائط",
+    "replies": "الردود",
+    "inviteAFriend": "ادعُ صديقًا",
+    "creditsAndPlan": "النقاط والخطة",
+    "settings": "الإعدادات",
+    "admin": "الإدارة",
+    "home": "الرئيسية",
+    "more": "المزيد"
+  },
+  "account": {
+    "settings": "الإعدادات",
+    "signOut": "تسجيل الخروج"
+  }
+}

@@ -1,6 +1,12 @@
 // Mirrors artifacts/api-server/src/lib/languages.ts — kept in sync by hand,
 // same pattern as GENDER_OPTIONS/VIDEO_CATEGORIES elsewhere in this app.
-export const SUPPORTED_LANGUAGES = ["en", "fr", "ar", "de", "es", "pt", "zh", "ja", "hi", "ru", "id", "bn", "sw", "ko"] as const;
+// Only languages with a REAL translation set ship in this list — the
+// picker once offered 14, but 6 of them (pt/ja/hi/ru/id/bn) were empty
+// stub directories, so picking them silently rendered English. That reads
+// as "translation is broken," which is worse than not offering the
+// language at all. Re-adding one = translating all 11 namespace files
+// first, then restoring its entry here and in the backend mirror.
+export const SUPPORTED_LANGUAGES = ["en", "fr", "ar", "de", "es", "zh", "sw", "ko"] as const;
 export type LanguageCode = (typeof SUPPORTED_LANGUAGES)[number];
 
 export const RTL_LANGUAGES: readonly LanguageCode[] = ["ar"];
@@ -15,13 +21,7 @@ export const LANGUAGE_LABELS: Record<LanguageCode, string> = {
   ar: "العربية",
   de: "Deutsch",
   es: "Español",
-  pt: "Português",
   zh: "中文",
-  ja: "日本語",
-  hi: "हिन्दी",
-  ru: "Русский",
-  id: "Bahasa Indonesia",
-  bn: "বাংলা",
   sw: "Kiswahili",
   ko: "한국어",
 };
