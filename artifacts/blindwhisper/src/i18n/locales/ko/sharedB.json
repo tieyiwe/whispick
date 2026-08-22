@@ -90,6 +90,7 @@
   },
   "textWhispScroll": {
     "sent": "전송 완료!",
+    "scheduled": "예약 완료!",
     "tapToOpenAriaLabel": "탭하여 이 텍스트 Whisp 열기",
     "tapTheBowToOpen": "리본을 탭하여 열어보세요",
     "someoneAnonymous": "익명의 누군가"

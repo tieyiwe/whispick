@@ -91,6 +91,7 @@
   },
   "textWhispScroll": {
     "sent": "Gesendet!",
+    "scheduled": "Geplant!",
     "tapToOpenAriaLabel": "Tippen, um diesen Text-Whisp zu öffnen",
     "tapTheBowToOpen": "Tippe auf die Schleife zum Öffnen",
     "someoneAnonymous": "Jemand Anonymes"

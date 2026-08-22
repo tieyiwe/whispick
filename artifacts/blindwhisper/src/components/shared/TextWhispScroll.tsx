@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import confetti from "canvas-confetti";
-import { Send, Sparkles } from "lucide-react";
+import { Send, Sparkles, CalendarClock } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 
 // The Text Whisp "fold/unfurl" moment — the one deliberately crafted visual
@@ -107,6 +107,10 @@ interface TextWhispScrollProps {
   createdAt?: string | Date | null;
   /** send mode only — auto-plays the roll/tie sequence on mount. Default true. */
   autoPlay?: boolean;
+  /** send mode only — the just-sent Text Whisp was scheduled for a future
+   *  time rather than delivered immediately, so the end-state confirmation
+   *  should read "Scheduled!" instead of "Sent!". */
+  scheduled?: boolean;
   /** send mode only — fires once the "Sent!" end state is reached. */
   onSendAnimationComplete?: () => void;
   /** open mode only — fires once the scroll is fully unrolled and the message is visible. */
@@ -124,6 +128,7 @@ export function TextWhispScroll({
   senderAlias,
   createdAt,
   autoPlay = true,
+  scheduled = false,
   onSendAnimationComplete,
   onOpened,
   initiallyOpen = false,
@@ -247,8 +252,8 @@ export function TextWhispScroll({
           style={{ opacity: sendPhase === "sent" ? 1 : 0, transition: "opacity 300ms ease" }}
           data-testid="text-whisp-sent-confirmation"
         >
-          <Send className="w-4 h-4" />
-          <span>{t("textWhispScroll.sent")}</span>
+          {scheduled ? <CalendarClock className="w-4 h-4" /> : <Send className="w-4 h-4" />}
+          <span>{t(scheduled ? "textWhispScroll.scheduled" : "textWhispScroll.sent")}</span>
           <Sparkles className="w-3.5 h-3.5" />
         </div>
 

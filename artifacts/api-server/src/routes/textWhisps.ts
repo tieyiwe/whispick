@@ -13,6 +13,7 @@ import { createTextWhispLimiter, textWhispRevealLimiter } from "../lib/rateLimit
 import { normalizePhoneE164 } from "../lib/phone";
 import { sendSms, textWhispGuestSmsBody } from "../lib/sms";
 import { getPublicAppUrl } from "../lib/publicUrl";
+import { MAX_SCHEDULE_DAYS } from "../lib/expiration";
 import {
   textWhispHookLine,
   textWhispReplyHookLine,
@@ -112,6 +113,11 @@ const createTextWhispSchema = z.object({
   recipientPhone: z.string().min(1),
   messageText: z.string().min(1).max(MESSAGE_MAX_LENGTH),
   senderAlias: z.string().nullable().optional(),
+  // "Schedule for later" — same field/semantics as whisps.ts's own
+  // scheduledAt (see routes/whisps.ts POST / and lib/scheduler.ts): a future
+  // ISO timestamp holds delivery back until lib/textWhispScheduler.ts finds
+  // it due. A past-or-missing value just sends immediately, same as today.
+  scheduledAt: z.string().nullable().optional(),
 });
 
 router.post("/", requireAuth, createTextWhispLimiter, async (req, res): Promise<void> => {
@@ -141,6 +147,16 @@ router.post("/", requireAuth, createTextWhispLimiter, async (req, res): Promise<
     return;
   }
 
+  const scheduledDate = parsed.data.scheduledAt ? new Date(parsed.data.scheduledAt) : null;
+  const isScheduled = scheduledDate !== null && scheduledDate.getTime() > Date.now();
+  if (isScheduled) {
+    const maxDate = new Date(Date.now() + MAX_SCHEDULE_DAYS * 24 * 60 * 60 * 1000);
+    if (scheduledDate!.getTime() > maxDate.getTime()) {
+      res.status(400).json({ error: `Please schedule within ${MAX_SCHEDULE_DAYS} days.` });
+      return;
+    }
+  }
+
   const id = randomUUID();
   const publicToken = randomUUID().replace(/-/g, "");
   await db.insert(textWhispsTable).values({
@@ -151,7 +167,8 @@ router.post("/", requireAuth, createTextWhispLimiter, async (req, res): Promise<
     publicToken,
     senderAlias: parsed.data.senderAlias ?? null,
     messageText: parsed.data.messageText,
-    status: "sent",
+    status: isScheduled ? "scheduled" : "sent",
+    scheduledAt: scheduledDate,
   });
 
   // ANTI-ENUMERATION: read back and respond to the sender BEFORE the
@@ -166,20 +183,26 @@ router.post("/", requireAuth, createTextWhispLimiter, async (req, res): Promise<
   const textWhisp = await db.select().from(textWhispsTable).where(eq(textWhispsTable.id, id)).then((r) => r[0]);
   res.status(201).json(toResponse(textWhisp, user.id));
 
-  const logCtx = { whispId: null, purpose: "text_whisp" as const };
-  if (matched) {
-    // Delivered entirely in-app — see lib/deliver.ts's deliverInApp, shared
-    // with the matched-whisp path in lib/deliver.ts itself.
-    void deliverInApp(matched.id, "You have a new Text Whisp", textWhispHookLine(), `/text-whisps/${id}`, recipientPhone, logCtx);
-  } else {
-    // Not a known account — deliver a guest link over SMS, same as a
-    // whisper_link's unmatched path (lib/deliver.ts's deliverWhisperLink),
-    // pointed at the public Text Whisp landing page (routes/publicTextWhisps.ts).
-    void sendSms(recipientPhone, textWhispGuestSmsBody(`${getPublicAppUrl(req)}/tw/${publicToken}`), logCtx);
+  // A scheduled send skips delivery entirely here — lib/textWhispScheduler.ts
+  // dispatches it once scheduledAt comes due, same "created now, delivered
+  // later" split whisps.ts's own scheduling uses.
+  if (!isScheduled) {
+    const logCtx = { whispId: null, purpose: "text_whisp" as const };
+    if (matched) {
+      // Delivered entirely in-app — see lib/deliver.ts's deliverInApp, shared
+      // with the matched-whisp path in lib/deliver.ts itself.
+      void deliverInApp(matched.id, "You have a new Text Whisp", textWhispHookLine(), `/text-whisps/${id}`, recipientPhone, logCtx);
+    } else {
+      // Not a known account — deliver a guest link over SMS, same as a
+      // whisper_link's unmatched path (lib/deliver.ts's deliverWhisperLink),
+      // pointed at the public Text Whisp landing page (routes/publicTextWhisps.ts).
+      void sendSms(recipientPhone, textWhispGuestSmsBody(`${getPublicAppUrl(req)}/tw/${publicToken}`), logCtx);
+    }
   }
 
   // Content-safety pass, same classifier whisps get — see
-  // lib/moderation.ts's moderateTextWhispAsync.
+  // lib/moderation.ts's moderateTextWhispAsync. Runs regardless of
+  // scheduling: it's about what the message says, not when it goes out.
   void moderateTextWhispAsync({ textWhispId: id, senderId: user.id, text: parsed.data.messageText });
 });
 

@@ -61,11 +61,17 @@ export const textWhispsTable = pgTable("text_whisps", {
   // routes/textWhisps.ts), not just implied by a DB constraint, so a bad
   // request fails fast with a clear error instead of a generic DB error.
   messageText: text("message_text").notNull(),
-  status: text("status").notNull().default("sent"), // 'sent' | 'read' | 'replied'
+  status: text("status").notNull().default("sent"), // 'sent' | 'read' | 'replied' | 'scheduled'
   revealRequested: boolean("reveal_requested").notNull().default(false),
   revealAccepted: boolean("reveal_accepted"),
   readAt: timestamp("read_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  // Set only when the sender chose "schedule for later" (routes/textWhisps.ts's
+  // POST /) — status is 'scheduled' and delivery (the in-app notify or guest
+  // SMS) is held back until lib/textWhispScheduler.ts's dispatcher finds this
+  // row due, mirroring whisps.scheduledAt/lib/scheduler.ts exactly. Null for
+  // every immediately-sent Text Whisp, same as whisps.scheduledAt.
+  scheduledAt: timestamp("scheduled_at", { withTimezone: true }),
   // Soft delete, sender-initiated — exact same semantics as
   // whisps.deletedBySenderAt: hides this text whisp from the sender's own
   // list/detail views without touching the row (or its replies) at all.

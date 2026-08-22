@@ -90,6 +90,7 @@
   },
   "textWhispScroll": {
     "sent": "已发送!",
+    "scheduled": "已安排!",
     "tapToOpenAriaLabel": "点按以打开这条文字 Whisp",
     "tapTheBowToOpen": "点按蝴蝶结即可打开",
     "someoneAnonymous": "一位匿名用户"

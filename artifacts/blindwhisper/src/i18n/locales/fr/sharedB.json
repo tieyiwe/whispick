@@ -91,6 +91,7 @@
   },
   "textWhispScroll": {
     "sent": "Envoyé !",
+    "scheduled": "Programmé !",
     "tapToOpenAriaLabel": "Appuie pour ouvrir ce Whisp texte",
     "tapTheBowToOpen": "Appuie sur le nœud pour ouvrir",
     "someoneAnonymous": "Quelqu'un d'anonyme"

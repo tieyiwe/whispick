@@ -584,9 +584,10 @@ export const ListTextWhispsResponseItem = zod.object({
   "publicToken": zod.string().describe('Token for the public guest landing page (\/tw\/{publicToken}, see GET \/public\/text-whisps\/{token}). Always set, even for a matched in-app send.'),
   "senderAlias": zod.string().nullish(),
   "messageText": zod.string().max(listTextWhispsResponseMessageTextMax),
-  "status": zod.string().describe('\'sent\' | \'read\' | \'replied\''),
+  "status": zod.string().describe('\'sent\' | \'read\' | \'replied\' | \'scheduled\''),
   "revealRequested": zod.boolean(),
   "revealAccepted": zod.boolean().nullish(),
+  "scheduledAt": zod.string().nullish().describe('Set only for a \"schedule for later\" send — delivery (the in-app notify or guest SMS) is held back until this time. Null for every immediately-sent Text Whisp.'),
   "readAt": zod.string().nullish(),
   "createdAt": zod.string(),
   "otherPartyTyping": zod.boolean().describe('True only while the OTHER party (never the caller\'s own ping echoed back) sent a typing ping within the last ~8s. See POST \/text-whisps\/{id}\/typing.')
@@ -604,7 +605,8 @@ export const createTextWhispBodyMessageTextMax = 260;
 export const CreateTextWhispBody = zod.object({
   "recipientPhone": zod.string(),
   "messageText": zod.string().max(createTextWhispBodyMessageTextMax),
-  "senderAlias": zod.string().nullish()
+  "senderAlias": zod.string().nullish(),
+  "scheduledAt": zod.string().nullish().describe('A future ISO timestamp to hold delivery back until — omit or leave null to send immediately.')
 })
 
 export const createTextWhispResponseMessageTextMax = 260;
@@ -619,9 +621,10 @@ export const CreateTextWhispResponse = zod.object({
   "publicToken": zod.string().describe('Token for the public guest landing page (\/tw\/{publicToken}, see GET \/public\/text-whisps\/{token}). Always set, even for a matched in-app send.'),
   "senderAlias": zod.string().nullish(),
   "messageText": zod.string().max(createTextWhispResponseMessageTextMax),
-  "status": zod.string().describe('\'sent\' | \'read\' | \'replied\''),
+  "status": zod.string().describe('\'sent\' | \'read\' | \'replied\' | \'scheduled\''),
   "revealRequested": zod.boolean(),
   "revealAccepted": zod.boolean().nullish(),
+  "scheduledAt": zod.string().nullish().describe('Set only for a \"schedule for later\" send — delivery (the in-app notify or guest SMS) is held back until this time. Null for every immediately-sent Text Whisp.'),
   "readAt": zod.string().nullish(),
   "createdAt": zod.string(),
   "otherPartyTyping": zod.boolean().describe('True only while the OTHER party (never the caller\'s own ping echoed back) sent a typing ping within the last ~8s. See POST \/text-whisps\/{id}\/typing.')
@@ -650,9 +653,10 @@ export const GetTextWhispResponse = zod.object({
   "publicToken": zod.string().describe('Token for the public guest landing page (\/tw\/{publicToken}, see GET \/public\/text-whisps\/{token}). Always set, even for a matched in-app send.'),
   "senderAlias": zod.string().nullish(),
   "messageText": zod.string().max(getTextWhispResponseTextWhispMessageTextMax),
-  "status": zod.string().describe('\'sent\' | \'read\' | \'replied\''),
+  "status": zod.string().describe('\'sent\' | \'read\' | \'replied\' | \'scheduled\''),
   "revealRequested": zod.boolean(),
   "revealAccepted": zod.boolean().nullish(),
+  "scheduledAt": zod.string().nullish().describe('Set only for a \"schedule for later\" send — delivery (the in-app notify or guest SMS) is held back until this time. Null for every immediately-sent Text Whisp.'),
   "readAt": zod.string().nullish(),
   "createdAt": zod.string(),
   "otherPartyTyping": zod.boolean().describe('True only while the OTHER party (never the caller\'s own ping echoed back) sent a typing ping within the last ~8s. See POST \/text-whisps\/{id}\/typing.')
@@ -762,9 +766,10 @@ export const RequestTextWhispRevealResponse = zod.object({
   "publicToken": zod.string().describe('Token for the public guest landing page (\/tw\/{publicToken}, see GET \/public\/text-whisps\/{token}). Always set, even for a matched in-app send.'),
   "senderAlias": zod.string().nullish(),
   "messageText": zod.string().max(requestTextWhispRevealResponseMessageTextMax),
-  "status": zod.string().describe('\'sent\' | \'read\' | \'replied\''),
+  "status": zod.string().describe('\'sent\' | \'read\' | \'replied\' | \'scheduled\''),
   "revealRequested": zod.boolean(),
   "revealAccepted": zod.boolean().nullish(),
+  "scheduledAt": zod.string().nullish().describe('Set only for a \"schedule for later\" send — delivery (the in-app notify or guest SMS) is held back until this time. Null for every immediately-sent Text Whisp.'),
   "readAt": zod.string().nullish(),
   "createdAt": zod.string(),
   "otherPartyTyping": zod.boolean().describe('True only while the OTHER party (never the caller\'s own ping echoed back) sent a typing ping within the last ~8s. See POST \/text-whisps\/{id}\/typing.')

@@ -3808,11 +3808,14 @@ components:
           maxLength: 260
         status:
           type: string
-          description: "'sent' | 'read' | 'replied'"
+          description: "'sent' | 'read' | 'replied' | 'scheduled'"
         revealRequested:
           type: boolean
         revealAccepted:
           type: ["boolean", "null"]
+        scheduledAt:
+          type: ["string", "null"]
+          description: Set only for a "schedule for later" send — delivery (the in-app notify or guest SMS) is held back until this time. Null for every immediately-sent Text Whisp.
         readAt:
           type: ["string", "null"]
         createdAt:
@@ -3842,6 +3845,9 @@ components:
           maxLength: 260
         senderAlias:
           type: ["string", "null"]
+        scheduledAt:
+          type: ["string", "null"]
+          description: A future ISO timestamp to hold delivery back until — omit or leave null to send immediately.
       required:
         - recipientPhone
         - messageText

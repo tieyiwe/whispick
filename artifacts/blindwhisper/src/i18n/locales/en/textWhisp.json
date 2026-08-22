@@ -18,6 +18,8 @@
     "phonePlaceholder": "+1 555 123 4567",
     "smsDisclosure": "By sending to a phone number, you're texting them on your own behalf. Msg & data rates may apply. Reply STOP to opt out, HELP for help. See our",
     "smsTermsLinkText": "SMS Terms",
+    "scheduleTitle": "Schedule for later",
+    "scheduleDescription": "Send now, or pick a future date and time",
     "sendButton": "Send Text Whisp",
     "backButton": "Back to Text Whisps",
     "viewButton": "View this Text Whisp",

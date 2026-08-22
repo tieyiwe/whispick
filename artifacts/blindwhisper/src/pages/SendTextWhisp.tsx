@@ -11,7 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { TextWhispScroll } from "@/components/shared/TextWhispScroll";
 import { useMobileSendAction } from "@/contexts/MobileSendAction";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, ArrowRight, Phone, Loader2, ScrollText } from "lucide-react";
+import { ArrowLeft, ArrowRight, Phone, Loader2, ScrollText, CalendarClock } from "lucide-react";
 
 const MESSAGE_MAX_LENGTH = 260;
 
@@ -42,16 +42,33 @@ export function SendTextWhisp() {
   const [sent, setSent] = useState(false);
   const [sentId, setSentId] = useState<string | null>(null);
   const [animationDone, setAnimationDone] = useState(false);
+  const [scheduleEnabled, setScheduleEnabled] = useState(false);
+  const [scheduledAtValue, setScheduledAtValue] = useState("");
+  const [wasScheduled, setWasScheduled] = useState(false);
 
   const createTextWhisp = useCreateTextWhisp();
+
+  // Same "a past pick becomes an immediate send" rule the backend enforces
+  // (see routes/textWhisps.ts's isScheduled check) — mirrored here purely so
+  // the post-send confirmation screen (TextWhispScroll's `scheduled` prop)
+  // shows "Sent!" rather than "Scheduled!" for a datetime that's already elapsed.
+  const isScheduling = scheduleEnabled && !!scheduledAtValue && new Date(scheduledAtValue).getTime() > Date.now();
 
   function handleSend() {
     const alias = customAlias.trim() || t(`sendTextWhisp.aliases.${senderAliasKey}`);
     createTextWhisp.mutate(
-      { data: { recipientPhone: phone.trim(), messageText: messageText.trim(), senderAlias: alias } },
+      {
+        data: {
+          recipientPhone: phone.trim(),
+          messageText: messageText.trim(),
+          senderAlias: alias,
+          scheduledAt: isScheduling ? new Date(scheduledAtValue).toISOString() : null,
+        },
+      },
       {
         onSuccess: (result) => {
           setSentId(result.id);
+          setWasScheduled(isScheduling);
           setSent(true);
           queryClient.invalidateQueries({ queryKey: getListTextWhispsQueryKey() });
         },
@@ -63,7 +80,11 @@ export function SendTextWhisp() {
   }
 
   const remaining = MESSAGE_MAX_LENGTH - messageText.length;
-  const canSend = phone.trim().length > 0 && messageText.trim().length > 0 && remaining >= 0;
+  const canSend =
+    phone.trim().length > 0 &&
+    messageText.trim().length > 0 &&
+    remaining >= 0 &&
+    (!scheduleEnabled || !!scheduledAtValue);
 
   // Drives the mobile bottom nav's raised round button while this page is
   // composing — see AppLayout.tsx and contexts/MobileSendAction.tsx. Without
@@ -78,7 +99,12 @@ export function SendTextWhisp() {
     return (
       <AppLayout>
         <div className="max-w-md mx-auto py-10 space-y-6">
-          <TextWhispScroll mode="send" messageText={messageText} onSendAnimationComplete={() => setAnimationDone(true)} />
+          <TextWhispScroll
+            mode="send"
+            messageText={messageText}
+            scheduled={wasScheduled}
+            onSendAnimationComplete={() => setAnimationDone(true)}
+          />
           <div
             className="flex flex-col sm:flex-row gap-3 justify-center"
             style={{ opacity: animationDone ? 1 : 0, transition: "opacity 300ms ease" }}
@@ -101,6 +127,9 @@ export function SendTextWhisp() {
                 setMessageText("");
                 setSenderAliasKey(SENDER_ALIASES[0].key);
                 setCustomAlias("");
+                setScheduleEnabled(false);
+                setScheduledAtValue("");
+                setWasScheduled(false);
               }}
               data-testid="button-send-another-text-whisp"
             >
@@ -213,6 +242,39 @@ export function SendTextWhisp() {
                   {t("sendTextWhisp.smsTermsLinkText")}
                 </a>.
               </p>
+            </div>
+
+            <div className="space-y-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setScheduleEnabled(!scheduleEnabled)}
+                data-testid="button-toggle-text-whisp-schedule"
+                className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
+                  scheduleEnabled ? "border-primary bg-primary/10" : "border-border/50 hover:border-border"
+                }`}
+              >
+                <CalendarClock className="w-5 h-5 text-primary" />
+                <div className="flex-1">
+                  <p className="font-medium text-foreground text-sm">{t("sendTextWhisp.scheduleTitle")}</p>
+                  <p className="text-xs text-muted-foreground">{t("sendTextWhisp.scheduleDescription")}</p>
+                </div>
+                <div className={`w-9 h-5 rounded-full transition-colors relative ${scheduleEnabled ? "bg-primary" : "bg-muted"}`}>
+                  <div
+                    className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
+                      scheduleEnabled ? "translate-x-4" : "translate-x-0.5"
+                    }`}
+                  />
+                </div>
+              </button>
+              {scheduleEnabled && (
+                <Input
+                  type="datetime-local"
+                  className="bg-input/50 border-border/50 rounded-xl"
+                  value={scheduledAtValue}
+                  onChange={(e) => setScheduledAtValue(e.target.value)}
+                  data-testid="input-text-whisp-scheduled-at"
+                />
+              )}
             </div>
 
             <Button

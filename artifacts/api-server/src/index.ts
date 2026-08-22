@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { startScheduledWhispDispatcher } from "./lib/scheduler";
+import { startScheduledTextWhispDispatcher } from "./lib/textWhispScheduler";
 import { startReminderDispatcher } from "./lib/reminderScheduler";
 import { startReplyNotificationScheduler } from "./lib/replyNotificationScheduler";
 import { startMediaRetentionScheduler } from "./lib/mediaRetentionScheduler";
@@ -34,6 +35,7 @@ app.listen(port, (err) => {
 });
 
 startScheduledWhispDispatcher();
+startScheduledTextWhispDispatcher();
 startReminderDispatcher();
 startReplyNotificationScheduler();
 startMediaRetentionScheduler();

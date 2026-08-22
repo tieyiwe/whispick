@@ -310,11 +310,16 @@ export interface TextWhisp {
   senderAlias?: string | null;
   /** @maxLength 260 */
   messageText: string;
-  /** 'sent' | 'read' | 'replied' */
+  /** 'sent' | 'read' | 'replied' | 'scheduled' */
   status: string;
   revealRequested: boolean;
   /** @nullable */
   revealAccepted?: boolean | null;
+  /**
+     * Set only for a "schedule for later" send — delivery (the in-app notify or guest SMS) is held back until this time. Null for every immediately-sent Text Whisp.
+     * @nullable
+     */
+  scheduledAt?: string | null;
   /** @nullable */
   readAt?: string | null;
   createdAt: string;
@@ -328,6 +333,11 @@ export interface TextWhispInput {
   messageText: string;
   /** @nullable */
   senderAlias?: string | null;
+  /**
+     * A future ISO timestamp to hold delivery back until — omit or leave null to send immediately.
+     * @nullable
+     */
+  scheduledAt?: string | null;
 }
 
 export interface TextWhispReply {

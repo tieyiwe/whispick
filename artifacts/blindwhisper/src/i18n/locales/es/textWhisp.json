@@ -18,6 +18,8 @@
     "phonePlaceholder": "+1 555 123 4567",
     "smsDisclosure": "Al enviar a un número de teléfono, le estás escribiendo en tu propio nombre. Pueden aplicarse tarifas de mensajes y datos. Responde STOP para darte de baja, HELP para ayuda. Consulta nuestros",
     "smsTermsLinkText": "Términos de SMS",
+    "scheduleTitle": "Programar para más tarde",
+    "scheduleDescription": "Envía ahora, o elige una fecha y hora futuras",
     "sendButton": "Enviar Whisp de texto",
     "backButton": "Volver a Whisps de texto",
     "viewButton": "Ver este Whisp de texto",
