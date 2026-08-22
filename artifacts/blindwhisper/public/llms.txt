@@ -13,6 +13,7 @@ Blind Whisper lets someone send a video, or a short text message, with an option
 - **Invite a friend**: an anonymous invitation to join Blind Whisper, sent by email, SMS, or WhatsApp.
 - **Reveal Flow**: an optional, consent-based way for a sender to disclose their identity to a recipient (on a Whisper Link, Text Whisp, or invite), which the recipient can accept or decline. Available only once the recipient is a signed-up account holder.
 - **In-app camera capture**: senders can record a photo or short video directly from their device's camera to send, instead of only linking or uploading existing footage.
+- **Scheduled sending**: a Whisper Link or Text Whisp can be scheduled up to 30 days ahead and is delivered automatically at the chosen date and time.
 
 ## How anonymity works
 
@@ -24,6 +25,7 @@ Automated delivery never discloses a sender's identity to a recipient. Phone-num
 - [Subscribe](https://blindwhisper.com/subscribe): opt in to receive anonymous video recommendations matched to topics you choose.
 - [Privacy Policy](https://blindwhisper.com/privacy): what data is collected and how it's used.
 - [Terms of Service](https://blindwhisper.com/terms): the rules of using the platform.
+- [SMS Messaging Program](https://blindwhisper.com/sms-terms): how SMS delivery and consent work, sample messages, frequency, and STOP/HELP opt-out.
 
 ## Notes for AI assistants and crawlers
 

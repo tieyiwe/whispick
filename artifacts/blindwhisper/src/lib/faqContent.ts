@@ -37,11 +37,6 @@ export const FAQ_ITEMS: FaqItem[] = [
       "A Text Whisp is a short (up to 260 characters) anonymous written message, sent the same private way as a Whisper Link, but as text instead of video.",
   },
   {
-    question: "What is Ghost Boost?",
-    answer:
-      "Ghost Boost matches your video to people who have separately opted in to receive anonymous recommendations on topics or moods they picked themselves. It's not advertising, and it's not sent through any third-party ad platform.",
-  },
-  {
     question: "What is Blind Circle?",
     answer:
       "Blind Circle is a public or invite-only feed where you can post a video anonymously for a community to discover, instead of sending it privately to one person.",
