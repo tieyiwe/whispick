@@ -188,7 +188,7 @@ export function AdminNotifications() {
                   <p className="text-muted-foreground text-xs mt-0.5">{n.body}</p>
                   <p className="text-xs text-muted-foreground mt-1">
                     {n.targetUserId ? (
-                      <>To <Link href={`/admin/users/${n.targetUserId}`} className="hover:text-primary transition-colors">{n.targetUserEmail ?? n.targetUserId}</Link></>
+                      <>To <Link href={`/admin_pro/users/${n.targetUserId}`} className="hover:text-primary transition-colors">{n.targetUserEmail ?? n.targetUserId}</Link></>
                     ) : "Broadcast to all users"}
                     {" · "}
                     {n.createdByAdminEmail ? `by ${n.createdByAdminEmail}` : "system-generated"}

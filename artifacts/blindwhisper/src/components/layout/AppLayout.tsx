@@ -203,7 +203,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const unreadReplyCount = unread?.unreadReplyCount ?? 0;
 
   const navItems = isAdmin
-    ? [...NAV_ITEMS, { href: "/admin", labelKey: "nav.admin", icon: ShieldCheck }]
+    ? [...NAV_ITEMS, { href: "/admin_pro", labelKey: "nav.admin", icon: ShieldCheck }]
     : NAV_ITEMS;
 
   // Everything not already reachable from one of the 4 fixed mobile tabs —

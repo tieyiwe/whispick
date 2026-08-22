@@ -144,7 +144,7 @@ export function AdminUsers() {
                 <CardContent className="p-4 flex items-center gap-4 flex-wrap">
                   <div className="flex-1 min-w-[200px]">
                     <div className="flex items-center gap-2">
-                      <Link href={`/admin/users/${user.id}`} className="font-medium text-foreground hover:text-primary transition-colors truncate">
+                      <Link href={`/admin_pro/users/${user.id}`} className="font-medium text-foreground hover:text-primary transition-colors truncate">
                         {user.fullName || user.email}
                       </Link>
                       {user.role === "admin" && (

@@ -182,7 +182,7 @@ export function AdminModeration() {
                           Debate Now comment: "{(f.debateTopicCommentText ?? "").slice(0, 60)}{(f.debateTopicCommentText?.length ?? 0) > 60 ? "…" : ""}"
                         </span>
                       ) : (
-                        <Link href={`/admin/whisps/${f.whispId}`} className="font-medium text-foreground hover:text-primary transition-colors truncate">
+                        <Link href={`/admin_pro/whisps/${f.whispId}`} className="font-medium text-foreground hover:text-primary transition-colors truncate">
                           {f.videoTitle || "Video"}
                         </Link>
                       )}
@@ -192,7 +192,7 @@ export function AdminModeration() {
                   <p className="text-sm text-muted-foreground">{f.reasoning}</p>
                   <div className="flex items-center justify-between gap-2 flex-wrap pt-1">
                     {f.userId ? (
-                      <Link href={`/admin/users/${f.userId}`} className="text-xs text-muted-foreground hover:text-primary transition-colors">
+                      <Link href={`/admin_pro/users/${f.userId}`} className="text-xs text-muted-foreground hover:text-primary transition-colors">
                         Sender: {f.senderEmail ?? f.userId}
                       </Link>
                     ) : (

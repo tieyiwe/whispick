@@ -102,7 +102,7 @@ export function AdminUserDetail() {
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-          setLocation("/admin/users");
+          setLocation("/admin_pro/users");
           toast({ title: "User deleted" });
         },
         onError: (err: any) => toast({ title: err?.error ?? "Failed to delete user", variant: "destructive" }),
@@ -137,7 +137,7 @@ export function AdminUserDetail() {
     <AdminLayout>
       <div className="max-w-3xl mx-auto space-y-5">
         <div className="flex items-center justify-between">
-          <Button variant="ghost" onClick={() => setLocation("/admin/users")} className="text-muted-foreground -ml-2">
+          <Button variant="ghost" onClick={() => setLocation("/admin_pro/users")} className="text-muted-foreground -ml-2">
             <ArrowLeft className="w-4 h-4 mr-1" /> Users
           </Button>
           <AlertDialog>
@@ -304,7 +304,7 @@ export function AdminUserDetail() {
                 return isTextWhisp ? (
                   <div key={f.id} className={rowClassName}>{content}</div>
                 ) : (
-                  <Link key={f.id} href={`/admin/whisps/${f.whispId}`} className={rowClassName}>
+                  <Link key={f.id} href={`/admin_pro/whisps/${f.whispId}`} className={rowClassName}>
                     {content}
                   </Link>
                 );
@@ -336,7 +336,7 @@ export function AdminUserDetail() {
             ) : whispsPage?.items.length ? (
               <>
                 {whispsPage.items.map((w) => (
-                  <Link key={w.id} href={`/admin/whisps/${w.id}`} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted/30 transition-colors">
+                  <Link key={w.id} href={`/admin_pro/whisps/${w.id}`} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted/30 transition-colors">
                     <PlayCircle className="w-4 h-4 text-muted-foreground shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="truncate text-sm text-foreground">{w.videoTitle || w.videoUrl}</p>

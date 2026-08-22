@@ -357,7 +357,7 @@ export function AdminReports() {
                     )}
 
                     <div className="flex items-center justify-between gap-2 flex-wrap pt-1">
-                      <Link href={`/admin/users/${r.reporterUserId}`} className="text-xs text-muted-foreground hover:text-primary transition-colors">
+                      <Link href={`/admin_pro/users/${r.reporterUserId}`} className="text-xs text-muted-foreground hover:text-primary transition-colors">
                         Reporter: {r.reporterEmail ?? r.reporterUserId}
                       </Link>
 

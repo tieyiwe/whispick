@@ -21,7 +21,7 @@ export function AdminDashboard() {
     { label: "Total Users", value: stats?.totalUsers ?? 0, icon: Users, color: "text-primary", bg: "bg-primary/10" },
     { label: "Total Whisps", value: stats?.totalWhisps ?? 0, icon: Send, color: "text-blue-400", bg: "bg-blue-500/10" },
     { label: "Active (7d)", value: stats?.activeUsersLast7Days ?? 0, icon: TrendingUp, color: "text-secondary", bg: "bg-secondary/10" },
-    { label: "Failed Deliveries", value: funnelStats?.funnel.failed ?? 0, icon: AlertOctagon, color: "text-destructive", bg: "bg-destructive/10", href: "/admin/whisps?status=failed" },
+    { label: "Failed Deliveries", value: funnelStats?.funnel.failed ?? 0, icon: AlertOctagon, color: "text-destructive", bg: "bg-destructive/10", href: "/admin_pro/whisps?status=failed" },
     { label: "Banned", value: stats?.bannedUsers ?? 0, icon: UserX, color: "text-destructive", bg: "bg-destructive/10" },
   ];
 

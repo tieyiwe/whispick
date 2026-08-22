@@ -23,6 +23,7 @@ Disallow: /replies
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin
+Disallow: /admin_pro
 Disallow: /sign-in
 Disallow: /sign-up
 Disallow: /verify-subscription
@@ -54,6 +55,7 @@ Disallow: /replies
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin
+Disallow: /admin_pro
 Disallow: /sign-in
 Disallow: /sign-up
 Disallow: /verify-subscription
@@ -85,6 +87,7 @@ Disallow: /replies
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin
+Disallow: /admin_pro
 Disallow: /sign-in
 Disallow: /sign-up
 Disallow: /verify-subscription
@@ -116,6 +119,7 @@ Disallow: /replies
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin
+Disallow: /admin_pro
 Disallow: /sign-in
 Disallow: /sign-up
 Disallow: /verify-subscription
@@ -147,6 +151,7 @@ Disallow: /replies
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin
+Disallow: /admin_pro
 Disallow: /sign-in
 Disallow: /sign-up
 Disallow: /verify-subscription
@@ -178,6 +183,7 @@ Disallow: /replies
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin
+Disallow: /admin_pro
 Disallow: /sign-in
 Disallow: /sign-up
 Disallow: /verify-subscription
@@ -209,6 +215,7 @@ Disallow: /replies
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin
+Disallow: /admin_pro
 Disallow: /sign-in
 Disallow: /sign-up
 Disallow: /verify-subscription
@@ -240,6 +247,7 @@ Disallow: /replies
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin
+Disallow: /admin_pro
 Disallow: /sign-in
 Disallow: /sign-up
 Disallow: /verify-subscription
@@ -271,6 +279,7 @@ Disallow: /replies
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin
+Disallow: /admin_pro
 Disallow: /sign-in
 Disallow: /sign-up
 Disallow: /verify-subscription
@@ -302,6 +311,7 @@ Disallow: /replies
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin
+Disallow: /admin_pro
 Disallow: /sign-in
 Disallow: /sign-up
 Disallow: /verify-subscription
@@ -333,6 +343,7 @@ Disallow: /replies
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin
+Disallow: /admin_pro
 Disallow: /sign-in
 Disallow: /sign-up
 Disallow: /verify-subscription
@@ -364,6 +375,7 @@ Disallow: /replies
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin
+Disallow: /admin_pro
 Disallow: /sign-in
 Disallow: /sign-up
 Disallow: /verify-subscription
@@ -395,6 +407,7 @@ Disallow: /replies
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin
+Disallow: /admin_pro
 Disallow: /sign-in
 Disallow: /sign-up
 Disallow: /verify-subscription
@@ -426,6 +439,7 @@ Disallow: /replies
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin
+Disallow: /admin_pro
 Disallow: /sign-in
 Disallow: /sign-up
 Disallow: /verify-subscription
@@ -457,6 +471,7 @@ Disallow: /replies
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin
+Disallow: /admin_pro
 Disallow: /sign-in
 Disallow: /sign-up
 Disallow: /verify-subscription
@@ -488,6 +503,7 @@ Disallow: /replies
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin
+Disallow: /admin_pro
 Disallow: /sign-in
 Disallow: /sign-up
 Disallow: /verify-subscription
@@ -519,6 +535,7 @@ Disallow: /replies
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin
+Disallow: /admin_pro
 Disallow: /sign-in
 Disallow: /sign-up
 Disallow: /verify-subscription
@@ -550,6 +567,7 @@ Disallow: /replies
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin
+Disallow: /admin_pro
 Disallow: /sign-in
 Disallow: /sign-up
 Disallow: /verify-subscription

@@ -5,17 +5,17 @@ import { PullToRefresh, reloadPage } from "@/components/shared/PullToRefresh";
 import { LayoutDashboard, Users, ListVideo, BarChart3, ArrowLeft, ShieldCheck, Sparkles, Bell, ShieldAlert, Megaphone, Video, ScrollText, Flag } from "lucide-react";
 
 const ADMIN_NAV_ITEMS = [
-  { href: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
-  { href: "/admin/users", label: "Users", icon: Users },
-  { href: "/admin/whisps", label: "Content", icon: ListVideo },
-  { href: "/admin/moderation", label: "Moderation", icon: ShieldAlert },
-  { href: "/admin/reports", label: "Reports", icon: Flag },
-  { href: "/admin/suggestions", label: "Suggestions", icon: Sparkles },
-  { href: "/admin/debate-agent", label: "Town Crier", icon: Megaphone },
-  { href: "/admin/circle-agent", label: "Circle Scout", icon: Video },
-  { href: "/admin/notifications", label: "Notifications", icon: Bell },
-  { href: "/admin/audit-log", label: "Audit Log", icon: ScrollText },
-  { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/admin_pro", label: "Overview", icon: LayoutDashboard, exact: true },
+  { href: "/admin_pro/users", label: "Users", icon: Users },
+  { href: "/admin_pro/whisps", label: "Content", icon: ListVideo },
+  { href: "/admin_pro/moderation", label: "Moderation", icon: ShieldAlert },
+  { href: "/admin_pro/reports", label: "Reports", icon: Flag },
+  { href: "/admin_pro/suggestions", label: "Suggestions", icon: Sparkles },
+  { href: "/admin_pro/debate-agent", label: "Town Crier", icon: Megaphone },
+  { href: "/admin_pro/circle-agent", label: "Circle Scout", icon: Video },
+  { href: "/admin_pro/notifications", label: "Notifications", icon: Bell },
+  { href: "/admin_pro/audit-log", label: "Audit Log", icon: ScrollText },
+  { href: "/admin_pro/analytics", label: "Analytics", icon: BarChart3 },
 ];
 
 export function AdminLayout({ children }: { children: ReactNode }) {

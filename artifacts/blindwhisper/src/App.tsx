@@ -298,19 +298,19 @@ function ClerkProviderWithRoutes() {
             <Route path="/text-whisps/:id" component={() => <ProtectedRoute component={TextWhispDetail} />} />
             <Route path="/text-whisps" component={() => <ProtectedRoute component={TextWhispsList} />} />
 
-            <Route path="/admin/users/:id" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminUserDetail} />} />} />
-            <Route path="/admin/users" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminUsers} />} />} />
-            <Route path="/admin/whisps/:id" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminWhispDetail} />} />} />
-            <Route path="/admin/whisps" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminWhisps} />} />} />
-            <Route path="/admin/analytics" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminAnalytics} />} />} />
-            <Route path="/admin/suggestions" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminSuggestions} />} />} />
-            <Route path="/admin/moderation" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminModeration} />} />} />
-            <Route path="/admin/reports" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminReports} />} />} />
-            <Route path="/admin/notifications" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminNotifications} />} />} />
-            <Route path="/admin/debate-agent" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminDebateAgent} />} />} />
-            <Route path="/admin/circle-agent" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminCircleAgent} />} />} />
-            <Route path="/admin/audit-log" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminAuditLog} />} />} />
-            <Route path="/admin" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminDashboard} />} />} />
+            <Route path="/admin_pro/users/:id" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminUserDetail} />} />} />
+            <Route path="/admin_pro/users" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminUsers} />} />} />
+            <Route path="/admin_pro/whisps/:id" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminWhispDetail} />} />} />
+            <Route path="/admin_pro/whisps" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminWhisps} />} />} />
+            <Route path="/admin_pro/analytics" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminAnalytics} />} />} />
+            <Route path="/admin_pro/suggestions" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminSuggestions} />} />} />
+            <Route path="/admin_pro/moderation" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminModeration} />} />} />
+            <Route path="/admin_pro/reports" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminReports} />} />} />
+            <Route path="/admin_pro/notifications" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminNotifications} />} />} />
+            <Route path="/admin_pro/debate-agent" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminDebateAgent} />} />} />
+            <Route path="/admin_pro/circle-agent" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminCircleAgent} />} />} />
+            <Route path="/admin_pro/audit-log" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminAuditLog} />} />} />
+            <Route path="/admin_pro" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminDashboard} />} />} />
 
             <Route path="/debate-topics/:id" component={DebateTopicDetail} />
             <Route path="/debate-topics" component={DebateTopics} />

@@ -149,7 +149,7 @@ export function AdminWhisps() {
                       {w.videoThumbnail ? <img src={w.videoThumbnail} className="w-full h-full object-cover" alt="" /> : <PlayCircle className="w-4 h-4 text-muted-foreground" />}
                     </div>
                     <div className="flex-1 min-w-[200px]">
-                      <Link href={`/admin/whisps/${w.id}`} className="font-medium text-foreground hover:text-primary transition-colors truncate block">
+                      <Link href={`/admin_pro/whisps/${w.id}`} className="font-medium text-foreground hover:text-primary transition-colors truncate block">
                         {w.videoTitle || w.videoUrl}
                       </Link>
                       <p className="text-xs text-muted-foreground truncate">
