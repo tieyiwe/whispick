@@ -1183,6 +1183,52 @@ export interface UsageInsightsResponse {
   days: number;
 }
 
+export interface AdminAccessMe {
+  isOwner: boolean;
+  permissions: string[];
+}
+
+export interface AdminGrant {
+  id: string;
+  email: string;
+  /** @nullable */
+  userId?: string | null;
+  roleTitle: string;
+  permissions: string[];
+  /**
+     * Null while the invite waits for an account with this email to exist.
+     * @nullable
+     */
+  linkedAt?: string | null;
+  createdAt: string;
+  /** @nullable */
+  lastSeenAt?: string | null;
+}
+
+export interface RolePreset {
+  title: string;
+  permissions: string[];
+}
+
+export interface AdminGrantListResponse {
+  items: AdminGrant[];
+  availablePermissions: string[];
+  rolePresets: RolePreset[];
+}
+
+export interface AdminGrantInput {
+  email: string;
+  roleTitle: string;
+  /** @minItems 1 */
+  permissions: string[];
+}
+
+export interface AdminGrantUpdateInput {
+  roleTitle?: string;
+  /** @minItems 1 */
+  permissions?: string[];
+}
+
 export interface AdminMfaStatus {
   enrolled: boolean;
 }

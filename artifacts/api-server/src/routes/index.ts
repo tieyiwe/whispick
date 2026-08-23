@@ -11,6 +11,7 @@ import billingRouter from "./billing";
 import linkRouter from "./link";
 import adminRouter from "./admin";
 import adminMfaRouter from "./adminMfa";
+import adminAccessRouter from "./adminAccess";
 import adminDebateAgentRouter from "./adminDebateAgent";
 import adminCircleAgentRouter from "./adminCircleAgent";
 import whisperGroupsRouter from "./whisperGroups";
@@ -67,6 +68,9 @@ router.use("/l", publicEndpointLimiter, linkRouter);
 // are the enrollment/unlock endpoints the MFA gate sends a locked-out
 // admin through (they do their own signed-in + admin-role check inline).
 router.use("/admin-mfa", adminMfaRouter);
+// Before the main admin router so /admin/access terminates here instead of
+// running the main router's middleware chain first.
+router.use("/admin/access", adminAccessRouter);
 router.use("/admin", adminRouter);
 // Separate router/file from adminRouter (see routes/adminDebateAgent.ts's
 // own comment for why) but the same "/admin" base path, so its routes still

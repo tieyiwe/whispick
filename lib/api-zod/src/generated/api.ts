@@ -2643,6 +2643,98 @@ export const AdminGenerateUsageInsightsResponse = zod.object({
 
 
 /**
+ * @summary This admin's HQ identity — owner flag and permission set (any admin)
+ */
+export const GetMyAdminAccessResponse = zod.object({
+  "isOwner": zod.boolean(),
+  "permissions": zod.array(zod.string())
+})
+
+
+/**
+ * @summary Staff grants, plus the permission catalog and role presets (owner only)
+ */
+export const AdminListAccessGrantsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "email": zod.string(),
+  "userId": zod.string().nullish(),
+  "roleTitle": zod.string(),
+  "permissions": zod.array(zod.string()),
+  "linkedAt": zod.string().nullish().describe('Null while the invite waits for an account with this email to exist.'),
+  "createdAt": zod.string(),
+  "lastSeenAt": zod.string().nullish()
+})),
+  "availablePermissions": zod.array(zod.string()),
+  "rolePresets": zod.array(zod.object({
+  "title": zod.string(),
+  "permissions": zod.array(zod.string())
+}))
+})
+
+
+/**
+ * @summary Invite a collaborator by email with a role and permission set (owner only)
+ */
+
+
+
+export const AdminCreateAccessGrantBody = zod.object({
+  "email": zod.string(),
+  "roleTitle": zod.string(),
+  "permissions": zod.array(zod.string()).min(1)
+})
+
+export const AdminCreateAccessGrantResponse = zod.object({
+  "id": zod.string(),
+  "email": zod.string(),
+  "userId": zod.string().nullish(),
+  "roleTitle": zod.string(),
+  "permissions": zod.array(zod.string()),
+  "linkedAt": zod.string().nullish().describe('Null while the invite waits for an account with this email to exist.'),
+  "createdAt": zod.string(),
+  "lastSeenAt": zod.string().nullish()
+})
+
+
+/**
+ * @summary Retitle or rescope a staff grant (owner only)
+ */
+export const AdminUpdateAccessGrantParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+
+
+export const AdminUpdateAccessGrantBody = zod.object({
+  "roleTitle": zod.string().optional(),
+  "permissions": zod.array(zod.string()).min(1).optional()
+})
+
+export const AdminUpdateAccessGrantResponse = zod.object({
+  "id": zod.string(),
+  "email": zod.string(),
+  "userId": zod.string().nullish(),
+  "roleTitle": zod.string(),
+  "permissions": zod.array(zod.string()),
+  "linkedAt": zod.string().nullish().describe('Null while the invite waits for an account with this email to exist.'),
+  "createdAt": zod.string(),
+  "lastSeenAt": zod.string().nullish()
+})
+
+
+/**
+ * @summary Revoke a collaborator — their account loses the admin role entirely (owner only)
+ */
+export const AdminRevokeAccessGrantParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const AdminRevokeAccessGrantResponse = zod.void()
+
+
+/**
  * @summary Whether this admin account has finished authenticator enrollment (admin role only)
  */
 export const GetAdminMfaStatusResponse = zod.object({

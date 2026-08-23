@@ -44,3 +44,29 @@ export async function adminHeaders(clerkId: string, adminEmail: string): Promise
 
   return { ...base, "x-admin-mfa": verify.body.token };
 }
+
+// A collaborator (admin via an access grant, NOT the ADMIN_EMAILS owner):
+// same TOTP enrollment dance, but never touches ADMIN_EMAILS — being the
+// owner would defeat the point of permission tests. The caller must have
+// arranged the grant + a sign-in (so the role is already admin) first.
+export async function collaboratorHeaders(clerkId: string): Promise<Record<string, string>> {
+  const base = { [TEST_USER_HEADER]: clerkId };
+  const setup = await request(app).post("/api/admin-mfa/setup").set(base);
+  let secret: string;
+  if (setup.status === 200) {
+    secret = setup.body.secret;
+    secretCache.set(clerkId, secret);
+  } else {
+    const cached = secretCache.get(clerkId);
+    if (!cached) throw new Error(`collaborator admin-mfa setup returned ${setup.status} with no cached secret for ${clerkId}`);
+    secret = cached;
+  }
+  const verify = await request(app)
+    .post("/api/admin-mfa/verify")
+    .set(base)
+    .send({ code: totpCodeAt(secret, Date.now()) });
+  if (verify.status !== 200) {
+    throw new Error(`collaborator admin-mfa verify failed: ${verify.status} ${JSON.stringify(verify.body)}`);
+  }
+  return { ...base, "x-admin-mfa": verify.body.token };
+}

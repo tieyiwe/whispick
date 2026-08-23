@@ -82,6 +82,7 @@ const AdminSuggestions = lazy(() => import("@/pages/admin/AdminSuggestions").the
 const AdminModeration = lazy(() => import("@/pages/admin/AdminModeration").then((m) => ({ default: m.AdminModeration })));
 const AdminReports = lazy(() => import("@/pages/admin/AdminReports").then((m) => ({ default: m.AdminReports })));
 const AdminPolicies = lazy(() => import("@/pages/admin/AdminPolicies").then((m) => ({ default: m.AdminPolicies })));
+const AdminAccess = lazy(() => import("@/pages/admin/AdminAccess").then((m) => ({ default: m.AdminAccess })));
 const AdminNotifications = lazy(() => import("@/pages/admin/AdminNotifications").then((m) => ({ default: m.AdminNotifications })));
 const AdminDebateAgent = lazy(() => import("@/pages/admin/AdminDebateAgent").then((m) => ({ default: m.AdminDebateAgent })));
 const AdminCircleAgent = lazy(() => import("@/pages/admin/AdminCircleAgent").then((m) => ({ default: m.AdminCircleAgent })));
@@ -322,6 +323,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/admin_pro/moderation" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminModeration} />} />} />
             <Route path="/admin_pro/reports" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminReports} />} />} />
             <Route path="/admin_pro/policies" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminPolicies} />} />} />
+            <Route path="/admin_pro/access" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminAccess} />} />} />
             <Route path="/admin_pro/notifications" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminNotifications} />} />} />
             <Route path="/admin_pro/debate-agent" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminDebateAgent} />} />} />
             <Route path="/admin_pro/circle-agent" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminCircleAgent} />} />} />

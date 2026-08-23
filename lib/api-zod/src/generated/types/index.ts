@@ -8,6 +8,7 @@
 
 export * from './acceptPoliciesInput';
 export * from './addWhisperGroupMembersInput';
+export * from './adminAccessMe';
 export * from './adminAuditLogEntry';
 export * from './adminAuditLogResponse';
 export * from './adminCategoryStat';
@@ -29,6 +30,10 @@ export * from './adminFunnelStatsInvites';
 export * from './adminFunnelStatsPhoneMatchRouting';
 export * from './adminFunnelStatsTextWhisps';
 export * from './adminGetUsageStatsParams';
+export * from './adminGrant';
+export * from './adminGrantInput';
+export * from './adminGrantListResponse';
+export * from './adminGrantUpdateInput';
 export * from './adminListAuditLogParams';
 export * from './adminListContentReportsParams';
 export * from './adminListModerationFlagsParams';
@@ -172,6 +177,7 @@ export * from './revealResponse';
 export * from './revealResult';
 export * from './rewhispDebateTopic200';
 export * from './rewhispDebateTopicBody';
+export * from './rolePreset';
 export * from './runCircleAgentResult';
 export * from './runDebateAgentResult';
 export * from './runSuggestionAgentResult';

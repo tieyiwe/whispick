@@ -2782,6 +2782,111 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
 
+  /admin/access/me:
+    get:
+      operationId: getMyAdminAccess
+      tags: [admin]
+      summary: This admin's HQ identity — owner flag and permission set (any admin)
+      responses:
+        "200":
+          description: Access info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAccessMe"
+
+  /admin/access/grants:
+    get:
+      operationId: adminListAccessGrants
+      tags: [admin]
+      summary: Staff grants, plus the permission catalog and role presets (owner only)
+      responses:
+        "200":
+          description: Grants
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminGrantListResponse"
+    post:
+      operationId: adminCreateAccessGrant
+      tags: [admin]
+      summary: Invite a collaborator by email with a role and permission set (owner only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminGrantInput"
+      responses:
+        "201":
+          description: Grant created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminGrant"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Email already has a grant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/access/grants/{id}:
+    patch:
+      operationId: adminUpdateAccessGrant
+      tags: [admin]
+      summary: Retitle or rescope a staff grant (owner only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminGrantUpdateInput"
+      responses:
+        "200":
+          description: Updated grant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminGrant"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      operationId: adminRevokeAccessGrant
+      tags: [admin]
+      summary: Revoke a collaborator — their account loses the admin role entirely (owner only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Revoked
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /admin-mfa/status:
     get:
       operationId: getAdminMfaStatus
@@ -5669,6 +5774,109 @@ components:
         - insights
         - statsAnalyzed
         - days
+
+    AdminAccessMe:
+      type: object
+      properties:
+        isOwner:
+          type: boolean
+        permissions:
+          type: array
+          items:
+            type: string
+      required:
+        - isOwner
+        - permissions
+
+    AdminGrant:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        userId:
+          type: ["string", "null"]
+        roleTitle:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+        linkedAt:
+          type: ["string", "null"]
+          description: Null while the invite waits for an account with this email to exist.
+        createdAt:
+          type: string
+        lastSeenAt:
+          type: ["string", "null"]
+      required:
+        - id
+        - email
+        - roleTitle
+        - permissions
+        - createdAt
+
+    RolePreset:
+      type: object
+      properties:
+        title:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+      required:
+        - title
+        - permissions
+
+    AdminGrantListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminGrant"
+        availablePermissions:
+          type: array
+          items:
+            type: string
+        rolePresets:
+          type: array
+          items:
+            $ref: "#/components/schemas/RolePreset"
+      required:
+        - items
+        - availablePermissions
+        - rolePresets
+
+    AdminGrantInput:
+      type: object
+      properties:
+        email:
+          type: string
+        roleTitle:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+          minItems: 1
+      required:
+        - email
+        - roleTitle
+        - permissions
+
+    AdminGrantUpdateInput:
+      type: object
+      properties:
+        roleTitle:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+          minItems: 1
 
     AdminMfaStatus:
       type: object

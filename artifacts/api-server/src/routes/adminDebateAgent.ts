@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { z } from "zod";
 import type { User } from "@workspace/db";
-import { requireAdmin } from "../lib/adminAuth";
+import { requireAdmin, requirePermission } from "../lib/adminAuth";
 import { logAdminAction } from "../lib/adminAudit";
 import {
   getOrCreateDebateAgentSettings,
@@ -21,6 +21,7 @@ import { MAX_TOPIC_TEXT_LENGTH } from "./debateTopics";
 const router: IRouter = Router();
 
 router.use(requireAdmin);
+router.use(requirePermission("agents"));
 
 const updateConfigSchema = z.object({
   enabled: z.boolean().optional(),

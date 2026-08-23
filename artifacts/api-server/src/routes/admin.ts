@@ -29,7 +29,7 @@ import {
   type User,
 } from "@workspace/db";
 import { and, asc, count, desc, eq, gte, ilike, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
-import { requireAdmin } from "../lib/adminAuth";
+import { requireAdmin, requirePermission } from "../lib/adminAuth";
 import { logAdminAction, listAdminAuditLog } from "../lib/adminAudit";
 import { VIDEO_CATEGORIES } from "../lib/categorize";
 import { computeOpportunities } from "../lib/insights";
@@ -45,6 +45,21 @@ import { httpUrlString, isHttpUrlOrAppPath } from "../lib/safeUrl";
 const router = Router();
 
 router.use(requireAdmin);
+
+// Feature-area gates (lib/adminAuth.ts): the owner passes everything; a
+// collaborator passes only the areas their grant carries. Prefixes mirror
+// AdminLayout's nav groups one-to-one.
+router.use("/users", requirePermission("users"));
+router.use("/whisps", requirePermission("whisps"));
+router.use("/moderation", requirePermission("moderation"));
+router.use("/content-reports", requirePermission("reports"));
+router.use("/notifications", requirePermission("notifications"));
+router.use("/policy-versions", requirePermission("policies"));
+router.use("/suggestions", requirePermission("suggestions"));
+router.use("/stats", requirePermission("analytics"));
+router.use("/usage-stats", requirePermission("analytics"));
+router.use("/usage-insights", requirePermission("analytics"));
+router.use("/audit-log", requirePermission("audit_log"));
 
 function categoryLabel(key: string): string {
   return VIDEO_CATEGORIES.find((c) => c.key === key)?.label ?? "Uncategorized";

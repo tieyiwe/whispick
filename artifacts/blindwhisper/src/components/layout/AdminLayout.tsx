@@ -1,5 +1,6 @@
 import { ReactNode, useEffect } from "react";
 import { Link, useLocation } from "wouter";
+import { useGetMyAdminAccess } from "@workspace/api-client-react";
 import { Logo } from "@/components/ui/logo";
 import { PullToRefresh, reloadPage } from "@/components/shared/PullToRefresh";
 import {
@@ -17,6 +18,7 @@ import {
   ScrollText,
   Flag,
   FileCheck2,
+  KeyRound,
 } from "lucide-react";
 
 // Odoo-style command-center navigation: one left rail, grouped by the job
@@ -25,52 +27,82 @@ import {
 // grouping is what makes the panel feel like a place to RUN the whole
 // operation instead of a pile of pages. Mobile keeps a horizontal scroll
 // strip of the same items — a rail doesn't fit a phone.
-const ADMIN_NAV_GROUPS: { heading: string; items: { href: string; label: string; icon: typeof Users; exact?: boolean }[] }[] = [
+type NavItem = { href: string; label: string; icon: typeof Users; exact?: boolean; permission?: string; ownerOnly?: boolean };
+
+const ADMIN_NAV_GROUPS: { heading: string; items: NavItem[] }[] = [
   {
     heading: "Business",
     items: [
-      { href: "/admin_pro", label: "Overview", icon: LayoutDashboard, exact: true },
-      { href: "/admin_pro/analytics", label: "Analytics", icon: BarChart3 },
+      { href: "/admin_pro", label: "Overview", icon: LayoutDashboard, exact: true, permission: "analytics" },
+      { href: "/admin_pro/analytics", label: "Analytics", icon: BarChart3, permission: "analytics" },
     ],
   },
   {
     heading: "Community",
     items: [
-      { href: "/admin_pro/users", label: "Users", icon: Users },
-      { href: "/admin_pro/moderation", label: "Moderation", icon: ShieldAlert },
-      { href: "/admin_pro/reports", label: "Reports", icon: Flag },
+      { href: "/admin_pro/users", label: "Users", icon: Users, permission: "users" },
+      { href: "/admin_pro/moderation", label: "Moderation", icon: ShieldAlert, permission: "moderation" },
+      { href: "/admin_pro/reports", label: "Reports", icon: Flag, permission: "reports" },
     ],
   },
   {
     heading: "Content",
     items: [
-      { href: "/admin_pro/whisps", label: "Whisps", icon: ListVideo },
-      { href: "/admin_pro/suggestions", label: "Suggestions", icon: Sparkles },
-      { href: "/admin_pro/debate-agent", label: "Town Crier", icon: Megaphone },
-      { href: "/admin_pro/circle-agent", label: "Circle Scout", icon: Video },
+      { href: "/admin_pro/whisps", label: "Whisps", icon: ListVideo, permission: "whisps" },
+      { href: "/admin_pro/suggestions", label: "Suggestions", icon: Sparkles, permission: "suggestions" },
+      { href: "/admin_pro/debate-agent", label: "Town Crier", icon: Megaphone, permission: "agents" },
+      { href: "/admin_pro/circle-agent", label: "Circle Scout", icon: Video, permission: "agents" },
     ],
   },
   {
     heading: "Outreach",
     items: [
-      { href: "/admin_pro/notifications", label: "Notifications", icon: Bell },
-      { href: "/admin_pro/policies", label: "Policies", icon: FileCheck2 },
+      { href: "/admin_pro/notifications", label: "Notifications", icon: Bell, permission: "notifications" },
+      { href: "/admin_pro/policies", label: "Policies", icon: FileCheck2, permission: "policies" },
     ],
   },
   {
     heading: "System",
-    items: [{ href: "/admin_pro/audit-log", label: "Audit Log", icon: ScrollText }],
+    items: [
+      { href: "/admin_pro/audit-log", label: "Audit Log", icon: ScrollText, permission: "audit_log" },
+      { href: "/admin_pro/access", label: "Staff & Access", icon: KeyRound, ownerOnly: true },
+    ],
   },
 ];
-
-const ALL_NAV_ITEMS = ADMIN_NAV_GROUPS.flatMap((g) => g.items);
 
 function isActivePath(location: string, item: { href: string; exact?: boolean }): boolean {
   return item.exact ? location === item.href : location === item.href || location.startsWith(item.href + "/");
 }
 
 export function AdminLayout({ children }: { children: ReactNode }) {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
+  // Collaborators only see the areas their grant covers (the backend
+  // enforces regardless — this keeps the rail honest). Until the access
+  // check answers, show everything rather than flashing an empty rail;
+  // wrong guesses just 403 politely.
+  const { data: access } = useGetMyAdminAccess();
+
+  function canSee(item: NavItem): boolean {
+    if (!access) return true;
+    if (item.ownerOnly) return access.isOwner;
+    if (!item.permission) return true;
+    return access.isOwner || access.permissions.includes(item.permission);
+  }
+
+  const visibleGroups = ADMIN_NAV_GROUPS
+    .map((g) => ({ ...g, items: g.items.filter(canSee) }))
+    .filter((g) => g.items.length > 0);
+  const visibleItems = visibleGroups.flatMap((g) => g.items);
+
+  // A collaborator without analytics lands on Overview by default — send
+  // them to their first permitted area instead of a page of 403s.
+  useEffect(() => {
+    if (!access || access.isOwner) return;
+    if (location === "/admin_pro" && !access.permissions.includes("analytics") && visibleItems.length > 0) {
+      setLocation(visibleItems[0].href);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [access, location]);
 
   // The palette class ALSO goes on <body> while any admin page is mounted:
   // Radix dialogs/selects/popovers portal to document.body, so a class on
@@ -113,7 +145,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 
         {/* Mobile: the same nav as a flat scroll strip under the top bar. */}
         <nav className="md:hidden px-3 flex gap-1 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {ALL_NAV_ITEMS.map((item) => {
+          {visibleItems.map((item) => {
             const active = isActivePath(location, item);
             const Icon = item.icon;
             return (
@@ -135,7 +167,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
       <div className="flex-1 flex min-h-0">
         {/* Desktop rail — grouped, Odoo-style. */}
         <aside className="hidden md:flex w-56 shrink-0 flex-col border-r border-border bg-card/60 px-3 py-5 gap-5 overflow-y-auto sticky top-[57px] h-[calc(100dvh-57px)]">
-          {ADMIN_NAV_GROUPS.map((group) => (
+          {visibleGroups.map((group) => (
             <div key={group.heading} className="space-y-1">
               <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
                 {group.heading}

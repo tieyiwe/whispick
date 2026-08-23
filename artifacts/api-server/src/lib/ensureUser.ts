@@ -1,5 +1,5 @@
 import { db } from "@workspace/db";
-import { usersTable, type User } from "@workspace/db";
+import { usersTable, adminGrantsTable, type User } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { clerkClient } from "@clerk/express";
@@ -10,7 +10,7 @@ import { logger } from "./logger";
 // the admin role. This is the only way to create the first admin — there's
 // no UI for it, since an admin panel obviously can't be the thing that grants
 // its own first access.
-function isBootstrapAdminEmail(email: string): boolean {
+export function isBootstrapAdminEmail(email: string): boolean {
   const list = process.env.ADMIN_EMAILS;
   if (!list) return false;
   return list
@@ -63,6 +63,27 @@ export async function fetchClerkProfile(clerkId: string): Promise<{ email: strin
 const PROFILE_HEAL_RETRY_MS = 10 * 60 * 1000;
 const lastHealAttempt = new Map<string, number>();
 
+// A standing collaborator invite (admin_grants.ts) attaches the moment a
+// user with the invited email exists: promote to the admin role and link
+// the grant row. Runs only for non-admin users with a real (non-
+// placeholder) email — one indexed lookup on the hot path, same cost class
+// as the ADMIN_EMAILS bootstrap check.
+async function maybeApplyAdminGrant(user: User): Promise<User> {
+  if (user.role === "admin" || isPlaceholderEmail(user.email, user.clerkId)) return user;
+  const grant = await db
+    .select()
+    .from(adminGrantsTable)
+    .where(eq(adminGrantsTable.email, user.email.toLowerCase()))
+    .then(r => r[0]);
+  if (!grant) return user;
+  await db.update(usersTable).set({ role: "admin" }).where(eq(usersTable.id, user.id));
+  if (!grant.userId) {
+    await db.update(adminGrantsTable).set({ userId: user.id, linkedAt: new Date() }).where(eq(adminGrantsTable.id, grant.id));
+  }
+  logger.info({ userId: user.id, grantId: grant.id, roleTitle: grant.roleTitle }, "Linked admin grant and promoted collaborator");
+  return { ...user, role: "admin" };
+}
+
 export async function ensureUser(clerkId: string, req: any): Promise<User> {
   let existing = await db.select().from(usersTable).where(eq(usersTable.clerkId, clerkId)).then(r => r[0]);
   if (existing) {
@@ -101,7 +122,7 @@ export async function ensureUser(clerkId: string, req: any): Promise<User> {
       await db.update(usersTable).set({ role: "admin" }).where(eq(usersTable.id, existing.id));
       return { ...existing, role: "admin" };
     }
-    return existing;
+    return maybeApplyAdminGrant(existing);
   }
 
   const id = randomUUID();
@@ -143,5 +164,6 @@ export async function ensureUser(clerkId: string, req: any): Promise<User> {
       .catch((err) => logger.warn({ err, userId: id }, "Geo-IP lookup failed"));
   }
 
-  return db.select().from(usersTable).where(eq(usersTable.clerkId, clerkId)).then(r => r[0]!);
+  const created = await db.select().from(usersTable).where(eq(usersTable.clerkId, clerkId)).then(r => r[0]!);
+  return maybeApplyAdminGrant(created);
 }
