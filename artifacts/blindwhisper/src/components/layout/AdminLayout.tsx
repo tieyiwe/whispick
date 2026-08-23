@@ -19,6 +19,7 @@ import {
   Flag,
   FileCheck2,
   KeyRound,
+  KanbanSquare,
 } from "lucide-react";
 
 // Odoo-style command-center navigation: one left rail, grouped by the job
@@ -35,6 +36,7 @@ const ADMIN_NAV_GROUPS: { heading: string; items: NavItem[] }[] = [
     items: [
       { href: "/admin_pro", label: "Overview", icon: LayoutDashboard, exact: true, permission: "analytics" },
       { href: "/admin_pro/analytics", label: "Analytics", icon: BarChart3, permission: "analytics" },
+      { href: "/admin_pro/projects", label: "Projects", icon: KanbanSquare, permission: "projects" },
     ],
   },
   {

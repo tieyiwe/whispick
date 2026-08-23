@@ -83,6 +83,7 @@ const AdminModeration = lazy(() => import("@/pages/admin/AdminModeration").then(
 const AdminReports = lazy(() => import("@/pages/admin/AdminReports").then((m) => ({ default: m.AdminReports })));
 const AdminPolicies = lazy(() => import("@/pages/admin/AdminPolicies").then((m) => ({ default: m.AdminPolicies })));
 const AdminAccess = lazy(() => import("@/pages/admin/AdminAccess").then((m) => ({ default: m.AdminAccess })));
+const AdminProjects = lazy(() => import("@/pages/admin/AdminProjects").then((m) => ({ default: m.AdminProjects })));
 const AdminNotifications = lazy(() => import("@/pages/admin/AdminNotifications").then((m) => ({ default: m.AdminNotifications })));
 const AdminDebateAgent = lazy(() => import("@/pages/admin/AdminDebateAgent").then((m) => ({ default: m.AdminDebateAgent })));
 const AdminCircleAgent = lazy(() => import("@/pages/admin/AdminCircleAgent").then((m) => ({ default: m.AdminCircleAgent })));
@@ -324,6 +325,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/admin_pro/reports" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminReports} />} />} />
             <Route path="/admin_pro/policies" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminPolicies} />} />} />
             <Route path="/admin_pro/access" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminAccess} />} />} />
+            <Route path="/admin_pro/projects" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminProjects} />} />} />
             <Route path="/admin_pro/notifications" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminNotifications} />} />} />
             <Route path="/admin_pro/debate-agent" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminDebateAgent} />} />} />
             <Route path="/admin_pro/circle-agent" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminCircleAgent} />} />} />

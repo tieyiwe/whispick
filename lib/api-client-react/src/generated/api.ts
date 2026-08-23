@@ -93,6 +93,17 @@ import type {
   GroupWhispSendDetail,
   GroupWhispSendSummary,
   HealthStatus,
+  HqProject,
+  HqProjectDetail,
+  HqProjectInput,
+  HqProjectListResponse,
+  HqProjectUpdateInput,
+  HqTask,
+  HqTaskComment,
+  HqTaskCommentInput,
+  HqTaskCommentListResponse,
+  HqTaskInput,
+  HqTaskUpdateInput,
   Invite,
   InviteInput,
   JoinCircleInput,
@@ -8538,6 +8549,661 @@ export const useAdminRevokeAccessGrant = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getAdminRevokeAccessGrantMutationOptions(options));
+    }
+
+export const getAdminListProjectsUrl = () => {
+
+
+
+
+  return `/api/admin/projects`
+}
+
+/**
+ * @summary HQ projects with open/done task counts, plus the assignable staff list (projects permission)
+ */
+export const adminListProjects = async ( options?: RequestInit): Promise<HqProjectListResponse> => {
+
+  return customFetch<HqProjectListResponse>(getAdminListProjectsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListProjectsQueryKey = () => {
+    return [
+    `/api/admin/projects`
+    ] as const;
+    }
+
+
+export const getAdminListProjectsQueryOptions = <TData = Awaited<ReturnType<typeof adminListProjects>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListProjects>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListProjectsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListProjects>>> = ({ signal }) => adminListProjects({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListProjects>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListProjectsQueryResult = NonNullable<Awaited<ReturnType<typeof adminListProjects>>>
+export type AdminListProjectsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary HQ projects with open/done task counts, plus the assignable staff list (projects permission)
+ */
+
+export function useAdminListProjects<TData = Awaited<ReturnType<typeof adminListProjects>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListProjects>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListProjectsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminCreateProjectUrl = () => {
+
+
+
+
+  return `/api/admin/projects`
+}
+
+/**
+ * @summary Create an HQ project (projects permission)
+ */
+export const adminCreateProject = async (hqProjectInput: HqProjectInput, options?: RequestInit): Promise<HqProject> => {
+
+  return customFetch<HqProject>(getAdminCreateProjectUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(hqProjectInput)
+  }
+);}
+
+
+
+
+export const getAdminCreateProjectMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateProject>>, TError,{data: BodyType<HqProjectInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminCreateProject>>, TError,{data: BodyType<HqProjectInput>}, TContext> => {
+
+const mutationKey = ['adminCreateProject'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminCreateProject>>, {data: BodyType<HqProjectInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminCreateProject(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminCreateProjectMutationResult = NonNullable<Awaited<ReturnType<typeof adminCreateProject>>>
+    export type AdminCreateProjectMutationBody = BodyType<HqProjectInput>
+    export type AdminCreateProjectMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create an HQ project (projects permission)
+ */
+export const useAdminCreateProject = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateProject>>, TError,{data: BodyType<HqProjectInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminCreateProject>>,
+        TError,
+        {data: BodyType<HqProjectInput>},
+        TContext
+      > => {
+      return useMutation(getAdminCreateProjectMutationOptions(options));
+    }
+
+export const getAdminGetProjectUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/projects/${id}`
+}
+
+/**
+ * @summary One project with its tasks, assignees, and comment counts (projects permission)
+ */
+export const adminGetProject = async (id: string, options?: RequestInit): Promise<HqProjectDetail> => {
+
+  return customFetch<HqProjectDetail>(getAdminGetProjectUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetProjectQueryKey = (id: string,) => {
+    return [
+    `/api/admin/projects/${id}`
+    ] as const;
+    }
+
+
+export const getAdminGetProjectQueryOptions = <TData = Awaited<ReturnType<typeof adminGetProject>>, TError = ErrorType<ApiError>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetProject>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetProjectQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetProject>>> = ({ signal }) => adminGetProject(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetProject>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetProjectQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetProject>>>
+export type AdminGetProjectQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary One project with its tasks, assignees, and comment counts (projects permission)
+ */
+
+export function useAdminGetProject<TData = Awaited<ReturnType<typeof adminGetProject>>, TError = ErrorType<ApiError>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetProject>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetProjectQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminUpdateProjectUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/projects/${id}`
+}
+
+/**
+ * @summary Rename, describe, or archive a project (projects permission)
+ */
+export const adminUpdateProject = async (id: string,
+    hqProjectUpdateInput: HqProjectUpdateInput, options?: RequestInit): Promise<HqProject> => {
+
+  return customFetch<HqProject>(getAdminUpdateProjectUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(hqProjectUpdateInput)
+  }
+);}
+
+
+
+
+export const getAdminUpdateProjectMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateProject>>, TError,{id: string;data: BodyType<HqProjectUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminUpdateProject>>, TError,{id: string;data: BodyType<HqProjectUpdateInput>}, TContext> => {
+
+const mutationKey = ['adminUpdateProject'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminUpdateProject>>, {id: string;data: BodyType<HqProjectUpdateInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  adminUpdateProject(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminUpdateProjectMutationResult = NonNullable<Awaited<ReturnType<typeof adminUpdateProject>>>
+    export type AdminUpdateProjectMutationBody = BodyType<HqProjectUpdateInput>
+    export type AdminUpdateProjectMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Rename, describe, or archive a project (projects permission)
+ */
+export const useAdminUpdateProject = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateProject>>, TError,{id: string;data: BodyType<HqProjectUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminUpdateProject>>,
+        TError,
+        {id: string;data: BodyType<HqProjectUpdateInput>},
+        TContext
+      > => {
+      return useMutation(getAdminUpdateProjectMutationOptions(options));
+    }
+
+export const getAdminCreateTaskUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/projects/${id}/tasks`
+}
+
+/**
+ * @summary Add a task — assigning notifies the assignee in-app (projects permission)
+ */
+export const adminCreateTask = async (id: string,
+    hqTaskInput: HqTaskInput, options?: RequestInit): Promise<HqTask> => {
+
+  return customFetch<HqTask>(getAdminCreateTaskUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(hqTaskInput)
+  }
+);}
+
+
+
+
+export const getAdminCreateTaskMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateTask>>, TError,{id: string;data: BodyType<HqTaskInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminCreateTask>>, TError,{id: string;data: BodyType<HqTaskInput>}, TContext> => {
+
+const mutationKey = ['adminCreateTask'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminCreateTask>>, {id: string;data: BodyType<HqTaskInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  adminCreateTask(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminCreateTaskMutationResult = NonNullable<Awaited<ReturnType<typeof adminCreateTask>>>
+    export type AdminCreateTaskMutationBody = BodyType<HqTaskInput>
+    export type AdminCreateTaskMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Add a task — assigning notifies the assignee in-app (projects permission)
+ */
+export const useAdminCreateTask = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateTask>>, TError,{id: string;data: BodyType<HqTaskInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminCreateTask>>,
+        TError,
+        {id: string;data: BodyType<HqTaskInput>},
+        TContext
+      > => {
+      return useMutation(getAdminCreateTaskMutationOptions(options));
+    }
+
+export const getAdminUpdateTaskUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/tasks/${id}`
+}
+
+/**
+ * @summary Update a task — status to done stamps completion; a new assignee is notified (projects permission)
+ */
+export const adminUpdateTask = async (id: string,
+    hqTaskUpdateInput: HqTaskUpdateInput, options?: RequestInit): Promise<HqTask> => {
+
+  return customFetch<HqTask>(getAdminUpdateTaskUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(hqTaskUpdateInput)
+  }
+);}
+
+
+
+
+export const getAdminUpdateTaskMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateTask>>, TError,{id: string;data: BodyType<HqTaskUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminUpdateTask>>, TError,{id: string;data: BodyType<HqTaskUpdateInput>}, TContext> => {
+
+const mutationKey = ['adminUpdateTask'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminUpdateTask>>, {id: string;data: BodyType<HqTaskUpdateInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  adminUpdateTask(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminUpdateTaskMutationResult = NonNullable<Awaited<ReturnType<typeof adminUpdateTask>>>
+    export type AdminUpdateTaskMutationBody = BodyType<HqTaskUpdateInput>
+    export type AdminUpdateTaskMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Update a task — status to done stamps completion; a new assignee is notified (projects permission)
+ */
+export const useAdminUpdateTask = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateTask>>, TError,{id: string;data: BodyType<HqTaskUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminUpdateTask>>,
+        TError,
+        {id: string;data: BodyType<HqTaskUpdateInput>},
+        TContext
+      > => {
+      return useMutation(getAdminUpdateTaskMutationOptions(options));
+    }
+
+export const getAdminDeleteTaskUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/tasks/${id}`
+}
+
+/**
+ * @summary Delete a task and its comments (projects permission)
+ */
+export const adminDeleteTask = async (id: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getAdminDeleteTaskUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getAdminDeleteTaskMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteTask>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminDeleteTask>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['adminDeleteTask'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminDeleteTask>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adminDeleteTask(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminDeleteTaskMutationResult = NonNullable<Awaited<ReturnType<typeof adminDeleteTask>>>
+
+    export type AdminDeleteTaskMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Delete a task and its comments (projects permission)
+ */
+export const useAdminDeleteTask = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteTask>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminDeleteTask>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getAdminDeleteTaskMutationOptions(options));
+    }
+
+export const getAdminListTaskCommentsUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/tasks/${id}/comments`
+}
+
+/**
+ * @summary A task's comment thread (projects permission)
+ */
+export const adminListTaskComments = async (id: string, options?: RequestInit): Promise<HqTaskCommentListResponse> => {
+
+  return customFetch<HqTaskCommentListResponse>(getAdminListTaskCommentsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListTaskCommentsQueryKey = (id: string,) => {
+    return [
+    `/api/admin/tasks/${id}/comments`
+    ] as const;
+    }
+
+
+export const getAdminListTaskCommentsQueryOptions = <TData = Awaited<ReturnType<typeof adminListTaskComments>>, TError = ErrorType<ApiError>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListTaskComments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListTaskCommentsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListTaskComments>>> = ({ signal }) => adminListTaskComments(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListTaskComments>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListTaskCommentsQueryResult = NonNullable<Awaited<ReturnType<typeof adminListTaskComments>>>
+export type AdminListTaskCommentsQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary A task's comment thread (projects permission)
+ */
+
+export function useAdminListTaskComments<TData = Awaited<ReturnType<typeof adminListTaskComments>>, TError = ErrorType<ApiError>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListTaskComments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListTaskCommentsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminAddTaskCommentUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/tasks/${id}/comments`
+}
+
+/**
+ * @summary Comment on a task — the assignee is notified (projects permission)
+ */
+export const adminAddTaskComment = async (id: string,
+    hqTaskCommentInput: HqTaskCommentInput, options?: RequestInit): Promise<HqTaskComment> => {
+
+  return customFetch<HqTaskComment>(getAdminAddTaskCommentUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(hqTaskCommentInput)
+  }
+);}
+
+
+
+
+export const getAdminAddTaskCommentMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminAddTaskComment>>, TError,{id: string;data: BodyType<HqTaskCommentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminAddTaskComment>>, TError,{id: string;data: BodyType<HqTaskCommentInput>}, TContext> => {
+
+const mutationKey = ['adminAddTaskComment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminAddTaskComment>>, {id: string;data: BodyType<HqTaskCommentInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  adminAddTaskComment(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminAddTaskCommentMutationResult = NonNullable<Awaited<ReturnType<typeof adminAddTaskComment>>>
+    export type AdminAddTaskCommentMutationBody = BodyType<HqTaskCommentInput>
+    export type AdminAddTaskCommentMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Comment on a task — the assignee is notified (projects permission)
+ */
+export const useAdminAddTaskComment = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminAddTaskComment>>, TError,{id: string;data: BodyType<HqTaskCommentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminAddTaskComment>>,
+        TError,
+        {id: string;data: BodyType<HqTaskCommentInput>},
+        TContext
+      > => {
+      return useMutation(getAdminAddTaskCommentMutationOptions(options));
     }
 
 export const getGetAdminMfaStatusUrl = () => {

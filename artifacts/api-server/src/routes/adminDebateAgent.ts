@@ -20,8 +20,12 @@ import { MAX_TOPIC_TEXT_LENGTH } from "./debateTopics";
 // /api/admin/debate-agent/....
 const router: IRouter = Router();
 
-router.use(requireAdmin);
-router.use(requirePermission("agents"));
+// Scoped to this router's own prefix — an unscoped use() would also run
+// for every other /admin/* request that falls through this router on its
+// way to a later one, wrongly imposing the "agents" permission on
+// unrelated areas.
+router.use("/debate-agent", requireAdmin);
+router.use("/debate-agent", requirePermission("agents"));
 
 const updateConfigSchema = z.object({
   enabled: z.boolean().optional(),

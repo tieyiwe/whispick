@@ -12,6 +12,7 @@ import linkRouter from "./link";
 import adminRouter from "./admin";
 import adminMfaRouter from "./adminMfa";
 import adminAccessRouter from "./adminAccess";
+import adminProjectsRouter from "./adminProjects";
 import adminDebateAgentRouter from "./adminDebateAgent";
 import adminCircleAgentRouter from "./adminCircleAgent";
 import whisperGroupsRouter from "./whisperGroups";
@@ -80,6 +81,9 @@ router.use("/admin", adminDebateAgentRouter);
 // routes/adminCircleAgent.ts's own comment) — its routes read as
 // /api/admin/circle-agent/....
 router.use("/admin", adminCircleAgentRouter);
+// Same "/admin" base, separate file — /api/admin/projects... and
+// /api/admin/tasks... (HQ workspace, "projects" permission).
+router.use("/admin", adminProjectsRouter);
 router.use("/whisper-groups", whisperGroupsRouter);
 router.use("/media", mediaRouter);
 router.use("/suggestions", suggestionsRouter);

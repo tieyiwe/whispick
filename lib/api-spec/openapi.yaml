@@ -2887,6 +2887,225 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
 
+  /admin/projects:
+    get:
+      operationId: adminListProjects
+      tags: [admin]
+      summary: HQ projects with open/done task counts, plus the assignable staff list (projects permission)
+      responses:
+        "200":
+          description: Projects
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HqProjectListResponse"
+    post:
+      operationId: adminCreateProject
+      tags: [admin]
+      summary: Create an HQ project (projects permission)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HqProjectInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HqProject"
+
+  /admin/projects/{id}:
+    get:
+      operationId: adminGetProject
+      tags: [admin]
+      summary: One project with its tasks, assignees, and comment counts (projects permission)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Project detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HqProjectDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    patch:
+      operationId: adminUpdateProject
+      tags: [admin]
+      summary: Rename, describe, or archive a project (projects permission)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HqProjectUpdateInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HqProject"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/projects/{id}/tasks:
+    post:
+      operationId: adminCreateTask
+      tags: [admin]
+      summary: Add a task — assigning notifies the assignee in-app (projects permission)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HqTaskInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HqTask"
+        "404":
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/tasks/{id}:
+    patch:
+      operationId: adminUpdateTask
+      tags: [admin]
+      summary: Update a task — status to done stamps completion; a new assignee is notified (projects permission)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HqTaskUpdateInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HqTask"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      operationId: adminDeleteTask
+      tags: [admin]
+      summary: Delete a task and its comments (projects permission)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/tasks/{id}/comments:
+    get:
+      operationId: adminListTaskComments
+      tags: [admin]
+      summary: A task's comment thread (projects permission)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Comments
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HqTaskCommentListResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    post:
+      operationId: adminAddTaskComment
+      tags: [admin]
+      summary: Comment on a task — the assignee is notified (projects permission)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HqTaskCommentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HqTaskComment"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /admin-mfa/status:
     get:
       operationId: getAdminMfaStatus
@@ -5877,6 +6096,211 @@ components:
           items:
             type: string
           minItems: 1
+
+    HqStaffMember:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        roleTitle:
+          type: string
+      required:
+        - id
+        - email
+        - roleTitle
+
+    HqProject:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        status:
+          type: string
+          description: "'active' | 'archived'"
+        createdByAdminId:
+          type: string
+        createdAt:
+          type: string
+        openTasks:
+          type: integer
+        doneTasks:
+          type: integer
+      required:
+        - id
+        - name
+        - status
+        - createdByAdminId
+        - createdAt
+
+    HqProjectListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/HqProject"
+        staff:
+          type: array
+          items:
+            $ref: "#/components/schemas/HqStaffMember"
+      required:
+        - items
+        - staff
+
+    HqProjectInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: ["string", "null"]
+      required:
+        - name
+
+    HqProjectUpdateInput:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [active, archived]
+
+    HqTask:
+      type: object
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        title:
+          type: string
+        detail:
+          type: ["string", "null"]
+        status:
+          type: string
+          description: "'todo' | 'in_progress' | 'done'"
+        assigneeAdminId:
+          type: ["string", "null"]
+        assigneeEmail:
+          type: ["string", "null"]
+        dueAt:
+          type: ["string", "null"]
+        completedAt:
+          type: ["string", "null"]
+        createdByAdminId:
+          type: string
+        createdAt:
+          type: string
+        commentCount:
+          type: integer
+      required:
+        - id
+        - projectId
+        - title
+        - status
+        - createdByAdminId
+        - createdAt
+
+    HqProjectDetail:
+      allOf:
+        - $ref: "#/components/schemas/HqProject"
+        - type: object
+          properties:
+            tasks:
+              type: array
+              items:
+                $ref: "#/components/schemas/HqTask"
+            staff:
+              type: array
+              items:
+                $ref: "#/components/schemas/HqStaffMember"
+          required:
+            - tasks
+            - staff
+
+    HqTaskInput:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        detail:
+          type: ["string", "null"]
+        assigneeAdminId:
+          type: ["string", "null"]
+        dueAt:
+          type: ["string", "null"]
+      required:
+        - title
+
+    HqTaskUpdateInput:
+      type: object
+      properties:
+        title:
+          type: string
+        detail:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [todo, in_progress, done]
+        assigneeAdminId:
+          type: ["string", "null"]
+        dueAt:
+          type: ["string", "null"]
+
+    HqTaskComment:
+      type: object
+      properties:
+        id:
+          type: string
+        taskId:
+          type: string
+        authorAdminId:
+          type: string
+        authorEmail:
+          type: ["string", "null"]
+        body:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - taskId
+        - authorAdminId
+        - body
+        - createdAt
+
+    HqTaskCommentListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/HqTaskComment"
+      required:
+        - items
+
+    HqTaskCommentInput:
+      type: object
+      properties:
+        body:
+          type: string
+          minLength: 1
+          maxLength: 2000
+      required:
+        - body
 
     AdminMfaStatus:
       type: object

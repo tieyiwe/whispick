@@ -1229,6 +1229,137 @@ export interface AdminGrantUpdateInput {
   permissions?: string[];
 }
 
+export interface HqStaffMember {
+  id: string;
+  email: string;
+  roleTitle: string;
+}
+
+export interface HqProject {
+  id: string;
+  name: string;
+  /** @nullable */
+  description?: string | null;
+  /** 'active' | 'archived' */
+  status: string;
+  createdByAdminId: string;
+  createdAt: string;
+  openTasks?: number;
+  doneTasks?: number;
+}
+
+export interface HqProjectListResponse {
+  items: HqProject[];
+  staff: HqStaffMember[];
+}
+
+export interface HqProjectInput {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  name: string;
+  /** @nullable */
+  description?: string | null;
+}
+
+export type HqProjectUpdateInputStatus = typeof HqProjectUpdateInputStatus[keyof typeof HqProjectUpdateInputStatus];
+
+
+export const HqProjectUpdateInputStatus = {
+  active: 'active',
+  archived: 'archived',
+} as const;
+
+export interface HqProjectUpdateInput {
+  name?: string;
+  /** @nullable */
+  description?: string | null;
+  status?: HqProjectUpdateInputStatus;
+}
+
+export interface HqTask {
+  id: string;
+  projectId: string;
+  title: string;
+  /** @nullable */
+  detail?: string | null;
+  /** 'todo' | 'in_progress' | 'done' */
+  status: string;
+  /** @nullable */
+  assigneeAdminId?: string | null;
+  /** @nullable */
+  assigneeEmail?: string | null;
+  /** @nullable */
+  dueAt?: string | null;
+  /** @nullable */
+  completedAt?: string | null;
+  createdByAdminId: string;
+  createdAt: string;
+  commentCount?: number;
+}
+
+export type HqProjectDetail = HqProject & {
+  tasks: HqTask[];
+  staff: HqStaffMember[];
+};
+
+export interface HqTaskInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title: string;
+  /** @nullable */
+  detail?: string | null;
+  /** @nullable */
+  assigneeAdminId?: string | null;
+  /** @nullable */
+  dueAt?: string | null;
+}
+
+export type HqTaskUpdateInputStatus = typeof HqTaskUpdateInputStatus[keyof typeof HqTaskUpdateInputStatus];
+
+
+export const HqTaskUpdateInputStatus = {
+  todo: 'todo',
+  in_progress: 'in_progress',
+  done: 'done',
+} as const;
+
+export interface HqTaskUpdateInput {
+  title?: string;
+  /** @nullable */
+  detail?: string | null;
+  status?: HqTaskUpdateInputStatus;
+  /** @nullable */
+  assigneeAdminId?: string | null;
+  /** @nullable */
+  dueAt?: string | null;
+}
+
+export interface HqTaskComment {
+  id: string;
+  taskId: string;
+  authorAdminId: string;
+  /** @nullable */
+  authorEmail?: string | null;
+  body: string;
+  createdAt: string;
+}
+
+export interface HqTaskCommentListResponse {
+  items: HqTaskComment[];
+}
+
+export interface HqTaskCommentInput {
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  body: string;
+}
+
 export interface AdminMfaStatus {
   enrolled: boolean;
 }

@@ -21,8 +21,12 @@ import { httpUrlString } from "../lib/safeUrl";
 // still read as /api/admin/circle-agent/....
 const router: IRouter = Router();
 
-router.use(requireAdmin);
-router.use(requirePermission("agents"));
+// Scoped to this router's own prefix — an unscoped use() would also run
+// for every other /admin/* request that falls through this router on its
+// way to a later one, wrongly imposing the "agents" permission on
+// unrelated areas.
+router.use("/circle-agent", requireAdmin);
+router.use("/circle-agent", requirePermission("agents"));
 
 const updateConfigSchema = z.object({
   enabled: z.boolean().optional(),

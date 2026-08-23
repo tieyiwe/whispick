@@ -2735,6 +2735,235 @@ export const AdminRevokeAccessGrantResponse = zod.void()
 
 
 /**
+ * @summary HQ projects with open/done task counts, plus the assignable staff list (projects permission)
+ */
+export const AdminListProjectsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.string().describe('\'active\' | \'archived\''),
+  "createdByAdminId": zod.string(),
+  "createdAt": zod.string(),
+  "openTasks": zod.number().optional(),
+  "doneTasks": zod.number().optional()
+})),
+  "staff": zod.array(zod.object({
+  "id": zod.string(),
+  "email": zod.string(),
+  "roleTitle": zod.string()
+}))
+})
+
+
+/**
+ * @summary Create an HQ project (projects permission)
+ */
+export const adminCreateProjectBodyNameMax = 120;
+
+
+
+export const AdminCreateProjectBody = zod.object({
+  "name": zod.string().min(1).max(adminCreateProjectBodyNameMax),
+  "description": zod.string().nullish()
+})
+
+export const AdminCreateProjectResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.string().describe('\'active\' | \'archived\''),
+  "createdByAdminId": zod.string(),
+  "createdAt": zod.string(),
+  "openTasks": zod.number().optional(),
+  "doneTasks": zod.number().optional()
+})
+
+
+/**
+ * @summary One project with its tasks, assignees, and comment counts (projects permission)
+ */
+export const AdminGetProjectParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const AdminGetProjectResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.string().describe('\'active\' | \'archived\''),
+  "createdByAdminId": zod.string(),
+  "createdAt": zod.string(),
+  "openTasks": zod.number().optional(),
+  "doneTasks": zod.number().optional()
+}).and(zod.object({
+  "tasks": zod.array(zod.object({
+  "id": zod.string(),
+  "projectId": zod.string(),
+  "title": zod.string(),
+  "detail": zod.string().nullish(),
+  "status": zod.string().describe('\'todo\' | \'in_progress\' | \'done\''),
+  "assigneeAdminId": zod.string().nullish(),
+  "assigneeEmail": zod.string().nullish(),
+  "dueAt": zod.string().nullish(),
+  "completedAt": zod.string().nullish(),
+  "createdByAdminId": zod.string(),
+  "createdAt": zod.string(),
+  "commentCount": zod.number().optional()
+})),
+  "staff": zod.array(zod.object({
+  "id": zod.string(),
+  "email": zod.string(),
+  "roleTitle": zod.string()
+}))
+}))
+
+
+/**
+ * @summary Rename, describe, or archive a project (projects permission)
+ */
+export const AdminUpdateProjectParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const AdminUpdateProjectBody = zod.object({
+  "name": zod.string().optional(),
+  "description": zod.string().nullish(),
+  "status": zod.enum(['active', 'archived']).optional()
+})
+
+export const AdminUpdateProjectResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.string().describe('\'active\' | \'archived\''),
+  "createdByAdminId": zod.string(),
+  "createdAt": zod.string(),
+  "openTasks": zod.number().optional(),
+  "doneTasks": zod.number().optional()
+})
+
+
+/**
+ * @summary Add a task — assigning notifies the assignee in-app (projects permission)
+ */
+export const AdminCreateTaskParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const adminCreateTaskBodyTitleMax = 200;
+
+
+
+export const AdminCreateTaskBody = zod.object({
+  "title": zod.string().min(1).max(adminCreateTaskBodyTitleMax),
+  "detail": zod.string().nullish(),
+  "assigneeAdminId": zod.string().nullish(),
+  "dueAt": zod.string().nullish()
+})
+
+export const AdminCreateTaskResponse = zod.object({
+  "id": zod.string(),
+  "projectId": zod.string(),
+  "title": zod.string(),
+  "detail": zod.string().nullish(),
+  "status": zod.string().describe('\'todo\' | \'in_progress\' | \'done\''),
+  "assigneeAdminId": zod.string().nullish(),
+  "assigneeEmail": zod.string().nullish(),
+  "dueAt": zod.string().nullish(),
+  "completedAt": zod.string().nullish(),
+  "createdByAdminId": zod.string(),
+  "createdAt": zod.string(),
+  "commentCount": zod.number().optional()
+})
+
+
+/**
+ * @summary Update a task — status to done stamps completion; a new assignee is notified (projects permission)
+ */
+export const AdminUpdateTaskParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const AdminUpdateTaskBody = zod.object({
+  "title": zod.string().optional(),
+  "detail": zod.string().nullish(),
+  "status": zod.enum(['todo', 'in_progress', 'done']).optional(),
+  "assigneeAdminId": zod.string().nullish(),
+  "dueAt": zod.string().nullish()
+})
+
+export const AdminUpdateTaskResponse = zod.object({
+  "id": zod.string(),
+  "projectId": zod.string(),
+  "title": zod.string(),
+  "detail": zod.string().nullish(),
+  "status": zod.string().describe('\'todo\' | \'in_progress\' | \'done\''),
+  "assigneeAdminId": zod.string().nullish(),
+  "assigneeEmail": zod.string().nullish(),
+  "dueAt": zod.string().nullish(),
+  "completedAt": zod.string().nullish(),
+  "createdByAdminId": zod.string(),
+  "createdAt": zod.string(),
+  "commentCount": zod.number().optional()
+})
+
+
+/**
+ * @summary Delete a task and its comments (projects permission)
+ */
+export const AdminDeleteTaskParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const AdminDeleteTaskResponse = zod.void()
+
+
+/**
+ * @summary A task's comment thread (projects permission)
+ */
+export const AdminListTaskCommentsParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const AdminListTaskCommentsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "taskId": zod.string(),
+  "authorAdminId": zod.string(),
+  "authorEmail": zod.string().nullish(),
+  "body": zod.string(),
+  "createdAt": zod.string()
+}))
+})
+
+
+/**
+ * @summary Comment on a task — the assignee is notified (projects permission)
+ */
+export const AdminAddTaskCommentParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const adminAddTaskCommentBodyBodyMax = 2000;
+
+
+
+export const AdminAddTaskCommentBody = zod.object({
+  "body": zod.string().min(1).max(adminAddTaskCommentBodyBodyMax)
+})
+
+export const AdminAddTaskCommentResponse = zod.object({
+  "id": zod.string(),
+  "taskId": zod.string(),
+  "authorAdminId": zod.string(),
+  "authorEmail": zod.string().nullish(),
+  "body": zod.string(),
+  "createdAt": zod.string()
+})
+
+
+/**
  * @summary Whether this admin account has finished authenticator enrollment (admin role only)
  */
 export const GetAdminMfaStatusResponse = zod.object({

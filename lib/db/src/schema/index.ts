@@ -19,6 +19,7 @@ export * from "./admin_mfa";
 export * from "./policy_versions";
 export * from "./feature_events";
 export * from "./admin_grants";
+export * from "./hq_projects";
 export * from "./concierge_requests";
 export * from "./invites";
 export * from "./text_whisps";
