@@ -2257,12 +2257,15 @@ export const AdminSendNotificationBody = zod.object({
   "body": zod.string().min(1).max(adminSendNotificationBodyBodyMax),
   "url": zod.string().nullish(),
   "audience": zod.enum(['all', 'users']),
-  "userIds": zod.array(zod.string()).optional().describe('Required (non-empty) when audience is \'users\'; ignored for \'all\'.')
+  "userIds": zod.array(zod.string()).optional().describe('Required (non-empty) when audience is \'users\'; ignored for \'all\'.'),
+  "sendEmail": zod.boolean().optional().describe('Also deliver as a branded email to each recipient\'s inbox. Respects each user\'s email-notifications opt-out, skips banned accounts and placeholder addresses.')
 })
 
 export const AdminSendNotificationResponse = zod.object({
   "recipientCount": zod.number().describe('Number of users this notification was created for — total user count for \'all\', or userIds.length for \'users\'.'),
-  "pushDelivered": zod.number().describe('How many active push subscriptions were actually notified live (best-effort; recipients without one still see it in-app).')
+  "pushDelivered": zod.number().describe('How many active push subscriptions were actually notified live (best-effort; recipients without one still see it in-app).'),
+  "emailsSent": zod.number().describe('Emails delivered when sendEmail was requested (0 otherwise).'),
+  "emailsSkipped": zod.number().describe('Recipients skipped for email — opted out, banned, placeholder address, or provider failure.')
 })
 
 
@@ -2449,6 +2452,139 @@ export const ReportContentBody = zod.object({
 export const ReportContentResponse = zod.object({
   "id": zod.string(),
   "status": zod.string()
+})
+
+
+/**
+ * Sweeps every user whose stored email is a fabricated `clerkId@...` placeholder and re-fetches their real profile from Clerk. Accounts with no email in Clerk (e.g. phone-only signups) and accounts whose real email already belongs to another row are left untouched and counted separately.
+ * @summary Backfill real emails/names/phones for accounts stuck with placeholder addresses (admin only)
+ */
+export const AdminRepairUserProfilesResponse = zod.object({
+  "scanned": zod.number(),
+  "healed": zod.number(),
+  "noEmailInClerk": zod.number(),
+  "conflicts": zod.number()
+})
+
+
+/**
+ * @summary Latest published policy updates this user hasn't agreed to yet
+ */
+export const GetMyPolicyStatusResponse = zod.object({
+  "pending": zod.array(zod.object({
+  "id": zod.string(),
+  "docType": zod.string(),
+  "summary": zod.string(),
+  "publishedAt": zod.string().nullish()
+}))
+})
+
+
+/**
+ * @summary Record agreement to one or more published policy updates
+ */
+export const acceptPoliciesBodyPolicyVersionIdsMax = 10;
+
+
+
+export const AcceptPoliciesBody = zod.object({
+  "policyVersionIds": zod.array(zod.string()).min(1).max(acceptPoliciesBodyPolicyVersionIdsMax)
+})
+
+export const AcceptPoliciesResponse = zod.void()
+
+
+/**
+ * @summary Policy update history with per-version acceptance counts (admin only)
+ */
+export const AdminListPolicyVersionsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "docType": zod.string().describe('\'privacy\' | \'terms\''),
+  "summary": zod.string().describe('The short user-facing \"what changed\" message shown in the consent prompt.'),
+  "publishedAt": zod.string().nullish().describe('Null while still a draft.'),
+  "createdByAdminId": zod.string(),
+  "createdAt": zod.string(),
+  "acceptedCount": zod.number()
+})),
+  "totalUsers": zod.number()
+})
+
+
+/**
+ * @summary Draft a policy update announcement (admin only)
+ */
+export const adminCreatePolicyVersionBodySummaryMax = 1000;
+
+
+
+export const AdminCreatePolicyVersionBody = zod.object({
+  "docType": zod.enum(['privacy', 'terms']),
+  "summary": zod.string().min(1).max(adminCreatePolicyVersionBodySummaryMax)
+})
+
+export const AdminCreatePolicyVersionResponse = zod.object({
+  "id": zod.string(),
+  "docType": zod.string().describe('\'privacy\' | \'terms\''),
+  "summary": zod.string().describe('The short user-facing \"what changed\" message shown in the consent prompt.'),
+  "publishedAt": zod.string().nullish().describe('Null while still a draft.'),
+  "createdByAdminId": zod.string(),
+  "createdAt": zod.string(),
+  "acceptedCount": zod.number()
+})
+
+
+/**
+ * @summary Edit a draft's summary — published versions are immutable (admin only)
+ */
+export const AdminUpdatePolicyVersionParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const adminUpdatePolicyVersionBodySummaryMax = 1000;
+
+
+
+export const AdminUpdatePolicyVersionBody = zod.object({
+  "summary": zod.string().min(1).max(adminUpdatePolicyVersionBodySummaryMax)
+})
+
+export const AdminUpdatePolicyVersionResponse = zod.object({
+  "id": zod.string(),
+  "docType": zod.string().describe('\'privacy\' | \'terms\''),
+  "summary": zod.string().describe('The short user-facing \"what changed\" message shown in the consent prompt.'),
+  "publishedAt": zod.string().nullish().describe('Null while still a draft.'),
+  "createdByAdminId": zod.string(),
+  "createdAt": zod.string(),
+  "acceptedCount": zod.number()
+})
+
+
+/**
+ * @summary Discard a draft — published versions are permanent history (admin only)
+ */
+export const AdminDeletePolicyVersionParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const AdminDeletePolicyVersionResponse = zod.void()
+
+
+/**
+ * @summary Publish a policy update — every signed-in user is prompted to agree from this moment (admin only)
+ */
+export const AdminPublishPolicyVersionParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const AdminPublishPolicyVersionResponse = zod.object({
+  "id": zod.string(),
+  "docType": zod.string().describe('\'privacy\' | \'terms\''),
+  "summary": zod.string().describe('The short user-facing \"what changed\" message shown in the consent prompt.'),
+  "publishedAt": zod.string().nullish().describe('Null while still a draft.'),
+  "createdByAdminId": zod.string(),
+  "createdAt": zod.string(),
+  "acceptedCount": zod.number()
 })
 
 

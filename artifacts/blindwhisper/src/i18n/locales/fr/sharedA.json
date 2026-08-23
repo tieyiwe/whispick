@@ -95,5 +95,17 @@
     "notNow": "Pas maintenant",
     "enabling": "Activation...",
     "enable": "Activer les notifications"
+  },
+  "policyUpdate": {
+    "heading": "Nous avons mis à jour nos politiques",
+    "description": "Prends un moment pour consulter ce qui a changé et confirmer ton accord pour continuer à utiliser Blind Whisper.",
+    "privacyLabel": "Politique de confidentialité",
+    "termsLabel": "Conditions d'utilisation",
+    "readLink": "Lire le document complet",
+    "agreeButton": "J'ai lu — J'accepte",
+    "laterButton": "Voir plus tard",
+    "reminderPill": "Mise à jour des politiques — à lire et accepter",
+    "toastThanks": "Merci — ton accord a été enregistré.",
+    "toastError": "Impossible d'enregistrer ton accord. Réessaie."
   }
 }

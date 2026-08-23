@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './acceptPoliciesInput';
 export * from './addWhisperGroupMembersInput';
 export * from './adminAuditLogEntry';
 export * from './adminAuditLogResponse';
@@ -86,6 +87,8 @@ export * from './createContentReportInput';
 export * from './createContentReportInputContentType';
 export * from './createContentReportInputReason';
 export * from './createContentReportResponse';
+export * from './createPolicyVersionInput';
+export * from './createPolicyVersionInputDocType';
 export * from './createSuggestionInput';
 export * from './creditTransaction';
 export * from './debateAgentSettings';
@@ -125,8 +128,12 @@ export * from './noteSuggestionsInput';
 export * from './noteSuggestionsResult';
 export * from './notification';
 export * from './notificationListResponse';
+export * from './pendingPolicy';
 export * from './phoneVerificationResult';
 export * from './pinWhisp200';
+export * from './policyStatusResponse';
+export * from './policyVersion';
+export * from './policyVersionListResponse';
 export * from './postCircleCommentBody';
 export * from './postCircleVideoInput';
 export * from './postCircleVideoResult';
@@ -153,6 +160,7 @@ export * from './renameCircleHandle200';
 export * from './renameCircleHandleBody';
 export * from './renameDebateTopicHandle200';
 export * from './renameDebateTopicHandleBody';
+export * from './repairProfilesResult';
 export * from './resolveContentReportInput';
 export * from './resolveContentReportInputResolution';
 export * from './resolveContentReportResponse';
@@ -205,6 +213,7 @@ export * from './updateDebateAgentConfigInput';
 export * from './updateDebateTopicHandleAvatar200';
 export * from './updateDebateTopicHandleAvatarBody';
 export * from './updateModerationFlagInput';
+export * from './updatePolicyVersionInput';
 export * from './updateSuggestionInput';
 export * from './uploadedVideo';
 export * from './userProfile';

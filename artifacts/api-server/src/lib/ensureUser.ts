@@ -29,7 +29,7 @@ function requestIp(req: any): string | undefined {
 // `${clerkId}@whispr.app` in the pre-rename era) rather than an address a
 // human can actually receive mail at. Matching on the clerkId prefix covers
 // both domains without a hardcoded list.
-function isPlaceholderEmail(email: string, clerkId: string): boolean {
+export function isPlaceholderEmail(email: string, clerkId: string): boolean {
   return email.startsWith(`${clerkId}@`);
 }
 
@@ -40,7 +40,7 @@ function isPlaceholderEmail(email: string, clerkId: string): boolean {
 // secret key or an API shape surprise has returned records without an
 // emailAddresses array in production, and `.find` on undefined was the
 // exact TypeError that silently pushed signups onto the placeholder path.
-async function fetchClerkProfile(clerkId: string): Promise<{ email: string | null; fullName: string | null; phone: string | null }> {
+export async function fetchClerkProfile(clerkId: string): Promise<{ email: string | null; fullName: string | null; phone: string | null }> {
   try {
     const clerkUser = await clerkClient.users.getUser(clerkId);
     const primaryEmail = clerkUser.emailAddresses?.find((e) => e.id === clerkUser.primaryEmailAddressId);

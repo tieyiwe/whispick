@@ -1064,6 +1064,79 @@ export interface UpdateModerationFlagInput {
   dismissed: boolean;
 }
 
+export interface RepairProfilesResult {
+  scanned: number;
+  healed: number;
+  noEmailInClerk: number;
+  conflicts: number;
+}
+
+export interface PolicyVersion {
+  id: string;
+  /** 'privacy' | 'terms' */
+  docType: string;
+  /** The short user-facing "what changed" message shown in the consent prompt. */
+  summary: string;
+  /**
+     * Null while still a draft.
+     * @nullable
+     */
+  publishedAt?: string | null;
+  createdByAdminId: string;
+  createdAt: string;
+  acceptedCount: number;
+}
+
+export interface PolicyVersionListResponse {
+  items: PolicyVersion[];
+  totalUsers: number;
+}
+
+export type CreatePolicyVersionInputDocType = typeof CreatePolicyVersionInputDocType[keyof typeof CreatePolicyVersionInputDocType];
+
+
+export const CreatePolicyVersionInputDocType = {
+  privacy: 'privacy',
+  terms: 'terms',
+} as const;
+
+export interface CreatePolicyVersionInput {
+  docType: CreatePolicyVersionInputDocType;
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  summary: string;
+}
+
+export interface UpdatePolicyVersionInput {
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  summary: string;
+}
+
+export interface PendingPolicy {
+  id: string;
+  docType: string;
+  summary: string;
+  /** @nullable */
+  publishedAt?: string | null;
+}
+
+export interface PolicyStatusResponse {
+  pending: PendingPolicy[];
+}
+
+export interface AcceptPoliciesInput {
+  /**
+     * @minItems 1
+     * @maxItems 10
+     */
+  policyVersionIds: string[];
+}
+
 export interface AdminMfaStatus {
   enrolled: boolean;
 }
@@ -1642,6 +1715,8 @@ export interface SendNotificationInput {
   audience: SendNotificationInputAudience;
   /** Required (non-empty) when audience is 'users'; ignored for 'all'. */
   userIds?: string[];
+  /** Also deliver as a branded email to each recipient's inbox. Respects each user's email-notifications opt-out, skips banned accounts and placeholder addresses. */
+  sendEmail?: boolean;
 }
 
 export interface SendNotificationResult {
@@ -1649,6 +1724,10 @@ export interface SendNotificationResult {
   recipientCount: number;
   /** How many active push subscriptions were actually notified live (best-effort; recipients without one still see it in-app). */
   pushDelivered: number;
+  /** Emails delivered when sendEmail was requested (0 otherwise). */
+  emailsSent: number;
+  /** Recipients skipped for email — opted out, banned, placeholder address, or provider failure. */
+  emailsSkipped: number;
 }
 
 export interface AdminNotificationListResponse {

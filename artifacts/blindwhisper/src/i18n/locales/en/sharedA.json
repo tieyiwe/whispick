@@ -95,5 +95,17 @@
     "notNow": "Not now",
     "enabling": "Enabling...",
     "enable": "Enable notifications"
+  },
+  "policyUpdate": {
+    "heading": "We've updated our policies",
+    "description": "Please take a moment to review what changed and confirm you agree to continue using Blind Whisper.",
+    "privacyLabel": "Privacy Policy",
+    "termsLabel": "Terms of Service",
+    "readLink": "Read the full document",
+    "agreeButton": "I've reviewed — I agree",
+    "laterButton": "Review later",
+    "reminderPill": "Policy update — review & agree",
+    "toastThanks": "Thanks — your agreement has been recorded.",
+    "toastError": "Couldn't record your agreement. Please try again."
   }
 }

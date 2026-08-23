@@ -95,5 +95,17 @@
     "notNow": "暂不开启",
     "enabling": "正在开启...",
     "enable": "开启通知"
+  },
+  "policyUpdate": {
+    "heading": "我们更新了政策",
+    "description": "请花一点时间查看变更内容,并确认同意后继续使用 Blind Whisper。",
+    "privacyLabel": "隐私政策",
+    "termsLabel": "服务条款",
+    "readLink": "阅读完整文档",
+    "agreeButton": "已阅读 — 我同意",
+    "laterButton": "稍后查看",
+    "reminderPill": "政策更新 — 请查看并同意",
+    "toastThanks": "谢谢 — 你的同意已被记录。",
+    "toastError": "无法记录你的同意,请重试。"
   }
 }

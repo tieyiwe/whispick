@@ -2540,6 +2540,182 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
 
+  /admin/users/repair-profiles:
+    post:
+      operationId: adminRepairUserProfiles
+      tags: [admin]
+      summary: Backfill real emails/names/phones for accounts stuck with placeholder addresses (admin only)
+      description: >-
+        Sweeps every user whose stored email is a fabricated
+        `clerkId@...` placeholder and re-fetches their real profile from
+        Clerk. Accounts with no email in Clerk (e.g. phone-only signups) and
+        accounts whose real email already belongs to another row are left
+        untouched and counted separately.
+      responses:
+        "200":
+          description: Per-outcome counts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RepairProfilesResult"
+
+  /user/policy-status:
+    get:
+      operationId: getMyPolicyStatus
+      tags: [user]
+      summary: Latest published policy updates this user hasn't agreed to yet
+      responses:
+        "200":
+          description: Pending policy updates (empty = nothing to prompt)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyStatusResponse"
+
+  /user/policy-acceptances:
+    post:
+      operationId: acceptPolicies
+      tags: [user]
+      summary: Record agreement to one or more published policy updates
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AcceptPoliciesInput"
+      responses:
+        "204":
+          description: Recorded (idempotent)
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/policy-versions:
+    get:
+      operationId: adminListPolicyVersions
+      tags: [admin]
+      summary: Policy update history with per-version acceptance counts (admin only)
+      responses:
+        "200":
+          description: Versions, newest first
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyVersionListResponse"
+    post:
+      operationId: adminCreatePolicyVersion
+      tags: [admin]
+      summary: Draft a policy update announcement (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePolicyVersionInput"
+      responses:
+        "201":
+          description: Draft created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyVersion"
+
+  /admin/policy-versions/{id}:
+    patch:
+      operationId: adminUpdatePolicyVersion
+      tags: [admin]
+      summary: Edit a draft's summary — published versions are immutable (admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePolicyVersionInput"
+      responses:
+        "200":
+          description: Updated draft
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyVersion"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Already published
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      operationId: adminDeletePolicyVersion
+      tags: [admin]
+      summary: Discard a draft — published versions are permanent history (admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Already published
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/policy-versions/{id}/publish:
+    post:
+      operationId: adminPublishPolicyVersion
+      tags: [admin]
+      summary: Publish a policy update — every signed-in user is prompted to agree from this moment (admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Published version
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyVersion"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Already published
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /admin-mfa/status:
     get:
       operationId: getAdminMfaStatus
@@ -5223,6 +5399,126 @@ components:
       required:
         - dismissed
 
+    RepairProfilesResult:
+      type: object
+      properties:
+        scanned:
+          type: integer
+        healed:
+          type: integer
+        noEmailInClerk:
+          type: integer
+        conflicts:
+          type: integer
+      required:
+        - scanned
+        - healed
+        - noEmailInClerk
+        - conflicts
+
+    PolicyVersion:
+      type: object
+      properties:
+        id:
+          type: string
+        docType:
+          type: string
+          description: "'privacy' | 'terms'"
+        summary:
+          type: string
+          description: The short user-facing "what changed" message shown in the consent prompt.
+        publishedAt:
+          type: ["string", "null"]
+          description: Null while still a draft.
+        createdByAdminId:
+          type: string
+        createdAt:
+          type: string
+        acceptedCount:
+          type: integer
+      required:
+        - id
+        - docType
+        - summary
+        - createdByAdminId
+        - createdAt
+        - acceptedCount
+
+    PolicyVersionListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PolicyVersion"
+        totalUsers:
+          type: integer
+      required:
+        - items
+        - totalUsers
+
+    CreatePolicyVersionInput:
+      type: object
+      properties:
+        docType:
+          type: string
+          enum: [privacy, terms]
+        summary:
+          type: string
+          minLength: 1
+          maxLength: 1000
+      required:
+        - docType
+        - summary
+
+    UpdatePolicyVersionInput:
+      type: object
+      properties:
+        summary:
+          type: string
+          minLength: 1
+          maxLength: 1000
+      required:
+        - summary
+
+    PendingPolicy:
+      type: object
+      properties:
+        id:
+          type: string
+        docType:
+          type: string
+        summary:
+          type: string
+        publishedAt:
+          type: ["string", "null"]
+      required:
+        - id
+        - docType
+        - summary
+
+    PolicyStatusResponse:
+      type: object
+      properties:
+        pending:
+          type: array
+          items:
+            $ref: "#/components/schemas/PendingPolicy"
+      required:
+        - pending
+
+    AcceptPoliciesInput:
+      type: object
+      properties:
+        policyVersionIds:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          maxItems: 10
+      required:
+        - policyVersionIds
+
     AdminMfaStatus:
       type: object
       properties:
@@ -6081,6 +6377,12 @@ components:
           items:
             type: string
           description: Required (non-empty) when audience is 'users'; ignored for 'all'.
+        sendEmail:
+          type: boolean
+          description: >-
+            Also deliver as a branded email to each recipient's inbox.
+            Respects each user's email-notifications opt-out, skips banned
+            accounts and placeholder addresses.
       required:
         - title
         - body
@@ -6095,9 +6397,17 @@ components:
         pushDelivered:
           type: integer
           description: How many active push subscriptions were actually notified live (best-effort; recipients without one still see it in-app).
+        emailsSent:
+          type: integer
+          description: Emails delivered when sendEmail was requested (0 otherwise).
+        emailsSkipped:
+          type: integer
+          description: Recipients skipped for email — opted out, banned, placeholder address, or provider failure.
       required:
         - recipientCount
         - pushDelivered
+        - emailsSent
+        - emailsSkipped
 
     AdminNotificationListResponse:
       type: object

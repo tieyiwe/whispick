@@ -24,6 +24,8 @@ import {
   debateTopicsTable,
   debateTopicCommentsTable,
   contentReportsTable,
+  policyVersionsTable,
+  policyAcceptancesTable,
   type User,
 } from "@workspace/db";
 import { and, asc, count, desc, eq, gte, ilike, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
@@ -35,6 +37,8 @@ import { resolveVideoMeta } from "../lib/videoMeta";
 import { generateSuggestionSummaryAsync } from "../lib/suggestionSummary";
 import { runSuggestionDiscoveryAgent } from "../lib/suggestionAgent";
 import { notifyUser, notifyAllUsers, notifyUserPersisted } from "../lib/push";
+import { fetchClerkProfile, isPlaceholderEmail } from "../lib/ensureUser";
+import { sendEmail, adminAnnouncementEmailHtml } from "../lib/email";
 import { httpUrlString, isHttpUrlOrAppPath } from "../lib/safeUrl";
 
 const router = Router();
@@ -771,6 +775,12 @@ const sendNotificationSchema = z
     url: z.string().min(1).max(2048).refine(isHttpUrlOrAppPath, { message: "Must be an app path or http(s) URL" }).nullable().optional(),
     audience: z.enum(["all", "users"]),
     userIds: z.array(z.string()).optional(),
+    // Also deliver as a branded email to each recipient's inbox — the
+    // channel that reaches people who aren't in the app. Respects each
+    // user's emailNotificationsEnabled opt-out, and skips accounts whose
+    // stored address is a fabricated placeholder (undeliverable — see
+    // lib/ensureUser.ts).
+    sendEmail: z.boolean().optional(),
   })
   .refine((data) => data.audience !== "users" || (data.userIds && data.userIds.length > 0), {
     message: "userIds is required and must be non-empty when audience is 'users'",
@@ -822,7 +832,31 @@ router.post("/notifications", async (req, res): Promise<void> => {
     pushDelivered = perUserCounts.reduce((sum, n) => sum + n, 0);
   }
 
-  res.status(201).json({ recipientCount, pushDelivered });
+  // Optional email channel. Recipients are filtered to people email can
+  // actually, appropriately reach: opted in (emailNotificationsEnabled),
+  // not banned, and not carrying a fabricated placeholder address.
+  let emailsSent = 0;
+  let emailsSkipped = 0;
+  if (parsed.data.sendEmail) {
+    const recipients =
+      audience === "all"
+        ? await db.select().from(usersTable).where(eq(usersTable.banned, false))
+        : await db.select().from(usersTable).where(inArray(usersTable.id, targetUserIds as string[]));
+    const html = adminAnnouncementEmailHtml(title, body, url);
+    for (const recipient of recipients) {
+      if (!recipient.emailNotificationsEnabled || recipient.banned || isPlaceholderEmail(recipient.email, recipient.clerkId)) {
+        emailsSkipped++;
+        continue;
+      }
+      const ok = await sendEmail(recipient.email, title, html, { whispId: null, purpose: "admin_announcement" });
+      if (ok) emailsSent++;
+      else emailsSkipped++;
+    }
+  }
+
+  logAdminAction(adminUser.id, "notification.send", { type: "notification", id: "batch" }, { audience, recipientCount, pushDelivered, emailsSent, emailsSkipped, emailed: !!parsed.data.sendEmail });
+
+  res.status(201).json({ recipientCount, pushDelivered, emailsSent, emailsSkipped });
 });
 
 // GET /api/admin/notifications — audit log of everything sent, newest first.
@@ -853,6 +887,176 @@ router.get("/notifications", async (req, res): Promise<void> => {
     page,
     pageSize,
   });
+});
+
+// POST /api/admin/users/repair-profiles — backfill for accounts stuck with
+// a fabricated `${clerkId}@...` email (a signup-day Clerk fetch failure —
+// see lib/ensureUser.ts). ensureUser self-heals such an account on that
+// user's NEXT sign-in, but a dormant account never triggers that, so this
+// sweeps every placeholder row against Clerk's API on demand. Per-row
+// outcomes:
+//   healed          — real email fetched and stored
+//   noEmailInClerk  — Clerk has no email for them (e.g. phone-only signup);
+//                     nothing to capture, placeholder stays
+//   conflict        — Clerk's email is already on ANOTHER account (the
+//                     same human signed up twice); left untouched rather
+//                     than guessing which account should own it
+router.post("/users/repair-profiles", async (req, res): Promise<void> => {
+  const candidates = await db
+    .select()
+    .from(usersTable)
+    .where(sql`${usersTable.email} LIKE ${usersTable.clerkId} || '@%'`)
+    .limit(200);
+
+  let healed = 0;
+  let noEmailInClerk = 0;
+  let conflicts = 0;
+  for (const user of candidates) {
+    // Belt and braces — the SQL LIKE above is the same predicate, but the
+    // shared helper stays the single definition of "placeholder."
+    if (!isPlaceholderEmail(user.email, user.clerkId)) continue;
+    const profile = await fetchClerkProfile(user.clerkId);
+    if (!profile.email) {
+      noEmailInClerk++;
+      continue;
+    }
+    try {
+      await db
+        .update(usersTable)
+        .set({
+          email: profile.email,
+          ...(user.fullName ? {} : { fullName: profile.fullName }),
+          ...(user.phone ? {} : { phone: profile.phone }),
+        })
+        .where(eq(usersTable.id, user.id));
+      healed++;
+    } catch {
+      // users_email_unique — the real email already belongs to another row.
+      conflicts++;
+    }
+  }
+
+  const adminUser = (req as any).adminUser as User;
+  logAdminAction(adminUser.id, "users.repair_profiles", { type: "user", id: "batch" }, { scanned: candidates.length, healed, noEmailInClerk, conflicts });
+
+  res.json({ scanned: candidates.length, healed, noEmailInClerk, conflicts });
+});
+
+// ---------------------------------------------------------------------------
+// Policy updates — the admin side of the re-consent system
+// (policy_versions.ts): draft a "what changed" summary for the Privacy
+// Policy or Terms, publish it, and from that moment every signed-in user is
+// prompted to review and agree. The actual policy TEXT lives on the
+// /privacy and /terms pages (updated in code); this tracks announcement +
+// consent, not the prose.
+// ---------------------------------------------------------------------------
+
+// GET /api/admin/policy-versions — full history, newest first, with how
+// many users have accepted each published version (vs. the total user
+// count, for a progress read).
+router.get("/policy-versions", async (_req, res): Promise<void> => {
+  const [versions, acceptCounts, totalUsersRow] = await Promise.all([
+    db.select().from(policyVersionsTable).orderBy(desc(policyVersionsTable.createdAt)),
+    db
+      .select({ policyVersionId: policyAcceptancesTable.policyVersionId, count: count() })
+      .from(policyAcceptancesTable)
+      .groupBy(policyAcceptancesTable.policyVersionId),
+    db.select({ count: count() }).from(usersTable).then((r) => r[0]),
+  ]);
+  const countsById = Object.fromEntries(acceptCounts.map((c) => [c.policyVersionId, c.count]));
+  res.json({
+    items: versions.map((v) => ({ ...v, acceptedCount: countsById[v.id] ?? 0 })),
+    totalUsers: totalUsersRow?.count ?? 0,
+  });
+});
+
+const createPolicyVersionSchema = z.object({
+  docType: z.enum(["privacy", "terms"]),
+  summary: z.string().trim().min(1).max(1000),
+});
+
+// POST /api/admin/policy-versions — create a draft.
+router.post("/policy-versions", async (req, res): Promise<void> => {
+  const parsed = createPolicyVersionSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const adminUser = (req as any).adminUser as User;
+  const id = randomUUID();
+  await db.insert(policyVersionsTable).values({
+    id,
+    docType: parsed.data.docType,
+    summary: parsed.data.summary,
+    publishedAt: null,
+    createdByAdminId: adminUser.id,
+  });
+  logAdminAction(adminUser.id, "policy.draft", { type: "policy_version", id }, { docType: parsed.data.docType });
+  const created = await db.select().from(policyVersionsTable).where(eq(policyVersionsTable.id, id)).then((r) => r[0]);
+  res.status(201).json({ ...created, acceptedCount: 0 });
+});
+
+const updatePolicyVersionSchema = z.object({ summary: z.string().trim().min(1).max(1000) });
+
+// PATCH /api/admin/policy-versions/:id — edit a DRAFT's summary. A
+// published version is immutable: the consent record must stay exactly
+// what users saw and agreed to.
+router.patch("/policy-versions/:id", async (req, res): Promise<void> => {
+  const version = await db.select().from(policyVersionsTable).where(eq(policyVersionsTable.id, req.params.id)).then((r) => r[0]);
+  if (!version) {
+    res.status(404).json({ error: "Policy update not found" });
+    return;
+  }
+  if (version.publishedAt) {
+    res.status(409).json({ error: "A published policy update can't be edited — create a new version instead." });
+    return;
+  }
+  const parsed = updatePolicyVersionSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  await db.update(policyVersionsTable).set({ summary: parsed.data.summary }).where(eq(policyVersionsTable.id, version.id));
+  const updated = await db.select().from(policyVersionsTable).where(eq(policyVersionsTable.id, version.id)).then((r) => r[0]);
+  res.json({ ...updated, acceptedCount: 0 });
+});
+
+// DELETE /api/admin/policy-versions/:id — discard a draft. Published
+// versions are history and can't be deleted.
+router.delete("/policy-versions/:id", async (req, res): Promise<void> => {
+  const version = await db.select().from(policyVersionsTable).where(eq(policyVersionsTable.id, req.params.id)).then((r) => r[0]);
+  if (!version) {
+    res.status(404).json({ error: "Policy update not found" });
+    return;
+  }
+  if (version.publishedAt) {
+    res.status(409).json({ error: "A published policy update can't be deleted." });
+    return;
+  }
+  await db.delete(policyVersionsTable).where(eq(policyVersionsTable.id, version.id));
+  const adminUser = (req as any).adminUser as User;
+  logAdminAction(adminUser.id, "policy.discard_draft", { type: "policy_version", id: version.id }, { docType: version.docType });
+  res.status(204).send();
+});
+
+// POST /api/admin/policy-versions/:id/publish — the moment the prompt goes
+// live for every signed-in user (in-app, on refresh, or at next login —
+// however they arrive next, PolicyUpdateGate picks it up).
+router.post("/policy-versions/:id/publish", async (req, res): Promise<void> => {
+  const version = await db.select().from(policyVersionsTable).where(eq(policyVersionsTable.id, req.params.id)).then((r) => r[0]);
+  if (!version) {
+    res.status(404).json({ error: "Policy update not found" });
+    return;
+  }
+  if (version.publishedAt) {
+    res.status(409).json({ error: "This policy update is already published." });
+    return;
+  }
+  await db.update(policyVersionsTable).set({ publishedAt: new Date() }).where(eq(policyVersionsTable.id, version.id));
+  const adminUser = (req as any).adminUser as User;
+  logAdminAction(adminUser.id, "policy.publish", { type: "policy_version", id: version.id }, { docType: version.docType });
+  const updated = await db.select().from(policyVersionsTable).where(eq(policyVersionsTable.id, version.id)).then((r) => r[0]);
+  res.json({ ...updated, acceptedCount: 0 });
 });
 
 // ---------------------------------------------------------------------------

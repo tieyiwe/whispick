@@ -395,6 +395,21 @@ export function inviteEmailHtml(inviteUrl: string): string {
   );
 }
 
+// Admin-composed announcement/update, sent from the admin panel's
+// communication tool (routes/admin.ts POST /notifications with
+// sendEmail:true). Title and body are the admin's own plain text — escaped
+// here since they're interpolated into raw HTML, and newlines become <br>
+// so multi-paragraph updates read as written.
+export function adminAnnouncementEmailHtml(title: string, body: string, url: string | null): string {
+  const bodyHtml = escapeHtml(body).replace(/\n/g, "<br>");
+  return emailShell(
+    `${emailHeading(escapeHtml(title))}
+     ${emailText(bodyHtml)}
+     ${url ? emailButton(url, "Open Blind Whisper") : ""}
+     ${emailNote("You're receiving this because you have a Blind Whisper account. You can turn off email notifications in Settings.")}`,
+  );
+}
+
 export function subscriptionMatchedEmailFooter(unsubscribeUrl: string): string {
   return `<p style="margin:20px 0 0;text-align:center;font-size:12px;line-height:1.6;color:#5F5F73;">
     You're getting this because you subscribed to anonymous whisps on a topic you chose.<br />

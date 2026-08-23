@@ -20,6 +20,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AcceptPoliciesInput,
   AddWhisperGroupMembersInput,
   AdminAuditLogResponse,
   AdminCategoryStatsResponse,
@@ -68,6 +69,7 @@ import type {
   CreateCircleInput,
   CreateContentReportInput,
   CreateContentReportResponse,
+  CreatePolicyVersionInput,
   CreateSuggestionInput,
   CreditTransaction,
   DebateAgentSettings,
@@ -101,6 +103,9 @@ import type {
   NotificationListResponse,
   PhoneVerificationResult,
   PinWhisp200,
+  PolicyStatusResponse,
+  PolicyVersion,
+  PolicyVersionListResponse,
   PostCircleCommentBody,
   PostCircleVideoInput,
   PostCircleVideoResult,
@@ -122,6 +127,7 @@ import type {
   RenameCircleHandleBody,
   RenameDebateTopicHandle200,
   RenameDebateTopicHandleBody,
+  RepairProfilesResult,
   ResolveContentReportInput,
   ResolveContentReportResponse,
   RevealResponse,
@@ -164,6 +170,7 @@ import type {
   UpdateDebateTopicHandleAvatar200,
   UpdateDebateTopicHandleAvatarBody,
   UpdateModerationFlagInput,
+  UpdatePolicyVersionInput,
   UpdateSuggestionInput,
   UploadedVideo,
   UserProfile,
@@ -7356,6 +7363,582 @@ export const useReportContent = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getReportContentMutationOptions(options));
+    }
+
+export const getAdminRepairUserProfilesUrl = () => {
+
+
+
+
+  return `/api/admin/users/repair-profiles`
+}
+
+/**
+ * Sweeps every user whose stored email is a fabricated `clerkId@...` placeholder and re-fetches their real profile from Clerk. Accounts with no email in Clerk (e.g. phone-only signups) and accounts whose real email already belongs to another row are left untouched and counted separately.
+ * @summary Backfill real emails/names/phones for accounts stuck with placeholder addresses (admin only)
+ */
+export const adminRepairUserProfiles = async ( options?: RequestInit): Promise<RepairProfilesResult> => {
+
+  return customFetch<RepairProfilesResult>(getAdminRepairUserProfilesUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAdminRepairUserProfilesMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRepairUserProfiles>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminRepairUserProfiles>>, TError,void, TContext> => {
+
+const mutationKey = ['adminRepairUserProfiles'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminRepairUserProfiles>>, void> = () => {
+
+
+          return  adminRepairUserProfiles(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminRepairUserProfilesMutationResult = NonNullable<Awaited<ReturnType<typeof adminRepairUserProfiles>>>
+
+    export type AdminRepairUserProfilesMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Backfill real emails/names/phones for accounts stuck with placeholder addresses (admin only)
+ */
+export const useAdminRepairUserProfiles = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRepairUserProfiles>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminRepairUserProfiles>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getAdminRepairUserProfilesMutationOptions(options));
+    }
+
+export const getGetMyPolicyStatusUrl = () => {
+
+
+
+
+  return `/api/user/policy-status`
+}
+
+/**
+ * @summary Latest published policy updates this user hasn't agreed to yet
+ */
+export const getMyPolicyStatus = async ( options?: RequestInit): Promise<PolicyStatusResponse> => {
+
+  return customFetch<PolicyStatusResponse>(getGetMyPolicyStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyPolicyStatusQueryKey = () => {
+    return [
+    `/api/user/policy-status`
+    ] as const;
+    }
+
+
+export const getGetMyPolicyStatusQueryOptions = <TData = Awaited<ReturnType<typeof getMyPolicyStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyPolicyStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyPolicyStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyPolicyStatus>>> = ({ signal }) => getMyPolicyStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyPolicyStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyPolicyStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getMyPolicyStatus>>>
+export type GetMyPolicyStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Latest published policy updates this user hasn't agreed to yet
+ */
+
+export function useGetMyPolicyStatus<TData = Awaited<ReturnType<typeof getMyPolicyStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyPolicyStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyPolicyStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAcceptPoliciesUrl = () => {
+
+
+
+
+  return `/api/user/policy-acceptances`
+}
+
+/**
+ * @summary Record agreement to one or more published policy updates
+ */
+export const acceptPolicies = async (acceptPoliciesInput: AcceptPoliciesInput, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getAcceptPoliciesUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(acceptPoliciesInput)
+  }
+);}
+
+
+
+
+export const getAcceptPoliciesMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptPolicies>>, TError,{data: BodyType<AcceptPoliciesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof acceptPolicies>>, TError,{data: BodyType<AcceptPoliciesInput>}, TContext> => {
+
+const mutationKey = ['acceptPolicies'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof acceptPolicies>>, {data: BodyType<AcceptPoliciesInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  acceptPolicies(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AcceptPoliciesMutationResult = NonNullable<Awaited<ReturnType<typeof acceptPolicies>>>
+    export type AcceptPoliciesMutationBody = BodyType<AcceptPoliciesInput>
+    export type AcceptPoliciesMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Record agreement to one or more published policy updates
+ */
+export const useAcceptPolicies = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptPolicies>>, TError,{data: BodyType<AcceptPoliciesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof acceptPolicies>>,
+        TError,
+        {data: BodyType<AcceptPoliciesInput>},
+        TContext
+      > => {
+      return useMutation(getAcceptPoliciesMutationOptions(options));
+    }
+
+export const getAdminListPolicyVersionsUrl = () => {
+
+
+
+
+  return `/api/admin/policy-versions`
+}
+
+/**
+ * @summary Policy update history with per-version acceptance counts (admin only)
+ */
+export const adminListPolicyVersions = async ( options?: RequestInit): Promise<PolicyVersionListResponse> => {
+
+  return customFetch<PolicyVersionListResponse>(getAdminListPolicyVersionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListPolicyVersionsQueryKey = () => {
+    return [
+    `/api/admin/policy-versions`
+    ] as const;
+    }
+
+
+export const getAdminListPolicyVersionsQueryOptions = <TData = Awaited<ReturnType<typeof adminListPolicyVersions>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListPolicyVersions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListPolicyVersionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListPolicyVersions>>> = ({ signal }) => adminListPolicyVersions({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListPolicyVersions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListPolicyVersionsQueryResult = NonNullable<Awaited<ReturnType<typeof adminListPolicyVersions>>>
+export type AdminListPolicyVersionsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Policy update history with per-version acceptance counts (admin only)
+ */
+
+export function useAdminListPolicyVersions<TData = Awaited<ReturnType<typeof adminListPolicyVersions>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListPolicyVersions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListPolicyVersionsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminCreatePolicyVersionUrl = () => {
+
+
+
+
+  return `/api/admin/policy-versions`
+}
+
+/**
+ * @summary Draft a policy update announcement (admin only)
+ */
+export const adminCreatePolicyVersion = async (createPolicyVersionInput: CreatePolicyVersionInput, options?: RequestInit): Promise<PolicyVersion> => {
+
+  return customFetch<PolicyVersion>(getAdminCreatePolicyVersionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createPolicyVersionInput)
+  }
+);}
+
+
+
+
+export const getAdminCreatePolicyVersionMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreatePolicyVersion>>, TError,{data: BodyType<CreatePolicyVersionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminCreatePolicyVersion>>, TError,{data: BodyType<CreatePolicyVersionInput>}, TContext> => {
+
+const mutationKey = ['adminCreatePolicyVersion'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminCreatePolicyVersion>>, {data: BodyType<CreatePolicyVersionInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminCreatePolicyVersion(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminCreatePolicyVersionMutationResult = NonNullable<Awaited<ReturnType<typeof adminCreatePolicyVersion>>>
+    export type AdminCreatePolicyVersionMutationBody = BodyType<CreatePolicyVersionInput>
+    export type AdminCreatePolicyVersionMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Draft a policy update announcement (admin only)
+ */
+export const useAdminCreatePolicyVersion = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreatePolicyVersion>>, TError,{data: BodyType<CreatePolicyVersionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminCreatePolicyVersion>>,
+        TError,
+        {data: BodyType<CreatePolicyVersionInput>},
+        TContext
+      > => {
+      return useMutation(getAdminCreatePolicyVersionMutationOptions(options));
+    }
+
+export const getAdminUpdatePolicyVersionUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/policy-versions/${id}`
+}
+
+/**
+ * @summary Edit a draft's summary — published versions are immutable (admin only)
+ */
+export const adminUpdatePolicyVersion = async (id: string,
+    updatePolicyVersionInput: UpdatePolicyVersionInput, options?: RequestInit): Promise<PolicyVersion> => {
+
+  return customFetch<PolicyVersion>(getAdminUpdatePolicyVersionUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updatePolicyVersionInput)
+  }
+);}
+
+
+
+
+export const getAdminUpdatePolicyVersionMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdatePolicyVersion>>, TError,{id: string;data: BodyType<UpdatePolicyVersionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminUpdatePolicyVersion>>, TError,{id: string;data: BodyType<UpdatePolicyVersionInput>}, TContext> => {
+
+const mutationKey = ['adminUpdatePolicyVersion'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminUpdatePolicyVersion>>, {id: string;data: BodyType<UpdatePolicyVersionInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  adminUpdatePolicyVersion(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminUpdatePolicyVersionMutationResult = NonNullable<Awaited<ReturnType<typeof adminUpdatePolicyVersion>>>
+    export type AdminUpdatePolicyVersionMutationBody = BodyType<UpdatePolicyVersionInput>
+    export type AdminUpdatePolicyVersionMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Edit a draft's summary — published versions are immutable (admin only)
+ */
+export const useAdminUpdatePolicyVersion = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdatePolicyVersion>>, TError,{id: string;data: BodyType<UpdatePolicyVersionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminUpdatePolicyVersion>>,
+        TError,
+        {id: string;data: BodyType<UpdatePolicyVersionInput>},
+        TContext
+      > => {
+      return useMutation(getAdminUpdatePolicyVersionMutationOptions(options));
+    }
+
+export const getAdminDeletePolicyVersionUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/policy-versions/${id}`
+}
+
+/**
+ * @summary Discard a draft — published versions are permanent history (admin only)
+ */
+export const adminDeletePolicyVersion = async (id: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getAdminDeletePolicyVersionUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getAdminDeletePolicyVersionMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeletePolicyVersion>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminDeletePolicyVersion>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['adminDeletePolicyVersion'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminDeletePolicyVersion>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adminDeletePolicyVersion(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminDeletePolicyVersionMutationResult = NonNullable<Awaited<ReturnType<typeof adminDeletePolicyVersion>>>
+
+    export type AdminDeletePolicyVersionMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Discard a draft — published versions are permanent history (admin only)
+ */
+export const useAdminDeletePolicyVersion = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeletePolicyVersion>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminDeletePolicyVersion>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getAdminDeletePolicyVersionMutationOptions(options));
+    }
+
+export const getAdminPublishPolicyVersionUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/policy-versions/${id}/publish`
+}
+
+/**
+ * @summary Publish a policy update — every signed-in user is prompted to agree from this moment (admin only)
+ */
+export const adminPublishPolicyVersion = async (id: string, options?: RequestInit): Promise<PolicyVersion> => {
+
+  return customFetch<PolicyVersion>(getAdminPublishPolicyVersionUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAdminPublishPolicyVersionMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminPublishPolicyVersion>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminPublishPolicyVersion>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['adminPublishPolicyVersion'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminPublishPolicyVersion>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adminPublishPolicyVersion(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminPublishPolicyVersionMutationResult = NonNullable<Awaited<ReturnType<typeof adminPublishPolicyVersion>>>
+
+    export type AdminPublishPolicyVersionMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Publish a policy update — every signed-in user is prompted to agree from this moment (admin only)
+ */
+export const useAdminPublishPolicyVersion = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminPublishPolicyVersion>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminPublishPolicyVersion>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getAdminPublishPolicyVersionMutationOptions(options));
     }
 
 export const getGetAdminMfaStatusUrl = () => {

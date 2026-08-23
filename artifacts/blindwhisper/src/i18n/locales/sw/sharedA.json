@@ -95,5 +95,17 @@
     "notNow": "Sivyo sasa",
     "enabling": "Inawasha...",
     "enable": "Washa arifa"
+  },
+  "policyUpdate": {
+    "heading": "Tumesasisha sera zetu",
+    "description": "Tafadhali chukua muda kupitia yaliyobadilika na kuthibitisha kuwa unakubali ili kuendelea kutumia Blind Whisper.",
+    "privacyLabel": "Sera ya Faragha",
+    "termsLabel": "Masharti ya Huduma",
+    "readLink": "Soma hati kamili",
+    "agreeButton": "Nimepitia — Nakubali",
+    "laterButton": "Pitia baadaye",
+    "reminderPill": "Sasisho la sera — pitia na ukubali",
+    "toastThanks": "Asante — kukubali kwako kumerekodiwa.",
+    "toastError": "Imeshindwa kurekodi kukubali kwako. Tafadhali jaribu tena."
   }
 }

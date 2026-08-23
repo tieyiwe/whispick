@@ -95,5 +95,17 @@
     "notNow": "나중에",
     "enabling": "켜는 중...",
     "enable": "알림 켜기"
+  },
+  "policyUpdate": {
+    "heading": "정책이 업데이트되었습니다",
+    "description": "잠시 시간을 내어 변경된 내용을 확인하고, Blind Whisper를 계속 이용하려면 동의해 주세요.",
+    "privacyLabel": "개인정보 처리방침",
+    "termsLabel": "서비스 약관",
+    "readLink": "전체 문서 읽기",
+    "agreeButton": "확인했습니다 — 동의합니다",
+    "laterButton": "나중에 확인",
+    "reminderPill": "정책 업데이트 — 확인 및 동의",
+    "toastThanks": "감사합니다 — 동의가 기록되었습니다.",
+    "toastError": "동의를 기록하지 못했습니다. 다시 시도해 주세요."
   }
 }

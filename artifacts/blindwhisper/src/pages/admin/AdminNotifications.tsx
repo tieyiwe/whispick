@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Bell, Send, Loader2, X, Search, Users, User } from "lucide-react";
+import { Bell, Send, Loader2, X, Search, Users, User, Mail } from "lucide-react";
 
 export function AdminNotifications() {
   const { toast } = useToast();
@@ -28,6 +28,7 @@ export function AdminNotifications() {
   const [body, setBody] = useState("");
   const [url, setUrl] = useState("");
   const [audience, setAudience] = useState<"all" | "users">("all");
+  const [alsoEmail, setAlsoEmail] = useState(false);
   const [userSearch, setUserSearch] = useState("");
   const [selectedUsers, setSelectedUsers] = useState<Array<{ id: string; email: string }>>([]);
 
@@ -60,11 +61,15 @@ export function AdminNotifications() {
           url: url.trim() || null,
           audience,
           userIds: audience === "users" ? selectedUsers.map((u) => u.id) : undefined,
+          sendEmail: alsoEmail,
         },
       },
       {
         onSuccess: (result) => {
-          toast({ title: `Sent to ${result.recipientCount} user${result.recipientCount === 1 ? "" : "s"}`, description: `${result.pushDelivered} reached live via push.` });
+          toast({
+            title: `Sent to ${result.recipientCount} user${result.recipientCount === 1 ? "" : "s"}`,
+            description: `${result.pushDelivered} reached live via push.${alsoEmail ? ` ${result.emailsSent} email${result.emailsSent === 1 ? "" : "s"} delivered${result.emailsSkipped ? `, ${result.emailsSkipped} skipped (opted out or no real email)` : ""}.` : ""}`,
+          });
           setTitle("");
           setBody("");
           setUrl("");
@@ -103,6 +108,27 @@ export function AdminNotifications() {
               <Label className="text-muted-foreground">Link (optional)</Label>
               <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="/whisps" className="bg-input/50 border-border/50 rounded-xl" />
             </div>
+
+            {/* The email channel reaches people who aren't in the app —
+                respects each user's Settings opt-out and skips accounts
+                without a real (non-placeholder) address. */}
+            <button
+              type="button"
+              onClick={() => setAlsoEmail(!alsoEmail)}
+              data-testid="button-toggle-send-email"
+              className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
+                alsoEmail ? "border-primary bg-primary/10" : "border-border/50 hover:border-border"
+              }`}
+            >
+              <Mail className="w-4 h-4 text-primary" />
+              <div className="flex-1">
+                <p className="font-medium text-foreground text-sm">Also send as email</p>
+                <p className="text-xs text-muted-foreground">Branded email to each recipient's inbox — skips opted-out users and accounts without a real address.</p>
+              </div>
+              <div className={`w-9 h-5 rounded-full transition-colors relative ${alsoEmail ? "bg-primary" : "bg-muted"}`}>
+                <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${alsoEmail ? "translate-x-4" : "translate-x-0.5"}`} />
+              </div>
+            </button>
 
             <div className="space-y-1.5">
               <Label className="text-muted-foreground">Audience</Label>

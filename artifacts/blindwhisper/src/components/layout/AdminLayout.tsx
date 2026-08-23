@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { Logo } from "@/components/ui/logo";
 import { PullToRefresh, reloadPage } from "@/components/shared/PullToRefresh";
-import { LayoutDashboard, Users, ListVideo, BarChart3, ArrowLeft, ShieldCheck, Sparkles, Bell, ShieldAlert, Megaphone, Video, ScrollText, Flag } from "lucide-react";
+import { LayoutDashboard, Users, ListVideo, BarChart3, ArrowLeft, ShieldCheck, Sparkles, Bell, ShieldAlert, Megaphone, Video, ScrollText, Flag, FileCheck2 } from "lucide-react";
 
 const ADMIN_NAV_ITEMS = [
   { href: "/admin_pro", label: "Overview", icon: LayoutDashboard, exact: true },
@@ -14,6 +14,7 @@ const ADMIN_NAV_ITEMS = [
   { href: "/admin_pro/debate-agent", label: "Town Crier", icon: Megaphone },
   { href: "/admin_pro/circle-agent", label: "Circle Scout", icon: Video },
   { href: "/admin_pro/notifications", label: "Notifications", icon: Bell },
+  { href: "/admin_pro/policies", label: "Policies", icon: FileCheck2 },
   { href: "/admin_pro/audit-log", label: "Audit Log", icon: ScrollText },
   { href: "/admin_pro/analytics", label: "Analytics", icon: BarChart3 },
 ];

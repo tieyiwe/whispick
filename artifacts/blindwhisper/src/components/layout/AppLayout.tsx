@@ -40,6 +40,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/comp
 import { NotificationBell } from "@/components/shared/NotificationBell";
 import { PullToRefresh, reloadPage } from "@/components/shared/PullToRefresh";
 import { InstallAppPrompt } from "@/components/shared/InstallAppPrompt";
+import { PolicyUpdateGate } from "@/components/shared/PolicyUpdateGate";
 import { useMobileSendActionValue } from "@/contexts/MobileSendAction";
 
 // labelKey resolves against the "common" namespace's nav.* keys (see
@@ -346,6 +347,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       {/* Only inside AppLayout, so it reaches signed-in users and never a
           stranger on a public whisp page who has no account to install for. */}
       <InstallAppPrompt />
+      <PolicyUpdateGate />
 
       {/* Mobile bottom tab bar with a raised Send action, native-app style */}
       <nav

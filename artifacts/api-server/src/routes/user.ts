@@ -8,8 +8,10 @@ import {
   notificationReadsTable,
   whispsTable,
   textWhispsTable,
+  policyVersionsTable,
+  policyAcceptancesTable,
 } from "@workspace/db";
-import { eq, and, or, ne, isNull, desc, count, notInArray } from "drizzle-orm";
+import { eq, and, or, ne, isNull, isNotNull, desc, count, notInArray, inArray } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { z } from "zod";
 import { requireAuth } from "../lib/auth";
@@ -128,6 +130,76 @@ router.patch("/profile", requireAuth, async (req, res): Promise<void> => {
 });
 
 // GET /api/user/push-public-key
+// GET /api/user/policy-status — the pending-consent check behind the
+// policy-update prompt (see policy_versions.ts): for each doc type, the
+// LATEST published version this user hasn't accepted yet. Empty `pending`
+// means nothing to prompt for.
+router.get("/policy-status", requireAuth, async (req, res): Promise<void> => {
+  const { userId } = getAuth(req);
+  const user = await ensureUser(userId!, req);
+
+  const published = await db
+    .select()
+    .from(policyVersionsTable)
+    .where(isNotNull(policyVersionsTable.publishedAt))
+    .orderBy(desc(policyVersionsTable.publishedAt));
+
+  // First row per docType is the latest published — the only one consent is
+  // ever required for (accepting the latest supersedes anything older).
+  const latestByDocType = new Map<string, typeof published[number]>();
+  for (const version of published) {
+    if (!latestByDocType.has(version.docType)) latestByDocType.set(version.docType, version);
+  }
+  const latest = [...latestByDocType.values()];
+  if (latest.length === 0) {
+    res.json({ pending: [] });
+    return;
+  }
+
+  const accepted = await db
+    .select({ policyVersionId: policyAcceptancesTable.policyVersionId })
+    .from(policyAcceptancesTable)
+    .where(and(eq(policyAcceptancesTable.userId, user.id), inArray(policyAcceptancesTable.policyVersionId, latest.map((v) => v.id))));
+  const acceptedIds = new Set(accepted.map((a) => a.policyVersionId));
+
+  res.json({
+    pending: latest
+      .filter((v) => !acceptedIds.has(v.id))
+      .map((v) => ({ id: v.id, docType: v.docType, summary: v.summary, publishedAt: v.publishedAt })),
+  });
+});
+
+const acceptPoliciesSchema = z.object({ policyVersionIds: z.array(z.string().max(64)).min(1).max(10) });
+
+// POST /api/user/policy-acceptances — the "I agree" click. Only published
+// versions are acceptable (a draft id is silently ignored rather than
+// recorded — nothing was ever shown to agree to), and re-accepting is a
+// no-op thanks to the unique index.
+router.post("/policy-acceptances", requireAuth, async (req, res): Promise<void> => {
+  const { userId } = getAuth(req);
+  const user = await ensureUser(userId!, req);
+
+  const parsed = acceptPoliciesSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const versions = await db
+    .select({ id: policyVersionsTable.id })
+    .from(policyVersionsTable)
+    .where(and(inArray(policyVersionsTable.id, parsed.data.policyVersionIds), isNotNull(policyVersionsTable.publishedAt)));
+
+  if (versions.length > 0) {
+    await db
+      .insert(policyAcceptancesTable)
+      .values(versions.map((v) => ({ id: randomUUID(), userId: user.id, policyVersionId: v.id })))
+      .onConflictDoNothing();
+  }
+
+  res.status(204).send();
+});
+
 router.get("/push-public-key", requireAuth, (_req, res): void => {
   const publicKey = getVapidPublicKey();
   if (!publicKey) {

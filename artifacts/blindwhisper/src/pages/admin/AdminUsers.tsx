@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import {
   useAdminListUsers,
+  useAdminRepairUserProfiles,
   useAdminUpdateUser,
   useAdminDeleteUser,
   getAdminListUsersQueryKey,
@@ -26,7 +27,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Search, ChevronLeft, ChevronRight, ShieldCheck, Ban, CheckCircle2, Trash2, MapPin } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, ShieldCheck, Ban, CheckCircle2, Trash2, MapPin, Wand2, Loader2 } from "lucide-react";
 
 const PAGE_SIZE = 20;
 
@@ -54,6 +55,26 @@ export function AdminUsers() {
 
   const updateUser = useAdminUpdateUser();
   const deleteUser = useAdminDeleteUser();
+  const repairProfiles = useAdminRepairUserProfiles();
+
+  function handleRepairProfiles() {
+    repairProfiles.mutate(undefined, {
+      onSuccess: (r) => {
+        invalidate();
+        toast({
+          title: `Repaired ${r.healed} of ${r.scanned} placeholder account${r.scanned === 1 ? "" : "s"}`,
+          description: [
+            r.noEmailInClerk ? `${r.noEmailInClerk} have no email on file (phone-only signups).` : null,
+            r.conflicts ? `${r.conflicts} skipped — their real email already belongs to another account.` : null,
+            r.scanned === 0 ? "No placeholder emails left — everyone's details are real." : null,
+          ]
+            .filter(Boolean)
+            .join(" "),
+        });
+      },
+      onError: (err: any) => toast({ title: err?.data?.error ?? "Repair failed", variant: "destructive" }),
+    });
+  }
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
@@ -91,8 +112,26 @@ export function AdminUsers() {
     <AdminLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-serif font-bold text-foreground">Users</h1>
-          <p className="text-muted-foreground mt-1">{data?.total ?? 0} total users.</p>
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <h1 className="text-3xl font-serif font-bold text-foreground">Users</h1>
+              <p className="text-muted-foreground mt-1">{data?.total ?? 0} total users.</p>
+            </div>
+            {/* Backfill for accounts stuck with a fabricated clerkId@... email
+                (signup-day Clerk fetch failure) — re-fetches their real
+                profile without waiting for them to sign in again. */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-full"
+              onClick={handleRepairProfiles}
+              disabled={repairProfiles.isPending}
+              data-testid="button-repair-profiles"
+            >
+              {repairProfiles.isPending ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5 mr-1.5" />}
+              Repair placeholder emails
+            </Button>
+          </div>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3">
