@@ -217,10 +217,17 @@ export function SendTextWhisp() {
               <p className="text-xs text-muted-foreground">
                 {t("sendTextWhisp.recipientDisclosure")}
               </p>
+              {/* Every other field on this page uses the app's low-emphasis
+                  bg-input/50 + border-border/50 treatment, but this is the
+                  one field nothing can be sent without — it needs to read as
+                  an obviously-empty box waiting for input, not blend into
+                  the page like a label. Solid background, a visible border
+                  even at rest (not just on focus), and a slightly darker
+                  placeholder for legibility. */}
               <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary" />
                 <Input
-                  className="pl-9 bg-input/50 border-border/50 rounded-xl"
+                  className="pl-9 h-12 bg-input border-2 border-primary/40 hover:border-primary/60 focus-visible:border-primary rounded-xl text-base placeholder:text-muted-foreground/80"
                   placeholder={t("sendTextWhisp.phonePlaceholder")}
                   type="tel"
                   value={phone}
