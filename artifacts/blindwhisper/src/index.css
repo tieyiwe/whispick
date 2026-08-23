@@ -367,3 +367,44 @@
     box-shadow: 0 0 12px 2px rgba(239, 68, 68, 0.35);
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Admin theme — the business HQ wears its own palette, scoped by this
+   class on AdminLayout's root so every token-driven component inside
+   (cards, buttons, badges, inputs) recolors without per-page changes.
+   Charcoal black ground, violet-leaning greys for surfaces (grey "close
+   to violet" per the design ask), and a matte, unshouty yellow as the
+   single accent — the complement that makes actions and active nav read
+   instantly against all that grey. Destructive red is deliberately kept:
+   in an admin surface red must keep meaning "careful", not "brand". */
+.admin-theme {
+  color-scheme: dark;
+  --background: 255 12% 7%;
+  --foreground: 250 12% 92%;
+
+  --card: 255 10% 13%;
+  --card-foreground: 250 12% 92%;
+  --card-border: 255 9% 21%;
+
+  --popover: 255 10% 13%;
+  --popover-foreground: 250 12% 92%;
+  --popover-border: 255 9% 21%;
+
+  /* Matte yellow — desaturated enough to feel soft ("cute"), dark text on
+     top for contrast. */
+  --primary: 46 64% 62%;
+  --primary-foreground: 255 12% 10%;
+
+  --secondary: 255 9% 30%;
+  --secondary-foreground: 250 12% 92%;
+
+  --muted: 255 9% 19%;
+  --muted-foreground: 250 7% 62%;
+
+  --accent: 255 9% 19%;
+  --accent-foreground: 250 12% 92%;
+
+  --border: 255 9% 21%;
+  --input: 255 9% 16%;
+  --ring: 46 64% 62%;
+}
