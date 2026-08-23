@@ -7,6 +7,7 @@ import { MoodTag } from "@/components/shared/MoodTag";
 import { FAQ_ITEMS } from "@/lib/faqContent";
 import { InstallAppPrompt } from "@/components/shared/InstallAppPrompt";
 import { guessBrowserLanguage } from "@/lib/languages";
+import { APP_VERSION, APP_VERSION_NAME } from "@/lib/appVersion";
 import i18n from "@/i18n";
 import { Send, Heart, Shield, Sparkles, PlayCircle, Users2, Users, Briefcase, UserRound, X, Check, ChevronDown } from "lucide-react";
 
@@ -311,12 +312,15 @@ export function LandingPage() {
         </section>
       </main>
 
-      <footer className="relative z-10 pb-8 flex justify-center gap-4 text-xs text-muted-foreground">
-        <Link href="/privacy" className="hover:text-primary transition-colors">{t("landingPage.footer.privacyPolicy")}</Link>
-        <span className="text-border">•</span>
-        <Link href="/terms" className="hover:text-primary transition-colors">{t("landingPage.footer.termsOfService")}</Link>
-        <span className="text-border">•</span>
-        <Link href="/sms-terms" className="hover:text-primary transition-colors">{t("landingPage.footer.smsTerms")}</Link>
+      <footer className="relative z-10 pb-8 flex flex-col items-center gap-2 text-xs text-muted-foreground">
+        <div className="flex justify-center gap-4">
+          <Link href="/privacy" className="hover:text-primary transition-colors">{t("landingPage.footer.privacyPolicy")}</Link>
+          <span className="text-border">•</span>
+          <Link href="/terms" className="hover:text-primary transition-colors">{t("landingPage.footer.termsOfService")}</Link>
+          <span className="text-border">•</span>
+          <Link href="/sms-terms" className="hover:text-primary transition-colors">{t("landingPage.footer.smsTerms")}</Link>
+        </div>
+        <p className="text-[11px] text-muted-foreground/60" data-testid="text-app-version">v{APP_VERSION} · {APP_VERSION_NAME}</p>
       </footer>
 
       {/* This is a signed-out visitor's only chance to see an install nudge

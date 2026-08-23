@@ -2,6 +2,7 @@ import { ReactNode, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useGetMyAdminAccess } from "@workspace/api-client-react";
 import { Logo } from "@/components/ui/logo";
+import { APP_VERSION, APP_VERSION_NAME } from "@/lib/appVersion";
 import { PullToRefresh, reloadPage } from "@/components/shared/PullToRefresh";
 import {
   LayoutDashboard,
@@ -138,6 +139,9 @@ export function AdminLayout({ children }: { children: ReactNode }) {
               </span>
               <span className="flex shrink-0 items-center gap-1 text-[11px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-md bg-primary text-primary-foreground">
                 <ShieldCheck className="w-3 h-3" /> HQ
+              </span>
+              <span className="hidden sm:inline text-[11px] text-muted-foreground/60 shrink-0" data-testid="text-app-version">
+                v{APP_VERSION} · {APP_VERSION_NAME}
               </span>
             </div>
           </div>

@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { LogoLockup } from "@/components/ui/logo";
+import { APP_VERSION, APP_VERSION_NAME } from "@/lib/appVersion";
 import { useUser, useClerk } from "@clerk/react";
 import { useGetUserProfile, useGetMyUnreadNotificationCount, getGetMyUnreadNotificationCountQueryKey } from "@workspace/api-client-react";
 import { isSupportedLanguage } from "@/lib/languages";
@@ -298,6 +299,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <LogOut className="w-5 h-5 mr-3" />
             {t("account.signOut")}
           </Button>
+          <p className="text-center text-[11px] text-muted-foreground/60 mt-3" data-testid="text-app-version">
+            v{APP_VERSION} · {APP_VERSION_NAME}
+          </p>
         </div>
       </aside>
 

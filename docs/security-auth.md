@@ -49,12 +49,23 @@ See [admin-hq.md](admin-hq.md) for the full model. Summary: owner via
 (403 `admin_permission_required` + which permission); `requireOwner` for
 Staff & Access management.
 
+**The owner account itself is untouchable from the Users admin surface**
+(`routes/admin.ts` PATCH/DELETE `/users/:id`): a collaborator holding the
+`users` permission cannot ban, demote, or delete the `isOwner` account, and
+role changes / bans on any other admin account require `req.adminIsOwner` —
+otherwise a collaborator could mint or remove fellow admins outside the
+Staff & Access grant system.
+
 ## Rate limiting
 
 `lib/rateLimit.ts` defines per-user limiters. Known limits:
 `createDebateTopicLimiter` 10/hr, `reportContentLimiter` 20/hr,
-`createTextWhispLimiter` 30/hr (others exist per feature — check the file).
-Tests must use fresh random clerk IDs to avoid cross-test 429 pollution.
+`createTextWhispLimiter` 30/hr, `adminMfaVerifyLimiter` 10/15min (others exist
+per feature — check the file). Tests must use fresh random clerk IDs to avoid
+cross-test 429 pollution; `adminMfaVerifyLimiter` additionally `skip`s under
+`NODE_ENV === "test"` (vitest's default) because the test harness re-enrolls
+and re-verifies a real TOTP code before every admin-gated test — far more
+often than any legitimate admin unlocks in production.
 
 ## Privacy rules (product-level)
 
