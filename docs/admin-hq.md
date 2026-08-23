@@ -174,9 +174,15 @@ Clerk itself remains the single source of truth for whether 2FA is
 actually required; this column exists solely so the compliance dashboard
 doesn't need a Clerk API call per row.
 
-## Text Whisp tools (admin)
+## Messages (`/admin_pro/notifications`)
 
-Two admin-initiated sends reusing the Text Whisp table/UI, both always
+One composer for everything "reach people" — a bell notification and a
+Text Whisp broadcast are two distinct backend calls (`notifications` and
+`text_whisps` are genuinely different tables: a Text Whisp can be replied
+to, a notification can't), but the admin writes the message once, picks
+audience once, and checks one or both channels rather than visiting two
+separate pages. A "Message a colleague" section on the same page covers
+staff-direct sends. Two admin-initiated Text Whisp sends, both always
 delivered purely in-app (never real SMS — the recipient is always a known
 account, never a phone-number guess):
 

@@ -21,7 +21,6 @@ import {
   FileCheck2,
   KeyRound,
   KanbanSquare,
-  MessageCircle,
 } from "lucide-react";
 
 // Odoo-style command-center navigation: one left rail, grouped by the job
@@ -61,8 +60,7 @@ const ADMIN_NAV_GROUPS: { heading: string; items: NavItem[] }[] = [
   {
     heading: "Outreach",
     items: [
-      { href: "/admin_pro/notifications", label: "Notifications", icon: Bell, permission: "notifications" },
-      { href: "/admin_pro/text-whisps", label: "Text Whisps", icon: MessageCircle, permission: "notifications" },
+      { href: "/admin_pro/notifications", label: "Messages", icon: Bell, permission: "notifications" },
       { href: "/admin_pro/policies", label: "Policies", icon: FileCheck2, permission: "policies" },
     ],
   },
