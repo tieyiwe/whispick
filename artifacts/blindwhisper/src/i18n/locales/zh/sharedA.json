@@ -79,7 +79,8 @@
     "commentCount_one": "{{count}} 条评论",
     "commentCount_other": "{{count}} 条评论",
     "shareTopicAria": "分享这个话题",
-    "joinDebate": "加入辩论"
+    "joinDebate": "加入辩论",
+    "onlineAriaLabel": "当前在线"
   },
   "demographicsGateDialog": {
     "title": "还差一小步",

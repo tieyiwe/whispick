@@ -63,6 +63,7 @@
     "postButton": "Publier",
     "topicAuthorBadge": "Auteur du sujet",
     "youBadge": "Toi",
+    "onlineAriaLabel": "En ligne actuellement",
     "timeAgo": "il y a {{time}}",
     "altAttachedImage": "Image jointe au commentaire",
     "replyButton": "Répondre",

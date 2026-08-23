@@ -6,8 +6,11 @@ import {
   useAdminUpdateUser,
   useAdminDeleteUser,
   useAdminListUserWhisps,
+  useAdminSendComplianceReminder,
   getAdminGetUserQueryKey,
   getAdminListUserWhispsQueryKey,
+  type ComplianceFlags,
+  type ComplianceReminderInputKind,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,7 +33,51 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { deliveryLabel } from "@/lib/deliveryMethod";
-import { ArrowLeft, Loader2, MapPin, Trash2, PlayCircle, MessageSquareHeart, ShieldAlert, Swords } from "lucide-react";
+import {
+  ArrowLeft,
+  Loader2,
+  MapPin,
+  Trash2,
+  PlayCircle,
+  MessageSquareHeart,
+  ShieldAlert,
+  Swords,
+  CheckCircle2,
+  XCircle,
+  HelpCircle,
+  BellRing,
+  ShieldCheck,
+} from "lucide-react";
+
+// Same 4-item breakdown as AdminUsers.tsx's row badges — kept local rather
+// than shared since each page's layout/spacing needs differ.
+function complianceItems(compliance: ComplianceFlags) {
+  return [
+    { kind: "email_unverified" as ComplianceReminderInputKind, label: "Email verified", ok: compliance.emailVerified, unknown: false },
+    { kind: "phone_unverified" as ComplianceReminderInputKind, label: "Phone verified", ok: compliance.phoneVerified, unknown: false },
+    { kind: "mfa_missing" as ComplianceReminderInputKind, label: "2FA enabled", ok: compliance.mfaEnabled === true, unknown: compliance.mfaEnabled == null },
+    { kind: "policy_pending" as ComplianceReminderInputKind, label: "Policy up to date", ok: compliance.policyUpToDate, unknown: false },
+  ];
+}
+
+function ComplianceBadge({ label, ok, unknown }: { label: string; ok: boolean; unknown: boolean }) {
+  if (unknown) {
+    return (
+      <Badge variant="outline" className="text-muted-foreground border-dashed gap-1" title={`${label}: unknown (never synced)`}>
+        <HelpCircle className="w-3 h-3" /> {label}
+      </Badge>
+    );
+  }
+  return ok ? (
+    <Badge variant="outline" className="text-muted-foreground border-border/50 gap-1">
+      <CheckCircle2 className="w-3 h-3" /> {label}
+    </Badge>
+  ) : (
+    <Badge variant="destructive" className="gap-1">
+      <XCircle className="w-3 h-3" /> {label}
+    </Badge>
+  );
+}
 
 const WHISP_PAGE_SIZE = 15;
 
@@ -43,6 +90,7 @@ export function AdminUserDetail() {
   const { data, isLoading } = useAdminGetUser(id!, { query: { enabled: !!id, queryKey: getAdminGetUserQueryKey(id!) } });
   const updateUser = useAdminUpdateUser();
   const deleteUser = useAdminDeleteUser();
+  const sendComplianceReminder = useAdminSendComplianceReminder();
 
   const [whispStatusFilter, setWhispStatusFilter] = useState("all");
   const [whispPage, setWhispPage] = useState(1);
@@ -89,6 +137,16 @@ export function AdminUserDetail() {
       {
         onSuccess: () => { invalidate(); toast({ title: data.user.banned ? "User unbanned" : "User banned" }); },
         onError: (err: any) => toast({ title: err?.data?.error ?? "Action failed", variant: "destructive" }),
+      }
+    );
+  }
+
+  function sendReminder(kind: ComplianceReminderInputKind) {
+    sendComplianceReminder.mutate(
+      { data: { userIds: [id!], kind } },
+      {
+        onSuccess: (r) => toast({ title: `${r.recipientCount} reminded, ${r.emailsSent} emailed` }),
+        onError: (err: any) => toast({ title: err?.data?.error ?? "Failed to send reminder", variant: "destructive" }),
       }
     );
   }
@@ -256,6 +314,33 @@ export function AdminUserDetail() {
                 {user.banned ? "Unban User" : "Ban User"}
               </Button>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-border/50">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-serif flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4" /> Compliance
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-2">
+            {complianceItems(user.compliance).map((i) => (
+              <div key={i.kind} className="flex items-center gap-1.5">
+                <ComplianceBadge label={i.label} ok={i.ok} unknown={i.unknown} />
+                {!i.ok && !i.unknown && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="rounded-full text-muted-foreground h-6 px-2"
+                    onClick={() => sendReminder(i.kind)}
+                    disabled={sendComplianceReminder.isPending}
+                    data-testid={`button-compliance-reminder-${i.kind}`}
+                  >
+                    <BellRing className="w-3.5 h-3.5 mr-1" /> Send reminder
+                  </Button>
+                )}
+              </div>
+            ))}
           </CardContent>
         </Card>
 

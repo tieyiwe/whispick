@@ -85,6 +85,7 @@ const AdminPolicies = lazy(() => import("@/pages/admin/AdminPolicies").then((m) 
 const AdminAccess = lazy(() => import("@/pages/admin/AdminAccess").then((m) => ({ default: m.AdminAccess })));
 const AdminProjects = lazy(() => import("@/pages/admin/AdminProjects").then((m) => ({ default: m.AdminProjects })));
 const AdminNotifications = lazy(() => import("@/pages/admin/AdminNotifications").then((m) => ({ default: m.AdminNotifications })));
+const AdminTextWhisps = lazy(() => import("@/pages/admin/AdminTextWhisps").then((m) => ({ default: m.AdminTextWhisps })));
 const AdminDebateAgent = lazy(() => import("@/pages/admin/AdminDebateAgent").then((m) => ({ default: m.AdminDebateAgent })));
 const AdminCircleAgent = lazy(() => import("@/pages/admin/AdminCircleAgent").then((m) => ({ default: m.AdminCircleAgent })));
 const AdminAuditLog = lazy(() => import("@/pages/admin/AdminAuditLog").then((m) => ({ default: m.AdminAuditLog })));
@@ -327,6 +328,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/admin_pro/access" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminAccess} />} />} />
             <Route path="/admin_pro/projects" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminProjects} />} />} />
             <Route path="/admin_pro/notifications" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminNotifications} />} />} />
+            <Route path="/admin_pro/text-whisps" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminTextWhisps} />} />} />
             <Route path="/admin_pro/debate-agent" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminDebateAgent} />} />} />
             <Route path="/admin_pro/circle-agent" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminCircleAgent} />} />} />
             <Route path="/admin_pro/audit-log" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminAuditLog} />} />} />

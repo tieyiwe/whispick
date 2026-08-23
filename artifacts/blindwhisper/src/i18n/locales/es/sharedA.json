@@ -79,7 +79,8 @@
     "commentCount_one": "{{count}} comentario",
     "commentCount_other": "{{count}} comentarios",
     "shareTopicAria": "Compartir este tema",
-    "joinDebate": "Únete al debate"
+    "joinDebate": "Únete al debate",
+    "onlineAriaLabel": "En línea ahora"
   },
   "demographicsGateDialog": {
     "title": "Solo una cosita rápida",

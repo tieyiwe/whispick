@@ -79,7 +79,8 @@
     "commentCount_one": "{{count}} commentaire",
     "commentCount_other": "{{count}} commentaires",
     "shareTopicAria": "Partager ce sujet",
-    "joinDebate": "Rejoindre le débat"
+    "joinDebate": "Rejoindre le débat",
+    "onlineAriaLabel": "En ligne actuellement"
   },
   "demographicsGateDialog": {
     "title": "Juste une petite chose",

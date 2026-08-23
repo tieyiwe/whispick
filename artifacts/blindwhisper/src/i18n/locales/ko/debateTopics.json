@@ -61,6 +61,7 @@
     "postButton": "게시",
     "topicAuthorBadge": "주제 작성자",
     "youBadge": "나",
+    "onlineAriaLabel": "지금 온라인",
     "timeAgo": "{{time}} 전",
     "altAttachedImage": "댓글에 첨부된 이미지",
     "replyButton": "답글",

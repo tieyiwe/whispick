@@ -143,6 +143,28 @@ export function SettingsPage() {
     );
   }
 
+  // Reciprocal by design (see docs/security-auth.md's "Online presence"
+  // section) — the server-side toggle both hides this account from anyone
+  // who follows it in Debate Now and stops it from seeing anyone else
+  // online, so the description below says as much rather than only
+  // describing the half that's about being seen.
+  function handleToggleShowOnlineStatus(enabled: boolean) {
+    updateProfile.mutate(
+      { data: { showOnlineStatus: enabled } },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetUserProfileQueryKey() });
+          toast({
+            title: enabled
+              ? t("settingsPage.toastShowOnlineStatusOn")
+              : t("settingsPage.toastShowOnlineStatusOff"),
+          });
+        },
+        onError: () => toast({ title: t("settingsPage.toastUpdateFailed"), variant: "destructive" }),
+      }
+    );
+  }
+
   function handleSave() {
     updateProfile.mutate(
       {
@@ -457,6 +479,20 @@ export function SettingsPage() {
                 onCheckedChange={handleToggleEmailNotifications}
                 disabled={updateProfile.isPending}
                 data-testid="switch-email-notifications"
+              />
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-foreground">{t("settingsPage.showOnlineStatus")}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {t("settingsPage.showOnlineStatusDescription")}
+                </p>
+              </div>
+              <Switch
+                checked={profile?.showOnlineStatus ?? true}
+                onCheckedChange={handleToggleShowOnlineStatus}
+                disabled={updateProfile.isPending}
+                data-testid="switch-show-online-status"
               />
             </div>
           </CardContent>

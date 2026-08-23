@@ -61,6 +61,7 @@
     "postButton": "发布",
     "topicAuthorBadge": "话题作者",
     "youBadge": "你",
+    "onlineAriaLabel": "当前在线",
     "timeAgo": "{{time}}前",
     "altAttachedImage": "评论附带的图片",
     "replyButton": "回复",

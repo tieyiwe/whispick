@@ -79,7 +79,8 @@
     "commentCount_one": "Maoni {{count}}",
     "commentCount_other": "Maoni {{count}}",
     "shareTopicAria": "Shiriki mada hii",
-    "joinDebate": "Jiunge na mjadala"
+    "joinDebate": "Jiunge na mjadala",
+    "onlineAriaLabel": "Sasa yuko mtandaoni"
   },
   "demographicsGateDialog": {
     "title": "Jambo moja dogo tu",

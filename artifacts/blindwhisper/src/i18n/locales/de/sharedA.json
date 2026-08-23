@@ -79,7 +79,8 @@
     "commentCount_one": "{{count}} Kommentar",
     "commentCount_other": "{{count}} Kommentare",
     "shareTopicAria": "Dieses Thema teilen",
-    "joinDebate": "An der Debatte teilnehmen"
+    "joinDebate": "An der Debatte teilnehmen",
+    "onlineAriaLabel": "Gerade online"
   },
   "demographicsGateDialog": {
     "title": "Nur noch eine kurze Sache",

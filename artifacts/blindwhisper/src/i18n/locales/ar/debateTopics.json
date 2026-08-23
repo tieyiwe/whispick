@@ -71,6 +71,7 @@
     "postButton": "نشر",
     "topicAuthorBadge": "كاتب الموضوع",
     "youBadge": "أنت",
+    "onlineAriaLabel": "متصل الآن",
     "timeAgo": "منذ {{time}}",
     "altAttachedImage": "صورة مرفقة بالتعليق",
     "replyButton": "رد",

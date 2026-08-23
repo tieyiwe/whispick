@@ -5,6 +5,8 @@ import {
   useGetFollowStats,
   useGetMyDebateTopicStats,
   useListFollowingDebateTopics,
+  useGetFollowedOnlineStatus,
+  getGetFollowedOnlineStatusQueryKey,
 } from "@workspace/api-client-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -33,6 +35,19 @@ export function DebateFollowing() {
   const { data, isLoading: feedLoading, isFetching } = useListFollowingDebateTopics(cursor ? { cursor } : undefined);
   const items = data?.items ?? [];
   const statsLoading = followStatsLoading || engagementStatsLoading;
+
+  // Every author on this feed is, by definition, someone the viewer follows
+  // — exactly the relationship GET /follows/online-status is scoped to (see
+  // docs/security-auth.md's "Online presence" section). Polled like
+  // NotificationBell's own freshness checks rather than pushed.
+  const { data: onlineStatus } = useGetFollowedOnlineStatus({
+    query: {
+      queryKey: getGetFollowedOnlineStatusQueryKey(),
+      refetchInterval: 60_000,
+      refetchIntervalInBackground: false,
+    },
+  });
+  const onlineMap = onlineStatus?.online ?? {};
 
   // `key` is a stable, language-independent id used only for the
   // data-testid below — `title` is the translated display text, so the
@@ -115,7 +130,7 @@ export function DebateFollowing() {
           ) : items.length ? (
             <div className="space-y-4">
               {items.map((topic) => (
-                <DebateTopicCard key={topic.id} topic={topic} />
+                <DebateTopicCard key={topic.id} topic={topic} authorOnline={!!onlineMap[topic.authorHandle]} />
               ))}
             </div>
           ) : (

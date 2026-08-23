@@ -83,7 +83,8 @@
     "commentCount_many": "{{count}} تعليقًا",
     "commentCount_other": "{{count}} تعليق",
     "shareTopicAria": "اهمس بهذا الموضوع",
-    "joinDebate": "انضم إلى النقاش"
+    "joinDebate": "انضم إلى النقاش",
+    "onlineAriaLabel": "متصل الآن"
   },
   "demographicsGateDialog": {
     "title": "شيء واحد سريع فقط",

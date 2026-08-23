@@ -63,6 +63,7 @@
     "postButton": "Posten",
     "topicAuthorBadge": "Themenersteller:in",
     "youBadge": "Du",
+    "onlineAriaLabel": "Gerade online",
     "timeAgo": "vor {{time}}",
     "altAttachedImage": "An den Kommentar angehängtes Bild",
     "replyButton": "Antworten",

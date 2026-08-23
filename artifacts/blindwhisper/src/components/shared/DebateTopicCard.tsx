@@ -23,7 +23,17 @@ function accentFor(id: string) {
 // Shared by DebateTopics.tsx (the public feed) and DebateFollowing.tsx (the
 // following feed) — same card, same accent-by-id styling, so a topic reads
 // identically wherever it shows up.
-export function DebateTopicCard({ topic }: { topic: DebateTopicFeedItem }) {
+export function DebateTopicCard({
+  topic,
+  authorOnline = false,
+}: {
+  topic: DebateTopicFeedItem;
+  /** Only ever passed from DebateFollowing.tsx, where authorHandle is
+   * necessarily a followed account — see GET /follows/online-status. The
+   * public feed (DebateTopics.tsx) never passes this, so it never shows a
+   * dot: presence is scoped to follower/followed pairs, not "any author". */
+  authorOnline?: boolean;
+}) {
   const { toast } = useToast();
   const { t } = useTranslation("sharedA");
   const accent = accentFor(topic.id);
@@ -68,7 +78,13 @@ export function DebateTopicCard({ topic }: { topic: DebateTopicFeedItem }) {
         {/* X/Twitter-style byline — avatar left of the handle, post text
             below spanning the full card width. */}
         <div className="relative flex items-center gap-2.5 mb-2" data-testid={`text-author-${topic.id}`}>
-          <AvatarCircle avatarId={topic.authorAvatarId} handle={topic.authorHandle} size="sm" />
+          <AvatarCircle
+            avatarId={topic.authorAvatarId}
+            handle={topic.authorHandle}
+            size="sm"
+            online={authorOnline}
+            onlineLabel={t("debateTopicCard.onlineAriaLabel")}
+          />
           <span className="text-sm font-medium text-foreground">{topic.authorHandle}</span>
         </div>
         <p className="relative font-serif text-xl md:text-2xl font-bold text-foreground leading-snug tracking-tight pr-6">

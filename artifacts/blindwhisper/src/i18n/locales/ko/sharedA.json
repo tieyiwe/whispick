@@ -79,7 +79,8 @@
     "commentCount_one": "댓글 {{count}}개",
     "commentCount_other": "댓글 {{count}}개",
     "shareTopicAria": "이 주제 공유하기",
-    "joinDebate": "토론 참여하기"
+    "joinDebate": "토론 참여하기",
+    "onlineAriaLabel": "지금 온라인"
   },
   "demographicsGateDialog": {
     "title": "간단한 절차가 하나 더 있어요",

@@ -79,7 +79,8 @@
     "commentCount_one": "{{count}} comment",
     "commentCount_other": "{{count}} comments",
     "shareTopicAria": "Whisper this topic",
-    "joinDebate": "Join the debate"
+    "joinDebate": "Join the debate",
+    "onlineAriaLabel": "Online now"
   },
   "demographicsGateDialog": {
     "title": "Just one quick thing",

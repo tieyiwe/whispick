@@ -98,6 +98,7 @@ router.post("/broadcast", async (req: any, res): Promise<void> => {
           .from(usersTable)
           .where(inArray(usersTable.id, [...new Set(parsed.data.userIds!)]));
 
+  let recipientCount = 0;
   for (const target of targets) {
     if (target.id === system.id) continue; // never message the reserved account itself
     await createInternalTextWhisp({
@@ -108,12 +109,13 @@ router.post("/broadcast", async (req: any, res): Promise<void> => {
       messageText: parsed.data.messageText,
       source: "admin",
     });
+    recipientCount++;
   }
 
   const adminUser = (req as any).adminUser as User;
-  logAdminAction(adminUser.id, "text_whisp.broadcast", { type: "text_whisp", id: "batch" }, { audience: parsed.data.audience, recipientCount: targets.length });
+  logAdminAction(adminUser.id, "text_whisp.broadcast", { type: "text_whisp", id: "batch" }, { audience: parsed.data.audience, recipientCount });
 
-  res.status(201).json({ recipientCount: targets.length });
+  res.status(201).json({ recipientCount });
 });
 
 const toStaffSchema = z.object({

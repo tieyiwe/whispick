@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Bar, BarChart, CartesianGrid, Cell, XAxis } from "recharts";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import {
   useAdminGetUsageStats,
@@ -8,8 +9,12 @@ import {
   useAdminGetLocationStats,
   useAdminGetDemographicStats,
   useAdminGetFunnelStats,
+  useAdminGetUsersOnlineNow,
+  getAdminGetUsersOnlineNowQueryKey,
+  useAdminGetTrafficByHour,
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RankedBarChart } from "@/components/shared/RankedBarChart";
 import { deliveryLabel } from "@/lib/deliveryMethod";
@@ -17,7 +22,19 @@ import { GENDER_LABELS, AGE_RANGE_LABELS, type Gender, type AgeRange } from "@/l
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, Loader2, MousePointerClick } from "lucide-react";
+import { Sparkles, Loader2, MousePointerClick, Radio, Clock, Send, Users } from "lucide-react";
+
+// Traffic-by-hour bar color: a darkened variant of the admin theme's matte-yellow
+// --primary (hsl(46 64% 62%)). The primary at its usual lightness reads as too
+// light for a dark chart surface (OKLCH L ~0.81, outside the ~0.48-0.67 dark-mode
+// band), so it's stepped down to hsl(46 64% 40%) — validated against the admin
+// card surface (#201E29) alongside the muted --chart-3 blue with
+// scripts/validate_palette.js from the dataviz skill: lightness band, chroma
+// floor, CVD separation (ΔE 26.2 protan/normal), and contrast all pass. Kept as
+// two colors total — "peak hour" vs. "every other hour" — so no legend swatch
+// grid is needed beyond the caption below the chart.
+const TRAFFIC_PEAK_COLOR = "hsl(46 64% 40%)";
+const TRAFFIC_BASE_COLOR = "hsl(var(--chart-3))";
 
 const FUNNEL_STAGES = [
   { key: "sent", label: "Sent" },
@@ -127,6 +144,153 @@ function FeatureUsageSection() {
   );
 }
 
+// Live headcount + a 24-bucket UTC histogram of platform activity. Polls the
+// online count on the same 60s cadence AdminUsers uses for its "last seen"
+// column, so the tile actually feels live rather than serving a stale cache.
+function LiveActivitySection() {
+  const [days, setDays] = useState("30");
+  const { data: onlineNow, isLoading: onlineLoading } = useAdminGetUsersOnlineNow({
+    query: { queryKey: getAdminGetUsersOnlineNowQueryKey(), staleTime: 0, refetchInterval: 60_000, refetchOnWindowFocus: true },
+  });
+  const { data: traffic, isLoading: trafficLoading } = useAdminGetTrafficByHour({ days: Number(days) });
+
+  const hours = traffic?.hours ?? [];
+  const peakHour = traffic?.peakHour ?? null;
+  const peakCount = peakHour !== null ? hours.find((h) => h.hour === peakHour)?.count : undefined;
+
+  const chartConfig = {
+    count: { label: "Events", color: TRAFFIC_BASE_COLOR },
+  } satisfies ChartConfig;
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Card className="bg-card border-border/50">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">Online now</p>
+                {onlineLoading ? (
+                  <Skeleton className="h-8 w-16 mt-1 rounded-md" />
+                ) : (
+                  <h3 className="text-2xl font-bold text-foreground mt-1">{(onlineNow?.onlineCount ?? 0).toLocaleString()}</h3>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  active in the last {onlineNow?.windowMinutes ?? "—"} min
+                </p>
+              </div>
+              <div className="p-2.5 rounded-xl bg-primary/10 relative">
+                <Radio className="w-4 h-4 text-primary" />
+                <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-border/50">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">Peak activity hour</p>
+                {trafficLoading ? (
+                  <Skeleton className="h-8 w-20 mt-1 rounded-md" />
+                ) : (
+                  <h3 className="text-2xl font-bold text-foreground mt-1">
+                    {peakHour !== null ? `${String(peakHour).padStart(2, "0")}:00 UTC` : "—"}
+                  </h3>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  {peakHour !== null && peakCount !== undefined
+                    ? `${peakCount.toLocaleString()} events, last ${days} days`
+                    : `not enough traffic yet, last ${days} days`}
+                </p>
+              </div>
+              <div className="p-2.5 rounded-xl bg-blue-500/10">
+                <Clock className="w-4 h-4 text-blue-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="bg-card border-border/50">
+        <CardHeader className="flex flex-row items-center justify-between gap-3 flex-wrap space-y-0">
+          <CardTitle className="flex items-center gap-2 text-base font-serif">
+            <Clock className="w-4 h-4 text-primary" /> Traffic by hour (UTC)
+          </CardTitle>
+          <Select value={days} onValueChange={setDays}>
+            <SelectTrigger className="w-28 rounded-full bg-input/50 border-border/50"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7">7 days</SelectItem>
+              <SelectItem value="30">30 days</SelectItem>
+              <SelectItem value="90">90 days</SelectItem>
+            </SelectContent>
+          </Select>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-xs text-muted-foreground -mt-1">
+            Platform-wide activity events, bucketed by hour of day in UTC — where interest clusters across the day, not tied to any one user's local time.
+          </p>
+          {trafficLoading ? (
+            <Skeleton className="h-52 rounded-xl" />
+          ) : !hours.length ? (
+            <p className="text-sm text-muted-foreground py-8 text-center">No activity recorded in this window yet.</p>
+          ) : (
+            <>
+              <ChartContainer config={chartConfig} className="w-full aspect-auto h-52">
+                <BarChart data={hours} margin={{ left: 0, right: 0, top: 8 }} barCategoryGap="18%">
+                  <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.3} />
+                  <XAxis
+                    dataKey="hour"
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fontSize: 11 }}
+                    tickFormatter={(v) => `${v}:00`}
+                    ticks={[0, 3, 6, 9, 12, 15, 18, 21]}
+                    interval={0}
+                  />
+                  <ChartTooltip
+                    cursor={{ fill: "hsl(var(--muted))", opacity: 0.3 }}
+                    content={
+                      <ChartTooltipContent
+                        hideLabel
+                        labelFormatter={(_, payload) => `${String(payload?.[0]?.payload?.hour ?? 0).padStart(2, "0")}:00 UTC`}
+                      />
+                    }
+                  />
+                  <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={22}>
+                    {hours.map((h) => (
+                      <Cell key={h.hour} fill={h.hour === peakHour ? TRAFFIC_PEAK_COLOR : TRAFFIC_BASE_COLOR} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ChartContainer>
+              <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-border/30">
+                <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: TRAFFIC_PEAK_COLOR }} />
+                  Peak hour
+                </span>
+                <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: TRAFFIC_BASE_COLOR }} />
+                  Other hours
+                </span>
+                {peakHour !== null && (
+                  <span className="text-xs text-foreground font-medium ml-auto">
+                    Peak activity: {String(peakHour).padStart(2, "0")}:00 UTC
+                  </span>
+                )}
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export function AdminAnalytics() {
   const { data: categoryStats, isLoading: categoriesLoading } = useAdminGetCategoryStats();
   const { data: deliveryStats, isLoading: deliveryLoading } = useAdminGetDeliveryMethodStats();
@@ -159,6 +323,14 @@ export function AdminAnalytics() {
           <h1 className="text-3xl font-serif font-bold text-foreground">Analytics</h1>
           <p className="text-muted-foreground mt-1">What people send, how it's delivered, and where they're sending from.</p>
         </div>
+
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-xl font-serif font-semibold flex items-center gap-2">
+              <Send className="w-5 h-5 text-primary" /> Delivery funnel
+            </h2>
+            <p className="text-sm text-muted-foreground mt-0.5">From send to reply — where whisps and related features succeed or drop off.</p>
+          </div>
 
         <Card className="bg-card border-border/50">
           <CardHeader>
@@ -348,6 +520,25 @@ export function AdminAnalytics() {
             )}
           </CardContent>
         </Card>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-xl font-serif font-semibold flex items-center gap-2">
+              <Radio className="w-5 h-5 text-primary" /> Who's active right now
+            </h2>
+            <p className="text-sm text-muted-foreground mt-0.5">A live headcount and when in the day (UTC) traffic actually shows up.</p>
+          </div>
+          <LiveActivitySection />
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-xl font-serif font-semibold flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary" /> Content & audience
+            </h2>
+            <p className="text-sm text-muted-foreground mt-0.5">What gets sent, and who's sending it.</p>
+          </div>
 
         <Card className="bg-card border-border/50">
           <CardHeader>
@@ -466,6 +657,7 @@ export function AdminAnalytics() {
         )}
 
         <FeatureUsageSection />
+        </div>
       </div>
     </AdminLayout>
   );

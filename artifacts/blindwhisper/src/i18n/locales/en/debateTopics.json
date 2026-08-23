@@ -63,6 +63,7 @@
     "postButton": "Post",
     "topicAuthorBadge": "Topic Author",
     "youBadge": "You",
+    "onlineAriaLabel": "Online now",
     "timeAgo": "{{time}} ago",
     "altAttachedImage": "Attached to comment",
     "replyButton": "Reply",

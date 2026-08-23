@@ -10,7 +10,9 @@ import {
   useRewhispDebateTopic,
   useRenameDebateTopicHandle,
   useUpdateDebateTopicHandleAvatar,
+  useGetFollowedOnlineStatus,
   getGetDebateTopicQueryKey,
+  getGetFollowedOnlineStatusQueryKey,
   getAuthToken,
   type DebateTopicComment,
   type DebateTopicDetail as DebateTopicDetailResponse,
@@ -251,6 +253,7 @@ function AvatarPickerControl({
 function CommentCard({
   comment,
   parentHandle,
+  online = false,
   onReply,
   onReact,
   reactPending,
@@ -258,6 +261,9 @@ function CommentCard({
 }: {
   comment: DebateTopicComment;
   parentHandle?: string;
+  /** Whether comment.handle is online per GET /follows/online-status — only
+   * ever true for handles the viewer follows (see onlineMap below). */
+  online?: boolean;
   onReply: () => void;
   onReact: (reaction: "like" | "dislike") => void;
   reactPending: boolean;
@@ -274,7 +280,13 @@ function CommentCard({
       {/* X/Twitter-style: avatar in the top-left, handle/meta beside it,
           body text spanning the full width below. */}
       <div className="flex items-start gap-3">
-        <AvatarCircle avatarId={comment.avatarId} handle={comment.handle} size="sm" />
+        <AvatarCircle
+          avatarId={comment.avatarId}
+          handle={comment.handle}
+          size="sm"
+          online={online}
+          onlineLabel={t("debateTopicDetail.onlineAriaLabel")}
+        />
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-medium text-foreground" data-testid={`text-handle-${comment.id}`}>
@@ -388,6 +400,22 @@ export function DebateTopicDetail() {
   const deleteTopic = useDeleteDebateTopic();
   const reactToComment = useReactToDebateTopicComment();
   const rewhisp = useRewhispDebateTopic();
+
+  // This page is reachable anonymously (visitorId-based), so the presence
+  // query only runs once signed in — the endpoint is scoped to a viewer's
+  // own follows and has nothing to say for an anonymous visitor. Only
+  // handles the viewer follows come back at all (see
+  // FollowedOnlineStatusResponse's schema comment), so no extra filtering
+  // is needed before using onlineMap below.
+  const { data: onlineStatus } = useGetFollowedOnlineStatus({
+    query: {
+      queryKey: getGetFollowedOnlineStatusQueryKey(),
+      enabled: !!isSignedIn,
+      refetchInterval: 60_000,
+      refetchIntervalInBackground: false,
+    },
+  });
+  const onlineMap = onlineStatus?.online ?? {};
 
   const commentsById = useMemo(() => {
     const map = new Map<string, DebateTopicComment>();
@@ -646,7 +674,13 @@ export function DebateTopicDetail() {
                 {/* X/Twitter-style: avatar + handle/meta above the post
                     text, which then spans the full card width. */}
                 <div className="flex items-center gap-3 flex-wrap" data-testid="text-topic-author">
-                  <AvatarCircle avatarId={topic.authorAvatarId} handle={topic.authorHandle} size="md" />
+                  <AvatarCircle
+                    avatarId={topic.authorAvatarId}
+                    handle={topic.authorHandle}
+                    size="md"
+                    online={!!onlineMap[topic.authorHandle]}
+                    onlineLabel={t("debateTopicDetail.onlineAriaLabel")}
+                  />
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{topic.authorHandle}</p>
                     <p className="text-xs text-muted-foreground">
@@ -871,6 +905,7 @@ export function DebateTopicDetail() {
                   <div key={root.id} className="space-y-2">
                     <CommentCard
                       comment={root}
+                      online={!!onlineMap[root.handle]}
                       onReply={() => setReplyTo({ id: root.id, handle: root.handle })}
                       onReact={(reaction) => handleReact(root.id, reaction)}
                       reactPending={reactToComment.isPending}
@@ -885,6 +920,7 @@ export function DebateTopicDetail() {
                             parentHandle={
                               reply.parentCommentId ? commentsById.get(reply.parentCommentId)?.handle : undefined
                             }
+                            online={!!onlineMap[reply.handle]}
                             onReply={() => setReplyTo({ id: reply.id, handle: reply.handle })}
                             onReact={(reaction) => handleReact(reply.id, reaction)}
                             reactPending={reactToComment.isPending}
