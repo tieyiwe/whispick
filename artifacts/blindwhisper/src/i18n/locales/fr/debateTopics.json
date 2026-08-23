@@ -91,6 +91,7 @@
       "reactionError": "Impossible de mettre à jour ta réaction",
       "rewhispError": "Impossible de faire un rewhisp de ce sujet",
       "linkCopied": "Lien copié — envoie-le pour faire entrer quelqu'un dans le débat",
+      "copyFailed": "Impossible de copier — veuillez le copier manuellement",
       "topicRetracted": "Sujet retiré",
       "retractError": "Impossible de retirer ce sujet"
     }

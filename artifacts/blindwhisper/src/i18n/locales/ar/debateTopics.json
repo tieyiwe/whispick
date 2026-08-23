@@ -99,6 +99,7 @@
       "reactionError": "تعذّر تحديث تفاعلك",
       "rewhispError": "تعذّر عمل Rewhisp لهذا الموضوع",
       "linkCopied": "تم نسخ الرابط — أرسله لتدعو شخصًا إلى النقاش",
+      "copyFailed": "تعذّر النسخ — يرجى النسخ يدويًا",
       "topicRetracted": "تم سحب الموضوع",
       "retractError": "تعذّر سحب هذا الموضوع"
     }

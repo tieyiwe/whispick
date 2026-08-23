@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import {
   useAdminListModerationFlags,
   useAdminUpdateModerationFlag,
   useAdminRemoveFlaggedContent,
+  useGetMyAdminAccess,
   getAdminListModerationFlagsQueryKey,
   type ModerationFlag,
 } from "@workspace/api-client-react";
@@ -68,6 +69,14 @@ export function AdminModeration() {
   const { data, isLoading } = useAdminListModerationFlags(params, {
     query: { queryKey: getAdminListModerationFlagsQueryKey(params) },
   });
+  // A Moderator-preset collaborator has "moderation" but not necessarily
+  // the "whisps"/"users" permissions the deep links below lead to — those
+  // destinations would just say "not found". Render plain text instead of a
+  // dead link for them (same optimistic-until-answered convention as
+  // AdminLayout's rail).
+  const { data: access } = useGetMyAdminAccess();
+  const canOpenWhisps = !access || access.isOwner || access.permissions.includes("whisps");
+  const canOpenUsers = !access || access.isOwner || access.permissions.includes("users");
   const updateFlag = useAdminUpdateModerationFlag();
   const removeContent = useAdminRemoveFlaggedContent();
   // The flag itself never gains a "removed" field (removedByAdminAt lands on
@@ -103,6 +112,13 @@ export function AdminModeration() {
   }
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1;
+
+  // Dismissing/removing the last row of the last page leaves `page` pointing
+  // past the end (the shrunken total no longer covers it) — snap back to the
+  // real last page instead of stranding an empty view.
+  useEffect(() => {
+    if (data && page > totalPages) setPage(totalPages);
+  }, [data, page, totalPages]);
 
   return (
     <AdminLayout>
@@ -181,20 +197,24 @@ export function AdminModeration() {
                         <span className="font-medium text-foreground truncate">
                           Debate Now comment: "{(f.debateTopicCommentText ?? "").slice(0, 60)}{(f.debateTopicCommentText?.length ?? 0) > 60 ? "…" : ""}"
                         </span>
-                      ) : (
+                      ) : canOpenWhisps ? (
                         <Link href={`/admin_pro/whisps/${f.whispId}`} className="font-medium text-foreground hover:text-primary transition-colors truncate">
                           {f.videoTitle || "Video"}
                         </Link>
+                      ) : (
+                        <span className="font-medium text-foreground truncate">{f.videoTitle || "Video"}</span>
                       )}
                     </div>
                     <span className="text-xs text-muted-foreground shrink-0">{new Date(f.createdAt).toLocaleString()}</span>
                   </div>
                   <p className="text-sm text-muted-foreground">{f.reasoning}</p>
                   <div className="flex items-center justify-between gap-2 flex-wrap pt-1">
-                    {f.userId ? (
+                    {f.userId && canOpenUsers ? (
                       <Link href={`/admin_pro/users/${f.userId}`} className="text-xs text-muted-foreground hover:text-primary transition-colors">
                         Sender: {f.senderEmail ?? f.userId}
                       </Link>
+                    ) : f.userId ? (
+                      <span className="text-xs text-muted-foreground">Sender: {f.senderEmail ?? f.userId}</span>
                     ) : (
                       // A circle_comment flag from a fully anonymous, no-account
                       // visitor has no userId to link — nothing here identifies

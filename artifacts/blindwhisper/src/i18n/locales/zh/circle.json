@@ -31,6 +31,7 @@
     "toastJoined": "已加入圈子",
     "toastInvalidCode": "邀请码无效",
     "toastCodeCopied": "邀请码已复制",
+    "toastCopyFailed": "复制失败 — 请手动复制",
     "tapToView": "点击查看动态",
     "emptyTitle": "还没有圈子",
     "emptyDescription": "创建一个圈子，与小群组匿名分享 whisps，或使用邀请码加入一个圈子。"

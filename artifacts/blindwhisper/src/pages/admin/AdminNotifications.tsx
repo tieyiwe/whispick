@@ -5,6 +5,7 @@ import {
   useAdminSendNotification,
   useAdminListNotifications,
   useAdminListUsers,
+  useGetMyAdminAccess,
   getAdminListNotificationsQueryKey,
   getAdminListUsersQueryKey,
 } from "@workspace/api-client-react";
@@ -33,9 +34,18 @@ export function AdminNotifications() {
   const [selectedUsers, setSelectedUsers] = useState<Array<{ id: string; email: string }>>([]);
 
   const sendNotification = useAdminSendNotification();
+  // Recipient search hits the admin users list, which 403s for collaborators
+  // without the "users" permission (e.g. the Assistant preset) — the picker
+  // would just sit silently empty. Same optimistic-until-answered convention
+  // as AdminLayout's rail: treat "not loaded yet" as permitted.
+  const { data: access } = useGetMyAdminAccess();
+  const canTargetSpecificUsers = !access || access.isOwner || access.permissions.includes("users");
   const userSearchParams = { search: userSearch, pageSize: 8 };
   const { data: userResults } = useAdminListUsers(userSearchParams, {
-    query: { enabled: audience === "users" && userSearch.trim().length > 0, queryKey: getAdminListUsersQueryKey(userSearchParams) },
+    query: {
+      enabled: canTargetSpecificUsers && audience === "users" && userSearch.trim().length > 0,
+      queryKey: getAdminListUsersQueryKey(userSearchParams),
+    },
   });
   const { data: history, isLoading: historyLoading } = useAdminListNotifications(
     { pageSize: 20 },
@@ -136,9 +146,14 @@ export function AdminNotifications() {
                 <SelectTrigger className="bg-input/50 border-border/50 rounded-xl w-full sm:w-56"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all"><span className="flex items-center gap-2"><Users className="w-3.5 h-3.5" /> All users</span></SelectItem>
-                  <SelectItem value="users"><span className="flex items-center gap-2"><User className="w-3.5 h-3.5" /> Specific users</span></SelectItem>
+                  <SelectItem value="users" disabled={!canTargetSpecificUsers}><span className="flex items-center gap-2"><User className="w-3.5 h-3.5" /> Specific users</span></SelectItem>
                 </SelectContent>
               </Select>
+              {!canTargetSpecificUsers && (
+                <p className="text-xs text-muted-foreground">
+                  Targeting specific users requires the Users permission — ask the super admin.
+                </p>
+              )}
             </div>
 
             {audience === "users" && (

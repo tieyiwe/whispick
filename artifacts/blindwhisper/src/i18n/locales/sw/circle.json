@@ -31,6 +31,7 @@
     "toastJoined": "Umejiunga na kikundi",
     "toastInvalidCode": "Msimbo wa mwaliko si sahihi",
     "toastCodeCopied": "Msimbo wa mwaliko umenakiliwa",
+    "toastCopyFailed": "Imeshindikana kunakili — tafadhali nakili mwenyewe",
     "tapToView": "Gusa kuona mtiririko",
     "emptyTitle": "Bado huna vikundi",
     "emptyDescription": "Unda kimoja kushiriki whisps bila jina na kikundi kidogo, au jiunge na kimoja kwa msimbo wa mwaliko."

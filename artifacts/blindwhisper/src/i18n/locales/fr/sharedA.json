@@ -75,6 +75,7 @@
   "debateTopicCard": {
     "shareTitle": "Blind Whisper — Debate Now",
     "linkCopied": "Lien copié — envoyez-le pour inviter quelqu'un à rejoindre le débat",
+    "copyFailed": "Impossible de copier — veuillez le copier manuellement",
     "commentCount_one": "{{count}} commentaire",
     "commentCount_other": "{{count}} commentaires",
     "shareTopicAria": "Partager ce sujet",
@@ -87,7 +88,8 @@
     "genderLabel": "Genre",
     "ageRangeLabel": "Tranche d'âge",
     "selectPlaceholder": "Sélectionner...",
-    "continue": "Continuer"
+    "continue": "Continuer",
+    "saveFailed": "Impossible d'enregistrer vos réponses. Veuillez réessayer."
   },
   "enableNotificationsPrompt": {
     "title": "Activer les notifications",

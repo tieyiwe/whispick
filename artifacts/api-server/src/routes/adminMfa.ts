@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
 import { z } from "zod";
 import { requireAuth } from "../lib/auth";
+import { adminMfaVerifyLimiter } from "../lib/rateLimit";
 import { ensureUser } from "../lib/ensureUser";
 import {
   generateTotpSecret,
@@ -81,7 +82,7 @@ const verifySchema = z.object({ code: z.string().min(1).max(32) });
 // generated and returned — the only time they ever exist in plaintext.
 // Every success returns a signed unlock token the frontend attaches to
 // admin requests (see requireAdmin in lib/adminAuth.ts).
-router.post("/verify", requireAuth, async (req, res): Promise<void> => {
+router.post("/verify", requireAuth, adminMfaVerifyLimiter, async (req, res): Promise<void> => {
   const user = await requireAdminRole(req, res);
   if (!user) return;
 

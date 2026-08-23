@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import {
@@ -50,7 +50,14 @@ export function AdminUsers() {
   };
 
   const { data, isLoading } = useAdminListUsers(params, {
-    query: { queryKey: getAdminListUsersQueryKey(params) },
+    query: {
+      queryKey: getAdminListUsersQueryKey(params),
+      // "Last seen" goes stale fast — keep the list live instead of serving
+      // the cache default (same polling convention as NotificationBell).
+      staleTime: 0,
+      refetchInterval: 60_000,
+      refetchOnWindowFocus: true,
+    },
   });
 
   const updateUser = useAdminUpdateUser();
@@ -88,7 +95,7 @@ export function AdminUsers() {
           invalidate();
           toast({ title: currentlyBanned ? "User unbanned" : "User banned" });
         },
-        onError: (err: any) => toast({ title: err?.error ?? "Action failed", variant: "destructive" }),
+        onError: (err: any) => toast({ title: err?.data?.error ?? "Action failed", variant: "destructive" }),
       }
     );
   }
@@ -101,12 +108,19 @@ export function AdminUsers() {
           invalidate();
           toast({ title: "User deleted" });
         },
-        onError: (err: any) => toast({ title: err?.error ?? "Failed to delete user", variant: "destructive" }),
+        onError: (err: any) => toast({ title: err?.data?.error ?? "Failed to delete user", variant: "destructive" }),
       }
     );
   }
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1;
+
+  // Deleting the last row of the last page leaves `page` pointing past the
+  // end (the shrunken total no longer covers it) — snap back to the real
+  // last page instead of stranding an empty view.
+  useEffect(() => {
+    if (data && page > totalPages) setPage(totalPages);
+  }, [data, page, totalPages]);
 
   return (
     <AdminLayout>

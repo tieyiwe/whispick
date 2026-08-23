@@ -89,6 +89,7 @@
       "reactionError": "更新反应失败",
       "rewhispError": "对这个话题执行 Rewhisp 失败",
       "linkCopied": "链接已复制——发给朋友，拉他们加入讨论",
+      "copyFailed": "复制失败 — 请手动复制",
       "topicRetracted": "话题已撤回",
       "retractError": "撤回话题失败"
     }

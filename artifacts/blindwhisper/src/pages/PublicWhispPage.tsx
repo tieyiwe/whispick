@@ -1,5 +1,5 @@
 import { useParams, useLocation } from "wouter";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { useUser } from "@clerk/react";
@@ -135,7 +135,6 @@ export function PublicWhispPage() {
   const [composerExpanded, setComposerExpanded] = useState(false);
   const replyTextareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const [hasTrackedOpen, setHasTrackedOpen] = useState(false);
   const [revealResponse, setRevealResponse] = useState<"accepted" | "declined" | null>(null);
   const [localAppreciation, setLocalAppreciation] = useState<"yes" | "no" | null>(null);
   const [showReminderPicker, setShowReminderPicker] = useState(false);
@@ -179,8 +178,12 @@ export function PublicWhispPage() {
 
   // Sent as a query param purely so a circle_drop response's viewerHasLiked
   // reflects this device — meaningless (and ignored server-side) for every
-  // other delivery method.
-  const visitorIdParams = { visitorId: getVisitorId() };
+  // other delivery method. Memoized (same as DebateTopicDetail) because it
+  // feeds the query key below: without localStorage getVisitorId() would
+  // mint a fresh UUID per render, and an ever-changing query key means an
+  // unbounded refetch loop.
+  const visitorId = useMemo(() => getVisitorId(), []);
+  const visitorIdParams = { visitorId };
 
   const { data: whisp, isLoading, refetch } = useGetPublicWhisp(token!, visitorIdParams, {
     query: {
@@ -347,11 +350,20 @@ export function PublicWhispPage() {
     );
   }
 
-  // Track "opened" on page load
-  if (whisp && !hasTrackedOpen) {
-    setHasTrackedOpen(true);
-    trackEvent.mutate({ token: token!, data: { eventType: "opened" } });
-  }
+  // Track "opened" once, the first time the whisp loads. An effect with a
+  // ref guard (same pattern as RepliesInbox's mark-all-read) rather than a
+  // render-body mutate: firing a mutation during render double-POSTs the
+  // event whenever React discards and replays a render.
+  // mutate is referentially stable, unlike the mutation result object —
+  // depending on it keeps this effect from re-running every single render.
+  const trackEventMutate = trackEvent.mutate;
+  const trackedOpenRef = useRef(false);
+
+  useEffect(() => {
+    if (!whisp || trackedOpenRef.current) return;
+    trackedOpenRef.current = true;
+    trackEventMutate({ token: token!, data: { eventType: "opened" } });
+  }, [whisp, trackEventMutate, token]);
 
   function handleWatchEvent(eventType: "clicked" | "watched_10s" | "watched_50pct" | "watched_complete") {
     trackEvent.mutate({ token: token!, data: { eventType } });
@@ -444,7 +456,7 @@ export function PublicWhispPage() {
 
   function handleToggleLike() {
     toggleLike.mutate(
-      { token: token!, data: { visitorId: getVisitorId() } },
+      { token: token!, data: { visitorId } },
       { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetPublicWhispQueryKey(token!) }) }
     );
   }
@@ -502,7 +514,7 @@ export function PublicWhispPage() {
         {
           token: token!,
           commentText: text,
-          visitorId: getVisitorId(),
+          visitorId,
           parentCommentId: commentReplyingTo?.id ?? null,
           image: commentImage,
         },
@@ -513,7 +525,7 @@ export function PublicWhispPage() {
     postComment.mutate(
       {
         token: token!,
-        data: { commentText: text, visitorId: getVisitorId(), parentCommentId: commentReplyingTo?.id ?? null },
+        data: { commentText: text, visitorId, parentCommentId: commentReplyingTo?.id ?? null },
       },
       callbacks
     );
@@ -521,7 +533,7 @@ export function PublicWhispPage() {
 
   function handleCommentReaction(commentId: string, reaction: "like" | "dislike") {
     reactToComment.mutate(
-      { token: token!, commentId, data: { visitorId: getVisitorId(), reaction } },
+      { token: token!, commentId, data: { visitorId, reaction } },
       { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetPublicWhispQueryKey(token!) }) }
     );
   }
@@ -535,7 +547,7 @@ export function PublicWhispPage() {
     const next = handleDraft.trim();
     if (!next) return;
     renameHandle.mutate(
-      { token: token!, data: { visitorId: getVisitorId(), handle: next } },
+      { token: token!, data: { visitorId, handle: next } },
       {
         onSuccess: () => {
           setRenamingHandle(false);

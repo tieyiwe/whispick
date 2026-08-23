@@ -22,6 +22,12 @@ const TOKEN_STORAGE_KEY = "bw_admin_mfa_token";
 let mfaState: AdminMfaState = null;
 const listeners = new Set<() => void>();
 
+// Subscribers hear about BOTH kinds of change — mfaState transitions and
+// token store/clear — so AdminRoute can useSyncExternalStore over either
+// snapshot. Without the token side, a cold-opened tab (mfaState already
+// null, token missing) would never re-render after a successful verify:
+// clearAdminMfaState early-returns, and nothing else notices the token
+// landing in sessionStorage.
 function notify(): void {
   for (const listener of listeners) listener();
 }
@@ -77,6 +83,7 @@ export function storeAdminMfaToken(token: string): void {
     // Storage unavailable (private mode edge cases) — the in-memory-only
     // consequence is just re-entering a code after a hard reload.
   }
+  notify();
 }
 
 export function clearAdminMfaToken(): void {
@@ -85,4 +92,5 @@ export function clearAdminMfaToken(): void {
   } catch {
     // ignore
   }
+  notify();
 }

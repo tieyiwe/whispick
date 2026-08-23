@@ -482,7 +482,13 @@ router.post("/notifications/:id/read", requireAuth, async (req, res): Promise<vo
     .then((r) => r[0]);
 
   if (!existing) {
-    await db.insert(notificationReadsTable).values({ id: randomUUID(), notificationId: notification.id, userId: user.id });
+    // onConflictDoNothing: the unique (notificationId, userId) index makes a
+    // concurrent duplicate (second tab, read-all racing this) a no-op
+    // instead of a duplicate row.
+    await db
+      .insert(notificationReadsTable)
+      .values({ id: randomUUID(), notificationId: notification.id, userId: user.id })
+      .onConflictDoNothing();
   }
 
   res.status(204).send();
@@ -595,7 +601,8 @@ router.post("/notifications/read-all", requireAuth, async (req, res): Promise<vo
   if (unread.length) {
     await db
       .insert(notificationReadsTable)
-      .values(unread.map((n) => ({ id: randomUUID(), notificationId: n.id, userId: user.id })));
+      .values(unread.map((n) => ({ id: randomUUID(), notificationId: n.id, userId: user.id })))
+      .onConflictDoNothing();
   }
 
   res.status(204).send();

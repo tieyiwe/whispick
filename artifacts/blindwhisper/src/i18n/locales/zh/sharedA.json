@@ -75,6 +75,7 @@
   "debateTopicCard": {
     "shareTitle": "Blind Whisper — Debate Now",
     "linkCopied": "链接已复制 — 发给朋友,邀请他们加入辩论",
+    "copyFailed": "复制失败 — 请手动复制",
     "commentCount_one": "{{count}} 条评论",
     "commentCount_other": "{{count}} 条评论",
     "shareTopicAria": "分享这个话题",
@@ -87,7 +88,8 @@
     "genderLabel": "性别",
     "ageRangeLabel": "年龄段",
     "selectPlaceholder": "请选择...",
-    "continue": "继续"
+    "continue": "继续",
+    "saveFailed": "无法保存你的回答,请重试。"
   },
   "enableNotificationsPrompt": {
     "title": "开启通知",

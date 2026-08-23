@@ -31,6 +31,7 @@
     "toastJoined": "انضممت إلى الدائرة",
     "toastInvalidCode": "رمز الدعوة غير صالح",
     "toastCodeCopied": "تم نسخ رمز الدعوة",
+    "toastCopyFailed": "تعذّر النسخ — يرجى النسخ يدويًا",
     "tapToView": "انقر لعرض الخلاصة",
     "emptyTitle": "لا توجد دوائر بعد",
     "emptyDescription": "أنشئ دائرة لمشاركة whisps بشكل مجهول مع مجموعة صغيرة، أو انضم إلى واحدة برمز دعوة."

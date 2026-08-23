@@ -91,6 +91,7 @@
       "reactionError": "Couldn't update your reaction",
       "rewhispError": "Couldn't rewhisp this topic",
       "linkCopied": "Link copied — send it to bring someone into the debate",
+      "copyFailed": "Couldn't copy — please copy it manually",
       "topicRetracted": "Topic retracted",
       "retractError": "Couldn't retract that topic"
     }

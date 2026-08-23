@@ -53,6 +53,16 @@ const NEXT_STATUS: Record<string, "in_progress" | "done" | "todo"> = {
   done: "todo",
 };
 
+// The date input's bare "YYYY-MM-DD" would parse as UTC midnight via
+// new Date(string), which toLocaleDateString then renders as the PREVIOUS
+// day anywhere west of UTC. Parse it as the end of the picker's LOCAL day
+// instead — "due by" semantics — so both the rendered date and the overdue
+// check (dueAt < now) land on the calendar day that was picked.
+function dueDateToIso(value: string): string {
+  const [y, m, d] = value.split("-").map(Number);
+  return new Date(y, m - 1, d, 23, 59).toISOString();
+}
+
 function CommentsDialog({ task, onClose }: { task: HqTask; onClose: () => void }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -165,7 +175,7 @@ export function AdminProjects() {
         data: {
           title: newTaskTitle.trim(),
           assigneeAdminId: newTaskAssignee !== "none" ? newTaskAssignee : null,
-          dueAt: newTaskDue ? new Date(newTaskDue).toISOString() : null,
+          dueAt: newTaskDue ? dueDateToIso(newTaskDue) : null,
         },
       },
       {

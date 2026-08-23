@@ -16,6 +16,13 @@
 // entirely client-side means the server never has to mint or track one.
 const VISITOR_ID_KEY = "blindwhisper:visitorId";
 
+// Fallback for when localStorage is unavailable — held at module level so
+// every call within a page load still returns the SAME id. Minting a fresh
+// UUID per call looked harmless, but anything keying a query on the visitor
+// id (PublicWhispPage, DebateTopicDetail) would see a new key every call —
+// an ever-changing query key means an unbounded refetch loop.
+let inMemoryFallbackId: string | null = null;
+
 export function getVisitorId(): string {
   try {
     const existing = localStorage.getItem(VISITOR_ID_KEY);
@@ -28,6 +35,7 @@ export function getVisitorId(): string {
     // a per-page-load id. Likes/comments still work, they just won't
     // recognize this visitor as "the same one" on a later visit; that's a
     // degraded experience, not a broken one.
-    return crypto.randomUUID();
+    inMemoryFallbackId ??= crypto.randomUUID();
+    return inMemoryFallbackId;
   }
 }

@@ -157,6 +157,14 @@ const taskInputSchema = z.object({
   dueAt: z.string().datetime({ offset: true }).nullable().optional(),
 });
 
+// An assignee must be actual staff. Without this check, any string id could
+// be assigned — and notifyAssignment would then push a real admin's email
+// into an arbitrary END USER's notification bell.
+async function isStaffId(id: string): Promise<boolean> {
+  const staff = await listStaff();
+  return staff.some((s) => s.id === id);
+}
+
 async function notifyAssignment(assigneeAdminId: string, actor: User, taskTitle: string, projectName: string): Promise<void> {
   if (assigneeAdminId === actor.id) return; // no self-notify noise
   await notifyUserPersisted(
@@ -178,6 +186,10 @@ router.post("/projects/:id/tasks", async (req: any, res): Promise<void> => {
   const parsed = taskInputSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Task needs a title (max 200 chars)." });
+    return;
+  }
+  if (parsed.data.assigneeAdminId && !(await isStaffId(parsed.data.assigneeAdminId))) {
+    res.status(400).json({ error: "Assignee must be a staff member" });
     return;
   }
   const adminUser = req.adminUser as User;
@@ -216,6 +228,10 @@ router.patch("/tasks/:id", async (req: any, res): Promise<void> => {
   const parsed = taskUpdateSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid task update" });
+    return;
+  }
+  if (parsed.data.assigneeAdminId && !(await isStaffId(parsed.data.assigneeAdminId))) {
+    res.status(400).json({ error: "Assignee must be a staff member" });
     return;
   }
   const adminUser = req.adminUser as User;

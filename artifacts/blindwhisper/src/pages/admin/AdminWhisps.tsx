@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useSearch } from "wouter";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { useAdminListWhisps, useAdminDeleteWhisp, getAdminListWhispsQueryKey } from "@workspace/api-client-react";
@@ -73,6 +73,13 @@ export function AdminWhisps() {
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1;
 
+  // Deleting the last row of the last page leaves `page` pointing past the
+  // end (the shrunken total no longer covers it) — snap back to the real
+  // last page instead of stranding an empty view.
+  useEffect(() => {
+    if (data && page > totalPages) setPage(totalPages);
+  }, [data, page, totalPages]);
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -112,6 +119,7 @@ export function AdminWhisps() {
               <SelectItem value="opened">Opened</SelectItem>
               <SelectItem value="watched">Watched</SelectItem>
               <SelectItem value="replied">Replied</SelectItem>
+              <SelectItem value="failed">Failed</SelectItem>
             </SelectContent>
           </Select>
           <Select value={deliveryMethod} onValueChange={(v) => { setDeliveryMethod(v); setPage(1); }}>

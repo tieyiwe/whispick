@@ -62,7 +62,12 @@ export function MyCircles() {
   }
 
   function copyInviteCode(code: string) {
-    navigator.clipboard.writeText(code).then(() => toast({ title: t("myCircles.toastCodeCopied") }));
+    navigator.clipboard
+      .writeText(code)
+      .then(() => toast({ title: t("myCircles.toastCodeCopied") }))
+      // A rejected clipboard write (permissions, unfocused document) should
+      // say so rather than vanish — the code is on screen, so point at it.
+      .catch(() => toast({ title: t("myCircles.toastCopyFailed"), variant: "destructive" }));
   }
 
   return (

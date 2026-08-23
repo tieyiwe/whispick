@@ -75,6 +75,7 @@
   "debateTopicCard": {
     "shareTitle": "Blind Whisper — Debate Now",
     "linkCopied": "Link kopiert — schick ihn, um jemanden zur Debatte einzuladen",
+    "copyFailed": "Kopieren fehlgeschlagen — bitte manuell kopieren",
     "commentCount_one": "{{count}} Kommentar",
     "commentCount_other": "{{count}} Kommentare",
     "shareTopicAria": "Dieses Thema teilen",
@@ -87,7 +88,8 @@
     "genderLabel": "Geschlecht",
     "ageRangeLabel": "Altersgruppe",
     "selectPlaceholder": "Auswählen...",
-    "continue": "Weiter"
+    "continue": "Weiter",
+    "saveFailed": "Deine Antworten konnten nicht gespeichert werden. Bitte versuch es noch einmal."
   },
   "enableNotificationsPrompt": {
     "title": "Benachrichtigungen aktivieren",

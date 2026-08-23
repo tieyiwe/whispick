@@ -91,6 +91,7 @@
       "reactionError": "Imeshindikana kusasisha itikio lako",
       "rewhispError": "Imeshindikana kufanya rewhisp ya mada hii",
       "linkCopied": "Kiungo kimenakiliwa — kitume ili kumleta mtu kwenye mjadala",
+      "copyFailed": "Imeshindikana kunakili — tafadhali nakili mwenyewe",
       "topicRetracted": "Mada imeondolewa",
       "retractError": "Imeshindikana kuondoa mada hiyo"
     }

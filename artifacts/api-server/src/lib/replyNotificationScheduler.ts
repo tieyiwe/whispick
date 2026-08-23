@@ -81,17 +81,21 @@ export function startReplyNotificationScheduler(): void {
       }
 
       for (const reply of due) {
+        // Claim first (conditional on still-unnotified) so a sweep that
+        // outruns the poll interval can't re-select this row and email the
+        // sender twice — zero rows updated means another sweep owns it.
+        const claimed = await db
+          .update(whispRepliesTable)
+          .set({ senderNotifiedAt: new Date() })
+          .where(and(eq(whispRepliesTable.id, reply.id), isNull(whispRepliesTable.senderNotifiedAt)))
+          .returning({ id: whispRepliesTable.id });
+        if (claimed.length === 0) continue;
+
         const whisp = await db.select().from(whispsTable).where(eq(whispsTable.id, reply.whispId)).then((r) => r[0]);
 
         // Whisp gone (soft-deleted or otherwise unresolvable) — nothing to
-        // notify about. Mark it handled so it doesn't stay queued forever.
-        if (!whisp) {
-          await db
-            .update(whispRepliesTable)
-            .set({ senderNotifiedAt: new Date() })
-            .where(eq(whispRepliesTable.id, reply.id));
-          continue;
-        }
+        // notify about; the claim above already stamped it handled.
+        if (!whisp) continue;
 
         const sender = await db.select().from(usersTable).where(eq(usersTable.id, whisp.senderId)).then((r) => r[0]);
         if (sender?.email) {
@@ -111,11 +115,6 @@ export function startReplyNotificationScheduler(): void {
           `/whisps/${whisp.id}`,
           "reply",
         );
-
-        await db
-          .update(whispRepliesTable)
-          .set({ senderNotifiedAt: new Date() })
-          .where(eq(whispRepliesTable.id, reply.id));
       }
 
       logger.info({ count: due.length }, "Dispatched deferred reply notifications");
@@ -128,6 +127,13 @@ export function startReplyNotificationScheduler(): void {
     try {
       const blocked = await getDueVideoReplyRequests();
       for (const whisp of blocked) {
+        // Same claim-first pattern as above — one notification, ever.
+        const claimed = await db
+          .update(whispsTable)
+          .set({ videoReplyRequestNotifiedAt: new Date() })
+          .where(and(eq(whispsTable.id, whisp.id), isNull(whispsTable.videoReplyRequestNotifiedAt)))
+          .returning({ id: whispsTable.id });
+        if (claimed.length === 0) continue;
         await notifyUserPersisted(
           whisp.senderId,
           "They wanted to whisp a video back 🎬",
@@ -135,10 +141,6 @@ export function startReplyNotificationScheduler(): void {
           `/whisps/${whisp.id}`,
           "video_reply_request",
         );
-        await db
-          .update(whispsTable)
-          .set({ videoReplyRequestNotifiedAt: new Date() })
-          .where(eq(whispsTable.id, whisp.id));
       }
       if (blocked.length) {
         logger.info({ count: blocked.length }, "Dispatched deferred video-reply-request notifications");

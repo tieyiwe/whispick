@@ -63,11 +63,18 @@ export function AdminCircleAgent() {
   }
 
   function handleSaveConfig() {
+    // A cleared input parses to NaN, which the backend's z.number() rejects —
+    // losing every other edit in the save. Omit the count instead (keeping
+    // the server's current value) so the rest of the config still lands.
     const parsedCount = parseInt(dailyPostCount, 10);
+    const countValid = Number.isInteger(parsedCount) && parsedCount >= 1 && parsedCount <= 10;
     updateConfig.mutate(
-      { data: { enabled, dailyPostCount: parsedCount, topics } },
+      { data: { enabled, ...(countValid ? { dailyPostCount: parsedCount } : {}), topics } },
       {
         onSuccess: () => {
+          // The server kept its existing count — reflect that in the input
+          // rather than leaving the cleared/invalid value on screen.
+          if (!countValid && config) setDailyPostCount(String(config.dailyPostCount));
           invalidate();
           toast({ title: "Circle Scout settings saved" });
         },

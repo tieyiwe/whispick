@@ -178,3 +178,23 @@ export const billingCheckoutLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: authKeyGenerator,
 });
+
+// POST /admin-mfa/verify (routes/adminMfa.ts) is the only thing standing
+// between a hijacked admin Clerk session and the full HQ, and TOTP accepts
+// ±1 time-step (3 of 10^6 codes valid at any instant) plus 40-bit backup
+// codes. Legitimate use is one code per unlock — a handful a day at most.
+// Tight window so a bot can't grind codes, generous enough that fat-
+// fingering a code a few times never locks a real admin out for long.
+export const adminMfaVerifyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: authKeyGenerator,
+  // The test harness re-enrolls and re-verifies real TOTP codes before every
+  // admin-gated test (see adminTestUtils.ts) — many times more often than any
+  // legitimate admin unlocks in production, where one code unlocks a 12h
+  // token. Skipping only under vitest's own NODE_ENV=test leaves production
+  // (and any other environment) fully protected.
+  skip: () => process.env.NODE_ENV === "test",
+});

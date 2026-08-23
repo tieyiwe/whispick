@@ -374,13 +374,17 @@ export function SendWhisp() {
     );
   }
 
-  async function handleSend() {
+  async function handleSend(opts?: { skipDemographicsCheck?: boolean }) {
     // One-time gate before a sender's very first whisp — see
     // lib/demographics.ts. Checked here so it interrupts before the send
     // even fires; the server enforces the same thing (428
     // "demographics_required") as a backstop in case this check ever gets
-    // out of sync with a stale cached profile.
-    if (needsDemographics(profile)) {
+    // out of sync with a stale cached profile. Skipped when the gate itself
+    // resumes the send: at that moment the cached profile is still the
+    // pre-answer one (the gate's invalidation hasn't refetched yet), so
+    // re-checking here would just re-open the gate — and the server's 428
+    // backstop still catches a genuinely unanswered gate.
+    if (!opts?.skipDemographicsCheck && needsDemographics(profile)) {
       setShowDemographicsGate(true);
       return;
     }
@@ -691,6 +695,7 @@ export function SendWhisp() {
                 setPreferWhatsApp(false);
                 setSentCount(1);
                 setStartTimestamp("");
+                setEndTimestamp("");
                 setScheduleEnabled(false);
                 setScheduledAtValue("");
                 setWhisperGroupId(null);
@@ -1663,7 +1668,7 @@ export function SendWhisp() {
                     <ArrowLeft className="w-4 h-4 mr-1" /> {t("sendWhisp.common.back")}
                   </Button>
                   <Button
-                    onClick={handleSend}
+                    onClick={() => handleSend()}
                     disabled={createWhisp.isPending || sendGroupWhisp.isPending || sendingBatch}
                     className="rounded-full shadow-[0_0_15px_rgba(124,92,252,0.3)] px-6"
                     data-testid="button-send-whisp"
@@ -1685,7 +1690,7 @@ export function SendWhisp() {
         open={showDemographicsGate}
         onConfirmed={() => {
           setShowDemographicsGate(false);
-          void handleSend();
+          void handleSend({ skipDemographicsCheck: true });
         }}
       />
     </AppLayout>

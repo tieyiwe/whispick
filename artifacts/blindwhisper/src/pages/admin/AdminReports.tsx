@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import {
   useAdminListContentReports,
   useAdminUpdateContentReport,
   useAdminResolveContentReport,
+  useGetMyAdminAccess,
   type ContentReport,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -221,6 +222,13 @@ export function AdminReports() {
   };
 
   const { data, isLoading } = useAdminListContentReports(params);
+  // A Moderator-preset collaborator has "reports" but not necessarily the
+  // "users" permission the reporter deep link below leads to — that page
+  // would just say "not found". Render plain text instead of a dead link
+  // for them (same optimistic-until-answered convention as AdminLayout's
+  // rail).
+  const { data: access } = useGetMyAdminAccess();
+  const canOpenUsers = !access || access.isOwner || access.permissions.includes("users");
   const updateReport = useAdminUpdateContentReport();
 
   function refresh() {
@@ -242,6 +250,13 @@ export function AdminReports() {
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1;
   const summary = data?.openByPriority;
+
+  // Resolving the last row of the last page leaves `page` pointing past the
+  // end (the shrunken total no longer covers it) — snap back to the real
+  // last page instead of stranding an empty view.
+  useEffect(() => {
+    if (data && page > totalPages) setPage(totalPages);
+  }, [data, page, totalPages]);
 
   return (
     <AdminLayout>
@@ -357,9 +372,13 @@ export function AdminReports() {
                     )}
 
                     <div className="flex items-center justify-between gap-2 flex-wrap pt-1">
-                      <Link href={`/admin_pro/users/${r.reporterUserId}`} className="text-xs text-muted-foreground hover:text-primary transition-colors">
-                        Reporter: {r.reporterEmail ?? r.reporterUserId}
-                      </Link>
+                      {canOpenUsers ? (
+                        <Link href={`/admin_pro/users/${r.reporterUserId}`} className="text-xs text-muted-foreground hover:text-primary transition-colors">
+                          Reporter: {r.reporterEmail ?? r.reporterUserId}
+                        </Link>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Reporter: {r.reporterEmail ?? r.reporterUserId}</span>
+                      )}
 
                       {!isResolved && (
                         <div className="flex items-center gap-1.5 flex-wrap">

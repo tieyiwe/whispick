@@ -44,12 +44,18 @@ export function startReminderDispatcher(): void {
 
         const newCount = whisp.reminderCount + 1;
         const isFinal = newCount >= MAX_REMINDERS;
-        void deliverWhisperLink(whisp, appUrl, reminderHookLine(isFinal, whisp.expiresAt), "reminder");
 
-        await db
+        // Claim BEFORE sending (conditional on the schedule still being set)
+        // so an overlapping sweep can't re-select this row and remind the
+        // recipient twice — zero rows updated means another sweep owns it.
+        const claimed = await db
           .update(whispsTable)
           .set({ reminderCount: newCount, lastReminderAt: new Date(), nextReminderAt: null })
-          .where(eq(whispsTable.id, whisp.id));
+          .where(and(eq(whispsTable.id, whisp.id), isNotNull(whispsTable.nextReminderAt)))
+          .returning({ id: whispsTable.id });
+        if (claimed.length === 0) continue;
+
+        void deliverWhisperLink(whisp, appUrl, reminderHookLine(isFinal, whisp.expiresAt), "reminder");
       }
 
       logger.info({ count: due.length }, "Dispatched whisp reminders");

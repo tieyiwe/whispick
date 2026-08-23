@@ -210,6 +210,11 @@ export function AdminRoute({ component: Component }: { component: React.Componen
   const queryClient = useQueryClient();
   const { data: profile, isLoading } = useGetUserProfile();
   const gateState = useSyncExternalStore(subscribeAdminMfaState, getAdminMfaStateSnapshot);
+  // The token read must be reactive too: on a cold-opened tab gateState is
+  // already null, so the only thing that changes after a successful verify
+  // is the token landing in sessionStorage — subscribing here is what
+  // advances the unlock screen (storeAdminMfaToken notifies subscribers).
+  const mfaToken = useSyncExternalStore(subscribeAdminMfaState, getAdminMfaToken);
   const isAdmin = profile?.role === "admin";
   // Proactive check so a fresh session sees the right screen immediately
   // instead of waiting for the first admin request to 403.
@@ -236,7 +241,7 @@ export function AdminRoute({ component: Component }: { component: React.Componen
   }
 
   const needsSetup = gateState === "setup" || (mfaStatus && !mfaStatus.enrolled);
-  const needsCode = gateState === "code" || (mfaStatus?.enrolled && !getAdminMfaToken());
+  const needsCode = gateState === "code" || (mfaStatus?.enrolled && !mfaToken);
 
   if (needsSetup) return <EnrollScreen onUnlocked={unlocked} />;
   if (needsCode) return <UnlockScreen onUnlocked={unlocked} />;

@@ -331,7 +331,9 @@ router.post("/w/:token/like", async (req, res): Promise<void> => {
   }
 
   const whisp = await db.select().from(whispsTable).where(eq(whispsTable.publicToken, req.params.token)).then((r) => r[0]);
-  if (!whisp) {
+  // removedByAdminAt: a taken-down post must stop accepting engagement too,
+  // not just disappear from reads — same 404 the page itself returns.
+  if (!whisp || whisp.removedByAdminAt) {
     res.status(404).json({ error: "Not found" });
     return;
   }
@@ -387,7 +389,9 @@ router.post("/w/:token/comments", commentImageUpload, async (req, res): Promise<
   }
 
   const whisp = await db.select().from(whispsTable).where(eq(whispsTable.publicToken, req.params.token)).then((r) => r[0]);
-  if (!whisp) {
+  // removedByAdminAt: a taken-down post must stop accepting engagement too,
+  // not just disappear from reads — same 404 the page itself returns.
+  if (!whisp || whisp.removedByAdminAt) {
     res.status(404).json({ error: "Not found" });
     return;
   }
@@ -578,7 +582,12 @@ router.post("/w/:token/comments/:commentId/reactions", async (req, res): Promise
   const result = await toggleReaction("circle_comment", comment.id, parsed.data.visitorId, parsed.data.reaction);
 
   if (result.viewerReaction === "like" && comment.authorUserId) {
-    void notifyUserPersisted(comment.authorUserId, "Someone liked your comment 👍", "Your comment on a Blind Circle post got a reaction.", `/w/${req.params.token}`, "circle_comment_reaction");
+    // Never self-notify — same rule as the comment notifications.
+    const { userId: reactorClerkId } = getAuth(req);
+    const reactor = reactorClerkId ? await ensureUser(reactorClerkId, req) : null;
+    if (reactor?.id !== comment.authorUserId) {
+      void notifyUserPersisted(comment.authorUserId, "Someone liked your comment 👍", "Your comment on a Blind Circle post got a reaction.", `/w/${req.params.token}`, "circle_comment_reaction");
+    }
   }
 
   res.json(result);
@@ -600,7 +609,9 @@ router.post("/w/:token/comments/:commentId/reactions", async (req, res): Promise
 // thread instead of minting a new one every time.
 router.post("/w/:token/circle-dm/start", async (req, res): Promise<void> => {
   const whisp = await db.select().from(whispsTable).where(eq(whispsTable.publicToken, req.params.token)).then((r) => r[0]);
-  if (!whisp) {
+  // removedByAdminAt: a taken-down post must stop accepting engagement too,
+  // not just disappear from reads — same 404 the page itself returns.
+  if (!whisp || whisp.removedByAdminAt) {
     res.status(404).json({ error: "Not found" });
     return;
   }
@@ -639,6 +650,11 @@ router.post("/w/:token/circle-dm/start", async (req, res): Promise<void> => {
 async function loadWhispUpload(token: string) {
   const whisp = await db.select().from(whispsTable).where(eq(whispsTable.publicToken, token)).then((r) => r[0]);
   if (!whisp?.uploadedVideoId) return { status: 404 as const };
+  // An admin takedown is meant to come down ENTIRELY — GET /w/:token 404s,
+  // but without this the raw bytes stayed streamable to anyone holding the
+  // token (circle posts publish theirs in the public feed) until the
+  // retention sweep finally deleted them.
+  if (whisp.removedByAdminAt) return { status: 404 as const };
   // GET /w/:token already reports `expired` and the frontend stops rendering
   // the video player once it's true, but that's a client-side-only gate —
   // without this check the raw bytes stayed fetchable forever via a direct
@@ -778,7 +794,12 @@ router.post("/w/:token/track", async (req, res): Promise<void> => {
   // a path is both safer and correct.
   const whispUrl = `/whisps/${whisp.id}`;
   if (eventType === "opened" && !whisp.openedAt) {
-    await db.update(whispsTable).set({ status: "opened", openedAt: new Date() }).where(eq(whispsTable.id, whisp.id));
+    // openedAt can lag the real first open (blocked tracker, rate-limited
+    // POST) — by then the recipient may already have replied or watched, and
+    // regressing those statuses would hide the whisp from the Replies Inbox
+    // and undercount the dashboard, same rule as the watched branch below.
+    const statusUpdate = whisp.status === "replied" || whisp.status === "watched" ? {} : { status: "opened" };
+    await db.update(whispsTable).set({ ...statusUpdate, openedAt: new Date() }).where(eq(whispsTable.id, whisp.id));
     if (!isMatchedFanout(whisp)) {
       void notifyUserPersisted(whisp.senderId, "Your whisp was opened 👀", "Someone just opened the link you sent.", whispUrl, "opened");
     }

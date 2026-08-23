@@ -29,7 +29,7 @@ import {
   type User,
 } from "@workspace/db";
 import { and, asc, count, desc, eq, gte, ilike, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
-import { requireAdmin, requirePermission } from "../lib/adminAuth";
+import { requireAdmin, requirePermission, isOwner } from "../lib/adminAuth";
 import { logAdminAction, listAdminAuditLog } from "../lib/adminAudit";
 import { VIDEO_CATEGORIES } from "../lib/categorize";
 import { computeOpportunities } from "../lib/insights";
@@ -294,6 +294,22 @@ router.patch("/users/:id", async (req, res): Promise<void> => {
     return;
   }
 
+  // The super admin account is managed by ADMIN_EMAILS, never from here —
+  // without this, any collaborator holding the `users` permission could ban
+  // or demote the owner and take over the HQ.
+  if (isOwner(target) && (parsed.data.banned === true || parsed.data.role === "user")) {
+    res.status(403).json({ error: "The super admin account can't be banned or demoted" });
+    return;
+  }
+  // Role changes (promoting to admin, demoting an admin) are the owner's
+  // call alone — otherwise a collaborator could mint admins entirely outside
+  // the Staff & Access grant system. Same for banning a fellow admin.
+  const targetsAdmin = target.role === "admin" || parsed.data.role === "admin";
+  if (!(req as any).adminIsOwner && targetsAdmin && (parsed.data.role !== undefined || parsed.data.banned !== undefined)) {
+    res.status(403).json({ error: "Only the super admin can change staff roles or ban staff accounts", code: "admin_owner_required" });
+    return;
+  }
+
   await db.update(usersTable).set(parsed.data).where(eq(usersTable.id, target.id));
   const updated = await db.select().from(usersTable).where(eq(usersTable.id, target.id)).then((r) => r[0]);
 
@@ -319,6 +335,17 @@ router.delete("/users/:id", async (req, res): Promise<void> => {
   const adminUser = (req as any).adminUser as User;
   if (target.id === adminUser.id) {
     res.status(400).json({ error: "You can't delete your own account from here" });
+    return;
+  }
+
+  // Same protections as PATCH: the owner is untouchable, and staff accounts
+  // can only be deleted by the owner.
+  if (isOwner(target)) {
+    res.status(403).json({ error: "The super admin account can't be deleted" });
+    return;
+  }
+  if (!(req as any).adminIsOwner && target.role === "admin") {
+    res.status(403).json({ error: "Only the super admin can delete staff accounts", code: "admin_owner_required" });
     return;
   }
 

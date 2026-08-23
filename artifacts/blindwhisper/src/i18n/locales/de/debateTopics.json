@@ -91,6 +91,7 @@
       "reactionError": "Deine Reaktion konnte nicht aktualisiert werden",
       "rewhispError": "Rewhisp für dieses Thema hat nicht geklappt",
       "linkCopied": "Link kopiert — schick ihn los und hol jemanden in die Debatte",
+      "copyFailed": "Kopieren fehlgeschlagen — bitte manuell kopieren",
       "topicRetracted": "Thema zurückgezogen",
       "retractError": "Thema konnte nicht zurückgezogen werden"
     }

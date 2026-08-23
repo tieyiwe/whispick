@@ -31,6 +31,7 @@
     "toastJoined": "Joined circle",
     "toastInvalidCode": "Invalid invite code",
     "toastCodeCopied": "Invite code copied",
+    "toastCopyFailed": "Couldn't copy — please copy it manually",
     "tapToView": "Tap to view feed",
     "emptyTitle": "No circles yet",
     "emptyDescription": "Create one to share whisps anonymously with a small group, or join one with an invite code."

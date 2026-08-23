@@ -394,6 +394,13 @@ router.post("/:id/send", requireAuth, createWhispLimiter, async (req, res): Prom
   // Validated before any quota is spent below, so a rejected schedule never
   // costs the sender their Whisper Link allowance for this batch.
   const scheduledDateCheck = data.scheduledAt ? new Date(data.scheduledAt) : null;
+  // Unparseable dates must be rejected here too — Invalid Date skips the
+  // window check (NaN comparisons are false) and then crashes the inserts
+  // AFTER the whole batch's quota was spent.
+  if (scheduledDateCheck && Number.isNaN(scheduledDateCheck.getTime())) {
+    res.status(400).json({ error: "That schedule date isn't valid." });
+    return;
+  }
   if (scheduledDateCheck !== null && scheduledDateCheck.getTime() > Date.now()) {
     const maxDays = uploadedVideo ? MAX_SCHEDULE_DAYS_WITH_UPLOAD : MAX_SCHEDULE_DAYS;
     const maxDate = new Date(Date.now() + maxDays * 24 * 60 * 60 * 1000);
@@ -402,6 +409,15 @@ router.post("/:id/send", requireAuth, createWhispLimiter, async (req, res): Prom
         error: uploadedVideo
           ? `An uploaded video can only be scheduled up to ${maxDays} days out, so it doesn't expire before it's sent.`
           : `Please schedule within ${maxDays} days.`,
+      });
+      return;
+    }
+    // Also measure against the upload's OWN remaining life (media uploaded
+    // six days ago phases out tomorrow) — recipients need their full 48-hour
+    // window before the bytes are deleted. Same rule as routes/whisps.ts.
+    if (uploadedVideo?.expiresAt && scheduledDateCheck.getTime() > uploadedVideo.expiresAt.getTime() - 48 * 60 * 60 * 1000) {
+      res.status(400).json({
+        error: "That upload is close to phasing out — schedule it sooner, or re-upload the video for a fresh 7-day window.",
       });
       return;
     }
@@ -471,6 +487,16 @@ router.post("/:id/send", requireAuth, createWhispLimiter, async (req, res): Prom
   const derived = uploadedVideo ? null : deriveVideoFields(data.videoUrl!, data.videoThumbnail);
   const effectiveVideoEmbedUrl = uploadedVideo ? null : derived!.embedUrl;
   const effectiveVideoPlatform = uploadedVideo ? "upload" : derived!.platform;
+
+  // An immediate group send near the end of an upload's retention would have
+  // its bytes deleted mid-way through the recipients' 48-hour windows —
+  // extend the media's life to cover them (same rule as routes/whisps.ts).
+  if (uploadedVideo?.expiresAt && !isScheduled) {
+    const needUntil = new Date(Date.now() + 49 * 60 * 60 * 1000);
+    if (uploadedVideo.expiresAt.getTime() < needUntil.getTime()) {
+      await db.update(uploadedVideosTable).set({ expiresAt: needUntil }).where(eq(uploadedVideosTable.id, uploadedVideo.id));
+    }
+  }
 
   const whispIds: string[] = [];
   for (const member of deliverable) {

@@ -12,7 +12,6 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -78,7 +77,7 @@ export function AdminUserDetail() {
       { id: id!, data: { role: role as "user" | "admin", plan: plan as "free" | "spark" | "ember" } },
       {
         onSuccess: () => { invalidate(); toast({ title: "User updated" }); },
-        onError: (err: any) => toast({ title: err?.error ?? "Failed to update user", variant: "destructive" }),
+        onError: (err: any) => toast({ title: err?.data?.error ?? "Failed to update user", variant: "destructive" }),
       }
     );
   }
@@ -89,7 +88,7 @@ export function AdminUserDetail() {
       { id: id!, data: { banned: !data.user.banned } },
       {
         onSuccess: () => { invalidate(); toast({ title: data.user.banned ? "User unbanned" : "User banned" }); },
-        onError: (err: any) => toast({ title: err?.error ?? "Action failed", variant: "destructive" }),
+        onError: (err: any) => toast({ title: err?.data?.error ?? "Action failed", variant: "destructive" }),
       }
     );
   }
@@ -103,7 +102,7 @@ export function AdminUserDetail() {
           setLocation("/admin_pro/users");
           toast({ title: "User deleted" });
         },
-        onError: (err: any) => toast({ title: err?.error ?? "Failed to delete user", variant: "destructive" }),
+        onError: (err: any) => toast({ title: err?.data?.error ?? "Failed to delete user", variant: "destructive" }),
       }
     );
   }
@@ -224,7 +223,7 @@ export function AdminUserDetail() {
               </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label className="text-muted-foreground">Role</Label>
                 <Select value={role} onValueChange={setRole}>

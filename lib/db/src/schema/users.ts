@@ -70,6 +70,14 @@ export const usersTable = pgTable("users", {
   // signup keep getting email unless they explicitly turn it off in
   // Settings.
   emailNotificationsEnabled: boolean("email_notifications_enabled").notNull().default(true),
+  // Online-presence visibility (Settings → privacy). Deliberately
+  // RECIPROCAL: turning it off both hides this user's own online dot AND
+  // stops them seeing anyone else's — no one-way lurking. Presence itself
+  // is derived from lastSeenAt (no extra machinery); it only ever surfaces
+  // as a per-thread "the other party is online" boolean between people who
+  // already share a thread (whisp / Text Whisp), never as any kind of
+  // contact list — that would cut against the anonymity model.
+  showOnlineStatus: boolean("show_online_status").notNull().default(true),
   // A persistent, public, pseudonymous handle (e.g. "SwiftFalcon482") — a
   // deliberate, narrow exception to this app's usual per-thread-only
   // anonymity (see anonymous_handles.ts's schema comment for that default):

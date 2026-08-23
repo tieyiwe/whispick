@@ -31,6 +31,7 @@
     "toastJoined": "Cercle rejoint",
     "toastInvalidCode": "Code d'invitation invalide",
     "toastCodeCopied": "Code d'invitation copié",
+    "toastCopyFailed": "Impossible de copier — veuillez le copier manuellement",
     "tapToView": "Appuie pour voir le fil",
     "emptyTitle": "Pas encore de cercle",
     "emptyDescription": "Crée-en un pour partager des whisps anonymement avec un petit groupe, ou rejoins-en un avec un code d'invitation."

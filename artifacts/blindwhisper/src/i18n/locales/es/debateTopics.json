@@ -91,6 +91,7 @@
       "reactionError": "No se pudo actualizar tu reacción",
       "rewhispError": "No se pudo hacer rewhisp de este tema",
       "linkCopied": "Enlace copiado: envíalo para sumar a alguien al debate",
+      "copyFailed": "No se pudo copiar — cópialo manualmente",
       "topicRetracted": "Tema retirado",
       "retractError": "No se pudo retirar el tema"
     }

@@ -2,7 +2,7 @@ import { Router } from "express";
 import { getAuth } from "@clerk/express";
 import { db } from "@workspace/db";
 import { circlesTable, circleMembersTable, whispsTable } from "@workspace/db";
-import { eq, and, desc, lt } from "drizzle-orm";
+import { eq, and, desc, lt, isNull } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { z } from "zod";
 import { requireAuth } from "../lib/auth";
@@ -114,6 +114,9 @@ router.get("/:id/feed", requireAuth, async (req, res): Promise<void> => {
     eq(whispsTable.deliveryMethod, "circle_drop"),
     eq(whispsTable.circleId, req.params.id),
     eq(whispsTable.status, "delivered"),
+    // Admin takedowns must reach private-circle feeds too, not just the
+    // public discovery feed and token pages.
+    isNull(whispsTable.removedByAdminAt),
   );
 
   const whisps = await db

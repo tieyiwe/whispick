@@ -75,6 +75,7 @@
   "debateTopicCard": {
     "shareTitle": "Blind Whisper — Debate Now",
     "linkCopied": "링크가 복사됐어요 — 전달해서 토론에 초대해 보세요",
+    "copyFailed": "복사하지 못했어요 — 직접 복사해 주세요",
     "commentCount_one": "댓글 {{count}}개",
     "commentCount_other": "댓글 {{count}}개",
     "shareTopicAria": "이 주제 공유하기",
@@ -87,7 +88,8 @@
     "genderLabel": "성별",
     "ageRangeLabel": "연령대",
     "selectPlaceholder": "선택...",
-    "continue": "계속"
+    "continue": "계속",
+    "saveFailed": "답변을 저장하지 못했어요. 다시 시도해 주세요."
   },
   "enableNotificationsPrompt": {
     "title": "알림 켜기",

@@ -75,6 +75,7 @@
   "debateTopicCard": {
     "shareTitle": "Blind Whisper — Debate Now",
     "linkCopied": "تم نسخ الرابط — أرسله لتدعو أحدًا إلى النقاش",
+    "copyFailed": "تعذّر النسخ — يرجى النسخ يدويًا",
     "commentCount_zero": "لا توجد تعليقات",
     "commentCount_one": "تعليق واحد",
     "commentCount_two": "تعليقان",
@@ -91,7 +92,8 @@
     "genderLabel": "الجنس",
     "ageRangeLabel": "الفئة العمرية",
     "selectPlaceholder": "اختر...",
-    "continue": "متابعة"
+    "continue": "متابعة",
+    "saveFailed": "تعذّر حفظ إجاباتك. يرجى المحاولة مرة أخرى."
   },
   "enableNotificationsPrompt": {
     "title": "فعّل الإشعارات",

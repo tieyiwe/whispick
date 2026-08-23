@@ -7,6 +7,7 @@ import { useUpdateUserProfile, getGetUserProfileQueryKey } from "@workspace/api-
 import { useQueryClient } from "@tanstack/react-query";
 import { GENDER_OPTIONS, AGE_RANGE_OPTIONS } from "@/lib/demographics";
 import { SUPPORTED_LANGUAGES, LANGUAGE_LABELS, guessBrowserLanguage } from "@/lib/languages";
+import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
@@ -26,6 +27,7 @@ export function DemographicsGateDialog({ open, onConfirmed }: { open: boolean; o
   const [preferredLanguage, setPreferredLanguage] = useState<string>(() => guessBrowserLanguage());
   const queryClient = useQueryClient();
   const updateProfile = useUpdateUserProfile();
+  const { toast } = useToast();
   const { t } = useTranslation("demographics");
   const { t: tShared } = useTranslation("sharedA");
 
@@ -42,6 +44,10 @@ export function DemographicsGateDialog({ open, onConfirmed }: { open: boolean; o
           void i18n.changeLanguage(preferredLanguage);
           onConfirmed();
         },
+        // This dialog can't be dismissed, so a silent failure would leave
+        // the user trapped with a button that seems to do nothing. Surface
+        // it; the button re-enables (isPending resets) so they can retry.
+        onError: () => toast({ title: tShared("demographicsGateDialog.saveFailed"), variant: "destructive" }),
       },
     );
   }

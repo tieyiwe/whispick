@@ -31,6 +31,7 @@
     "toastJoined": "서클에 참여했어요",
     "toastInvalidCode": "초대 코드가 올바르지 않아요",
     "toastCodeCopied": "초대 코드가 복사되었어요",
+    "toastCopyFailed": "복사하지 못했어요 — 직접 복사해 주세요",
     "tapToView": "탭하면 피드를 볼 수 있어요",
     "emptyTitle": "아직 서클이 없어요",
     "emptyDescription": "소규모 그룹과 whisps를 익명으로 공유하려면 서클을 만들거나, 초대 코드로 참여해보세요."

@@ -612,7 +612,12 @@ router.post("/public/debate-topics/:id/comments/:commentId/reactions", async (re
   const result = await toggleReaction("debate_topic_comment", comment.id, parsed.data.visitorId, parsed.data.reaction);
 
   if (result.viewerReaction === "like" && comment.authorUserId) {
-    void notifyUserPersisted(comment.authorUserId, "Someone liked your comment 👍", "Your comment on Debate Now got a reaction.", topicUrl(req.params.id), "debate_comment_reaction");
+    // Never self-notify — same rule as the comment-reply notifications above.
+    const { userId: reactorClerkId } = getAuth(req);
+    const reactor = reactorClerkId ? await ensureUser(reactorClerkId, req) : null;
+    if (reactor?.id !== comment.authorUserId) {
+      void notifyUserPersisted(comment.authorUserId, "Someone liked your comment 👍", "Your comment on Debate Now got a reaction.", topicUrl(req.params.id), "debate_comment_reaction");
+    }
   }
 
   res.json(result);

@@ -89,6 +89,7 @@
       "reactionError": "반응을 업데이트하지 못했습니다",
       "rewhispError": "이 주제를 Rewhisp하지 못했습니다",
       "linkCopied": "링크가 복사되었습니다 — 공유해서 토론에 초대해 보세요",
+      "copyFailed": "복사하지 못했어요 — 직접 복사해 주세요",
       "topicRetracted": "주제가 삭제되었습니다",
       "retractError": "주제를 삭제하지 못했습니다"
     }

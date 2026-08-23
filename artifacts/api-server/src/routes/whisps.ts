@@ -136,7 +136,21 @@ router.post("/concierge", requireAuth, conciergeLimiter, async (req, res): Promi
 // construction. viewerRole/pinned/archived only ever reveal facts about the
 // CALLER's own side.
 function toWhispResponse(whisp: typeof whispsTable.$inferSelect, viewerId: string) {
-  const { recipientUserId, senderPinnedAt, senderArchivedAt, recipientPinnedAt, recipientArchivedAt, ...rest } = whisp;
+  // videoReplyRequestNotifyAt/NotifiedAt are the anti-correlation deferral
+  // machinery (the randomized delay before the sender's phone buzzes) — a
+  // matched recipient reading their own box must never see the exact second
+  // that notification fires, same reasoning as whisp_replies.notifySenderAt
+  // being allowlisted out of public responses.
+  const {
+    recipientUserId,
+    senderPinnedAt,
+    senderArchivedAt,
+    recipientPinnedAt,
+    recipientArchivedAt,
+    videoReplyRequestNotifyAt,
+    videoReplyRequestNotifiedAt,
+    ...rest
+  } = whisp;
   const viewerRole: "sender" | "recipient" | null =
     whisp.senderId === viewerId ? "sender" : recipientUserId === viewerId ? "recipient" : null;
   const { senderId, ...safeRest } = rest;
@@ -358,6 +372,14 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
 
   const isGhostBoost = data.deliveryMethod === "ghost_boost";
   const scheduledDate = data.scheduledAt ? new Date(data.scheduledAt) : null;
+  // An unparseable date must be rejected HERE, before any quota/credit is
+  // spent: Invalid Date fails the isScheduled check below (NaN > now is
+  // false), skips the window validation, and then blows up the insert's
+  // toISOString() — after the sender was already charged a link/credit.
+  if (scheduledDate && Number.isNaN(scheduledDate.getTime())) {
+    res.status(400).json({ error: "That schedule date isn't valid." });
+    return;
+  }
   // Ghost Boost's own "pending" status already means "queued, no live ad
   // integration" — scheduling isn't layered on top of that.
   const isScheduled = !isGhostBoost && scheduledDate !== null && scheduledDate.getTime() > Date.now();
@@ -372,6 +394,16 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
         error: uploadedVideo
           ? `An uploaded video can only be scheduled up to ${maxDays} days out, so it doesn't expire before it's sent.`
           : `Please schedule within ${maxDays} days.`,
+      });
+      return;
+    }
+    // The days-out cap alone isn't enough for library re-use: media uploaded
+    // six days ago phases out tomorrow, so measure against the upload's OWN
+    // expiry too — the send must land early enough that the recipient's full
+    // 48-hour window fits before the bytes are deleted.
+    if (uploadedVideo?.expiresAt && scheduledDate!.getTime() > uploadedVideo.expiresAt.getTime() - 48 * 60 * 60 * 1000) {
+      res.status(400).json({
+        error: "That upload is close to phasing out — schedule it sooner, or re-upload the video for a fresh 7-day window.",
       });
       return;
     }
@@ -543,6 +575,17 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
       amount: -1,
       whispId: id,
     });
+  }
+
+  // An immediate send near the end of an upload's 7-day retention would
+  // otherwise have its bytes deleted mid-way through the recipient's 48-hour
+  // window (retention sweeps purely on uploadedVideos.expiresAt). Extend the
+  // media's life to cover the whisp's own expiry, plus an hour of slack.
+  if (uploadedVideo?.expiresAt && !isScheduled && !isGhostBoost) {
+    const needUntil = new Date(Date.now() + 49 * 60 * 60 * 1000);
+    if (uploadedVideo.expiresAt.getTime() < needUntil.getTime()) {
+      await db.update(uploadedVideosTable).set({ expiresAt: needUntil }).where(eq(uploadedVideosTable.id, uploadedVideo.id));
+    }
   }
 
   // Read back and respond before kicking off the fire-and-forget delivery

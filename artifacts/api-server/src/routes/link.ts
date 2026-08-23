@@ -32,7 +32,10 @@ router.get("/:token", async (req, res): Promise<void> => {
   const userAgent = req.headers["user-agent"] ?? "";
   const isCrawler = CRAWLER_UA_PATTERN.test(userAgent);
 
-  if (!whisp || !isCrawler) {
+  // A taken-down whisp must not keep unfurling its title/thumbnail to
+  // crawlers — treat it like any unknown token and just bounce to the SPA
+  // (which will show its own not-found state).
+  if (!whisp || whisp.removedByAdminAt || !isCrawler) {
     res.redirect(302, destination);
     return;
   }

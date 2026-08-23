@@ -75,6 +75,7 @@
   "debateTopicCard": {
     "shareTitle": "Blind Whisper — Debate Now",
     "linkCopied": "Kiungo kimenakiliwa — kituma ili kumleta mtu kwenye mjadala",
+    "copyFailed": "Imeshindikana kunakili — tafadhali nakili mwenyewe",
     "commentCount_one": "Maoni {{count}}",
     "commentCount_other": "Maoni {{count}}",
     "shareTopicAria": "Shiriki mada hii",
@@ -87,7 +88,8 @@
     "genderLabel": "Jinsia",
     "ageRangeLabel": "Kigezo cha umri",
     "selectPlaceholder": "Chagua...",
-    "continue": "Endelea"
+    "continue": "Endelea",
+    "saveFailed": "Imeshindikana kuhifadhi majibu yako. Tafadhali jaribu tena."
   },
   "enableNotificationsPrompt": {
     "title": "Washa arifa",

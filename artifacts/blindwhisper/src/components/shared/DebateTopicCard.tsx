@@ -41,7 +41,12 @@ export function DebateTopicCard({ topic }: { topic: DebateTopicFeedItem }) {
       navigator.share({ title: t("debateTopicCard.shareTitle"), url }).catch(() => {});
       return;
     }
-    navigator.clipboard.writeText(url).then(() => toast({ title: t("debateTopicCard.linkCopied") }));
+    navigator.clipboard
+      .writeText(url)
+      .then(() => toast({ title: t("debateTopicCard.linkCopied") }))
+      // A rejected clipboard write (permissions, unfocused document) should
+      // say so rather than vanish silently.
+      .catch(() => toast({ title: t("debateTopicCard.copyFailed"), variant: "destructive" }));
   }
 
   return (
