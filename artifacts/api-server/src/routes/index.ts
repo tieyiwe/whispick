@@ -28,6 +28,7 @@ import debateTopicsRouter from "./debateTopics";
 import followsRouter from "./follows";
 import contentReportsRouter from "./contentReports";
 import usageEventsRouter from "./usageEvents";
+import whisperBoxRouter from "./whisperBox";
 import { publicEndpointLimiter } from "../lib/rateLimit";
 
 const router: IRouter = Router();
@@ -57,6 +58,12 @@ router.use("/public", usageEventsRouter);
 // Mounted after the "/public" limiter registration so requests to its
 // public routes still pass through publicEndpointLimiter first.
 router.use(debateTopicsRouter);
+// Same reasoning as debateTopicsRouter above — defines its own full
+// "/public/whisper-box/..." AND authenticated "/whisper-box/..." paths, and
+// must stay after the "/public" limiter registration so its public routes
+// still pass through publicEndpointLimiter (in addition to its own tighter
+// whisperBoxSendLimiter on the send route specifically).
+router.use(whisperBoxRouter);
 router.use("/follows", followsRouter);
 // No prefix, same reasoning as debateTopicsRouter above — it defines its
 // own full "/content-reports" path.

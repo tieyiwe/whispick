@@ -31,3 +31,5 @@ export type {
 } from "./generated/types";
 // Same collision, added with the Debate Topics avatar-picker endpoint.
 export type { UpdateDebateTopicHandleAvatarBody } from "./generated/types";
+// Same collision, added with the Whisper Box public send endpoint.
+export type { SendWhisperBoxMessageBody } from "./generated/types";

@@ -78,6 +78,16 @@ export const usersTable = pgTable("users", {
   // already share a thread (whisp / Text Whisp), never as any kind of
   // contact list — that would cut against the anonymity model.
   showOnlineStatus: boolean("show_online_status").notNull().default(true),
+  // The Whisper Box public-link opt-in (see whisper_box_messages.ts) —
+  // deliberately default FALSE and separate from whether the account has a
+  // whispererHandle at all. Handles are already assigned automatically the
+  // first time someone posts/comments in Debate Now (see
+  // lib/whispererHandle.ts) — without this separate flag, everyone active
+  // in Debate Now would silently become receivable by strangers the moment
+  // they got a handle, with no idea they'd opted into anything. Turning
+  // this on is the explicit, only way a public inbound-message page exists
+  // for an account.
+  whisperBoxEnabled: boolean("whisper_box_enabled").notNull().default(false),
   // A persistent, public, pseudonymous handle (e.g. "SwiftFalcon482") — a
   // deliberate, narrow exception to this app's usual per-thread-only
   // anonymity (see anonymous_handles.ts's schema comment for that default):

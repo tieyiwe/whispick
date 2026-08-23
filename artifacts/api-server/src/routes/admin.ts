@@ -27,6 +27,7 @@ import {
   policyVersionsTable,
   policyAcceptancesTable,
   featureEventsTable,
+  whisperBoxMessagesTable,
   type User,
 } from "@workspace/db";
 import { and, asc, count, desc, eq, gte, ilike, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
@@ -1300,6 +1301,7 @@ router.get("/moderation/flags", async (req, res): Promise<void> => {
         textWhispId: moderationFlagsTable.textWhispId,
         debateTopicId: moderationFlagsTable.debateTopicId,
         debateTopicCommentId: moderationFlagsTable.debateTopicCommentId,
+        whisperBoxMessageId: moderationFlagsTable.whisperBoxMessageId,
         contentType: moderationFlagsTable.contentType,
         userId: moderationFlagsTable.userId,
         severity: moderationFlagsTable.severity,
@@ -1314,20 +1316,23 @@ router.get("/moderation/flags", async (req, res): Promise<void> => {
         circleCommentText: circleCommentsTable.commentText,
         debateTopicText: debateTopicsTable.topicText,
         debateTopicCommentText: debateTopicCommentsTable.commentText,
+        whisperBoxMessageText: whisperBoxMessagesTable.messageText,
         senderEmail: usersTable.email,
       })
       .from(moderationFlagsTable)
       // leftJoin, not innerJoin — a flag row only ever matches one of
       // whispsTable/textWhispsTable/circleCommentsTable/debateTopicsTable/
-      // debateTopicCommentsTable, per contentType. usersTable is also a
-      // leftJoin, not inner: a circle_comment or debate_topic_comment flag
-      // from an anonymous (no-account) commenter has userId=null and should
-      // still show up here, just without a "Sender:" link to follow.
+      // debateTopicCommentsTable/whisperBoxMessagesTable, per contentType.
+      // usersTable is also a leftJoin, not inner: a circle_comment,
+      // debate_topic_comment, or whisper_box_message flag has no account to
+      // attribute it to (userId=null) and should still show up here, just
+      // without a "Sender:" link to follow.
       .leftJoin(whispsTable, eq(moderationFlagsTable.whispId, whispsTable.id))
       .leftJoin(textWhispsTable, eq(moderationFlagsTable.textWhispId, textWhispsTable.id))
       .leftJoin(circleCommentsTable, eq(moderationFlagsTable.circleCommentId, circleCommentsTable.id))
       .leftJoin(debateTopicsTable, eq(moderationFlagsTable.debateTopicId, debateTopicsTable.id))
       .leftJoin(debateTopicCommentsTable, eq(moderationFlagsTable.debateTopicCommentId, debateTopicCommentsTable.id))
+      .leftJoin(whisperBoxMessagesTable, eq(moderationFlagsTable.whisperBoxMessageId, whisperBoxMessagesTable.id))
       .leftJoin(usersTable, eq(moderationFlagsTable.userId, usersTable.id))
       .where(where)
       .orderBy(desc(moderationFlagsTable.createdAt))
@@ -1398,6 +1403,10 @@ router.post("/moderation/flags/:id/remove-content", async (req, res): Promise<vo
     case "debate_topic_comment":
       if (!flag.debateTopicCommentId) { res.status(400).json({ error: "Flag has no associated comment" }); return; }
       await db.update(debateTopicCommentsTable).set({ removedByAdminAt: now }).where(eq(debateTopicCommentsTable.id, flag.debateTopicCommentId));
+      break;
+    case "whisper_box_message":
+      if (!flag.whisperBoxMessageId) { res.status(400).json({ error: "Flag has no associated message" }); return; }
+      await db.update(whisperBoxMessagesTable).set({ removedByAdminAt: now }).where(eq(whisperBoxMessagesTable.id, flag.whisperBoxMessageId));
       break;
     default:
       res.status(400).json({ error: "This content type can't be taken down from here" });

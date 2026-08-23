@@ -14,7 +14,7 @@ per table. New tables must also be added to the test truncate list in
 
 | Table | Purpose |
 |---|---|
-| `users` | One row per account. Identity (id = Clerk user id, unique `clerkId`, unique `email` — placeholder form `<clerkId>@blindwhisper.com` is detected/healed, `fullName`, `avatarUrl`); two-tier phone trust (`phone` = unverified Clerk sync, `phoneVerifiedAt` = Twilio Verify OTP proof — only the pair proves ownership); demographics (`gender`, `ageRange`, `countryCode`); `preferredLanguage`; billing (`plan` free/spark/ember, `boostCredits`, `whisperLinksUsed` + `whisperLinksResetAt`, Stripe ids); `role` user/admin, `banned`; IP-geo at signup (`country/region/city`, admin analytics only); `lastSeenAt`; `emailNotificationsEnabled`; `showOnlineStatus` (default true, reciprocal presence toggle — see security-auth.md); `twoFactorEnabled` (nullable best-effort Clerk mirror, admin compliance signal only); public pseudonym (`whispererHandle` unique + `whispererAvatarId` — deliberately separate from the real `avatarUrl`); `mfaNudgeDismissedAt` |
+| `users` | One row per account. Identity (id = Clerk user id, unique `clerkId`, unique `email` — placeholder form `<clerkId>@blindwhisper.com` is detected/healed, `fullName`, `avatarUrl`); two-tier phone trust (`phone` = unverified Clerk sync, `phoneVerifiedAt` = Twilio Verify OTP proof — only the pair proves ownership); demographics (`gender`, `ageRange`, `countryCode`); `preferredLanguage`; billing (`plan` free/spark/ember, `boostCredits`, `whisperLinksUsed` + `whisperLinksResetAt`, Stripe ids); `role` user/admin, `banned`; IP-geo at signup (`country/region/city`, admin analytics only); `lastSeenAt`; `emailNotificationsEnabled`; `showOnlineStatus` (default true, reciprocal presence toggle — see security-auth.md); `twoFactorEnabled` (nullable best-effort Clerk mirror, admin compliance signal only); `whisperBoxEnabled` (default false — the public pull-link opt-in, see features-community.md); public pseudonym (`whispererHandle` unique + `whispererAvatarId` — deliberately separate from the real `avatarUrl`); `mfaNudgeDismissedAt` |
 | `follows` | Follower/followed pairs, unique per pair; Debate Now only |
 | `anonymous_handles` | Per-thread pseudonyms: unique `(contentType, rootId, visitorId)` + per-thread `avatarId` — never cross-thread trackable |
 
@@ -51,6 +51,7 @@ per table. New tables must also be added to the test truncate list in
 | `content_reports` | Community reports: target ref, reason (priority-mapped), ≤300-word detail, status, admin handling |
 | `suggested_videos` | Curated Suggestions Library links: categories, featured, status pending/published/archived, source admin/ai_agent, AI summary fields |
 | `suggestion_agent_status` | Singleton status row for the discovery agent |
+| `whisper_box_messages` | Anonymous inbound messages via a user's public Whisper Box link: `recipientUserId`, `messageText` (≤500), `senderAlias` (decorative only), status unread/read, `removedByAdminAt`. Deliberately no `senderId` — no account, no way to trace or warn an author |
 | `debate_agent_settings` / `circle_agent_settings` | Singleton config+status for Town Crier / Circle Scout (enabled, dailyPostCount, topics, run health) |
 
 ## Growth & delivery

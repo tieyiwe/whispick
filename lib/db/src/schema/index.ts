@@ -35,3 +35,4 @@ export * from "./follows";
 export * from "./admin_audit_log";
 export * from "./debate_agent_settings";
 export * from "./circle_agent_settings";
+export * from "./whisper_box_messages";

@@ -869,6 +869,64 @@ export interface DebateTopicStats {
   commentLikesReceived: number;
 }
 
+/**
+ * A message received through the caller's own Whisper Box. No senderId anywhere on this shape — the sender is anonymous by design, with no account to attribute the message to.
+ */
+export interface WhisperBoxMessage {
+  id: string;
+  recipientUserId: string;
+  /** @maxLength 500 */
+  messageText: string;
+  /**
+     * Purely decorative flavor text the sender typed — never an identity, never validated against anything.
+     * @maxLength 60
+     * @nullable
+     */
+  senderAlias?: string | null;
+  /** 'unread' | 'read' */
+  status: string;
+  /** @nullable */
+  readAt?: string | null;
+  /**
+     * Admin takedown (moderation_flags.contentType 'whisper_box_message'), distinct from the recipient's own delete.
+     * @nullable
+     */
+  removedByAdminAt?: string | null;
+  createdAt: string;
+}
+
+/**
+ * The caller's own real stats for the requested period — no invented percentile/"top X%" claims, there's no leaderboard infra to back that up.
+ */
+export interface UserRecap {
+  /** 'all_time' | 'last_30_days' — echoes back the resolved period (invalid query values fall back to all_time) */
+  period: string;
+  /** Whisps sent, any deliveryMethod (whisper_link, group_whisper, circle_drop, circle_dm, ghost_boost). */
+  totalSent: number;
+  /** Whisps received where deliveryMethod is whisper_link or group_whisper only. */
+  totalReceived: number;
+  /** Replies received on the caller's own sent whisps. */
+  repliesReceived: number;
+  /** Sent whisps with deliveryMethod circle_drop. */
+  circlePosts: number;
+  debateTopicsPosted: number;
+  /** Never period-scoped — always the current running total, even for last_30_days. */
+  followerCount: number;
+  /**
+     * Null unless the caller has whisperBoxEnabled; otherwise the count of messages received in the period.
+     * @nullable
+     */
+  whisperBoxMessagesReceived: number | null;
+  /**
+     * The caller's most frequent rank-1 whisp_categories result across their sent whisps in the period, or null if none.
+     * @nullable
+     */
+  topCategory: string | null;
+  memberSince: string;
+  /** @nullable */
+  whispererHandle?: string | null;
+}
+
 export interface Circle {
   id: string;
   name: string;
@@ -1041,7 +1099,12 @@ export interface ModerationFlag {
      * @nullable
      */
   debateTopicCommentId?: string | null;
-  /** 'whisp' | 'text_whisp' | 'circle_comment' | 'debate_topic' | 'debate_topic_comment' */
+  /**
+     * Set when contentType is 'whisper_box_message'; null otherwise.
+     * @nullable
+     */
+  whisperBoxMessageId?: string | null;
+  /** 'whisp' | 'text_whisp' | 'circle_comment' | 'debate_topic' | 'debate_topic_comment' | 'whisper_box_message' */
   contentType: string;
   /**
      * Null only for contentType='circle_comment' or contentType='debate_topic_comment' from a fully anonymous, no-account commenter — there's no account to attribute the flag to.
@@ -1073,6 +1136,11 @@ export interface ModerationFlag {
      * @nullable
      */
   debateTopicCommentText?: string | null;
+  /**
+     * The flagged Whisper Box message's text, denormalized the same way. Null unless contentType is 'whisper_box_message'.
+     * @nullable
+     */
+  whisperBoxMessageText?: string | null;
   /** @nullable */
   senderEmail?: string | null;
   severity: ModerationFlagSeverity;
@@ -2624,6 +2692,21 @@ export type StartCircleDm201 = {
   publicToken: string;
 };
 
+export type GetUserRecapParams = {
+/**
+ * Defaults to all_time; an unrecognized value also falls back to all_time rather than erroring.
+ */
+period?: GetUserRecapPeriod;
+};
+
+export type GetUserRecapPeriod = typeof GetUserRecapPeriod[keyof typeof GetUserRecapPeriod];
+
+
+export const GetUserRecapPeriod = {
+  all_time: 'all_time',
+  last_30_days: 'last_30_days',
+} as const;
+
 export type ListCircleFeedParams = {
 cursor?: string;
 };
@@ -2695,6 +2778,48 @@ export type RewhispDebateTopicBody = {
 export type RewhispDebateTopic200 = {
   rewhispCount: number;
   viewerRewhisped: boolean;
+};
+
+export type GetPublicWhisperBox200 = {
+  handle: string;
+  /** @nullable */
+  avatarId: string | null;
+};
+
+export type SendWhisperBoxMessageBody = {
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  messageText: string;
+  /**
+     * @maxLength 60
+     * @nullable
+     */
+  senderAlias?: string | null;
+};
+
+export type SendWhisperBoxMessage201 = {
+  ok: boolean;
+};
+
+export type EnableWhisperBox200 = {
+  handle: string;
+  /** @nullable */
+  avatarId: string | null;
+  enabled: boolean;
+};
+
+export type DisableWhisperBox200 = {
+  enabled: boolean;
+};
+
+export type ListWhisperBoxMessages200 = {
+  items: WhisperBoxMessage[];
+};
+
+export type GetWhisperBoxUnreadCount200 = {
+  unreadCount: number;
 };
 
 export type AdminListUsersParams = {

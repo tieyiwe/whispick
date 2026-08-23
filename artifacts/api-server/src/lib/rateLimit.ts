@@ -198,3 +198,20 @@ export const adminMfaVerifyLimiter = rateLimit({
   // (and any other environment) fully protected.
   skip: () => process.env.NODE_ENV === "test",
 });
+
+// POST /public/whisper-box/:handle (routes/whisperBox.ts) is the one place
+// on the platform a completely anonymous, no-account visitor can write
+// content aimed at a specific named person — IP-keyed by necessity, same as
+// publicEndpointLimiter, since there's no authenticated user to key on.
+// Deliberately its own (tighter) limiter rather than reusing
+// publicEndpointLimiter's shared 60/5min budget: a Whisper Box link is
+// meant to be shared publicly on a bio, which makes it a more attractive
+// spam/harassment target than the rest of the public surface, and a flood
+// of messages is a worse experience for the recipient than for anyone else
+// on the shared budget.
+export const whisperBoxSendLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 12,
+  standardHeaders: true,
+  legacyHeaders: false,
+});

@@ -17,7 +17,8 @@ handler that never echoes messages/stacks.
 | 4 | `/public` | publicEndpointLimiter | **limiter registered ONCE here** (60 req / 5 min, IP-keyed) — per-router mounting double-counted requests |
 | 5–10 | `/public` | public.ts, circle.ts, subscribe.ts, publicInvites.ts, publicTextWhisps.ts, usageEvents.ts | |
 | 11 | *(none)* | debateTopics.ts | defines `/debate-topics` AND `/public/debate-topics…`; must stay after #4 so its public routes hit the limiter |
-| 12 | `/follows` | follows.ts | |
+| 11b | *(none)* | whisperBox.ts | defines `/public/whisper-box/:handle` AND authenticated `/whisper-box…`; same reasoning as debateTopics.ts, mounted right after it |
+| 12 | `/follows` | follows.ts | includes `GET /follows/online-status` |
 | 13 | *(none)* | contentReports.ts | `/content-reports` |
 | 14 | `/circles` | circles.ts | |
 | 15 | `/user` | user.ts | profile, notifications, phone verification, push subscription, policy status/accept |
@@ -76,6 +77,7 @@ User-keyed (auth id, falling back to IP), 1-hour windows unless noted:
 | phoneVerificationLimiter | 5 | Twilio Verify sends |
 | confirmPhoneVerificationLimiter | 15 | OTP confirms |
 | billingCheckoutLimiter | 20 | Stripe checkout sessions |
+| whisperBoxSendLimiter | 12 | Whisper Box public sends (IP-keyed; a public bio link is a more attractive spam target than the rest of the public surface) |
 
 ## Endpoint inventories
 

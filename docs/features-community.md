@@ -139,6 +139,64 @@ attempted".
 content so it's never attributed to the admin who configured the agent. It has a
 Whisperer identity so agent topics get a byline.
 
+## Whisper Box (public pull-link)
+
+The platform's one deliberately anonymous-**sender** surface, and its main
+pull-growth mechanic: a signed-in user opts in (`users.whisperBoxEnabled`,
+default **false**) and gets a public page at `/whisper-box/:whispererHandle`
+where literally anyone — no account, no sign-in — can send them one short
+(≤500 char) anonymous message. Meant to be shared on a public bio link
+(Instagram/TikTok/etc.), the same growth mechanic NGL/Sarahah/tbh used.
+
+**Why it's opt-in and separate from just having a handle:** a
+`whispererHandle` is already assigned automatically the first time someone
+posts or comments in Debate Now (`lib/whispererHandle.ts`). Without a
+separate flag, everyone active in Debate Now would silently become
+receivable by strangers the moment they got a handle. `whisperBoxEnabled`
+is the only thing that turns the public page on; `POST /whisper-box/enable`
+(Settings) does double duty — lazily assigns a handle if missing, then
+flips the flag — and `POST /whisper-box/disable` turns the page off without
+touching the handle (still usable for Debate Now/follows).
+
+**The core architectural inversion:** every other send path (Whisper Link,
+Text Whisp, Whisper Group) requires the SENDER to be a signed-in,
+accountable Whisperer. Here the sender has no account at all. Consequences,
+all reflected in `whisper_box_messages.ts`'s schema:
+- No `senderId` — nothing to warn or ban an author for; `moderateWhisperBoxMessageAsync`
+  (`lib/moderation.ts`) can only ever lead to an admin taking the message
+  down, never tracing it to anyone.
+- No reply channel — nothing points back to the sender, unlike a Text
+  Whisp's guest link. The recipient can only read and delete.
+- `senderAlias` is purely decorative flavor text, same as elsewhere.
+
+**Public endpoints** (`routes/whisperBox.ts`, own file, no router prefix —
+defines both its public and authenticated paths, same pattern as
+`debateTopics.ts`): `GET /public/whisper-box/:handle` (resolves a handle;
+**identical 404** whether the handle doesn't exist or the box is off — never
+distinguishes the two) and `POST /public/whisper-box/:handle` (the send;
+constant `{ok:true}` response, no id leaked back — same anti-enumeration
+posture as `POST /subscribe`). The send is IP-rate-limited
+(`whisperBoxSendLimiter`, 12/hr) on top of the shared `publicEndpointLimiter`
+the GET rides — a public bio link is a more attractive spam target than the
+rest of the public surface.
+
+**Authenticated inbox** (`/whisper-box`): list, unread count, mark-read,
+delete (hard delete — no sender-side copy to preserve). Moderation flags
+carry `contentType: 'whisper_box_message'`; admin takedown sets
+`removedByAdminAt`, which the recipient's own inbox also excludes.
+
+## Personal Recap (shareable stats)
+
+`GET /user/recap?period=all_time|last_30_days` (`routes/user.ts`) — a
+"Wrapped"-style personal stat card meant to be screenshotted and shared.
+Only ever the caller's own real, honestly-computed numbers (no invented
+percentile/"top X%" claims — there's no leaderboard infra to back that up):
+`totalSent`, `totalReceived` (matched Whisper Link/Group deliveries only),
+`repliesReceived`, `circlePosts`, `debateTopicsPosted`, `followerCount`
+(never period-scoped — a running total), `whisperBoxMessagesReceived`
+(`null` unless the box is enabled), `topCategory` (rank-1
+`whisp_categories`, most frequent), `memberSince`, `whispererHandle`.
+
 ## Suggestions Library
 
 `suggested_videos`: admin-curated third-party video links (never uploaded

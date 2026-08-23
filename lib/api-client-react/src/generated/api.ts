@@ -92,10 +92,15 @@ import type {
   DebateTopicInput,
   DebateTopicStats,
   DeleteMedia200,
+  DisableWhisperBox200,
+  EnableWhisperBox200,
   FollowedOnlineStatusResponse,
   GetDebateTopicParams,
   GetFollowStats200,
   GetPublicWhispParams,
+  GetPublicWhisperBox200,
+  GetUserRecapParams,
+  GetWhisperBoxUnreadCount200,
   GroupWhispSendDetail,
   GroupWhispSendSummary,
   HealthStatus,
@@ -117,6 +122,7 @@ import type {
   ListDebateTopicsParams,
   ListFollowingDebateTopicsParams,
   ListSuggestionsParams,
+  ListWhisperBoxMessages200,
   ListWhispsParams,
   MatchStats,
   ModerationFlag,
@@ -165,6 +171,8 @@ import type {
   SendGroupWhispResult,
   SendNotificationInput,
   SendNotificationResult,
+  SendWhisperBoxMessage201,
+  SendWhisperBoxMessageBody,
   StartCircleDm201,
   StartPhoneVerificationInput,
   SubscribeInput,
@@ -205,6 +213,7 @@ import type {
   UsageStatsResponse,
   UserProfile,
   UserProfileUpdate,
+  UserRecap,
   VerifySubscription200,
   VerifySubscriptionParams,
   VideoMeta,
@@ -3400,6 +3409,90 @@ export const useUpdateUserProfile = <TError = ErrorType<unknown>,
       return useMutation(getUpdateUserProfileMutationOptions(options));
     }
 
+export const getGetUserRecapUrl = (params?: GetUserRecapParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/user/recap?${stringifiedParams}` : `/api/user/recap`
+}
+
+/**
+ * @summary Personal "Wrapped"-style stats recap — real, honestly-computed numbers only, meant to be screenshotted and shared
+ */
+export const getUserRecap = async (params?: GetUserRecapParams, options?: RequestInit): Promise<UserRecap> => {
+
+  return customFetch<UserRecap>(getGetUserRecapUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetUserRecapQueryKey = (params?: GetUserRecapParams,) => {
+    return [
+    `/api/user/recap`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetUserRecapQueryOptions = <TData = Awaited<ReturnType<typeof getUserRecap>>, TError = ErrorType<unknown>>(params?: GetUserRecapParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUserRecap>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetUserRecapQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getUserRecap>>> = ({ signal }) => getUserRecap(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getUserRecap>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetUserRecapQueryResult = NonNullable<Awaited<ReturnType<typeof getUserRecap>>>
+export type GetUserRecapQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Personal "Wrapped"-style stats recap — real, honestly-computed numbers only, meant to be screenshotted and shared
+ */
+
+export function useGetUserRecap<TData = Awaited<ReturnType<typeof getUserRecap>>, TError = ErrorType<unknown>>(
+ params?: GetUserRecapParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUserRecap>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetUserRecapQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getDismissMfaNudgeUrl = () => {
 
 
@@ -5417,6 +5510,592 @@ export const useRewhispDebateTopic = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getRewhispDebateTopicMutationOptions(options));
+    }
+
+export const getGetPublicWhisperBoxUrl = (handle: string,) => {
+
+
+
+
+  return `/api/public/whisper-box/${handle}`
+}
+
+/**
+ * Same 404 whether the handle doesn't resolve to any account or resolves to one that has since turned its Whisper Box off — the response never distinguishes "no such person" from "that person disabled their box."
+ * @summary Resolve a Whisper Box handle to its public display info (no auth required)
+ */
+export const getPublicWhisperBox = async (handle: string, options?: RequestInit): Promise<GetPublicWhisperBox200> => {
+
+  return customFetch<GetPublicWhisperBox200>(getGetPublicWhisperBoxUrl(handle),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPublicWhisperBoxQueryKey = (handle: string,) => {
+    return [
+    `/api/public/whisper-box/${handle}`
+    ] as const;
+    }
+
+
+export const getGetPublicWhisperBoxQueryOptions = <TData = Awaited<ReturnType<typeof getPublicWhisperBox>>, TError = ErrorType<ApiError>>(handle: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicWhisperBox>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPublicWhisperBoxQueryKey(handle);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPublicWhisperBox>>> = ({ signal }) => getPublicWhisperBox(handle, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: handle !== null && handle !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPublicWhisperBox>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPublicWhisperBoxQueryResult = NonNullable<Awaited<ReturnType<typeof getPublicWhisperBox>>>
+export type GetPublicWhisperBoxQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Resolve a Whisper Box handle to its public display info (no auth required)
+ */
+
+export function useGetPublicWhisperBox<TData = Awaited<ReturnType<typeof getPublicWhisperBox>>, TError = ErrorType<ApiError>>(
+ handle: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicWhisperBox>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPublicWhisperBoxQueryOptions(handle,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSendWhisperBoxMessageUrl = (handle: string,) => {
+
+
+
+
+  return `/api/public/whisper-box/${handle}`
+}
+
+/**
+ * Deliberately minimal, constant-shaped response — no id, no confirmation of anything about the recipient — same anti-enumeration/no-feedback posture as POST /public/subscribe, since the response shape must never become an oracle on an unauthenticated endpoint.
+ * @summary Send an anonymous message to a Whisper Box (no auth required)
+ */
+export const sendWhisperBoxMessage = async (handle: string,
+    sendWhisperBoxMessageBody: SendWhisperBoxMessageBody, options?: RequestInit): Promise<SendWhisperBoxMessage201> => {
+
+  return customFetch<SendWhisperBoxMessage201>(getSendWhisperBoxMessageUrl(handle),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(sendWhisperBoxMessageBody)
+  }
+);}
+
+
+
+
+export const getSendWhisperBoxMessageMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendWhisperBoxMessage>>, TError,{handle: string;data: BodyType<SendWhisperBoxMessageBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendWhisperBoxMessage>>, TError,{handle: string;data: BodyType<SendWhisperBoxMessageBody>}, TContext> => {
+
+const mutationKey = ['sendWhisperBoxMessage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendWhisperBoxMessage>>, {handle: string;data: BodyType<SendWhisperBoxMessageBody>}> = (props) => {
+          const {handle,data} = props ?? {};
+
+          return  sendWhisperBoxMessage(handle,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendWhisperBoxMessageMutationResult = NonNullable<Awaited<ReturnType<typeof sendWhisperBoxMessage>>>
+    export type SendWhisperBoxMessageMutationBody = BodyType<SendWhisperBoxMessageBody>
+    export type SendWhisperBoxMessageMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Send an anonymous message to a Whisper Box (no auth required)
+ */
+export const useSendWhisperBoxMessage = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendWhisperBoxMessage>>, TError,{handle: string;data: BodyType<SendWhisperBoxMessageBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sendWhisperBoxMessage>>,
+        TError,
+        {handle: string;data: BodyType<SendWhisperBoxMessageBody>},
+        TContext
+      > => {
+      return useMutation(getSendWhisperBoxMessageMutationOptions(options));
+    }
+
+export const getEnableWhisperBoxUrl = () => {
+
+
+
+
+  return `/api/whisper-box/enable`
+}
+
+/**
+ * The Settings "Get your Whisper Box link" action. One call both lazy-assigns a whispererHandle (same lazy-assign as the first Debate Now post/comment) and flips the opt-in on, so Settings only needs one button.
+ * @summary Turn on the caller's Whisper Box, assigning a Whisperer handle first if they don't already have one
+ */
+export const enableWhisperBox = async ( options?: RequestInit): Promise<EnableWhisperBox200> => {
+
+  return customFetch<EnableWhisperBox200>(getEnableWhisperBoxUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getEnableWhisperBoxMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof enableWhisperBox>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof enableWhisperBox>>, TError,void, TContext> => {
+
+const mutationKey = ['enableWhisperBox'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof enableWhisperBox>>, void> = () => {
+
+
+          return  enableWhisperBox(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type EnableWhisperBoxMutationResult = NonNullable<Awaited<ReturnType<typeof enableWhisperBox>>>
+
+    export type EnableWhisperBoxMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Turn on the caller's Whisper Box, assigning a Whisperer handle first if they don't already have one
+ */
+export const useEnableWhisperBox = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof enableWhisperBox>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof enableWhisperBox>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getEnableWhisperBoxMutationOptions(options));
+    }
+
+export const getDisableWhisperBoxUrl = () => {
+
+
+
+
+  return `/api/whisper-box/disable`
+}
+
+/**
+ * @summary Turn off the caller's Whisper Box public page, without touching the handle itself
+ */
+export const disableWhisperBox = async ( options?: RequestInit): Promise<DisableWhisperBox200> => {
+
+  return customFetch<DisableWhisperBox200>(getDisableWhisperBoxUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getDisableWhisperBoxMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disableWhisperBox>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof disableWhisperBox>>, TError,void, TContext> => {
+
+const mutationKey = ['disableWhisperBox'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof disableWhisperBox>>, void> = () => {
+
+
+          return  disableWhisperBox(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DisableWhisperBoxMutationResult = NonNullable<Awaited<ReturnType<typeof disableWhisperBox>>>
+
+    export type DisableWhisperBoxMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Turn off the caller's Whisper Box public page, without touching the handle itself
+ */
+export const useDisableWhisperBox = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disableWhisperBox>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof disableWhisperBox>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getDisableWhisperBoxMutationOptions(options));
+    }
+
+export const getListWhisperBoxMessagesUrl = () => {
+
+
+
+
+  return `/api/whisper-box`
+}
+
+/**
+ * @summary The caller's own received Whisper Box messages, newest first
+ */
+export const listWhisperBoxMessages = async ( options?: RequestInit): Promise<ListWhisperBoxMessages200> => {
+
+  return customFetch<ListWhisperBoxMessages200>(getListWhisperBoxMessagesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListWhisperBoxMessagesQueryKey = () => {
+    return [
+    `/api/whisper-box`
+    ] as const;
+    }
+
+
+export const getListWhisperBoxMessagesQueryOptions = <TData = Awaited<ReturnType<typeof listWhisperBoxMessages>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWhisperBoxMessages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListWhisperBoxMessagesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listWhisperBoxMessages>>> = ({ signal }) => listWhisperBoxMessages({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listWhisperBoxMessages>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListWhisperBoxMessagesQueryResult = NonNullable<Awaited<ReturnType<typeof listWhisperBoxMessages>>>
+export type ListWhisperBoxMessagesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary The caller's own received Whisper Box messages, newest first
+ */
+
+export function useListWhisperBoxMessages<TData = Awaited<ReturnType<typeof listWhisperBoxMessages>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWhisperBoxMessages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListWhisperBoxMessagesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetWhisperBoxUnreadCountUrl = () => {
+
+
+
+
+  return `/api/whisper-box/unread-count`
+}
+
+/**
+ * @summary Lightweight unread count for a nav badge, without fetching the full list
+ */
+export const getWhisperBoxUnreadCount = async ( options?: RequestInit): Promise<GetWhisperBoxUnreadCount200> => {
+
+  return customFetch<GetWhisperBoxUnreadCount200>(getGetWhisperBoxUnreadCountUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWhisperBoxUnreadCountQueryKey = () => {
+    return [
+    `/api/whisper-box/unread-count`
+    ] as const;
+    }
+
+
+export const getGetWhisperBoxUnreadCountQueryOptions = <TData = Awaited<ReturnType<typeof getWhisperBoxUnreadCount>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWhisperBoxUnreadCount>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWhisperBoxUnreadCountQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWhisperBoxUnreadCount>>> = ({ signal }) => getWhisperBoxUnreadCount({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWhisperBoxUnreadCount>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWhisperBoxUnreadCountQueryResult = NonNullable<Awaited<ReturnType<typeof getWhisperBoxUnreadCount>>>
+export type GetWhisperBoxUnreadCountQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Lightweight unread count for a nav badge, without fetching the full list
+ */
+
+export function useGetWhisperBoxUnreadCount<TData = Awaited<ReturnType<typeof getWhisperBoxUnreadCount>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWhisperBoxUnreadCount>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWhisperBoxUnreadCountQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getMarkWhisperBoxMessageReadUrl = (id: string,) => {
+
+
+
+
+  return `/api/whisper-box/${id}/read`
+}
+
+/**
+ * @summary Mark one Whisper Box message as read
+ */
+export const markWhisperBoxMessageRead = async (id: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getMarkWhisperBoxMessageReadUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getMarkWhisperBoxMessageReadMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markWhisperBoxMessageRead>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof markWhisperBoxMessageRead>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['markWhisperBoxMessageRead'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markWhisperBoxMessageRead>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  markWhisperBoxMessageRead(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkWhisperBoxMessageReadMutationResult = NonNullable<Awaited<ReturnType<typeof markWhisperBoxMessageRead>>>
+
+    export type MarkWhisperBoxMessageReadMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Mark one Whisper Box message as read
+ */
+export const useMarkWhisperBoxMessageRead = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markWhisperBoxMessageRead>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof markWhisperBoxMessageRead>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getMarkWhisperBoxMessageReadMutationOptions(options));
+    }
+
+export const getDeleteWhisperBoxMessageUrl = (id: string,) => {
+
+
+
+
+  return `/api/whisper-box/${id}`
+}
+
+/**
+ * A hard delete, unlike whisps' soft delete — there's no sender-side copy to preserve, since there's no sender account at all.
+ * @summary Delete one of the caller's own received Whisper Box messages
+ */
+export const deleteWhisperBoxMessage = async (id: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteWhisperBoxMessageUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteWhisperBoxMessageMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteWhisperBoxMessage>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteWhisperBoxMessage>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteWhisperBoxMessage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteWhisperBoxMessage>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteWhisperBoxMessage(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteWhisperBoxMessageMutationResult = NonNullable<Awaited<ReturnType<typeof deleteWhisperBoxMessage>>>
+
+    export type DeleteWhisperBoxMessageMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Delete one of the caller's own received Whisper Box messages
+ */
+export const useDeleteWhisperBoxMessage = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteWhisperBoxMessage>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteWhisperBoxMessage>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getDeleteWhisperBoxMessageMutationOptions(options));
     }
 
 export const getCreateCheckoutSessionUrl = () => {

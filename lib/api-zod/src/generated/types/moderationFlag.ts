@@ -34,7 +34,12 @@ export interface ModerationFlag {
      * @nullable
      */
   debateTopicCommentId?: string | null;
-  /** 'whisp' | 'text_whisp' | 'circle_comment' | 'debate_topic' | 'debate_topic_comment' */
+  /**
+     * Set when contentType is 'whisper_box_message'; null otherwise.
+     * @nullable
+     */
+  whisperBoxMessageId?: string | null;
+  /** 'whisp' | 'text_whisp' | 'circle_comment' | 'debate_topic' | 'debate_topic_comment' | 'whisper_box_message' */
   contentType: string;
   /**
      * Null only for contentType='circle_comment' or contentType='debate_topic_comment' from a fully anonymous, no-account commenter — there's no account to attribute the flag to.
@@ -66,6 +71,11 @@ export interface ModerationFlag {
      * @nullable
      */
   debateTopicCommentText?: string | null;
+  /**
+     * The flagged Whisper Box message's text, denormalized the same way. Null unless contentType is 'whisper_box_message'.
+     * @nullable
+     */
+  whisperBoxMessageText?: string | null;
   /** @nullable */
   senderEmail?: string | null;
   severity: ModerationFlagSeverity;

@@ -33,9 +33,15 @@ export const moderationFlagsTable = pgTable("moderation_flags", {
   // lib/moderation.ts's moderateDebateTopicCommentAsync and
   // debate_topic_comments.ts).
   debateTopicCommentId: text("debate_topic_comment_id"),
-  contentType: text("content_type").notNull().default("whisp"), // 'whisp' | 'text_whisp' | 'circle_comment' | 'debate_topic' | 'debate_topic_comment'
-  // Nullable ONLY for the two anonymous-commenter content types
-  // ('circle_comment', 'debate_topic_comment'): a comment can come from a
+  // Set instead when contentType is 'whisper_box_message' (see
+  // lib/moderation.ts's moderateWhisperBoxMessageAsync and
+  // whisper_box_messages.ts). userId is ALWAYS null for this content
+  // type — there is no sender account at all, by design (see that table's
+  // schema comment).
+  whisperBoxMessageId: text("whisper_box_message_id"),
+  contentType: text("content_type").notNull().default("whisp"), // 'whisp' | 'text_whisp' | 'circle_comment' | 'debate_topic' | 'debate_topic_comment' | 'whisper_box_message'
+  // Nullable for the anonymous-sender content types ('circle_comment',
+  // 'debate_topic_comment', 'whisper_box_message'): those can come from a
   // fully anonymous, no-account visitor with no userId to attribute it to.
   // maybeWarnUser (lib/moderation.ts) is skipped when null — there's no
   // account to warn, and nothing here identifies the visitor beyond their
@@ -55,6 +61,7 @@ export const moderationFlagsTable = pgTable("moderation_flags", {
   index("moderation_flags_circle_comment_id_idx").on(table.circleCommentId),
   index("moderation_flags_debate_topic_id_idx").on(table.debateTopicId),
   index("moderation_flags_debate_topic_comment_id_idx").on(table.debateTopicCommentId),
+  index("moderation_flags_whisper_box_message_id_idx").on(table.whisperBoxMessageId),
 ]);
 
 export const insertModerationFlagSchema = createInsertSchema(moderationFlagsTable).omit({ createdAt: true });

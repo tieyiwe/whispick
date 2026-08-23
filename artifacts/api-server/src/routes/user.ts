@@ -7,11 +7,16 @@ import {
   notificationsTable,
   notificationReadsTable,
   whispsTable,
+  whispRepliesTable,
+  whispCategoriesTable,
   textWhispsTable,
   policyVersionsTable,
   policyAcceptancesTable,
+  debateTopicsTable,
+  followsTable,
+  whisperBoxMessagesTable,
 } from "@workspace/db";
-import { eq, and, or, ne, isNull, isNotNull, desc, count, notInArray, inArray } from "drizzle-orm";
+import { eq, and, or, ne, isNull, isNotNull, desc, count, notInArray, inArray, gte } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { z } from "zod";
 import { requireAuth } from "../lib/auth";
@@ -53,6 +58,104 @@ router.get("/profile", requireAuth, async (req, res): Promise<void> => {
     showOnlineStatus: user.showOnlineStatus,
     twoFactorEnabled: user.twoFactorEnabled,
     createdAt: user.createdAt,
+  });
+});
+
+const RECAP_PERIODS = ["all_time", "last_30_days"] as const;
+type RecapPeriod = (typeof RECAP_PERIODS)[number];
+
+// GET /api/user/recap — the shareable "Wrapped"-style personal stat card:
+// real, honestly-computed numbers only (no fabricated percentile/"top X%"
+// claims — this app has no leaderboard infra to back that up). Meant to be
+// screenshotted and shared to a Story/feed as organic growth — every stat
+// here is the CALLER'S OWN activity, never anyone else's, so nothing here
+// needs the anti-enumeration care the rest of the app's public surfaces do.
+router.get("/recap", requireAuth, async (req, res): Promise<void> => {
+  const { userId } = getAuth(req);
+  const user = await ensureUser(userId!, req);
+  const period: RecapPeriod = RECAP_PERIODS.includes(req.query.period as RecapPeriod) ? (req.query.period as RecapPeriod) : "all_time";
+  const since = period === "last_30_days" ? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) : null;
+
+  // Loosely typed on purpose: this is used against several different
+  // tables' createdAt columns below, and a precise shared type would just
+  // fight Drizzle's per-table column typing for no real benefit — gte()
+  // itself still enforces the right shape at each call site.
+  function sinceClause(column: any) {
+    return since ? gte(column, since) : undefined;
+  }
+
+  const [
+    [{ count: totalSent } = { count: 0 }],
+    [{ count: totalReceived } = { count: 0 }],
+    [{ count: repliesReceived } = { count: 0 }],
+    [{ count: circlePosts } = { count: 0 }],
+    [{ count: debateTopicsPosted } = { count: 0 }],
+    [{ count: followerCount } = { count: 0 }],
+    [{ count: whisperBoxMessagesReceived } = { count: 0 }],
+    topCategoryRows,
+  ] = await Promise.all([
+    db.select({ count: count() }).from(whispsTable).where(and(eq(whispsTable.senderId, user.id), sinceClause(whispsTable.createdAt))),
+    db
+      .select({ count: count() })
+      .from(whispsTable)
+      .where(
+        and(
+          eq(whispsTable.recipientUserId, user.id),
+          inArray(whispsTable.deliveryMethod, ["whisper_link", "group_whisper"]),
+          sinceClause(whispsTable.createdAt),
+        ),
+      ),
+    db
+      .select({ count: count() })
+      .from(whispRepliesTable)
+      .innerJoin(whispsTable, eq(whispRepliesTable.whispId, whispsTable.id))
+      .where(and(eq(whispsTable.senderId, user.id), eq(whispRepliesTable.fromRecipient, true), sinceClause(whispRepliesTable.createdAt))),
+    db
+      .select({ count: count() })
+      .from(whispsTable)
+      .where(and(eq(whispsTable.senderId, user.id), eq(whispsTable.deliveryMethod, "circle_drop"), sinceClause(whispsTable.createdAt))),
+    db
+      .select({ count: count() })
+      .from(debateTopicsTable)
+      .where(
+        and(
+          eq(debateTopicsTable.authorId, user.id),
+          isNull(debateTopicsTable.deletedByAuthorAt),
+          isNull(debateTopicsTable.removedByAdminAt),
+          sinceClause(debateTopicsTable.createdAt),
+        ),
+      ),
+    // Followers aren't period-scoped — "how many people follow you" is a
+    // running total, not something that resets each recap window.
+    db.select({ count: count() }).from(followsTable).where(eq(followsTable.followedUserId, user.id)),
+    user.whisperBoxEnabled
+      ? db
+          .select({ count: count() })
+          .from(whisperBoxMessagesTable)
+          .where(and(eq(whisperBoxMessagesTable.recipientUserId, user.id), isNull(whisperBoxMessagesTable.removedByAdminAt), sinceClause(whisperBoxMessagesTable.createdAt)))
+      : Promise.resolve([{ count: 0 }]),
+    db
+      .select({ category: whispCategoriesTable.category, total: count() })
+      .from(whispCategoriesTable)
+      .innerJoin(whispsTable, eq(whispCategoriesTable.whispId, whispsTable.id))
+      .where(and(eq(whispsTable.senderId, user.id), eq(whispCategoriesTable.rank, 1), sinceClause(whispsTable.createdAt)))
+      .groupBy(whispCategoriesTable.category)
+      .orderBy(desc(count()))
+      .limit(1),
+  ]);
+
+  res.json({
+    period,
+    totalSent,
+    totalReceived,
+    repliesReceived,
+    circlePosts,
+    debateTopicsPosted,
+    followerCount,
+    whisperBoxMessagesReceived: user.whisperBoxEnabled ? whisperBoxMessagesReceived : null,
+    topCategory: topCategoryRows[0]?.category ?? null,
+    memberSince: user.createdAt,
+    whispererHandle: user.whispererHandle,
   });
 });
 
