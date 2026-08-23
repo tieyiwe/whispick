@@ -1,5 +1,10 @@
 # Blind Whisper
 
+> **Documentation rule:** `docs/` holds the living technical documentation
+> (index: `docs/README.md`). Every implementation batch that changes behavior —
+> a table, endpoint, scheduler, env var, or user-facing feature — must update
+> the relevant `docs/` page(s) in the same commit series.
+
 An anonymous video recommendation platform — paste a video URL, add a mood tag and optional note, then send it to a known person via Whisper Link (guaranteed anonymous delivery) or post it to Circle for organic community discovery — without revealing your identity. (Ghost Boost, a third delivery method, is paused — see the delivery-methods bullet below.)
 
 ## Run & Operate
