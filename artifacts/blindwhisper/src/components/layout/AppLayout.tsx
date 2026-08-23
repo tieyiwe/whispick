@@ -4,7 +4,13 @@ import { useTranslation } from "react-i18next";
 import { LogoLockup } from "@/components/ui/logo";
 import { APP_VERSION, APP_VERSION_NAME } from "@/lib/appVersion";
 import { useUser, useClerk } from "@clerk/react";
-import { useGetUserProfile, useGetMyUnreadNotificationCount, getGetMyUnreadNotificationCountQueryKey } from "@workspace/api-client-react";
+import {
+  useGetUserProfile,
+  useGetMyUnreadNotificationCount,
+  useGetWhisperBoxUnreadCount,
+  getGetMyUnreadNotificationCountQueryKey,
+  getGetWhisperBoxUnreadCountQueryKey,
+} from "@workspace/api-client-react";
 import { isSupportedLanguage } from "@/lib/languages";
 import {
   LayoutDashboard,
@@ -25,6 +31,7 @@ import {
   Swords,
   Menu,
   UserCheck,
+  Mailbox,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -61,6 +68,7 @@ const NAV_ITEMS = [
   { href: "/whisper-groups", labelKey: "nav.whisperGroups", icon: UsersRound },
   { href: "/media-library", labelKey: "nav.mediaLibrary", icon: Clapperboard },
   { href: "/replies", labelKey: "nav.replies", icon: MessageSquareHeart },
+  { href: "/whisper-box", labelKey: "nav.whisperBox", icon: Mailbox },
   { href: "/invite", labelKey: "nav.inviteAFriend", icon: UserPlus },
   { href: "/credits", labelKey: "nav.creditsAndPlan", icon: CreditCard },
   { href: "/settings", labelKey: "nav.settings", icon: Settings },
@@ -74,6 +82,7 @@ const MOBILE_TAB_ITEMS_LEFT = [
 const MOBILE_TAB_ITEMS_RIGHT = [
   { href: "/circle", labelKey: "nav.blindCircle", icon: Users },
   { href: "/replies", labelKey: "nav.replies", icon: MessageSquareHeart },
+  { href: "/whisper-box", labelKey: "nav.whisperBox", icon: Mailbox },
 ];
 
 function MobileTabLink({
@@ -204,6 +213,18 @@ export function AppLayout({ children }: { children: ReactNode }) {
   });
   const unreadReplyCount = unread?.unreadReplyCount ?? 0;
 
+  // Same polling treatment as the Replies badge above, driving the Whisper
+  // Box nav entry's own badge — see routes/whisperBox.ts's GET
+  // /whisper-box/unread-count.
+  const { data: whisperBoxUnread } = useGetWhisperBoxUnreadCount({
+    query: {
+      queryKey: getGetWhisperBoxUnreadCountQueryKey(),
+      refetchInterval: 60_000,
+      refetchIntervalInBackground: false,
+    },
+  });
+  const whisperBoxUnreadCount = whisperBoxUnread?.unreadCount ?? 0;
+
   const navItems = isAdmin
     ? [...NAV_ITEMS, { href: "/admin_pro", labelKey: "nav.admin", icon: ShieldCheck }]
     : NAV_ITEMS;
@@ -272,6 +293,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
                     data-testid="badge-unread-replies"
                   >
                     {unreadReplyCount > 9 ? "9+" : unreadReplyCount}
+                  </span>
+                )}
+                {item.href === "/whisper-box" && whisperBoxUnreadCount > 0 && (
+                  <span
+                    className="min-w-[20px] h-5 px-1.5 rounded-full bg-secondary text-xs font-semibold text-secondary-foreground flex items-center justify-center"
+                    data-testid="badge-unread-whisper-box"
+                  >
+                    {whisperBoxUnreadCount > 9 ? "9+" : whisperBoxUnreadCount}
                   </span>
                 )}
               </Link>
@@ -396,7 +425,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
               icon={item.icon}
               label={t(item.labelKey)}
               isActive={location === item.href}
-              badgeCount={item.href === "/replies" ? unreadReplyCount : 0}
+              badgeCount={item.href === "/replies" ? unreadReplyCount : item.href === "/whisper-box" ? whisperBoxUnreadCount : 0}
             />
           ))}
 

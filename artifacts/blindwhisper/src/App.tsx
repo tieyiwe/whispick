@@ -52,6 +52,8 @@ const WhisperGroupDetail = lazy(() => import("@/pages/WhisperGroupDetail").then(
 const GroupSendDetail = lazy(() => import("@/pages/GroupSendDetail").then((m) => ({ default: m.GroupSendDetail })));
 const WhispDetail = lazy(() => import("@/pages/WhispDetail").then((m) => ({ default: m.WhispDetail })));
 const RepliesInbox = lazy(() => import("@/pages/RepliesInbox").then((m) => ({ default: m.RepliesInbox })));
+const WhisperBoxInbox = lazy(() => import("@/pages/WhisperBoxInbox").then((m) => ({ default: m.WhisperBoxInbox })));
+const PublicWhisperBoxPage = lazy(() => import("@/pages/PublicWhisperBoxPage").then((m) => ({ default: m.PublicWhisperBoxPage })));
 const CreditsPage = lazy(() => import("@/pages/CreditsPage").then((m) => ({ default: m.CreditsPage })));
 const SettingsPage = lazy(() => import("@/pages/SettingsPage").then((m) => ({ default: m.SettingsPage })));
 const AccountSecurity = lazy(() => import("@/pages/AccountSecurity").then((m) => ({ default: m.AccountSecurity })));
@@ -69,6 +71,7 @@ const DebateFollowing = lazy(() => import("@/pages/DebateFollowing").then((m) =>
 const SubscribePage = lazy(() => import("@/pages/SubscribePage").then((m) => ({ default: m.SubscribePage })));
 const VerifySubscriptionPage = lazy(() => import("@/pages/VerifySubscriptionPage").then((m) => ({ default: m.VerifySubscriptionPage })));
 const UnsubscribeFromMatchingPage = lazy(() => import("@/pages/UnsubscribeFromMatchingPage").then((m) => ({ default: m.UnsubscribeFromMatchingPage })));
+const RecapPage = lazy(() => import("@/pages/RecapPage").then((m) => ({ default: m.RecapPage })));
 
 // Admin panel — highest-value split. Most users never load any of this, and
 // AdminAnalytics alone pulls in the recharts charting library.
@@ -305,8 +308,10 @@ function ClerkProviderWithRoutes() {
             <Route path="/whisper-groups" component={() => <ProtectedRoute component={WhisperGroups} />} />
             <Route path="/media-library" component={() => <ProtectedRoute component={MediaLibrary} />} />
             <Route path="/replies" component={() => <ProtectedRoute component={RepliesInbox} />} />
+            <Route path="/whisper-box" component={() => <ProtectedRoute component={WhisperBoxInbox} />} />
             <Route path="/credits" component={() => <ProtectedRoute component={CreditsPage} />} />
             <Route path="/settings" component={() => <ProtectedRoute component={SettingsPage} />} />
+            <Route path="/recap" component={() => <ProtectedRoute component={RecapPage} />} />
             <Route path="/account/security/*?" component={() => <ProtectedRoute component={AccountSecurity} />} />
             <Route path="/invite" component={() => <ProtectedRoute component={InvitePage} />} />
             <Route path="/debate-topics/new" component={() => <ProtectedRoute component={CreateDebateTopic} />} />
@@ -335,6 +340,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/debate-topics/:id" component={DebateTopicDetail} />
             <Route path="/debate-topics" component={DebateTopics} />
             <Route path="/w/:token" component={PublicWhispPage} />
+            <Route path="/whisper-box/:handle" component={PublicWhisperBoxPage} />
             <Route path="/invite/:token" component={PublicInvitePage} />
             <Route path="/tw/:token" component={PublicTextWhisp} />
             <Route path="/privacy" component={PrivacyPolicy} />

@@ -7,8 +7,12 @@ import {
   useGetPushPublicKey,
   useCreatePushSubscription,
   useDeletePushSubscription,
+  useEnableWhisperBox,
+  useDisableWhisperBox,
+  useGetUserRecap,
   getGetUserProfileQueryKey,
   getGetPushPublicKeyQueryKey,
+  getGetUserRecapQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -21,7 +25,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, User, Mail, Shield, Bell, Phone, ShieldCheck, Swords } from "lucide-react";
+import { Loader2, User, Mail, Shield, Bell, Phone, ShieldCheck, Swords, Mailbox, Share2 } from "lucide-react";
 import { isPushSupported, getExistingPushSubscription, subscribeToPush, pushSubscriptionToJson } from "@/lib/push";
 import { GENDER_OPTIONS, AGE_RANGE_OPTIONS } from "@/lib/demographics";
 import { useTranslation } from "react-i18next";
@@ -44,6 +48,7 @@ export function SettingsPage() {
   const { toast } = useToast();
   const { t } = useTranslation("account");
   const { t: tDemographics } = useTranslation("demographics");
+  const { t: tWhisperBox } = useTranslation("whisperBox");
   const [fullName, setFullName] = useState("");
   const [gender, setGender] = useState("");
   const [ageRange, setAgeRange] = useState("");
@@ -78,6 +83,59 @@ export function SettingsPage() {
       .then((sub) => setPushEnabled(!!sub))
       .finally(() => setPushCheckDone(true));
   }, []);
+
+  // There's no dedicated boolean field for "is Whisper Box on" anywhere the
+  // frontend can read directly — the recap endpoint's whisperBoxMessagesReceived
+  // is null unless the caller has whisperBoxEnabled (see UserRecap's own doc
+  // comment), which is the signal this card uses instead. enableWhisperBox /
+  // disableWhisperBox's own responses drive `whisperBoxOverride` so the
+  // switch and share link update instantly rather than waiting on a second
+  // round trip to refetch recap.
+  const { data: recap, isLoading: recapLoading } = useGetUserRecap();
+  const [whisperBoxOverride, setWhisperBoxOverride] = useState<{ enabled: boolean; handle: string | null } | null>(null);
+  const recapWhisperBoxEnabled = recap ? recap.whisperBoxMessagesReceived !== null : undefined;
+  const whisperBoxEnabled = whisperBoxOverride?.enabled ?? recapWhisperBoxEnabled ?? false;
+  const whisperBoxHandle = whisperBoxOverride?.handle ?? profile?.whispererHandle ?? null;
+  const enableWhisperBox = useEnableWhisperBox();
+  const disableWhisperBox = useDisableWhisperBox();
+
+  function handleWhisperBoxToggleSuccess(enabled: boolean, handle: string | null) {
+    setWhisperBoxOverride({ enabled, handle });
+    queryClient.invalidateQueries({ queryKey: getGetUserRecapQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetUserProfileQueryKey() });
+    toast({ title: enabled ? tWhisperBox("settingsSection.toastEnabled") : tWhisperBox("settingsSection.toastDisabled") });
+  }
+
+  function handleWhisperBoxToggleError() {
+    toast({ title: tWhisperBox("settingsSection.toastToggleFailed"), variant: "destructive" });
+  }
+
+  function handleToggleWhisperBox(enabled: boolean) {
+    if (enabled) {
+      enableWhisperBox.mutate(undefined, {
+        onSuccess: (result) => handleWhisperBoxToggleSuccess(true, result.handle),
+        onError: handleWhisperBoxToggleError,
+      });
+    } else {
+      disableWhisperBox.mutate(undefined, {
+        onSuccess: () => handleWhisperBoxToggleSuccess(false, whisperBoxHandle),
+        onError: handleWhisperBoxToggleError,
+      });
+    }
+  }
+
+  function handleShareWhisperBoxLink() {
+    if (!whisperBoxHandle) return;
+    const url = `${window.location.origin}/whisper-box/${whisperBoxHandle}`;
+    if (navigator.share) {
+      navigator.share({ title: tWhisperBox("settingsSection.shareTitle"), url }).catch(() => {});
+      return;
+    }
+    navigator.clipboard
+      .writeText(url)
+      .then(() => toast({ title: tWhisperBox("settingsSection.toastLinkCopied") }))
+      .catch(() => toast({ title: tWhisperBox("settingsSection.toastCopyFailed"), variant: "destructive" }));
+  }
 
   async function handleEnablePush() {
     setPushLoading(true);
@@ -495,6 +553,63 @@ export function SettingsPage() {
                 data-testid="switch-show-online-status"
               />
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Whisper Box — the app's one deliberately anonymous-SENDER
+            surface: opting in gets a public link anyone (no account needed)
+            can use to send one anonymous message. See
+            docs/features-community.md's "Whisper Box" section. */}
+        <Card className="bg-card border-border/50">
+          <CardHeader>
+            <CardTitle className="text-base font-serif flex items-center gap-2">
+              <Mailbox className="w-4 h-4 text-primary" /> {tWhisperBox("settingsSection.cardTitle")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {recapLoading && whisperBoxOverride === null ? (
+              <Skeleton className="h-10 rounded-xl" />
+            ) : (
+              <>
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{tWhisperBox("settingsSection.toggleLabel")}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {whisperBoxEnabled
+                        ? tWhisperBox("settingsSection.enabledDescription")
+                        : tWhisperBox("settingsSection.disabledDescription")}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={whisperBoxEnabled}
+                    onCheckedChange={handleToggleWhisperBox}
+                    disabled={enableWhisperBox.isPending || disableWhisperBox.isPending}
+                    data-testid="switch-whisper-box-enabled"
+                  />
+                </div>
+                {whisperBoxEnabled && whisperBoxHandle && (
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/30 border border-border/40">
+                    <Input
+                      readOnly
+                      value={`${window.location.origin}/whisper-box/${whisperBoxHandle}`}
+                      onFocus={(e) => e.currentTarget.select()}
+                      className="text-xs bg-transparent border-none px-0 h-auto flex-1 truncate focus-visible:ring-0"
+                      data-testid="input-whisper-box-link"
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="rounded-full shrink-0"
+                      onClick={handleShareWhisperBoxLink}
+                      data-testid="button-share-whisper-box-link"
+                    >
+                      <Share2 className="w-3.5 h-3.5 mr-1.5" /> {tWhisperBox("settingsSection.shareButton")}
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
           </CardContent>
         </Card>
 

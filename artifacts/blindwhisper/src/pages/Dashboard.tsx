@@ -1,9 +1,9 @@
 import { useEffect, useState, lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
-import { useGetWhispStats, useListSuggestions, getListSuggestionsQueryKey, useGetUserProfile } from "@workspace/api-client-react";
+import { useGetWhispStats, useListSuggestions, getListSuggestionsQueryKey, useGetUserProfile, useGetUserRecap, useGetWhisperBoxUnreadCount } from "@workspace/api-client-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Send, Eye, PlayCircle, MessageSquareHeart, TrendingUp, Ghost, Sparkles, Repeat, Heart } from "lucide-react";
+import { Send, Eye, PlayCircle, MessageSquareHeart, TrendingUp, Ghost, Sparkles, Repeat, Heart, PartyPopper, Mailbox } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link, useLocation } from "wouter";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -28,12 +28,23 @@ const FEATURED_SUGGESTIONS_PARAMS = { featured: "true" };
 
 export function Dashboard() {
   const { t } = useTranslation("whisp");
+  // Second namespace hook, same pattern SettingsPage.tsx uses for its
+  // `tDemographics` alias — Whisper Box's own copy lives in its own
+  // namespace rather than crowding into whisp.json.
+  const { t: tWhisperBox } = useTranslation("whisperBox");
   const { data: stats, isLoading } = useGetWhispStats();
   const { data: profile } = useGetUserProfile();
   const { data: suggestionsData } = useListSuggestions(FEATURED_SUGGESTIONS_PARAMS, {
     query: { queryKey: getListSuggestionsQueryKey(FEATURED_SUGGESTIONS_PARAMS) },
   });
   const featuredSuggestion = suggestionsData?.items[0];
+  // whisperBoxMessagesReceived is null unless the caller has whisperBoxEnabled
+  // — see UserRecap's own doc comment. There's no dedicated boolean field for
+  // this anywhere else the frontend can read, so recap doubles as the signal.
+  const { data: recap } = useGetUserRecap();
+  const whisperBoxEnabled = recap ? recap.whisperBoxMessagesReceived !== null : false;
+  const { data: whisperBoxUnread } = useGetWhisperBoxUnreadCount();
+  const whisperBoxUnreadCount = whisperBoxUnread?.unreadCount ?? 0;
   const [, setLocation] = useLocation();
 
   // First-Dashboard-visit nudge to verify a phone number (see
@@ -312,6 +323,73 @@ export function Dashboard() {
                     </p>
                     <Link href="/suggestions">
                       <Button variant="outline" className="w-full rounded-full">{t("dashboard.suggestions.browse")}</Button>
+                    </Link>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Recap CTA — points at the shareable "Wrapped"-style stats
+                card (RecapPage); a self-contained, additive block on
+                purpose since Dashboard.tsx is shared with other in-flight
+                work. */}
+            <h2 className="text-xl font-serif font-semibold pt-2">{t("dashboard.recap.title")}</h2>
+            <Card className="bg-card border-border/50 relative overflow-hidden" data-testid="card-recap-nudge">
+              <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] bg-gilded/10 rounded-full blur-[60px] pointer-events-none" />
+              <CardContent className="p-6 text-center">
+                <div className="w-16 h-16 rounded-full bg-gilded/15 flex items-center justify-center mx-auto mb-4">
+                  <PartyPopper className="w-8 h-8 text-gilded" />
+                </div>
+                <h3 className="text-lg font-medium text-foreground mb-2">{t("dashboard.recap.heading")}</h3>
+                <p className="text-sm text-muted-foreground mb-6">{t("dashboard.recap.description")}</p>
+                <Link href="/recap">
+                  <Button variant="outline" className="w-full rounded-full" data-testid="button-see-recap">
+                    {t("dashboard.recap.cta")}
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            {/* Whisper Box CTA — self-contained, additive block for the same
+                reason the Recap one above is: Dashboard.tsx is shared with
+                other in-flight work. */}
+            <h2 className="text-xl font-serif font-semibold pt-2">{tWhisperBox("dashboardCard.title")}</h2>
+            <Card className="bg-card border-border/50 relative overflow-hidden" data-testid="card-whisper-box-nudge">
+              <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] bg-primary/10 rounded-full blur-[60px] pointer-events-none" />
+              <CardContent className="p-6 text-center">
+                <div className="w-16 h-16 rounded-full bg-primary/15 flex items-center justify-center mx-auto mb-4">
+                  <Mailbox className="w-8 h-8 text-primary" />
+                </div>
+                {!whisperBoxEnabled ? (
+                  <>
+                    <h3 className="text-lg font-medium text-foreground mb-2">{tWhisperBox("dashboardCard.getStartedTitle")}</h3>
+                    <p className="text-sm text-muted-foreground mb-6">{tWhisperBox("dashboardCard.getStartedDescription")}</p>
+                    <Link href="/settings">
+                      <Button variant="outline" className="w-full rounded-full" data-testid="button-get-whisper-box">
+                        {tWhisperBox("dashboardCard.getStartedCta")}
+                      </Button>
+                    </Link>
+                  </>
+                ) : whisperBoxUnreadCount > 0 ? (
+                  <>
+                    <h3 className="text-lg font-medium text-foreground mb-2">
+                      {tWhisperBox("dashboardCard.unreadTitle", { count: whisperBoxUnreadCount })}
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-6">{tWhisperBox("dashboardCard.unreadDescription")}</p>
+                    <Link href="/whisper-box">
+                      <Button className="w-full rounded-full" data-testid="button-view-whisper-box-inbox">
+                        {tWhisperBox("dashboardCard.viewInboxCta")}
+                      </Button>
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="text-lg font-medium text-foreground mb-2">{tWhisperBox("dashboardCard.idleTitle")}</h3>
+                    <p className="text-sm text-muted-foreground mb-6">{tWhisperBox("dashboardCard.idleDescription")}</p>
+                    <Link href="/whisper-box">
+                      <Button variant="outline" className="w-full rounded-full" data-testid="button-view-whisper-box-inbox">
+                        {tWhisperBox("dashboardCard.viewInboxCta")}
+                      </Button>
                     </Link>
                   </>
                 )}

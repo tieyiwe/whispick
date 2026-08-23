@@ -25,7 +25,7 @@ It lives in the repository so it versions with the code.
 ## Ground rules that apply everywhere
 
 - **Product terms stay in English in all languages:** Blind Whisper, Whisp(s), Whisper Link(s),
-  Whisperer(s), Blind Circle(s), Debate Now, Town Crier, Circle Scout, Ghost Boost.
+  Whisperer(s), Blind Circle(s), Debate Now, Town Crier, Circle Scout, Ghost Boost, Whisper Box.
 - **Ghost Boost is currently disabled** and must not appear in public metadata or marketing.
 - Private links (`/w/…`, `/tw/…`) are secrets — never logged, never indexed, never shared in
   marketing material.

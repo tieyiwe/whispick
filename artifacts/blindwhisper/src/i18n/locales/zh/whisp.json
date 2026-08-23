@@ -47,6 +47,12 @@
       "whisperThis": "把这个 Whisper 出去",
       "description": "浏览精选视频库,给你圈子里可能需要的人 whisper 一个。",
       "browse": "浏览推荐"
+    },
+    "recap": {
+      "title": "你的 Recap",
+      "heading": "查看你的 Recap",
+      "description": "可分享的 Blind Whisper 活动概览——发送、接收,应有尽有。",
+      "cta": "查看我的 Recap"
     }
   },
   "sendWhisp": {

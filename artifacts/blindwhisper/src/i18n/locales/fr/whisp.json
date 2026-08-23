@@ -47,6 +47,12 @@
       "whisperThis": "Whisperer ceci",
       "description": "Parcours une bibliothèque de vidéos sélectionnées et envoie-en une à quelqu'un de ton entourage qui en aurait besoin.",
       "browse": "Parcourir les suggestions"
+    },
+    "recap": {
+      "title": "Ton Recap",
+      "heading": "Découvre ton Recap",
+      "description": "Un aperçu de ton activité sur Blind Whisper, prêt à partager : envois, réceptions et tout le reste.",
+      "cta": "Voir mon Recap"
     }
   },
   "sendWhisp": {

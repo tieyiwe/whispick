@@ -47,6 +47,12 @@
       "whisperThis": "Whisper hii",
       "description": "Vinjari maktaba iliyoteuliwa ya video na um-whisper mmoja kwa mtu katika mzunguko wako anayeweza kuihitaji.",
       "browse": "Vinjari Mapendekezo"
+    },
+    "recap": {
+      "title": "Recap Yako",
+      "heading": "Angalia Recap Yako",
+      "description": "Muhtasari wa shughuli zako za Blind Whisper unaoweza kushirikiwa — zilizotumwa, zilizopokelewa, na zote zilizobaki.",
+      "cta": "Angalia Recap Yangu"
     }
   },
   "sendWhisp": {

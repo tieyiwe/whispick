@@ -20,6 +20,7 @@ Disallow: /circles
 Disallow: /whisper-groups
 Disallow: /media-library
 Disallow: /replies
+Disallow: /whisper-box$
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin
@@ -52,6 +53,7 @@ Disallow: /circles
 Disallow: /whisper-groups
 Disallow: /media-library
 Disallow: /replies
+Disallow: /whisper-box$
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin
@@ -84,6 +86,7 @@ Disallow: /circles
 Disallow: /whisper-groups
 Disallow: /media-library
 Disallow: /replies
+Disallow: /whisper-box$
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin
@@ -116,6 +119,7 @@ Disallow: /circles
 Disallow: /whisper-groups
 Disallow: /media-library
 Disallow: /replies
+Disallow: /whisper-box$
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin
@@ -148,6 +152,7 @@ Disallow: /circles
 Disallow: /whisper-groups
 Disallow: /media-library
 Disallow: /replies
+Disallow: /whisper-box$
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin
@@ -180,6 +185,7 @@ Disallow: /circles
 Disallow: /whisper-groups
 Disallow: /media-library
 Disallow: /replies
+Disallow: /whisper-box$
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin
@@ -212,6 +218,7 @@ Disallow: /circles
 Disallow: /whisper-groups
 Disallow: /media-library
 Disallow: /replies
+Disallow: /whisper-box$
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin
@@ -244,6 +251,7 @@ Disallow: /circles
 Disallow: /whisper-groups
 Disallow: /media-library
 Disallow: /replies
+Disallow: /whisper-box$
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin
@@ -276,6 +284,7 @@ Disallow: /circles
 Disallow: /whisper-groups
 Disallow: /media-library
 Disallow: /replies
+Disallow: /whisper-box$
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin
@@ -308,6 +317,7 @@ Disallow: /circles
 Disallow: /whisper-groups
 Disallow: /media-library
 Disallow: /replies
+Disallow: /whisper-box$
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin
@@ -340,6 +350,7 @@ Disallow: /circles
 Disallow: /whisper-groups
 Disallow: /media-library
 Disallow: /replies
+Disallow: /whisper-box$
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin
@@ -372,6 +383,7 @@ Disallow: /circles
 Disallow: /whisper-groups
 Disallow: /media-library
 Disallow: /replies
+Disallow: /whisper-box$
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin
@@ -404,6 +416,7 @@ Disallow: /circles
 Disallow: /whisper-groups
 Disallow: /media-library
 Disallow: /replies
+Disallow: /whisper-box$
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin
@@ -436,6 +449,7 @@ Disallow: /circles
 Disallow: /whisper-groups
 Disallow: /media-library
 Disallow: /replies
+Disallow: /whisper-box$
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin
@@ -468,6 +482,7 @@ Disallow: /circles
 Disallow: /whisper-groups
 Disallow: /media-library
 Disallow: /replies
+Disallow: /whisper-box$
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin
@@ -500,6 +515,7 @@ Disallow: /circles
 Disallow: /whisper-groups
 Disallow: /media-library
 Disallow: /replies
+Disallow: /whisper-box$
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin
@@ -532,6 +548,7 @@ Disallow: /circles
 Disallow: /whisper-groups
 Disallow: /media-library
 Disallow: /replies
+Disallow: /whisper-box$
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin
@@ -564,6 +581,7 @@ Disallow: /circles
 Disallow: /whisper-groups
 Disallow: /media-library
 Disallow: /replies
+Disallow: /whisper-box$
 Disallow: /credits
 Disallow: /settings
 Disallow: /admin

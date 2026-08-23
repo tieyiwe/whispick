@@ -47,6 +47,12 @@
       "whisperThis": "이거 Whisper하기",
       "description": "엄선된 영상 라이브러리를 둘러보고, 필요할 것 같은 주변 사람에게 whisper해보세요.",
       "browse": "추천 둘러보기"
+    },
+    "recap": {
+      "title": "내 Recap",
+      "heading": "내 Recap 보기",
+      "description": "보낸 것부터 받은 것까지, 공유할 수 있는 내 Blind Whisper 활동 요약이에요.",
+      "cta": "내 Recap 보기"
     }
   },
   "sendWhisp": {

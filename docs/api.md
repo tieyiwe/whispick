@@ -111,11 +111,12 @@ Per-area endpoint tables live in the feature pages:
   `/circles[/:id]`, `/whisper-groups[/sends/:groupSendId|/:id]`,
   `/media-library`, `/replies`, `/credits`, `/settings`,
   `/account/security/*`, `/invite`, `/debate-topics/new`,
-  `/debate-topics/following`, `/send-text`, `/text-whisps[/:id]`.
+  `/debate-topics/following`, `/send-text`, `/text-whisps[/:id]`,
+  `/whisper-box` (inbox), `/recap`.
 - **Public:** `/debate-topics[/:id]`, `/w/:token`, `/tw/:token`,
-  `/invite/:token`, `/privacy(-policy)`, `/terms(-and-conditions)`,
-  `/sms-terms`, `/community-guidelines`, `/subscribe`, `/verify-subscription`,
-  `/unsubscribe`, 404 fallback.
+  `/invite/:token`, `/whisper-box/:handle`, `/privacy(-policy)`,
+  `/terms(-and-conditions)`, `/sms-terms`, `/community-guidelines`,
+  `/subscribe`, `/verify-subscription`, `/unsubscribe`, 404 fallback.
 - **Admin:** `/admin_pro` + `/users[/:id]`, `/whisps[/:id]`, `/analytics`,
   `/projects`, `/suggestions`, `/moderation`, `/reports`, `/policies`,
   `/access`, `/notifications`, `/debate-agent`, `/circle-agent`, `/audit-log`.

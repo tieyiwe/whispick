@@ -1,0 +1,75 @@
+{
+  "publicWhisperBoxPage": {
+    "notFoundTitle": "Ce lien Whisper Box n'est pas actif",
+    "notFoundDescription": "Le lien est peut-être incorrect, ou cette personne a désactivé sa Whisper Box.",
+    "heading": "Envoyer un message anonyme à {{handle}}",
+    "subheading": "Cette personne ne saura jamais que c'était vous — à moins que vous ne le lui disiez.",
+    "messageLabel": "Votre message",
+    "messagePlaceholder": "Dites ce que vous avez sur le cœur...",
+    "aliasLabel": "Signer comme (facultatif)",
+    "aliasPlaceholder": "ex. Un ami, Quelqu'un qui tient à vous...",
+    "privacyNote": "C'est totalement anonyme. Rien à votre sujet n'est partagé — ni votre nom, ni votre compte, ni quoi que ce soit d'autre.",
+    "sendButton": "Envoyer anonymement",
+    "successTitle": "Message envoyé",
+    "successDescription": "Il a été livré anonymement. Rien ne permet de savoir que c'était vous.",
+    "sendAnotherButton": "Envoyer un autre message",
+    "signUpPrompt": "Vous voulez votre propre Whisper Box ?",
+    "signUpLinkText": "Inscription gratuite",
+    "poweredByPrefix": "Propulsé par",
+    "poweredBySuffix": "— envoyez des whisps anonymes aux personnes qui comptent pour vous.",
+    "toastValidationError": "Ce message n'a pas pu être envoyé — vérifiez-le et réessayez.",
+    "toastRateLimitedTitle": "Vous envoyez beaucoup de messages",
+    "toastRateLimitedDescription": "Merci de patienter un peu avant d'en envoyer un autre.",
+    "toastSendFailed": "Impossible d'envoyer ce message. Veuillez réessayer."
+  },
+  "whisperBoxInbox": {
+    "title": "Whisper Box",
+    "subtitle": "Messages anonymes envoyés à votre lien public Whisper Box.",
+    "anonymous": "Anonyme",
+    "newBadge": "Nouveau",
+    "timeAgo": "il y a {{time}}",
+    "deleteButton": "Supprimer",
+    "deleteDialog": {
+      "title": "Supprimer ce message ?",
+      "description": "Cette action est irréversible. Le message sera définitivement supprimé de votre Whisper Box.",
+      "cancel": "Annuler",
+      "confirm": "Supprimer"
+    },
+    "toastDeleteSuccess": "Message supprimé",
+    "toastDeleteError": "Impossible de supprimer ce message",
+    "toastMarkReadError": "Impossible de mettre à jour ce message",
+    "emptyState": {
+      "titleEnabled": "Votre Whisper Box est vide",
+      "descriptionEnabled": "Partagez votre lien et les messages anonymes commenceront à apparaître ici.",
+      "manageCta": "Obtenir votre lien",
+      "titleDisabled": "Whisper Box n'est pas activée",
+      "descriptionDisabled": "Activez-la dans Paramètres pour obtenir un lien public permettant à n'importe qui de vous envoyer un message anonyme, sans compte de son côté.",
+      "enableCta": "Activer dans Paramètres"
+    }
+  },
+  "settingsSection": {
+    "cardTitle": "Whisper Box",
+    "toggleLabel": "Whisper Box",
+    "enabledDescription": "Toute personne ayant votre lien peut vous envoyer un message anonyme — sans compte.",
+    "disabledDescription": "Activez ceci pour obtenir un lien public permettant à n'importe qui de vous envoyer un message anonyme.",
+    "shareButton": "Partager",
+    "shareTitle": "Blind Whisper — Whisper Box",
+    "toastLinkCopied": "Lien copié — partagez-le où vous voulez",
+    "toastCopyFailed": "Impossible de copier — copiez-le manuellement",
+    "toastEnabled": "Whisper Box est activée",
+    "toastDisabled": "Whisper Box est désactivée",
+    "toastToggleFailed": "Impossible de mettre à jour ce réglage. Veuillez réessayer."
+  },
+  "dashboardCard": {
+    "title": "Whisper Box",
+    "getStartedTitle": "Obtenez votre Whisper Box",
+    "getStartedDescription": "Un lien public permettant à n'importe qui de vous envoyer un message anonyme. Partagez-le dans votre bio.",
+    "getStartedCta": "L'activer",
+    "unreadTitle_one": "Vous avez {{count}} nouveau message",
+    "unreadTitle_other": "Vous avez {{count}} nouveaux messages",
+    "unreadDescription": "Quelqu'un vous a envoyé un mot anonyme.",
+    "idleTitle": "Whisper Box",
+    "idleDescription": "Partagez votre lien pour recevoir plus de messages anonymes.",
+    "viewInboxCta": "Voir la boîte de réception"
+  }
+}
