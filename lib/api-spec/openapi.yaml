@@ -1580,6 +1580,24 @@ paths:
                     type: integer
                 required: [followerCount, followingCount]
 
+  /follows/online-status:
+    get:
+      operationId: getFollowedOnlineStatus
+      tags: [follows]
+      summary: Which followed Whisperer handles are online right now (signed in)
+      description: >-
+        The only place in the app that surfaces presence at all — everywhere
+        else is an anonymous thread where this would be a real
+        deanonymization risk. Empty immediately if the viewer has their own
+        visibility off.
+      responses:
+        "200":
+          description: Online status by handle
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FollowedOnlineStatusResponse"
+
   /public/debate-topics:
     get:
       operationId: listDebateTopics
@@ -1941,6 +1959,12 @@ paths:
             type: string
           required: false
         - in: query
+          name: compliance
+          schema:
+            type: string
+            enum: [mfa_missing, policy_pending, email_unverified, phone_unverified]
+          required: false
+        - in: query
           name: page
           schema:
             type: integer
@@ -2089,6 +2113,55 @@ paths:
                 $ref: "#/components/schemas/AdminWhispListResponse"
         "404":
           description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/users/online-now:
+    get:
+      operationId: adminGetUsersOnlineNow
+      tags: [admin]
+      summary: How many accounts have been active in the last presence window, for the Analytics "online now" tile (admin only)
+      description: >-
+        An admin-only aggregate headcount — not gated by any individual's
+        showOnlineStatus, which only governs whether other users can see a
+        specific person online, not whether the platform's own operators can
+        see an anonymous count.
+      responses:
+        "200":
+          description: Online count
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOnlineNowResponse"
+
+  /admin/users/compliance-reminder:
+    post:
+      operationId: adminSendComplianceReminder
+      tags: [admin]
+      summary: Nudge specific users about a single missing compliance item, via in-app notification, best-effort push, and email (admin only)
+      description: >-
+        Same persisted-notification-plus-email delivery as POST
+        /admin/notifications, just pre-written per compliance kind rather
+        than admin-authored. Never re-verifies the flag is still true
+        server-side before sending — a reminder sent after someone already
+        fixed it is a harmless no-op.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ComplianceReminderInput"
+      responses:
+        "201":
+          description: Sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SendNotificationResult"
+        "400":
+          description: Bad request
           content:
             application/json:
               schema:
@@ -2756,6 +2829,27 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UsageStatsResponse"
+
+  /admin/analytics/traffic-by-hour:
+    get:
+      operationId: adminGetTrafficByHour
+      tags: [admin]
+      summary: 24-bucket UTC histogram of platform activity, for the Analytics "when is the app actually used" chart (admin only)
+      description: Sums feature_events.count (not row count — one row can represent many clicks), not just how many events were logged.
+      parameters:
+        - in: query
+          name: days
+          schema:
+            type: integer
+          required: false
+          description: Window in days (default 30, max 365).
+      responses:
+        "200":
+          description: Traffic by hour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrafficByHourResponse"
 
   /admin/usage-insights:
     post:
@@ -3663,6 +3757,61 @@ paths:
                 $ref: "#/components/schemas/PostCircleVideoResult"
         "400":
           description: Bad request — the URL couldn't be resolved (unsupported host, private/restricted content, fetch failure)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/text-whisps/broadcast:
+    post:
+      operationId: adminBroadcastTextWhisp
+      tags: [admin]
+      summary: Send a platform Text Whisp to every user or a chosen set (admin only)
+      description: >-
+        Always sent from the reserved system account, not the acting admin —
+        a platform broadcast shouldn't be attributed to whichever admin
+        happened to click Send. Deliberately not anonymous to the recipient.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BroadcastTextWhispInput"
+      responses:
+        "201":
+          description: Sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BroadcastTextWhispResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/text-whisps/to-staff:
+    post:
+      operationId: adminSendTextWhispToStaff
+      tags: [admin]
+      summary: One staff member Text Whisping a colleague directly by account, skipping the phone-number lookup a normal Text Whisp needs (admin only)
+      description: Sent from the acting admin's own account, not the system user — a genuinely one named colleague writing to another.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TextWhispToStaffInput"
+      responses:
+        "201":
+          description: Sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TextWhispToStaffResult"
+        "400":
+          description: Bad request
           content:
             application/json:
               schema:
@@ -4706,6 +4855,55 @@ components:
       required:
         - replyText
 
+    BroadcastTextWhispInput:
+      type: object
+      properties:
+        messageText:
+          type: string
+          minLength: 1
+          maxLength: 260
+        audience:
+          type: string
+          enum: [all, selected]
+        userIds:
+          type: array
+          items:
+            type: string
+          maxItems: 5000
+          description: Recipients when audience is 'selected'; ignored for 'all'.
+      required:
+        - messageText
+        - audience
+
+    BroadcastTextWhispResult:
+      type: object
+      properties:
+        recipientCount:
+          type: integer
+      required:
+        - recipientCount
+
+    TextWhispToStaffInput:
+      type: object
+      properties:
+        recipientAdminId:
+          type: string
+        messageText:
+          type: string
+          minLength: 1
+          maxLength: 260
+      required:
+        - recipientAdminId
+        - messageText
+
+    TextWhispToStaffResult:
+      type: object
+      properties:
+        id:
+          type: string
+      required:
+        - id
+
     Invite:
       type: object
       properties:
@@ -5060,6 +5258,12 @@ components:
         emailNotificationsEnabled:
           type: boolean
           description: Whether this Whisperer wants the "you have a new whisp" email in addition to the in-app notification. On by default — see PATCH /user/profile to change it.
+        showOnlineStatus:
+          type: boolean
+          description: Whether accounts that follow this Whisperer can see them as online (see GET /follows/online-status). On by default.
+        twoFactorEnabled:
+          type: ["boolean", "null"]
+          description: Best-effort, admin-facing mirror of Clerk's own user.twoFactorEnabled — never used for any access-control decision. Null means never synced yet, distinct from false ("synced, and it's off").
         createdAt:
           type: string
       required:
@@ -5071,6 +5275,7 @@ components:
         - whisperLinksUsed
         - role
         - emailNotificationsEnabled
+        - showOnlineStatus
         - createdAt
 
     UserProfileUpdate:
@@ -5086,6 +5291,9 @@ components:
           type: ["string", "null"]
         emailNotificationsEnabled:
           type: boolean
+        showOnlineStatus:
+          type: boolean
+          description: Whether accounts that follow this Whisperer can see them as online (see GET /follows/online-status).
         countryCode:
           type: ["string", "null"]
         preferredLanguage:
@@ -5155,6 +5363,17 @@ components:
         - type
         - amount
         - createdAt
+
+    FollowedOnlineStatusResponse:
+      type: object
+      properties:
+        online:
+          type: object
+          additionalProperties:
+            type: boolean
+          description: Keyed by whispererHandle. Only handles the viewer is allowed to see presence for are included — see GET /follows/online-status.
+      required:
+        - online
 
     CircleFeedItem:
       type: object
@@ -5541,6 +5760,11 @@ components:
           type: ["string", "null"]
         createdAt:
           type: string
+        compliance:
+          $ref: "#/components/schemas/ComplianceFlags"
+        online:
+          type: boolean
+          description: Whether this account has been active in the last presence window (see lib/presence.ts) — an admin-only aggregate signal, not gated by the account's own showOnlineStatus preference.
       required:
         - id
         - clerkId
@@ -5551,6 +5775,26 @@ components:
         - role
         - banned
         - createdAt
+        - compliance
+        - online
+
+    ComplianceFlags:
+      type: object
+      description: Compliance signals for the admin Users dashboard — never used for any access-control decision, purely a "does this person need a nudge" view. See lib/compliance.ts.
+      properties:
+        emailVerified:
+          type: boolean
+        phoneVerified:
+          type: boolean
+        mfaEnabled:
+          type: ["boolean", "null"]
+          description: Mirrors AdminUser.compliance's users.twoFactorEnabled — null means never synced yet, distinct from false ("synced, and it's off").
+        policyUpToDate:
+          type: boolean
+      required:
+        - emailVerified
+        - phoneVerified
+        - policyUpToDate
 
     AdminUserListResponse:
       type: object
@@ -5646,6 +5890,34 @@ components:
         - moderationFlags
         - debateTopics
         - debateTopicComments
+
+    AdminOnlineNowResponse:
+      type: object
+      properties:
+        onlineCount:
+          type: integer
+        windowMinutes:
+          type: integer
+          description: Width of the presence window this count was computed over, in minutes.
+      required:
+        - onlineCount
+        - windowMinutes
+
+    ComplianceReminderInput:
+      type: object
+      properties:
+        userIds:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          maxItems: 200
+        kind:
+          type: string
+          enum: [mfa_missing, policy_pending, email_unverified, phone_unverified]
+      required:
+        - userIds
+        - kind
 
     AdminAuditLogEntry:
       type: object
@@ -5959,6 +6231,32 @@ components:
           type: integer
       required:
         - items
+        - days
+
+    TrafficByHourResponse:
+      type: object
+      properties:
+        hours:
+          type: array
+          description: Exactly 24 entries, one per UTC hour (0-23), in order.
+          items:
+            type: object
+            properties:
+              hour:
+                type: integer
+              count:
+                type: integer
+            required:
+              - hour
+              - count
+        peakHour:
+          type: ["integer", "null"]
+          description: The hour with the highest count, or null if every bucket is 0 across the whole window.
+        days:
+          type: integer
+      required:
+        - hours
+        - peakHour
         - days
 
     UsageInsightsInput:

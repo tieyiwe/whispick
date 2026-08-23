@@ -4,7 +4,6 @@ import {
   hqProjectsTable,
   hqTasksTable,
   hqTaskCommentsTable,
-  adminGrantsTable,
   usersTable,
   type User,
 } from "@workspace/db";
@@ -13,6 +12,8 @@ import { randomUUID } from "crypto";
 import { z } from "zod";
 import { requireAdmin, requirePermission } from "../lib/adminAuth";
 import { notifyUserPersisted } from "../lib/push";
+import { listStaff } from "../lib/staff";
+import { logAdminAction } from "../lib/adminAudit";
 
 const router: IRouter = Router();
 
@@ -24,17 +25,6 @@ const router: IRouter = Router();
 // default.
 router.use(requireAdmin);
 router.use(requirePermission("projects"));
-
-// Everyone assignable: the owner plus every linked staff grant. Email is
-// the display identity here — this is an internal tool among people who
-// already know each other.
-async function listStaff(): Promise<{ id: string; email: string; roleTitle: string }[]> {
-  const grants = await db.select().from(adminGrantsTable);
-  const linked = grants.filter((g) => g.userId);
-  const admins = await db.select({ id: usersTable.id, email: usersTable.email, role: usersTable.role }).from(usersTable).where(eq(usersTable.role, "admin"));
-  const roleByUserId = new Map(linked.map((g) => [g.userId!, g.roleTitle]));
-  return admins.map((a) => ({ id: a.id, email: a.email, roleTitle: roleByUserId.get(a.id) ?? "Super Admin" }));
-}
 
 // GET /api/admin/projects
 router.get("/projects", async (_req, res): Promise<void> => {
@@ -109,6 +99,13 @@ router.patch("/projects/:id", async (req, res): Promise<void> => {
       ...(parsed.data.status !== undefined ? { status: parsed.data.status } : {}),
     })
     .where(eq(hqProjectsTable.id, project.id));
+  // Only the status transition is logged — a rename/description edit is
+  // routine workspace upkeep, but archiving is the one change worth being
+  // able to answer "who closed this out, and when."
+  if (parsed.data.status !== undefined && parsed.data.status !== project.status) {
+    const adminUser = (req as any).adminUser as User;
+    logAdminAction(adminUser.id, "hq_project.status_change", { type: "hq_project", id: project.id }, { name: project.name, from: project.status, to: parsed.data.status });
+  }
   const updated = await db.select().from(hqProjectsTable).where(eq(hqProjectsTable.id, project.id)).then((r) => r[0]);
   res.json(updated);
 });
@@ -266,6 +263,8 @@ router.delete("/tasks/:id", async (req, res): Promise<void> => {
   }
   await db.delete(hqTaskCommentsTable).where(eq(hqTaskCommentsTable.taskId, task.id));
   await db.delete(hqTasksTable).where(eq(hqTasksTable.id, task.id));
+  const adminUser = (req as any).adminUser as User;
+  logAdminAction(adminUser.id, "hq_task.delete", { type: "hq_task", id: task.id }, { title: task.title, projectId: task.projectId });
   res.status(204).send();
 });
 

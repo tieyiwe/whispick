@@ -67,6 +67,28 @@ cross-test 429 pollution; `adminMfaVerifyLimiter` additionally `skip`s under
 and re-verifies a real TOTP code before every admin-gated test — far more
 often than any legitimate admin unlocks in production.
 
+## Online presence
+
+`users.showOnlineStatus` (default `true`) is a single **reciprocal** toggle
+(Settings → Privacy): turning it off both hides your own online status from
+everyone and stops you from seeing anyone else's (`lib/presence.ts`'s
+`presenceFor`). "Online" = active within the last 5 minutes
+(`ONLINE_WINDOW_MS`).
+
+**Deliberately NOT wired into Whisper Links or Text Whisps at all** — the
+codebase enforces an absolute, unconditional rule that a whisp/text-whisp's
+`recipientUserId` is never exposed to the sender via the API, not even after
+an accepted Reveal. Computing "is the recipient online" from that id, in
+either direction, would break that invariant and hand back exactly the live
+proximity/timing signal `lib/replyNotificationScheduler.ts`'s randomized
+reply-notification delay was built to hide (see that scheduler's own
+anti-correlation note). Presence is visible **only** in Debate Now, between
+a follower and an account they follow (`GET /follows/online-status`) — a
+`whispererHandle` is a persistent, opt-in-followable pseudonym by design,
+not an anonymity boundary, so surfacing presence there adds nothing an
+attacker didn't already have. Don't extend presence to any anonymous thread
+without re-reading this reasoning first.
+
 ## Privacy rules (product-level)
 
 - Whisper Links (`/w/…`) and Text Whisp links (`/tw/…`) are capability URLs —

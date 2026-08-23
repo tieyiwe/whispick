@@ -95,11 +95,21 @@ result reports `emailsSent` / `emailsSkipped`.
   (capture-phase listener; uuids/digit-runs normalized to `*`), batches ≤50 events
   every 20 s to public `/api/public/usage-events`, stored in `feature_events`.
   Admin sees most-used / least-used features — for trimming clutter later.
+- **Traffic by hour**: `GET /admin/analytics/traffic-by-hour` sums
+  `feature_events.count` (not row count — one row can represent many clicks)
+  into a 24-bucket UTC histogram over a configurable window, for a "when is
+  the app actually used" chart alongside the peak-hour text insight
+  `lib/insights.ts` already surfaces.
+- **Online now**: `GET /admin/users/online-now` — a platform-wide headcount
+  of accounts active in the last 5 minutes. This aggregate is visible to
+  admins regardless of any individual's presence-visibility toggle (see
+  below) — that toggle governs what OTHER USERS can see about one person,
+  not the platform operators' own aggregate view.
 - **AI insights**: `lib/usageInsights.ts` sends aggregated stats to Anthropic
   (`claude-haiku-4-5-20251001`) and returns practical product insights
   (JSON contract with raw-text fallback).
-- Users page shows accurate **last seen** (`users.lastSeenAt`) and has a
-  "Repair placeholder emails" backfill button.
+- Users page shows accurate **last seen** (`users.lastSeenAt`, polled live)
+  and has a "Repair placeholder emails" backfill button.
 
 ## Projects & Tasks (`/admin_pro/projects`)
 
@@ -119,7 +129,72 @@ Tables `hq_projects`, `hq_tasks`, `hq_task_comments`; routes in
 ## Audit log (`/admin_pro/audit-log`)
 
 `admin_audit_log` table + `logAdminAction` — sensitive admin actions are recorded
-(who, what, target) and browsable.
+(who, what, target) and browsable, filterable by admin and target type
+(`listAdminAuditLog`). Coverage includes: user role/plan/ban changes and
+deletion, whisp deletion, moderation flag review (dismiss/undismiss) and
+takedown, content report updates, admin notification/announcement sends,
+compliance reminder sends, HQ project archiving and task deletion, access
+grant create/update/revoke, policy draft/discard/publish, profile-repair
+sweeps, usage-insight runs, and content-agent config changes/manual posts —
+plus every admin **login**: each successful MFA unlock (`admin_mfa.unlock`,
+distinct from one-time `admin_mfa.enroll`) is logged with the method used
+(TOTP vs. backup code), so "who accessed the HQ and when" is answerable
+alongside "what they did once inside."
+
+## Users: compliance dashboard & reminders
+
+`GET /admin/users` returns a `compliance` object per row
+(`lib/compliance.ts`'s `complianceFlagsFor`): `emailVerified` (not a
+placeholder address), `phoneVerified` (`phoneVerifiedAt` set),
+`mfaEnabled` (best-effort mirror of Clerk's `twoFactorEnabled` — see
+below; `null` means never synced), and `policyUpToDate` (accepted the
+latest published version of every policy doc type). Also an `online`
+flag (active within the last 5 minutes) and, via
+`GET /admin/users/online-now`, a platform-wide online headcount for the
+Analytics tile.
+
+A `?compliance=` filter (`mfa_missing | policy_pending | email_unverified |
+phone_unverified`) narrows the list to accounts needing that one thing —
+computed in application code (not SQL) over a capped scan window, since
+compliance is derived from a join plus a Clerk mirror rather than a plain
+column.
+
+`POST /admin/users/compliance-reminder` (`{userIds, kind}`) sends a
+pre-written persisted notification + email nudge for one compliance kind,
+to one user or many — the same delivery shape as the Notifications
+composer, just pre-authored per kind instead of admin-typed. Used for both
+the single-user "Send reminder" action and a bulk send from a filtered/
+selected list.
+
+**`users.twoFactorEnabled`** is a best-effort mirror of Clerk's own
+`user.twoFactorEnabled`, synced opportunistically in `ensureUser` on a
+24-hour per-user throttle (separate from the tighter 10-minute
+placeholder-email heal). Never used for any access-control decision —
+Clerk itself remains the single source of truth for whether 2FA is
+actually required; this column exists solely so the compliance dashboard
+doesn't need a Clerk API call per row.
+
+## Text Whisp tools (admin)
+
+Two admin-initiated sends reusing the Text Whisp table/UI, both always
+delivered purely in-app (never real SMS — the recipient is always a known
+account, never a phone-number guess):
+
+- **Broadcast** (`POST /admin/text-whisps/broadcast`, permission
+  `notifications`): a message to every user or a selected set. Sent from
+  the reserved system account (`lib/systemUser.ts`) with `senderAlias`
+  "Blind Whisper Team" — deliberately **not anonymous**, unlike a normal
+  person-to-person Text Whisp.
+- **Staff-direct** (`POST /admin/text-whisps/to-staff`): one staff member
+  reaching a colleague directly by account (validated against `listStaff()`
+  in `lib/staff.ts`), skipping the phone-number lookup a normal send needs.
+  Sent from the acting admin's own account/name, since colleagues already
+  know each other.
+
+Both reuse `text_whisps.source = 'admin'` to distinguish these from normal
+user sends; `recipientPhone` (NOT NULL on the table) holds the recipient's
+real phone if on file, else a non-actionable `internal:<userId>` sentinel —
+delivery for `source: 'admin'` rows never consults it.
 
 ## Content agents
 

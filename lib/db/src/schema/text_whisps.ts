@@ -91,6 +91,16 @@ export const textWhispsTable = pgTable("text_whisps", {
   // that made it moot.
   typingUserId: text("typing_user_id"),
   typingAt: timestamp("typing_at", { withTimezone: true }),
+  // 'user' (default, the normal person-to-person flow above) | 'admin' — an
+  // admin-composed send (routes/adminTextWhisps.ts): a platform broadcast to
+  // all/selected users, or one staff member reaching a colleague directly by
+  // account instead of by phone number. Both always have a real
+  // recipientUserId and are delivered purely in-app — never real SMS, since
+  // there's no anonymous-guest phase to this kind of send. senderAlias
+  // carries the visible "who this is from" for these (e.g. "Blind Whisper
+  // Team"), deliberately NOT anonymous — this is the platform or a named
+  // colleague speaking, not a stranger.
+  source: text("source").notNull().default("user"),
 }, (table) => [
   index("text_whisps_sender_id_idx").on(table.senderId),
   index("text_whisps_recipient_user_id_idx").on(table.recipientUserId),

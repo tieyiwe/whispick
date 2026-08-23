@@ -117,7 +117,11 @@ router.post("/verify", requireAuth, adminMfaVerifyLimiter, async (req, res): Pro
   }
 
   // Normal unlock: authenticator code first, backup code as the fallback.
+  // Logged (distinct from admin_mfa.enroll above) so "who accessed the
+  // admin panel and when" is part of the reviewable footprint, not just
+  // what they did once inside.
   if (verifyTotpCode(mfa.totpSecret, code)) {
+    logAdminAction(user.id, "admin_mfa.unlock", { type: "user", id: user.id }, { method: "totp" });
     res.json({ token: issueMfaToken(user.id) });
     return;
   }
@@ -125,6 +129,7 @@ router.post("/verify", requireAuth, adminMfaVerifyLimiter, async (req, res): Pro
   if (remaining !== null) {
     await db.update(adminMfaTable).set({ backupCodeHashes: JSON.stringify(remaining) }).where(eq(adminMfaTable.userId, user.id));
     logger.info({ userId: user.id, remaining: remaining.length }, "Admin backup code consumed");
+    logAdminAction(user.id, "admin_mfa.unlock", { type: "user", id: user.id }, { method: "backup_code", backupCodesRemaining: remaining.length });
     res.json({ token: issueMfaToken(user.id), backupCodesRemaining: remaining.length });
     return;
   }

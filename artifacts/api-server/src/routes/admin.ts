@@ -26,6 +26,7 @@ import {
   contentReportsTable,
   policyVersionsTable,
   policyAcceptancesTable,
+  featureEventsTable,
   type User,
 } from "@workspace/db";
 import { and, asc, count, desc, eq, gte, ilike, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
@@ -41,6 +42,8 @@ import { fetchClerkProfile, isPlaceholderEmail } from "../lib/ensureUser";
 import { aggregateFeatureUsage, generateUsageInsights } from "../lib/usageInsights";
 import { sendEmail, adminAnnouncementEmailHtml } from "../lib/email";
 import { httpUrlString, isHttpUrlOrAppPath } from "../lib/safeUrl";
+import { complianceFlagsFor, matchesComplianceFilter, type ComplianceFilter } from "../lib/compliance";
+import { isOnline, ONLINE_WINDOW_MS } from "../lib/presence";
 
 const router = Router();
 
@@ -76,12 +79,23 @@ function parsePagination(req: any): { page: number; pageSize: number } {
 // ---------------------------------------------------------------------------
 
 // GET /api/admin/users
+const COMPLIANCE_FILTERS: ComplianceFilter[] = ["mfa_missing", "policy_pending", "email_unverified", "phone_unverified"];
+// Compliance isn't a plain column — it's derived from a Clerk mirror plus a
+// join against policy_versions/policy_acceptances — so filtering on it can't
+// happen in the paginated SQL query above. Fetched and filtered in JS
+// instead, capped well above any realistic admin page size at this app's
+// scale; revisit with a real SQL join if the user base outgrows this.
+const COMPLIANCE_FILTER_SCAN_LIMIT = 1000;
+
 router.get("/users", async (req, res): Promise<void> => {
   const { page, pageSize } = parsePagination(req);
   const search = typeof req.query.search === "string" ? req.query.search.trim() : "";
   const planFilter = typeof req.query.plan === "string" ? req.query.plan : undefined;
   const roleFilter = typeof req.query.role === "string" ? req.query.role : undefined;
   const bannedFilter = req.query.banned === "true" ? true : req.query.banned === "false" ? false : undefined;
+  const complianceFilter = COMPLIANCE_FILTERS.includes(req.query.compliance as ComplianceFilter)
+    ? (req.query.compliance as ComplianceFilter)
+    : undefined;
 
   const conditions = [];
   if (search) conditions.push(or(ilike(usersTable.email, `%${search}%`), ilike(usersTable.fullName, `%${search}%`)));
@@ -90,12 +104,116 @@ router.get("/users", async (req, res): Promise<void> => {
   if (bannedFilter !== undefined) conditions.push(eq(usersTable.banned, bannedFilter));
   const where = conditions.length ? and(...conditions) : undefined;
 
+  if (complianceFilter) {
+    const scanned = await db.select().from(usersTable).where(where).orderBy(desc(usersTable.createdAt)).limit(COMPLIANCE_FILTER_SCAN_LIMIT);
+    const flagsById = await complianceFlagsFor(scanned);
+    const matching = scanned.filter((u) => matchesComplianceFilter(flagsById[u.id]!, complianceFilter));
+    const pageItems = matching.slice((page - 1) * pageSize, (page - 1) * pageSize + pageSize);
+    res.json({
+      items: pageItems.map((u) => ({ ...u, compliance: flagsById[u.id], online: isOnline(u.lastSeenAt) })),
+      total: matching.length,
+      page,
+      pageSize,
+    });
+    return;
+  }
+
   const [items, totalRow] = await Promise.all([
     db.select().from(usersTable).where(where).orderBy(desc(usersTable.createdAt)).limit(pageSize).offset((page - 1) * pageSize),
     db.select({ count: count() }).from(usersTable).where(where).then((r) => r[0]),
   ]);
+  const flagsById = await complianceFlagsFor(items);
 
-  res.json({ items, total: totalRow?.count ?? 0, page, pageSize });
+  res.json({
+    items: items.map((u) => ({ ...u, compliance: flagsById[u.id], online: isOnline(u.lastSeenAt) })),
+    total: totalRow?.count ?? 0,
+    page,
+    pageSize,
+  });
+});
+
+// GET /api/admin/users/online-now — how many accounts have been active in
+// the last ONLINE_WINDOW_MS, for the Analytics "online now" tile. Admin-only
+// aggregate count — not gated by any individual's showOnlineStatus, which
+// only governs whether OTHER USERS can see a specific person online, not
+// whether the platform's own operators can see an anonymous headcount.
+router.get("/users/online-now", async (_req, res): Promise<void> => {
+  const [{ count: onlineCount } = { count: 0 }] = await db
+    .select({ count: count() })
+    .from(usersTable)
+    .where(gte(usersTable.lastSeenAt, new Date(Date.now() - ONLINE_WINDOW_MS)));
+  res.json({ onlineCount, windowMinutes: ONLINE_WINDOW_MS / 60_000 });
+});
+
+const COMPLIANCE_REMINDER_COPY: Record<ComplianceFilter, { title: string; body: string; url: string }> = {
+  mfa_missing: {
+    title: "Turn on two-factor authentication",
+    body: "Add an authenticator app to your account in Settings → Account & Security — it only takes a minute and keeps your account a lot safer.",
+    url: "/account/security",
+  },
+  policy_pending: {
+    title: "Please review our updated policy",
+    body: "We've updated our Privacy Policy or Terms — open the app to review and accept before you continue.",
+    url: "/dashboard",
+  },
+  email_unverified: {
+    title: "We couldn't confirm your email",
+    body: "Your account's email on file looks off, which means you may be missing important notifications. Please check it in Settings.",
+    url: "/settings",
+  },
+  phone_unverified: {
+    title: "Verify your phone number",
+    body: "Verifying your phone lets Text Whisps and Whisper Links reach you directly instead of as a guest link. Add it in Settings.",
+    url: "/settings",
+  },
+};
+
+const complianceReminderSchema = z.object({
+  userIds: z.array(z.string().max(64)).min(1).max(200),
+  kind: z.enum(["mfa_missing", "policy_pending", "email_unverified", "phone_unverified"]),
+});
+
+// POST /api/admin/users/compliance-reminder — nudge specific users (one or
+// many, from the Users compliance dashboard) about a single missing thing.
+// Same persisted-notification-plus-email shape as POST /notifications, just
+// pre-written per compliance kind rather than admin-authored. Never verifies
+// the flag is still true server-side before sending — a reminder sent a
+// moment after someone already fixed it is a harmless no-op, not worth the
+// extra query on every send.
+router.post("/users/compliance-reminder", async (req, res): Promise<void> => {
+  const parsed = complianceReminderSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const adminUser = (req as any).adminUser as User;
+  const { title, body, url } = COMPLIANCE_REMINDER_COPY[parsed.data.kind];
+  const userIds = [...new Set(parsed.data.userIds)];
+
+  const recipients = await db.select().from(usersTable).where(inArray(usersTable.id, userIds));
+
+  await db.insert(notificationsTable).values(
+    recipients.map((r) => ({ id: randomUUID(), targetUserId: r.id, title, body, url, createdByAdminId: adminUser.id })),
+  );
+  const perUserCounts = await Promise.all(recipients.map((r) => notifyUser(r.id, title, body, url)));
+  const pushDelivered = perUserCounts.reduce((sum, n) => sum + n, 0);
+
+  let emailsSent = 0;
+  let emailsSkipped = 0;
+  const html = adminAnnouncementEmailHtml(title, body, url);
+  for (const r of recipients) {
+    if (!r.emailNotificationsEnabled || r.banned || isPlaceholderEmail(r.email, r.clerkId)) {
+      emailsSkipped++;
+      continue;
+    }
+    const ok = await sendEmail(r.email, title, html, { whispId: null, purpose: "admin_announcement" });
+    if (ok) emailsSent++;
+    else emailsSkipped++;
+  }
+
+  logAdminAction(adminUser.id, "users.compliance_reminder", { type: "user", id: "batch" }, { kind: parsed.data.kind, recipientCount: recipients.length, pushDelivered, emailsSent, emailsSkipped });
+
+  res.status(201).json({ recipientCount: recipients.length, pushDelivered, emailsSent, emailsSkipped });
 });
 
 // GET /api/admin/users/:id — everything needed to answer "what happened
@@ -179,8 +297,10 @@ router.get("/users/:id", async (req, res): Promise<void> => {
       .limit(50),
   ]);
 
+  const flagsById = await complianceFlagsFor([user]);
+
   res.json({
-    user,
+    user: { ...user, compliance: flagsById[user.id], online: isOnline(user.lastSeenAt) },
     recentWhisps,
     totalWhisps: totalWhispsRow?.count ?? 0,
     creditTransactions,
@@ -999,6 +1119,28 @@ router.get("/usage-stats", async (req, res): Promise<void> => {
   res.json({ items: stats, days });
 });
 
+// GET /api/admin/analytics/traffic-by-hour — 24-bucket UTC histogram of
+// platform activity (summed feature_events.count, not row count — one row
+// can represent many clicks, see that table's own comment), for the
+// Analytics "when is the app actually used" chart. Same window param as
+// usage-stats.
+router.get("/analytics/traffic-by-hour", async (req, res): Promise<void> => {
+  const days = Math.min(365, Math.max(1, parseInt(String(req.query.days ?? "30"), 10) || 30));
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+  const rows = await db
+    .select({ hour: sql<number>`extract(hour from ${featureEventsTable.createdAt})`, total: sql<number>`sum(${featureEventsTable.count})` })
+    .from(featureEventsTable)
+    .where(gte(featureEventsTable.createdAt, since))
+    .groupBy(sql`extract(hour from ${featureEventsTable.createdAt})`);
+
+  const byHour = new Map(rows.map((r) => [Number(r.hour), Number(r.total)]));
+  const hours = Array.from({ length: 24 }, (_, hour) => ({ hour, count: byHour.get(hour) ?? 0 }));
+  const peak = hours.reduce((best, h) => (h.count > best.count ? h : best), hours[0]!);
+
+  res.json({ hours, peakHour: peak.count > 0 ? peak.hour : null, days });
+});
+
 // POST /api/admin/usage-insights — the smart analyzer: aggregates the same
 // window and asks Claude for practical, owner-actionable product insights.
 router.post("/usage-insights", async (req, res): Promise<void> => {
@@ -1218,6 +1360,8 @@ router.patch("/moderation/flags/:id", async (req, res): Promise<void> => {
     .update(moderationFlagsTable)
     .set({ dismissed: parsed.data.dismissed, reviewedAt: new Date(), reviewedByAdminId: adminUser.id })
     .where(eq(moderationFlagsTable.id, existing.id));
+
+  logAdminAction(adminUser.id, "moderation.flag_review", { type: "moderation_flag", id: existing.id }, { dismissed: parsed.data.dismissed, contentType: existing.contentType });
 
   const updated = await db.select().from(moderationFlagsTable).where(eq(moderationFlagsTable.id, existing.id)).then((r) => r[0]);
   res.json(updated);

@@ -1111,6 +1111,8 @@ export const GetUserProfileResponse = zod.object({
   "whisperLinksUsed": zod.number(),
   "role": zod.string(),
   "emailNotificationsEnabled": zod.boolean().describe('Whether this Whisperer wants the \"you have a new whisp\" email in addition to the in-app notification. On by default — see PATCH \/user\/profile to change it.'),
+  "showOnlineStatus": zod.boolean().describe('Whether accounts that follow this Whisperer can see them as online (see GET \/follows\/online-status). On by default.'),
+  "twoFactorEnabled": zod.boolean().nullish().describe('Best-effort, admin-facing mirror of Clerk\'s own user.twoFactorEnabled — never used for any access-control decision. Null means never synced yet, distinct from false (\"synced, and it\'s off\").'),
   "createdAt": zod.string()
 })
 
@@ -1124,6 +1126,7 @@ export const UpdateUserProfileBody = zod.object({
   "gender": zod.string().nullish(),
   "ageRange": zod.string().nullish(),
   "emailNotificationsEnabled": zod.boolean().optional(),
+  "showOnlineStatus": zod.boolean().optional().describe('Whether accounts that follow this Whisperer can see them as online (see GET \/follows\/online-status).'),
   "countryCode": zod.string().nullish(),
   "preferredLanguage": zod.enum(['en', 'fr', 'ar', 'de', 'es', 'pt', 'zh', 'ja', 'hi', 'ru', 'id', 'bn', 'sw', 'ko']).optional().describe('Not nullable — unlike gender\/ageRange there\'s no \"prefer not to say\" for the language the app actually renders in.'),
   "whispererAvatarId": zod.string().nullish().describe('Sets (or, if null, clears) this account\'s own Debate Topics avatar — see UserProfile.whispererAvatarId.')
@@ -1149,6 +1152,8 @@ export const UpdateUserProfileResponse = zod.object({
   "whisperLinksUsed": zod.number(),
   "role": zod.string(),
   "emailNotificationsEnabled": zod.boolean().describe('Whether this Whisperer wants the \"you have a new whisp\" email in addition to the in-app notification. On by default — see PATCH \/user\/profile to change it.'),
+  "showOnlineStatus": zod.boolean().describe('Whether accounts that follow this Whisperer can see them as online (see GET \/follows\/online-status). On by default.'),
+  "twoFactorEnabled": zod.boolean().nullish().describe('Best-effort, admin-facing mirror of Clerk\'s own user.twoFactorEnabled — never used for any access-control decision. Null means never synced yet, distinct from false (\"synced, and it\'s off\").'),
   "createdAt": zod.string()
 })
 
@@ -1414,6 +1419,15 @@ export const GetFollowStatsResponse = zod.object({
 
 
 /**
+ * The only place in the app that surfaces presence at all — everywhere else is an anonymous thread where this would be a real deanonymization risk. Empty immediately if the viewer has their own visibility off.
+ * @summary Which followed Whisperer handles are online right now (signed in)
+ */
+export const GetFollowedOnlineStatusResponse = zod.object({
+  "online": zod.record(zod.string(), zod.boolean()).describe('Keyed by whispererHandle. Only handles the viewer is allowed to see presence for are included — see GET \/follows\/online-status.')
+})
+
+
+/**
  * @summary Public Debate Topics feed (no auth required)
  */
 export const ListDebateTopicsQueryParams = zod.object({
@@ -1610,6 +1624,7 @@ export const AdminListUsersQueryParams = zod.object({
   "plan": zod.coerce.string().optional(),
   "role": zod.coerce.string().optional(),
   "banned": zod.coerce.string().optional(),
+  "compliance": zod.enum(['mfa_missing', 'policy_pending', 'email_unverified', 'phone_unverified']).optional(),
   "page": zod.coerce.number().optional(),
   "pageSize": zod.coerce.number().optional()
 })
@@ -1636,7 +1651,14 @@ export const AdminListUsersResponse = zod.object({
   "region": zod.string().nullish(),
   "city": zod.string().nullish(),
   "lastSeenAt": zod.string().nullish(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "compliance": zod.object({
+  "emailVerified": zod.boolean(),
+  "phoneVerified": zod.boolean(),
+  "mfaEnabled": zod.boolean().nullish().describe('Mirrors AdminUser.compliance\'s users.twoFactorEnabled — null means never synced yet, distinct from false (\"synced, and it\'s off\").'),
+  "policyUpToDate": zod.boolean()
+}).describe('Compliance signals for the admin Users dashboard — never used for any access-control decision, purely a \"does this person need a nudge\" view. See lib\/compliance.ts.'),
+  "online": zod.boolean().describe('Whether this account has been active in the last presence window (see lib\/presence.ts) — an admin-only aggregate signal, not gated by the account\'s own showOnlineStatus preference.')
 })),
   "total": zod.number(),
   "page": zod.number(),
@@ -1673,7 +1695,14 @@ export const AdminGetUserResponse = zod.object({
   "region": zod.string().nullish(),
   "city": zod.string().nullish(),
   "lastSeenAt": zod.string().nullish(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "compliance": zod.object({
+  "emailVerified": zod.boolean(),
+  "phoneVerified": zod.boolean(),
+  "mfaEnabled": zod.boolean().nullish().describe('Mirrors AdminUser.compliance\'s users.twoFactorEnabled — null means never synced yet, distinct from false (\"synced, and it\'s off\").'),
+  "policyUpToDate": zod.boolean()
+}).describe('Compliance signals for the admin Users dashboard — never used for any access-control decision, purely a \"does this person need a nudge\" view. See lib\/compliance.ts.'),
+  "online": zod.boolean().describe('Whether this account has been active in the last presence window (see lib\/presence.ts) — an admin-only aggregate signal, not gated by the account\'s own showOnlineStatus preference.')
 }),
   "recentWhisps": zod.array(zod.object({
   "id": zod.string(),
@@ -1801,7 +1830,14 @@ export const AdminUpdateUserResponse = zod.object({
   "region": zod.string().nullish(),
   "city": zod.string().nullish(),
   "lastSeenAt": zod.string().nullish(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "compliance": zod.object({
+  "emailVerified": zod.boolean(),
+  "phoneVerified": zod.boolean(),
+  "mfaEnabled": zod.boolean().nullish().describe('Mirrors AdminUser.compliance\'s users.twoFactorEnabled — null means never synced yet, distinct from false (\"synced, and it\'s off\").'),
+  "policyUpToDate": zod.boolean()
+}).describe('Compliance signals for the admin Users dashboard — never used for any access-control decision, purely a \"does this person need a nudge\" view. See lib\/compliance.ts.'),
+  "online": zod.boolean().describe('Whether this account has been active in the last presence window (see lib\/presence.ts) — an admin-only aggregate signal, not gated by the account\'s own showOnlineStatus preference.')
 })
 
 
@@ -1867,6 +1903,37 @@ export const AdminListUserWhispsResponse = zod.object({
   "total": zod.number(),
   "page": zod.number(),
   "pageSize": zod.number()
+})
+
+
+/**
+ * An admin-only aggregate headcount — not gated by any individual's showOnlineStatus, which only governs whether other users can see a specific person online, not whether the platform's own operators can see an anonymous count.
+ * @summary How many accounts have been active in the last presence window, for the Analytics "online now" tile (admin only)
+ */
+export const AdminGetUsersOnlineNowResponse = zod.object({
+  "onlineCount": zod.number(),
+  "windowMinutes": zod.number().describe('Width of the presence window this count was computed over, in minutes.')
+})
+
+
+/**
+ * Same persisted-notification-plus-email delivery as POST /admin/notifications, just pre-written per compliance kind rather than admin-authored. Never re-verifies the flag is still true server-side before sending — a reminder sent after someone already fixed it is a harmless no-op.
+ * @summary Nudge specific users about a single missing compliance item, via in-app notification, best-effort push, and email (admin only)
+ */
+export const adminSendComplianceReminderBodyUserIdsMax = 200;
+
+
+
+export const AdminSendComplianceReminderBody = zod.object({
+  "userIds": zod.array(zod.string()).min(1).max(adminSendComplianceReminderBodyUserIdsMax),
+  "kind": zod.enum(['mfa_missing', 'policy_pending', 'email_unverified', 'phone_unverified'])
+})
+
+export const AdminSendComplianceReminderResponse = zod.object({
+  "recipientCount": zod.number().describe('Number of users this notification was created for — total user count for \'all\', or userIds.length for \'users\'.'),
+  "pushDelivered": zod.number().describe('How many active push subscriptions were actually notified live (best-effort; recipients without one still see it in-app).'),
+  "emailsSent": zod.number().describe('Emails delivered when sendEmail was requested (0 otherwise).'),
+  "emailsSkipped": zod.number().describe('Recipients skipped for email — opted out, banned, placeholder address, or provider failure.')
 })
 
 
@@ -2621,6 +2688,24 @@ export const AdminGetUsageStatsResponse = zod.object({
   "distinctUsers": zod.number().describe('Distinct signed-in users who used it (anonymous usage counts in totalCount only).'),
   "lastUsedAt": zod.string().nullish()
 })),
+  "days": zod.number()
+})
+
+
+/**
+ * Sums feature_events.count (not row count — one row can represent many clicks), not just how many events were logged.
+ * @summary 24-bucket UTC histogram of platform activity, for the Analytics "when is the app actually used" chart (admin only)
+ */
+export const AdminGetTrafficByHourQueryParams = zod.object({
+  "days": zod.coerce.number().optional().describe('Window in days (default 30, max 365).')
+})
+
+export const AdminGetTrafficByHourResponse = zod.object({
+  "hours": zod.array(zod.object({
+  "hour": zod.number(),
+  "count": zod.number()
+})).describe('Exactly 24 entries, one per UTC hour (0-23), in order.'),
+  "peakHour": zod.number().nullable().describe('The hour with the highest count, or null if every bucket is 0 across the whole window.'),
   "days": zod.number()
 })
 
@@ -3456,6 +3541,45 @@ export const AdminPostCircleVideoBody = zod.object({
 })
 
 export const AdminPostCircleVideoResponse = zod.object({
+  "id": zod.string()
+})
+
+
+/**
+ * Always sent from the reserved system account, not the acting admin — a platform broadcast shouldn't be attributed to whichever admin happened to click Send. Deliberately not anonymous to the recipient.
+ * @summary Send a platform Text Whisp to every user or a chosen set (admin only)
+ */
+export const adminBroadcastTextWhispBodyMessageTextMax = 260;
+
+export const adminBroadcastTextWhispBodyUserIdsMax = 5000;
+
+
+
+export const AdminBroadcastTextWhispBody = zod.object({
+  "messageText": zod.string().min(1).max(adminBroadcastTextWhispBodyMessageTextMax),
+  "audience": zod.enum(['all', 'selected']),
+  "userIds": zod.array(zod.string()).max(adminBroadcastTextWhispBodyUserIdsMax).optional().describe('Recipients when audience is \'selected\'; ignored for \'all\'.')
+})
+
+export const AdminBroadcastTextWhispResponse = zod.object({
+  "recipientCount": zod.number()
+})
+
+
+/**
+ * Sent from the acting admin's own account, not the system user — a genuinely one named colleague writing to another.
+ * @summary One staff member Text Whisping a colleague directly by account, skipping the phone-number lookup a normal Text Whisp needs (admin only)
+ */
+export const adminSendTextWhispToStaffBodyMessageTextMax = 260;
+
+
+
+export const AdminSendTextWhispToStaffBody = zod.object({
+  "recipientAdminId": zod.string(),
+  "messageText": zod.string().min(1).max(adminSendTextWhispToStaffBodyMessageTextMax)
+})
+
+export const AdminSendTextWhispToStaffResponse = zod.object({
   "id": zod.string()
 })
 

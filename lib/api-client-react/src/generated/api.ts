@@ -28,6 +28,7 @@ import type {
   AdminDeliveryMethodStatsResponse,
   AdminDemographicStatsResponse,
   AdminFunnelStats,
+  AdminGetTrafficByHourParams,
   AdminGetUsageStatsParams,
   AdminGrant,
   AdminGrantInput,
@@ -47,6 +48,7 @@ import type {
   AdminMfaVerifyInput,
   AdminMfaVerifyResponse,
   AdminNotificationListResponse,
+  AdminOnlineNowResponse,
   AdminOpportunitiesResponse,
   AdminOverviewStats,
   AdminUser,
@@ -58,6 +60,8 @@ import type {
   AppreciationInput,
   AppreciationResult,
   ArchiveWhisp200,
+  BroadcastTextWhispInput,
+  BroadcastTextWhispResult,
   CheckoutRequest,
   CheckoutResponse,
   Circle,
@@ -67,6 +71,7 @@ import type {
   ClaimInviteInput,
   ClaimInviteResult,
   CommentReactionResult,
+  ComplianceReminderInput,
   ConciergeInput,
   ConciergeResult,
   ConfirmPhoneVerificationInput,
@@ -87,6 +92,7 @@ import type {
   DebateTopicInput,
   DebateTopicStats,
   DeleteMedia200,
+  FollowedOnlineStatusResponse,
   GetDebateTopicParams,
   GetFollowStats200,
   GetPublicWhispParams,
@@ -172,12 +178,15 @@ import type {
   TextWhispInput,
   TextWhispReply,
   TextWhispReplyInput,
+  TextWhispToStaffInput,
+  TextWhispToStaffResult,
   ToggleCircleLike200,
   ToggleCircleLikeBody,
   ToggleFollow200,
   ToggleFollowBody,
   TrackingEventInput,
   TrackingResult,
+  TrafficByHourResponse,
   UnreadNotificationCountResponse,
   UnsubscribeFromMatching200,
   UnsubscribeFromMatchingParams,
@@ -4722,6 +4731,84 @@ export function useGetFollowStats<TData = Awaited<ReturnType<typeof getFollowSta
 
 
 
+export const getGetFollowedOnlineStatusUrl = () => {
+
+
+
+
+  return `/api/follows/online-status`
+}
+
+/**
+ * The only place in the app that surfaces presence at all — everywhere else is an anonymous thread where this would be a real deanonymization risk. Empty immediately if the viewer has their own visibility off.
+ * @summary Which followed Whisperer handles are online right now (signed in)
+ */
+export const getFollowedOnlineStatus = async ( options?: RequestInit): Promise<FollowedOnlineStatusResponse> => {
+
+  return customFetch<FollowedOnlineStatusResponse>(getGetFollowedOnlineStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFollowedOnlineStatusQueryKey = () => {
+    return [
+    `/api/follows/online-status`
+    ] as const;
+    }
+
+
+export const getGetFollowedOnlineStatusQueryOptions = <TData = Awaited<ReturnType<typeof getFollowedOnlineStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFollowedOnlineStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFollowedOnlineStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFollowedOnlineStatus>>> = ({ signal }) => getFollowedOnlineStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFollowedOnlineStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFollowedOnlineStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getFollowedOnlineStatus>>>
+export type GetFollowedOnlineStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Which followed Whisperer handles are online right now (signed in)
+ */
+
+export function useGetFollowedOnlineStatus<TData = Awaited<ReturnType<typeof getFollowedOnlineStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFollowedOnlineStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFollowedOnlineStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getListDebateTopicsUrl = (params?: ListDebateTopicsParams,) => {
   const normalizedParams = new URLSearchParams();
 
@@ -5792,6 +5879,155 @@ export function useAdminListUserWhisps<TData = Awaited<ReturnType<typeof adminLi
 
 
 
+
+export const getAdminGetUsersOnlineNowUrl = () => {
+
+
+
+
+  return `/api/admin/users/online-now`
+}
+
+/**
+ * An admin-only aggregate headcount — not gated by any individual's showOnlineStatus, which only governs whether other users can see a specific person online, not whether the platform's own operators can see an anonymous count.
+ * @summary How many accounts have been active in the last presence window, for the Analytics "online now" tile (admin only)
+ */
+export const adminGetUsersOnlineNow = async ( options?: RequestInit): Promise<AdminOnlineNowResponse> => {
+
+  return customFetch<AdminOnlineNowResponse>(getAdminGetUsersOnlineNowUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetUsersOnlineNowQueryKey = () => {
+    return [
+    `/api/admin/users/online-now`
+    ] as const;
+    }
+
+
+export const getAdminGetUsersOnlineNowQueryOptions = <TData = Awaited<ReturnType<typeof adminGetUsersOnlineNow>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetUsersOnlineNow>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetUsersOnlineNowQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetUsersOnlineNow>>> = ({ signal }) => adminGetUsersOnlineNow({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetUsersOnlineNow>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetUsersOnlineNowQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetUsersOnlineNow>>>
+export type AdminGetUsersOnlineNowQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary How many accounts have been active in the last presence window, for the Analytics "online now" tile (admin only)
+ */
+
+export function useAdminGetUsersOnlineNow<TData = Awaited<ReturnType<typeof adminGetUsersOnlineNow>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetUsersOnlineNow>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetUsersOnlineNowQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminSendComplianceReminderUrl = () => {
+
+
+
+
+  return `/api/admin/users/compliance-reminder`
+}
+
+/**
+ * Same persisted-notification-plus-email delivery as POST /admin/notifications, just pre-written per compliance kind rather than admin-authored. Never re-verifies the flag is still true server-side before sending — a reminder sent after someone already fixed it is a harmless no-op.
+ * @summary Nudge specific users about a single missing compliance item, via in-app notification, best-effort push, and email (admin only)
+ */
+export const adminSendComplianceReminder = async (complianceReminderInput: ComplianceReminderInput, options?: RequestInit): Promise<SendNotificationResult> => {
+
+  return customFetch<SendNotificationResult>(getAdminSendComplianceReminderUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(complianceReminderInput)
+  }
+);}
+
+
+
+
+export const getAdminSendComplianceReminderMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminSendComplianceReminder>>, TError,{data: BodyType<ComplianceReminderInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminSendComplianceReminder>>, TError,{data: BodyType<ComplianceReminderInput>}, TContext> => {
+
+const mutationKey = ['adminSendComplianceReminder'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminSendComplianceReminder>>, {data: BodyType<ComplianceReminderInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminSendComplianceReminder(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminSendComplianceReminderMutationResult = NonNullable<Awaited<ReturnType<typeof adminSendComplianceReminder>>>
+    export type AdminSendComplianceReminderMutationBody = BodyType<ComplianceReminderInput>
+    export type AdminSendComplianceReminderMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Nudge specific users about a single missing compliance item, via in-app notification, best-effort push, and email (admin only)
+ */
+export const useAdminSendComplianceReminder = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminSendComplianceReminder>>, TError,{data: BodyType<ComplianceReminderInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminSendComplianceReminder>>,
+        TError,
+        {data: BodyType<ComplianceReminderInput>},
+        TContext
+      > => {
+      return useMutation(getAdminSendComplianceReminderMutationOptions(options));
+    }
 
 export const getAdminListWhispsUrl = (params?: AdminListWhispsParams,) => {
   const normalizedParams = new URLSearchParams();
@@ -8104,6 +8340,91 @@ export function useAdminGetUsageStats<TData = Awaited<ReturnType<typeof adminGet
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getAdminGetUsageStatsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminGetTrafficByHourUrl = (params?: AdminGetTrafficByHourParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/analytics/traffic-by-hour?${stringifiedParams}` : `/api/admin/analytics/traffic-by-hour`
+}
+
+/**
+ * Sums feature_events.count (not row count — one row can represent many clicks), not just how many events were logged.
+ * @summary 24-bucket UTC histogram of platform activity, for the Analytics "when is the app actually used" chart (admin only)
+ */
+export const adminGetTrafficByHour = async (params?: AdminGetTrafficByHourParams, options?: RequestInit): Promise<TrafficByHourResponse> => {
+
+  return customFetch<TrafficByHourResponse>(getAdminGetTrafficByHourUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetTrafficByHourQueryKey = (params?: AdminGetTrafficByHourParams,) => {
+    return [
+    `/api/admin/analytics/traffic-by-hour`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getAdminGetTrafficByHourQueryOptions = <TData = Awaited<ReturnType<typeof adminGetTrafficByHour>>, TError = ErrorType<unknown>>(params?: AdminGetTrafficByHourParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetTrafficByHour>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetTrafficByHourQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetTrafficByHour>>> = ({ signal }) => adminGetTrafficByHour(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetTrafficByHour>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetTrafficByHourQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetTrafficByHour>>>
+export type AdminGetTrafficByHourQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary 24-bucket UTC histogram of platform activity, for the Analytics "when is the app actually used" chart (admin only)
+ */
+
+export function useAdminGetTrafficByHour<TData = Awaited<ReturnType<typeof adminGetTrafficByHour>>, TError = ErrorType<unknown>>(
+ params?: AdminGetTrafficByHourParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetTrafficByHour>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetTrafficByHourQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -10828,6 +11149,148 @@ export const useAdminPostCircleVideo = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getAdminPostCircleVideoMutationOptions(options));
+    }
+
+export const getAdminBroadcastTextWhispUrl = () => {
+
+
+
+
+  return `/api/admin/text-whisps/broadcast`
+}
+
+/**
+ * Always sent from the reserved system account, not the acting admin — a platform broadcast shouldn't be attributed to whichever admin happened to click Send. Deliberately not anonymous to the recipient.
+ * @summary Send a platform Text Whisp to every user or a chosen set (admin only)
+ */
+export const adminBroadcastTextWhisp = async (broadcastTextWhispInput: BroadcastTextWhispInput, options?: RequestInit): Promise<BroadcastTextWhispResult> => {
+
+  return customFetch<BroadcastTextWhispResult>(getAdminBroadcastTextWhispUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(broadcastTextWhispInput)
+  }
+);}
+
+
+
+
+export const getAdminBroadcastTextWhispMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminBroadcastTextWhisp>>, TError,{data: BodyType<BroadcastTextWhispInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminBroadcastTextWhisp>>, TError,{data: BodyType<BroadcastTextWhispInput>}, TContext> => {
+
+const mutationKey = ['adminBroadcastTextWhisp'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminBroadcastTextWhisp>>, {data: BodyType<BroadcastTextWhispInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminBroadcastTextWhisp(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminBroadcastTextWhispMutationResult = NonNullable<Awaited<ReturnType<typeof adminBroadcastTextWhisp>>>
+    export type AdminBroadcastTextWhispMutationBody = BodyType<BroadcastTextWhispInput>
+    export type AdminBroadcastTextWhispMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Send a platform Text Whisp to every user or a chosen set (admin only)
+ */
+export const useAdminBroadcastTextWhisp = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminBroadcastTextWhisp>>, TError,{data: BodyType<BroadcastTextWhispInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminBroadcastTextWhisp>>,
+        TError,
+        {data: BodyType<BroadcastTextWhispInput>},
+        TContext
+      > => {
+      return useMutation(getAdminBroadcastTextWhispMutationOptions(options));
+    }
+
+export const getAdminSendTextWhispToStaffUrl = () => {
+
+
+
+
+  return `/api/admin/text-whisps/to-staff`
+}
+
+/**
+ * Sent from the acting admin's own account, not the system user — a genuinely one named colleague writing to another.
+ * @summary One staff member Text Whisping a colleague directly by account, skipping the phone-number lookup a normal Text Whisp needs (admin only)
+ */
+export const adminSendTextWhispToStaff = async (textWhispToStaffInput: TextWhispToStaffInput, options?: RequestInit): Promise<TextWhispToStaffResult> => {
+
+  return customFetch<TextWhispToStaffResult>(getAdminSendTextWhispToStaffUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(textWhispToStaffInput)
+  }
+);}
+
+
+
+
+export const getAdminSendTextWhispToStaffMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminSendTextWhispToStaff>>, TError,{data: BodyType<TextWhispToStaffInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminSendTextWhispToStaff>>, TError,{data: BodyType<TextWhispToStaffInput>}, TContext> => {
+
+const mutationKey = ['adminSendTextWhispToStaff'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminSendTextWhispToStaff>>, {data: BodyType<TextWhispToStaffInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminSendTextWhispToStaff(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminSendTextWhispToStaffMutationResult = NonNullable<Awaited<ReturnType<typeof adminSendTextWhispToStaff>>>
+    export type AdminSendTextWhispToStaffMutationBody = BodyType<TextWhispToStaffInput>
+    export type AdminSendTextWhispToStaffMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary One staff member Text Whisping a colleague directly by account, skipping the phone-number lookup a normal Text Whisp needs (admin only)
+ */
+export const useAdminSendTextWhispToStaff = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminSendTextWhispToStaff>>, TError,{data: BodyType<TextWhispToStaffInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminSendTextWhispToStaff>>,
+        TError,
+        {data: BodyType<TextWhispToStaffInput>},
+        TContext
+      > => {
+      return useMutation(getAdminSendTextWhispToStaffMutationOptions(options));
     }
 
 export const getListSuggestionsUrl = (params?: ListSuggestionsParams,) => {

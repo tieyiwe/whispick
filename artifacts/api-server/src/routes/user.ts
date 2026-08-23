@@ -50,16 +50,20 @@ router.get("/profile", requireAuth, async (req, res): Promise<void> => {
     whisperLinksUsed: user.whisperLinksUsed,
     role: user.role,
     emailNotificationsEnabled: user.emailNotificationsEnabled,
+    showOnlineStatus: user.showOnlineStatus,
+    twoFactorEnabled: user.twoFactorEnabled,
     createdAt: user.createdAt,
   });
 });
 
 // POST /api/user/mfa-nudge/dismiss — "skip for now" on the two-factor setup
-// nudge. Whether 2FA is actually enabled is never asked here or stored by
-// this app at all — that's Clerk's own user.twoFactorEnabled, read directly
-// client-side — this endpoint only remembers a skip, so it doesn't nag again
-// on another device until the next natural prompt point (see
-// users.mfaNudgeDismissedAt's schema comment).
+// nudge. Whether 2FA is actually enabled is still asked of Clerk directly,
+// client-side, for anything access-control-relevant — the nudge itself
+// never gates on it. users.twoFactorEnabled is a separate, best-effort,
+// admin-facing MIRROR of that Clerk fact (see its schema comment) used only
+// to power the admin compliance dashboard; this endpoint only remembers a
+// skip, so it doesn't nag again on another device until the next natural
+// prompt point (see users.mfaNudgeDismissedAt's schema comment).
 router.post("/mfa-nudge/dismiss", requireAuth, async (req, res): Promise<void> => {
   const { userId } = getAuth(req);
   const user = await ensureUser(userId!, req);
@@ -80,6 +84,7 @@ router.patch("/profile", requireAuth, async (req, res): Promise<void> => {
     gender: z.enum(GENDER_OPTIONS).nullable().optional(),
     ageRange: z.enum(AGE_RANGE_OPTIONS).nullable().optional(),
     emailNotificationsEnabled: z.boolean().optional(),
+    showOnlineStatus: z.boolean().optional(),
     countryCode: z.string().length(2).nullable().optional(),
     preferredLanguage: z.enum(SUPPORTED_LANGUAGES).optional(),
     whispererAvatarId: z.string().max(50).nullable().optional(),
@@ -125,6 +130,7 @@ router.patch("/profile", requireAuth, async (req, res): Promise<void> => {
     boostCredits: updated.boostCredits,
     whisperLinksUsed: updated.whisperLinksUsed,
     emailNotificationsEnabled: updated.emailNotificationsEnabled,
+    showOnlineStatus: updated.showOnlineStatus,
     createdAt: updated.createdAt,
   });
 });

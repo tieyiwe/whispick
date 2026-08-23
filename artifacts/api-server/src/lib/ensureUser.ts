@@ -40,7 +40,9 @@ export function isPlaceholderEmail(email: string, clerkId: string): boolean {
 // secret key or an API shape surprise has returned records without an
 // emailAddresses array in production, and `.find` on undefined was the
 // exact TypeError that silently pushed signups onto the placeholder path.
-export async function fetchClerkProfile(clerkId: string): Promise<{ email: string | null; fullName: string | null; phone: string | null }> {
+export async function fetchClerkProfile(
+  clerkId: string,
+): Promise<{ email: string | null; fullName: string | null; phone: string | null; twoFactorEnabled: boolean | null }> {
   try {
     const clerkUser = await clerkClient.users.getUser(clerkId);
     const primaryEmail = clerkUser.emailAddresses?.find((e) => e.id === clerkUser.primaryEmailAddressId);
@@ -48,10 +50,11 @@ export async function fetchClerkProfile(clerkId: string): Promise<{ email: strin
     const fullName = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || null;
     const primaryPhone = clerkUser.phoneNumbers?.find((p) => p.id === clerkUser.primaryPhoneNumberId);
     const phone = primaryPhone?.phoneNumber ?? clerkUser.phoneNumbers?.[0]?.phoneNumber ?? null;
-    return { email, fullName, phone };
+    const twoFactorEnabled = typeof clerkUser.twoFactorEnabled === "boolean" ? clerkUser.twoFactorEnabled : null;
+    return { email, fullName, phone, twoFactorEnabled };
   } catch (err) {
     logger.error({ err, clerkId }, "Failed to fetch user profile from Clerk");
-    return { email: null, fullName: null, phone: null };
+    return { email: null, fullName: null, phone: null, twoFactorEnabled: null };
   }
 }
 
@@ -62,6 +65,25 @@ export async function fetchClerkProfile(clerkId: string): Promise<{ email: strin
 // stops being a permanent wrong email, not that it heals within seconds.
 const PROFILE_HEAL_RETRY_MS = 10 * 60 * 1000;
 const lastHealAttempt = new Map<string, number>();
+
+// A separate, much slower throttle for the admin compliance dashboard's
+// users.twoFactorEnabled mirror (see its schema comment) — unlike a
+// placeholder email, a stale 2FA flag isn't urgent, so this doesn't need the
+// email-heal cadence above. Fire-and-forget: never adds latency to the
+// request it happens to piggyback on.
+const MFA_SYNC_INTERVAL_MS = 24 * 60 * 60 * 1000;
+const lastMfaSync = new Map<string, number>();
+function maybeSyncTwoFactorStatus(user: User): void {
+  const last = lastMfaSync.get(user.clerkId) ?? 0;
+  if (Date.now() - last <= MFA_SYNC_INTERVAL_MS) return;
+  lastMfaSync.set(user.clerkId, Date.now());
+  void fetchClerkProfile(user.clerkId)
+    .then((profile) => {
+      if (profile.twoFactorEnabled === null || profile.twoFactorEnabled === user.twoFactorEnabled) return;
+      return db.update(usersTable).set({ twoFactorEnabled: profile.twoFactorEnabled }).where(eq(usersTable.id, user.id));
+    })
+    .catch((err) => logger.warn({ err, userId: user.id }, "2FA status sync failed"));
+}
 
 // A standing collaborator invite (admin_grants.ts) attaches the moment a
 // user with the invited email exists: promote to the admin role and link
@@ -118,6 +140,8 @@ export async function ensureUser(clerkId: string, req: any): Promise<User> {
       }
     }
 
+    maybeSyncTwoFactorStatus(existing);
+
     if (existing.role !== "admin" && isBootstrapAdminEmail(existing.email)) {
       await db.update(usersTable).set({ role: "admin" }).where(eq(usersTable.id, existing.id));
       return { ...existing, role: "admin" };
@@ -152,6 +176,7 @@ export async function ensureUser(clerkId: string, req: any): Promise<User> {
     whisperLinksUsed: 0,
     role,
     lastSeenAt: new Date(),
+    twoFactorEnabled: clerkProfile.twoFactorEnabled,
   });
 
   const ip = requestIp(req);

@@ -30,6 +30,7 @@ handler that never echoes messages/stacks.
 | 22 | `/admin` | adminDebateAgent.ts | `/admin/debate-agent/*` — middleware scoped to its prefix |
 | 23 | `/admin` | adminCircleAgent.ts | `/admin/circle-agent/*` — same |
 | 24 | `/admin` | adminProjects.ts | `/admin/projects*`, `/admin/tasks*` (permission `projects`) |
+| 24b | `/admin/text-whisps` | adminTextWhisps.ts | broadcast + staff-direct sends (permission `notifications`); own distinct prefix, so its middleware is inherently scoped |
 | 25 | `/whisper-groups` | whisperGroups.ts | `/sends` registered before `/:id` |
 | 26 | `/media` | media.ts | |
 | 27 | `/suggestions` | suggestions.ts | |

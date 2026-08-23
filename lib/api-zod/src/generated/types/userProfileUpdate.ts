@@ -18,6 +18,8 @@ export interface UserProfileUpdate {
   /** @nullable */
   ageRange?: string | null;
   emailNotificationsEnabled?: boolean;
+  /** Whether accounts that follow this Whisperer can see them as online (see GET /follows/online-status). */
+  showOnlineStatus?: boolean;
   /** @nullable */
   countryCode?: string | null;
   /** Not nullable — unlike gender/ageRange there's no "prefer not to say" for the language the app actually renders in. */

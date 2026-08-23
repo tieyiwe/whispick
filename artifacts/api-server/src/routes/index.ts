@@ -13,6 +13,7 @@ import adminRouter from "./admin";
 import adminMfaRouter from "./adminMfa";
 import adminAccessRouter from "./adminAccess";
 import adminProjectsRouter from "./adminProjects";
+import adminTextWhispsRouter from "./adminTextWhisps";
 import adminDebateAgentRouter from "./adminDebateAgent";
 import adminCircleAgentRouter from "./adminCircleAgent";
 import whisperGroupsRouter from "./whisperGroups";
@@ -84,6 +85,11 @@ router.use("/admin", adminCircleAgentRouter);
 // Same "/admin" base, separate file — /api/admin/projects... and
 // /api/admin/tasks... (HQ workspace, "projects" permission).
 router.use("/admin", adminProjectsRouter);
+// Own distinct prefix (not bare "/admin") — its requireAdmin/requirePermission
+// middleware is inherently scoped to these routes only, unlike the shared-
+// "/admin"-base agent routers, which is why THEY need router.use("/prefix", mw)
+// instead of router.use(mw): see adminDebateAgent.ts's own comment.
+router.use("/admin/text-whisps", adminTextWhispsRouter);
 router.use("/whisper-groups", whisperGroupsRouter);
 router.use("/media", mediaRouter);
 router.use("/suggestions", suggestionsRouter);

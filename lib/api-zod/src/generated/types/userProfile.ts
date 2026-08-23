@@ -59,5 +59,12 @@ export interface UserProfile {
   role: string;
   /** Whether this Whisperer wants the "you have a new whisp" email in addition to the in-app notification. On by default — see PATCH /user/profile to change it. */
   emailNotificationsEnabled: boolean;
+  /** Whether accounts that follow this Whisperer can see them as online (see GET /follows/online-status). On by default. */
+  showOnlineStatus: boolean;
+  /**
+     * Best-effort, admin-facing mirror of Clerk's own user.twoFactorEnabled — never used for any access-control decision. Null means never synced yet, distinct from false ("synced, and it's off").
+     * @nullable
+     */
+  twoFactorEnabled?: boolean | null;
   createdAt: string;
 }

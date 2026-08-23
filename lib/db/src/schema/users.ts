@@ -120,6 +120,14 @@ export const usersTable = pgTable("users", {
   // (user.twoFactorEnabled, read client-side) and is the single source of
   // truth — this column only ever answers "did they say not now."
   mfaNudgeDismissedAt: timestamp("mfa_nudge_dismissed_at", { withTimezone: true }),
+  // Best-effort mirror of Clerk's own user.twoFactorEnabled — the single
+  // source of truth stays Clerk (see mfaNudgeDismissedAt's comment); this
+  // column exists ONLY so the admin compliance view can see who has 2FA on
+  // without an API call per row. Null = never synced yet. Refreshed
+  // opportunistically in ensureUser.ts on a daily-per-user throttle, so it
+  // can lag reality by up to a day — acceptable for a dashboard signal, not
+  // used for any access-control decision.
+  twoFactorEnabled: boolean("two_factor_enabled"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

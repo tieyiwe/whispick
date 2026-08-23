@@ -5,6 +5,7 @@
  * Blind Whisper API — anonymous video recommendation platform
  * OpenAPI spec version: 0.1.0
  */
+import type { ComplianceFlags } from './complianceFlags';
 
 export interface AdminUser {
   id: string;
@@ -40,4 +41,7 @@ export interface AdminUser {
   /** @nullable */
   lastSeenAt?: string | null;
   createdAt: string;
+  compliance: ComplianceFlags;
+  /** Whether this account has been active in the last presence window (see lib/presence.ts) — an admin-only aggregate signal, not gated by the account's own showOnlineStatus preference. */
+  online: boolean;
 }

@@ -14,7 +14,7 @@ per table. New tables must also be added to the test truncate list in
 
 | Table | Purpose |
 |---|---|
-| `users` | One row per account. Identity (id = Clerk user id, unique `clerkId`, unique `email` — placeholder form `<clerkId>@blindwhisper.com` is detected/healed, `fullName`, `avatarUrl`); two-tier phone trust (`phone` = unverified Clerk sync, `phoneVerifiedAt` = Twilio Verify OTP proof — only the pair proves ownership); demographics (`gender`, `ageRange`, `countryCode`); `preferredLanguage`; billing (`plan` free/spark/ember, `boostCredits`, `whisperLinksUsed` + `whisperLinksResetAt`, Stripe ids); `role` user/admin, `banned`; IP-geo at signup (`country/region/city`, admin analytics only); `lastSeenAt`; `emailNotificationsEnabled`; public pseudonym (`whispererHandle` unique + `whispererAvatarId` — deliberately separate from the real `avatarUrl`); `mfaNudgeDismissedAt` |
+| `users` | One row per account. Identity (id = Clerk user id, unique `clerkId`, unique `email` — placeholder form `<clerkId>@blindwhisper.com` is detected/healed, `fullName`, `avatarUrl`); two-tier phone trust (`phone` = unverified Clerk sync, `phoneVerifiedAt` = Twilio Verify OTP proof — only the pair proves ownership); demographics (`gender`, `ageRange`, `countryCode`); `preferredLanguage`; billing (`plan` free/spark/ember, `boostCredits`, `whisperLinksUsed` + `whisperLinksResetAt`, Stripe ids); `role` user/admin, `banned`; IP-geo at signup (`country/region/city`, admin analytics only); `lastSeenAt`; `emailNotificationsEnabled`; `showOnlineStatus` (default true, reciprocal presence toggle — see security-auth.md); `twoFactorEnabled` (nullable best-effort Clerk mirror, admin compliance signal only); public pseudonym (`whispererHandle` unique + `whispererAvatarId` — deliberately separate from the real `avatarUrl`); `mfaNudgeDismissedAt` |
 | `follows` | Follower/followed pairs, unique per pair; Debate Now only |
 | `anonymous_handles` | Per-thread pseudonyms: unique `(contentType, rootId, visitorId)` + per-thread `avatarId` — never cross-thread trackable |
 
@@ -34,7 +34,7 @@ per table. New tables must also be added to the test truncate list in
 
 | Table | Purpose |
 |---|---|
-| `text_whisps` | Text-only anonymous messages by phone: `recipientPhone` (E.164) + nullable `recipientUserId` (verified match at send time only), `publicToken`, status scheduled/sent/read/replied, `scheduledAt`, typing indicator columns, reveal handshake, sender soft delete |
+| `text_whisps` | Text-only anonymous messages by phone: `recipientPhone` (E.164) + nullable `recipientUserId` (verified match at send time only), `publicToken`, status scheduled/sent/read/replied, `scheduledAt`, typing indicator columns, reveal handshake, sender soft delete, `source` ('user' default \| 'admin' — admin broadcast/staff-direct sends, always in-app-only) |
 | `text_whisp_replies` | Authenticated two-party thread: `senderId`, quote `parentReplyId`, `readAt` receipts |
 
 ## Community

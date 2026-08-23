@@ -371,6 +371,45 @@ export interface TextWhispReplyInput {
   parentReplyId?: string | null;
 }
 
+export type BroadcastTextWhispInputAudience = typeof BroadcastTextWhispInputAudience[keyof typeof BroadcastTextWhispInputAudience];
+
+
+export const BroadcastTextWhispInputAudience = {
+  all: 'all',
+  selected: 'selected',
+} as const;
+
+export interface BroadcastTextWhispInput {
+  /**
+     * @minLength 1
+     * @maxLength 260
+     */
+  messageText: string;
+  audience: BroadcastTextWhispInputAudience;
+  /**
+     * Recipients when audience is 'selected'; ignored for 'all'.
+     * @maxItems 5000
+     */
+  userIds?: string[];
+}
+
+export interface BroadcastTextWhispResult {
+  recipientCount: number;
+}
+
+export interface TextWhispToStaffInput {
+  recipientAdminId: string;
+  /**
+     * @minLength 1
+     * @maxLength 260
+     */
+  messageText: string;
+}
+
+export interface TextWhispToStaffResult {
+  id: string;
+}
+
 export interface Invite {
   id: string;
   inviterUserId: string;
@@ -599,6 +638,13 @@ export interface UserProfile {
   role: string;
   /** Whether this Whisperer wants the "you have a new whisp" email in addition to the in-app notification. On by default — see PATCH /user/profile to change it. */
   emailNotificationsEnabled: boolean;
+  /** Whether accounts that follow this Whisperer can see them as online (see GET /follows/online-status). On by default. */
+  showOnlineStatus: boolean;
+  /**
+     * Best-effort, admin-facing mirror of Clerk's own user.twoFactorEnabled — never used for any access-control decision. Null means never synced yet, distinct from false ("synced, and it's off").
+     * @nullable
+     */
+  twoFactorEnabled?: boolean | null;
   createdAt: string;
 }
 
@@ -635,6 +681,8 @@ export interface UserProfileUpdate {
   /** @nullable */
   ageRange?: string | null;
   emailNotificationsEnabled?: boolean;
+  /** Whether accounts that follow this Whisperer can see them as online (see GET /follows/online-status). */
+  showOnlineStatus?: boolean;
   /** @nullable */
   countryCode?: string | null;
   /** Not nullable — unlike gender/ageRange there's no "prefer not to say" for the language the app actually renders in. */
@@ -673,6 +721,16 @@ export interface CreditTransaction {
   /** @nullable */
   whispId?: string | null;
   createdAt: string;
+}
+
+/**
+ * Keyed by whispererHandle. Only handles the viewer is allowed to see presence for are included — see GET /follows/online-status.
+ */
+export type FollowedOnlineStatusResponseOnline = {[key: string]: boolean};
+
+export interface FollowedOnlineStatusResponse {
+  /** Keyed by whispererHandle. Only handles the viewer is allowed to see presence for are included — see GET /follows/online-status. */
+  online: FollowedOnlineStatusResponseOnline;
 }
 
 export interface CircleFeedItem {
@@ -863,6 +921,20 @@ export interface CheckoutResponse {
   url: string | null;
 }
 
+/**
+ * Compliance signals for the admin Users dashboard — never used for any access-control decision, purely a "does this person need a nudge" view. See lib/compliance.ts.
+ */
+export interface ComplianceFlags {
+  emailVerified: boolean;
+  phoneVerified: boolean;
+  /**
+     * Mirrors AdminUser.compliance's users.twoFactorEnabled — null means never synced yet, distinct from false ("synced, and it's off").
+     * @nullable
+     */
+  mfaEnabled?: boolean | null;
+  policyUpToDate: boolean;
+}
+
 export interface AdminUser {
   id: string;
   clerkId: string;
@@ -897,6 +969,9 @@ export interface AdminUser {
   /** @nullable */
   lastSeenAt?: string | null;
   createdAt: string;
+  compliance: ComplianceFlags;
+  /** Whether this account has been active in the last presence window (see lib/presence.ts) — an admin-only aggregate signal, not gated by the account's own showOnlineStatus preference. */
+  online: boolean;
 }
 
 export interface AdminUserListResponse {
@@ -1028,6 +1103,31 @@ export interface AdminUserDetail {
   debateTopics: AdminUserDetailDebateTopicsItem[];
   /** Debate Topic comments this account posted while signed in, most recent 50. */
   debateTopicComments: AdminUserDetailDebateTopicCommentsItem[];
+}
+
+export interface AdminOnlineNowResponse {
+  onlineCount: number;
+  /** Width of the presence window this count was computed over, in minutes. */
+  windowMinutes: number;
+}
+
+export type ComplianceReminderInputKind = typeof ComplianceReminderInputKind[keyof typeof ComplianceReminderInputKind];
+
+
+export const ComplianceReminderInputKind = {
+  mfa_missing: 'mfa_missing',
+  policy_pending: 'policy_pending',
+  email_unverified: 'email_unverified',
+  phone_unverified: 'phone_unverified',
+} as const;
+
+export interface ComplianceReminderInput {
+  /**
+     * @minItems 1
+     * @maxItems 200
+     */
+  userIds: string[];
+  kind: ComplianceReminderInputKind;
 }
 
 /**
@@ -1165,6 +1265,22 @@ export interface FeatureUsageStat {
 
 export interface UsageStatsResponse {
   items: FeatureUsageStat[];
+  days: number;
+}
+
+export type TrafficByHourResponseHoursItem = {
+  hour: number;
+  count: number;
+};
+
+export interface TrafficByHourResponse {
+  /** Exactly 24 entries, one per UTC hour (0-23), in order. */
+  hours: TrafficByHourResponseHoursItem[];
+  /**
+     * The hour with the highest count, or null if every bucket is 0 across the whole window.
+     * @nullable
+     */
+  peakHour: number | null;
   days: number;
 }
 
@@ -2586,9 +2702,20 @@ search?: string;
 plan?: string;
 role?: string;
 banned?: string;
+compliance?: AdminListUsersCompliance;
 page?: number;
 pageSize?: number;
 };
+
+export type AdminListUsersCompliance = typeof AdminListUsersCompliance[keyof typeof AdminListUsersCompliance];
+
+
+export const AdminListUsersCompliance = {
+  mfa_missing: 'mfa_missing',
+  policy_pending: 'policy_pending',
+  email_unverified: 'email_unverified',
+  phone_unverified: 'phone_unverified',
+} as const;
 
 export type AdminListUserWhispsParams = {
 status?: string;
@@ -2626,6 +2753,13 @@ pageSize?: number;
 };
 
 export type AdminGetUsageStatsParams = {
+/**
+ * Window in days (default 30, max 365).
+ */
+days?: number;
+};
+
+export type AdminGetTrafficByHourParams = {
 /**
  * Window in days (default 30, max 365).
  */
