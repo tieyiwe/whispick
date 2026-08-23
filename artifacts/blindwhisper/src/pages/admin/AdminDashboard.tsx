@@ -83,17 +83,11 @@ export function AdminDashboard() {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Card className="bg-card border-border/50">
             <CardContent className="p-5">
               <p className="text-xs text-muted-foreground">New users (30d)</p>
               <p className="text-xl font-bold text-foreground mt-1">{stats?.newUsersLast30Days ?? 0}</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-card border-border/50">
-            <CardContent className="p-5">
-              <p className="text-xs text-muted-foreground">Credit pack purchases</p>
-              <p className="text-xl font-bold text-foreground mt-1">{stats?.creditPackPurchases ?? 0}</p>
             </CardContent>
           </Card>
           <Card className="bg-card border-border/50">

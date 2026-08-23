@@ -119,9 +119,14 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   return (
     // admin-theme scopes the HQ palette (index.css): charcoal + violet-grey
     // surfaces + matte yellow accent, without touching the member-facing app.
-    <div className="admin-theme min-h-[100dvh] bg-background text-foreground flex flex-col">
+    // The shell is viewport-height with ONLY <main> scrolling — html/body carry
+    // overflow-x:hidden (index.css), which defeats position:sticky, so a
+    // sticky rail scrolled away with the page. An internally-scrolled main
+    // keeps the header and rail genuinely static (PullToRefresh already
+    // supports internally-scrolled containers — it walks ancestor scrollTop).
+    <div className="admin-theme h-[100dvh] bg-background text-foreground flex flex-col overflow-hidden">
       <header
-        className="border-b border-border bg-card sticky top-0 z-40"
+        className="border-b border-border bg-card z-40 shrink-0"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
         <div className="px-4 md:px-6 py-3 flex items-center justify-between gap-4">
@@ -168,7 +173,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 
       <div className="flex-1 flex min-h-0">
         {/* Desktop rail — grouped, Odoo-style. */}
-        <aside className="hidden md:flex w-56 shrink-0 flex-col border-r border-border bg-card/60 px-3 py-5 gap-5 overflow-y-auto sticky top-[57px] h-[calc(100dvh-57px)]">
+        <aside className="hidden md:flex w-56 shrink-0 flex-col border-r border-border bg-card/60 px-3 py-5 gap-5 overflow-y-auto">
           {visibleGroups.map((group) => (
             <div key={group.heading} className="space-y-1">
               <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
@@ -196,7 +201,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           ))}
         </aside>
 
-        <main className="flex-1 min-w-0">
+        <main className="flex-1 min-w-0 overflow-y-auto">
           {/* Same swipe-down refresh the rest of the app has, so the gesture
               doesn't silently stop working the moment you cross into admin. */}
           <PullToRefresh onRefresh={reloadPage}>

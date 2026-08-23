@@ -18,6 +18,13 @@ business function in one place. The admin UI is English-only by convention.
   (charcoal `255 12% 7%`, violet-grey cards `255 10% 13%`, matte yellow primary
   `46 64% 62%`). The class is applied to both the layout root **and**
   `document.body` (Radix portals render into body).
+- The shell is viewport-height with **only `<main>` scrolling**, so the header
+  and left rail stay static. Don't switch the rail to `position: sticky` —
+  `overflow-x: hidden` on html/body (index.css) defeats sticky positioning.
+- **Ghost Boost is hidden from the admin UI while the feature is paused**
+  (no credits column/editor, no ledger card, no delivery-method filter option,
+  no analytics rows). Backend fields (`users.boostCredits`,
+  `credit_transactions`) are untouched — restoring the feature is a UI change.
 
 ## Access model (three layers)
 

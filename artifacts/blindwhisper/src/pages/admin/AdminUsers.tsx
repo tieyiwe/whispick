@@ -202,7 +202,6 @@ export function AdminUsers() {
                     )}
                   </div>
                   <Badge variant="outline" className="capitalize">{user.plan}</Badge>
-                  <span className="text-xs text-muted-foreground w-24 text-center">{user.boostCredits} credits</span>
                   <span className="text-xs text-muted-foreground w-28">{new Date(user.createdAt).toLocaleDateString()}</span>
                   <div className="flex items-center gap-1">
                     <Button

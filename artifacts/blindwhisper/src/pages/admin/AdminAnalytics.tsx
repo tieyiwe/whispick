@@ -164,7 +164,7 @@ export function AdminAnalytics() {
           <CardHeader>
             <CardTitle className="text-base font-serif">Sent → delivered → opened → watched → replied</CardTitle>
             <p className="text-xs text-muted-foreground">
-              Every recipient-directed whisp (Whisper Link, Group Whisper, Ghost Boost matches) — Blind Circle is excluded since it has no
+              Every recipient-directed whisp (Whisper Link, Group Whisper) — Blind Circle is excluded since it has no
               single recipient to fall off for.
               {funnelStats && funnelStats.funnel.failed > 0 ? ` ${funnelStats.funnel.failed} failed to send outright.` : ""}
             </p>
@@ -199,21 +199,11 @@ export function AdminAnalytics() {
 
           <Card className="bg-card border-border/50">
             <CardHeader>
-              <CardTitle className="text-base font-serif">Ghost Boost & Blind Circles</CardTitle>
+              <CardTitle className="text-base font-serif">Blind Circles</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               {funnelLoading ? <Skeleton className="h-32 rounded-xl" /> : (
                 <>
-                  <div className="flex items-center justify-between text-sm py-1.5 px-3 rounded-lg bg-muted/20">
-                    <span className="text-foreground">Ghost Boost campaigns</span>
-                    <span className="text-muted-foreground font-mono">{funnelStats?.ghostBoost.campaigns ?? 0}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm py-1.5 px-3 rounded-lg bg-muted/20">
-                    <span className="text-foreground">Matched sends (avg/campaign)</span>
-                    <span className="text-muted-foreground font-mono">
-                      {funnelStats?.ghostBoost.totalMatched ?? 0} ({funnelStats?.ghostBoost.avgMatchedPerCampaign ?? 0})
-                    </span>
-                  </div>
                   <div className="flex items-center justify-between text-sm py-1.5 px-3 rounded-lg bg-muted/20">
                     <span className="text-foreground">Blind Circles / members</span>
                     <span className="text-muted-foreground font-mono">

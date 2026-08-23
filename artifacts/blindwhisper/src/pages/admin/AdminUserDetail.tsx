@@ -58,14 +58,12 @@ export function AdminUserDetail() {
 
   const [role, setRole] = useState("user");
   const [plan, setPlan] = useState("free");
-  const [boostCredits, setBoostCredits] = useState("0");
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
     if (data && !initialized) {
       setRole(data.user.role);
       setPlan(data.user.plan);
-      setBoostCredits(String(data.user.boostCredits));
       setInitialized(true);
     }
   }, [data, initialized]);
@@ -77,7 +75,7 @@ export function AdminUserDetail() {
 
   function handleSave() {
     updateUser.mutate(
-      { id: id!, data: { role: role as "user" | "admin", plan: plan as "free" | "spark" | "ember", boostCredits: parseInt(boostCredits, 10) || 0 } },
+      { id: id!, data: { role: role as "user" | "admin", plan: plan as "free" | "spark" | "ember" } },
       {
         onSuccess: () => { invalidate(); toast({ title: "User updated" }); },
         onError: (err: any) => toast({ title: err?.error ?? "Failed to update user", variant: "destructive" }),
@@ -131,7 +129,7 @@ export function AdminUserDetail() {
     );
   }
 
-  const { user, totalWhisps, creditTransactions, statusCounts, totalReplies, moderationFlagCount, moderationFlags, debateTopics, debateTopicComments } = data;
+  const { user, totalWhisps, statusCounts, totalReplies, moderationFlagCount, moderationFlags, debateTopics, debateTopicComments } = data;
 
   return (
     <AdminLayout>
@@ -247,16 +245,6 @@ export function AdminUserDetail() {
                     <SelectItem value="ember">Ember</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-muted-foreground">Ghost Boost credits</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  className="bg-input/50 border-border/50 rounded-xl"
-                  value={boostCredits}
-                  onChange={(e) => setBoostCredits(e.target.value)}
-                />
               </div>
             </div>
 
@@ -375,34 +363,6 @@ export function AdminUserDetail() {
             ) : <p className="text-sm text-muted-foreground py-4 text-center">No whisps match this filter.</p>}
           </CardContent>
         </Card>
-
-        {creditTransactions.length > 0 && (
-          <Card className="bg-card border-border/50">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-serif">Credit Transactions</CardTitle>
-              <p className="text-xs text-muted-foreground">Running balance walked backward from the current Ghost Boost credit count ({user.boostCredits}).</p>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {(() => {
-                let runningBalance = user.boostCredits;
-                return creditTransactions.map((tx) => {
-                  const balanceAfter = runningBalance;
-                  runningBalance -= tx.amount;
-                  return (
-                    <div key={tx.id} className="flex items-center justify-between text-sm py-1.5 border-b border-border/30 last:border-0">
-                      <span className="text-muted-foreground capitalize">{tx.type.replace("_", " ")}</span>
-                      <span className={tx.amount >= 0 ? "text-primary font-medium" : "text-destructive font-medium"}>
-                        {tx.amount >= 0 ? "+" : ""}{tx.amount}
-                      </span>
-                      <span className="text-xs text-muted-foreground font-mono">bal. {balanceAfter}</span>
-                      <span className="text-xs text-muted-foreground">{new Date(tx.createdAt).toLocaleDateString()}</span>
-                    </div>
-                  );
-                });
-              })()}
-            </CardContent>
-          </Card>
-        )}
 
         {(debateTopics.length > 0 || debateTopicComments.length > 0) && (
           <Card className="bg-card border-border/50">
