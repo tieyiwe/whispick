@@ -1137,6 +1137,52 @@ export interface AcceptPoliciesInput {
   policyVersionIds: string[];
 }
 
+export type RecordUsageInputEventsItem = {
+  feature: string;
+  /**
+     * @minimum 1
+     * @maximum 500
+     */
+  count: number;
+};
+
+export interface RecordUsageInput {
+  /**
+     * @minItems 1
+     * @maxItems 50
+     */
+  events: RecordUsageInputEventsItem[];
+}
+
+export interface FeatureUsageStat {
+  feature: string;
+  totalCount: number;
+  /** Distinct signed-in users who used it (anonymous usage counts in totalCount only). */
+  distinctUsers: number;
+  /** @nullable */
+  lastUsedAt?: string | null;
+}
+
+export interface UsageStatsResponse {
+  items: FeatureUsageStat[];
+  days: number;
+}
+
+export interface UsageInsightsInput {
+  days?: number;
+}
+
+export interface UsageInsight {
+  title: string;
+  detail: string;
+}
+
+export interface UsageInsightsResponse {
+  insights: UsageInsight[];
+  statsAnalyzed: number;
+  days: number;
+}
+
 export interface AdminMfaStatus {
   enrolled: boolean;
 }
@@ -2400,6 +2446,13 @@ dismissed?: string;
 severity?: string;
 page?: number;
 pageSize?: number;
+};
+
+export type AdminGetUsageStatsParams = {
+/**
+ * Window in days (default 30, max 365).
+ */
+days?: number;
 };
 
 export type AdminListContentReportsParams = {

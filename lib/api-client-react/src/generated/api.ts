@@ -27,6 +27,7 @@ import type {
   AdminDeliveryMethodStatsResponse,
   AdminDemographicStatsResponse,
   AdminFunnelStats,
+  AdminGetUsageStatsParams,
   AdminListAuditLogParams,
   AdminListContentReportsParams,
   AdminListModerationFlagsParams,
@@ -121,6 +122,7 @@ import type {
   ReactToCircleCommentBody,
   ReactToDebateTopicCommentBody,
   RecentRecipientListResponse,
+  RecordUsageInput,
   RemindMeInput,
   RemindMeResult,
   RenameCircleHandle200,
@@ -173,6 +175,9 @@ import type {
   UpdatePolicyVersionInput,
   UpdateSuggestionInput,
   UploadedVideo,
+  UsageInsightsInput,
+  UsageInsightsResponse,
+  UsageStatsResponse,
   UserProfile,
   UserProfileUpdate,
   VerifySubscription200,
@@ -7939,6 +7944,230 @@ export const useAdminPublishPolicyVersion = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getAdminPublishPolicyVersionMutationOptions(options));
+    }
+
+export const getRecordUsageEventsUrl = () => {
+
+
+
+
+  return `/api/public/usage-events`
+}
+
+/**
+ * @summary Record aggregated feature-usage counters (internal analytics; anonymous allowed)
+ */
+export const recordUsageEvents = async (recordUsageInput: RecordUsageInput, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRecordUsageEventsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(recordUsageInput)
+  }
+);}
+
+
+
+
+export const getRecordUsageEventsMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordUsageEvents>>, TError,{data: BodyType<RecordUsageInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof recordUsageEvents>>, TError,{data: BodyType<RecordUsageInput>}, TContext> => {
+
+const mutationKey = ['recordUsageEvents'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof recordUsageEvents>>, {data: BodyType<RecordUsageInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  recordUsageEvents(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RecordUsageEventsMutationResult = NonNullable<Awaited<ReturnType<typeof recordUsageEvents>>>
+    export type RecordUsageEventsMutationBody = BodyType<RecordUsageInput>
+    export type RecordUsageEventsMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Record aggregated feature-usage counters (internal analytics; anonymous allowed)
+ */
+export const useRecordUsageEvents = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordUsageEvents>>, TError,{data: BodyType<RecordUsageInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof recordUsageEvents>>,
+        TError,
+        {data: BodyType<RecordUsageInput>},
+        TContext
+      > => {
+      return useMutation(getRecordUsageEventsMutationOptions(options));
+    }
+
+export const getAdminGetUsageStatsUrl = (params?: AdminGetUsageStatsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/usage-stats?${stringifiedParams}` : `/api/admin/usage-stats`
+}
+
+/**
+ * @summary Per-feature usage totals over a window, most-used first (admin only)
+ */
+export const adminGetUsageStats = async (params?: AdminGetUsageStatsParams, options?: RequestInit): Promise<UsageStatsResponse> => {
+
+  return customFetch<UsageStatsResponse>(getAdminGetUsageStatsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetUsageStatsQueryKey = (params?: AdminGetUsageStatsParams,) => {
+    return [
+    `/api/admin/usage-stats`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getAdminGetUsageStatsQueryOptions = <TData = Awaited<ReturnType<typeof adminGetUsageStats>>, TError = ErrorType<unknown>>(params?: AdminGetUsageStatsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetUsageStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetUsageStatsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetUsageStats>>> = ({ signal }) => adminGetUsageStats(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetUsageStats>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetUsageStatsQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetUsageStats>>>
+export type AdminGetUsageStatsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Per-feature usage totals over a window, most-used first (admin only)
+ */
+
+export function useAdminGetUsageStats<TData = Awaited<ReturnType<typeof adminGetUsageStats>>, TError = ErrorType<unknown>>(
+ params?: AdminGetUsageStatsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetUsageStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetUsageStatsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminGenerateUsageInsightsUrl = () => {
+
+
+
+
+  return `/api/admin/usage-insights`
+}
+
+/**
+ * @summary AI analyzer — practical product insights from the usage counters (admin only)
+ */
+export const adminGenerateUsageInsights = async (usageInsightsInput?: UsageInsightsInput, options?: RequestInit): Promise<UsageInsightsResponse> => {
+
+  return customFetch<UsageInsightsResponse>(getAdminGenerateUsageInsightsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(usageInsightsInput)
+  }
+);}
+
+
+
+
+export const getAdminGenerateUsageInsightsMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminGenerateUsageInsights>>, TError,{data?: BodyType<UsageInsightsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminGenerateUsageInsights>>, TError,{data?: BodyType<UsageInsightsInput>}, TContext> => {
+
+const mutationKey = ['adminGenerateUsageInsights'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminGenerateUsageInsights>>, {data?: BodyType<UsageInsightsInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminGenerateUsageInsights(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminGenerateUsageInsightsMutationResult = NonNullable<Awaited<ReturnType<typeof adminGenerateUsageInsights>>>
+    export type AdminGenerateUsageInsightsMutationBody = BodyType<UsageInsightsInput> | undefined
+    export type AdminGenerateUsageInsightsMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary AI analyzer — practical product insights from the usage counters (admin only)
+ */
+export const useAdminGenerateUsageInsights = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminGenerateUsageInsights>>, TError,{data?: BodyType<UsageInsightsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminGenerateUsageInsights>>,
+        TError,
+        {data?: BodyType<UsageInsightsInput>},
+        TContext
+      > => {
+      return useMutation(getAdminGenerateUsageInsightsMutationOptions(options));
     }
 
 export const getGetAdminMfaStatusUrl = () => {

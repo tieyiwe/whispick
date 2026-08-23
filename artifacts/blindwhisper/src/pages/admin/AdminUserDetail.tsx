@@ -211,7 +211,7 @@ export function AdminUserDetail() {
               </div>
               <div>
                 <p className="text-muted-foreground">Last seen</p>
-                <p className="font-medium text-foreground">{user.lastSeenAt ? new Date(user.lastSeenAt).toLocaleDateString() : "—"}</p>
+                <p className="font-medium text-foreground">{user.lastSeenAt ? new Date(user.lastSeenAt).toLocaleString() : "—"}</p>
               </div>
             </div>
 

@@ -17,6 +17,7 @@ import { MobileSendActionProvider } from "@/contexts/MobileSendAction";
 import { watchForUpdates, isUpdateAvailable } from "@/lib/appUpdate";
 import { setAuthTokenGetter, setExtraHeadersGetter } from "@workspace/api-client-react";
 import { getAdminMfaToken } from "@/lib/adminMfaGate";
+import { initFeatureUsage } from "@/lib/featureUsage";
 import { dark } from '@clerk/themes';
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from 'wouter';
 import { Loader2 } from "lucide-react";
@@ -195,6 +196,9 @@ function ClerkAuthTokenBridge() {
       const token = getAdminMfaToken();
       return token ? { "X-Admin-Mfa": token } : null;
     });
+    // Feature-usage capture starts once the token getter is in place so
+    // signed-in activity is attributed (guests still count, unattributed).
+    initFeatureUsage();
     return () => {
       setAuthTokenGetter(null);
       setExtraHeadersGetter(null);

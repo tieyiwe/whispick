@@ -24,6 +24,7 @@ import textWhispsRouter from "./textWhisps";
 import debateTopicsRouter from "./debateTopics";
 import followsRouter from "./follows";
 import contentReportsRouter from "./contentReports";
+import usageEventsRouter from "./usageEvents";
 import { publicEndpointLimiter } from "../lib/rateLimit";
 
 const router: IRouter = Router();
@@ -46,6 +47,7 @@ router.use("/public", circleRouter);
 router.use("/public", subscribeRouter);
 router.use("/public", publicInvitesRouter);
 router.use("/public", publicTextWhispsRouter);
+router.use("/public", usageEventsRouter);
 // No prefix: debateTopicsRouter defines its own full paths (both the
 // authenticated "/debate-topics" create/delete and the public
 // "/public/debate-topics..." routes), same pattern healthRouter uses above.

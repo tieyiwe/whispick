@@ -192,6 +192,9 @@ export function AdminUsers() {
                       {user.banned && <Badge variant="destructive">Banned</Badge>}
                     </div>
                     <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Last seen: {user.lastSeenAt ? new Date(user.lastSeenAt).toLocaleString() : "never"}
+                    </p>
                     {(user.city || user.country) && (
                       <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                         <MapPin className="w-3 h-3" /> {[user.city, user.country].filter(Boolean).join(", ")}

@@ -17,6 +17,7 @@ export * from "./moderation_flags";
 export * from "./content_reports";
 export * from "./admin_mfa";
 export * from "./policy_versions";
+export * from "./feature_events";
 export * from "./concierge_requests";
 export * from "./invites";
 export * from "./text_whisps";

@@ -2589,6 +2589,60 @@ export const AdminPublishPolicyVersionResponse = zod.object({
 
 
 /**
+ * @summary Record aggregated feature-usage counters (internal analytics; anonymous allowed)
+ */
+export const recordUsageEventsBodyEventsItemCountMax = 500;
+
+export const recordUsageEventsBodyEventsMax = 50;
+
+
+
+export const RecordUsageEventsBody = zod.object({
+  "events": zod.array(zod.object({
+  "feature": zod.string(),
+  "count": zod.number().min(1).max(recordUsageEventsBodyEventsItemCountMax)
+})).min(1).max(recordUsageEventsBodyEventsMax)
+})
+
+export const RecordUsageEventsResponse = zod.void()
+
+
+/**
+ * @summary Per-feature usage totals over a window, most-used first (admin only)
+ */
+export const AdminGetUsageStatsQueryParams = zod.object({
+  "days": zod.coerce.number().optional().describe('Window in days (default 30, max 365).')
+})
+
+export const AdminGetUsageStatsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "feature": zod.string(),
+  "totalCount": zod.number(),
+  "distinctUsers": zod.number().describe('Distinct signed-in users who used it (anonymous usage counts in totalCount only).'),
+  "lastUsedAt": zod.string().nullish()
+})),
+  "days": zod.number()
+})
+
+
+/**
+ * @summary AI analyzer — practical product insights from the usage counters (admin only)
+ */
+export const AdminGenerateUsageInsightsBody = zod.object({
+  "days": zod.number().optional()
+})
+
+export const AdminGenerateUsageInsightsResponse = zod.object({
+  "insights": zod.array(zod.object({
+  "title": zod.string(),
+  "detail": zod.string()
+})),
+  "statsAnalyzed": zod.number(),
+  "days": zod.number()
+})
+
+
+/**
  * @summary Whether this admin account has finished authenticator enrollment (admin role only)
  */
 export const GetAdminMfaStatusResponse = zod.object({

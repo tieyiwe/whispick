@@ -1,5 +1,8 @@
+import { useState } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import {
+  useAdminGetUsageStats,
+  useAdminGenerateUsageInsights,
   useAdminGetCategoryStats,
   useAdminGetDeliveryMethodStats,
   useAdminGetLocationStats,
@@ -11,6 +14,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { RankedBarChart } from "@/components/shared/RankedBarChart";
 import { deliveryLabel } from "@/lib/deliveryMethod";
 import { GENDER_LABELS, AGE_RANGE_LABELS, type Gender, type AgeRange } from "@/lib/demographics";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { Sparkles, Loader2, MousePointerClick } from "lucide-react";
 
 const FUNNEL_STAGES = [
   { key: "sent", label: "Sent" },
@@ -20,6 +27,105 @@ const FUNNEL_STAGES = [
   { key: "replied", label: "Replied" },
   { key: "appreciated", label: "Appreciated" },
 ] as const;
+
+// Feature-usage rankings + the AI analyzer. Most-used tells you what to
+// protect; least-used (among features that have had a fair chance) is the
+// trim/redesign shortlist; the analyzer turns both into concrete
+// recommendations via Claude (lib/usageInsights.ts server-side).
+function FeatureUsageSection() {
+  const { toast } = useToast();
+  const [days, setDays] = useState("30");
+  const { data, isLoading } = useAdminGetUsageStats({ days: Number(days) });
+  const analyze = useAdminGenerateUsageInsights();
+  const [insights, setInsights] = useState<{ title: string; detail: string }[] | null>(null);
+
+  const items = data?.items ?? [];
+  const most = items.slice(0, 12);
+  const least = items.length > 12 ? [...items].slice(-12).reverse() : [];
+
+  function handleAnalyze() {
+    analyze.mutate(
+      { data: { days: Number(days) } },
+      {
+        onSuccess: (r) => setInsights(r.insights),
+        onError: (err: any) => toast({ title: err?.data?.error ?? "Analyzer unavailable", variant: "destructive" }),
+      },
+    );
+  }
+
+  return (
+    <Card className="bg-card border-border/50">
+      <CardHeader className="flex flex-row items-center justify-between gap-3 flex-wrap space-y-0">
+        <CardTitle className="flex items-center gap-2">
+          <MousePointerClick className="w-5 h-5 text-primary" /> Feature usage
+        </CardTitle>
+        <div className="flex items-center gap-2">
+          <Select value={days} onValueChange={setDays}>
+            <SelectTrigger className="w-28 rounded-full bg-input/50 border-border/50"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7">7 days</SelectItem>
+              <SelectItem value="30">30 days</SelectItem>
+              <SelectItem value="90">90 days</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button size="sm" className="rounded-full" onClick={handleAnalyze} disabled={analyze.isPending} data-testid="button-usage-insights">
+            {analyze.isPending ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 mr-1.5" />}
+            Smart insights
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        {insights && (
+          <div className="space-y-2">
+            {insights.map((ins, i) => (
+              <div key={i} className="rounded-xl border border-primary/30 bg-primary/5 p-3">
+                <p className="text-sm font-semibold text-foreground">{ins.title}</p>
+                <p className="text-sm text-muted-foreground mt-0.5">{ins.detail}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {isLoading ? (
+          <Skeleton className="h-40 rounded-2xl" />
+        ) : items.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No usage recorded in this window yet — tracking starts counting from this deploy onward.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Most used</p>
+              <div className="space-y-1">
+                {most.map((f) => (
+                  <div key={f.feature} className="flex items-center justify-between text-sm py-1.5 px-3 rounded-lg bg-muted/20">
+                    <span className="text-foreground font-mono text-xs truncate">{f.feature}</span>
+                    <span className="text-muted-foreground font-mono shrink-0 ml-3">{f.totalCount}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Least used</p>
+              {least.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Not enough distinct features tracked yet to call anything "least used."</p>
+              ) : (
+                <div className="space-y-1">
+                  {least.map((f) => (
+                    <div key={f.feature} className="flex items-center justify-between text-sm py-1.5 px-3 rounded-lg bg-muted/20">
+                      <span className="text-foreground font-mono text-xs truncate">{f.feature}</span>
+                      <span className="text-muted-foreground font-mono shrink-0 ml-3">{f.totalCount}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 export function AdminAnalytics() {
   const { data: categoryStats, isLoading: categoriesLoading } = useAdminGetCategoryStats();
@@ -368,6 +474,8 @@ export function AdminAnalytics() {
             </CardContent>
           </Card>
         )}
+
+        <FeatureUsageSection />
       </div>
     </AdminLayout>
   );

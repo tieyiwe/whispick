@@ -38,6 +38,7 @@ import { generateSuggestionSummaryAsync } from "../lib/suggestionSummary";
 import { runSuggestionDiscoveryAgent } from "../lib/suggestionAgent";
 import { notifyUser, notifyAllUsers, notifyUserPersisted } from "../lib/push";
 import { fetchClerkProfile, isPlaceholderEmail } from "../lib/ensureUser";
+import { aggregateFeatureUsage, generateUsageInsights } from "../lib/usageInsights";
 import { sendEmail, adminAnnouncementEmailHtml } from "../lib/email";
 import { httpUrlString, isHttpUrlOrAppPath } from "../lib/safeUrl";
 
@@ -940,6 +941,34 @@ router.post("/users/repair-profiles", async (req, res): Promise<void> => {
   logAdminAction(adminUser.id, "users.repair_profiles", { type: "user", id: "batch" }, { scanned: candidates.length, healed, noEmailInClerk, conflicts });
 
   res.json({ scanned: candidates.length, healed, noEmailInClerk, conflicts });
+});
+
+// ---------------------------------------------------------------------------
+// Feature usage analytics — which buttons/features are actually used (and
+// which aren't), plus the AI analyzer that turns the counters into
+// practical trim/redesign recommendations. Capture side:
+// routes/usageEvents.ts + lib/featureUsage.ts (frontend).
+// ---------------------------------------------------------------------------
+
+// GET /api/admin/usage-stats?days=30
+router.get("/usage-stats", async (req, res): Promise<void> => {
+  const days = Math.min(365, Math.max(1, parseInt(String(req.query.days ?? "30"), 10) || 30));
+  const stats = await aggregateFeatureUsage(days);
+  res.json({ items: stats, days });
+});
+
+// POST /api/admin/usage-insights — the smart analyzer: aggregates the same
+// window and asks Claude for practical, owner-actionable product insights.
+router.post("/usage-insights", async (req, res): Promise<void> => {
+  const days = Math.min(365, Math.max(1, parseInt(String((req.body ?? {}).days ?? "30"), 10) || 30));
+  try {
+    const result = await generateUsageInsights(days);
+    const adminUser = (req as any).adminUser as User;
+    logAdminAction(adminUser.id, "usage.analyze", { type: "analytics", id: "usage" }, { days, statsAnalyzed: result.statsAnalyzed });
+    res.json({ ...result, days });
+  } catch (err) {
+    res.status(502).json({ error: "The analyzer couldn't complete — try again in a moment." });
+  }
 });
 
 // ---------------------------------------------------------------------------
