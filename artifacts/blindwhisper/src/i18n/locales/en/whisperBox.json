@@ -66,6 +66,11 @@
     "toastStoryUnsupported": "Sharing isn't supported in this browser — try copying the link instead.",
     "toastStoryFailed": "Couldn't create the share image. Please try again."
   },
+  "linkDialog": {
+    "title": "Your Whisper Box link",
+    "description": "Anyone with this link — or who scans the QR code — can send you one anonymous message.",
+    "copyButton": "Copy link"
+  },
   "dashboardCard": {
     "title": "Whisper Box",
     "getStartedTitle": "Get your Whisper Box",

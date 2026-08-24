@@ -66,6 +66,11 @@
     "toastStoryUnsupported": "المشاركة غير مدعومة في هذا المتصفح — جرّب نسخ الرابط بدلاً من ذلك.",
     "toastStoryFailed": "تعذّر إنشاء صورة المشاركة. يُرجى المحاولة مرة أخرى."
   },
+  "linkDialog": {
+    "title": "رابط Whisper Box الخاص بك",
+    "description": "أي شخص لديه هذا الرابط — أو يمسح رمز QR — يمكنه إرسال رسالة واحدة مجهولة إليك.",
+    "copyButton": "نسخ الرابط"
+  },
   "dashboardCard": {
     "title": "Whisper Box",
     "getStartedTitle": "احصل على Whisper Box الخاصة بك",

@@ -29,6 +29,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Mailbox, Trash2, Clock, Image, Loader2 } from "lucide-react";
 import { shareWhisperBoxStoryCard } from "@/lib/whisperBoxStoryCard";
+import { WhisperBoxLinkDialog } from "@/components/shared/WhisperBoxLinkDialog";
 import i18n from "@/i18n";
 
 // The recipient's own view of their Whisper Box — see routes/whisperBox.ts's
@@ -55,6 +56,7 @@ export function WhisperBoxInbox() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [storyShareLoading, setStoryShareLoading] = useState(false);
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
 
   // Same branded-image share as SettingsPage's Whisper Box card (see
   // src/lib/whisperBoxStoryCard.ts) — surfaced here too since the empty
@@ -175,11 +177,23 @@ export function WhisperBoxInbox() {
                   {t("settingsSection.shareStoryButton")}
                 </Button>
               )}
-              <Link href="/settings">
-                <Button variant="outline" className="rounded-full" data-testid="button-manage-whisper-box">
-                  {whisperBoxEnabled ? t("whisperBoxInbox.emptyState.manageCta") : t("whisperBoxInbox.emptyState.enableCta")}
+              {whisperBoxEnabled ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-full"
+                  onClick={() => setLinkDialogOpen(true)}
+                  data-testid="button-manage-whisper-box"
+                >
+                  {t("whisperBoxInbox.emptyState.manageCta")}
                 </Button>
-              </Link>
+              ) : (
+                <Link href="/settings">
+                  <Button variant="outline" className="rounded-full" data-testid="button-manage-whisper-box">
+                    {t("whisperBoxInbox.emptyState.enableCta")}
+                  </Button>
+                </Link>
+              )}
             </div>
           </Card>
         ) : (
@@ -258,6 +272,10 @@ export function WhisperBoxInbox() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {recap?.whispererHandle && (
+          <WhisperBoxLinkDialog handle={recap.whispererHandle} open={linkDialogOpen} onOpenChange={setLinkDialogOpen} />
+        )}
       </div>
     </AppLayout>
   );

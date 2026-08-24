@@ -66,6 +66,11 @@
     "toastStoryUnsupported": "Kushiriki hakutumiki kwenye kivinjari hiki — jaribu kunakili kiungo badala yake.",
     "toastStoryFailed": "Imeshindikana kutengeneza picha ya kushiriki. Tafadhali jaribu tena."
   },
+  "linkDialog": {
+    "title": "Kiungo chako cha Whisper Box",
+    "description": "Mtu yeyote mwenye kiungo hiki — au anayeskani msimbo wa QR — anaweza kukutumia ujumbe mmoja usiojulikana.",
+    "copyButton": "Nakili kiungo"
+  },
   "dashboardCard": {
     "title": "Whisper Box",
     "getStartedTitle": "Pata Whisper Box yako",

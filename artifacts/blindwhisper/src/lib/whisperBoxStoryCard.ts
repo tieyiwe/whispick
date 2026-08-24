@@ -364,18 +364,32 @@ export type ShareWhisperBoxStoryResult = "shared-image" | "shared-link" | "downl
  * plain-link share buttons (SettingsPage, RecapPage) already use for
  * `navigator.share` — a user cancelling the native share sheet rejects that
  * promise and isn't an error worth surfacing.
+ *
+ * The card image itself can never be a real hyperlink — it's a flat PNG,
+ * pixels aren't interactive, and the QR code only works for someone with a
+ * camera pointed at it, not a tap. So the file-share call below also passes
+ * `url` (Web Share API level 2 allows `files` and `url` together) and folds
+ * the same URL into `text` as a plain string. Neither is guaranteed by every
+ * destination app, but both are real, commonly-honored paths: Instagram's
+ * "Add to Your Story" sheet can pick up a shared `url` and attach it as a
+ * tappable link sticker automatically, and most other targets (Snapchat,
+ * TikTok, WhatsApp, iMessage) auto-linkify a bare URL that appears in shared
+ * text. This is the actual mechanism, not a cosmetic tweak — leaving `url`
+ * off the file-share call (the bug this fixes) meant the only path back to
+ * the Whisper Box page was a manual QR scan.
  */
 export async function shareWhisperBoxStoryCard(
   options: WhisperBoxStoryCardOptions & { shareTitle: string; shareText: string },
 ): Promise<ShareWhisperBoxStoryResult> {
   const file = await whisperBoxStoryCardToFile(options);
+  const textWithLink = `${options.shareText}\n${options.url}`;
 
   if (file && typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
-    navigator.share({ files: [file], title: options.shareTitle, text: options.shareText }).catch(() => {});
+    navigator.share({ files: [file], title: options.shareTitle, text: textWithLink, url: options.url }).catch(() => {});
     return "shared-image";
   }
   if (navigator.share) {
-    navigator.share({ title: options.shareTitle, url: options.url }).catch(() => {});
+    navigator.share({ title: options.shareTitle, text: options.shareText, url: options.url }).catch(() => {});
     return "shared-link";
   }
   if (file) {

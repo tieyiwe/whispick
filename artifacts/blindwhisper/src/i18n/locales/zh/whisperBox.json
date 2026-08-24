@@ -66,6 +66,11 @@
     "toastStoryUnsupported": "此浏览器不支持分享——请尝试手动复制链接。",
     "toastStoryFailed": "无法生成分享图片，请重试。"
   },
+  "linkDialog": {
+    "title": "你的 Whisper Box 链接",
+    "description": "任何拥有此链接、或扫描二维码的人，都可以给你发一条匿名消息。",
+    "copyButton": "复制链接"
+  },
   "dashboardCard": {
     "title": "Whisper Box",
     "getStartedTitle": "获取你的 Whisper Box",

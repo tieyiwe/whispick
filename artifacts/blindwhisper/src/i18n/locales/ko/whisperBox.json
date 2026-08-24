@@ -66,6 +66,11 @@
     "toastStoryUnsupported": "이 브라우저에서는 공유가 지원되지 않습니다 — 대신 링크를 복사해 보세요.",
     "toastStoryFailed": "공유 이미지를 만들지 못했습니다. 다시 시도해 주세요."
   },
+  "linkDialog": {
+    "title": "내 Whisper Box 링크",
+    "description": "이 링크를 가진 사람이나 QR 코드를 스캔한 사람은 누구나 익명 메시지를 보낼 수 있어요.",
+    "copyButton": "링크 복사"
+  },
   "dashboardCard": {
     "title": "Whisper Box",
     "getStartedTitle": "Whisper Box 시작하기",

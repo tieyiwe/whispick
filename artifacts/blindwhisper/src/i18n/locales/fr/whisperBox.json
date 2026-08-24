@@ -66,6 +66,11 @@
     "toastStoryUnsupported": "Le partage n'est pas pris en charge par ce navigateur — essayez de copier le lien à la place.",
     "toastStoryFailed": "Impossible de créer l'image à partager. Veuillez réessayer."
   },
+  "linkDialog": {
+    "title": "Votre lien Whisper Box",
+    "description": "Toute personne ayant ce lien — ou qui scanne le QR code — peut vous envoyer un message anonyme.",
+    "copyButton": "Copier le lien"
+  },
   "dashboardCard": {
     "title": "Whisper Box",
     "getStartedTitle": "Obtenez votre Whisper Box",
