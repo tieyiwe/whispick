@@ -117,7 +117,7 @@ function MobileTabLink({
           </span>
         )}
       </div>
-      <span className="text-[10px] font-medium leading-none">{label}</span>
+      <span className="text-[10px] font-medium leading-tight text-center">{label}</span>
     </Link>
   );
 }
@@ -448,7 +448,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
             }`}
           >
             <Menu className="w-6 h-6" />
-            <span className="text-[10px] font-medium leading-none">{t("nav.more")}</span>
+            <span className="text-[10px] font-medium leading-tight text-center">{t("nav.more")}</span>
           </button>
         </div>
       </nav>
