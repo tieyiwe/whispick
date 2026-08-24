@@ -307,7 +307,8 @@
       "failedToSend": "Échec de l'envoi",
       "couldntPostComment": "Impossible de publier ce commentaire",
       "failedToRequestReveal": "Échec de la demande de révélation",
-      "failedToDelete": "Échec de la suppression"
+      "failedToDelete": "Échec de la suppression",
+      "couldntUpdateGuessReaction": "Impossible de mettre à jour ta réaction"
     }
   },
   "whispsList": {
@@ -516,7 +517,10 @@
       "lastReplyWarning": "C'est ta dernière réponse anonyme — inscris-toi gratuitement pour continuer.",
       "repliesLeft_one": "Il te reste {{count}} réponse anonyme.",
       "repliesLeft_other": "Il te reste {{count}} réponses anonymes.",
-      "sendButton": "Envoyer la réponse"
+      "sendButton": "Envoyer la réponse",
+      "guessToggle": "Devine qui a envoyé ceci 🕵️",
+      "guessHint": "C'est à lui de choisir sa réaction — jamais une réponse automatique.",
+      "guessPlaceholder": "Je pense que c'est..."
     },
     "reveal": {
       "viewerAccepted": "Tu leur as fait savoir que tu es d'accord qu'ils se révèlent.",
@@ -558,7 +562,8 @@
       "couldntPostComment": "Impossible de publier ce commentaire",
       "nameUpdated": "Nom mis à jour",
       "couldntUpdateName": "Impossible de mettre ce nom à jour",
-      "couldntStartConversation": "Impossible de démarrer cette conversation"
+      "couldntStartConversation": "Impossible de démarrer cette conversation",
+      "guessSentAnonymously": "Ta supposition est envoyée ! 🕵️"
     },
     "notFound": "Ce whisp est introuvable."
   }

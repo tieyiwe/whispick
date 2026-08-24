@@ -307,7 +307,8 @@
       "failedToSend": "Imeshindwa kutuma",
       "couldntPostComment": "Imeshindwa kuchapisha maoni hayo",
       "failedToRequestReveal": "Imeshindwa kuomba kujitambulisha",
-      "failedToDelete": "Imeshindwa kufuta"
+      "failedToDelete": "Imeshindwa kufuta",
+      "couldntUpdateGuessReaction": "Imeshindwa kusasisha mwitikio wako"
     }
   },
   "whispsList": {
@@ -516,7 +517,10 @@
       "lastReplyWarning": "Hili ni jibu lako la mwisho la siri — jiunge bure ili kuendelea.",
       "repliesLeft_one": "Umebaki na jibu {{count}} la siri.",
       "repliesLeft_other": "Umebaki na majibu {{count}} ya siri.",
-      "sendButton": "Tuma Jibu"
+      "sendButton": "Tuma Jibu",
+      "guessToggle": "Kisia ni nani alituma hii 🕵️",
+      "guessHint": "Wao ndio watachagua jinsi ya kuitikia — si jibu la kiotomatiki kamwe.",
+      "guessPlaceholder": "Nadhani ni..."
     },
     "reveal": {
       "viewerAccepted": "Umewajulisha kuwa ni sawa kujitambulisha.",
@@ -558,7 +562,8 @@
       "couldntPostComment": "Imeshindwa kuchapisha maoni hayo",
       "nameUpdated": "Jina limesasishwa",
       "couldntUpdateName": "Imeshindwa kusasisha jina hilo",
-      "couldntStartConversation": "Imeshindwa kuanzisha mazungumzo hayo"
+      "couldntStartConversation": "Imeshindwa kuanzisha mazungumzo hayo",
+      "guessSentAnonymously": "Kisia chako kimetumwa! 🕵️"
     },
     "notFound": "Whisp hii haikupatikana."
   }

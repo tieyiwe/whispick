@@ -78,7 +78,15 @@
     "replyingTo": "Respondiendo a {{name}}",
     "cancelReply": "Cancelar respuesta",
     "writeAReply": "Escribe una respuesta...",
-    "send": "Enviar"
+    "send": "Enviar",
+    "guessTag": "🕵️ Suposición",
+    "guessReactionPrompt": "Reacciona a su suposición:",
+    "guessReaction": {
+      "hot": "Te acercas",
+      "cold": "Frío, frío",
+      "no_comment": "Sin comentarios",
+      "confirmed": "Sí, soy yo"
+    }
   },
   "statusBadge": {
     "pending": "Pendiente",

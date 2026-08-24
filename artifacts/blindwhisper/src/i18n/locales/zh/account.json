@@ -51,6 +51,8 @@
     "emailNotificationsDescription": "当有人给你发 whisp 时收到邮件提醒。无论如何你都能在应用内看到 — 这只影响是否额外发送邮件。",
     "showOnlineStatus": "显示在线状态",
     "showOnlineStatusDescription": "让在 Debate Now 中关注你的账号看到你何时在线。关闭此项后，你也将无法看到其他人的在线状态。",
+    "appBadge": "在应用图标上显示未读数角标",
+    "appBadgeDescription": "添加到主屏幕后，会在应用图标上以角标形式显示未读总数。这不是实时小组件 — 只是图标上的一个数字。",
     "toastShowOnlineStatusOn": "你的在线状态现在对关注者可见",
     "toastShowOnlineStatusOff": "你的在线状态现已隐藏",
     "privacyCardTitle": "隐私",

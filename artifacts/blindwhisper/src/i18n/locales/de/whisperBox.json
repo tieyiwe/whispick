@@ -58,7 +58,13 @@
     "toastCopyFailed": "Kopieren fehlgeschlagen — bitte manuell kopieren",
     "toastEnabled": "Whisper Box ist eingeschaltet",
     "toastDisabled": "Whisper Box ist ausgeschaltet",
-    "toastToggleFailed": "Das konnte nicht aktualisiert werden. Bitte versuche es erneut."
+    "toastToggleFailed": "Das konnte nicht aktualisiert werden. Bitte versuche es erneut.",
+    "shareStoryButton": "In Story teilen",
+    "storyPromptText": "Schick mir einen anonymen Whisper 👀",
+    "storyShareText": "Schick mir einen anonymen Whisper — ganz ohne Konto.",
+    "toastStoryDownloaded": "Bild gespeichert — teile es in deiner Story!",
+    "toastStoryUnsupported": "Teilen wird in diesem Browser nicht unterstützt — kopiere stattdessen den Link.",
+    "toastStoryFailed": "Das Bild zum Teilen konnte nicht erstellt werden. Bitte versuche es erneut."
   },
   "dashboardCard": {
     "title": "Whisper Box",

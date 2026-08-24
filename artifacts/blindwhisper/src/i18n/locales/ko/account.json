@@ -51,6 +51,8 @@
     "emailNotificationsDescription": "누군가 whisp를 보내면 이메일로 알려드립니다. 어차피 앱에서는 항상 확인할 수 있어요 — 이 설정은 추가 이메일 발송 여부만 조절합니다.",
     "showOnlineStatus": "온라인 상태 표시",
     "showOnlineStatusDescription": "Debate Now에서 나를 팔로우하는 계정이 내가 온라인인지 볼 수 있게 해요. 이 설정을 끄면 다른 사람의 온라인 상태도 볼 수 없게 돼요.",
+    "appBadge": "안 읽은 개수 배지 표시",
+    "appBadgeDescription": "홈 화면에 설치하면 앱 아이콘에 안 읽은 항목의 총 개수를 배지로 표시합니다. 실시간 위젯이 아니라 아이콘 위의 숫자일 뿐입니다.",
     "toastShowOnlineStatusOn": "이제 팔로워에게 온라인 상태가 표시됩니다",
     "toastShowOnlineStatusOff": "이제 온라인 상태가 숨겨집니다",
     "privacyCardTitle": "개인정보 보호",

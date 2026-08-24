@@ -8,6 +8,7 @@ import {
   useArchiveWhisp,
   useGetGhostBoostMatches,
   usePostCircleComment,
+  useSetGuessReaction,
   getGetGhostBoostMatchesQueryKey,
   getGetWhispQueryKey,
   getListWhispsQueryKey,
@@ -33,7 +34,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { MoodTag } from "@/components/shared/MoodTag";
-import { ReplyThread, ThreadComposer, type ThreadReply } from "@/components/shared/ReplyThread";
+import { ReplyThread, ThreadComposer, type ThreadReply, type GuessReactionValue } from "@/components/shared/ReplyThread";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import {
@@ -168,6 +169,7 @@ export function WhispDetail() {
   const requestReveal = useRequestReveal();
   const deleteWhisp = useDeleteWhisp();
   const archiveWhisp = useArchiveWhisp();
+  const setGuessReaction = useSetGuessReaction();
 
   if (isLoading) {
     return (
@@ -284,6 +286,20 @@ export function WhispDetail() {
           toast({ title: t("whispDetail.revealRequestSent") });
         },
         onError: () => toast({ title: t("whispDetail.toast.failedToRequestReveal"), variant: "destructive" }),
+      }
+    );
+  }
+
+  // The sender's manual, one-tap reaction to a guess — never an automatic
+  // check against the real sender's identity (see docs/features-whisps.md's
+  // "Guess who sent it" section). Overwrite-safe: tapping a different option
+  // just re-sends with the new reaction, same as the backend allows.
+  function handleReactToGuess(reply: ThreadReply, reaction: GuessReactionValue) {
+    setGuessReaction.mutate(
+      { id: whisp.id, replyId: reply.id, data: { reaction } },
+      {
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetWhispQueryKey(id!) }),
+        onError: () => toast({ title: t("whispDetail.toast.couldntUpdateGuessReaction"), variant: "destructive" }),
       }
     );
   }
@@ -580,6 +596,8 @@ export function WhispDetail() {
                 otherLabel={t("whispDetail.recipientLabel")}
                 replyingTo={replyingTo}
                 onReplyTo={setReplyingTo}
+                onReactToGuess={handleReactToGuess}
+                reactingGuessReplyId={setGuessReaction.isPending ? setGuessReaction.variables?.replyId ?? null : null}
                 emptyState={
                   <p className="text-xs text-muted-foreground text-center py-3">
                     {t("whispDetail.noRepliesYet")}

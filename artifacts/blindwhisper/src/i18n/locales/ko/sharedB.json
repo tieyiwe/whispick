@@ -77,7 +77,15 @@
     "replyingTo": "{{name}}님에게 답장 중",
     "cancelReply": "답장 취소",
     "writeAReply": "답장을 입력하세요...",
-    "send": "보내기"
+    "send": "보내기",
+    "guessTag": "🕵️ 추측",
+    "guessReactionPrompt": "이 추측에 반응해 보세요:",
+    "guessReaction": {
+      "hot": "점점 가까워지고 있어요",
+      "cold": "완전히 틀렸어요",
+      "no_comment": "노코멘트",
+      "confirmed": "네, 저예요"
+    }
   },
   "statusBadge": {
     "pending": "대기 중",

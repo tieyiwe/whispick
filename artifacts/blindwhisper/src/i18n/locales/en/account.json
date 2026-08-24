@@ -51,6 +51,8 @@
     "emailNotificationsDescription": "Get an email when someone whisps you. You'll always see it in the app either way — this only controls the extra email.",
     "showOnlineStatus": "Show when you're online",
     "showOnlineStatusDescription": "Let accounts that follow you in Debate Now see when you're online. Turning this off also hides everyone else's online status from you.",
+    "appBadge": "Badge app icon with unread count",
+    "appBadgeDescription": "When installed to your home screen, show your total unread count as a badge on the app icon. Not a live widget — just a number on the icon.",
     "toastShowOnlineStatusOn": "Your online status is now visible to your followers",
     "toastShowOnlineStatusOff": "Your online status is now hidden",
     "privacyCardTitle": "Privacy",

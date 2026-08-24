@@ -307,7 +307,8 @@
       "failedToSend": "전송 실패",
       "couldntPostComment": "댓글을 게시하지 못했어요",
       "failedToRequestReveal": "정체 공개 요청에 실패했어요",
-      "failedToDelete": "삭제에 실패했어요"
+      "failedToDelete": "삭제에 실패했어요",
+      "couldntUpdateGuessReaction": "반응을 업데이트하지 못했어요"
     }
   },
   "whispsList": {
@@ -516,7 +517,10 @@
       "lastReplyWarning": "마지막 익명 답장이에요 — 계속하려면 무료로 가입하세요.",
       "repliesLeft_one": "익명 답장이 {{count}}회 남았어요.",
       "repliesLeft_other": "익명 답장이 {{count}}회 남았어요.",
-      "sendButton": "답장 보내기"
+      "sendButton": "답장 보내기",
+      "guessToggle": "누가 보냈는지 추측하기 🕵️",
+      "guessHint": "반응은 보낸 사람이 직접 골라요 — 자동으로 확인되는 답은 없어요.",
+      "guessPlaceholder": "제 생각엔..."
     },
     "reveal": {
       "viewerAccepted": "정체를 공개해도 좋다고 알렸어요.",
@@ -558,7 +562,8 @@
       "couldntPostComment": "댓글을 게시하지 못했어요",
       "nameUpdated": "이름이 업데이트됐어요",
       "couldntUpdateName": "해당 이름을 업데이트하지 못했어요",
-      "couldntStartConversation": "해당 대화를 시작하지 못했어요"
+      "couldntStartConversation": "해당 대화를 시작하지 못했어요",
+      "guessSentAnonymously": "추측을 보냈어요! 🕵️"
     },
     "notFound": "이 whisp를 찾을 수 없습니다."
   }

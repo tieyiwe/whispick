@@ -307,7 +307,8 @@
       "failedToSend": "Senden fehlgeschlagen",
       "couldntPostComment": "Dieser Kommentar konnte nicht veröffentlicht werden",
       "failedToRequestReveal": "Offenbarungsanfrage fehlgeschlagen",
-      "failedToDelete": "Löschen fehlgeschlagen"
+      "failedToDelete": "Löschen fehlgeschlagen",
+      "couldntUpdateGuessReaction": "Deine Reaktion konnte nicht aktualisiert werden"
     }
   },
   "whispsList": {
@@ -516,7 +517,10 @@
       "lastReplyWarning": "Das ist deine letzte anonyme Antwort — registriere dich kostenlos, um weiterzumachen.",
       "repliesLeft_one": "Dir bleibt noch {{count}} anonyme Antwort.",
       "repliesLeft_other": "Dir bleiben noch {{count}} anonyme Antworten.",
-      "sendButton": "Antwort senden"
+      "sendButton": "Antwort senden",
+      "guessToggle": "Rate, wer das geschickt hat 🕵️",
+      "guessHint": "Die Reaktion wählt der Absender selbst aus — nie eine automatische Antwort.",
+      "guessPlaceholder": "Ich glaube, das war..."
     },
     "reveal": {
       "viewerAccepted": "Du hast ihnen mitgeteilt, dass sie sich offenbaren dürfen.",
@@ -558,7 +562,8 @@
       "couldntPostComment": "Dieser Kommentar konnte nicht veröffentlicht werden",
       "nameUpdated": "Name aktualisiert",
       "couldntUpdateName": "Dieser Name konnte nicht aktualisiert werden",
-      "couldntStartConversation": "Dieses Gespräch konnte nicht gestartet werden"
+      "couldntStartConversation": "Dieses Gespräch konnte nicht gestartet werden",
+      "guessSentAnonymously": "Deine Vermutung ist unterwegs! 🕵️"
     },
     "notFound": "Dieser Whisp konnte nicht gefunden werden."
   }

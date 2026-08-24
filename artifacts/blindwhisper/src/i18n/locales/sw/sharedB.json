@@ -78,7 +78,15 @@
     "replyingTo": "Unamjibu {{name}}",
     "cancelReply": "Ghairi jibu",
     "writeAReply": "Andika jibu...",
-    "send": "Tuma"
+    "send": "Tuma",
+    "guessTag": "🕵️ Kisia",
+    "guessReactionPrompt": "Itikia kisia chao:",
+    "guessReaction": {
+      "hot": "Unakaribia",
+      "cold": "Baridi kabisa",
+      "no_comment": "Sina la kusema",
+      "confirmed": "Ndiyo, ni mimi"
+    }
   },
   "statusBadge": {
     "pending": "Inasubiri",

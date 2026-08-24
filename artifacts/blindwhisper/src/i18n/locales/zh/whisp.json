@@ -307,7 +307,8 @@
       "failedToSend": "发送失败",
       "couldntPostComment": "评论发布失败",
       "failedToRequestReveal": "公开身份请求失败",
-      "failedToDelete": "删除失败"
+      "failedToDelete": "删除失败",
+      "couldntUpdateGuessReaction": "无法更新你的反应"
     }
   },
   "whispsList": {
@@ -516,7 +517,10 @@
       "lastReplyWarning": "这是你的最后一次匿名回复——免费注册以继续。",
       "repliesLeft_one": "你还剩 {{count}} 次匿名回复。",
       "repliesLeft_other": "你还剩 {{count}} 次匿名回复。",
-      "sendButton": "发送回复"
+      "sendButton": "发送回复",
+      "guessToggle": "猜猜是谁发的 🕵️",
+      "guessHint": "对方会亲自选择如何回应——绝不会有自动判定的答案。",
+      "guessPlaceholder": "我猜是..."
     },
     "reveal": {
       "viewerAccepted": "你已告知对方可以公开身份。",
@@ -558,7 +562,8 @@
       "couldntPostComment": "评论发布失败",
       "nameUpdated": "昵称已更新",
       "couldntUpdateName": "无法更新该昵称",
-      "couldntStartConversation": "无法开始该对话"
+      "couldntStartConversation": "无法开始该对话",
+      "guessSentAnonymously": "你的猜测已发送！🕵️"
     },
     "notFound": "找不到这个 whisp。"
   }

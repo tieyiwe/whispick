@@ -78,7 +78,15 @@
     "replyingTo": "Antwort an {{name}}",
     "cancelReply": "Antwort abbrechen",
     "writeAReply": "Antwort schreiben...",
-    "send": "Senden"
+    "send": "Senden",
+    "guessTag": "🕵️ Vermutung",
+    "guessReactionPrompt": "Reagiere auf die Vermutung:",
+    "guessReaction": {
+      "hot": "Warm, warm",
+      "cold": "Kalt",
+      "no_comment": "Kein Kommentar",
+      "confirmed": "Ja, das war ich"
+    }
   },
   "statusBadge": {
     "pending": "Ausstehend",

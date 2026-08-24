@@ -77,7 +77,15 @@
     "replyingTo": "正在回复 {{name}}",
     "cancelReply": "取消回复",
     "writeAReply": "写下你的回复…",
-    "send": "发送"
+    "send": "发送",
+    "guessTag": "🕵️ 猜测",
+    "guessReactionPrompt": "对这个猜测做出反应：",
+    "guessReaction": {
+      "hot": "越来越接近了",
+      "cold": "差远了",
+      "no_comment": "不予置评",
+      "confirmed": "对，就是我"
+    }
   },
   "statusBadge": {
     "pending": "待处理",

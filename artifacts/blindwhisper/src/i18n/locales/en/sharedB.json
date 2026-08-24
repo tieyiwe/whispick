@@ -78,7 +78,15 @@
     "replyingTo": "Replying to {{name}}",
     "cancelReply": "Cancel reply",
     "writeAReply": "Write a reply...",
-    "send": "Send"
+    "send": "Send",
+    "guessTag": "🕵️ Guess",
+    "guessReactionPrompt": "React to their guess:",
+    "guessReaction": {
+      "hot": "Getting warm",
+      "cold": "Cold",
+      "no_comment": "No comment",
+      "confirmed": "Yep, that's me"
+    }
   },
   "statusBadge": {
     "pending": "Pending",

@@ -12,6 +12,7 @@ import {
   getGetWhisperBoxUnreadCountQueryKey,
 } from "@workspace/api-client-react";
 import { isSupportedLanguage } from "@/lib/languages";
+import { useAppBadge } from "@/lib/useAppBadge";
 import {
   LayoutDashboard,
   Send,
@@ -212,6 +213,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
     },
   });
   const unreadReplyCount = unread?.unreadReplyCount ?? 0;
+  const notificationUnreadCount = unread?.unreadCount ?? 0;
 
   // Same polling treatment as the Replies badge above, driving the Whisper
   // Box nav entry's own badge — see routes/whisperBox.ts's GET
@@ -224,6 +226,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
     },
   });
   const whisperBoxUnreadCount = whisperBoxUnread?.unreadCount ?? 0;
+
+  // Home-screen presence (Badge API): reflects total actionable unread —
+  // bell notifications + Whisper Box inbox. Deliberately notificationUnreadCount,
+  // not unreadReplyCount, which is already a subset of it rather than an
+  // addition. Piggybacks on the two polled queries above instead of opening
+  // its own poll; a no-op everywhere the Badge API doesn't exist. Lives here
+  // (not a page) so it's active for the whole authenticated session.
+  useAppBadge(notificationUnreadCount + whisperBoxUnreadCount);
 
   const navItems = isAdmin
     ? [...NAV_ITEMS, { href: "/admin_pro", labelKey: "nav.admin", icon: ShieldCheck }]

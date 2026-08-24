@@ -307,7 +307,8 @@
       "failedToSend": "Error al enviar",
       "couldntPostComment": "No se pudo publicar ese comentario",
       "failedToRequestReveal": "Error al solicitar la revelación",
-      "failedToDelete": "Error al eliminar"
+      "failedToDelete": "Error al eliminar",
+      "couldntUpdateGuessReaction": "No se pudo actualizar tu reacción"
     }
   },
   "whispsList": {
@@ -516,7 +517,10 @@
       "lastReplyWarning": "Esta es tu última respuesta anónima — regístrate gratis para seguir.",
       "repliesLeft_one": "Te queda {{count}} respuesta anónima.",
       "repliesLeft_other": "Te quedan {{count}} respuestas anónimas.",
-      "sendButton": "Enviar respuesta"
+      "sendButton": "Enviar respuesta",
+      "guessToggle": "Adivina quién lo envió 🕵️",
+      "guessHint": "Ellos eligen cómo reaccionar — nunca es una respuesta automática.",
+      "guessPlaceholder": "Creo que fue..."
     },
     "reveal": {
       "viewerAccepted": "Les has hecho saber que está bien revelarse.",
@@ -558,7 +562,8 @@
       "couldntPostComment": "No se pudo publicar ese comentario",
       "nameUpdated": "Nombre actualizado",
       "couldntUpdateName": "No se pudo actualizar ese nombre",
-      "couldntStartConversation": "No se pudo iniciar esa conversación"
+      "couldntStartConversation": "No se pudo iniciar esa conversación",
+      "guessSentAnonymously": "¡Tu suposición fue enviada! 🕵️"
     },
     "notFound": "No se pudo encontrar este whisp."
   }

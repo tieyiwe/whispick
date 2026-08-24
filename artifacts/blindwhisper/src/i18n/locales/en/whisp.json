@@ -307,7 +307,8 @@
       "failedToSend": "Failed to send",
       "couldntPostComment": "Couldn't post that comment",
       "failedToRequestReveal": "Failed to request reveal",
-      "failedToDelete": "Failed to delete"
+      "failedToDelete": "Failed to delete",
+      "couldntUpdateGuessReaction": "Couldn't update your reaction"
     }
   },
   "whispsList": {
@@ -516,7 +517,10 @@
       "lastReplyWarning": "This is your last anonymous reply — sign up free to keep going.",
       "repliesLeft_one": "{{count}} anonymous reply left.",
       "repliesLeft_other": "{{count}} anonymous replies left.",
-      "sendButton": "Send Reply"
+      "sendButton": "Send Reply",
+      "guessToggle": "Guess who sent this 🕵️",
+      "guessHint": "They'll pick how to react — never an automatic answer.",
+      "guessPlaceholder": "I think it was..."
     },
     "reveal": {
       "viewerAccepted": "You've let them know it's okay to reveal themselves.",
@@ -558,7 +562,8 @@
       "couldntPostComment": "Couldn't post that comment",
       "nameUpdated": "Name updated",
       "couldntUpdateName": "Couldn't update that name",
-      "couldntStartConversation": "Couldn't start that conversation"
+      "couldntStartConversation": "Couldn't start that conversation",
+      "guessSentAnonymously": "Your guess is in! 🕵️"
     },
     "notFound": "This whisp could not be found."
   }

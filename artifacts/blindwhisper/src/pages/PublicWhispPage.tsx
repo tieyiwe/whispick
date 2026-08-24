@@ -100,6 +100,11 @@ export function PublicWhispPage() {
   const { isSignedIn } = useUser();
   const [replyText, setReplyText] = useState("");
   const [replyingTo, setReplyingTo] = useState<ThreadReply | null>(null);
+  // "Guess who sent it" — an optional flag on the reply being composed, not
+  // a separate flow: same textarea, same send button, just tagged. Reset on
+  // every successful send (see submitReply) so it never silently carries
+  // over onto an unrelated follow-up message.
+  const [isGuessMode, setIsGuessMode] = useState(false);
 
   // The fixed header's real rendered height, so the content below it knows
   // how much space to reserve. Measured rather than a guessed constant
@@ -370,7 +375,7 @@ export function PublicWhispPage() {
     if (eventType === "watched_complete") setJustWatched(true);
   }
 
-  function submitReply(text: string, video?: { url: string; meta: typeof replyVideoMeta }) {
+  function submitReply(text: string, video?: { url: string; meta: typeof replyVideoMeta }, isGuess?: boolean) {
     publicReply.mutate(
       {
         token: token!,
@@ -382,6 +387,7 @@ export function PublicWhispPage() {
           videoEmbedUrl: video?.meta?.embedUrl ?? null,
           videoPlatform: video?.meta?.platform ?? null,
           ...(replyingTo ? { parentReplyId: replyingTo.id } : {}),
+          ...(isGuess ? { isGuess: true } : {}),
         },
       },
       {
@@ -391,8 +397,9 @@ export function PublicWhispPage() {
           setShowVideoReply(false);
           setReplyVideoUrl("");
           setReplyVideoMeta(null);
+          setIsGuessMode(false);
           queryClient.invalidateQueries({ queryKey: getGetPublicWhispQueryKey(token!) });
-          toast({ title: t("publicWhisp.toast.replySentAnonymously") });
+          toast({ title: isGuess ? t("publicWhisp.toast.guessSentAnonymously") : t("publicWhisp.toast.replySentAnonymously") });
         },
         onError: () => toast({ title: t("publicWhisp.toast.failedToSendReply"), variant: "destructive" }),
       }
@@ -450,6 +457,14 @@ export function PublicWhispPage() {
 
   function handleReply() {
     const video = replyVideoUrl.trim();
+    // A guess requires text (enforced server-side too, see PublicReplyInput)
+    // — a video-only "guess" wouldn't have anything for the sender to react
+    // to as a guess.
+    if (isGuessMode) {
+      if (!replyText.trim()) return;
+      submitReply(replyText.trim(), video ? { url: video, meta: replyVideoMeta } : undefined, true);
+      return;
+    }
     if (!replyText.trim() && !video) return;
     submitReply(replyText.trim(), video ? { url: video, meta: replyVideoMeta } : undefined);
   }
@@ -1251,7 +1266,7 @@ export function PublicWhispPage() {
                     </p>
                   </div>
 
-                  {whisp.replies.length === 0 && (
+                  {whisp.replies.length === 0 && !isGuessMode && (
                   <div className="flex flex-wrap gap-2 justify-center">
                     {QUICK_REPLIES.map((qr) => (
                       <button
@@ -1272,10 +1287,36 @@ export function PublicWhispPage() {
                     <span className="text-xs text-muted-foreground">{t("publicWhisp.reply.orWriteYourOwn")}</span>
                     <div className="flex-1 h-px bg-border/40" />
                   </div>
+
+                  {/* "Guess who sent it" — a lightweight toggle, not a
+                      separate flow: it just tags the same message being
+                      typed below. The hint makes the trust model explicit
+                      right where the recipient decides to flag a guess, not
+                      just after the fact on the sender's side. */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => setIsGuessMode((v) => !v)}
+                      aria-pressed={isGuessMode}
+                      data-testid="button-toggle-guess-mode"
+                      className={[
+                        "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors active:scale-95",
+                        isGuessMode
+                          ? "border-gilded/50 bg-gilded/15 text-gilded"
+                          : "border-border/50 bg-card text-muted-foreground hover:border-gilded/40 hover:text-foreground",
+                      ].join(" ")}
+                    >
+                      {t("publicWhisp.reply.guessToggle")}
+                    </button>
+                    {isGuessMode && (
+                      <span className="text-[11px] text-muted-foreground">{t("publicWhisp.reply.guessHint")}</span>
+                    )}
+                  </div>
+
                   <Textarea
                     ref={replyTextareaRef}
                     className="bg-card border-border/50 rounded-xl resize-none min-h-[80px]"
-                    placeholder={t("publicWhisp.reply.fullPlaceholder")}
+                    placeholder={isGuessMode ? t("publicWhisp.reply.guessPlaceholder") : t("publicWhisp.reply.fullPlaceholder")}
                     maxLength={300}
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
@@ -1284,11 +1325,14 @@ export function PublicWhispPage() {
                     // fingers already expect after typing anywhere else in
                     // the app. Guarded exactly like the Send button itself:
                     // no bare Enter with nothing to send, and no double-send
-                    // while a request is already in flight.
+                    // while a request is already in flight. A guess needs
+                    // text specifically (see handleReply), so a video-only
+                    // draft doesn't count as "ready" while the toggle is on.
                     onKeyDown={(e) => {
                       if (e.key !== "Enter" || e.shiftKey) return;
                       e.preventDefault();
-                      if ((replyText.trim() || replyVideoUrl.trim()) && !publicReply.isPending) handleReply();
+                      const ready = isGuessMode ? !!replyText.trim() : !!(replyText.trim() || replyVideoUrl.trim());
+                      if (ready && !publicReply.isPending) handleReply();
                     }}
                     data-testid="textarea-public-reply"
                   />
@@ -1397,7 +1441,7 @@ export function PublicWhispPage() {
                     <span className="text-xs text-muted-foreground">{replyText.length}/300</span>
                     <Button
                       onClick={handleReply}
-                      disabled={(!replyText.trim() && !replyVideoUrl.trim()) || publicReply.isPending}
+                      disabled={(isGuessMode ? !replyText.trim() : !replyText.trim() && !replyVideoUrl.trim()) || publicReply.isPending}
                       size="sm"
                       className="rounded-full"
                       data-testid="button-send-reply"

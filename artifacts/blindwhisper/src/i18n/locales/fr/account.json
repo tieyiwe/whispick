@@ -51,6 +51,8 @@
     "emailNotificationsDescription": "Recevez un e-mail quand quelqu'un vous envoie un whisp. Vous le verrez toujours dans l'appli de toute façon — ceci ne contrôle que l'e-mail en plus.",
     "showOnlineStatus": "Afficher votre statut en ligne",
     "showOnlineStatusDescription": "Permet aux comptes qui vous suivent dans Debate Now de voir quand vous êtes en ligne. Désactiver ceci masque aussi le statut en ligne des autres pour vous.",
+    "appBadge": "Afficher un badge avec le nombre de non lus",
+    "appBadgeDescription": "Une fois l'appli installée sur votre écran d'accueil, affiche votre total d'éléments non lus sous forme de badge sur l'icône. Ce n'est pas un widget en direct — juste un chiffre sur l'icône.",
     "toastShowOnlineStatusOn": "Votre statut en ligne est maintenant visible par vos abonnés",
     "toastShowOnlineStatusOff": "Votre statut en ligne est maintenant masqué",
     "privacyCardTitle": "Confidentialité",

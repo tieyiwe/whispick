@@ -25,8 +25,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, User, Mail, Shield, Bell, Phone, ShieldCheck, Swords, Mailbox, Share2 } from "lucide-react";
+import { Loader2, User, Mail, Shield, Bell, Phone, ShieldCheck, Swords, Mailbox, Share2, Image } from "lucide-react";
 import { isPushSupported, getExistingPushSubscription, subscribeToPush, pushSubscriptionToJson } from "@/lib/push";
+import { shareWhisperBoxStoryCard } from "@/lib/whisperBoxStoryCard";
+import { isAppBadgeSupported, useAppBadgeEnabled } from "@/lib/useAppBadge";
 import { GENDER_OPTIONS, AGE_RANGE_OPTIONS } from "@/lib/demographics";
 import { useTranslation } from "react-i18next";
 import { SUPPORTED_LANGUAGES, LANGUAGE_LABELS } from "@/lib/languages";
@@ -66,6 +68,8 @@ export function SettingsPage() {
   }
 
   const updateProfile = useUpdateUserProfile();
+
+  const [appBadgeEnabled, setAppBadgeEnabled] = useAppBadgeEnabled();
 
   const [pushEnabled, setPushEnabled] = useState(false);
   const [pushLoading, setPushLoading] = useState(false);
@@ -135,6 +139,38 @@ export function SettingsPage() {
       .writeText(url)
       .then(() => toast({ title: tWhisperBox("settingsSection.toastLinkCopied") }))
       .catch(() => toast({ title: tWhisperBox("settingsSection.toastCopyFailed"), variant: "destructive" }));
+  }
+
+  const [storyShareLoading, setStoryShareLoading] = useState(false);
+
+  // The branded, image-based counterpart to handleShareWhisperBoxLink above
+  // — see src/lib/whisperBoxStoryCard.ts. Generates a Story-ratio PNG card
+  // client-side and, where the platform supports it, hands it straight to
+  // the native share sheet so Instagram/Snapchat/TikTok show up as targets,
+  // rather than sharing a bare link.
+  async function handleShareWhisperBoxStory() {
+    if (!whisperBoxHandle || storyShareLoading) return;
+    setStoryShareLoading(true);
+    try {
+      const url = `${window.location.origin}/whisper-box/${whisperBoxHandle}`;
+      const result = await shareWhisperBoxStoryCard({
+        handle: whisperBoxHandle,
+        url,
+        promptText: tWhisperBox("settingsSection.storyPromptText"),
+        dir: i18n.dir(),
+        shareTitle: tWhisperBox("settingsSection.shareTitle"),
+        shareText: tWhisperBox("settingsSection.storyShareText"),
+      });
+      if (result === "downloaded") {
+        toast({ title: tWhisperBox("settingsSection.toastStoryDownloaded") });
+      } else if (result === "unsupported") {
+        toast({ title: tWhisperBox("settingsSection.toastStoryUnsupported"), variant: "destructive" });
+      }
+    } catch {
+      toast({ title: tWhisperBox("settingsSection.toastStoryFailed"), variant: "destructive" });
+    } finally {
+      setStoryShareLoading(false);
+    }
   }
 
   async function handleEnablePush() {
@@ -553,6 +589,21 @@ export function SettingsPage() {
                 data-testid="switch-show-online-status"
               />
             </div>
+            {isAppBadgeSupported() && (
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium text-foreground">{t("settingsPage.appBadge")}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {t("settingsPage.appBadgeDescription")}
+                  </p>
+                </div>
+                <Switch
+                  checked={appBadgeEnabled}
+                  onCheckedChange={setAppBadgeEnabled}
+                  data-testid="switch-app-badge"
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -588,23 +639,49 @@ export function SettingsPage() {
                   />
                 </div>
                 {whisperBoxEnabled && whisperBoxHandle && (
-                  <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/30 border border-border/40">
-                    <Input
-                      readOnly
-                      value={`${window.location.origin}/whisper-box/${whisperBoxHandle}`}
-                      onFocus={(e) => e.currentTarget.select()}
-                      className="text-xs bg-transparent border-none px-0 h-auto flex-1 truncate focus-visible:ring-0"
-                      data-testid="input-whisper-box-link"
-                    />
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/30 border border-border/40">
+                      <Input
+                        readOnly
+                        value={`${window.location.origin}/whisper-box/${whisperBoxHandle}`}
+                        onFocus={(e) => e.currentTarget.select()}
+                        className="text-xs bg-transparent border-none px-0 h-auto flex-1 truncate focus-visible:ring-0"
+                        data-testid="input-whisper-box-link"
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="rounded-full shrink-0"
+                        onClick={handleShareWhisperBoxLink}
+                        data-testid="button-share-whisper-box-link"
+                      >
+                        <Share2 className="w-3.5 h-3.5 mr-1.5" /> {tWhisperBox("settingsSection.shareButton")}
+                      </Button>
+                    </div>
+                    {/* The branded, image-based share option — visually
+                        distinct (filled, gradient ring echoing an
+                        Instagram/Snapchat/TikTok Story ring) from the plain
+                        outline copy-link button above, since this one
+                        produces a whole PNG card rather than a bare URL. */}
                     <Button
                       type="button"
                       size="sm"
-                      variant="outline"
-                      className="rounded-full shrink-0"
-                      onClick={handleShareWhisperBoxLink}
-                      data-testid="button-share-whisper-box-link"
+                      onClick={handleShareWhisperBoxStory}
+                      disabled={storyShareLoading}
+                      className="w-full rounded-full text-white shadow-sm"
+                      style={{
+                        background:
+                          "linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 55%, hsl(var(--gilded)) 100%)",
+                      }}
+                      data-testid="button-share-whisper-box-story"
                     >
-                      <Share2 className="w-3.5 h-3.5 mr-1.5" /> {tWhisperBox("settingsSection.shareButton")}
+                      {storyShareLoading ? (
+                        <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                      ) : (
+                        <Image className="w-3.5 h-3.5 mr-1.5" />
+                      )}
+                      {tWhisperBox("settingsSection.shareStoryButton")}
                     </Button>
                   </div>
                 )}

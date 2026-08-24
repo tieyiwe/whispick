@@ -27,7 +27,27 @@ export type ThreadReply = {
   /** When the OTHER party viewed this message. Null means sent but unread —
    *  see the schema comment on whisp_replies.readAt for the full model. */
   readAt?: string | null;
+  /** True when the recipient flagged this reply as a "guess who sent it"
+   *  guess. Only ever true on a recipient-authored reply. */
+  isGuess?: boolean;
+  /** 'hot' | 'cold' | 'no_comment' | 'confirmed' | null — set only by the
+   *  sender's own manual, one-tap choice (see GuessReactionPicker below).
+   *  Never computed by the system: auto-checking a guess against the real
+   *  sender would be an identity-enumeration oracle. */
+  guessReaction?: string | null;
 };
+
+/** The four manual reactions a sender can leave on a guess — deliberately a
+ *  closed preset rather than free text or a boolean right/wrong, so the UI
+ *  can never be read as the app itself confirming or denying an identity. */
+export type GuessReactionValue = "hot" | "cold" | "no_comment" | "confirmed";
+
+const GUESS_REACTIONS: { value: GuessReactionValue; emoji: string }[] = [
+  { value: "hot", emoji: "🔥" },
+  { value: "cold", emoji: "🥶" },
+  { value: "no_comment", emoji: "😏" },
+  { value: "confirmed", emoji: "✅" },
+];
 
 // WhatsApp-style read receipt: one grey check once it's sent, two green
 // checks once the other party has actually seen it. Only ever rendered on a
@@ -105,6 +125,7 @@ function MessageBubble({
   parent,
   parentAuthorLabel,
   onReply,
+  guessReactionControl,
 }: {
   reply: ThreadReply;
   isOwn: boolean;
@@ -113,6 +134,16 @@ function MessageBubble({
   parent?: ThreadReply;
   parentAuthorLabel?: string;
   onReply?: (reply: ThreadReply) => void;
+  /** Only ever passed by the sender's own view (WhispDetail) — a recipient
+   *  never gets to react to their own guess, they only ever see the result
+   *  (rendered separately below, from `reply.guessReaction`, regardless of
+   *  this prop). */
+  guessReactionControl?: {
+    onReact: (reply: ThreadReply, reaction: GuessReactionValue) => void;
+    /** The reply currently mid-request, so its picker can show a busy state
+     *  without locking every other guess in the thread. */
+    pendingReplyId?: string | null;
+  };
 }) {
   const { t } = useTranslation("sharedB");
   return (
@@ -126,6 +157,17 @@ function MessageBubble({
       <span className="flex items-center gap-1 text-[11px] text-muted-foreground px-2 mb-1">
         {authorLabel} · {formatTimestamp(reply.createdAt)}
         {isOwn && <ReadReceipt read={!!reply.readAt} />}
+        {reply.isGuess && (
+          // A small badge rather than restyling the whole bubble — the
+          // message still reads as a normal reply, this just flags that it
+          // doubles as a guess.
+          <span
+            data-testid={`reply-guess-tag-${reply.id}`}
+            className="inline-flex items-center gap-1 rounded-full bg-gilded/15 text-gilded px-1.5 py-0.5 text-[10px] font-medium leading-none"
+          >
+            {t("replyThread.guessTag")}
+          </span>
+        )}
       </span>
       <div
         className={[
@@ -165,6 +207,58 @@ function MessageBubble({
           </a>
         )}
       </div>
+      {/* The sender's reaction to a guess, once they've made one — a manual,
+          human choice being relayed, never the app itself confirming or
+          denying who sent the whisp (see GuessReactionValue's own comment).
+          Shown to both sides identically, wherever the reply itself renders. */}
+      {reply.isGuess && reply.guessReaction && (
+        <span
+          data-testid={`reply-guess-reaction-${reply.id}`}
+          className="mt-1 mx-2 inline-flex w-fit items-center gap-1.5 rounded-full border border-gilded/30 bg-gilded/10 px-2.5 py-1 text-[11px] font-medium text-gilded"
+        >
+          {GUESS_REACTIONS.find((r) => r.value === reply.guessReaction)?.emoji}
+          {t(`replyThread.guessReaction.${reply.guessReaction}`, { defaultValue: reply.guessReaction })}
+        </span>
+      )}
+      {/* The sender's one-tap reaction picker — only ever rendered on the
+          sender's own view (guessReactionControl is only passed there), and
+          only on a reply that's actually a guess. Always all four options,
+          highlighting whichever is currently selected: the backend allows
+          overwriting a reaction, so this stays editable rather than
+          one-shot, same as tapping a different quick reply. */}
+      {guessReactionControl && reply.isGuess && (
+        <div className="mt-1.5 mx-2 space-y-1" data-testid={`guess-reaction-picker-${reply.id}`}>
+          {/* Only shown before the first reaction — once one's picked, the
+              highlighted option below already says everything this would. */}
+          {!reply.guessReaction && (
+            <p className="text-[11px] text-muted-foreground">{t("replyThread.guessReactionPrompt")}</p>
+          )}
+          <div className="flex flex-wrap gap-1.5">
+          {GUESS_REACTIONS.map((option) => {
+            const selected = reply.guessReaction === option.value;
+            const pending = guessReactionControl.pendingReplyId === reply.id;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => guessReactionControl.onReact(reply, option.value)}
+                disabled={pending}
+                aria-pressed={selected}
+                data-testid={`guess-reaction-${option.value}-${reply.id}`}
+                className={[
+                  "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors active:scale-95 disabled:opacity-50",
+                  selected
+                    ? "border-gilded/50 bg-gilded/15 text-gilded"
+                    : "border-border/50 bg-card text-muted-foreground hover:border-gilded/40 hover:text-foreground",
+                ].join(" ")}
+              >
+                {option.emoji} {t(`replyThread.guessReaction.${option.value}`)}
+              </button>
+            );
+          })}
+          </div>
+        </div>
+      )}
       {onReply && (
         // Always rendered rather than hover-only: half the readers are on a
         // phone, where there is no hover and an affordance that only appears
@@ -193,6 +287,8 @@ export function ReplyThread({
   composer,
   replyingTo,
   onReplyTo,
+  onReactToGuess,
+  reactingGuessReplyId,
 }: {
   replies: ThreadReply[];
   viewerIsRecipient: boolean;
@@ -208,6 +304,15 @@ export function ReplyThread({
    *  `onReplyTo` is what turns the per-message Reply affordance on at all. */
   replyingTo?: ThreadReply | null;
   onReplyTo?: (reply: ThreadReply | null) => void;
+  /** Turns on the sender's guess-reaction picker on every guess reply in the
+   *  thread. Only ever passed from the sender's own view (WhispDetail) — the
+   *  mutation itself lives on the page, same division of responsibility as
+   *  `onReplyTo`. Omit entirely on the recipient's view, where a guess's
+   *  reaction (if any) is still shown, just not editable. */
+  onReactToGuess?: (reply: ThreadReply, reaction: GuessReactionValue) => void;
+  /** The guess reply currently mid-request, so only its own picker shows a
+   *  busy state. */
+  reactingGuessReplyId?: string | null;
 }) {
   const { t } = useTranslation("sharedB");
   const resolvedOwnLabel = ownLabel ?? t("replyThread.you");
@@ -225,6 +330,9 @@ export function ReplyThread({
   const byId = useMemo(() => new Map(replies.map((r) => [r.id, r])), [replies]);
   const labelFor = (reply: ThreadReply) =>
     (viewerIsRecipient ? reply.fromRecipient : !reply.fromRecipient) ? resolvedOwnLabel : otherLabel;
+  const guessReactionControl = onReactToGuess
+    ? { onReact: onReactToGuess, pendingReplyId: reactingGuessReplyId }
+    : undefined;
 
   function scrollToLatest(behavior: ScrollBehavior = "smooth") {
     const el = scrollRef.current;
@@ -301,6 +409,7 @@ export function ReplyThread({
                   parent={parent}
                   parentAuthorLabel={parent && labelFor(parent)}
                   onReply={onReplyTo}
+                  guessReactionControl={guessReactionControl}
                 />
               );
             })}

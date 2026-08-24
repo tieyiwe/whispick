@@ -355,7 +355,8 @@
       "failedToSend": "فشل الإرسال",
       "couldntPostComment": "تعذّر نشر ذلك التعليق",
       "failedToRequestReveal": "فشل طلب الكشف",
-      "failedToDelete": "فشل الحذف"
+      "failedToDelete": "فشل الحذف",
+      "couldntUpdateGuessReaction": "تعذّر تحديث تفاعلك"
     }
   },
   "whispsList": {
@@ -576,7 +577,10 @@
       "repliesLeft_few": "تبقّى لديك {{count}} ردود مجهولة.",
       "repliesLeft_many": "تبقّى لديك {{count}} ردًّا مجهولًا.",
       "repliesLeft_other": "تبقّى لديك {{count}} رد مجهول.",
-      "sendButton": "أرسل الرد"
+      "sendButton": "أرسل الرد",
+      "guessToggle": "خمّن من أرسل هذا 🕵️",
+      "guessHint": "هو من سيختار طريقة التفاعل — لن يكون هناك ردّ تلقائي أبدًا.",
+      "guessPlaceholder": "أعتقد أنه..."
     },
     "reveal": {
       "viewerAccepted": "لقد أخبرتهم أنه لا بأس بالكشف عن هويتهم.",
@@ -618,7 +622,8 @@
       "couldntPostComment": "تعذّر نشر ذلك التعليق",
       "nameUpdated": "تم تحديث الاسم",
       "couldntUpdateName": "تعذّر تحديث ذلك الاسم",
-      "couldntStartConversation": "تعذّر بدء تلك المحادثة"
+      "couldntStartConversation": "تعذّر بدء تلك المحادثة",
+      "guessSentAnonymously": "تم إرسال تخمينك! 🕵️"
     },
     "notFound": "تعذّر العثور على هذا الـ Whisp."
   }

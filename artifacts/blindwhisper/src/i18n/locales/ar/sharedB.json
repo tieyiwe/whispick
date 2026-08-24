@@ -82,7 +82,15 @@
     "replyingTo": "جارٍ الرد على {{name}}",
     "cancelReply": "إلغاء الرد",
     "writeAReply": "اكتب ردًا...",
-    "send": "إرسال"
+    "send": "إرسال",
+    "guessTag": "🕵️ تخمين",
+    "guessReactionPrompt": "تفاعل مع تخمينهم:",
+    "guessReaction": {
+      "hot": "اقتربت",
+      "cold": "بعيد تمامًا",
+      "no_comment": "بلا تعليق",
+      "confirmed": "نعم، أنا هو"
+    }
   },
   "statusBadge": {
     "pending": "قيد الانتظار",

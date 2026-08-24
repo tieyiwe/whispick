@@ -27,7 +27,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Mailbox, Trash2, Clock } from "lucide-react";
+import { Mailbox, Trash2, Clock, Image, Loader2 } from "lucide-react";
+import { shareWhisperBoxStoryCard } from "@/lib/whisperBoxStoryCard";
+import i18n from "@/i18n";
 
 // The recipient's own view of their Whisper Box — see routes/whisperBox.ts's
 // GET /whisper-box and docs/features-community.md. Every message here has no
@@ -52,6 +54,36 @@ export function WhisperBoxInbox() {
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [storyShareLoading, setStoryShareLoading] = useState(false);
+
+  // Same branded-image share as SettingsPage's Whisper Box card (see
+  // src/lib/whisperBoxStoryCard.ts) — surfaced here too since the empty
+  // state is the other natural moment to prompt "go share your link".
+  async function handleShareWhisperBoxStory() {
+    const handle = recap?.whispererHandle;
+    if (!handle || storyShareLoading) return;
+    setStoryShareLoading(true);
+    try {
+      const url = `${window.location.origin}/whisper-box/${handle}`;
+      const result = await shareWhisperBoxStoryCard({
+        handle,
+        url,
+        promptText: t("settingsSection.storyPromptText"),
+        dir: i18n.dir(),
+        shareTitle: t("settingsSection.shareTitle"),
+        shareText: t("settingsSection.storyShareText"),
+      });
+      if (result === "downloaded") {
+        toast({ title: t("settingsSection.toastStoryDownloaded") });
+      } else if (result === "unsupported") {
+        toast({ title: t("settingsSection.toastStoryUnsupported"), variant: "destructive" });
+      }
+    } catch {
+      toast({ title: t("settingsSection.toastStoryFailed"), variant: "destructive" });
+    } finally {
+      setStoryShareLoading(false);
+    }
+  }
 
   function invalidateAfterChange() {
     queryClient.invalidateQueries({ queryKey: getListWhisperBoxMessagesQueryKey() });
@@ -122,11 +154,33 @@ export function WhisperBoxInbox() {
             <p className="text-muted-foreground max-w-sm mx-auto mb-6">
               {whisperBoxEnabled ? t("whisperBoxInbox.emptyState.descriptionEnabled") : t("whisperBoxInbox.emptyState.descriptionDisabled")}
             </p>
-            <Link href="/settings">
-              <Button variant="outline" className="rounded-full" data-testid="button-manage-whisper-box">
-                {whisperBoxEnabled ? t("whisperBoxInbox.emptyState.manageCta") : t("whisperBoxInbox.emptyState.enableCta")}
-              </Button>
-            </Link>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
+              {whisperBoxEnabled && recap?.whispererHandle && (
+                <Button
+                  type="button"
+                  onClick={handleShareWhisperBoxStory}
+                  disabled={storyShareLoading}
+                  className="rounded-full text-white shadow-sm"
+                  style={{
+                    background:
+                      "linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 55%, hsl(var(--gilded)) 100%)",
+                  }}
+                  data-testid="button-share-whisper-box-story"
+                >
+                  {storyShareLoading ? (
+                    <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                  ) : (
+                    <Image className="w-3.5 h-3.5 mr-1.5" />
+                  )}
+                  {t("settingsSection.shareStoryButton")}
+                </Button>
+              )}
+              <Link href="/settings">
+                <Button variant="outline" className="rounded-full" data-testid="button-manage-whisper-box">
+                  {whisperBoxEnabled ? t("whisperBoxInbox.emptyState.manageCta") : t("whisperBoxInbox.emptyState.enableCta")}
+                </Button>
+              </Link>
+            </div>
           </Card>
         ) : (
           <div className="space-y-3">

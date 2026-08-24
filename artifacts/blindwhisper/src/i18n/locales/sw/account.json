@@ -51,6 +51,8 @@
     "emailNotificationsDescription": "Pata barua pepe wakati mtu anakutumia whisp. Utaiona kwenye programu hata hivyo — hii inadhibiti tu barua pepe ya ziada.",
     "showOnlineStatus": "Onyesha wakati uko mtandaoni",
     "showOnlineStatusDescription": "Inaruhusu akaunti zinazokufuata kwenye Debate Now kuona wakati uko mtandaoni. Kuzima hii pia kunakuzuia kuona hali ya mtandaoni ya wengine.",
+    "appBadge": "Weka alama ya idadi isiyosomwa kwenye ikoni",
+    "appBadgeDescription": "Ukisakinisha programu kwenye skrini ya nyumbani, itaonyesha jumla ya vitu ambavyo hujasoma kama alama kwenye ikoni ya programu. Si widget ya moja kwa moja — ni tarakimu tu kwenye ikoni.",
     "toastShowOnlineStatusOn": "Hali yako ya mtandaoni sasa inaonekana kwa wafuasi wako",
     "toastShowOnlineStatusOff": "Hali yako ya mtandaoni sasa imefichwa",
     "privacyCardTitle": "Faragha",
