@@ -9,7 +9,14 @@ import userRouter from "./user";
 import creditsRouter from "./credits";
 import billingRouter from "./billing";
 import linkRouter from "./link";
+import whisperBoxLinkRouter from "./whisperBoxLink";
 import adminRouter from "./admin";
+import adminMfaRouter from "./adminMfa";
+import adminAccessRouter from "./adminAccess";
+import adminProjectsRouter from "./adminProjects";
+import adminTextWhispsRouter from "./adminTextWhisps";
+import adminDebateAgentRouter from "./adminDebateAgent";
+import adminCircleAgentRouter from "./adminCircleAgent";
 import whisperGroupsRouter from "./whisperGroups";
 import mediaRouter from "./media";
 import subscribeRouter from "./subscribe";
@@ -18,6 +25,11 @@ import invitesRouter from "./invites";
 import publicInvitesRouter from "./publicInvites";
 import publicTextWhispsRouter from "./publicTextWhisps";
 import textWhispsRouter from "./textWhisps";
+import debateTopicsRouter from "./debateTopics";
+import followsRouter from "./follows";
+import contentReportsRouter from "./contentReports";
+import usageEventsRouter from "./usageEvents";
+import whisperBoxRouter from "./whisperBox";
 import { publicEndpointLimiter } from "../lib/rateLimit";
 
 const router: IRouter = Router();
@@ -40,12 +52,53 @@ router.use("/public", circleRouter);
 router.use("/public", subscribeRouter);
 router.use("/public", publicInvitesRouter);
 router.use("/public", publicTextWhispsRouter);
+router.use("/public", usageEventsRouter);
+// No prefix: debateTopicsRouter defines its own full paths (both the
+// authenticated "/debate-topics" create/delete and the public
+// "/public/debate-topics..." routes), same pattern healthRouter uses above.
+// Mounted after the "/public" limiter registration so requests to its
+// public routes still pass through publicEndpointLimiter first.
+router.use(debateTopicsRouter);
+// Same reasoning as debateTopicsRouter above — defines its own full
+// "/public/whisper-box/..." AND authenticated "/whisper-box/..." paths, and
+// must stay after the "/public" limiter registration so its public routes
+// still pass through publicEndpointLimiter (in addition to its own tighter
+// whisperBoxSendLimiter on the send route specifically).
+router.use(whisperBoxRouter);
+router.use("/follows", followsRouter);
+// No prefix, same reasoning as debateTopicsRouter above — it defines its
+// own full "/content-reports" path.
+router.use(contentReportsRouter);
 router.use("/circles", circlesRouter);
 router.use("/user", userRouter);
 router.use("/credits", creditsRouter);
 router.use("/billing", billingRouter);
 router.use("/l", publicEndpointLimiter, linkRouter);
+router.use("/wb", publicEndpointLimiter, whisperBoxLinkRouter);
+// Mounted OUTSIDE the /admin router's requireAdmin chain on purpose: these
+// are the enrollment/unlock endpoints the MFA gate sends a locked-out
+// admin through (they do their own signed-in + admin-role check inline).
+router.use("/admin-mfa", adminMfaRouter);
+// Before the main admin router so /admin/access terminates here instead of
+// running the main router's middleware chain first.
+router.use("/admin/access", adminAccessRouter);
 router.use("/admin", adminRouter);
+// Separate router/file from adminRouter (see routes/adminDebateAgent.ts's
+// own comment for why) but the same "/admin" base path, so its routes still
+// read as /api/admin/debate-agent/....
+router.use("/admin", adminDebateAgentRouter);
+// Same "/admin" base path, separate router/file for the same reason (see
+// routes/adminCircleAgent.ts's own comment) — its routes read as
+// /api/admin/circle-agent/....
+router.use("/admin", adminCircleAgentRouter);
+// Same "/admin" base, separate file — /api/admin/projects... and
+// /api/admin/tasks... (HQ workspace, "projects" permission).
+router.use("/admin", adminProjectsRouter);
+// Own distinct prefix (not bare "/admin") — its requireAdmin/requirePermission
+// middleware is inherently scoped to these routes only, unlike the shared-
+// "/admin"-base agent routers, which is why THEY need router.use("/prefix", mw)
+// instead of router.use(mw): see adminDebateAgent.ts's own comment.
+router.use("/admin/text-whisps", adminTextWhispsRouter);
 router.use("/whisper-groups", whisperGroupsRouter);
 router.use("/media", mediaRouter);
 router.use("/suggestions", suggestionsRouter);

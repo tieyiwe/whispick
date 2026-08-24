@@ -34,6 +34,20 @@ export const PLAN_LIMITS: Record<string, { whisperLinksPerMonth: number | null; 
 
 export const GHOST_BOOST_COST_USD = 6.99;
 
+// Ghost Boost is paused, not removed: the original idea was to buy reach on
+// social ad platforms, which turned out not to be viable (no way to
+// guarantee reaching one identified person, plus anti-harassment ad-policy
+// risk), and the anonymous-mailing-list matching that replaced it hasn't
+// proven itself either. The code, schema, tests, and historical
+// data/campaigns all stay intact so this can be re-scoped and flipped back
+// on later — this ONE flag is the single place that does it. Every other
+// gate in the app (routes/whisps.ts's send block, routes/billing.ts's
+// credit-pack checkout block, SendWhisp.tsx/CreditsPage.tsx/Dashboard.tsx's
+// hidden UI) reads from this constant. Viewing/managing a PAST Ghost Boost
+// campaign (WhispDetail.tsx's match-stats view, admin panel) is
+// deliberately NOT gated by this — only new sends and new purchases are.
+export const GHOST_BOOST_ENABLED = false;
+
 // How many times an ANONYMOUS recipient can reply to a single whisp before
 // the thread closes and the sender is offered more (whisps.
 // replyCreditsPurchased). Overridable via RECIPIENT_FREE_REPLIES; set it to
@@ -71,6 +85,61 @@ export function recipientReplyAllowance(replyCreditsPurchased: number): number |
   return free === null ? null : free + replyCreditsPurchased;
 }
 
+/**
+ * Whether the recipient of this whisp may reply with a VIDEO.
+ *
+ * Text replies stay open to anonymous recipients (up to the reply allowance);
+ * whisping a video back is the thing that needs either a membership or credit
+ * the sender bought for this whisp. Two reasons it's drawn here rather than at
+ * the reply cap: a video reply costs real storage and moderation attention in
+ * a way a line of text doesn't, and it's the moment where asking an anonymous
+ * recipient to join is a fair trade rather than an interruption — they're
+ * already choosing to put something of their own into the exchange.
+ *
+ * Deliberately NOT tied to recipientFreeReplies: that cap is currently off
+ * (see the TODO above), and this restriction is meant to hold regardless.
+ */
+export function canRecipientWhispVideoBack(isSignedIn: boolean, replyCreditsPurchased: number): boolean {
+  return isSignedIn || replyCreditsPurchased > 0;
+}
+
 export function whisperLinkLimitFor(plan: string): number | null {
   return (PLAN_LIMITS[plan] ?? PLAN_LIMITS.free).whisperLinksPerMonth;
+}
+
+// How many public comments an ANONYMOUS (no account) visitor can post on an
+// open, anonymous public comment thread — Blind Circle content and Debate
+// Topics both use this same shared limit, and any future anonymous comment
+// surface should call these same functions rather than growing a parallel
+// rate-limit system — within a rolling window, before being asked to sign
+// up or wait it out. Unlike recipientFreeReplies above, this ships enabled
+// by default: these are brand-new, always-public surfaces with no existing
+// "buy more" purchase flow to eventually gate behind, so there's no reason
+// to launch uncapped the way the reply cap currently is. Overridable via
+// ANONYMOUS_COMMENT_LIMIT ("unlimited" disables it), same pattern as every
+// other configurable limit in this file.
+const ANONYMOUS_COMMENT_LIMIT_DEFAULT = 3;
+export const COMMENT_LIMIT_WINDOW_HOURS = 24;
+
+export function anonymousCommentLimit(): number | null {
+  const raw = process.env.ANONYMOUS_COMMENT_LIMIT?.trim();
+  if (!raw) return ANONYMOUS_COMMENT_LIMIT_DEFAULT;
+  if (raw.toLowerCase() === "unlimited") return null;
+  return parsePositiveIntOr(raw, ANONYMOUS_COMMENT_LIMIT_DEFAULT);
+}
+
+/**
+ * Whether this visitor may post another Circle comment right now.
+ *
+ * A signed-in caller is never capped — creating a free account ("becoming a
+ * Whisperer") is exactly the way around this limit, same as the anonymous
+ * reply cap's own signed-in exemption elsewhere in this file.
+ * `recentCommentCount` is the caller's count of comments in the trailing
+ * COMMENT_LIMIT_WINDOW_HOURS window (see routes/public.ts), not a lifetime
+ * total — the limit resets on a rolling 24h basis, not a hard one-time wall.
+ */
+export function canPostAnonymousComment(isSignedIn: boolean, recentCommentCount: number): boolean {
+  if (isSignedIn) return true;
+  const limit = anonymousCommentLimit();
+  return limit === null || recentCommentCount < limit;
 }

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import app from "../app";
-import { db, whispRepliesTable } from "@workspace/db";
+import { db, whispRepliesTable, whispsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { TEST_USER_HEADER } from "./setup";
 
@@ -13,6 +13,15 @@ async function createWhisp(overrides: Record<string, unknown> = {}) {
     .set(TEST_USER_HEADER, USER_A)
     .send({ videoUrl: "https://youtu.be/x", deliveryMethod: "circle_drop", ...overrides });
   return res.body as { id: string; publicToken: string };
+}
+
+
+// Video replies from an anonymous recipient need credit the sender bought
+// (see videoReplyGate.test.ts, which covers that rule directly). Tests below
+// that are about video handling rather than the gate unlock it explicitly, so
+// a failure there means what it says.
+async function unlockVideoReplies(whispId: string) {
+  await db.update(whispsTable).set({ replyCreditsPurchased: 1 }).where(eq(whispsTable.id, whispId));
 }
 
 describe("GET /api/public/w/:token", () => {
@@ -30,6 +39,18 @@ describe("GET /api/public/w/:token", () => {
     expect(res.body).not.toHaveProperty("senderId");
   });
 
+  it("reports hasWatched only once a prior visit already marked it watched, not the visit that does the watching", async () => {
+    const whisp = await createWhisp();
+
+    const beforeWatching = await request(app).get(`/api/public/w/${whisp.publicToken}`);
+    expect(beforeWatching.body.hasWatched).toBe(false);
+
+    await request(app).post(`/api/public/w/${whisp.publicToken}/track`).send({ eventType: "watched_complete" });
+
+    const afterWatching = await request(app).get(`/api/public/w/${whisp.publicToken}`);
+    expect(afterWatching.body.hasWatched).toBe(true);
+  });
+
   it("includes the reply thread so the recipient can see prior messages, not just send a one-shot reply", async () => {
     const whisp = await createWhisp();
 
@@ -44,6 +65,35 @@ describe("GET /api/public/w/:token", () => {
     expect(res.body.replies).toHaveLength(2);
     expect(res.body.replies[0].fromRecipient).toBe(true);
     expect(res.body.replies[1].fromRecipient).toBe(false);
+  });
+
+  it("marks the sender's follow-up read the moment the recipient views the thread, but never their own reply", async () => {
+    const whisp = await createWhisp();
+
+    // The recipient's own message — a read receipt on this should only ever
+    // come from the sender's side (routes/whisps.ts GET /:id), never from
+    // the recipient loading their own page.
+    const ownReply = await request(app)
+      .post(`/api/public/w/${whisp.publicToken}/reply`)
+      .send({ replyText: "thank you" });
+    expect(ownReply.body.readAt).toBeNull();
+
+    const senderFollowUp = await request(app)
+      .post(`/api/whisps/${whisp.id}/replies`)
+      .set(TEST_USER_HEADER, USER_A)
+      .send({ replyText: "of course" });
+    expect(senderFollowUp.body.readAt).toBeNull();
+
+    const res = await request(app).get(`/api/public/w/${whisp.publicToken}`);
+    const [recipientMessage, senderMessage] = res.body.replies;
+    expect(recipientMessage.readAt).toBeNull();
+    expect(senderMessage.readAt).toBeTruthy();
+
+    // Idempotent: a second load (the page's own poll included) doesn't move
+    // an already-set readAt.
+    const firstReadAt = senderMessage.readAt;
+    const again = await request(app).get(`/api/public/w/${whisp.publicToken}`);
+    expect(again.body.replies[1].readAt).toBe(firstReadAt);
   });
 });
 
@@ -62,6 +112,56 @@ describe("POST /api/public/w/:token/track", () => {
     const detail = await request(app).get(`/api/whisps/${whisp.id}`).set(TEST_USER_HEADER, USER_A);
     expect(detail.body.whisp.status).toBe("watched");
     expect(detail.body.whisp.openedAt).not.toBeNull();
+    expect(detail.body.whisp.watchedAt).not.toBeNull();
+  });
+
+  it("marks the whisp watched on a click alone, for a platform that can't report progress", async () => {
+    // A TikTok/Instagram/Facebook/X whisp has no player API to tell us it
+    // finished. Before, gating on watched_complete left those stuck at
+    // "opened" forever regardless of what the recipient actually did.
+    const whisp = await createWhisp();
+
+    await request(app).post(`/api/public/w/${whisp.publicToken}/track`).send({ eventType: "clicked" });
+
+    const detail = await request(app).get(`/api/whisps/${whisp.id}`).set(TEST_USER_HEADER, USER_A);
+    expect(detail.body.whisp.status).toBe("watched");
+    expect(detail.body.whisp.watchedAt).not.toBeNull();
+  });
+
+  it("keeps the original watch time when a completion follows the click", async () => {
+    const whisp = await createWhisp();
+
+    await request(app).post(`/api/public/w/${whisp.publicToken}/track`).send({ eventType: "clicked" });
+    const afterClick = await request(app).get(`/api/whisps/${whisp.id}`).set(TEST_USER_HEADER, USER_A);
+    const firstWatchedAt = afterClick.body.whisp.watchedAt;
+
+    await request(app).post(`/api/public/w/${whisp.publicToken}/track`).send({ eventType: "watched_complete" });
+    const afterComplete = await request(app).get(`/api/whisps/${whisp.id}`).set(TEST_USER_HEADER, USER_A);
+
+    // The completion upgrades what the timeline SAYS (it reads the raw
+    // events) without re-stamping when watching began, and without a second
+    // notification — one video, one buzz.
+    expect(afterComplete.body.whisp.watchedAt).toBe(firstWatchedAt);
+    expect(afterComplete.body.trackingEvents.map((e: any) => e.eventType)).toEqual(["clicked", "watched_complete"]);
+  });
+
+  it("does not mark a whisp watched on an unrelated event", async () => {
+    const whisp = await createWhisp();
+
+    await request(app).post(`/api/public/w/${whisp.publicToken}/track`).send({ eventType: "watched_10s" });
+
+    const detail = await request(app).get(`/api/whisps/${whisp.id}`).set(TEST_USER_HEADER, USER_A);
+    expect(detail.body.whisp.watchedAt).toBeNull();
+  });
+
+  it("keeps status as replied even if the video is played afterwards", async () => {
+    const whisp = await createWhisp();
+
+    await request(app).post(`/api/public/w/${whisp.publicToken}/reply`).send({ replyText: "thanks!" });
+    await request(app).post(`/api/public/w/${whisp.publicToken}/track`).send({ eventType: "clicked" });
+
+    const detail = await request(app).get(`/api/whisps/${whisp.id}`).set(TEST_USER_HEADER, USER_A);
+    expect(detail.body.whisp.status).toBe("replied");
     expect(detail.body.whisp.watchedAt).not.toBeNull();
   });
 });
@@ -95,6 +195,7 @@ describe("POST /api/public/w/:token/reply", () => {
 
   it("accepts a whisp-back video reply with no text", async () => {
     const whisp = await createWhisp();
+    await unlockVideoReplies(whisp.id);
 
     const res = await request(app).post(`/api/public/w/${whisp.publicToken}/reply`).send({
       videoUrl: "https://youtu.be/reply",
@@ -183,6 +284,7 @@ describe("POST /api/public/w/:token/reply", () => {
 
   it("ignores a client-supplied reply thumbnail/embed and derives them server-side (anti-deanonymization)", async () => {
     const whisp = await createWhisp();
+    await unlockVideoReplies(whisp.id);
 
     const res = await request(app).post(`/api/public/w/${whisp.publicToken}/reply`).send({
       videoUrl: "https://youtu.be/dQw4w9WgXcQ",
@@ -201,6 +303,7 @@ describe("POST /api/public/w/:token/reply", () => {
 
   it("drops a non-YouTube reply thumbnail rather than trusting the client (no attacker host reaches the sender's browser)", async () => {
     const whisp = await createWhisp();
+    await unlockVideoReplies(whisp.id);
 
     const res = await request(app).post(`/api/public/w/${whisp.publicToken}/reply`).send({
       videoUrl: "https://www.tiktok.com/@a/video/123",
@@ -211,6 +314,75 @@ describe("POST /api/public/w/:token/reply", () => {
     // No deterministic safe thumbnail for TikTok, so it's null — never the
     // attacker-supplied one.
     expect(res.body.videoThumbnail).toBeNull();
+  });
+});
+
+// Per-message replying: the client sends the id of the message being
+// answered so the thread can quote it. That id is attacker-controlled (this
+// route is unauthenticated), so the only thing standing between it and a
+// cross-thread leak is the same-whisp check.
+describe("threaded replies (parentReplyId)", () => {
+  it("keeps the parent reference when it points at a message on the same whisp", async () => {
+    const whisp = await createWhisp();
+    const first = await request(app)
+      .post(`/api/whisps/${whisp.id}/replies`)
+      .set(TEST_USER_HEADER, USER_A)
+      .send({ replyText: "how are you?" });
+
+    const answer = await request(app)
+      .post(`/api/public/w/${whisp.publicToken}/reply`)
+      .send({ replyText: "better now", parentReplyId: first.body.id });
+
+    expect(answer.status).toBe(201);
+    expect(answer.body.parentReplyId).toBe(first.body.id);
+
+    const page = await request(app).get(`/api/public/w/${whisp.publicToken}`);
+    expect(page.body.replies.find((r: any) => r.id === answer.body.id).parentReplyId).toBe(first.body.id);
+  });
+
+  it("drops a parent id belonging to a different whisp instead of quoting across threads", async () => {
+    const mine = await createWhisp();
+    const theirs = await createWhisp();
+    const foreign = await request(app)
+      .post(`/api/public/w/${theirs.publicToken}/reply`)
+      .send({ replyText: "a secret from another thread" });
+
+    const res = await request(app)
+      .post(`/api/public/w/${mine.publicToken}/reply`)
+      .send({ replyText: "probing", parentReplyId: foreign.body.id });
+
+    // Accepted as an ordinary message — the reference is silently dropped
+    // rather than 400'd, since a stale id (parent deleted while typing) is a
+    // normal race, not an attack worth surfacing to the user.
+    expect(res.status).toBe(201);
+    expect(res.body.parentReplyId).toBeNull();
+  });
+
+  it("drops a parent id that doesn't exist at all", async () => {
+    const whisp = await createWhisp();
+
+    const res = await request(app)
+      .post(`/api/public/w/${whisp.publicToken}/reply`)
+      .send({ replyText: "hello", parentReplyId: "no-such-reply" });
+
+    expect(res.status).toBe(201);
+    expect(res.body.parentReplyId).toBeNull();
+  });
+
+  it("applies the same-whisp rule to the sender's own replies", async () => {
+    const mine = await createWhisp();
+    const theirs = await createWhisp();
+    const foreign = await request(app)
+      .post(`/api/public/w/${theirs.publicToken}/reply`)
+      .send({ replyText: "elsewhere" });
+
+    const res = await request(app)
+      .post(`/api/whisps/${mine.id}/replies`)
+      .set(TEST_USER_HEADER, USER_A)
+      .send({ replyText: "probing", parentReplyId: foreign.body.id });
+
+    expect(res.status).toBe(201);
+    expect(res.body.parentReplyId).toBeNull();
   });
 });
 

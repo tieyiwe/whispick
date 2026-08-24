@@ -1,9 +1,19 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import request from "supertest";
 import app from "../app";
 import { db, usersTable, whispsTable, whispRepliesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { TEST_USER_HEADER } from "./setup";
+
+// Ghost Boost is paused in production (GHOST_BOOST_ENABLED = false in
+// lib/plans.ts — see ghostBoostDisabled.test.ts for coverage of that
+// default), but the credit-spend/scheduling logic this file's Ghost Boost
+// tests exercise is still real code kept ready for when the feature comes
+// back, so this file overrides just that one flag to keep exercising it.
+vi.mock("../lib/plans", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../lib/plans")>();
+  return { ...actual, GHOST_BOOST_ENABLED: true };
+});
 
 const USER_A = "clerk_user_a";
 const USER_B = "clerk_user_b";
@@ -331,6 +341,36 @@ describe("GET /api/whisps", () => {
     expect(res.body).toHaveLength(1);
     expect(res.body[0].videoUrl).toBe("https://youtu.be/a");
   });
+
+  it("never reveals the real sender's account id to a matched recipient (box=received)", async () => {
+    // Test env's ensureUser gives every user a deterministic `${clerkId}@blindwhisper.com`
+    // email (see ensureUser.ts) — the recipient's user row has to exist BEFORE
+    // the send for lib/deliver.ts's email-match lookup to find it at all.
+    await request(app).get("/api/whisps").set(asUser("clerk_whisp_leak_recipient"));
+
+    const sent = await request(app)
+      .post("/api/whisps")
+      .set(asUser("clerk_whisp_leak_sender"))
+      .send({
+        videoUrl: "https://youtu.be/leak",
+        deliveryMethod: "whisper_link",
+        whisperChannel: "email",
+        recipientEmail: "clerk_whisp_leak_recipient@blindwhisper.com",
+      });
+    expect(sent.status).toBe(201);
+
+    const received = await request(app).get("/api/whisps?box=received").set(asUser("clerk_whisp_leak_recipient"));
+    expect(received.status).toBe(200);
+    expect(received.body).toHaveLength(1);
+    expect(received.body[0].senderId).toBeNull();
+    expect(received.body[0].viewerRole).toBe("recipient");
+
+    // The sender's own "Sent" view is unaffected — they already know it's
+    // their own id.
+    const asSender = await request(app).get("/api/whisps").set(asUser("clerk_whisp_leak_sender"));
+    expect(asSender.body[0].senderId).toEqual(expect.any(String));
+    expect(asSender.body[0].viewerRole).toBe("sender");
+  });
 });
 
 describe("Reveal flow", () => {
@@ -428,6 +468,41 @@ describe("DELETE /api/whisps/:id", () => {
 
     const del = await request(app).delete(`/api/whisps/${created.body.id}`).set(asUser(USER_D));
     expect(del.status).toBe(404);
+  });
+});
+
+describe("GET /api/whisps/:id — reply read receipts", () => {
+  const USER_E = "clerk_user_e";
+
+  it("marks the recipient's replies read the moment the sender views the thread", async () => {
+    const created = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_E))
+      .send({ videoUrl: "https://youtu.be/a", deliveryMethod: "circle_drop" });
+    const whispId = created.body.id;
+
+    // A real recipient-authored row — the only route that can produce
+    // fromRecipient=true is the public one; POST /api/whisps/:id/replies is
+    // sender-only and ignores any fromRecipient the client sends (see its
+    // own comment), so that route can't stand in for this.
+    const reply = await request(app)
+      .post(`/api/public/w/${created.body.publicToken}/reply`)
+      .send({ replyText: "a reply from the recipient" });
+    expect(reply.body.readAt).toBeNull();
+
+    const firstView = await request(app).get(`/api/whisps/${whispId}`).set(asUser(USER_E));
+    expect(firstView.body.replies[0].readAt).toBeTruthy();
+
+    // A sender-authored follow-up should never get marked "read" by the
+    // sender's own view — only the recipient side of the conversation does
+    // that, in GET /api/public/w/:token (see public.test.ts).
+    const followUp = await request(app)
+      .post(`/api/whisps/${whispId}/replies`)
+      .set(asUser(USER_E))
+      .send({ replyText: "a follow-up from the sender", fromRecipient: false });
+    const secondView = await request(app).get(`/api/whisps/${whispId}`).set(asUser(USER_E));
+    const senderReply = secondView.body.replies.find((r: { id: string }) => r.id === followUp.body.id);
+    expect(senderReply.readAt).toBeNull();
   });
 });
 

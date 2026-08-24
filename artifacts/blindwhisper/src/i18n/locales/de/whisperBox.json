@@ -1,0 +1,101 @@
+{
+  "publicWhisperBoxPage": {
+    "notFoundTitle": "Dieser Whisper-Box-Link ist nicht aktiv",
+    "notFoundDescription": "Entweder ist der Link falsch, oder diese Person hat ihre Whisper Box deaktiviert.",
+    "heading": "Sende {{handle}} eine anonyme Nachricht",
+    "promptLine": "Du kannst mir alles sagen oder zeigen, was ich hören oder sehen muss — anonym.",
+    "subheading": "Niemand erfährt, dass du es warst — es sei denn, du sagst es selbst.",
+    "messageLabel": "Deine Nachricht",
+    "messagePlaceholder": "Schreib, was dir auf dem Herzen liegt...",
+    "aliasLabel": "Unterschreiben als (optional)",
+    "aliasPlaceholder": "z. B. Ein Freund, Jemand, dem du wichtig bist...",
+    "privacyNote": "Das ist vollständig anonym. Es wird nichts über dich weitergegeben — weder dein Name noch dein Konto noch irgendetwas anderes.",
+    "sendButton": "Anonym senden",
+    "successTitle": "Nachricht gesendet",
+    "successDescription": "Sie wurde anonym zugestellt. Es gibt keine Möglichkeit herauszufinden, dass du es warst.",
+    "sendAnotherButton": "Weitere Nachricht senden",
+    "signUpPrompt": "Möchtest du deine eigene Whisper Box?",
+    "signUpLinkText": "Kostenlos registrieren",
+    "poweredByPrefix": "Bereitgestellt von",
+    "poweredBySuffix": "— sende anonyme Whisps an Menschen, die dir wichtig sind.",
+    "toastValidationError": "Diese Nachricht konnte nicht gesendet werden — bitte überprüfe sie und versuche es erneut.",
+    "toastRateLimitedTitle": "Du sendest gerade sehr viele Nachrichten",
+    "toastRateLimitedDescription": "Bitte warte etwas, bevor du die nächste sendest.",
+    "toastSendFailed": "Diese Nachricht konnte nicht gesendet werden. Bitte versuche es erneut."
+  },
+  "whisperBoxInbox": {
+    "title": "Whisper Box",
+    "subtitle": "Anonyme Nachrichten, die an deinen öffentlichen Whisper-Box-Link gesendet wurden.",
+    "anonymous": "Anonym",
+    "newBadge": "Neu",
+    "timeAgo": "vor {{time}}",
+    "deleteButton": "Löschen",
+    "deleteDialog": {
+      "title": "Diese Nachricht löschen?",
+      "description": "Das kann nicht rückgängig gemacht werden. Die Nachricht wird dauerhaft aus deiner Whisper Box entfernt.",
+      "cancel": "Abbrechen",
+      "confirm": "Löschen"
+    },
+    "toastDeleteSuccess": "Nachricht gelöscht",
+    "toastDeleteError": "Diese Nachricht konnte nicht gelöscht werden",
+    "toastMarkReadError": "Diese Nachricht konnte nicht aktualisiert werden",
+    "emptyState": {
+      "titleEnabled": "Deine Whisper Box ist leer",
+      "descriptionEnabled": "Teile deinen Link, und anonyme Nachrichten erscheinen hier.",
+      "manageCta": "Link holen",
+      "titleDisabled": "Whisper Box ist nicht eingeschaltet",
+      "descriptionDisabled": "Schalte sie in den Einstellungen ein, um einen öffentlichen Link zu erhalten, über den dir jeder eine anonyme Nachricht senden kann — ganz ohne eigenes Konto.",
+      "enableCta": "In den Einstellungen einschalten"
+    }
+  },
+  "settingsSection": {
+    "cardTitle": "Whisper Box",
+    "toggleLabel": "Whisper Box",
+    "enabledDescription": "Jeder mit deinem Link kann dir eine anonyme Nachricht senden — ganz ohne Konto.",
+    "disabledDescription": "Schalte das ein, um einen öffentlichen Link zu erhalten, über den dir jeder eine anonyme Nachricht senden kann.",
+    "shareButton": "Teilen",
+    "shareTitle": "Blind Whisper — Whisper Box",
+    "toastLinkCopied": "Link kopiert — teile ihn, wo du willst",
+    "toastCopyFailed": "Kopieren fehlgeschlagen — bitte manuell kopieren",
+    "toastEnabled": "Whisper Box ist eingeschaltet",
+    "toastDisabled": "Whisper Box ist ausgeschaltet",
+    "toastToggleFailed": "Das konnte nicht aktualisiert werden. Bitte versuche es erneut.",
+    "shareStoryButton": "In Story teilen",
+    "storyPromptText": "Schick mir einen anonymen Whisper 👀",
+    "storyShareText": "Schick mir einen anonymen Whisper — ganz ohne Konto.",
+    "toastStoryDownloaded": "Bild gespeichert — teile es in deiner Story!",
+    "toastStoryShared": "Link wurde auch kopiert — füge ihn ein, falls die App ihn nicht automatisch hinzufügt.",
+    "toastStoryUnsupported": "Teilen wird in diesem Browser nicht unterstützt — kopiere stattdessen den Link.",
+    "toastStoryFailed": "Das Bild zum Teilen konnte nicht erstellt werden. Bitte versuche es erneut."
+  },
+  "linkDialog": {
+    "title": "Dein Whisper-Box-Link",
+    "description": "Jeder mit diesem Link — oder wer den QR-Code scannt — kann dir eine anonyme Nachricht schicken.",
+    "copyButton": "Link kopieren",
+    "namePromptTitle": "Erst deinen Namen hinzufügen?",
+    "namePromptDescription": "Dein Whisper-Box-Link basiert auf deinem Anzeigenamen, damit Freunde ihn wirklich wiedererkennen. Ohne einen bekommst du stattdessen einen zufälligen Link.",
+    "nameInputLabel": "Anzeigename",
+    "nameInputPlaceholder": "Dein Name",
+    "nameSaveCta": "Speichern und Link holen",
+    "nameSkipCta": "Vorerst überspringen",
+    "toastPersonalized": "Dein Link passt jetzt zu deinem Namen",
+    "toastPersonalizeFailed": "Konnte nicht aktualisiert werden. Bitte versuche es erneut."
+  },
+  "searchBar": {
+    "sectionTitle": "Jemandes Whisper Box finden",
+    "placeholder": "@handle",
+    "button": "Suchen"
+  },
+  "dashboardCard": {
+    "title": "Whisper Box",
+    "getStartedTitle": "Hol dir deine Whisper Box",
+    "getStartedDescription": "Ein öffentlicher Link, über den dir jeder eine anonyme Nachricht senden kann. Teile ihn in deiner Bio.",
+    "getStartedCta": "Einschalten",
+    "unreadTitle_one": "Du hast {{count}} neue Nachricht",
+    "unreadTitle_other": "Du hast {{count}} neue Nachrichten",
+    "unreadDescription": "Jemand hat dir eine anonyme Nachricht geschickt.",
+    "idleTitle": "Whisper Box",
+    "idleDescription": "Teile deinen Link, um mehr anonyme Nachrichten zu erhalten.",
+    "viewInboxCta": "Posteingang ansehen"
+  }
+}

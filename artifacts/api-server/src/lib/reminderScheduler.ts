@@ -7,6 +7,10 @@ import { isExpired, MAX_REMINDERS } from "./expiration";
 import { logger } from "./logger";
 
 const POLL_INTERVAL_MS = 60_000;
+// Same bounded-sweep reasoning as lib/scheduler.ts's BATCH_LIMIT — this loop
+// fires a real send per row sequentially; leftover due rows are picked up on
+// the next poll, still only 60s away.
+const BATCH_LIMIT = 100;
 
 // Dispatches "remind me later" follow-ups the recipient scheduled from the
 // public whisp page (see routes/public.ts's /remind-me). Same
@@ -19,7 +23,8 @@ export function startReminderDispatcher(): void {
       const due = await db
         .select()
         .from(whispsTable)
-        .where(and(isNotNull(whispsTable.nextReminderAt), lte(whispsTable.nextReminderAt, new Date())));
+        .where(and(isNotNull(whispsTable.nextReminderAt), lte(whispsTable.nextReminderAt, new Date())))
+        .limit(BATCH_LIMIT);
 
       if (due.length === 0) return;
 
@@ -39,12 +44,18 @@ export function startReminderDispatcher(): void {
 
         const newCount = whisp.reminderCount + 1;
         const isFinal = newCount >= MAX_REMINDERS;
-        void deliverWhisperLink(whisp, appUrl, reminderHookLine(isFinal, whisp.expiresAt), "reminder");
 
-        await db
+        // Claim BEFORE sending (conditional on the schedule still being set)
+        // so an overlapping sweep can't re-select this row and remind the
+        // recipient twice — zero rows updated means another sweep owns it.
+        const claimed = await db
           .update(whispsTable)
           .set({ reminderCount: newCount, lastReminderAt: new Date(), nextReminderAt: null })
-          .where(eq(whispsTable.id, whisp.id));
+          .where(and(eq(whispsTable.id, whisp.id), isNotNull(whispsTable.nextReminderAt)))
+          .returning({ id: whispsTable.id });
+        if (claimed.length === 0) continue;
+
+        void deliverWhisperLink(whisp, appUrl, reminderHookLine(isFinal, whisp.expiresAt), "reminder");
       }
 
       logger.info({ count: due.length }, "Dispatched whisp reminders");

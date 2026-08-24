@@ -1,0 +1,36 @@
+{
+  "mediaLibrary": {
+    "title": "Biblioteca multimedia",
+    "description": "Los videos que subiste desde tu dispositivo, listos para reutilizar en un whisp.",
+    "uploadButton": "Subir un video",
+    "uploadSuccess": "Video subido",
+    "uploadFailedDefault": "No se pudo subir el video. Inténtalo de nuevo.",
+    "deleteSuccess": "Video eliminado",
+    "deleteError": "No se pudo eliminar el video",
+    "emptyState": "Aún no hay videos — sube uno para empezar.",
+    "unavailable": "Ya no está disponible",
+    "usageCount_one": "{{count}} whisp",
+    "usageCount_other": "{{count}} whisps",
+    "expiresIn": "Se elimina en {{days}} d",
+    "whispIt": "Enviar Whisp",
+    "postToCircle": "Blind Circle",
+    "removeDialog": {
+      "title": "¿Eliminar este video?",
+      "description": "Cualquier whisp que ya lo haya usado mostrará \"ya no disponible\" en lugar del video.",
+      "cancel": "Cancelar",
+      "confirm": "Eliminar"
+    },
+    "previewError": "No se pudo cargar este video para la vista previa."
+  },
+  "suggestionsLibrary": {
+    "title": "Biblioteca de sugerencias",
+    "description": "Videos que vale la pena compartir. Encuentra uno que le quede bien a alguien de tu círculo y susúrraselo de forma anónima.",
+    "filterAll": "Todos",
+    "filterFeatured": "Destacados",
+    "featuredBadge": "Destacado",
+    "untitledVideo": "Video sin título",
+    "watch": "Ver",
+    "whisperThis": "Susurrar esto",
+    "emptyState": "Todavía no hay nada aquí — vuelve pronto."
+  }
+}

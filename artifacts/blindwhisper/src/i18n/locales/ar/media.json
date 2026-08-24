@@ -1,0 +1,40 @@
+{
+  "mediaLibrary": {
+    "title": "مكتبة الوسائط",
+    "description": "الفيديوهات التي رفعتها من جهازك، جاهزة لإعادة استخدامها في Whisp.",
+    "uploadButton": "ارفع فيديو",
+    "uploadSuccess": "تم رفع الفيديو",
+    "uploadFailedDefault": "فشل الرفع. يرجى المحاولة مرة أخرى.",
+    "deleteSuccess": "تمت إزالة الفيديو",
+    "deleteError": "تعذّرت إزالة الفيديو",
+    "emptyState": "لا توجد مقاطع مرفوعة بعد — أضف فيديو للبدء.",
+    "unavailable": "لم يعد متاحًا",
+    "usageCount_zero": "لا توجد أي Whisps",
+    "usageCount_one": "Whisp واحد",
+    "usageCount_two": "اثنان من Whisps",
+    "usageCount_few": "{{count}} Whisps",
+    "usageCount_many": "{{count}} Whisp",
+    "usageCount_other": "{{count}} Whisp",
+    "expiresIn": "يُزال خلال {{days}} يوم",
+    "whispIt": "أرسله كـ Whisp",
+    "postToCircle": "Blind Circle",
+    "removeDialog": {
+      "title": "هل تريد إزالة هذا الفيديو؟",
+      "description": "أي Whisp استخدم هذا الفيديو من قبل سيعرض \"لم يعد متاحًا\" بدلًا من الفيديو.",
+      "cancel": "إلغاء",
+      "confirm": "إزالة"
+    },
+    "previewError": "تعذّر تحميل هذا الفيديو للمعاينة."
+  },
+  "suggestionsLibrary": {
+    "title": "مكتبة الاقتراحات",
+    "description": "فيديوهات تستحق أن تنتقل من يد إلى يد. جِد فيديو يناسب شخصًا في دائرتك واهمس به إليه بهوية مجهولة.",
+    "filterAll": "الكل",
+    "filterFeatured": "مميّز",
+    "featuredBadge": "مميّز",
+    "untitledVideo": "فيديو بلا عنوان",
+    "watch": "مشاهدة",
+    "whisperThis": "اهمس بهذا",
+    "emptyState": "لا شيء هنا بعد — عد إلينا قريبًا."
+  }
+}

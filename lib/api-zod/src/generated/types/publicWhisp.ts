@@ -5,10 +5,15 @@
  * Blind Whisper API — anonymous video recommendation platform
  * OpenAPI spec version: 0.1.0
  */
+import type { CircleComment } from './circleComment';
 import type { WhispReply } from './whispReply';
 
 export interface PublicWhisp {
   id: string;
+  /** True only when the caller is signed in, is this whisp's matched recipient, and has archived their copy (see POST /whisps/{id}/archive) — always false for an anonymous visitor or a signed-in non-recipient. */
+  viewerArchived?: boolean;
+  /** Same caller-relative scoping as viewerArchived, for pin instead. */
+  viewerPinned?: boolean;
   videoUrl: string;
   /** @nullable */
   videoTitle?: string | null;
@@ -48,4 +53,18 @@ export interface PublicWhisp {
      * @nullable
      */
   recipientRepliesRemaining?: number | null;
+  /** Whether this viewer may whisp a VIDEO back. Text replies stay open to anonymous recipients up to their allowance; a video reply needs either an account or reply credit the sender bought for this whisp. */
+  videoRepliesAllowed?: boolean;
+  /** Whether this whisp was already marked watched (whisps.watchedAt) BEFORE this request — true only on a reopen, never on the load that itself does the watching. */
+  hasWatched?: boolean;
+  /** Whether this whisp was already opened (whisps.openedAt) BEFORE this request — true only on a reopen, never on a true first visit. This, not hasWatched, drives whether the appreciation prompt starts expanded (first-ever open — visible right under the video) or collapsed (any reopen, still one tap away): watchedAt gets set the moment someone taps Play, before they've actually watched anything, so it would spring the prompt open too early; openedAt never does. */
+  hasOpenedBefore?: boolean;
+  /** 'whisper_link' | 'ghost_boost' | 'circle_drop' | 'group_whisper' | 'circle_dm' */
+  deliveryMethod: string;
+  /** Blind Circle posts only (0 otherwise). */
+  likeCount: number;
+  /** Whether the visitorId passed as a query param has already liked this post. False (not just "unknown") when no visitorId is given. */
+  viewerHasLiked: boolean;
+  /** Blind Circle posts only (empty otherwise). */
+  comments: CircleComment[];
 }

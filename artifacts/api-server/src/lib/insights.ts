@@ -2,7 +2,7 @@ import { db } from "@workspace/db";
 import { usersTable, whispsTable, whispCategoriesTable } from "@workspace/db";
 import { and, count, desc, eq, gte, isNotNull, sql } from "drizzle-orm";
 import { VIDEO_CATEGORIES } from "./categorize";
-import { PLAN_LIMITS } from "./plans";
+import { PLAN_LIMITS, GHOST_BOOST_ENABLED } from "./plans";
 
 export type Insight = {
   id: string;
@@ -116,21 +116,26 @@ export async function computeOpportunities(): Promise<Insight[]> {
     }
   }
 
-  // 4. Ghost Boost credits sitting unused.
-  const idleCreditsRow = await db
-    .select({ count: count() })
-    .from(usersTable)
-    .where(gte(usersTable.boostCredits, 1))
-    .then((r) => r[0]);
+  // 4. Ghost Boost credits sitting unused — meaningless advice while Ghost
+  // Boost sends are paused (see GHOST_BOOST_ENABLED), so skip it entirely
+  // rather than nudge an admin toward re-engaging users on a feature they
+  // currently can't spend credits on.
+  if (GHOST_BOOST_ENABLED) {
+    const idleCreditsRow = await db
+      .select({ count: count() })
+      .from(usersTable)
+      .where(gte(usersTable.boostCredits, 1))
+      .then((r) => r[0]);
 
-  if ((idleCreditsRow?.count ?? 0) >= 3) {
-    insights.push({
-      id: "idle-credits",
-      title: "Purchased Ghost Boost credits are sitting unused",
-      description: `${idleCreditsRow!.count} users are holding at least 1 unused Ghost Boost credit. A re-engagement email or in-app nudge could convert those into sends.`,
-      severity: "opportunity",
-      metric: String(idleCreditsRow!.count),
-    });
+    if ((idleCreditsRow?.count ?? 0) >= 3) {
+      insights.push({
+        id: "idle-credits",
+        title: "Purchased Ghost Boost credits are sitting unused",
+        description: `${idleCreditsRow!.count} users are holding at least 1 unused Ghost Boost credit. A re-engagement email or in-app nudge could convert those into sends.`,
+        severity: "opportunity",
+        metric: String(idleCreditsRow!.count),
+      });
+    }
   }
 
   // 5. Geographic concentration — is signup base concentrated in one place?

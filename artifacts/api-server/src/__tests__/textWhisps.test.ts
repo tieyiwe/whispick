@@ -2,10 +2,11 @@ import { describe, it, expect } from "vitest";
 import { randomUUID } from "crypto";
 import request from "supertest";
 import app from "../app";
-import { db, usersTable, textWhispsTable, textWhispRepliesTable } from "@workspace/db";
+import { db, usersTable, textWhispsTable, textWhispRepliesTable, notificationsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { TEST_USER_HEADER } from "./setup";
 import { textWhispGuestSmsBody } from "../lib/sms";
+import { getDueTextWhisps } from "../lib/textWhispScheduler";
 
 const USER_A = "clerk_text_whisp_a"; // sender
 const USER_B = "clerk_text_whisp_b"; // recipient — verified
@@ -39,6 +40,25 @@ async function setupSenderAndVerifiedRecipient() {
   const senderId = await insertUser(USER_A);
   const recipientId = await insertUser(USER_B, { phone: RECIPIENT_PHONE, phoneVerifiedAt: new Date() });
   return { senderId, recipientId };
+}
+
+// Same shape as setupSenderAndVerifiedRecipient, but with a fresh, uniquely
+// generated clerk id pair each call instead of the fixed USER_A/USER_B
+// reused by most of this file's tests. createTextWhispLimiter
+// (lib/rateLimit.ts) caps POST /text-whisps at 30/hour PER AUTHENTICATED
+// USER — that's in-memory middleware state, not touched by the afterEach DB
+// truncate, so it accumulates across every test in this file that sends as
+// USER_A regardless of pass/fail. A test that needs several of its own text
+// whisps (rather than exercising USER_A/B's own established relationship)
+// should use this instead, so it draws from its own separate budget rather
+// than eating into USER_A's and starving whatever test happens to run after
+// it in the same file.
+async function setupFreshSenderAndVerifiedRecipient() {
+  const senderClerkId = `clerk_text_whisp_fresh_sender_${randomUUID()}`;
+  const recipientClerkId = `clerk_text_whisp_fresh_recipient_${randomUUID()}`;
+  const senderId = await insertUser(senderClerkId);
+  const recipientId = await insertUser(recipientClerkId, { phone: RECIPIENT_PHONE, phoneVerifiedAt: new Date() });
+  return { senderClerkId, recipientClerkId, senderId, recipientId };
 }
 
 describe("POST /api/text-whisps", () => {
@@ -341,6 +361,131 @@ describe("Text Whisp replies", () => {
     const stored = await db.select().from(textWhispRepliesTable).where(eq(textWhispRepliesTable.id, res.body.id)).then((r) => r[0]);
     expect(stored.senderId).toBe(recipient.id);
   });
+
+  it("quotes a valid parent reply from the same thread", async () => {
+    const { senderClerkId, recipientClerkId } = await setupFreshSenderAndVerifiedRecipient();
+    const create = await request(app)
+      .post("/api/text-whisps")
+      .set(asUser(senderClerkId))
+      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "hi there" });
+    const id = create.body.id as string;
+
+    const first = await request(app).post(`/api/text-whisps/${id}/replies`).set(asUser(recipientClerkId)).send({ replyText: "first" });
+
+    const second = await request(app)
+      .post(`/api/text-whisps/${id}/replies`)
+      .set(asUser(senderClerkId))
+      .send({ replyText: "answering", parentReplyId: first.body.id });
+
+    expect(second.status).toBe(201);
+    expect(second.body.parentReplyId).toBe(first.body.id);
+  });
+
+  it("degrades to an unquoted reply for a parentReplyId from a different thread", async () => {
+    const { senderClerkId, recipientClerkId } = await setupFreshSenderAndVerifiedRecipient();
+    async function sendTextWhisp() {
+      const res = await request(app)
+        .post("/api/text-whisps")
+        .set(asUser(senderClerkId))
+        .send({ recipientPhone: RECIPIENT_PHONE, messageText: "hi there" });
+      return res.body.id as string;
+    }
+    const idA = await sendTextWhisp();
+    const idB = await sendTextWhisp();
+    const foreignReply = await request(app)
+      .post(`/api/text-whisps/${idB}/replies`)
+      .set(asUser(recipientClerkId))
+      .send({ replyText: "elsewhere" });
+
+    const res = await request(app)
+      .post(`/api/text-whisps/${idA}/replies`)
+      .set(asUser(senderClerkId))
+      .send({ replyText: "hi", parentReplyId: foreignReply.body.id });
+
+    expect(res.status).toBe(201);
+    expect(res.body.parentReplyId).toBeNull();
+  });
+
+  it("marks the other party's replies read when the viewer opens the thread, never their own", async () => {
+    const { senderClerkId, recipientClerkId } = await setupFreshSenderAndVerifiedRecipient();
+    const create = await request(app)
+      .post("/api/text-whisps")
+      .set(asUser(senderClerkId))
+      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "hi there" });
+    const id = create.body.id as string;
+
+    const reply = await request(app).post(`/api/text-whisps/${id}/replies`).set(asUser(recipientClerkId)).send({ replyText: "hi" });
+
+    const beforeOpen = await db.select().from(textWhispRepliesTable).where(eq(textWhispRepliesTable.id, reply.body.id)).then((r) => r[0]);
+    expect(beforeOpen.readAt).toBeNull();
+
+    await request(app).get(`/api/text-whisps/${id}`).set(asUser(senderClerkId));
+
+    const afterOpen = await db.select().from(textWhispRepliesTable).where(eq(textWhispRepliesTable.id, reply.body.id)).then((r) => r[0]);
+    expect(afterOpen.readAt).not.toBeNull();
+  });
+
+  it("never marks the viewer's own reply read from their own GET call", async () => {
+    const { senderClerkId } = await setupFreshSenderAndVerifiedRecipient();
+    const create = await request(app)
+      .post("/api/text-whisps")
+      .set(asUser(senderClerkId))
+      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "hi there" });
+    const id = create.body.id as string;
+
+    const ownReply = await request(app).post(`/api/text-whisps/${id}/replies`).set(asUser(senderClerkId)).send({ replyText: "from the sender" });
+
+    await request(app).get(`/api/text-whisps/${id}`).set(asUser(senderClerkId));
+
+    const row = await db.select().from(textWhispRepliesTable).where(eq(textWhispRepliesTable.id, ownReply.body.id)).then((r) => r[0]);
+    expect(row.readAt).toBeNull();
+  });
+});
+
+describe("Text Whisp typing indicator", () => {
+  async function createTextWhisp() {
+    const { senderClerkId, recipientClerkId } = await setupFreshSenderAndVerifiedRecipient();
+    const res = await request(app)
+      .post("/api/text-whisps")
+      .set(asUser(senderClerkId))
+      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "hi there" });
+    return { id: res.body.id as string, senderClerkId, recipientClerkId };
+  }
+
+  it("shows otherPartyTyping to the OTHER party only, never the pinger's own view", async () => {
+    const { id, senderClerkId, recipientClerkId } = await createTextWhisp();
+    const ping = await request(app).post(`/api/text-whisps/${id}/typing`).set(asUser(recipientClerkId));
+    expect(ping.status).toBe(204);
+
+    const senderView = await request(app).get(`/api/text-whisps/${id}`).set(asUser(senderClerkId));
+    expect(senderView.body.textWhisp.otherPartyTyping).toBe(true);
+
+    const recipientView = await request(app).get(`/api/text-whisps/${id}`).set(asUser(recipientClerkId));
+    expect(recipientView.body.textWhisp.otherPartyTyping).toBe(false);
+  });
+
+  it("clears once the pinger actually sends their reply", async () => {
+    const { id, senderClerkId, recipientClerkId } = await createTextWhisp();
+    await request(app).post(`/api/text-whisps/${id}/typing`).set(asUser(recipientClerkId));
+    await request(app).post(`/api/text-whisps/${id}/replies`).set(asUser(recipientClerkId)).send({ replyText: "here it is" });
+
+    const senderView = await request(app).get(`/api/text-whisps/${id}`).set(asUser(senderClerkId));
+    expect(senderView.body.textWhisp.otherPartyTyping).toBe(false);
+  });
+
+  it("rejects a typing ping from an unrelated third party", async () => {
+    const { id } = await createTextWhisp();
+    const outsiderClerkId = `clerk_text_whisp_outsider_${randomUUID()}`;
+    await insertUser(outsiderClerkId);
+    const res = await request(app).post(`/api/text-whisps/${id}/typing`).set(asUser(outsiderClerkId));
+    expect(res.status).toBe(404);
+  });
+
+  it("rejects an unauthenticated typing ping", async () => {
+    const { id } = await createTextWhisp();
+    const res = await request(app).post(`/api/text-whisps/${id}/typing`);
+    expect(res.status).toBe(401);
+  });
 });
 
 describe("Text Whisp reveal flow", () => {
@@ -492,5 +637,86 @@ describe("textWhispGuestSmsBody", () => {
     const body = textWhispGuestSmsBody("https://blindwhisper.com/tw/abc123");
     expect(body).toContain("https://blindwhisper.com/tw/abc123");
     expect(body).toContain("Reply STOP to opt out, HELP for help. Msg & data rates may apply.");
+  });
+});
+
+describe("Text Whisp scheduling", () => {
+  it("schedules a future send instead of delivering immediately, and doesn't notify yet", async () => {
+    const { senderClerkId, recipientId } = await setupFreshSenderAndVerifiedRecipient();
+    const scheduledAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    const res = await request(app)
+      .post("/api/text-whisps")
+      .set(asUser(senderClerkId))
+      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "later", scheduledAt });
+
+    expect(res.status).toBe(201);
+    expect(res.body.status).toBe("scheduled");
+    expect(res.body.scheduledAt).toBeTruthy();
+
+    const row = await db.select().from(textWhispsTable).where(eq(textWhispsTable.id, res.body.id)).then((r) => r[0]);
+    expect(row.status).toBe("scheduled");
+    expect(row.scheduledAt).not.toBeNull();
+
+    // No in-app notification fired yet — delivery is held back until due.
+    const notifications = await db.select().from(notificationsTable).where(eq(notificationsTable.targetUserId, recipientId));
+    expect(notifications.length).toBe(0);
+  });
+
+  it("rejects a schedule further out than the max window", async () => {
+    const { senderClerkId } = await setupFreshSenderAndVerifiedRecipient();
+    const farFuture = new Date(Date.now() + 400 * 24 * 60 * 60 * 1000).toISOString();
+    const res = await request(app)
+      .post("/api/text-whisps")
+      .set(asUser(senderClerkId))
+      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "too far", scheduledAt: farFuture });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("treats a past scheduledAt as an immediate send", async () => {
+    const { senderClerkId } = await setupFreshSenderAndVerifiedRecipient();
+    const past = new Date(Date.now() - 60_000).toISOString();
+    const res = await request(app)
+      .post("/api/text-whisps")
+      .set(asUser(senderClerkId))
+      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "already due", scheduledAt: past });
+
+    expect(res.status).toBe(201);
+    expect(res.body.status).toBe("sent");
+  });
+});
+
+describe("getDueTextWhisps", () => {
+  it("only returns scheduled, due, non-deleted rows", async () => {
+    const { senderId } = await setupFreshSenderAndVerifiedRecipient();
+    const now = Date.now();
+
+    // Inserted directly rather than through the route, so exact
+    // status/scheduledAt/deletedBySenderAt combinations are controllable.
+    const due = {
+      id: randomUUID(), senderId, recipientPhone: "+15551110001", publicToken: randomUUID(),
+      messageText: "due", status: "scheduled", scheduledAt: new Date(now - 60_000),
+    };
+    const notYetDue = {
+      id: randomUUID(), senderId, recipientPhone: "+15551110002", publicToken: randomUUID(),
+      messageText: "not yet", status: "scheduled", scheduledAt: new Date(now + 60_000),
+    };
+    const alreadySent = {
+      id: randomUUID(), senderId, recipientPhone: "+15551110003", publicToken: randomUUID(),
+      messageText: "already sent", status: "sent", scheduledAt: new Date(now - 60_000),
+    };
+    const deleted = {
+      id: randomUUID(), senderId, recipientPhone: "+15551110004", publicToken: randomUUID(),
+      messageText: "deleted", status: "scheduled", scheduledAt: new Date(now - 60_000), deletedBySenderAt: new Date(),
+    };
+
+    await db.insert(textWhispsTable).values([due, notYetDue, alreadySent, deleted]);
+
+    const dueRows = await getDueTextWhisps();
+    const dueIds = dueRows.map((r) => r.id);
+    expect(dueIds).toContain(due.id);
+    expect(dueIds).not.toContain(notYetDue.id);
+    expect(dueIds).not.toContain(alreadySent.id);
+    expect(dueIds).not.toContain(deleted.id);
   });
 });

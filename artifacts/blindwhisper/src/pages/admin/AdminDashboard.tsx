@@ -21,7 +21,7 @@ export function AdminDashboard() {
     { label: "Total Users", value: stats?.totalUsers ?? 0, icon: Users, color: "text-primary", bg: "bg-primary/10" },
     { label: "Total Whisps", value: stats?.totalWhisps ?? 0, icon: Send, color: "text-blue-400", bg: "bg-blue-500/10" },
     { label: "Active (7d)", value: stats?.activeUsersLast7Days ?? 0, icon: TrendingUp, color: "text-secondary", bg: "bg-secondary/10" },
-    { label: "Failed Deliveries", value: funnelStats?.funnel.failed ?? 0, icon: AlertOctagon, color: "text-destructive", bg: "bg-destructive/10", href: "/admin/whisps?status=failed" },
+    { label: "Failed Deliveries", value: funnelStats?.funnel.failed ?? 0, icon: AlertOctagon, color: "text-destructive", bg: "bg-destructive/10", href: "/admin_pro/whisps?status=failed" },
     { label: "Banned", value: stats?.bannedUsers ?? 0, icon: UserX, color: "text-destructive", bg: "bg-destructive/10" },
   ];
 
@@ -83,17 +83,11 @@ export function AdminDashboard() {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Card className="bg-card border-border/50">
             <CardContent className="p-5">
               <p className="text-xs text-muted-foreground">New users (30d)</p>
               <p className="text-xl font-bold text-foreground mt-1">{stats?.newUsersLast30Days ?? 0}</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-card border-border/50">
-            <CardContent className="p-5">
-              <p className="text-xs text-muted-foreground">Credit pack purchases</p>
-              <p className="text-xl font-bold text-foreground mt-1">{stats?.creditPackPurchases ?? 0}</p>
             </CardContent>
           </Card>
           <Card className="bg-card border-border/50">

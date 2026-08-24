@@ -41,7 +41,7 @@ export function AdminWhispDetail() {
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ["/api/admin/whisps"] });
-          setLocation("/admin/whisps");
+          setLocation("/admin_pro/whisps");
           toast({ title: "Whisp removed" });
         },
         onError: () => toast({ title: "Failed to remove whisp", variant: "destructive" }),
@@ -76,7 +76,7 @@ export function AdminWhispDetail() {
     <AdminLayout>
       <div className="max-w-2xl mx-auto space-y-5">
         <div className="flex items-center justify-between">
-          <Button variant="ghost" onClick={() => setLocation("/admin/whisps")} className="text-muted-foreground -ml-2">
+          <Button variant="ghost" onClick={() => setLocation("/admin_pro/whisps")} className="text-muted-foreground -ml-2">
             <ArrowLeft className="w-4 h-4 mr-1" /> Content
           </Button>
           <AlertDialog>
@@ -200,7 +200,7 @@ export function AdminWhispDetail() {
                   </div>
                   <p className="text-foreground">{f.reasoning}</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {f.dismissed ? "Dismissed as a false positive" : "Awaiting review"} · <Link href="/admin/moderation" className="hover:text-primary transition-colors">Review queue</Link>
+                    {f.dismissed ? "Dismissed as a false positive" : "Awaiting review"} · <Link href="/admin_pro/moderation" className="hover:text-primary transition-colors">Review queue</Link>
                   </p>
                 </div>
               ))}

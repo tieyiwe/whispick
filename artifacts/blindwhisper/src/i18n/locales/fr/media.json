@@ -1,0 +1,36 @@
+{
+  "mediaLibrary": {
+    "title": "Médiathèque",
+    "description": "Les vidéos que tu as importées depuis ton appareil, prêtes à être réutilisées dans un whisp.",
+    "uploadButton": "Importer une vidéo",
+    "uploadSuccess": "Vidéo importée",
+    "uploadFailedDefault": "Échec de l'importation. Réessaie.",
+    "deleteSuccess": "Vidéo supprimée",
+    "deleteError": "Impossible de supprimer la vidéo",
+    "emptyState": "Aucune vidéo pour l'instant — ajoutes-en une pour commencer.",
+    "unavailable": "Plus disponible",
+    "usageCount_one": "{{count}} whisp",
+    "usageCount_other": "{{count}} whisps",
+    "expiresIn": "Supprimée dans {{days}} j",
+    "whispIt": "Envoyer en Whisp",
+    "postToCircle": "Blind Circle",
+    "removeDialog": {
+      "title": "Supprimer cette vidéo ?",
+      "description": "Tout whisp qui l'a déjà utilisée affichera « plus disponible » à la place de la vidéo.",
+      "cancel": "Annuler",
+      "confirm": "Supprimer"
+    },
+    "previewError": "Impossible de charger cette vidéo pour l'aperçu."
+  },
+  "suggestionsLibrary": {
+    "title": "Bibliothèque de suggestions",
+    "description": "Des vidéos qui valent le coup d'être partagées. Trouve-en une qui convient à quelqu'un de ton cercle et chuchote-la-lui anonymement.",
+    "filterAll": "Toutes",
+    "filterFeatured": "En vedette",
+    "featuredBadge": "En vedette",
+    "untitledVideo": "Vidéo sans titre",
+    "watch": "Regarder",
+    "whisperThis": "Chuchoter ceci",
+    "emptyState": "Rien ici pour l'instant — reviens bientôt."
+  }
+}

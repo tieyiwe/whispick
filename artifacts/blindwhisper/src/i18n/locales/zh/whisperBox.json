@@ -1,0 +1,100 @@
+{
+  "publicWhisperBoxPage": {
+    "notFoundTitle": "此 Whisper Box 链接未启用",
+    "notFoundDescription": "链接可能有误，或者对方已关闭了自己的 Whisper Box。",
+    "heading": "给 {{handle}} 发送一条匿名消息",
+    "promptLine": "有什么想让我听到或看到的，都可以匿名告诉我。",
+    "subheading": "除非你自己告诉对方，否则对方永远不会知道是你发的。",
+    "messageLabel": "你的消息",
+    "messagePlaceholder": "写下你想说的话...",
+    "aliasLabel": "署名（可选）",
+    "aliasPlaceholder": "例如：一位朋友、在乎你的人...",
+    "privacyNote": "这条消息完全匿名。不会分享任何关于你的信息——姓名、账号或其他任何内容都不会。",
+    "sendButton": "匿名发送",
+    "successTitle": "消息已发送",
+    "successDescription": "已匿名送达，对方无从得知是你发的。",
+    "sendAnotherButton": "再发一条消息",
+    "signUpPrompt": "想拥有自己的 Whisper Box 吗？",
+    "signUpLinkText": "免费注册",
+    "poweredByPrefix": "技术支持：",
+    "poweredBySuffix": "——向你在意的人发送匿名 whisp。",
+    "toastValidationError": "消息发送失败——请检查后重试。",
+    "toastRateLimitedTitle": "你发送的消息太多了",
+    "toastRateLimitedDescription": "请稍后再发送。",
+    "toastSendFailed": "消息发送失败，请重试。"
+  },
+  "whisperBoxInbox": {
+    "title": "Whisper Box",
+    "subtitle": "发送到你公开 Whisper Box 链接的匿名消息。",
+    "anonymous": "匿名",
+    "newBadge": "新",
+    "timeAgo": "{{time}}前",
+    "deleteButton": "删除",
+    "deleteDialog": {
+      "title": "删除这条消息？",
+      "description": "此操作无法撤销，消息将从你的 Whisper Box 中永久删除。",
+      "cancel": "取消",
+      "confirm": "删除"
+    },
+    "toastDeleteSuccess": "消息已删除",
+    "toastDeleteError": "无法删除该消息",
+    "toastMarkReadError": "无法更新该消息",
+    "emptyState": {
+      "titleEnabled": "你的 Whisper Box 还没有消息",
+      "descriptionEnabled": "分享你的链接，匿名消息就会出现在这里。",
+      "manageCta": "获取你的链接",
+      "titleDisabled": "Whisper Box 尚未开启",
+      "descriptionDisabled": "在设置中开启后，你会获得一个公开链接，任何人都可以（无需账号）向你发送一条匿名消息。",
+      "enableCta": "在设置中开启"
+    }
+  },
+  "settingsSection": {
+    "cardTitle": "Whisper Box",
+    "toggleLabel": "Whisper Box",
+    "enabledDescription": "任何拥有你链接的人都可以发送一条匿名消息——无需账号。",
+    "disabledDescription": "开启后即可获得一个公开链接，任何人都能向你发送匿名消息。",
+    "shareButton": "分享",
+    "shareTitle": "Blind Whisper — Whisper Box",
+    "toastLinkCopied": "链接已复制——可以分享到任何地方",
+    "toastCopyFailed": "复制失败——请手动复制",
+    "toastEnabled": "Whisper Box 已开启",
+    "toastDisabled": "Whisper Box 已关闭",
+    "toastToggleFailed": "更新失败，请重试。",
+    "shareStoryButton": "分享到限时动态",
+    "storyPromptText": "给我发一条匿名 Whisper 👀",
+    "storyShareText": "给我发一条匿名 Whisper——无需账号。",
+    "toastStoryDownloaded": "图片已保存——快分享到你的限时动态吧！",
+    "toastStoryShared": "链接也已复制——如果应用没有自动添加，可以手动粘贴。",
+    "toastStoryUnsupported": "此浏览器不支持分享——请尝试手动复制链接。",
+    "toastStoryFailed": "无法生成分享图片，请重试。"
+  },
+  "linkDialog": {
+    "title": "你的 Whisper Box 链接",
+    "description": "任何拥有此链接、或扫描二维码的人，都可以给你发一条匿名消息。",
+    "copyButton": "复制链接",
+    "namePromptTitle": "要先添加你的名字吗？",
+    "namePromptDescription": "你的 Whisper Box 链接是根据你的显示名字生成的，这样朋友才能真正认出它。如果没有名字，你会得到一个随机链接。",
+    "nameInputLabel": "显示名字",
+    "nameInputPlaceholder": "你的名字",
+    "nameSaveCta": "保存并获取我的链接",
+    "nameSkipCta": "暂时跳过",
+    "toastPersonalized": "你的链接现在和你的名字对应了",
+    "toastPersonalizeFailed": "更新失败，请重试。"
+  },
+  "searchBar": {
+    "sectionTitle": "查找某人的 Whisper Box",
+    "placeholder": "@用户名",
+    "button": "搜索"
+  },
+  "dashboardCard": {
+    "title": "Whisper Box",
+    "getStartedTitle": "获取你的 Whisper Box",
+    "getStartedDescription": "一个公开链接，任何人都能向你发送一条匿名消息。分享到你的个人简介吧。",
+    "getStartedCta": "立即开启",
+    "unreadTitle_other": "你有 {{count}} 条新消息",
+    "unreadDescription": "有人给你发了一条匿名留言。",
+    "idleTitle": "Whisper Box",
+    "idleDescription": "分享你的链接，获得更多匿名消息。",
+    "viewInboxCta": "查看收件箱"
+  }
+}

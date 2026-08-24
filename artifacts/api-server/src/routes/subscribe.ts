@@ -52,10 +52,18 @@ router.post("/subscribe", async (req, res): Promise<void> => {
     // resubscribe it against its owner's wishes.
     const wasUnsubscribed = !!existing.unsubscribedAt;
     alreadyVerified = !!existing.verifiedAt && !wasUnsubscribed;
-    await db
-      .update(matchSubscribersTable)
-      .set({ categories, ...(wasUnsubscribed ? { verifiedAt: null } : {}) })
-      .where(eq(matchSubscribersTable.id, existing.id));
+    // Same reasoning applies to `categories`: a bare POST proves nothing
+    // about inbox access, so it must never rewrite an ACTIVE, verified
+    // subscription's topics (anyone who knows the address could redirect
+    // what the real owner receives). Unverified or unsubscribed rows are
+    // fair game — the emailed confirmation click is still required before
+    // anything matches.
+    if (!alreadyVerified) {
+      await db
+        .update(matchSubscribersTable)
+        .set({ categories, ...(wasUnsubscribed ? { verifiedAt: null } : {}) })
+        .where(eq(matchSubscribersTable.id, existing.id));
+    }
   } else {
     token = randomUUID();
     alreadyVerified = false;

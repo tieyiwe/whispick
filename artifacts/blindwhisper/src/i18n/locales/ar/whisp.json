@@ -1,0 +1,630 @@
+{
+  "shared": {
+    "back": "رجوع",
+    "cancel": "إلغاء",
+    "delete": "حذف",
+    "save": "حفظ",
+    "memberCount_zero": "لا يوجد أعضاء",
+    "memberCount_one": "عضو واحد",
+    "memberCount_two": "عضوان",
+    "memberCount_few": "{{count}} أعضاء",
+    "memberCount_many": "{{count}} عضوًا",
+    "memberCount_other": "{{count}} عضو",
+    "blindCircleFeed": "موجز Blind Circle",
+    "ghostBoostAudience": "جمهور Ghost Boost",
+    "whispToSomeoneElse": "أرسل Whisp لشخص آخر",
+    "couldntUpdateThat": "تعذّر تحديث ذلك",
+    "movedBackToList": "أُعيد إلى قائمتك",
+    "whispDeleted": "تم حذف الـ Whisp"
+  },
+  "dashboard": {
+    "title": "لوحة التحكم",
+    "subtitle": "إليك أداء الـ Whisps التي أرسلتها.",
+    "sendNewWhisp": "أرسل Whisp جديدًا",
+    "stats": {
+      "sentWhisps": "الـ Whisps المُرسلة",
+      "openRate": "معدّل الفتح",
+      "videosWatched": "الفيديوهات المُشاهدة",
+      "repliesReceived": "الردود المستلمة",
+      "whispsThatHelped": "الـ Whisps التي ساعدت"
+    },
+    "recentWhisps": "أحدث الـ Whisps",
+    "viewAll": "عرض الكل",
+    "videoAlt": "فيديو",
+    "videoLinkFallback": "رابط فيديو",
+    "sentTo": "أُرسل إلى {{destination}}",
+    "emptyState": {
+      "title": "لم تُرسل أي Whisps بعد",
+      "description": "ابدأ بمشاركة فيديوهات ذات معنى مع الأشخاص الذين تهتم لأمرهم.",
+      "cta": "أنشئ أول Whisp لك"
+    },
+    "ghostBoosts": {
+      "title": "Ghost Boosts",
+      "creditsAvailable": "أرصدة التعزيز المتاحة",
+      "description": "يضع Ghost Boost الـ Whisp في قائمة انتظار لتوصيل معزَّز أوسع انتشارًا بدلًا من الرسالة المباشرة — وهو لا يضمن وصوله إلى شخص محدد بعينه كما يفعل Whisper Link.",
+      "getMoreCredits": "احصل على مزيد من الأرصدة"
+    },
+    "suggestions": {
+      "title": "مكتبة الاقتراحات",
+      "videoWorthSharing": "فيديو يستحق المشاركة",
+      "browseLibrary": "تصفّح المكتبة",
+      "whisperThis": "اهمس بهذا",
+      "description": "تصفّح مكتبة منسّقة من الفيديوهات واهمس بأحدها إلى شخص في دائرتك قد يحتاجه.",
+      "browse": "تصفّح الاقتراحات"
+    },
+    "recap": {
+      "title": "ملخصك السنوي",
+      "heading": "شاهد ملخصك",
+      "description": "لمحة قابلة للمشاركة عن نشاطك في Blind Whisper — المُرسل والمُستلم وكل ما بينهما.",
+      "cta": "عرض ملخصي"
+    }
+  },
+  "sendWhisp": {
+    "channels": {
+      "email": "البريد الإلكتروني",
+      "sms": "رسالة نصية",
+      "whatsapp": "WhatsApp"
+    },
+    "senderAliases": {
+      "someoneWhoCares": "شخص يهتم لأمرك",
+      "aFriend": "صديق",
+      "someoneWhoLovesYou": "شخص يحبك",
+      "anAdmirer": "مُعجب"
+    },
+    "maxDurationMinutes_zero": "لا دقائق",
+    "maxDurationMinutes_one": "دقيقة واحدة",
+    "maxDurationMinutes_two": "دقيقتان",
+    "maxDurationMinutes_few": "{{count}} دقائق",
+    "maxDurationMinutes_many": "{{count}} دقيقة",
+    "maxDurationMinutes_other": "{{count}} دقيقة",
+    "maxDurationSeconds_zero": "لا ثوانٍ",
+    "maxDurationSeconds_one": "ثانية واحدة",
+    "maxDurationSeconds_two": "ثانيتان",
+    "maxDurationSeconds_few": "{{count}} ثوانٍ",
+    "maxDurationSeconds_many": "{{count}} ثانية",
+    "maxDurationSeconds_other": "{{count}} ثانية",
+    "header": {
+      "title": "أرسل Whisp",
+      "subtitle": "شارك فيديو بشكل مجهول مع شخص تهتم لأمره."
+    },
+    "stepIndicator": "الخطوة {{step}} من {{total}}",
+    "steps": {
+      "video": "الفيديو",
+      "mood": "المزاج",
+      "note": "الملاحظة",
+      "delivery": "التوصيل",
+      "recipient": "المستلم",
+      "send": "الإرسال"
+    },
+    "tabs": {
+      "concierge": "غير متأكد؟ صِفه لنا",
+      "url": "الصق رابطًا",
+      "upload": "رفع",
+      "camera": "الكاميرا",
+      "library": "مكتبتي"
+    },
+    "url": {
+      "heading": "الصق رابط فيديو",
+      "description": "YouTube أو TikTok أو Instagram أو Facebook أو Vimeo — أي رابط فيديو عام.",
+      "placeholder": "https://youtube.com/watch?v=..."
+    },
+    "upload": {
+      "heading": "ارفع فيديو",
+      "description": "أقل من {{duration}}، بصيغة MP4/WebM/MOV. نُبقيه قصيرًا ليتم تحميله بسرعة لدى المستلم.",
+      "processing": "جارٍ معالجة الفيديو…",
+      "tapToChoose": "انقر لاختيار فيديو من جهازك",
+      "genericError": "فشل الرفع. حاول مرة أخرى من فضلك."
+    },
+    "camera": {
+      "heading": "استخدم الكاميرا",
+      "description": "التقط صورة أو سجّل فيديو (أقل من {{duration}}) هنا مباشرة — دون الحاجة لمغادرة التطبيق."
+    },
+    "library": {
+      "heading": "مكتبة الوسائط الخاصة بك",
+      "description": "أعد استخدام مقطع رفعته من قبل.",
+      "empty": "لا شيء هنا بعد — ارفع فيديو لإضافة واحد.",
+      "notAvailable": "لم يعد متاحًا"
+    },
+    "concierge": {
+      "heading": "غير متأكد ماذا ترسل؟",
+      "description": "صِف الموقف وسنقترح عليك فيديو من مكتبة الاقتراحات لدينا ونصيغ لك ملاحظة مجهولة ترافقه.",
+      "placeholder": "مثلًا: أريد أن أخبر أخي أنني فخور به لكن لا أعرف كيف",
+      "tryAgain": "حاول مرة أخرى",
+      "getSuggestions": "احصل على اقتراحات",
+      "resultsHeading": "بعض الفيديوهات التي قد تناسب:",
+      "videoThumbnailAlt": "صورة مصغّرة للفيديو",
+      "untitledVideo": "فيديو بلا عنوان",
+      "noMatch": "لم نجد تطابقًا قويًا في مكتبتنا لهذا الموقف — لكن إليك مسودة ملاحظة أدناه. اختر فيديو بنفسك من تبويب آخر وستنتقل الملاحظة معه.",
+      "draftedNote": "الملاحظة المقترحة:",
+      "useNoteOnly": "استخدم هذه الملاحظة، وسأختار فيديو بنفسي"
+    },
+    "step2": {
+      "passingForward": "تمرير هذا الفيديو إلى شخص آخر",
+      "suggestedForSituation": "مقترح لموقفك",
+      "platformLink": "رابط {{platform}}",
+      "noPreviewDescription": "لا يمكننا إنشاء معاينة لروابط {{platform}}، لكن يظل بإمكانك إرساله — فقط تأكد بنفسك من أن الرابط يعمل.",
+      "videoFallback": "فيديو",
+      "trimHeading": "اقتصاص المقطع (اختياري)",
+      "startPlaceholder": "البداية mm:ss",
+      "to": "إلى",
+      "endPlaceholder": "النهاية mm:ss",
+      "trimHint": "انتقل مباشرة إلى الجزء المهم، مثل 1:24، وتوقّف عنده بدل أن توحي لهم بمشاهدة المقطع كاملًا.",
+      "moodHeading": "اختر وسم المزاج",
+      "moodSubtitle": "اختياري — يحدد النبرة العاطفية للمستلم."
+    },
+    "step3": {
+      "heading": "أضف ملاحظة مجهولة",
+      "subtitle": "اختياري — بحد أقصى 200 حرف. لن يعرف المستلم أنك أنت.",
+      "placeholder": "اكتب شيئًا لطيفًا أو صادقًا أو شجاعًا...",
+      "suggestMore": "اقترح المزيد",
+      "helpFindWords": "ساعدني في إيجاد الكلمات",
+      "regenerate": "أعد الصياغة",
+      "signAs": "وقّع باسم:",
+      "customAliasPlaceholder": "أو اكتب اسمًا مستعارًا خاصًا بك..."
+    },
+    "step4": {
+      "heading": "كيف تريد أن يُوصَّل؟",
+      "whisperLink": {
+        "description": "أرسله إليهم مباشرة — توصيل فوري ومباشر ومضمون",
+        "price": "مجانًا (3 شهريًا)"
+      },
+      "groupWhisper": {
+        "title": "Whisper جماعي",
+        "description": "أرسل الـ Whisp المجهول نفسه إلى مجموعة محفوظة من جهات اتصالك دفعة واحدة",
+        "price": "يستخدم أرصدة Whisper Link، رصيد واحد لكل عضو",
+        "whichGroup": "أي مجموعة؟",
+        "noGroupsCreate": "ليس لديك أي مجموعات بعد — أنشئ واحدة"
+      },
+      "ghostBoost": {
+        "description": "تتم مطابقته مع غرباء اختاروا الاستماع إلى مواضيع كهذه — مجهول من الطرفين. الوصول غير مضمون؛ فهو يعتمد على عدد المشتركين حاليًا.",
+        "price": "رصيد واحد (6.99$)"
+      },
+      "scheduleTitle": "جدولة لوقت لاحق",
+      "scheduleDescription": "أرسل الآن، أو اختر تاريخًا ووقتًا في المستقبل"
+    },
+    "step5": {
+      "heading": "من يجب أن يستلمه؟",
+      "description": "أدخل بريدًا إلكترونيًا أو رقم هاتف (بالصيغة الدولية، مثل ‎+1 555 123 4567). أضف فواصل إذا كان هناك أكثر من واحد.",
+      "placeholder": "sam@example.com, +1 555 123 4567",
+      "matchingContacts": "جهات اتصال مطابقة",
+      "recentlySentTo": "أُرسل مؤخرًا إلى",
+      "invalidRecipients": "ليس بريدًا إلكترونيًا أو رقم هاتف صالحًا: {{list}}",
+      "groupNoticeBold": "سيتم حفظ هذا كمجموعة Whisper ({{count}} من الأشخاص)",
+      "groupNoticeRest": "حتى تتمكن من إعادة استخدامها لاحقًا. سيحصل كل شخص على Whisp خاص به — لن يرى أحدهم الآخر، وسيستهلك كل واحد Whisper Link من باقتك.",
+      "preferWhatsApp": "أرسل إلى أرقام الهواتف عبر WhatsApp بدلًا من SMS",
+      "smsDisclosure": "بإرسالك إلى رقم هاتف، فأنت تراسل صاحبه بالأصالة عن نفسك. قد تُطبَّق رسوم الرسائل والبيانات. أرسل STOP لإيقاف الرسائل، وHELP للمساعدة. راجع",
+      "smsTermsLinkText": "شروط SMS",
+      "or": "أو",
+      "chooseFromContacts": "اختر من جهات الاتصال"
+    },
+    "step6": {
+      "heading": "جاهز للإرسال؟",
+      "mood": "المزاج",
+      "signedAs": "موقَّع باسم",
+      "delivery": "التوصيل",
+      "groupWhisperChannel": "Whisper جماعي ({{channel}})",
+      "to": "إلى",
+      "matchedSubscribers": "مشتركون مطابقون مهتمون بهذا الموضوع",
+      "groupSummary": "{{name}} ({{members}})",
+      "groupFallback": "مجموعة",
+      "startsAt": "يبدأ عند",
+      "endsAt": "ينتهي عند",
+      "when": "متى",
+      "rightNow": "الآن مباشرة",
+      "yourNote": "ملاحظتك",
+      "sendButton": "أرسل الـ Whisp"
+    },
+    "sent": {
+      "title_zero": "لا توجد رسائل Whisp في الطريق",
+      "title_one": "رسالة الـ Whisp الخاصة بك في طريقها",
+      "title_two": "رسالتا الـ Whisp الخاصتان بك في طريقهما",
+      "title_few": "رسائل الـ Whisp الخاصة بك في طريقها",
+      "title_many": "رسائل الـ Whisp الخاصة بك في طريقها",
+      "title_other": "رسائل الـ Whisp الخاصة بك في طريقها",
+      "description_zero": "لم يتم الإرسال إلى أي شخص.",
+      "description_one": "تم إرسالها. سنخبرك عندما تتم مشاهدتها.",
+      "description_two": "أُرسلت إلى شخصين. سنخبرك كلما شاهدها أحدهما.",
+      "description_few": "أُرسلت إلى {{count}} أشخاص. سنخبرك كلما شاهدها أحدهم.",
+      "description_many": "أُرسلت إلى {{count}} شخصًا. سنخبرك كلما شاهدها أحدهم.",
+      "description_other": "أُرسلت إلى {{count}} شخص. سنخبرك كلما شاهدها أحدهم.",
+      "trackButton_zero": "لا توجد Whisps لتتبّعها",
+      "trackButton_one": "تتبّع هذا الـ Whisp",
+      "trackButton_two": "تتبّع هذين الـ Whisps",
+      "trackButton_few": "تتبّع هذه الـ Whisps",
+      "trackButton_many": "تتبّع هذه الـ Whisps",
+      "trackButton_other": "تتبّع هذه الـ Whisps",
+      "sendAnother": "أرسل واحدًا آخر"
+    },
+    "common": {
+      "back": "رجوع",
+      "next": "التالي",
+      "review": "مراجعة"
+    },
+    "validation": {
+      "invalidUrl": "يرجى إدخال رابط صالح",
+      "invalidTimeFormat": "صيغة الوقت غير صالحة",
+      "endTimeMustBeGreaterThanZero": "يجب أن يكون وقت النهاية أكبر من 0:00",
+      "endTimeAfterStart": "يجب أن يكون وقت النهاية بعد وقت البداية"
+    },
+    "toast": {
+      "conciergeNoResults": "لم نتمكن من اقتراح شيء لهذا الآن",
+      "noSuggestions": "تعذّر تقديم اقتراحات في الوقت الحالي",
+      "noContactInfo": "جهة الاتصال هذه ليس لها بريد إلكتروني أو رقم هاتف مسجّل",
+      "failedToSendGroup": "فشل إرسال الـ Whisp الجماعي",
+      "failedToSend": "فشل إرسال الـ Whisp",
+      "failedToSendFallback": "فشل الإرسال",
+      "partialSendTitle": "أُرسل إلى {{succeeded}}، وتعذّر الوصول إلى {{failed}}",
+      "membersSkipped_zero": "لم يتم تخطي أي عضو",
+      "membersSkipped_one": "تم تخطي عضو واحد",
+      "membersSkipped_two": "تم تخطي عضوين",
+      "membersSkipped_few": "تم تخطي {{count}} أعضاء",
+      "membersSkipped_many": "تم تخطي {{count}} عضوًا",
+      "membersSkipped_other": "تم تخطي {{count}} عضو",
+      "membersSkippedDescription": "لم تتوفر لديهم معلومات الاتصال التي تحتاجها هذه القناة."
+    }
+  },
+  "whispDetail": {
+    "notFound": "لم يتم العثور على الـ Whisp.",
+    "backToWhisps": "العودة إلى الـ Whisps",
+    "deleteDialog": {
+      "title": "هل تريد حذف هذا الـ Whisp؟",
+      "descriptionWithReplies_zero": "لا يحتوي هذا الـ Whisp على أي ردود من المستلم. حذفه يزيله من قائمة الـ Whisps الخاصة بك. لا يمكن التراجع عن هذا من جانبك.",
+      "descriptionWithReplies_one": "يحتوي هذا الـ Whisp على رد واحد من المستلم. حذفه يزيله — مع ذلك الرد — من قائمة الـ Whisps الخاصة بك. لا يمكن التراجع عن هذا من جانبك.",
+      "descriptionWithReplies_two": "يحتوي هذا الـ Whisp على ردّين من المستلم. حذفه يزيله — مع سلسلة الردود تلك — من قائمة الـ Whisps الخاصة بك. لا يمكن التراجع عن هذا من جانبك.",
+      "descriptionWithReplies_few": "يحتوي هذا الـ Whisp على {{count}} ردود من المستلم. حذفه يزيله — مع سلسلة الردود تلك — من قائمة الـ Whisps الخاصة بك. لا يمكن التراجع عن هذا من جانبك.",
+      "descriptionWithReplies_many": "يحتوي هذا الـ Whisp على {{count}} ردًّا من المستلم. حذفه يزيله — مع سلسلة الردود تلك — من قائمة الـ Whisps الخاصة بك. لا يمكن التراجع عن هذا من جانبك.",
+      "descriptionWithReplies_other": "يحتوي هذا الـ Whisp على {{count}} رد من المستلم. حذفه يزيله — مع سلسلة الردود تلك — من قائمة الـ Whisps الخاصة بك. لا يمكن التراجع عن هذا من جانبك.",
+      "descriptionNoReplies": "هذا يزيل الـ Whisp من قائمتك. لا يمكن التراجع عن هذا من جانبك."
+    },
+    "videoFallback": "فيديو",
+    "matchedToSubscribers_zero": "لم تتم المطابقة مع أي مشترك",
+    "matchedToSubscribers_one": "تمت المطابقة مع مشترك واحد",
+    "matchedToSubscribers_two": "تمت المطابقة مع مشتركين اثنين",
+    "matchedToSubscribers_few": "تمت المطابقة مع {{count}} مشتركين",
+    "matchedToSubscribers_many": "تمت المطابقة مع {{count}} مشتركًا",
+    "matchedToSubscribers_other": "تمت المطابقة مع {{count}} مشترك",
+    "noMatchingSubscribers": "لم يتم العثور على مشتركين مطابقين في الوقت المناسب",
+    "lookingForMatch": "نبحث عن تطابق بين المشتركين...",
+    "sentTo": "أُرسل إلى {{destination}}",
+    "genericRecipient": "المستلم",
+    "via": "عبر {{method}}",
+    "scheduledToSend": "مجدول للإرسال {{date}}",
+    "stats": {
+      "matched": "{{count}} تمت مطابقتهم",
+      "opened": "{{count}} فتحوا",
+      "watched": "{{count}} شاهدوا",
+      "replied": "{{count}} ردّوا",
+      "appreciated": "{{count}} أبدوا تقديرهم",
+      "views_zero": "لا مشاهدات",
+      "views_one": "مشاهدة واحدة",
+      "views_two": "مشاهدتان",
+      "views_few": "{{count}} مشاهدات",
+      "views_many": "{{count}} مشاهدة",
+      "views_other": "{{count}} مشاهدة",
+      "likes_zero": "لا إعجابات",
+      "likes_one": "إعجاب واحد",
+      "likes_two": "إعجابان",
+      "likes_few": "{{count}} إعجابات",
+      "likes_many": "{{count}} إعجابًا",
+      "likes_other": "{{count}} إعجاب",
+      "comments_zero": "لا تعليقات",
+      "comments_one": "تعليق واحد",
+      "comments_two": "تعليقان",
+      "comments_few": "{{count}} تعليقات",
+      "comments_many": "{{count}} تعليقًا",
+      "comments_other": "{{count}} تعليق"
+    },
+    "appreciationYes": "قالوا إن هذا شيء كانوا بحاجة إلى سماعه",
+    "appreciationNo": "قالوا إن هذا لم يكن تمامًا ما يحتاجونه",
+    "takeawayHeading": "الخلاصة التي خرجوا بها",
+    "deliveryTimeline": "الخط الزمني للتوصيل",
+    "timeline": {
+      "sent": "أُرسل",
+      "delivered": "تم التوصيل",
+      "opened": "فُتح",
+      "watched": "شوهد",
+      "watchedAll": "شوهد كاملًا",
+      "watchedFull": "بدأ المشاهدة",
+      "watchedAllFull": "شاهده حتى النهاية",
+      "replied": "ردّ"
+    },
+    "anonymousConversation": "محادثة مجهولة",
+    "outOfReplies": {
+      "title": "لقد استخدموا كل ردودهم المجهولة.",
+      "description": "لا يمكنهم الرد مجددًا إلا إذا أضفت مزيدًا من الردود، أو أنشأوا حسابًا مجانيًا. لا يزال بإمكانك إرسال رسائل متابعة.",
+      "comingSoonButton": "أضف مزيدًا من الردود (قريبًا)"
+    },
+    "oneReplyLeft": "تبقّى لديهم رد مجهول واحد.",
+    "recipientLabel": "المستلم",
+    "noRepliesYet": "لا ردود بعد. يمكنك إرسال رسالة مجهولة أخرى أدناه.",
+    "composerPlaceholder": "أرسل رسالة مجهولة أخرى...",
+    "commentsHeading": "التعليقات ({{count}})",
+    "noComments": "لا تعليقات بعد.",
+    "replyingToComment": "الرد على تعليق",
+    "cancelReplyAriaLabel": "إلغاء الرد",
+    "replyAsPosterPlaceholder": "رُدّ بصفتك الناشر...",
+    "privateConversationsHeading": "محادثات خاصة ({{count}})",
+    "anonymousVisitorWantsToTalk": "زائر مجهول يريد التحدث",
+    "revealYourself": "اكشف عن هويتك",
+    "revealRequestSent": "تم إرسال طلب الكشف",
+    "revealAccepted": "لقد وافقوا! يمكنك الآن الكشف عن هويتك.",
+    "revealDeclined": "لقد رفضوا الكشف.",
+    "revealWaiting": "في انتظار رد المستلم...",
+    "toast": {
+      "followUpSent": "تم إرسال رسالة المتابعة",
+      "failedToSend": "فشل الإرسال",
+      "couldntPostComment": "تعذّر نشر ذلك التعليق",
+      "failedToRequestReveal": "فشل طلب الكشف",
+      "failedToDelete": "فشل الحذف",
+      "couldntUpdateGuessReaction": "تعذّر تحديث تفاعلك"
+    }
+  },
+  "whispsList": {
+    "title": "الـ Whisps الخاصة بي",
+    "subtitle": "كل ما أرسلته، وكل ما أُرسل إليك.",
+    "tabs": {
+      "sent": "المُرسلة",
+      "received": "المستلمة",
+      "archived": "المؤرشفة"
+    },
+    "searchPlaceholderSent": "ابحث بالعنوان أو المستلم...",
+    "searchPlaceholderOther": "ابحث بالعنوان...",
+    "filter": {
+      "allStatuses": "كل الحالات",
+      "pending": "قيد الانتظار",
+      "scheduled": "مجدولة",
+      "delivered": "تم توصيلها",
+      "opened": "مفتوحة",
+      "watched": "مُشاهدة",
+      "replied": "تم الرد عليها"
+    },
+    "videoAlt": "فيديو",
+    "videoLinkFallback": "رابط فيديو",
+    "newBadge": "جديد",
+    "unpin": "إلغاء التثبيت",
+    "pinToTop": "تثبيت في الأعلى",
+    "moreOptions": "خيارات إضافية",
+    "moveBackToList": "إعادة إلى القائمة",
+    "archive": "أرشفة",
+    "from": "من: {{sender}}",
+    "to": "إلى: {{recipient}}",
+    "someoneAnonymous": "شخص مجهول",
+    "anonymousCircleVisitor": "زائر مجهول من الـ Circle",
+    "via": "عبر {{method}}",
+    "emptyState": {
+      "title": "لم يتم العثور على أي Whisps",
+      "adjustFilters": "جرّب تعديل عوامل التصفية للعثور على ما تبحث عنه.",
+      "noneReceived": "لم يصل شيء إلى بريدك الوارد بعد — عندما يرسل لك أحد الـ Whisperers شيئًا، سيظهر هنا.",
+      "noneArchived": "لا شيء مؤرشف — ثبّت أو أرشِف أو احذف أي Whisp من قائمة خياراته (أو اضغط مطوّلًا على بطاقته).",
+      "noneSent": "لم ترسل أي Whisps بعد.",
+      "cta": "أرسل أول Whisp لك"
+    },
+    "deleteDialog": {
+      "title": "هل تريد حذف هذا الـ Whisp؟",
+      "description": "هذا يخفيه من قائمتك أنت فقط — يبقى رابط المستلم وما يراه يعملان كما تم توصيلهما. لا يمكن التراجع عن هذا من جانبك."
+    },
+    "toast": {
+      "unpinned": "تم إلغاء التثبيت",
+      "pinnedToTop": "تم التثبيت في الأعلى",
+      "archived": "تمت الأرشفة",
+      "couldntDelete": "تعذّر حذف ذلك"
+    }
+  },
+  "repliesInbox": {
+    "title": "الردود",
+    "subtitle": "ردود مجهولة من الأشخاص الذين وصلت إليهم.",
+    "emptyState": {
+      "title": "لا ردود بعد",
+      "description": "عندما يرد أحدهم على الـ Whisp الخاص بك، سيظهر رده هنا — بشكل مجهول."
+    },
+    "repliedSuffix": "ردّ",
+    "someoneRepliedAnonymously": "ردّ شخص ما بشكل مجهول",
+    "videoFallback": "فيديو",
+    "videoWhispsHeading": "ردود Whisps الفيديو",
+    "textWhispsHeading": "ردود الـ Whisps النصية",
+    "videoWhispsEmpty": "لا ردود على Whisps الفيديو الخاصة بك بعد.",
+    "textWhispsEmpty": "لا ردود على الـ Whisps النصية الخاصة بك بعد."
+  },
+  "groupSendDetail": {
+    "notFound": "لم يتم العثور على الإرسال الجماعي.",
+    "whisperGroupsLink": "مجموعات Whisper",
+    "videoFallback": "فيديو",
+    "groupFallback": "مجموعة",
+    "stats": {
+      "opened": "{{count}} فتحوا",
+      "watched": "{{count}} شاهدوا",
+      "replied": "{{count}} ردّوا",
+      "appreciated": "{{count}} أبدوا تقديرهم"
+    },
+    "perMemberStatus": "حالة كل عضو",
+    "unknownRecipient": "غير معروف",
+    "whispedVideoBack": "ردّ بفيديو عبر Whisp"
+  },
+  "whisperGroupDetail": {
+    "notFound": "لم يتم العثور على المجموعة.",
+    "whisperGroupsLink": "مجموعات Whisper",
+    "deleteDialog": {
+      "title": "هل تريد حذف \"{{name}}\"؟",
+      "description": "هذا يزيل المجموعة المحفوظة وقائمة أعضائها. الـ Whisps التي أرسلتها بالفعل إلى هذه المجموعة لن تتأثر."
+    },
+    "sendAWhisp": "أرسل Whisp",
+    "addMembers": "أضف أعضاء",
+    "addFromContacts": "أضف من جهات الاتصال",
+    "orAddManually": "أو أضف يدويًا",
+    "namePlaceholder": "الاسم (اختياري)",
+    "emailPlaceholder": "البريد الإلكتروني",
+    "phonePlaceholder": "الهاتف",
+    "addMember": "أضف عضوًا",
+    "unnamedContact": "جهة اتصال بلا اسم",
+    "noMembersYet": "لا أعضاء بعد — أضف بعضهم أعلاه.",
+    "toast": {
+      "addEmailOrPhone": "أضف بريدًا إلكترونيًا أو رقم هاتف",
+      "memberAdded": "تمت إضافة العضو",
+      "failedToAddMember": "فشلت إضافة العضو",
+      "noneHadContactInfo": "لا أحد من جهات الاتصال تلك لديه بريد إلكتروني أو رقم هاتف",
+      "membersAdded_zero": "لم تتم إضافة أي عضو",
+      "membersAdded_one": "تمت إضافة عضو واحد",
+      "membersAdded_two": "تمت إضافة عضوين",
+      "membersAdded_few": "تمت إضافة {{count}} أعضاء",
+      "membersAdded_many": "تمت إضافة {{count}} عضوًا",
+      "membersAdded_other": "تمت إضافة {{count}} عضو",
+      "failedToAddMembers": "فشلت إضافة الأعضاء",
+      "memberRemoved": "تمت إزالة العضو",
+      "failedToRemoveMember": "فشلت إزالة العضو",
+      "groupDeleted": "تم حذف المجموعة",
+      "failedToDeleteGroup": "فشل حذف المجموعة"
+    }
+  },
+  "whisperGroups": {
+    "title": "مجموعات Whisper",
+    "subtitle": "احفظ مجموعة من جهات الاتصال مرة واحدة، ثم أرسل الـ Whisp المجهول نفسه إليهم جميعًا دفعة واحدة.",
+    "tabs": {
+      "groups": "المجموعات",
+      "sentBatches": "الدُفعات المُرسلة"
+    },
+    "createAGroup": "أنشئ مجموعة",
+    "namePlaceholder": "مثلًا: أصدقاء الجامعة",
+    "create": "إنشاء",
+    "emptyGroups": "لا مجموعات بعد — أنشئ واحدة أعلاه للبدء.",
+    "emptySends": "لم تُرسل أي Whisps جماعية بعد.",
+    "groupFallback": "مجموعة",
+    "sendRow": {
+      "summary": "{{group}} · {{members}} · عبر {{via}}",
+      "scheduled": "مجدولة",
+      "stats": "{{opened}} فتحوا · {{watched}} شاهدوا · {{replied}} ردّوا"
+    },
+    "toast": {
+      "groupCreated": "تم إنشاء المجموعة",
+      "failedToCreateGroup": "فشل إنشاء المجموعة"
+    }
+  },
+  "publicWhisp": {
+    "takeaway": "الخلاصة",
+    "backToDashboard": "لوحة التحكم",
+    "becomeAWhisperer": "كن Whisperer",
+    "lead": {
+      "group": "أرسل شخص من دائرتك هذا بشكل مجهول — أنت واحد من {{count}} من الأشخاص الذين وصلهم 👀",
+      "individual": "شخص يهتم لأمرك رأى أنك بحاجة إلى مشاهدة هذا 👀"
+    },
+    "expired": {
+      "title": "انتهت صلاحية هذا الـ Whisp",
+      "description": "من أرسله يمكنه دائمًا أن يرسل لك واحدًا جديدًا."
+    },
+    "expiresIn": "تنتهي صلاحيته خلال {{time}}",
+    "appreciation": {
+      "yesResponse": "سعداء أن هذا وصلك.",
+      "noResponse": "شكرًا لأنك أخبرتهم.",
+      "prompt": "هل كان هذا شيئًا تحتاج إلى سماعه؟",
+      "knowSomeone": "هل تعرف شخصًا يحتاج هذا أيضًا؟",
+      "passItForward": "مرّره لغيرك",
+      "yesButton": "نعم",
+      "noButton": "ليس تمامًا"
+    },
+    "circle": {
+      "like": "إعجاب",
+      "messagePosterPrivately": "راسل الناشر بشكل خاص",
+      "commentCount_zero": "لا تعليقات",
+      "commentCount_one": "تعليق واحد",
+      "commentCount_two": "تعليقان",
+      "commentCount_few": "{{count}} تعليقات",
+      "commentCount_many": "{{count}} تعليقًا",
+      "commentCount_other": "{{count}} تعليق",
+      "beFirstToComment": "كن أول من يعلّق",
+      "commentPlaceholder": "أضف تعليقًا... (مجهول)",
+      "moreCommentOptionsAriaLabel": "خيارات تعليق إضافية، بما في ذلك إرفاق صورة",
+      "commentingAs": "تعلّق باسم {{handle}}",
+      "anonymousHandle": "مجهول",
+      "changeName": "غيّر الاسم",
+      "renamePlaceholder": "اسم جديد (حروف وأرقام فقط)",
+      "renameWarning": "لا تستخدم اسمك الحقيقي أو أي شيء قد يكشف هويتك.",
+      "replyingTo": "الرد على {{target}}",
+      "thePoster": "الناشر",
+      "aComment": "تعليق",
+      "cancelReplyAriaLabel": "إلغاء الرد",
+      "attachmentPreviewAlt": "معاينة المرفق",
+      "removeImageAriaLabel": "إزالة الصورة",
+      "attachPhoto": "أرفق صورة",
+      "couldntAttachImage": "تعذّر إرفاق تلك الصورة",
+      "keepItKind": "حافظ على اللطف — الهدف هنا حوار صادق وبنّاء.",
+      "unlimitedCommentsSuffix": "لتعليقات غير محدودة."
+    },
+    "reply": {
+      "headerConversation": "محادثة مجهولة",
+      "headerWantToReply": "هل تريد الرد بشكل مجهول؟",
+      "theSender": "المُرسل",
+      "expiredNotice": "انتهت صلاحية هذا الـ Whisp، لذا لم يعد بإمكانك الرد.",
+      "limitReached": {
+        "title": "لقد استخدمت كل ردودك المجهولة هنا.",
+        "description": "أنشئ حسابًا مجانيًا لمواصلة هذه المحادثة — ستبقى مجهولًا بالنسبة لهم.",
+        "signUpButton": "سجّل لمواصلة الرد"
+      },
+      "compactPlaceholder": "رُدّ بشكل مجهول...",
+      "moreReplyOptionsAriaLabel": "خيارات رد إضافية، بما في ذلك الرد بفيديو",
+      "replyingToPrefix": "الرد على",
+      "thisVideoFallback": "هذا الفيديو",
+      "orWriteYourOwn": "أو اكتب ردك الخاص",
+      "fullPlaceholder": "اكتب ردك... (مجهول)",
+      "whispVideoBack": "ردّ بفيديو Whisp",
+      "videoLockedDescription": "يتطلب حسابًا مجانيًا — ردودك النصية لا تزال تعمل",
+      "videoUnlockedDescription": "أرسل فيديو مع ردك — وستبقى مجهولًا",
+      "videoThumbnailAlt": "صورة مصغّرة",
+      "videoUrlPlaceholder": "الصق رابط فيديو...",
+      "addVideoButton": "إضافة",
+      "lastReplyWarning": "هذا آخر رد مجهول لك — سجّل مجانًا لمواصلة الرد.",
+      "repliesLeft_zero": "لم يتبقَّ لديك أي ردود مجهولة.",
+      "repliesLeft_one": "تبقّى لديك رد مجهول واحد.",
+      "repliesLeft_two": "تبقّى لديك ردّان مجهولان.",
+      "repliesLeft_few": "تبقّى لديك {{count}} ردود مجهولة.",
+      "repliesLeft_many": "تبقّى لديك {{count}} ردًّا مجهولًا.",
+      "repliesLeft_other": "تبقّى لديك {{count}} رد مجهول.",
+      "sendButton": "أرسل الرد",
+      "guessToggle": "خمّن من أرسل هذا 🕵️",
+      "guessHint": "هو من سيختار طريقة التفاعل — لن يكون هناك ردّ تلقائي أبدًا.",
+      "guessPlaceholder": "أعتقد أنه..."
+    },
+    "reveal": {
+      "viewerAccepted": "لقد أخبرتهم أنه لا بأس بالكشف عن هويتهم.",
+      "viewerDeclined": "لقد اخترت إبقاء الأمر مجهولًا.",
+      "prompt": "الشخص الذي أرسل هذا يريد الكشف عن هويته.",
+      "question": "هل تريد أن تعرف من أرسل لك هذا؟",
+      "accept": "قبول",
+      "decline": "رفض"
+    },
+    "reminder": {
+      "finalNotice": "سنذكّرك مرة أخيرة — بعدها لن يكون هذا الـ Whisp متاحًا بعد الآن.",
+      "notice": "سنذكّرك قبل انتهاء صلاحية هذا الـ Whisp.",
+      "pickerHeading": "متى تريد أن نذكّرك؟",
+      "button": "ذكّرني بهذا لاحقًا"
+    },
+    "signupCta": {
+      "heading": "لديك ما تقوله، لكن ليس بصوت عالٍ؟",
+      "description": "أرسل فيديو لشخص يحتاجه — بشكل مجهول، ودون الجزء المحرج من قوله بنفسك. لن يعرفوا أبدًا أنك أنت، إلا إذا أردت ذلك.",
+      "button": "كن Whisperer الآن",
+      "disclaimer": "ابدأ مجانًا — دون الحاجة إلى بطاقة."
+    },
+    "subscribeCta": {
+      "heading": "تريد المزيد مما يناسبك؟",
+      "description": "استقبل Whisps مجهولة كهذه في بريدك الوارد عندما تطابق المواضيع التي تختارها."
+    },
+    "footer": {
+      "poweredByPrefix": "مقدَّم من",
+      "poweredBySuffix": "— أرسل ما يهم، دون الجزء المحرج."
+    },
+    "toast": {
+      "couldntScheduleReminder": "تعذّرت جدولة ذلك التذكير",
+      "somethingWentWrong": "حدث خطأ ما",
+      "replySentAnonymously": "أُرسل الرد بشكل مجهول",
+      "failedToSendReply": "فشل إرسال الرد",
+      "createAccountToWhispVideo": "أنشئ حسابًا مجانيًا لترد بفيديو Whisp",
+      "senderNotified": "لقد أخبرنا المُرسل أيضًا — يمكنه فتح ردود الفيديو لك.",
+      "freeCommentsUsed": "لقد استخدمت تعليقاتك المجانية في الوقت الحالي",
+      "signUpToComment": "سجّل لتعلّق في أي وقت، أو عد بعد 24 ساعة.",
+      "couldntPostComment": "تعذّر نشر ذلك التعليق",
+      "nameUpdated": "تم تحديث الاسم",
+      "couldntUpdateName": "تعذّر تحديث ذلك الاسم",
+      "couldntStartConversation": "تعذّر بدء تلك المحادثة",
+      "guessSentAnonymously": "تم إرسال تخمينك! 🕵️"
+    },
+    "notFound": "تعذّر العثور على هذا الـ Whisp."
+  }
+}

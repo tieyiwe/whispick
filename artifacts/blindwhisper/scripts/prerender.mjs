@@ -25,6 +25,14 @@ import { createServer } from "vite";
 import { renderToStaticMarkup } from "react-dom/server";
 import React from "react";
 import { Router } from "wouter";
+// Same module instance the page components get: Vite's SSR loader
+// externalizes node_modules deps to plain Node resolution, so this
+// QueryClientProvider shares its React context with the components'
+// own useMutation/useQueryClient hooks. Needed only by SubscribePage
+// (its subscribe-mutation hook throws without a provider at render
+// time), but wrapping every page is harmless — no queries run during
+// a static render.
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -36,14 +44,21 @@ const templatePath = path.join(distDir, "index.html");
 
 const SITE_URL = "https://blindwhisper.com";
 
+// MUST stay byte-for-byte identical to index.html's <title> and
+// <meta name="description"> — retitleHead() below swaps per-page values in
+// by exact-string replacement against these, so a drift here silently
+// leaves the homepage title/description on every other prerendered page.
+const HOME_TITLE = "Blind Whisper — Send What They Need to Hear, Anonymously";
+const HOME_DESCRIPTION =
+  "Blind Whisper lets you send a video to someone who needs it, anonymously. Whisper Links and Circle — no account required to receive.";
+
 /** @type {{routePath: string; outFile: string; title: string; description: string; isHome: boolean}[]} */
 const PAGES = [
   {
     routePath: "/",
     outFile: "index.html",
-    title: "Blind Whisper — Send What They Need to Hear, Anonymously",
-    description:
-      "Blind Whisper lets you send a video to someone who needs it, anonymously. Whisper Links, Ghost Boost matching, and Circle — no account required to receive.",
+    title: HOME_TITLE,
+    description: HOME_DESCRIPTION,
     isHome: true,
   },
   {
@@ -60,6 +75,30 @@ const PAGES = [
     title: "Terms of Service — Blind Whisper",
     description:
       "The terms governing your use of Blind Whisper's anonymous messaging platform.",
+    isHome: false,
+  },
+  {
+    routePath: "/community-guidelines",
+    outFile: "community-guidelines/index.html",
+    title: "Community Guidelines — Blind Whisper",
+    description:
+      "The rules for Blind Whisper's public spaces: what honest, anonymous debate is for, the hard limits — no sexual content, threats, harassment, hate speech, or child endangerment — and how reporting and enforcement work.",
+    isHome: false,
+  },
+  {
+    routePath: "/sms-terms",
+    outFile: "sms-terms/index.html",
+    title: "SMS Messaging Program — Blind Whisper",
+    description:
+      "Blind Whisper's SMS messaging program: how sender-initiated messages and consent work, verbatim sample messages, message frequency, and how to opt out (STOP) or get help (HELP).",
+    isHome: false,
+  },
+  {
+    routePath: "/subscribe",
+    outFile: "subscribe/index.html",
+    title: "Get Anonymous Video Recommendations — Blind Whisper",
+    description:
+      "Opt in to receive anonymous video recommendations matched to topics you choose. No account needed — confirm by email, unsubscribe anytime with one click.",
     isHome: false,
   },
 ];
@@ -92,15 +131,21 @@ function buildFaqJsonLd(faqItems) {
 
 /** Swaps title/description/canonical/OG/twitter meta for a given page. */
 function retitleHead(html, { title, description, canonicalUrl }) {
-  const homeTitle = "Blind Whisper — Send What They Need to Hear, Anonymously";
-  const homeDescription =
-    "Blind Whisper lets you send a video to someone who needs it, anonymously. Whisper Links, Ghost Boost matching, and Circle — no account required to receive.";
   const homeCanonical = `${SITE_URL}/`;
 
+  // Guard against the exact drift the HOME_* comment above warns about:
+  // fail the build loudly instead of shipping pages whose meta silently
+  // kept the homepage title/description.
+  if (!html.includes(`<title>${HOME_TITLE}</title>`) || !html.includes(`content="${HOME_DESCRIPTION}"`)) {
+    throw new Error(
+      "prerender: index.html's <title>/<meta description> no longer match HOME_TITLE/HOME_DESCRIPTION in scripts/prerender.mjs — update both together."
+    );
+  }
+
   let out = html;
-  out = out.split(`<title>${homeTitle}</title>`).join(`<title>${escapeHtml(title)}</title>`);
-  out = out.split(`content="${homeDescription}"`).join(`content="${escapeHtml(description)}"`);
-  out = out.split(`content="${homeTitle}"`).join(`content="${escapeHtml(title)}"`);
+  out = out.split(`<title>${HOME_TITLE}</title>`).join(`<title>${escapeHtml(title)}</title>`);
+  out = out.split(`content="${HOME_DESCRIPTION}"`).join(`content="${escapeHtml(description)}"`);
+  out = out.split(`content="${HOME_TITLE}"`).join(`content="${escapeHtml(title)}"`);
   out = out.split(`href="${homeCanonical}"`).join(`href="${canonicalUrl}"`);
   out = out.split(`content="${homeCanonical}"`).join(`content="${canonicalUrl}"`);
   return out;
@@ -143,29 +188,41 @@ async function main() {
   });
 
   try {
-    const [{ LandingPage }, { PrivacyPolicy }, { TermsOfService }, { FAQ_ITEMS }] = await Promise.all([
-      server.ssrLoadModule("/src/pages/LandingPage.tsx"),
-      server.ssrLoadModule("/src/pages/PrivacyPolicy.tsx"),
-      server.ssrLoadModule("/src/pages/TermsOfService.tsx"),
-      server.ssrLoadModule("/src/lib/faqContent.ts"),
-    ]);
+    const [{ LandingPage }, { PrivacyPolicy }, { TermsOfService }, { SmsTerms }, { CommunityGuidelines }, { SubscribePage }, { FAQ_ITEMS }] =
+      await Promise.all([
+        server.ssrLoadModule("/src/pages/LandingPage.tsx"),
+        server.ssrLoadModule("/src/pages/PrivacyPolicy.tsx"),
+        server.ssrLoadModule("/src/pages/TermsOfService.tsx"),
+        server.ssrLoadModule("/src/pages/SmsTerms.tsx"),
+        server.ssrLoadModule("/src/pages/CommunityGuidelines.tsx"),
+        server.ssrLoadModule("/src/pages/SubscribePage.tsx"),
+        server.ssrLoadModule("/src/lib/faqContent.ts"),
+      ]);
 
     const componentsByPath = {
       "/": LandingPage,
       "/privacy": PrivacyPolicy,
       "/terms": TermsOfService,
+      "/sms-terms": SmsTerms,
+      "/community-guidelines": CommunityGuidelines,
+      "/subscribe": SubscribePage,
     };
 
     const faqJsonLd = buildFaqJsonLd(FAQ_ITEMS);
 
     for (const page of PAGES) {
       const Component = componentsByPath[page.routePath];
-      // These three components only consume wouter's Router context (for
-      // <Link>) — no TanStack Query, no Clerk — so a bare Router with a
-      // static ssrPath is enough. ssrPath avoids ever touching `window`/
-      // `location`/`history`, which don't exist under plain Node.
+      // Router with a static ssrPath avoids ever touching `window`/
+      // `location`/`history`, which don't exist under plain Node. The
+      // QueryClientProvider is a fresh, empty client per page — nothing
+      // fetches during a static render (SubscribePage's hook is a
+      // mutation), it just satisfies the hooks' context requirement.
       const appHtml = renderToStaticMarkup(
-        React.createElement(Router, { ssrPath: page.routePath }, React.createElement(Component))
+        React.createElement(
+          QueryClientProvider,
+          { client: new QueryClient() },
+          React.createElement(Router, { ssrPath: page.routePath }, React.createElement(Component))
+        )
       );
 
       let outHtml = template.replace('<div id="root"></div>', `<div id="root">${appHtml}</div>`);

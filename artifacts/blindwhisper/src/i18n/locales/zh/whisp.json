@@ -1,0 +1,570 @@
+{
+  "shared": {
+    "back": "返回",
+    "cancel": "取消",
+    "delete": "删除",
+    "save": "保存",
+    "memberCount_one": "{{count}} 位成员",
+    "memberCount_other": "{{count}} 位成员",
+    "blindCircleFeed": "Blind Circle 动态",
+    "ghostBoostAudience": "Ghost Boost 受众",
+    "whispToSomeoneElse": "转发给另一个人",
+    "couldntUpdateThat": "更新失败",
+    "movedBackToList": "已移回你的列表",
+    "whispDeleted": "Whisp 已删除"
+  },
+  "dashboard": {
+    "title": "仪表盘",
+    "subtitle": "这是你的 whisp 表现情况。",
+    "sendNewWhisp": "发送新 Whisp",
+    "stats": {
+      "sentWhisps": "已发送的 Whisp",
+      "openRate": "打开率",
+      "videosWatched": "已观看的视频",
+      "repliesReceived": "收到的回复",
+      "whispsThatHelped": "有帮助的 Whisp"
+    },
+    "recentWhisps": "最近的 Whisp",
+    "viewAll": "查看全部",
+    "videoAlt": "视频",
+    "videoLinkFallback": "视频链接",
+    "sentTo": "已发送给 {{destination}}",
+    "emptyState": {
+      "title": "还没有发送过 whisp",
+      "description": "开始与你在乎的人分享有意义的视频吧。",
+      "cta": "创建你的第一个 Whisp"
+    },
+    "ghostBoosts": {
+      "title": "Ghost Boost",
+      "creditsAvailable": "可用的 Boost 额度",
+      "description": "Ghost Boost 会把一个 whisp 排队进行更广泛的投放,而不是直接发送给某人——它不能像 Whisper Link 那样保证送达某个特定的人。",
+      "getMoreCredits": "获取更多额度"
+    },
+    "suggestions": {
+      "title": "推荐库",
+      "videoWorthSharing": "一个值得分享的视频",
+      "browseLibrary": "浏览资料库",
+      "whisperThis": "把这个 Whisper 出去",
+      "description": "浏览精选视频库,给你圈子里可能需要的人 whisper 一个。",
+      "browse": "浏览推荐"
+    },
+    "recap": {
+      "title": "你的 Recap",
+      "heading": "查看你的 Recap",
+      "description": "可分享的 Blind Whisper 活动概览——发送、接收,应有尽有。",
+      "cta": "查看我的 Recap"
+    }
+  },
+  "sendWhisp": {
+    "channels": {
+      "email": "邮件",
+      "sms": "短信",
+      "whatsapp": "WhatsApp"
+    },
+    "senderAliases": {
+      "someoneWhoCares": "一个在乎你的人",
+      "aFriend": "一个朋友",
+      "someoneWhoLovesYou": "一个爱你的人",
+      "anAdmirer": "一个仰慕者"
+    },
+    "maxDurationMinutes_one": "{{count}} 分钟",
+    "maxDurationMinutes_other": "{{count}} 分钟",
+    "maxDurationSeconds_one": "{{count}} 秒",
+    "maxDurationSeconds_other": "{{count}} 秒",
+    "header": {
+      "title": "发送 Whisp",
+      "subtitle": "匿名与你在乎的人分享一个视频。"
+    },
+    "stepIndicator": "第 {{step}} 步,共 {{total}} 步",
+    "steps": {
+      "video": "视频",
+      "mood": "心情",
+      "note": "留言",
+      "delivery": "发送方式",
+      "recipient": "收件人",
+      "send": "发送"
+    },
+    "tabs": {
+      "concierge": "不确定?描述一下",
+      "url": "粘贴链接",
+      "upload": "上传",
+      "camera": "拍摄",
+      "library": "我的资料库"
+    },
+    "url": {
+      "heading": "粘贴视频链接",
+      "description": "YouTube、TikTok、Instagram、Facebook、Vimeo——任何公开视频链接均可。",
+      "placeholder": "https://youtube.com/watch?v=..."
+    },
+    "upload": {
+      "heading": "上传视频",
+      "description": "时长在 {{duration}} 以内,MP4/WebM/MOV 格式。保持简短以便对方快速加载。",
+      "processing": "正在处理你的视频…",
+      "tapToChoose": "点击从设备中选择视频",
+      "genericError": "上传失败,请重试。"
+    },
+    "camera": {
+      "heading": "使用你的相机",
+      "description": "直接在这里拍照或录制视频(时长在 {{duration}} 以内)——无需离开应用。"
+    },
+    "library": {
+      "heading": "你的媒体资料库",
+      "description": "重复使用你已上传过的片段。",
+      "empty": "这里还什么都没有——上传一个视频来添加吧。",
+      "notAvailable": "已不可用"
+    },
+    "concierge": {
+      "heading": "不知道该发什么?",
+      "description": "描述一下情况,我们会从推荐库中为你推荐一个视频,并起草一条匿名留言配合它。",
+      "placeholder": "例如,我想告诉哥哥我为他感到骄傲,但不知道怎么说",
+      "tryAgain": "再试一次",
+      "getSuggestions": "获取建议",
+      "resultsHeading": "几个可能合适的视频:",
+      "videoThumbnailAlt": "视频缩略图",
+      "untitledVideo": "无标题视频",
+      "noMatch": "我们的资料库里没有强匹配的内容——不过下面有一份留言草稿。在另一个标签页选择你自己的视频,它会自动带过去。",
+      "draftedNote": "留言草稿:",
+      "useNoteOnly": "使用这条留言,我自己选视频"
+    },
+    "step2": {
+      "passingForward": "正在转发这一条",
+      "suggestedForSituation": "为你的情况推荐",
+      "platformLink": "{{platform}} 链接",
+      "noPreviewDescription": "我们无法为 {{platform}} 链接生成预览,但你仍然可以发送——只需再确认一下链接对你来说能正常打开。",
+      "videoFallback": "视频",
+      "trimHeading": "剪辑片段(可选)",
+      "startPlaceholder": "开始 mm:ss",
+      "to": "至",
+      "endPlaceholder": "结束 mm:ss",
+      "trimHint": "直接跳到精彩部分,例如 1:24,并在那里停止,而不是暗示对方要看完整段视频。",
+      "moodHeading": "选择一个心情标签",
+      "moodSubtitle": "可选——为收件人设定情感基调。"
+    },
+    "step3": {
+      "heading": "添加一条匿名留言",
+      "subtitle": "可选——最多 200 个字符。收件人不会知道是你。",
+      "placeholder": "写一些友善、真诚或勇敢的话...",
+      "suggestMore": "换一批建议",
+      "helpFindWords": "帮我找到合适的话",
+      "regenerate": "重新生成",
+      "signAs": "署名为:",
+      "customAliasPlaceholder": "或输入自定义署名..."
+    },
+    "step4": {
+      "heading": "应该如何送达?",
+      "whisperLink": {
+        "description": "直接发送给对方——直接、即时、保证送达",
+        "price": "免费(每月 3 次)"
+      },
+      "groupWhisper": {
+        "title": "群组 Whisper",
+        "description": "一次性把同一条匿名 whisp 发送给一个已保存的联系人群组",
+        "price": "使用 Whisper Link 额度,每位成员 1 次",
+        "whichGroup": "哪个群组?",
+        "noGroupsCreate": "你还没有任何群组——创建一个吧"
+      },
+      "ghostBoost": {
+        "description": "与订阅了类似话题的陌生人匹配——双向匿名。触达范围无法保证,取决于当前有多少人订阅。",
+        "price": "1 个额度($6.99)"
+      },
+      "scheduleTitle": "安排稍后发送",
+      "scheduleDescription": "立即发送,或选择未来的日期和时间"
+    },
+    "step5": {
+      "heading": "谁应该收到它?",
+      "description": "输入一个邮箱或电话号码(使用国际格式,例如 +1 555 123 4567)。如果不止一个,请用逗号分隔。",
+      "placeholder": "sam@example.com, +1 555 123 4567",
+      "matchingContacts": "匹配的联系人",
+      "recentlySentTo": "最近发送给",
+      "invalidRecipients": "不是有效的邮箱或电话号码:{{list}}",
+      "groupNoticeBold": "这将被保存为一个 Whisper Group({{count}} 人)",
+      "groupNoticeRest": "以便你以后重复使用。每个人都会收到自己的私密 whisp——他们不会看到彼此,而且每一份都会使用你套餐中的一个 Whisper Link。",
+      "preferWhatsApp": "通过 WhatsApp 而非短信联系电话号码",
+      "smsDisclosure": "发送到电话号码时,你是以自己的名义给对方发短信。可能会产生消息和流量费用。回复 STOP 可退订,回复 HELP 获取帮助。请查看我们的",
+      "smsTermsLinkText": "短信条款",
+      "or": "或",
+      "chooseFromContacts": "从通讯录中选择"
+    },
+    "step6": {
+      "heading": "准备好发送了吗?",
+      "mood": "心情",
+      "signedAs": "署名为",
+      "delivery": "发送方式",
+      "groupWhisperChannel": "群组 Whisper({{channel}})",
+      "to": "发给",
+      "matchedSubscribers": "对该话题感兴趣的匹配订阅者",
+      "groupSummary": "{{name}}({{members}})",
+      "groupFallback": "群组",
+      "startsAt": "开始于",
+      "endsAt": "结束于",
+      "when": "发送时间",
+      "rightNow": "立即发送",
+      "yourNote": "你的留言",
+      "sendButton": "发送 Whisp"
+    },
+    "sent": {
+      "title_one": "你的 whisp 已经发出",
+      "title_other": "你的 whisp 已经发出",
+      "description_one": "已经发送。对方看到后我们会通知你。",
+      "description_other": "已发送给 {{count}} 人。每个人查看后我们都会通知你。",
+      "trackButton_one": "追踪这个 whisp",
+      "trackButton_other": "追踪这些 whisp",
+      "sendAnother": "再发一个"
+    },
+    "common": {
+      "back": "返回",
+      "next": "下一步",
+      "review": "查看"
+    },
+    "validation": {
+      "invalidUrl": "请输入有效的网址",
+      "invalidTimeFormat": "时间格式无效",
+      "endTimeMustBeGreaterThanZero": "结束时间必须大于 0:00",
+      "endTimeAfterStart": "结束时间必须晚于开始时间"
+    },
+    "toast": {
+      "conciergeNoResults": "暂时没能想出合适的内容",
+      "noSuggestions": "目前无法生成建议",
+      "noContactInfo": "该联系人没有邮箱或电话记录",
+      "failedToSendGroup": "群组 whisp 发送失败",
+      "failedToSend": "whisp 发送失败",
+      "failedToSendFallback": "发送失败",
+      "partialSendTitle": "已发送给 {{succeeded}} 人,{{failed}} 人未能送达",
+      "membersSkipped_one": "跳过了 {{count}} 位成员",
+      "membersSkipped_other": "跳过了 {{count}} 位成员",
+      "membersSkippedDescription": "他们没有该渠道所需的联系方式。"
+    }
+  },
+  "whispDetail": {
+    "notFound": "未找到该 whisp。",
+    "backToWhisps": "返回 whisp 列表",
+    "deleteDialog": {
+      "title": "删除这个 whisp?",
+      "descriptionWithReplies_one": "这个 whisp 收到了收件人的一条回复。删除后会把它——连同这条回复——从你的 whisp 中移除。此操作在你这边无法撤销。",
+      "descriptionWithReplies_other": "这个 whisp 收到了收件人的 {{count}} 条回复。删除后会把它——连同整个回复对话——从你的 whisp 中移除。此操作在你这边无法撤销。",
+      "descriptionNoReplies": "这会把该 whisp 从你的 whisp 中移除。此操作在你这边无法撤销。"
+    },
+    "videoFallback": "视频",
+    "matchedToSubscribers_one": "已与 {{count}} 位订阅者匹配",
+    "matchedToSubscribers_other": "已与 {{count}} 位订阅者匹配",
+    "noMatchingSubscribers": "未能及时找到匹配的订阅者",
+    "lookingForMatch": "正在订阅者中寻找匹配...",
+    "sentTo": "已发送给 {{destination}}",
+    "genericRecipient": "收件人",
+    "via": "通过 {{method}}",
+    "scheduledToSend": "已安排在 {{date}} 发送",
+    "stats": {
+      "matched": "已匹配 {{count}} 人",
+      "opened": "已打开 {{count}} 人",
+      "watched": "已观看 {{count}} 人",
+      "replied": "已回复 {{count}} 人",
+      "appreciated": "认可了 {{count}} 人",
+      "views_one": "{{count}} 次查看",
+      "views_other": "{{count}} 次查看",
+      "likes_one": "{{count}} 个赞",
+      "likes_other": "{{count}} 个赞",
+      "comments_one": "{{count}} 条评论",
+      "comments_other": "{{count}} 条评论"
+    },
+    "appreciationYes": "对方说这正是他们需要听到的",
+    "appreciationNo": "对方说这不完全是他们需要的",
+    "takeawayHeading": "对方的收获",
+    "deliveryTimeline": "送达时间线",
+    "timeline": {
+      "sent": "已发送",
+      "delivered": "已送达",
+      "opened": "已打开",
+      "watched": "已观看",
+      "watchedAll": "已看完",
+      "watchedFull": "已开始观看",
+      "watchedAllFull": "已完整看完",
+      "replied": "已回复"
+    },
+    "anonymousConversation": "匿名对话",
+    "outOfReplies": {
+      "title": "他们的匿名回复次数已用完。",
+      "description": "除非你追加回复次数,或对方创建一个免费账户,否则他们无法再回复。你仍然可以发送后续消息。",
+      "comingSoonButton": "追加回复次数(即将推出)"
+    },
+    "oneReplyLeft": "他们还剩 1 次匿名回复。",
+    "recipientLabel": "收件人",
+    "noRepliesYet": "还没有回复。你可以在下方发送另一条匿名消息。",
+    "composerPlaceholder": "发送另一条匿名消息...",
+    "commentsHeading": "评论({{count}})",
+    "noComments": "还没有评论。",
+    "replyingToComment": "正在回复一条评论",
+    "cancelReplyAriaLabel": "取消回复",
+    "replyAsPosterPlaceholder": "以发布者身份回复...",
+    "privateConversationsHeading": "私密对话({{count}})",
+    "anonymousVisitorWantsToTalk": "一位匿名访客想要交流",
+    "revealYourself": "公开身份",
+    "revealRequestSent": "公开身份请求已发送",
+    "revealAccepted": "对方接受了!你现在可以公开自己的身份了。",
+    "revealDeclined": "对方拒绝了公开身份。",
+    "revealWaiting": "正在等待收件人回应...",
+    "toast": {
+      "followUpSent": "后续消息已发送",
+      "failedToSend": "发送失败",
+      "couldntPostComment": "评论发布失败",
+      "failedToRequestReveal": "公开身份请求失败",
+      "failedToDelete": "删除失败",
+      "couldntUpdateGuessReaction": "无法更新你的反应"
+    }
+  },
+  "whispsList": {
+    "title": "我的 Whisp",
+    "subtitle": "你发送和收到的一切。",
+    "tabs": {
+      "sent": "已发送",
+      "received": "已收到",
+      "archived": "已归档"
+    },
+    "searchPlaceholderSent": "按标题或收件人搜索...",
+    "searchPlaceholderOther": "按标题搜索...",
+    "filter": {
+      "allStatuses": "所有状态",
+      "pending": "待处理",
+      "scheduled": "已安排",
+      "delivered": "已送达",
+      "opened": "已打开",
+      "watched": "已观看",
+      "replied": "已回复"
+    },
+    "videoAlt": "视频",
+    "videoLinkFallback": "视频链接",
+    "newBadge": "新",
+    "unpin": "取消置顶",
+    "pinToTop": "置顶",
+    "moreOptions": "更多选项",
+    "moveBackToList": "移回列表",
+    "archive": "归档",
+    "from": "来自:{{sender}}",
+    "to": "发给:{{recipient}}",
+    "someoneAnonymous": "一位匿名人士",
+    "anonymousCircleVisitor": "一位匿名 Circle 访客",
+    "via": "通过 {{method}}",
+    "emptyState": {
+      "title": "没有找到 whisp",
+      "adjustFilters": "试着调整筛选条件,找到你想要的内容。",
+      "noneReceived": "你的收件箱还没有任何内容——当有其他 Whisperer 给你发东西时,会出现在这里。",
+      "noneArchived": "还没有归档任何内容——从选项菜单中置顶、归档或删除一个 whisp(或长按其卡片)。",
+      "noneSent": "你还没有发送过任何 whisp。",
+      "cta": "发送你的第一个 Whisp"
+    },
+    "deleteDialog": {
+      "title": "删除这个 whisp?",
+      "description": "这只会把它从你自己的列表中隐藏——收件人的链接及其视图仍会像已送达那样正常工作。此操作在你这边无法撤销。"
+    },
+    "toast": {
+      "unpinned": "已取消置顶",
+      "pinnedToTop": "已置顶",
+      "archived": "已归档",
+      "couldntDelete": "删除失败"
+    }
+  },
+  "repliesInbox": {
+    "title": "回复",
+    "subtitle": "来自你所触达的人的匿名回复。",
+    "emptyState": {
+      "title": "还没有回复",
+      "description": "有人回复你的 whisp 时,会以匿名方式出现在这里。"
+    },
+    "repliedSuffix": "回复了",
+    "someoneRepliedAnonymously": "有人匿名回复了",
+    "videoFallback": "视频",
+    "videoWhispsHeading": "视频 Whisps 回复",
+    "textWhispsHeading": "文字 Whisps 回复",
+    "videoWhispsEmpty": "还没有人回复你的视频 Whisps。",
+    "textWhispsEmpty": "还没有人回复你的文字 Whisps。"
+  },
+  "groupSendDetail": {
+    "notFound": "未找到该群组发送记录。",
+    "whisperGroupsLink": "Whisper Groups",
+    "videoFallback": "视频",
+    "groupFallback": "群组",
+    "stats": {
+      "opened": "已打开 {{count}} 人",
+      "watched": "已观看 {{count}} 人",
+      "replied": "已回复 {{count}} 人",
+      "appreciated": "认可了 {{count}} 人"
+    },
+    "perMemberStatus": "各成员状态",
+    "unknownRecipient": "未知",
+    "whispedVideoBack": "回发了一个视频"
+  },
+  "whisperGroupDetail": {
+    "notFound": "未找到该群组。",
+    "whisperGroupsLink": "Whisper Groups",
+    "deleteDialog": {
+      "title": "删除“{{name}}”?",
+      "description": "这会删除已保存的群组及其成员列表。你已经发送给这个群组的 whisp 不会受到影响。"
+    },
+    "sendAWhisp": "发送 Whisp",
+    "addMembers": "添加成员",
+    "addFromContacts": "从通讯录添加",
+    "orAddManually": "或手动添加",
+    "namePlaceholder": "姓名(可选)",
+    "emailPlaceholder": "邮箱",
+    "phonePlaceholder": "电话",
+    "addMember": "添加成员",
+    "unnamedContact": "未命名联系人",
+    "noMembersYet": "还没有成员——在上方添加一些吧。",
+    "toast": {
+      "addEmailOrPhone": "请添加邮箱或电话号码",
+      "memberAdded": "成员已添加",
+      "failedToAddMember": "添加成员失败",
+      "noneHadContactInfo": "这些联系人都没有邮箱或电话号码",
+      "membersAdded_one": "已添加 {{count}} 位成员",
+      "membersAdded_other": "已添加 {{count}} 位成员",
+      "failedToAddMembers": "添加成员失败",
+      "memberRemoved": "成员已移除",
+      "failedToRemoveMember": "移除成员失败",
+      "groupDeleted": "群组已删除",
+      "failedToDeleteGroup": "删除群组失败"
+    }
+  },
+  "whisperGroups": {
+    "title": "Whisper Groups",
+    "subtitle": "保存一次联系人群组,之后就能一次性把同一条匿名 whisp 发送给所有人。",
+    "tabs": {
+      "groups": "群组",
+      "sentBatches": "已发送批次"
+    },
+    "createAGroup": "创建群组",
+    "namePlaceholder": "例如,大学好友",
+    "create": "创建",
+    "emptyGroups": "还没有群组——在上方创建一个开始吧。",
+    "emptySends": "还没有发送过群组 whisp。",
+    "groupFallback": "群组",
+    "sendRow": {
+      "summary": "{{group}} · {{members}} · 通过 {{via}}",
+      "scheduled": "已安排",
+      "stats": "{{opened}} 已打开 · {{watched}} 已观看 · {{replied}} 已回复"
+    },
+    "toast": {
+      "groupCreated": "群组已创建",
+      "failedToCreateGroup": "创建群组失败"
+    }
+  },
+  "publicWhisp": {
+    "takeaway": "要点",
+    "backToDashboard": "仪表盘",
+    "becomeAWhisperer": "成为 Whisperer",
+    "lead": {
+      "group": "你圈子里的某个人匿名发送了这条——你是收到它的 {{count}} 人之一 👀",
+      "individual": "一个在乎你的人认为你需要看看这个 👀"
+    },
+    "expired": {
+      "title": "这个 whisp 已过期",
+      "description": "发送者随时可以再给你发一个新的。"
+    },
+    "expiresIn": "将在 {{time}} 后过期",
+    "appreciation": {
+      "yesResponse": "很高兴这条内容打动了你。",
+      "noResponse": "谢谢你让他们知道。",
+      "prompt": "这是你需要听到的内容吗?",
+      "knowSomeone": "认识也需要这个的人吗?",
+      "passItForward": "传递下去",
+      "yesButton": "是的",
+      "noButton": "不太是"
+    },
+    "circle": {
+      "like": "点赞",
+      "messagePosterPrivately": "私信发布者",
+      "commentCount_one": "{{count}} 条评论",
+      "commentCount_other": "{{count}} 条评论",
+      "beFirstToComment": "抢先评论",
+      "commentPlaceholder": "添加评论...(匿名)",
+      "moreCommentOptionsAriaLabel": "更多评论选项,包括添加照片",
+      "commentingAs": "以 {{handle}} 的身份评论",
+      "anonymousHandle": "匿名",
+      "changeName": "修改昵称",
+      "renamePlaceholder": "新昵称(仅限字母和数字)",
+      "renameWarning": "不要使用你的真实姓名或任何可能暴露身份的信息。",
+      "replyingTo": "正在回复 {{target}}",
+      "thePoster": "发布者",
+      "aComment": "一条评论",
+      "cancelReplyAriaLabel": "取消回复",
+      "attachmentPreviewAlt": "附件预览",
+      "removeImageAriaLabel": "移除图片",
+      "attachPhoto": "添加照片",
+      "couldntAttachImage": "无法添加该图片",
+      "keepItKind": "请友善交流——这里的目标是真诚而有建设性的对话。",
+      "unlimitedCommentsSuffix": "以获得无限评论。"
+    },
+    "reply": {
+      "headerConversation": "匿名对话",
+      "headerWantToReply": "想匿名回复吗?",
+      "theSender": "发送者",
+      "expiredNotice": "这个 whisp 已过期,你无法再回复了。",
+      "limitReached": {
+        "title": "你在这里的匿名回复次数已用完。",
+        "description": "创建一个免费账户即可继续这段对话——你对他们来说依然是匿名的。",
+        "signUpButton": "注册以继续回复"
+      },
+      "compactPlaceholder": "匿名回复...",
+      "moreReplyOptionsAriaLabel": "更多回复选项,包括视频回复",
+      "replyingToPrefix": "正在回复",
+      "thisVideoFallback": "这个视频",
+      "orWriteYourOwn": "或者自己写一条",
+      "fullPlaceholder": "写下你的回复...(匿名)",
+      "whispVideoBack": "用视频回复",
+      "videoLockedDescription": "需要免费账户——文字回复仍然可用",
+      "videoUnlockedDescription": "在回复中附带一段视频——仍然是匿名的",
+      "videoThumbnailAlt": "缩略图",
+      "videoUrlPlaceholder": "粘贴视频链接...",
+      "addVideoButton": "添加",
+      "lastReplyWarning": "这是你的最后一次匿名回复——免费注册以继续。",
+      "repliesLeft_one": "你还剩 {{count}} 次匿名回复。",
+      "repliesLeft_other": "你还剩 {{count}} 次匿名回复。",
+      "sendButton": "发送回复",
+      "guessToggle": "猜猜是谁发的 🕵️",
+      "guessHint": "对方会亲自选择如何回应——绝不会有自动判定的答案。",
+      "guessPlaceholder": "我猜是..."
+    },
+    "reveal": {
+      "viewerAccepted": "你已告知对方可以公开身份。",
+      "viewerDeclined": "你选择继续保持匿名。",
+      "prompt": "发送这条消息的人想要公开身份。",
+      "question": "你想知道是谁给你发送了这个吗?",
+      "accept": "同意",
+      "decline": "拒绝"
+    },
+    "reminder": {
+      "finalNotice": "我们会再提醒你最后一次——之后这个 whisp 将不再可用。",
+      "notice": "我们会在这个 whisp 过期前提醒你。",
+      "pickerHeading": "你想什么时候收到提醒?",
+      "button": "稍后提醒我"
+    },
+    "signupCta": {
+      "heading": "有话想说,但不想说出口?",
+      "description": "给需要的人发一段视频——匿名进行,省去亲口说出来的尴尬。除非你愿意让他们知道,否则他们永远不会知道是你。",
+      "button": "立即成为 Whisperer",
+      "disclaimer": "免费开始——无需信用卡。"
+    },
+    "subscribeCta": {
+      "heading": "想要更多为你匹配的内容?",
+      "description": "当有内容匹配你选择的话题时,把像这样的匿名 whisp 发送到你的收件箱。"
+    },
+    "footer": {
+      "poweredByPrefix": "技术支持",
+      "poweredBySuffix": "——传递重要的心意,省去尴尬的部分。"
+    },
+    "toast": {
+      "couldntScheduleReminder": "无法安排该提醒",
+      "somethingWentWrong": "出了点问题",
+      "replySentAnonymously": "回复已匿名发送",
+      "failedToSendReply": "回复发送失败",
+      "createAccountToWhispVideo": "创建一个免费账户以用视频回复",
+      "senderNotified": "我们也通知了发送者——他们可以为你解锁视频回复功能。",
+      "freeCommentsUsed": "你的免费评论次数已用完",
+      "signUpToComment": "注册即可随时评论,或 24 小时后再来看看。",
+      "couldntPostComment": "评论发布失败",
+      "nameUpdated": "昵称已更新",
+      "couldntUpdateName": "无法更新该昵称",
+      "couldntStartConversation": "无法开始该对话",
+      "guessSentAnonymously": "你的猜测已发送！🕵️"
+    },
+    "notFound": "找不到这个 whisp。"
+  }
+}

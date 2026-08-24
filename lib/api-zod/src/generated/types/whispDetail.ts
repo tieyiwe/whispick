@@ -5,8 +5,10 @@
  * Blind Whisper API — anonymous video recommendation platform
  * OpenAPI spec version: 0.1.0
  */
+import type { CircleComment } from './circleComment';
 import type { TrackingEvent } from './trackingEvent';
 import type { Whisp } from './whisp';
+import type { WhispDetailCircleConversationsItem } from './whispDetailCircleConversationsItem';
 import type { WhispReply } from './whispReply';
 
 export interface WhispDetail {
@@ -18,4 +20,12 @@ export interface WhispDetail {
      * @nullable
      */
   recipientRepliesRemaining?: number | null;
+  /** Blind Circle posts only (0 otherwise) — how many times this post was opened, across every anonymous viewer. */
+  viewCount: number;
+  /** Blind Circle posts only (0 otherwise). */
+  likeCount: number;
+  /** Blind Circle posts only (empty otherwise). */
+  comments: CircleComment[];
+  /** Private 1:1 conversations anonymous viewers started from this Blind Circle post (see POST /w/{token}/circle-dm/start). Empty for every other delivery method, including a circle_dm thread itself — a conversation can't spawn another conversation. */
+  circleConversations: WhispDetailCircleConversationsItem[];
 }

@@ -12,4 +12,9 @@ export interface TextWhispInput {
   messageText: string;
   /** @nullable */
   senderAlias?: string | null;
+  /**
+     * A future ISO timestamp to hold delivery back until — omit or leave null to send immediately.
+     * @nullable
+     */
+  scheduledAt?: string | null;
 }

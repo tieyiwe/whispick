@@ -1,0 +1,143 @@
+{
+  "followButton": {
+    "following": "Siguiendo",
+    "follow": "Seguir",
+    "couldntUpdateFollowStatus": "No se pudo actualizar el estado de seguimiento"
+  },
+  "installAppPrompt": {
+    "dialogAriaLabel": "Instalar Blind Whisper",
+    "titleMobile": "Añade Blind Whisper a tu teléfono",
+    "titleDesktop": "Añade Blind Whisper a este equipo",
+    "descriptionIos": "Se abre a pantalla completa, sin barras del navegador, como una app.",
+    "descriptionMobile": "Se abre a pantalla completa desde tu pantalla de inicio, como una app.",
+    "descriptionDesktop": "La próxima vez, ábrela con un solo clic desde tu escritorio o barra de tareas, sin tener que buscar entre pestañas del navegador.",
+    "notNow": "Ahora no",
+    "iosStepShare": "Toca <1>Compartir</1> en la parte inferior de Safari",
+    "iosStepAddHome": "Elige <1>Añadir a pantalla de inicio</1>",
+    "installing": "Instalando...",
+    "install": "Instalar"
+  },
+  "legalLayout": {
+    "home": "Inicio",
+    "lastUpdated": "Última actualización: {{date}}"
+  },
+  "mfaNudgeBanner": {
+    "title": "Configura la autenticación en dos pasos para más seguridad",
+    "description": "Añade un segundo paso al iniciar sesión para que tu cuenta esté protegida aunque se filtre tu contraseña.",
+    "skipForNow": "Omitir por ahora",
+    "setUpNow": "Configurar ahora"
+  },
+  "moodTag": {
+    "iSeeYou": "Te Veo",
+    "healTogether": "Sanemos Juntos",
+    "iLoveYou": "Te Quiero",
+    "thinkAboutThis": "Piénsalo",
+    "forYourGrowth": "Para Tu Crecimiento",
+    "justBecause": "Solo Porque Sí"
+  },
+  "notificationBell": {
+    "unreadAriaLabel": "{{count}} notificaciones sin leer",
+    "notifications": "Notificaciones",
+    "unreadCount": "{{count}} sin leer",
+    "markAllRead": "Marcar todas como leídas",
+    "noNotificationsYet": "Aún no tienes notificaciones."
+  },
+  "phoneVerificationDialog": {
+    "title": "Verifica tu número de teléfono",
+    "description": "Es opcional, pero ayuda a que los whisps lleguen más rápido y gratis cuando esa persona ya está aquí.",
+    "maybeLater": "Quizás más tarde"
+  },
+  "pinToTaskbarTip": {
+    "ariaLabel": "Fija Blind Whisper para acceder con un clic",
+    "title": "¡Instalado! Un paso más",
+    "description": "Fíjala para acceder con un clic la próxima vez: abre Blind Whisper y luego {{instructions}}",
+    "instructionsMac": "Haz clic derecho en su ícono del Dock → Opciones → \"Mantener en el Dock\".",
+    "instructionsWindows": "Haz clic derecho en su ícono de la barra de tareas → \"Anclar a la barra de tareas\".",
+    "dismiss": "Cerrar"
+  },
+  "pullToRefresh": {
+    "refreshing": "Actualizando...",
+    "releaseToRefresh": "Suelta para actualizar",
+    "pullToRefresh": "Desliza hacia abajo para actualizar"
+  },
+  "rankedBarChart": {
+    "count": "Cantidad",
+    "noDataYet": "Aún no hay datos."
+  },
+  "replyThread": {
+    "seen": "Visto",
+    "sentAriaLabel": "Enviado",
+    "aVideo": "un video",
+    "aMessage": "un mensaje",
+    "whispedVideoBack": "Respondió con un video",
+    "reply": "Responder",
+    "you": "Tú",
+    "newMessages_one": "{{count}} mensaje nuevo",
+    "newMessages_other": "{{count}} mensajes nuevos",
+    "jumpToLatest": "Ir a lo más reciente",
+    "replyingTo": "Respondiendo a {{name}}",
+    "cancelReply": "Cancelar respuesta",
+    "writeAReply": "Escribe una respuesta...",
+    "send": "Enviar",
+    "guessTag": "🕵️ Suposición",
+    "guessReactionPrompt": "Reacciona a su suposición:",
+    "guessReaction": {
+      "hot": "Te acercas",
+      "cold": "Frío, frío",
+      "no_comment": "Sin comentarios",
+      "confirmed": "Sí, soy yo"
+    }
+  },
+  "statusBadge": {
+    "pending": "Pendiente",
+    "scheduled": "Programado",
+    "sent": "Enviado",
+    "read": "Leído",
+    "delivered": "Entregado",
+    "opened": "Abierto",
+    "watched": "Visto",
+    "replied": "Respondido",
+    "failed": "No se pudo enviar"
+  },
+  "textWhispScroll": {
+    "sent": "¡Enviado!",
+    "scheduled": "¡Programado!",
+    "tapToOpenAriaLabel": "Toca para abrir este Whisp de texto",
+    "tapTheBowToOpen": "Toca el lazo para abrir",
+    "someoneAnonymous": "Alguien anónimo"
+  },
+  "trendAreaChart": {
+    "count": "Cantidad",
+    "noActivityYet": "Aún no hay actividad en este período."
+  },
+  "videoPlayer": {
+    "openOn": "Abrir en {{platform}}",
+    "openOriginal": "Abrir original",
+    "videoAlt": "Video",
+    "watchTheVideo": "Ver el video"
+  },
+  "whispSentConfirmation": {
+    "srOnlySent": "Tu whisp ha sido enviado"
+  },
+  "appErrorBoundary": {
+    "title": "Algo salió mal al cargar esta página.",
+    "description": "Esto suele solucionarse recargando la página, a menudo porque acaba de salir una nueva versión.",
+    "reload": "Recargar"
+  },
+  "phoneVerificationFlow": {
+    "explainer": "Verificaremos tu número para que los whisps que te envíen lleguen al instante si ya estás en Blind Whisper — lo que envías y recibes sigue siendo 100% anónimo, siempre.",
+    "smsDisclosure": "Pueden aplicarse tarifas de mensajes y datos por el código de verificación de un solo uso. Consulta nuestros",
+    "smsTermsLink": "Términos de SMS",
+    "sendCode": "Enviar código de verificación",
+    "enterCode": "Ingresa el código de 6 dígitos que enviamos a {{phone}}.",
+    "changeNumber": "Cambiar número",
+    "verify": "Verificar",
+    "toastCodeSent": "Código enviado",
+    "toastCodeSentDescription": "Enviamos un código de 6 dígitos a {{phone}}.",
+    "toastSendFailed": "No se pudo enviar el código",
+    "toastSendFailedDescription": "Verifica el número e inténtalo de nuevo.",
+    "toastVerified": "Número de teléfono verificado",
+    "toastConfirmFailed": "Ese código no funcionó",
+    "toastConfirmFailedDescription": "Inténtalo de nuevo."
+  }
+}

@@ -8,29 +8,70 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>Blind Whisper — Send What They Need to Hear, Anonymously</title>
-    <meta name="description" content="Blind Whisper lets you send a video to someone who needs it, anonymously. Whisper Links, Ghost Boost matching, and Circle — no account required to receive." />
+    <meta name="description" content="Blind Whisper lets you send a video to someone who needs it, anonymously. Whisper Links and Circle — no account required to receive." />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://blindwhisper.com/" />
     <meta property="og:title" content="Blind Whisper — Send What They Need to Hear, Anonymously" />
-    <meta property="og:description" content="Blind Whisper lets you send a video to someone who needs it, anonymously. Whisper Links, Ghost Boost matching, and Circle — no account required to receive." />
+    <meta property="og:description" content="Blind Whisper lets you send a video to someone who needs it, anonymously. Whisper Links and Circle — no account required to receive." />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://blindwhisper.com/" />
     <meta property="og:image" content="https://blindwhisper.com/opengraph.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Blind Whisper — anonymous messages, videos, and notes for the people who need them" />
     <meta property="og:site_name" content="Blind Whisper" />
+    <meta property="og:locale" content="en_US" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Blind Whisper — Send What They Need to Hear, Anonymously" />
-    <meta name="twitter:description" content="Blind Whisper lets you send a video to someone who needs it, anonymously. Whisper Links, Ghost Boost matching, and Circle — no account required to receive." />
+    <meta name="twitter:description" content="Blind Whisper lets you send a video to someone who needs it, anonymously. Whisper Links and Circle — no account required to receive." />
     <meta name="twitter:image" content="https://blindwhisper.com/opengraph.jpg" />
+    <meta name="twitter:image:alt" content="Blind Whisper — anonymous messages, videos, and notes for the people who need them" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- iOS ignores SVG icons and won't use the one above, falling back to a
+         screenshot of the page when someone adds the app to their home screen.
+         This PNG is the same mark on a deliberately square background, since
+         iOS applies its own corner mask and would otherwise round it twice. -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <!-- Android's home-screen icon and install metadata come from the manifest,
+         not from the icons above. Without it the service worker registered in
+         lib/push.ts had nothing to install against, and "Add to Home Screen"
+         fell back to a screenshot the same way iOS did. The maskable icon is a
+         separate file because Android masks icons to arbitrary shapes and keeps
+         only the central 80% circle, which the full-size mark overflows. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Blind Whisper",
+        "alternateName": "BlindWhisper",
+        "url": "https://blindwhisper.com/",
+        "inLanguage": "en",
+        "publisher": {
+          "@type": "Organization",
+          "name": "TIBLOGICS"
+        }
+      }
+    </script>
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "WebApplication",
         "name": "Blind Whisper",
         "url": "https://blindwhisper.com/",
-        "description": "Blind Whisper lets you send a video to someone who needs it, anonymously.",
+        "description": "Blind Whisper lets you send a video or a short written note to someone who needs it, anonymously — without revealing who you are unless you choose to.",
         "applicationCategory": "SocialNetworkingApplication",
         "operatingSystem": "Any",
+        "image": "https://blindwhisper.com/opengraph.jpg",
+        "featureList": [
+          "Whisper Link — anonymous one-to-one video delivery by email, SMS, or WhatsApp",
+          "Text Whisp — short anonymous written messages to any phone number",
+          "Whisper Groups — one anonymous video sent to several saved recipients",
+          "Blind Circle — anonymous community video feed",
+          "Reveal Flow — consent-based identity reveal the recipient can accept or decline",
+          "Anonymous replies — recipients can respond without either side being identified",
+          "Scheduled sending — pick a future date and time for delivery"
+        ],
         "offers": {
           "@type": "AggregateOffer",
           "priceCurrency": "USD",

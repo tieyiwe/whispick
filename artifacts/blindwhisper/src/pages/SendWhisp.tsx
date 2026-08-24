@@ -1,19 +1,21 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
   useScrapeVideoMeta,
   useCreateWhisp,
-  useListMyCircles,
   useListWhisperGroups,
+  useCreateWhisperGroup,
+  useAddWhisperGroupMembers,
   useSendGroupWhisp,
   useListMedia,
   useGetNoteSuggestions,
   useGetConciergeSuggestions,
   useGetUserProfile,
-  getListMyCirclesQueryKey,
+  useGetMyRecentRecipients,
   getListWhisperGroupsQueryKey,
   getGetWhispStatsQueryKey,
   getListWhispsQueryKey,
@@ -28,6 +30,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { MoodTag, MOOD_CONFIG } from "@/components/shared/MoodTag";
+import { Logo } from "@/components/ui/logo";
+import { WhispSentConfirmation } from "@/components/shared/WhispSentConfirmation";
 import {
   ArrowLeft,
   ArrowRight,
@@ -37,12 +41,9 @@ import {
   Mail,
   Phone,
   Ghost,
-  Users,
   Send,
-  Check,
   Clock,
   CalendarClock,
-  Globe,
   Contact,
   UsersRound,
   Plus,
@@ -56,18 +57,19 @@ import {
 import { SiWhatsapp } from "react-icons/si";
 import { PlatformIcon } from "@/components/shared/PlatformIcon";
 import { isContactPickerSupported, pickContact } from "@/lib/contactPicker";
-import { parseRecipients } from "@/lib/recipients";
-import { uploadMedia, UploadValidationError, type UploadedVideoResult } from "@/lib/uploadMedia";
+import { parseRecipients, tokenAtCaret, replaceTokenAt, recipientKey } from "@/lib/recipients";
+import { uploadMedia, UploadValidationError, MAX_UPLOAD_DURATION_SECONDS, type UploadedVideoResult } from "@/lib/uploadMedia";
 import { Thumbnail } from "@/components/shared/Thumbnail";
 import { CameraCapture } from "@/components/shared/CameraCapture";
 import { takePendingForward } from "@/lib/forwardVideo";
 import { DemographicsGateDialog } from "@/components/shared/DemographicsGateDialog";
 import { needsDemographics } from "@/lib/demographics";
+import { GHOST_BOOST_ENABLED } from "@/lib/featureFlags";
 
 const WHISPER_CHANNELS = [
-  { key: "email", label: "Email", icon: Mail },
-  { key: "sms", label: "Text", icon: Phone },
-  { key: "whatsapp", label: "WhatsApp", icon: SiWhatsapp },
+  { key: "email", icon: Mail },
+  { key: "sms", icon: Phone },
+  { key: "whatsapp", icon: SiWhatsapp },
 ] as const;
 
 const MOOD_TAGS = Object.entries(MOOD_CONFIG).map(([key, config]) => ({
@@ -76,34 +78,7 @@ const MOOD_TAGS = Object.entries(MOOD_CONFIG).map(([key, config]) => ({
   color: config.color,
 }));
 
-const SENDER_ALIASES = [
-  "Someone who cares",
-  "A friend",
-  "Someone who loves you",
-  "An admirer",
-];
-
-function ParticleAnimation() {
-  return (
-    <div className="relative h-32 flex items-center justify-center pointer-events-none overflow-hidden">
-      {Array.from({ length: 8 }).map((_, i) => (
-        <div
-          key={i}
-          className="particle absolute w-3 h-3 rounded-full bg-primary/80 blur-[2px]"
-          style={{
-            left: `${15 + i * 10}%`,
-            bottom: "0",
-            animationDelay: `${i * 0.25}s`,
-            animationDuration: `${2.5 + (i % 3) * 0.5}s`,
-            width: `${8 + (i % 3) * 4}px`,
-            height: `${8 + (i % 3) * 4}px`,
-            background: i % 3 === 0 ? "#7C5CFC" : i % 3 === 1 ? "#FF6B6B" : "#a78bfa",
-          }}
-        />
-      ))}
-    </div>
-  );
-}
+const SENDER_ALIAS_KEYS = ["someoneWhoCares", "aFriend", "someoneWhoLovesYou", "anAdmirer"] as const;
 
 function parseTimestampToSeconds(value: string): number | null {
   const trimmed = value.trim();
@@ -120,6 +95,17 @@ function formatSecondsAsTimestamp(seconds: number): string {
   return `${mins}:${String(secs).padStart(2, "0")}`;
 }
 
+// "1 minute" / "90 seconds" — whichever reads naturally for whatever
+// MAX_UPLOAD_DURATION_SECONDS currently is, so this copy never goes stale
+// again the way the old hardcoded "under 2 minutes" text did.
+function formatMaxUploadDuration(t: (key: string, options?: Record<string, unknown>) => string): string {
+  if (MAX_UPLOAD_DURATION_SECONDS % 60 === 0) {
+    const minutes = MAX_UPLOAD_DURATION_SECONDS / 60;
+    return t("sendWhisp.maxDurationMinutes", { count: minutes });
+  }
+  return t("sendWhisp.maxDurationSeconds", { count: MAX_UPLOAD_DURATION_SECONDS });
+}
+
 const step1Schema = z.object({ videoUrl: z.string().url("Please enter a valid URL") });
 const step5Schema = z.object({
   recipientEmail: z.string().email().optional().or(z.literal("")),
@@ -127,6 +113,8 @@ const step5Schema = z.object({
 });
 
 export function SendWhisp() {
+  const { t } = useTranslation("whisp");
+  const senderAliasOptions = SENDER_ALIAS_KEYS.map((key) => ({ key, label: t(`sendWhisp.senderAliases.${key}`) }));
   const [step, setStep] = useState(1);
   const [videoSource, setVideoSource] = useState<"url" | "upload" | "camera" | "library" | "concierge">("url");
   const [videoUrl, setVideoUrl] = useState("");
@@ -163,9 +151,9 @@ export function SendWhisp() {
   // this is what's carried into the final whisp, so admin analytics can
   // tell whether concierge suggestions led to a real send.
   const [conciergeRequestId, setConciergeRequestId] = useState<string | null>(null);
-  const [senderAlias, setSenderAlias] = useState(SENDER_ALIASES[0]);
+  const [senderAlias, setSenderAlias] = useState(senderAliasOptions[0].label);
   const [customAlias, setCustomAlias] = useState("");
-  const [deliveryMethod, setDeliveryMethod] = useState<"whisper_link" | "ghost_boost" | "circle_drop" | "group_whisper">("whisper_link");
+  const [deliveryMethod, setDeliveryMethod] = useState<"whisper_link" | "ghost_boost" | "group_whisper">("whisper_link");
   const [whisperChannel, setWhisperChannel] = useState<"email" | "sms" | "whatsapp">("email");
   const [recipientEmail, setRecipientEmail] = useState("");
   const [recipientPhone, setRecipientPhone] = useState("");
@@ -174,6 +162,10 @@ export function SendWhisp() {
   // still used by Group Whisper, which picks one channel for the whole
   // group rather than per member.)
   const [recipientsInput, setRecipientsInput] = useState("");
+  // Where the caret sits in that field, so suggestions match the entry being
+  // typed rather than the whole comma-separated list.
+  const [recipientCaret, setRecipientCaret] = useState(0);
+  const recipientsRef = useRef<HTMLTextAreaElement>(null);
   const [preferWhatsApp, setPreferWhatsApp] = useState(false);
   const [sendingBatch, setSendingBatch] = useState(false);
   const [sentCount, setSentCount] = useState(1);
@@ -181,7 +173,6 @@ export function SendWhisp() {
   const [endTimestamp, setEndTimestamp] = useState("");
   const [scheduleEnabled, setScheduleEnabled] = useState(false);
   const [scheduledAtValue, setScheduledAtValue] = useState("");
-  const [circleId, setCircleId] = useState<string | null>(null);
   const [whisperGroupId, setWhisperGroupId] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
   const [sentWhispId, setSentWhispId] = useState<string | null>(null);
@@ -196,11 +187,10 @@ export function SendWhisp() {
   const scrapeMeta = useScrapeVideoMeta();
   const createWhisp = useCreateWhisp();
   const sendGroupWhisp = useSendGroupWhisp();
+  const createWhisperGroup = useCreateWhisperGroup();
+  const addWhisperGroupMembers = useAddWhisperGroupMembers();
   const noteSuggestionsMutation = useGetNoteSuggestions();
   const conciergeMutation = useGetConciergeSuggestions();
-  const { data: myCircles } = useListMyCircles({
-    query: { enabled: deliveryMethod === "circle_drop", queryKey: getListMyCirclesQueryKey() },
-  });
   const { data: myWhisperGroups } = useListWhisperGroups({
     query: { enabled: deliveryMethod === "group_whisper", queryKey: getListWhisperGroupsQueryKey() },
   });
@@ -227,7 +217,16 @@ export function SendWhisp() {
   useEffect(() => {
     const forward = takePendingForward();
     if (!forward) return;
-    setVideoUrl(forward.videoUrl);
+    if (forward.uploadedVideoId) {
+      // An uploaded/recorded clip forwarded from Media Library's "Whisp It"
+      // button — identified by id, same as handleLibrarySelect below, not
+      // by URL (there isn't a real navigable one for an upload).
+      setUploadedVideoId(forward.uploadedVideoId);
+      setVideoUrl("");
+    } else {
+      setVideoUrl(forward.videoUrl);
+      setUploadedVideoId(null);
+    }
     setVideoMeta({
       title: forward.videoTitle,
       thumbnail: forward.videoThumbnail,
@@ -283,7 +282,7 @@ export function SendWhisp() {
       setVideoMeta({ title: result.originalFilename, thumbnail: `/api/media/${result.id}/thumbnail`, platform: "upload" });
       setStep(2);
     } catch (err) {
-      setUploadError(err instanceof UploadValidationError ? err.message : "Upload failed. Please try again.");
+      setUploadError(err instanceof UploadValidationError ? err.message : t("sendWhisp.upload.genericError"));
     } finally {
       setIsUploading(false);
     }
@@ -320,10 +319,10 @@ export function SendWhisp() {
           setConciergeResultId(result.requestId);
           setConciergeSearched(true);
           if (result.videoSuggestions.length === 0 && !result.noteDraft) {
-            toast({ title: "Couldn't come up with anything for that just now", variant: "destructive" });
+            toast({ title: t("sendWhisp.toast.conciergeNoResults"), variant: "destructive" });
           }
         },
-        onError: () => toast({ title: "Couldn't come up with suggestions right now", variant: "destructive" }),
+        onError: () => toast({ title: t("sendWhisp.toast.noSuggestions"), variant: "destructive" }),
       }
     );
   }
@@ -365,23 +364,27 @@ export function SendWhisp() {
       {
         onSuccess: (result) => {
           if (result.suggestions.length === 0) {
-            toast({ title: "Couldn't come up with suggestions right now", variant: "destructive" });
+            toast({ title: t("sendWhisp.toast.noSuggestions"), variant: "destructive" });
             return;
           }
           setNoteSuggestions(result.suggestions);
         },
-        onError: () => toast({ title: "Couldn't come up with suggestions right now", variant: "destructive" }),
+        onError: () => toast({ title: t("sendWhisp.toast.noSuggestions"), variant: "destructive" }),
       }
     );
   }
 
-  async function handleSend() {
+  async function handleSend(opts?: { skipDemographicsCheck?: boolean }) {
     // One-time gate before a sender's very first whisp — see
     // lib/demographics.ts. Checked here so it interrupts before the send
     // even fires; the server enforces the same thing (428
     // "demographics_required") as a backstop in case this check ever gets
-    // out of sync with a stale cached profile.
-    if (needsDemographics(profile)) {
+    // out of sync with a stale cached profile. Skipped when the gate itself
+    // resumes the send: at that moment the cached profile is still the
+    // pre-answer one (the gate's invalidation hasn't refetched yet), so
+    // re-checking here would just re-open the gate — and the server's 428
+    // backstop still catches a genuinely unanswered gate.
+    if (!opts?.skipDemographicsCheck && needsDemographics(profile)) {
       setShowDemographicsGate(true);
       return;
     }
@@ -397,7 +400,11 @@ export function SendWhisp() {
           data: {
             videoUrl: uploadedVideoId ? null : videoUrl,
             videoTitle: videoMeta?.title ?? null,
-            videoThumbnail: videoMeta?.thumbnail ?? null,
+            // A relative /api/media/:id/thumbnail path when uploadedVideoId
+            // is set — real for the frontend's own preview, but not a valid
+            // http(s) URL for the API, which derives the real thumbnail
+            // server-side from the upload anyway (see routes/whisps.ts).
+            videoThumbnail: uploadedVideoId ? null : videoMeta?.thumbnail ?? null,
             videoEmbedUrl: uploadedVideoId ? null : videoMeta?.embedUrl ?? null,
             videoPlatform: videoMeta?.platform ?? null,
             uploadedVideoId,
@@ -416,8 +423,8 @@ export function SendWhisp() {
             setSent(true);
             if (result.skippedMembers.length) {
               toast({
-                title: `${result.skippedMembers.length} member${result.skippedMembers.length > 1 ? "s" : ""} skipped`,
-                description: "They didn't have the contact info this channel needs.",
+                title: t("sendWhisp.toast.membersSkipped", { count: result.skippedMembers.length }),
+                description: t("sendWhisp.toast.membersSkippedDescription"),
               });
             }
             queryClient.invalidateQueries({ queryKey: getGetWhispStatsQueryKey() });
@@ -428,7 +435,7 @@ export function SendWhisp() {
               setShowDemographicsGate(true);
               return;
             }
-            toast({ title: err?.data?.error ?? "Failed to send group whisp", variant: "destructive" });
+            toast({ title: err?.data?.error ?? t("sendWhisp.toast.failedToSendGroup"), variant: "destructive" });
           },
         }
       );
@@ -438,14 +445,17 @@ export function SendWhisp() {
     const sharedPayload = {
       videoUrl: uploadedVideoId ? null : videoUrl,
       videoTitle: videoMeta?.title ?? null,
-      videoThumbnail: videoMeta?.thumbnail ?? null,
+      // See the group_whisper branch above for why this is nulled for an
+      // upload — a relative preview path, not a valid http(s) URL.
+      videoThumbnail: uploadedVideoId ? null : videoMeta?.thumbnail ?? null,
       videoEmbedUrl: uploadedVideoId ? null : videoMeta?.embedUrl ?? null,
       videoPlatform: videoMeta?.platform ?? null,
       uploadedVideoId,
       videoStartSeconds: parseTimestampToSeconds(startTimestamp),
       videoEndSeconds: parseTimestampToSeconds(endTimestamp),
       deliveryMethod,
-      circleId: deliveryMethod === "circle_drop" ? circleId : null,
+      // Blind Circle posts are composed on the Blind Circle page, not here.
+      circleId: null,
       anonymousNote: anonymousNote || null,
       senderAlias: alias,
       moodTag: moodTag,
@@ -453,7 +463,7 @@ export function SendWhisp() {
       conciergeRequestId,
     };
 
-    // For anything that isn't a Whisper Link (Circle Drop, Ghost Boost)
+    // For anything that isn't a Whisper Link (Blind Circle, Ghost Boost)
     // there's no per-recipient contact at all — one send, unchanged.
     if (deliveryMethod !== "whisper_link") {
       createWhisp.mutate(
@@ -470,7 +480,7 @@ export function SendWhisp() {
               setShowDemographicsGate(true);
               return;
             }
-            toast({ title: "Failed to send whisp", variant: "destructive" });
+            toast({ title: t("sendWhisp.toast.failedToSend"), variant: "destructive" });
           },
         },
       );
@@ -490,6 +500,35 @@ export function SendWhisp() {
     const failed: { contact: string; message: string }[] = [];
     let gated = false;
 
+    // More than one recipient means this is a group worth keeping. Saved as a
+    // real Whisper Group so the same set is reusable next time without
+    // retyping it — but delivery still goes out one whisp per person (below)
+    // rather than through the group-send pipeline, because a group send
+    // commits to a single channel and this list can mix emails with phone
+    // numbers. Best-effort: if saving the group fails, the whisps still go.
+    if (parsedRecipients.recipients.length > 1) {
+      try {
+        const first = parsedRecipients.recipients[0].raw;
+        const others = parsedRecipients.recipients.length - 1;
+        const group = await createWhisperGroup.mutateAsync({
+          data: { name: `${first} +${others} more` },
+        });
+        await addWhisperGroupMembers.mutateAsync({
+          id: group.id,
+          data: {
+            members: parsedRecipients.recipients.map((r) => ({
+              email: r.kind === "email" ? r.raw : null,
+              phone: r.kind === "phone" ? r.raw : null,
+            })),
+          },
+        });
+        queryClient.invalidateQueries({ queryKey: getListWhisperGroupsQueryKey() });
+      } catch {
+        // Saving the group is a convenience, not the point of the send —
+        // never block delivery on it.
+      }
+    }
+
     for (const recipient of parsedRecipients.recipients) {
       try {
         const whisp = await createWhisp.mutateAsync({
@@ -508,7 +547,7 @@ export function SendWhisp() {
           gated = true;
           break;
         }
-        failed.push({ contact: recipient.raw, message: err?.data?.error ?? "Failed to send" });
+        failed.push({ contact: recipient.raw, message: err?.data?.error ?? t("sendWhisp.toast.failedToSendFallback") });
       }
     }
     setSendingBatch(false);
@@ -523,7 +562,7 @@ export function SendWhisp() {
 
     if (succeeded.length === 0) {
       toast({
-        title: failed[0]?.message ?? "Failed to send whisp",
+        title: failed[0]?.message ?? t("sendWhisp.toast.failedToSend"),
         variant: "destructive",
       });
       return;
@@ -534,7 +573,7 @@ export function SendWhisp() {
     // notice.
     if (failed.length > 0) {
       toast({
-        title: `Sent to ${succeeded.length}, couldn't reach ${failed.length}`,
+        title: t("sendWhisp.toast.partialSendTitle", { succeeded: succeeded.length, failed: failed.length }),
         description: failed.map((f) => f.contact).join(", "),
         variant: "destructive",
       });
@@ -554,34 +593,72 @@ export function SendWhisp() {
     // several contacts in a row builds up the list.
     const picked = contact.email || contact.tel;
     if (!picked) {
-      toast({ title: "That contact has no email or phone number on file", variant: "destructive" });
+      toast({ title: t("sendWhisp.toast.noContactInfo"), variant: "destructive" });
       return;
     }
     setRecipientsInput((current) => (current.trim() ? `${current.replace(/,\s*$/, "")}, ${picked}` : picked));
   }
 
   const parsedRecipients = parseRecipients(recipientsInput);
+
+  // Contacts this sender has used before, so a returning user doesn't retype
+  // an address. Server-derived from their own sending history rather than
+  // held in localStorage, so it's there on a new device too.
+  const { data: recentRecipients } = useGetMyRecentRecipients();
+  const recipientToken = tokenAtCaret(recipientsInput, recipientCaret);
+  const alreadyEntered = new Set(parsedRecipients.recipients.map((r) => recipientKey(r.raw, r.kind)));
+  const recipientSuggestions = (recentRecipients?.items ?? [])
+    // Never suggest someone already in the field — the whole point is to save
+    // typing, and offering a duplicate wastes the one slot it has.
+    .filter((c) => !alreadyEntered.has(recipientKey(c.value, c.kind as "email" | "phone")))
+    .filter((c) => {
+      if (!recipientToken.token) return true;
+      const typed = recipientToken.token.toLowerCase();
+      // Phone numbers are matched on digits so "555" finds "+1 555 123 4567"
+      // despite the spaces and the country code the sender didn't type.
+      const digits = typed.replace(/\D/g, "");
+      return c.kind === "phone" && digits
+        ? c.value.replace(/\D/g, "").includes(digits)
+        : c.value.toLowerCase().includes(typed);
+    })
+    .slice(0, 5);
+
+  function applyRecipientSuggestion(value: string) {
+    const next = replaceTokenAt(recipientsInput, recipientToken.start, recipientToken.end, value);
+    setRecipientsInput(next.value);
+    setRecipientCaret(next.caret);
+    // Put the caret back where the next entry goes; without this the browser
+    // parks it at the end of the field on refocus.
+    requestAnimationFrame(() => {
+      const el = recipientsRef.current;
+      if (!el) return;
+      el.focus();
+      el.setSelectionRange(next.caret, next.caret);
+    });
+  }
   const hasPhoneRecipient = parsedRecipients.recipients.some((r) => r.kind === "phone");
   const canContinueFromRecipients =
     parsedRecipients.recipients.length > 0 && parsedRecipients.invalid.length === 0;
 
-  const steps = ["Video", "Mood", "Note", "Delivery", "Recipient", "Send"];
+  const steps = [
+    t("sendWhisp.steps.video"),
+    t("sendWhisp.steps.mood"),
+    t("sendWhisp.steps.note"),
+    t("sendWhisp.steps.delivery"),
+    t("sendWhisp.steps.recipient"),
+    t("sendWhisp.steps.send"),
+  ];
 
   if (sent) {
     return (
       <AppLayout>
         <div className="max-w-xl mx-auto text-center py-16 space-y-6">
-          <ParticleAnimation />
-          <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center mx-auto glow-card">
-            <Check className="w-10 h-10 text-primary" />
-          </div>
+          <WhispSentConfirmation />
           <h1 className="text-4xl font-serif font-bold text-foreground">
-            {sentCount > 1 ? "Your whisps are on their way" : "Your whisp is on its way"}
+            {t("sendWhisp.sent.title", { count: sentCount })}
           </h1>
           <p className="text-muted-foreground text-lg">
-            {sentCount > 1
-              ? `Sent to ${sentCount} people. We'll let you know as each one is seen.`
-              : "It's been sent. We'll let you know when it's seen."}
+            {t("sendWhisp.sent.description", { count: sentCount })}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
             <Button
@@ -597,7 +674,7 @@ export function SendWhisp() {
               }}
               data-testid="button-track-whisp"
             >
-              {sentCount > 1 ? "Track these whisps" : "Track this whisp"}
+              {t("sendWhisp.sent.trackButton", { count: sentCount })}
             </Button>
             <Button
               className="rounded-full shadow-[0_0_15px_rgba(124,92,252,0.3)]"
@@ -608,7 +685,7 @@ export function SendWhisp() {
                 setVideoMeta(null);
                 setMoodTag(null);
                 setAnonymousNote("");
-                setSenderAlias(SENDER_ALIASES[0]);
+                setSenderAlias(senderAliasOptions[0].label);
                 setCustomAlias("");
                 setDeliveryMethod("whisper_link");
                 setWhisperChannel("email");
@@ -618,9 +695,9 @@ export function SendWhisp() {
                 setPreferWhatsApp(false);
                 setSentCount(1);
                 setStartTimestamp("");
+                setEndTimestamp("");
                 setScheduleEnabled(false);
                 setScheduledAtValue("");
-                setCircleId(null);
                 setWhisperGroupId(null);
                 setSentWhispId(null);
                 setSentGroupSendId(null);
@@ -634,7 +711,7 @@ export function SendWhisp() {
               }}
               data-testid="button-send-another"
             >
-              Send another
+              {t("sendWhisp.sent.sendAnother")}
             </Button>
           </div>
         </div>
@@ -647,11 +724,11 @@ export function SendWhisp() {
   const trimError = !endTimestamp
     ? null
     : parsedEndSeconds === null
-      ? "Invalid time format"
+      ? t("sendWhisp.validation.invalidTimeFormat")
       : parsedEndSeconds <= 0
-        ? "End time must be greater than 0:00"
+        ? t("sendWhisp.validation.endTimeMustBeGreaterThanZero")
         : parsedStartSeconds !== null && parsedEndSeconds <= parsedStartSeconds
-          ? "End time must be after the start time"
+          ? t("sendWhisp.validation.endTimeAfterStart")
           : null;
 
   return (
@@ -659,8 +736,8 @@ export function SendWhisp() {
       <div className="max-w-xl mx-auto space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-serif font-bold text-foreground">Send a Whisp</h1>
-          <p className="text-muted-foreground mt-1">Share a video anonymously with someone you care about.</p>
+          <h1 className="text-3xl font-serif font-bold text-foreground">{t("sendWhisp.header.title")}</h1>
+          <p className="text-muted-foreground mt-1">{t("sendWhisp.header.subtitle")}</p>
         </div>
 
         {/* Step indicators */}
@@ -678,7 +755,7 @@ export function SendWhisp() {
               />
             </div>
           ))}
-          <span className="ml-2 text-xs text-muted-foreground">Step {step} of {steps.length}</span>
+          <span className="ml-2 text-xs text-muted-foreground">{t("sendWhisp.stepIndicator", { step, total: steps.length })}</span>
         </div>
 
         <Card className="bg-card border-border/50 overflow-hidden">
@@ -688,11 +765,11 @@ export function SendWhisp() {
               <div className="space-y-4">
                 <div className="flex gap-1.5 p-1 bg-muted/30 rounded-xl w-fit flex-wrap">
                   {([
-                    { key: "concierge" as const, label: "Not sure? Describe it", icon: Sparkles },
-                    { key: "url" as const, label: "Paste a link", icon: Link2 },
-                    { key: "upload" as const, label: "Upload", icon: Upload },
-                    { key: "camera" as const, label: "Camera", icon: Camera },
-                    { key: "library" as const, label: "My library", icon: FolderOpen },
+                    { key: "concierge" as const, label: t("sendWhisp.tabs.concierge"), icon: Sparkles },
+                    { key: "url" as const, label: t("sendWhisp.tabs.url"), icon: Link2 },
+                    { key: "upload" as const, label: t("sendWhisp.tabs.upload"), icon: Upload },
+                    { key: "camera" as const, label: t("sendWhisp.tabs.camera"), icon: Camera },
+                    { key: "library" as const, label: t("sendWhisp.tabs.library"), icon: FolderOpen },
                   ]).map((tab) => (
                     <button
                       key={tab.key}
@@ -710,14 +787,14 @@ export function SendWhisp() {
 
                 {videoSource === "url" && (
                   <>
-                    <h2 className="text-xl font-serif font-semibold">Paste a video link</h2>
-                    <p className="text-sm text-muted-foreground">YouTube, TikTok, Instagram, Facebook, Vimeo — any public video URL.</p>
+                    <h2 className="text-xl font-serif font-semibold">{t("sendWhisp.url.heading")}</h2>
+                    <p className="text-sm text-muted-foreground">{t("sendWhisp.url.description")}</p>
                     <div className="flex gap-2">
                       <div className="relative flex-1">
                         <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
                           className="pl-9 bg-input/50 border-border/50 rounded-xl"
-                          placeholder="https://youtube.com/watch?v=..."
+                          placeholder={t("sendWhisp.url.placeholder")}
                           {...urlForm.register("videoUrl")}
                           onKeyDown={(e) => e.key === "Enter" && urlForm.handleSubmit(handleUrlSubmit)()}
                           data-testid="input-video-url"
@@ -733,16 +810,20 @@ export function SendWhisp() {
                       </Button>
                     </div>
                     {urlForm.formState.errors.videoUrl && (
-                      <p className="text-sm text-destructive">{urlForm.formState.errors.videoUrl.message}</p>
+                      <p className="text-sm text-destructive">
+                        {urlForm.formState.errors.videoUrl.type === "manual"
+                          ? urlForm.formState.errors.videoUrl.message
+                          : t("sendWhisp.validation.invalidUrl")}
+                      </p>
                     )}
                   </>
                 )}
 
                 {videoSource === "upload" && (
                   <>
-                    <h2 className="text-xl font-serif font-semibold">Upload a video</h2>
+                    <h2 className="text-xl font-serif font-semibold">{t("sendWhisp.upload.heading")}</h2>
                     <p className="text-sm text-muted-foreground">
-                      Under 2 minutes, MP4/WebM/MOV. Kept short so it loads fast for the recipient.
+                      {t("sendWhisp.upload.description", { duration: formatMaxUploadDuration(t) })}
                     </p>
                     <label
                       className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-border/60 rounded-xl py-10 cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
@@ -754,7 +835,7 @@ export function SendWhisp() {
                         <Upload className="w-6 h-6 text-muted-foreground" />
                       )}
                       <span className="text-sm text-muted-foreground">
-                        {isUploading ? "Processing your video…" : "Tap to choose a video from your device"}
+                        {isUploading ? t("sendWhisp.upload.processing") : t("sendWhisp.upload.tapToChoose")}
                       </span>
                       <input
                         type="file"
@@ -771,9 +852,9 @@ export function SendWhisp() {
 
                 {videoSource === "camera" && (
                   <>
-                    <h2 className="text-xl font-serif font-semibold">Use your camera</h2>
+                    <h2 className="text-xl font-serif font-semibold">{t("sendWhisp.camera.heading")}</h2>
                     <p className="text-sm text-muted-foreground">
-                      Take a photo or record a video (under 2 minutes) right here — no need to leave the app.
+                      {t("sendWhisp.camera.description", { duration: formatMaxUploadDuration(t) })}
                     </p>
                     <CameraCapture onUploaded={handleCameraUploaded} />
                   </>
@@ -781,11 +862,11 @@ export function SendWhisp() {
 
                 {videoSource === "library" && (
                   <>
-                    <h2 className="text-xl font-serif font-semibold">Your Media Library</h2>
-                    <p className="text-sm text-muted-foreground">Reuse a clip you've already uploaded.</p>
+                    <h2 className="text-xl font-serif font-semibold">{t("sendWhisp.library.heading")}</h2>
+                    <p className="text-sm text-muted-foreground">{t("sendWhisp.library.description")}</p>
                     {!mediaLibrary?.length ? (
                       <p className="text-sm text-muted-foreground py-6 text-center">
-                        Nothing here yet — upload a video to add one.
+                        {t("sendWhisp.library.empty")}
                       </p>
                     ) : (
                       <div className="grid grid-cols-2 gap-2">
@@ -804,7 +885,7 @@ export function SendWhisp() {
                             <p className="text-xs font-medium text-foreground truncate">{item.originalFilename}</p>
                             {item.status !== "ready" && (
                               <span className="absolute top-2 right-2 text-[10px] px-1.5 py-0.5 rounded-full bg-background/90 text-muted-foreground">
-                                No longer available
+                                {t("sendWhisp.library.notAvailable")}
                               </span>
                             )}
                           </button>
@@ -817,15 +898,15 @@ export function SendWhisp() {
                 {videoSource === "concierge" && (
                   <>
                     <h2 className="text-xl font-serif font-semibold flex items-center gap-1.5">
-                      <Sparkles className="w-4 h-4 text-primary" /> Not sure what to send?
+                      <Sparkles className="w-4 h-4 text-primary" /> {t("sendWhisp.concierge.heading")}
                     </h2>
                     <p className="text-sm text-muted-foreground">
-                      Describe the situation and we'll suggest a video from our Suggestions Library and draft an anonymous note to go with it.
+                      {t("sendWhisp.concierge.description")}
                     </p>
                     <div className="relative">
                       <Textarea
                         className="bg-input/50 border-border/50 rounded-xl min-h-[80px] resize-none"
-                        placeholder="e.g. I want to tell my brother I'm proud of him but don't know how"
+                        placeholder={t("sendWhisp.concierge.placeholder")}
                         maxLength={500}
                         value={conciergeSituation}
                         onChange={(e) => setConciergeSituation(e.target.value)}
@@ -844,14 +925,14 @@ export function SendWhisp() {
                       ) : (
                         <Sparkles className="w-4 h-4 mr-1.5" />
                       )}
-                      {conciergeSearched ? "Try again" : "Get suggestions"}
+                      {conciergeSearched ? t("sendWhisp.concierge.tryAgain") : t("sendWhisp.concierge.getSuggestions")}
                     </Button>
 
                     {conciergeSearched && !conciergeMutation.isPending && (
                       <div className="space-y-3 pt-3 border-t border-border/30" data-testid="concierge-results">
                         {conciergeVideoSuggestions.length > 0 ? (
                           <>
-                            <p className="text-sm font-medium text-foreground">A few videos that might fit:</p>
+                            <p className="text-sm font-medium text-foreground">{t("sendWhisp.concierge.resultsHeading")}</p>
                             <div className="grid grid-cols-1 gap-2">
                               {conciergeVideoSuggestions.map((video) => (
                                 <button
@@ -863,7 +944,7 @@ export function SendWhisp() {
                                 >
                                   <div className="w-16 h-12 flex-shrink-0 bg-muted rounded-lg overflow-hidden flex items-center justify-center">
                                     {video.videoThumbnail ? (
-                                      <Thumbnail src={video.videoThumbnail} alt={video.videoTitle ?? "Video thumbnail"} className="w-full h-full object-cover" />
+                                      <Thumbnail src={video.videoThumbnail} alt={video.videoTitle ?? t("sendWhisp.concierge.videoThumbnailAlt")} className="w-full h-full object-cover" />
                                     ) : (
                                       <PlayCircle className="w-5 h-5 text-muted-foreground" />
                                     )}
@@ -873,7 +954,7 @@ export function SendWhisp() {
                                       <PlatformIcon platform={video.videoPlatform} className="w-3 h-3" />
                                       <span className="text-[11px] text-muted-foreground capitalize">{video.videoPlatform}</span>
                                     </div>
-                                    <p className="text-sm font-medium text-foreground truncate">{video.videoTitle || "Untitled video"}</p>
+                                    <p className="text-sm font-medium text-foreground truncate">{video.videoTitle || t("sendWhisp.concierge.untitledVideo")}</p>
                                     {video.aiSummary && <p className="text-xs text-muted-foreground line-clamp-2">{video.aiSummary}</p>}
                                   </div>
                                 </button>
@@ -882,13 +963,13 @@ export function SendWhisp() {
                           </>
                         ) : (
                           <p className="text-sm text-muted-foreground">
-                            No strong match in our library for this one — but here's a note draft below. Pick your own video from another tab and it'll carry over.
+                            {t("sendWhisp.concierge.noMatch")}
                           </p>
                         )}
 
                         {conciergeNoteDraft && (
                           <div className="space-y-1.5">
-                            <p className="text-xs font-medium text-muted-foreground">Drafted note:</p>
+                            <p className="text-xs font-medium text-muted-foreground">{t("sendWhisp.concierge.draftedNote")}</p>
                             <p className="text-sm p-2.5 rounded-xl border border-border/50 bg-card text-foreground" data-testid="concierge-note-draft">
                               {conciergeNoteDraft}
                             </p>
@@ -900,7 +981,7 @@ export function SendWhisp() {
                                 onClick={handleUseConciergeNoteOnly}
                                 data-testid="button-concierge-note-only"
                               >
-                                Use this note, I'll pick a video
+                                {t("sendWhisp.concierge.useNoteOnly")}
                               </Button>
                             )}
                           </div>
@@ -917,12 +998,12 @@ export function SendWhisp() {
               <div className="space-y-4">
                 {isForwarded && (
                   <div className="flex items-center gap-1.5 text-xs text-primary bg-primary/10 rounded-full px-3 py-1.5 w-fit" data-testid="badge-passing-forward">
-                    <Send className="w-3 h-3" /> Passing this one forward
+                    <Send className="w-3 h-3" /> {t("sendWhisp.step2.passingForward")}
                   </div>
                 )}
                 {!isForwarded && conciergeRequestId && (
                   <div className="flex items-center gap-1.5 text-xs text-primary bg-primary/10 rounded-full px-3 py-1.5 w-fit" data-testid="badge-concierge-suggested">
-                    <Sparkles className="w-3 h-3" /> Suggested for your situation
+                    <Sparkles className="w-3 h-3" /> {t("sendWhisp.step2.suggestedForSituation")}
                   </div>
                 )}
                 {/* Video preview */}
@@ -932,9 +1013,9 @@ export function SendWhisp() {
                       <PlatformIcon platform={videoMeta.platform} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground capitalize">{videoMeta.platform} link</p>
+                      <p className="text-sm font-medium text-foreground capitalize">{t("sendWhisp.step2.platformLink", { platform: videoMeta.platform })}</p>
                       <p className="text-xs text-muted-foreground">
-                        We can't generate a preview for {videoMeta.platform} links, but you can still send it — just double-check the link works for you.
+                        {t("sendWhisp.step2.noPreviewDescription", { platform: videoMeta.platform })}
                       </p>
                     </div>
                   </div>
@@ -952,27 +1033,27 @@ export function SendWhisp() {
                         <PlatformIcon platform={videoMeta.platform} />
                         <span className="text-xs text-muted-foreground capitalize">{videoMeta.platform}</span>
                       </div>
-                      <p className="text-sm font-medium text-foreground truncate">{videoMeta.title || "Video"}</p>
+                      <p className="text-sm font-medium text-foreground truncate">{videoMeta.title || t("sendWhisp.step2.videoFallback")}</p>
                     </div>
                   </div>
                 )}
 
                 <div className="space-y-1.5">
                   <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-muted-foreground" /> Trim the clip (optional)
+                    <Clock className="w-3.5 h-3.5 text-muted-foreground" /> {t("sendWhisp.step2.trimHeading")}
                   </p>
                   <div className="flex items-center gap-2">
                     <Input
                       className="bg-input/50 border-border/50 rounded-xl w-28"
-                      placeholder="Start mm:ss"
+                      placeholder={t("sendWhisp.step2.startPlaceholder")}
                       value={startTimestamp}
                       onChange={(e) => setStartTimestamp(e.target.value)}
                       data-testid="input-start-timestamp"
                     />
-                    <span className="text-muted-foreground text-sm">to</span>
+                    <span className="text-muted-foreground text-sm">{t("sendWhisp.step2.to")}</span>
                     <Input
                       className="bg-input/50 border-border/50 rounded-xl w-28"
-                      placeholder="End mm:ss"
+                      placeholder={t("sendWhisp.step2.endPlaceholder")}
                       value={endTimestamp}
                       onChange={(e) => setEndTimestamp(e.target.value)}
                       data-testid="input-end-timestamp"
@@ -982,13 +1063,13 @@ export function SendWhisp() {
                     <p className="text-xs text-destructive">{trimError}</p>
                   ) : (
                     <p className="text-xs text-muted-foreground">
-                      Jump straight to the good part, e.g. 1:24, and stop there instead of implying they watch the whole thing.
+                      {t("sendWhisp.step2.trimHint")}
                     </p>
                   )}
                 </div>
 
-                <h2 className="text-xl font-serif font-semibold">Choose a mood tag</h2>
-                <p className="text-sm text-muted-foreground">Optional — sets the emotional tone for the recipient.</p>
+                <h2 className="text-xl font-serif font-semibold">{t("sendWhisp.step2.moodHeading")}</h2>
+                <p className="text-sm text-muted-foreground">{t("sendWhisp.step2.moodSubtitle")}</p>
                 <div className="grid grid-cols-2 gap-2">
                   {MOOD_TAGS.map((m) => (
                     <button
@@ -1009,10 +1090,10 @@ export function SendWhisp() {
                 </div>
                 <div className="flex justify-between pt-2">
                   <Button variant="ghost" onClick={() => setStep(1)} className="rounded-xl text-muted-foreground">
-                    <ArrowLeft className="w-4 h-4 mr-1" /> Back
+                    <ArrowLeft className="w-4 h-4 mr-1" /> {t("sendWhisp.common.back")}
                   </Button>
                   <Button onClick={() => setStep(3)} disabled={!!trimError} className="rounded-xl" data-testid="button-next-step2">
-                    Next <ArrowRight className="w-4 h-4 ml-1" />
+                    {t("sendWhisp.common.next")} <ArrowRight className="w-4 h-4 ml-1" />
                   </Button>
                 </div>
               </div>
@@ -1021,12 +1102,12 @@ export function SendWhisp() {
             {/* Step 3: Anonymous Note */}
             {step === 3 && (
               <div className="space-y-4">
-                <h2 className="text-xl font-serif font-semibold">Add an anonymous note</h2>
-                <p className="text-sm text-muted-foreground">Optional — max 200 characters. The recipient won't know it's you.</p>
+                <h2 className="text-xl font-serif font-semibold">{t("sendWhisp.step3.heading")}</h2>
+                <p className="text-sm text-muted-foreground">{t("sendWhisp.step3.subtitle")}</p>
                 <div className="relative">
                   <Textarea
                     className="bg-input/50 border-border/50 rounded-xl min-h-[100px] resize-none"
-                    placeholder="Write something kind, honest, or brave..."
+                    placeholder={t("sendWhisp.step3.placeholder")}
                     maxLength={200}
                     value={anonymousNote}
                     onChange={(e) => setAnonymousNote(e.target.value)}
@@ -1048,7 +1129,7 @@ export function SendWhisp() {
                     ) : (
                       <Sparkles className="w-3.5 h-3.5" />
                     )}
-                    {noteSuggestions.length > 0 ? "Suggest more" : "Help me find the words"}
+                    {noteSuggestions.length > 0 ? t("sendWhisp.step3.suggestMore") : t("sendWhisp.step3.helpFindWords")}
                   </button>
 
                   {noteSuggestions.length > 0 && (
@@ -1070,33 +1151,33 @@ export function SendWhisp() {
                         disabled={noteSuggestionsMutation.isPending}
                         className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
                       >
-                        <RefreshCw className="w-3 h-3" /> Regenerate
+                        <RefreshCw className="w-3 h-3" /> {t("sendWhisp.step3.regenerate")}
                       </button>
                     </div>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Sign as:</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t("sendWhisp.step3.signAs")}</p>
                   <div className="grid grid-cols-2 gap-2">
-                    {SENDER_ALIASES.map((alias) => (
+                    {senderAliasOptions.map((alias) => (
                       <button
-                        key={alias}
+                        key={alias.key}
                         type="button"
-                        onClick={() => { setSenderAlias(alias); setCustomAlias(""); }}
-                        data-testid={`alias-${alias.replace(/\s+/g, "-").toLowerCase()}`}
+                        onClick={() => { setSenderAlias(alias.label); setCustomAlias(""); }}
+                        data-testid={`alias-${alias.key}`}
                         className={`p-2 rounded-xl text-xs text-left border transition-all ${
-                          senderAlias === alias && !customAlias
+                          senderAlias === alias.label && !customAlias
                             ? "border-primary bg-primary/10 text-foreground"
                             : "border-border/50 text-muted-foreground hover:border-border"
                         }`}
                       >
-                        {alias}
+                        {alias.label}
                       </button>
                     ))}
                   </div>
                   <Input
-                    placeholder="Or type a custom alias..."
+                    placeholder={t("sendWhisp.step3.customAliasPlaceholder")}
                     className="bg-input/50 border-border/50 rounded-xl text-sm"
                     value={customAlias}
                     onChange={(e) => setCustomAlias(e.target.value)}
@@ -1105,10 +1186,10 @@ export function SendWhisp() {
                 </div>
                 <div className="flex justify-between pt-2">
                   <Button variant="ghost" onClick={() => setStep(2)} className="rounded-xl text-muted-foreground">
-                    <ArrowLeft className="w-4 h-4 mr-1" /> Back
+                    <ArrowLeft className="w-4 h-4 mr-1" /> {t("sendWhisp.common.back")}
                   </Button>
                   <Button onClick={() => setStep(4)} className="rounded-xl" data-testid="button-next-step3">
-                    Next <ArrowRight className="w-4 h-4 ml-1" />
+                    {t("sendWhisp.common.next")} <ArrowRight className="w-4 h-4 ml-1" />
                   </Button>
                 </div>
               </div>
@@ -1117,7 +1198,7 @@ export function SendWhisp() {
             {/* Step 4: Delivery Method */}
             {step === 4 && (
               <div className="space-y-4">
-                <h2 className="text-xl font-serif font-semibold">How should it be delivered?</h2>
+                <h2 className="text-xl font-serif font-semibold">{t("sendWhisp.step4.heading")}</h2>
                 <div className="grid grid-cols-1 gap-3">
                   <button
                     type="button"
@@ -1135,8 +1216,8 @@ export function SendWhisp() {
                       </div>
                       <div>
                         <p className="font-semibold text-foreground">Whisper Link</p>
-                        <p className="text-sm text-muted-foreground mt-0.5">Send straight to them — direct, instant, guaranteed delivery</p>
-                        <p className="text-xs text-primary mt-1 font-medium">Free (3/month)</p>
+                        <p className="text-sm text-muted-foreground mt-0.5">{t("sendWhisp.step4.whisperLink.description")}</p>
+                        <p className="text-xs text-primary mt-1 font-medium">{t("sendWhisp.step4.whisperLink.price")}</p>
                       </div>
                     </div>
                   </button>
@@ -1164,7 +1245,7 @@ export function SendWhisp() {
                             }`}
                           >
                             <Icon className="w-4 h-4" />
-                            {ch.label}
+                            {t(`sendWhisp.channels.${ch.key}`)}
                           </button>
                         );
                       })}
@@ -1186,16 +1267,16 @@ export function SendWhisp() {
                         <UsersRound className="w-5 h-5 text-primary" />
                       </div>
                       <div>
-                        <p className="font-semibold text-foreground">Group Whisper</p>
-                        <p className="text-sm text-muted-foreground mt-0.5">Send the same anonymous whisp to a saved group of your contacts at once</p>
-                        <p className="text-xs text-primary mt-1 font-medium">Uses Whisper Link credits, 1 per member</p>
+                        <p className="font-semibold text-foreground">{t("sendWhisp.step4.groupWhisper.title")}</p>
+                        <p className="text-sm text-muted-foreground mt-0.5">{t("sendWhisp.step4.groupWhisper.description")}</p>
+                        <p className="text-xs text-primary mt-1 font-medium">{t("sendWhisp.step4.groupWhisper.price")}</p>
                       </div>
                     </div>
                   </button>
 
                   {deliveryMethod === "group_whisper" && (
                     <div className="pl-2 pr-1 -mt-1 space-y-2">
-                      <p className="text-xs font-medium text-muted-foreground">Which group?</p>
+                      <p className="text-xs font-medium text-muted-foreground">{t("sendWhisp.step4.groupWhisper.whichGroup")}</p>
                       {(myWhisperGroups ?? []).length === 0 ? (
                         <button
                           type="button"
@@ -1203,7 +1284,7 @@ export function SendWhisp() {
                           data-testid="button-create-whisper-group"
                           className="w-full flex items-center gap-2 p-3 rounded-xl border border-dashed border-border/60 text-sm text-muted-foreground hover:text-foreground hover:border-border transition-all"
                         >
-                          <Plus className="w-4 h-4" /> You don't have any groups yet — create one
+                          <Plus className="w-4 h-4" /> {t("sendWhisp.step4.groupWhisper.noGroupsCreate")}
                         </button>
                       ) : (
                         <div className="grid grid-cols-1 gap-2">
@@ -1220,7 +1301,7 @@ export function SendWhisp() {
                               }`}
                             >
                               <span className="flex items-center gap-2"><UsersRound className="w-4 h-4" /> {g.name}</span>
-                              <span className="text-xs text-muted-foreground">{g.memberCount} member{g.memberCount === 1 ? "" : "s"}</span>
+                              <span className="text-xs text-muted-foreground">{t("shared.memberCount", { count: g.memberCount })}</span>
                             </button>
                           ))}
                         </div>
@@ -1228,83 +1309,34 @@ export function SendWhisp() {
                     </div>
                   )}
 
-                  <button
-                    type="button"
-                    onClick={() => setDeliveryMethod("ghost_boost")}
-                    data-testid="delivery-ghost-boost"
-                    className={`p-4 rounded-xl border text-left transition-all ${
-                      deliveryMethod === "ghost_boost"
-                        ? "border-primary bg-primary/10"
-                        : "border-border/50 hover:border-border"
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={`p-2 rounded-xl ${deliveryMethod === "ghost_boost" ? "bg-primary/20" : "bg-muted/40"}`}>
-                        <Ghost className="w-5 h-5 text-primary" />
+                  {GHOST_BOOST_ENABLED && (
+                    <button
+                      type="button"
+                      onClick={() => setDeliveryMethod("ghost_boost")}
+                      data-testid="delivery-ghost-boost"
+                      className={`p-4 rounded-xl border text-left transition-all ${
+                        deliveryMethod === "ghost_boost"
+                          ? "border-primary bg-primary/10"
+                          : "border-border/50 hover:border-border"
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`p-2 rounded-xl ${deliveryMethod === "ghost_boost" ? "bg-primary/20" : "bg-muted/40"}`}>
+                          <Ghost className="w-5 h-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-foreground">Ghost Boost</p>
+                          <p className="text-sm text-muted-foreground mt-0.5">{t("sendWhisp.step4.ghostBoost.description")}</p>
+                          <p className="text-xs text-secondary mt-1 font-medium">{t("sendWhisp.step4.ghostBoost.price")}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-semibold text-foreground">Ghost Boost</p>
-                        <p className="text-sm text-muted-foreground mt-0.5">Matched to strangers who opted in to hear about topics like this one — anonymous both ways. Reach isn't guaranteed; it depends on how many people are subscribed right now.</p>
-                        <p className="text-xs text-secondary mt-1 font-medium">1 Credit ($6.99)</p>
-                      </div>
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDeliveryMethod("circle_drop")}
-                    data-testid="delivery-circle-drop"
-                    className={`p-4 rounded-xl border text-left transition-all ${
-                      deliveryMethod === "circle_drop"
-                        ? "border-primary bg-primary/10"
-                        : "border-border/50 hover:border-border"
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={`p-2 rounded-xl ${deliveryMethod === "circle_drop" ? "bg-primary/20" : "bg-muted/40"}`}>
-                        <Users className="w-5 h-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-foreground">Circle Drop</p>
-                        <p className="text-sm text-muted-foreground mt-0.5">Post it to the community feed — no specific recipient, organic discovery</p>
-                        <p className="text-xs text-primary mt-1 font-medium">Free</p>
-                      </div>
-                    </div>
-                  </button>
-
-                  {deliveryMethod === "circle_drop" && (
-                    <div className="pl-2 pr-1 -mt-1 space-y-2">
-                      <p className="text-xs font-medium text-muted-foreground">Which circle?</p>
-                      <div className="grid grid-cols-1 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setCircleId(null)}
-                          data-testid="circle-option-public"
-                          className={`flex items-center gap-2 p-2.5 rounded-xl border text-sm font-medium transition-all ${
-                            circleId === null
-                              ? "border-primary bg-primary/10 text-foreground"
-                              : "border-border/50 text-muted-foreground hover:border-border"
-                          }`}
-                        >
-                          <Globe className="w-4 h-4" /> Public Circle feed
-                        </button>
-                        {(myCircles ?? []).map((c) => (
-                          <button
-                            key={c.id}
-                            type="button"
-                            onClick={() => setCircleId(c.id)}
-                            data-testid={`circle-option-${c.id}`}
-                            className={`flex items-center gap-2 p-2.5 rounded-xl border text-sm font-medium transition-all ${
-                              circleId === c.id
-                                ? "border-primary bg-primary/10 text-foreground"
-                                : "border-border/50 text-muted-foreground hover:border-border"
-                            }`}
-                          >
-                            <Users className="w-4 h-4" /> {c.name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+                    </button>
                   )}
+                  {/* Blind Circle used to be a fourth option here. Posting to a
+                      community feed has no recipient at all, so asking people to
+                      start a choose-a-recipient wizard in order to do it was
+                      backwards — it now lives on the Blind Circle page itself,
+                      which is also where the feed it posts to is. */}
                 </div>
 
                 {deliveryMethod !== "ghost_boost" && (
@@ -1319,8 +1351,8 @@ export function SendWhisp() {
                     >
                       <CalendarClock className="w-5 h-5 text-primary" />
                       <div className="flex-1">
-                        <p className="font-medium text-foreground text-sm">Schedule for later</p>
-                        <p className="text-xs text-muted-foreground">Send now, or pick a future date and time</p>
+                        <p className="font-medium text-foreground text-sm">{t("sendWhisp.step4.scheduleTitle")}</p>
+                        <p className="text-xs text-muted-foreground">{t("sendWhisp.step4.scheduleDescription")}</p>
                       </div>
                       <div className={`w-9 h-5 rounded-full transition-colors relative ${scheduleEnabled ? "bg-primary" : "bg-muted"}`}>
                         <div
@@ -1344,7 +1376,7 @@ export function SendWhisp() {
 
                 <div className="flex justify-between pt-2">
                   <Button variant="ghost" onClick={() => setStep(3)} className="rounded-xl text-muted-foreground">
-                    <ArrowLeft className="w-4 h-4 mr-1" /> Back
+                    <ArrowLeft className="w-4 h-4 mr-1" /> {t("sendWhisp.common.back")}
                   </Button>
                   <Button
                     onClick={() => setStep(deliveryMethod === "whisper_link" ? 5 : 6)}
@@ -1355,7 +1387,7 @@ export function SendWhisp() {
                     className="rounded-xl"
                     data-testid="button-next-step4"
                   >
-                    {deliveryMethod === "whisper_link" ? "Next" : "Review"} <ArrowRight className="w-4 h-4 ml-1" />
+                    {deliveryMethod === "whisper_link" ? t("sendWhisp.common.next") : t("sendWhisp.common.review")} <ArrowRight className="w-4 h-4 ml-1" />
                   </Button>
                 </div>
               </div>
@@ -1364,19 +1396,56 @@ export function SendWhisp() {
             {/* Step 5: Recipient Info (only Whisper Link has a specific recipient) */}
             {step === 5 && deliveryMethod === "whisper_link" && (
               <div className="space-y-4">
-                <h2 className="text-xl font-serif font-semibold">Who should receive it?</h2>
+                <h2 className="text-xl font-serif font-semibold">{t("sendWhisp.step5.heading")}</h2>
                 <p className="text-sm text-muted-foreground">
-                  Enter an email address or a phone number (in international format, e.g. +1 555 123 4567).
-                  Separate multiple people with commas — we'll work out how to reach each of them.
+                  {t("sendWhisp.step5.description")}
                 </p>
                 <div className="space-y-3">
                   <Textarea
+                    ref={recipientsRef}
                     className="bg-input/50 border-border/50 rounded-xl resize-none min-h-[80px]"
-                    placeholder="sam@example.com, +1 555 123 4567"
+                    placeholder={t("sendWhisp.step5.placeholder")}
                     value={recipientsInput}
-                    onChange={(e) => setRecipientsInput(e.target.value)}
+                    onChange={(e) => {
+                      setRecipientsInput(e.target.value);
+                      setRecipientCaret(e.target.selectionStart ?? e.target.value.length);
+                    }}
+                    // Clicking or arrowing into a different entry has to move
+                    // the suggestions with it, not just typing.
+                    onSelect={(e) => setRecipientCaret(e.currentTarget.selectionStart ?? 0)}
                     data-testid="input-recipients"
                   />
+
+                  {/* Contacts they've sent to before. Shown as soon as the
+                      field is focused-and-empty as well as while typing —
+                      "who did I send that to last time" is exactly the thing
+                      people can't remember, and a list they have to start
+                      spelling correctly to see is no help. */}
+                  {recipientSuggestions.length > 0 && (
+                    <div className="space-y-1.5" data-testid="recipient-suggestions">
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                        {recipientToken.token ? t("sendWhisp.step5.matchingContacts") : t("sendWhisp.step5.recentlySentTo")}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {recipientSuggestions.map((c) => (
+                          <button
+                            key={`${c.kind}:${c.value}`}
+                            type="button"
+                            onClick={() => applyRecipientSuggestion(c.value)}
+                            data-testid={`suggestion-recipient-${c.value}`}
+                            className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-card px-2.5 py-1 text-xs text-foreground transition-colors hover:border-primary/50 hover:bg-primary/10"
+                          >
+                            {c.kind === "email" ? (
+                              <Mail className="w-3 h-3 text-muted-foreground" />
+                            ) : (
+                              <Phone className="w-3 h-3 text-muted-foreground" />
+                            )}
+                            {c.value}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Live read-back of how each entry was understood. Without
                       it, auto-detection is invisible — a typo'd address just
@@ -1397,8 +1466,27 @@ export function SendWhisp() {
 
                   {parsedRecipients.invalid.length > 0 && (
                     <p className="text-xs text-destructive" data-testid="text-invalid-recipients">
-                      Not a valid email or phone number: {parsedRecipients.invalid.join(", ")}
+                      {t("sendWhisp.step5.invalidRecipients", { list: parsedRecipients.invalid.join(", ") })}
                     </p>
+                  )}
+
+                  {/* Says plainly what more than one recipient causes, before
+                      they commit to it — a group appearing in their account
+                      unannounced, or each person quietly costing a separate
+                      Whisper Link, would both be surprises. */}
+                  {parsedRecipients.recipients.length > 1 && (
+                    <div
+                      className="flex items-start gap-2 rounded-xl border border-gilded/25 bg-gilded/[0.07] px-3 py-2.5"
+                      data-testid="notice-becomes-group"
+                    >
+                      <UsersRound className="w-4 h-4 text-gilded shrink-0 mt-0.5" />
+                      <p className="text-xs text-muted-foreground">
+                        <span className="text-foreground font-medium">
+                          {t("sendWhisp.step5.groupNoticeBold", { count: parsedRecipients.recipients.length })}
+                        </span>{" "}
+                        {t("sendWhisp.step5.groupNoticeRest")}
+                      </p>
+                    </div>
                   )}
 
                   {/* Only meaningful once a phone number is actually in the
@@ -1413,15 +1501,28 @@ export function SendWhisp() {
                         className="rounded border-border/50"
                         data-testid="checkbox-prefer-whatsapp"
                       />
-                      Send to phone numbers on WhatsApp instead of SMS
+                      {t("sendWhisp.step5.preferWhatsApp")}
                     </label>
+                  )}
+
+                  {/* A2P 10DLC-required disclosure, shown at the exact point
+                      a phone number is collected for SMS delivery — not just
+                      buried in the Terms. Only for the SMS path; WhatsApp
+                      delivery isn't carrier-regulated the same way. */}
+                  {hasPhoneRecipient && !preferWhatsApp && (
+                    <p className="text-xs text-muted-foreground" data-testid="text-sms-consent-disclosure">
+                      {t("sendWhisp.step5.smsDisclosure")}{" "}
+                      <a href="/sms-terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                        {t("sendWhisp.step5.smsTermsLinkText")}
+                      </a>.
+                    </p>
                   )}
 
                   {isContactPickerSupported() && (
                     <>
                       <div className="flex items-center gap-2">
                         <div className="flex-1 h-px bg-border/40" />
-                        <span className="text-xs text-muted-foreground">or</span>
+                        <span className="text-xs text-muted-foreground">{t("sendWhisp.step5.or")}</span>
                         <div className="flex-1 h-px bg-border/40" />
                       </div>
                       <Button
@@ -1431,14 +1532,14 @@ export function SendWhisp() {
                         onClick={handlePickContact}
                         data-testid="button-pick-contact"
                       >
-                        <Contact className="w-4 h-4 mr-2" /> Choose from Contacts
+                        <Contact className="w-4 h-4 mr-2" /> {t("sendWhisp.step5.chooseFromContacts")}
                       </Button>
                     </>
                   )}
                 </div>
                 <div className="flex justify-between pt-2">
                   <Button variant="ghost" onClick={() => setStep(4)} className="rounded-xl text-muted-foreground">
-                    <ArrowLeft className="w-4 h-4 mr-1" /> Back
+                    <ArrowLeft className="w-4 h-4 mr-1" /> {t("sendWhisp.common.back")}
                   </Button>
                   <Button
                     onClick={() => setStep(6)}
@@ -1446,7 +1547,7 @@ export function SendWhisp() {
                     className="rounded-xl"
                     data-testid="button-next-step5"
                   >
-                    Review <ArrowRight className="w-4 h-4 ml-1" />
+                    {t("sendWhisp.common.review")} <ArrowRight className="w-4 h-4 ml-1" />
                   </Button>
                 </div>
               </div>
@@ -1455,7 +1556,13 @@ export function SendWhisp() {
             {/* Step 6: Confirm + Send */}
             {step === 6 && (
               <div className="space-y-4">
-                <h2 className="text-xl font-serif font-semibold">Ready to send?</h2>
+                {/* The mark sits opposite the heading on the final step —
+                    the last screen before something goes out anonymously is
+                    the one worth signing. */}
+                <div className="flex items-start justify-between gap-3">
+                  <h2 className="text-xl font-serif font-semibold">{t("sendWhisp.step6.heading")}</h2>
+                  <Logo className="h-8 w-auto shrink-0 text-primary" aria-hidden />
+                </div>
                 <div className="space-y-2 text-sm">
                   {videoMeta?.noPreview ? (
                     <div className="flex gap-3 p-3 bg-muted/30 rounded-xl items-center" data-testid="review-video-preview-card">
@@ -1463,7 +1570,7 @@ export function SendWhisp() {
                         <PlatformIcon platform={videoMeta.platform} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground capitalize">{videoMeta.platform} link</p>
+                        <p className="text-sm font-medium text-foreground capitalize">{t("sendWhisp.step2.platformLink", { platform: videoMeta.platform })}</p>
                         <p className="text-xs text-muted-foreground truncate">{videoUrl}</p>
                       </div>
                     </div>
@@ -1488,67 +1595,65 @@ export function SendWhisp() {
                   <div className="p-3 bg-muted/30 rounded-xl space-y-2">
                     {moodTag && (
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Mood</span>
+                        <span className="text-muted-foreground">{t("sendWhisp.step6.mood")}</span>
                         <MoodTag mood={moodTag} />
                       </div>
                     )}
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Signed as</span>
+                      <span className="text-muted-foreground">{t("sendWhisp.step6.signedAs")}</span>
                       <span className="text-foreground">{customAlias || senderAlias}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Delivery</span>
+                      <span className="text-muted-foreground">{t("sendWhisp.step6.delivery")}</span>
                       <span className="text-foreground capitalize">
                         {deliveryMethod === "group_whisper"
-                          ? `Group Whisper (${WHISPER_CHANNELS.find((c) => c.key === whisperChannel)?.label})`
+                          ? t("sendWhisp.step6.groupWhisperChannel", { channel: t(`sendWhisp.channels.${whisperChannel}`) })
                           : deliveryMethod === "whisper_link"
                           ? `Whisper Link${hasPhoneRecipient && preferWhatsApp ? " (WhatsApp)" : ""}`
                           : deliveryMethod.replace("_", " ")}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">To</span>
+                      <span className="text-muted-foreground">{t("sendWhisp.step6.to")}</span>
                       <span className="text-foreground">
-                        {deliveryMethod === "circle_drop"
-                          ? circleId
-                            ? myCircles?.find((c) => c.id === circleId)?.name ?? "Private circle"
-                            : "Anyone in the Circle feed"
-                          : deliveryMethod === "ghost_boost"
-                          ? "Matched subscribers interested in this topic"
+                        {deliveryMethod === "ghost_boost"
+                          ? t("sendWhisp.step6.matchedSubscribers")
                           : deliveryMethod === "group_whisper"
                           ? (() => {
                               const g = myWhisperGroups?.find((g) => g.id === whisperGroupId);
-                              return g ? `${g.name} (${g.memberCount} member${g.memberCount === 1 ? "" : "s"})` : "Group";
+                              return g
+                                ? t("sendWhisp.step6.groupSummary", { name: g.name, members: t("shared.memberCount", { count: g.memberCount }) })
+                                : t("sendWhisp.step6.groupFallback");
                             })()
                           : parsedRecipients.recipients.map((r) => r.raw).join(", ")}
                       </span>
                     </div>
                     {startTimestamp && parsedStartSeconds !== null && (
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Starts at</span>
+                        <span className="text-muted-foreground">{t("sendWhisp.step6.startsAt")}</span>
                         <span className="text-foreground">{startTimestamp}</span>
                       </div>
                     )}
                     {endTimestamp && parsedEndSeconds !== null && !trimError && (
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Ends at</span>
+                        <span className="text-muted-foreground">{t("sendWhisp.step6.endsAt")}</span>
                         <span className="text-foreground">{endTimestamp}</span>
                       </div>
                     )}
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">When</span>
+                      <span className="text-muted-foreground">{t("sendWhisp.step6.when")}</span>
                       <span className="text-foreground">
                         {scheduleEnabled && deliveryMethod !== "ghost_boost" && scheduledAtValue
                           ? new Date(scheduledAtValue).toLocaleString(undefined, {
                               dateStyle: "medium",
                               timeStyle: "short",
                             })
-                          : "Right now"}
+                          : t("sendWhisp.step6.rightNow")}
                       </span>
                     </div>
                     {anonymousNote && (
                       <div className="border-t border-border/50 pt-2">
-                        <span className="text-muted-foreground block mb-1">Your note</span>
+                        <span className="text-muted-foreground block mb-1">{t("sendWhisp.step6.yourNote")}</span>
                         <span className="text-foreground italic">"{anonymousNote}"</span>
                       </div>
                     )}
@@ -1560,10 +1665,10 @@ export function SendWhisp() {
                     onClick={() => setStep(deliveryMethod === "whisper_link" ? 5 : 4)}
                     className="rounded-xl text-muted-foreground"
                   >
-                    <ArrowLeft className="w-4 h-4 mr-1" /> Back
+                    <ArrowLeft className="w-4 h-4 mr-1" /> {t("sendWhisp.common.back")}
                   </Button>
                   <Button
-                    onClick={handleSend}
+                    onClick={() => handleSend()}
                     disabled={createWhisp.isPending || sendGroupWhisp.isPending || sendingBatch}
                     className="rounded-full shadow-[0_0_15px_rgba(124,92,252,0.3)] px-6"
                     data-testid="button-send-whisp"
@@ -1573,7 +1678,7 @@ export function SendWhisp() {
                     ) : (
                       <Send className="w-4 h-4 mr-2" />
                     )}
-                    Send Whisp
+                    {t("sendWhisp.step6.sendButton")}
                   </Button>
                 </div>
               </div>
@@ -1585,7 +1690,7 @@ export function SendWhisp() {
         open={showDemographicsGate}
         onConfirmed={() => {
           setShowDemographicsGate(false);
-          void handleSend();
+          void handleSend({ skipDemographicsCheck: true });
         }}
       />
     </AppLayout>

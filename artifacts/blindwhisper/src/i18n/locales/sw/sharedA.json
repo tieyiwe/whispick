@@ -1,0 +1,114 @@
+{
+  "archivedWhispGate": {
+    "title": "Whisp hii imehifadhiwa",
+    "description": "Imewekwa kwenye Hifadhi yako. Irudishe ili kuiona au kuijibu tena.",
+    "descriptionWithTitle": "\"{{title}}\" imewekwa kwenye Hifadhi yako. Irudishe ili kuiona au kuijibu tena.",
+    "back": "Rudi",
+    "unarchive": "Toa kwenye hifadhi ili uione"
+  },
+  "avatarPickerGrid": {
+    "chooseAvatar": "Chagua avatar",
+    "noAvatar": "Bila avatar"
+  },
+  "cameraCapture": {
+    "modePhoto": "Picha",
+    "modeVideo": "Video",
+    "photoPrepareUnsupported": "Kivinjari hiki hakiwezi kuandaa picha kwa ajili ya kutuma — jaribu Video badala yake.",
+    "photoPrepareFailed": "Imeshindwa kuandaa picha hiyo kwa ajili ya kutuma. Tafadhali ipige tena.",
+    "captureFailed": "Imeshindwa kunasa picha kutoka kwa kamera.",
+    "photoClipUnsupported": "Picha haziwezi kuandaliwa kwa ajili ya kutuma kwenye kivinjari hiki — jaribu Video badala yake, au Piga Tena.",
+    "recordUnsupported": "Kivinjari hiki hakiwezi kurekodi video — jaribu Picha au Pakia badala yake.",
+    "recordStartFailed": "Imeshindwa kuanza kurekodi. Tafadhali jaribu tena.",
+    "unsupportedFallback": "Tumia Pakia au Bandika kiungo badala yake.",
+    "deniedFallback": "Pakia na Bandika kiungo bado vinapatikana kama hii haifanyi kazi.",
+    "idlePromptPhoto": "Piga picha kwa kamera yako",
+    "idlePromptVideo": "Rekodi video fupi kwa kamera yako",
+    "tryAgain": "Jaribu tena",
+    "enableCamera": "Washa kamera",
+    "requestingAccess": "Inaomba ruhusa ya kamera…",
+    "flipCamera": "Geuza kamera",
+    "takePhoto": "Piga Picha",
+    "stop": "Simamisha",
+    "startRecording": "Anza Kurekodi",
+    "capturedPhotoAlt": "Picha iliyonaswa",
+    "preparingPhoto": "Inaandaa picha yako…",
+    "retake": "Piga Tena",
+    "useThisPhoto": "Tumia picha hii",
+    "useThisVideo": "Tumia video hii",
+    "uploading": "Inapakia…"
+  },
+  "circleCommentRow": {
+    "poster": "Mchapishaji",
+    "you": "(wewe)",
+    "reply": "Jibu",
+    "attachedImageAlt": "Imeambatanishwa kwenye maoni"
+  },
+  "circlePostComposer": {
+    "trigger": "Chapisha kwenye Blind Circle",
+    "dialogTitle": "Chapisha kwenye Blind Circle",
+    "uploadFailedGeneric": "Kupakia kumeshindwa — video lazima ziwe chini ya sekunde {{seconds}}",
+    "postedSuccess": "Imechapishwa kwenye Blind Circle",
+    "postFailedGeneric": "Imeshindwa kuchapisha kwenye Blind Circle",
+    "pasteLink": "Bandika kiungo",
+    "uploadVideo": "Pakia video",
+    "fetch": "Leta",
+    "videoLinkPlaceholder": "Bandika kiungo cha video...",
+    "removeVideo": "Ondoa video",
+    "titleLabel": "Kichwa",
+    "titlePlaceholder": "Ni nini? Ipe kichwa",
+    "chooseVideo": "Chagua video",
+    "uploadingEllipsis": "Inapakia...",
+    "uploadHint": "Hadi sekunde {{seconds}}. MP4, WebM au MOV.",
+    "notePlaceholderWithTitle": "Maelezo mafupi (si lazima)",
+    "notePlaceholderNoTitle": "Sema kitu kuihusu (si lazima)",
+    "moodLabel": "Hali ya moyo (si lazima)",
+    "aliasPlaceholder": "Isaini kama... (si lazima)",
+    "destinationLabel": "Iende wapi?",
+    "publicCircle": "Blind Circle ya Umma",
+    "anonymousDisclaimer": "Imechapishwa bila jina — jina lako halionekani kamwe. Yeyote anayeweza kuona duara hili anaweza kuona chapisho hili.",
+    "postAnonymously": "Chapisha bila jina"
+  },
+  "countryPhoneInput": {
+    "searchCountry": "Tafuta nchi...",
+    "noCountryFound": "Hakuna nchi iliyopatikana."
+  },
+  "debateTopicCard": {
+    "shareTitle": "Blind Whisper — Debate Now",
+    "linkCopied": "Kiungo kimenakiliwa — kituma ili kumleta mtu kwenye mjadala",
+    "copyFailed": "Imeshindikana kunakili — tafadhali nakili mwenyewe",
+    "commentCount_one": "Maoni {{count}}",
+    "commentCount_other": "Maoni {{count}}",
+    "shareTopicAria": "Shiriki mada hii",
+    "joinDebate": "Jiunge na mjadala",
+    "onlineAriaLabel": "Sasa yuko mtandaoni"
+  },
+  "demographicsGateDialog": {
+    "title": "Jambo moja dogo tu",
+    "description": "Kabla whisp yako ya kwanza haijatumwa, tusaidie kuelewa nani anatumia Blind Whisper, na chagua lugha ambayo programu itumie. Hakuna kati ya haya yanayoonyeshwa kwa yeyote unayemtumia, na unaweza kuibadilisha baadaye kwenye Mipangilio.",
+    "languageLabel": "Lugha",
+    "genderLabel": "Jinsia",
+    "ageRangeLabel": "Kigezo cha umri",
+    "selectPlaceholder": "Chagua...",
+    "continue": "Endelea",
+    "saveFailed": "Imeshindikana kuhifadhi majibu yako. Tafadhali jaribu tena."
+  },
+  "enableNotificationsPrompt": {
+    "title": "Washa arifa",
+    "description": "Pata arifa papo hapo mtu anapokutumia whisp, au kujibu — moja kwa moja kwenye kifaa chako, kama programu nyingine yoyote.",
+    "notNow": "Sivyo sasa",
+    "enabling": "Inawasha...",
+    "enable": "Washa arifa"
+  },
+  "policyUpdate": {
+    "heading": "Tumesasisha sera zetu",
+    "description": "Tafadhali chukua muda kupitia yaliyobadilika na kuthibitisha kuwa unakubali ili kuendelea kutumia Blind Whisper.",
+    "privacyLabel": "Sera ya Faragha",
+    "termsLabel": "Masharti ya Huduma",
+    "readLink": "Soma hati kamili",
+    "agreeButton": "Nimepitia — Nakubali",
+    "laterButton": "Pitia baadaye",
+    "reminderPill": "Sasisho la sera — pitia na ukubali",
+    "toastThanks": "Asante — kukubali kwako kumerekodiwa.",
+    "toastError": "Imeshindwa kurekodi kukubali kwako. Tafadhali jaribu tena."
+  }
+}

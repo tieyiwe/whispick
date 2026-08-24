@@ -22,8 +22,8 @@ artifactId = "artifacts/whispick"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "pnpm --filter @workspace/whispick run dev"
-cwd = "./artifacts/whispick"
+args = "pnpm --filter @workspace/blindwhisper run dev"
+cwd = "./artifacts/blindwhisper"
 waitForPort = 22964
 ensurePreviewReachable = "/"
 router = "path"

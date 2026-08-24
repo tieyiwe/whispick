@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AsYouType } from "libphonenumber-js/min";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -18,14 +19,31 @@ import { cn } from "@/lib/utils";
 // full number as given to them — and are intentionally left as plain inputs.
 export function CountryPhoneInput({
   onChange,
+  onCountryChange,
   disabled,
 }: {
   onChange: (e164: string) => void;
+  // Fired with the selected ISO 3166-1 alpha-2 code, both on mount (the
+  // auto-detected default — most people never touch the picker, so a
+  // caller that only listens for explicit selection would never hear
+  // anything for them) and on every explicit change. Optional: the picker
+  // is useful purely for its formatting behavior even when nobody needs to
+  // know which country was picked.
+  onCountryChange?: (iso2: string) => void;
   disabled?: boolean;
 }) {
+  const { t } = useTranslation("sharedA");
   const [country, setCountry] = useState(() => detectDefaultCountry());
   const [nationalNumber, setNationalNumber] = useState("");
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    onCountryChange?.(country);
+    // Deliberately fires again only when `country` itself changes, not on
+    // every render — onCountryChange is passed inline by most callers and
+    // isn't a stable reference to depend on.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [country]);
 
   const selected = useMemo(() => COUNTRIES.find((c) => c.iso2 === country) ?? COUNTRIES[0], [country]);
 
@@ -72,9 +90,9 @@ export function CountryPhoneInput({
         </PopoverTrigger>
         <PopoverContent className="w-72 p-0" align="start">
           <Command>
-            <CommandInput placeholder="Search country..." data-testid="input-country-search" />
+            <CommandInput placeholder={t("countryPhoneInput.searchCountry")} data-testid="input-country-search" />
             <CommandList>
-              <CommandEmpty>No country found.</CommandEmpty>
+              <CommandEmpty>{t("countryPhoneInput.noCountryFound")}</CommandEmpty>
               <CommandGroup>
                 {COUNTRIES.map((c) => (
                   <CommandItem

@@ -1,0 +1,570 @@
+{
+  "shared": {
+    "back": "Rudi",
+    "cancel": "Ghairi",
+    "delete": "Futa",
+    "save": "Hifadhi",
+    "memberCount_one": "Mwanachama {{count}}",
+    "memberCount_other": "Wanachama {{count}}",
+    "blindCircleFeed": "mtiririko wa Blind Circle",
+    "ghostBoostAudience": "hadhira ya Ghost Boost",
+    "whispToSomeoneElse": "Whisp kwa mtu mwingine",
+    "couldntUpdateThat": "Imeshindwa kusasisha hilo",
+    "movedBackToList": "Imerudishwa kwenye orodha yako",
+    "whispDeleted": "Whisp imefutwa"
+  },
+  "dashboard": {
+    "title": "Dashibodi",
+    "subtitle": "Hivi ndivyo whisps zako zinavyofanya.",
+    "sendNewWhisp": "Tuma Whisp Mpya",
+    "stats": {
+      "sentWhisps": "Whisps Zilizotumwa",
+      "openRate": "Kiwango cha Kufunguliwa",
+      "videosWatched": "Video Zilizotazamwa",
+      "repliesReceived": "Majibu Yaliyopokelewa",
+      "whispsThatHelped": "Whisps Zilizosaidia"
+    },
+    "recentWhisps": "Whisps za Hivi Karibuni",
+    "viewAll": "Ona zote",
+    "videoAlt": "Video",
+    "videoLinkFallback": "Kiungo cha Video",
+    "sentTo": "Imetumwa kwa {{destination}}",
+    "emptyState": {
+      "title": "Bado hujatuma whisp yoyote",
+      "description": "Anza kushiriki video zenye maana na watu unaowajali.",
+      "cta": "Unda Whisp Yako ya Kwanza"
+    },
+    "ghostBoosts": {
+      "title": "Ghost Boosts",
+      "creditsAvailable": "Mikopo ya Boost Inayopatikana",
+      "description": "Ghost Boost huweka whisp kwenye foleni kwa ajili ya usambazaji mpana zaidi badala ya ujumbe wa moja kwa moja — haihakikishii kufikia mtu mmoja maalum kama Whisper Link inavyofanya.",
+      "getMoreCredits": "Pata Mikopo Zaidi"
+    },
+    "suggestions": {
+      "title": "Maktaba ya Mapendekezo",
+      "videoWorthSharing": "Video inayofaa kushirikiwa",
+      "browseLibrary": "Vinjari maktaba",
+      "whisperThis": "Whisper hii",
+      "description": "Vinjari maktaba iliyoteuliwa ya video na um-whisper mmoja kwa mtu katika mzunguko wako anayeweza kuihitaji.",
+      "browse": "Vinjari Mapendekezo"
+    },
+    "recap": {
+      "title": "Recap Yako",
+      "heading": "Angalia Recap Yako",
+      "description": "Muhtasari wa shughuli zako za Blind Whisper unaoweza kushirikiwa — zilizotumwa, zilizopokelewa, na zote zilizobaki.",
+      "cta": "Angalia Recap Yangu"
+    }
+  },
+  "sendWhisp": {
+    "channels": {
+      "email": "Barua pepe",
+      "sms": "Ujumbe",
+      "whatsapp": "WhatsApp"
+    },
+    "senderAliases": {
+      "someoneWhoCares": "Mtu anayekujali",
+      "aFriend": "Rafiki",
+      "someoneWhoLovesYou": "Mtu anayekupenda",
+      "anAdmirer": "Mpenzi wa siri"
+    },
+    "maxDurationMinutes_one": "dakika {{count}}",
+    "maxDurationMinutes_other": "dakika {{count}}",
+    "maxDurationSeconds_one": "sekunde {{count}}",
+    "maxDurationSeconds_other": "sekunde {{count}}",
+    "header": {
+      "title": "Tuma Whisp",
+      "subtitle": "Shiriki video bila kujulikana na mtu unayemjali."
+    },
+    "stepIndicator": "Hatua {{step}} kati ya {{total}}",
+    "steps": {
+      "video": "Video",
+      "mood": "Hisia",
+      "note": "Ujumbe",
+      "delivery": "Uwasilishaji",
+      "recipient": "Mpokeaji",
+      "send": "Tuma"
+    },
+    "tabs": {
+      "concierge": "Huna uhakika? Eleza tu",
+      "url": "Bandika kiungo",
+      "upload": "Pakia",
+      "camera": "Kamera",
+      "library": "Maktaba yangu"
+    },
+    "url": {
+      "heading": "Bandika kiungo cha video",
+      "description": "YouTube, TikTok, Instagram, Facebook, Vimeo — kiungo chochote cha video cha umma.",
+      "placeholder": "https://youtube.com/watch?v=..."
+    },
+    "upload": {
+      "heading": "Pakia video",
+      "description": "Chini ya {{duration}}, MP4/WebM/MOV. Iweke fupi ili ipakie haraka kwa mpokeaji.",
+      "processing": "Inachakata video yako…",
+      "tapToChoose": "Gusa kuchagua video kutoka kwenye kifaa chako",
+      "genericError": "Kupakia kumeshindikana. Tafadhali jaribu tena."
+    },
+    "camera": {
+      "heading": "Tumia kamera yako",
+      "description": "Piga picha au rekodi video (chini ya {{duration}}) hapa hapa — bila kuhitaji kutoka kwenye programu."
+    },
+    "library": {
+      "heading": "Maktaba Yako ya Media",
+      "description": "Tumia tena klipu uliyokwisha kuipakia.",
+      "empty": "Bado hakuna kitu hapa — pakia video ili kuongeza moja.",
+      "notAvailable": "Haipatikani tena"
+    },
+    "concierge": {
+      "heading": "Huna uhakika utume nini?",
+      "description": "Eleza hali hiyo nasi tutakupendekezea video kutoka Maktaba yetu ya Mapendekezo na kuandaa ujumbe wa siri wa kuiambatanisha nayo.",
+      "placeholder": "mfano, nataka kumwambia kaka yangu ninajivunia lakini sijui jinsi",
+      "tryAgain": "Jaribu tena",
+      "getSuggestions": "Pata mapendekezo",
+      "resultsHeading": "Video chache zinazoweza kufaa:",
+      "videoThumbnailAlt": "Picha ndogo ya video",
+      "untitledVideo": "Video isiyo na kichwa",
+      "noMatch": "Hakuna inayolingana vizuri kwenye maktaba yetu kwa hili — lakini kuna rasimu ya ujumbe hapa chini. Chagua video yako mwenyewe kwenye kichupo kingine nayo itaendelea kutumika.",
+      "draftedNote": "Rasimu ya ujumbe:",
+      "useNoteOnly": "Tumia ujumbe huu, nitachagua video mwenyewe"
+    },
+    "step2": {
+      "passingForward": "Inasambaza hii mbele",
+      "suggestedForSituation": "Imependekezwa kwa hali yako",
+      "platformLink": "Kiungo cha {{platform}}",
+      "noPreviewDescription": "Hatuwezi kutengeneza onyesho la awali kwa viungo vya {{platform}}, lakini bado unaweza kuvituma — hakikisha tu kiungo kinafanya kazi kwako.",
+      "videoFallback": "Video",
+      "trimHeading": "Kata klipu (si lazima)",
+      "startPlaceholder": "Mwanzo mm:ss",
+      "to": "hadi",
+      "endPlaceholder": "Mwisho mm:ss",
+      "trimHint": "Ruka moja kwa moja hadi sehemu nzuri, mfano 1:24, na simama pale badala ya kupendekeza waitazame yote.",
+      "moodHeading": "Chagua alama ya hisia",
+      "moodSubtitle": "Si lazima — huweka mkondo wa hisia kwa mpokeaji."
+    },
+    "step3": {
+      "heading": "Ongeza ujumbe wa siri",
+      "subtitle": "Si lazima — herufi 200 zaidi zaidi. Mpokeaji hatajua ni wewe.",
+      "placeholder": "Andika kitu chenye upendo, ukweli, au ujasiri...",
+      "suggestMore": "Pendekeza zaidi",
+      "helpFindWords": "Nisaidie kupata maneno",
+      "regenerate": "Tengeneza upya",
+      "signAs": "Sahihi kama:",
+      "customAliasPlaceholder": "Au andika jina lako maalum..."
+    },
+    "step4": {
+      "heading": "Iwasilishwe vipi?",
+      "whisperLink": {
+        "description": "Tuma moja kwa moja kwao — moja kwa moja, papo hapo, uwasilishaji uliohakikishwa",
+        "price": "Bure (3/mwezi)"
+      },
+      "groupWhisper": {
+        "title": "Whisper ya Kikundi",
+        "description": "Tuma whisp ile ile ya siri kwa kikundi kilichohifadhiwa cha anwani zako mara moja",
+        "price": "Inatumia mikopo ya Whisper Link, 1 kwa kila mwanachama",
+        "whichGroup": "Kikundi kipi?",
+        "noGroupsCreate": "Huna kikundi bado — unda kimoja"
+      },
+      "ghostBoost": {
+        "description": "Imeoanishwa na wageni waliojiunga kusikia kuhusu mada kama hii — bila kujulikana pande zote mbili. Ufikiaji hauhakikishwi; unategemea watu wangapi wamejiunga kwa sasa.",
+        "price": "Mkopo 1 ($6.99)"
+      },
+      "scheduleTitle": "Panga kwa baadaye",
+      "scheduleDescription": "Tuma sasa, au chagua tarehe na saa ya baadaye"
+    },
+    "step5": {
+      "heading": "Ni nani anayepaswa kuipokea?",
+      "description": "Ingiza barua pepe au namba ya simu (kwa muundo wa kimataifa, mfano +1 555 123 4567). Ongeza mikato ikiwa zaidi ya moja.",
+      "placeholder": "sam@mfano.com, +1 555 123 4567",
+      "matchingContacts": "Anwani zinazolingana",
+      "recentlySentTo": "Zilizotumwa hivi karibuni kwa",
+      "invalidRecipients": "Si barua pepe au namba ya simu sahihi: {{list}}",
+      "groupNoticeBold": "Hii itahifadhiwa kama Whisper Group (watu {{count}})",
+      "groupNoticeRest": "ili uweze kuitumia tena baadaye. Kila mmoja atapata whisp yake binafsi ya siri — hawataonana, na kila mmoja atatumia Whisper Link kutoka mpango wako.",
+      "preferWhatsApp": "Tuma kwa namba za simu kupitia WhatsApp badala ya SMS",
+      "smsDisclosure": "Kwa kutuma kwa namba ya simu, unamtumia ujumbe kwa jina lako mwenyewe. Gharama za ujumbe na data zinaweza kutumika. Jibu STOP kujitoa, HELP kwa msaada. Angalia",
+      "smsTermsLinkText": "Masharti ya SMS",
+      "or": "au",
+      "chooseFromContacts": "Chagua kutoka Anwani"
+    },
+    "step6": {
+      "heading": "Uko tayari kutuma?",
+      "mood": "Hisia",
+      "signedAs": "Imesainiwa kama",
+      "delivery": "Uwasilishaji",
+      "groupWhisperChannel": "Whisper ya Kikundi ({{channel}})",
+      "to": "Kwa",
+      "matchedSubscribers": "Wanaojisajili waliooanishwa wenye kupendezwa na mada hii",
+      "groupSummary": "{{name}} ({{members}})",
+      "groupFallback": "Kikundi",
+      "startsAt": "Inaanza",
+      "endsAt": "Inaisha",
+      "when": "Lini",
+      "rightNow": "Sasa hivi",
+      "yourNote": "Ujumbe wako",
+      "sendButton": "Tuma Whisp"
+    },
+    "sent": {
+      "title_one": "Whisp yako iko njiani",
+      "title_other": "Whisps zako ziko njiani",
+      "description_one": "Imetumwa. Tutakujulisha itakapoonwa.",
+      "description_other": "Imetumwa kwa watu {{count}}. Tutakujulisha kila mmoja atakapoiona.",
+      "trackButton_one": "Fuatilia whisp hii",
+      "trackButton_other": "Fuatilia whisps hizi",
+      "sendAnother": "Tuma nyingine"
+    },
+    "common": {
+      "back": "Rudi",
+      "next": "Endelea",
+      "review": "Kagua"
+    },
+    "validation": {
+      "invalidUrl": "Tafadhali ingiza URL sahihi",
+      "invalidTimeFormat": "Muundo wa muda si sahihi",
+      "endTimeMustBeGreaterThanZero": "Muda wa mwisho lazima uwe zaidi ya 0:00",
+      "endTimeAfterStart": "Muda wa mwisho lazima uwe baada ya muda wa mwanzo"
+    },
+    "toast": {
+      "conciergeNoResults": "Hatujaweza kupata kitu kwa hilo kwa sasa",
+      "noSuggestions": "Imeshindikana kutengeneza mapendekezo kwa sasa",
+      "noContactInfo": "Anwani hiyo haina barua pepe wala namba ya simu",
+      "failedToSendGroup": "Imeshindwa kutuma whisp ya kikundi",
+      "failedToSend": "Imeshindwa kutuma whisp",
+      "failedToSendFallback": "Imeshindwa kutuma",
+      "partialSendTitle": "Imetumwa kwa {{succeeded}}, imeshindwa kufikia {{failed}}",
+      "membersSkipped_one": "Mwanachama {{count}} amerukwa",
+      "membersSkipped_other": "Wanachama {{count}} wamerukwa",
+      "membersSkippedDescription": "Hawakuwa na taarifa za mawasiliano zinazohitajika na kituo hiki."
+    }
+  },
+  "whispDetail": {
+    "notFound": "Whisp haikupatikana.",
+    "backToWhisps": "Rudi kwenye whisps",
+    "deleteDialog": {
+      "title": "Futa whisp hii?",
+      "descriptionWithReplies_one": "Whisp hii ina jibu moja kutoka kwa mpokeaji. Kuifuta kunaiondoa — pamoja na jibu hilo — kutoka kwa whisps zako. Hili haliwezi kutenduliwa upande wako.",
+      "descriptionWithReplies_other": "Whisp hii ina majibu {{count}} kutoka kwa mpokeaji. Kuifuta kunaiondoa — pamoja na mazungumzo hayo — kutoka kwa whisps zako. Hili haliwezi kutenduliwa upande wako.",
+      "descriptionNoReplies": "Hii inaondoa whisp kutoka kwa whisps zako. Hili haliwezi kutenduliwa upande wako."
+    },
+    "videoFallback": "Video",
+    "matchedToSubscribers_one": "Imeoanishwa na mtu {{count}} aliyejisajili",
+    "matchedToSubscribers_other": "Imeoanishwa na watu {{count}} waliojisajili",
+    "noMatchingSubscribers": "Hakuna mtu aliyejisajili aliyepatikana kwa wakati",
+    "lookingForMatch": "Inatafuta anayelingana miongoni mwa waliojisajili...",
+    "sentTo": "Imetumwa kwa {{destination}}",
+    "genericRecipient": "mpokeaji",
+    "via": "Kupitia {{method}}",
+    "scheduledToSend": "Imepangwa kutumwa {{date}}",
+    "stats": {
+      "matched": "{{count}} wameoanishwa",
+      "opened": "{{count}} wamefungua",
+      "watched": "{{count}} wametazama",
+      "replied": "{{count}} wamejibu",
+      "appreciated": "{{count}} wameithamini",
+      "views_one": "Ona {{count}}",
+      "views_other": "Maoni {{count}}",
+      "likes_one": "Kupenda {{count}}",
+      "likes_other": "Kupenda {{count}}",
+      "comments_one": "Maoni {{count}}",
+      "comments_other": "Maoni {{count}}"
+    },
+    "appreciationYes": "Walisema hii ni kitu walichohitaji kusikia",
+    "appreciationNo": "Walisema si hasa walichokihitaji",
+    "takeawayHeading": "Walichojifunza",
+    "deliveryTimeline": "Mstari wa Muda wa Uwasilishaji",
+    "timeline": {
+      "sent": "Imetumwa",
+      "delivered": "Imewasilishwa",
+      "opened": "Imefunguliwa",
+      "watched": "Imetazamwa",
+      "watchedAll": "Imetazamwa yote",
+      "watchedFull": "Alianza kutazama",
+      "watchedAllFull": "Alitazama yote mwanzo hadi mwisho",
+      "replied": "Imejibiwa"
+    },
+    "anonymousConversation": "Mazungumzo ya siri",
+    "outOfReplies": {
+      "title": "Wametumia majibu yao yote ya siri.",
+      "description": "Hawawezi kujibu tena isipokuwa uongeze majibu zaidi, au wajiunge na akaunti bure. Bado unaweza kutuma ujumbe wa ziada.",
+      "comingSoonButton": "Ongeza majibu zaidi (yanakuja hivi karibuni)"
+    },
+    "oneReplyLeft": "Wamebaki na jibu 1 la siri.",
+    "recipientLabel": "Mpokeaji",
+    "noRepliesYet": "Bado hakuna majibu. Unaweza kutuma ujumbe mwingine wa siri hapa chini.",
+    "composerPlaceholder": "Tuma ujumbe mwingine wa siri...",
+    "commentsHeading": "Maoni ({{count}})",
+    "noComments": "Bado hakuna maoni.",
+    "replyingToComment": "Anajibu maoni",
+    "cancelReplyAriaLabel": "Ghairi jibu",
+    "replyAsPosterPlaceholder": "Jibu kama mchapishaji...",
+    "privateConversationsHeading": "Mazungumzo ya Faragha ({{count}})",
+    "anonymousVisitorWantsToTalk": "Mgeni asiyejulikana anataka kuzungumza",
+    "revealYourself": "Jitambulishe",
+    "revealRequestSent": "Ombi la kujitambulisha limetumwa",
+    "revealAccepted": "Wamekubali! Sasa unaweza kujitambulisha.",
+    "revealDeclined": "Wamekataa kujitambulishwa.",
+    "revealWaiting": "Inasubiri jibu la mpokeaji...",
+    "toast": {
+      "followUpSent": "Ujumbe wa ziada umetumwa",
+      "failedToSend": "Imeshindwa kutuma",
+      "couldntPostComment": "Imeshindwa kuchapisha maoni hayo",
+      "failedToRequestReveal": "Imeshindwa kuomba kujitambulisha",
+      "failedToDelete": "Imeshindwa kufuta",
+      "couldntUpdateGuessReaction": "Imeshindwa kusasisha mwitikio wako"
+    }
+  },
+  "whispsList": {
+    "title": "Whisps Zangu",
+    "subtitle": "Kila kitu ulichotuma, na kila kitu ulichotumiwa.",
+    "tabs": {
+      "sent": "Zilizotumwa",
+      "received": "Zilizopokewa",
+      "archived": "Zilizohifadhiwa"
+    },
+    "searchPlaceholderSent": "Tafuta kwa kichwa au mpokeaji...",
+    "searchPlaceholderOther": "Tafuta kwa kichwa...",
+    "filter": {
+      "allStatuses": "Hali Zote",
+      "pending": "Inasubiri",
+      "scheduled": "Imepangwa",
+      "delivered": "Imewasilishwa",
+      "opened": "Imefunguliwa",
+      "watched": "Imetazamwa",
+      "replied": "Imejibiwa"
+    },
+    "videoAlt": "Video",
+    "videoLinkFallback": "Kiungo cha Video",
+    "newBadge": "Mpya",
+    "unpin": "Ondoa alama",
+    "pinToTop": "Bandika juu",
+    "moreOptions": "Chaguo zaidi",
+    "moveBackToList": "Rudisha kwenye orodha",
+    "archive": "Hifadhi kumbukumbu",
+    "from": "Kutoka: {{sender}}",
+    "to": "Kwa: {{recipient}}",
+    "someoneAnonymous": "Mtu asiyejulikana",
+    "anonymousCircleVisitor": "Mgeni asiyejulikana wa Circle",
+    "via": "kupitia {{method}}",
+    "emptyState": {
+      "title": "Hakuna whisps zilizopatikana",
+      "adjustFilters": "Jaribu kubadilisha vichujio vyako kupata unachotafuta.",
+      "noneReceived": "Bado hakuna kilichofika kwenye kikasha chako — Whisperer mwenzako atakapokutumia kitu, kitaonekana hapa.",
+      "noneArchived": "Hakuna kilichohifadhiwa — bandika, hifadhi, au futa whisp kutoka kwenye menyu yake ya chaguo (au bonyeza na kushikilia kadi yake).",
+      "noneSent": "Bado hujatuma whisp yoyote.",
+      "cta": "Tuma Whisp Yako ya Kwanza"
+    },
+    "deleteDialog": {
+      "title": "Futa whisp hii?",
+      "description": "Hii inaificha kutoka kwenye orodha yako mwenyewe — kiungo cha mpokeaji, na jinsi anavyoiona, kinaendelea kufanya kazi kama kilichokwisha kuwasilishwa. Hili haliwezi kutenduliwa upande wako."
+    },
+    "toast": {
+      "unpinned": "Alama imeondolewa",
+      "pinnedToTop": "Imebandikwa juu",
+      "archived": "Imehifadhiwa",
+      "couldntDelete": "Imeshindwa kufuta hilo"
+    }
+  },
+  "repliesInbox": {
+    "title": "Majibu",
+    "subtitle": "Majibu ya siri kutoka kwa watu uliowafikia.",
+    "emptyState": {
+      "title": "Bado hakuna majibu",
+      "description": "Mtu atakapojibu whisp yako, itaonekana hapa — bila kujulikana."
+    },
+    "repliedSuffix": "amejibu",
+    "someoneRepliedAnonymously": "Mtu amejibu bila kujulikana",
+    "videoFallback": "Video",
+    "videoWhispsHeading": "Majibu ya Whisp za Video",
+    "textWhispsHeading": "Majibu ya Whisp za Maandishi",
+    "videoWhispsEmpty": "Bado hakuna majibu kwa Whisp zako za Video.",
+    "textWhispsEmpty": "Bado hakuna majibu kwa Whisp zako za Maandishi."
+  },
+  "groupSendDetail": {
+    "notFound": "Utumaji wa kikundi haukupatikana.",
+    "whisperGroupsLink": "Whisper Groups",
+    "videoFallback": "Video",
+    "groupFallback": "Kikundi",
+    "stats": {
+      "opened": "{{count}} wamefungua",
+      "watched": "{{count}} wametazama",
+      "replied": "{{count}} wamejibu",
+      "appreciated": "{{count}} wameithamini"
+    },
+    "perMemberStatus": "Hali ya kila mwanachama",
+    "unknownRecipient": "Hajulikani",
+    "whispedVideoBack": "amewhisp video kurudi"
+  },
+  "whisperGroupDetail": {
+    "notFound": "Kikundi hakikupatikana.",
+    "whisperGroupsLink": "Whisper Groups",
+    "deleteDialog": {
+      "title": "Futa \"{{name}}\"?",
+      "description": "Hii huondoa kikundi kilichohifadhiwa na orodha yake ya wanachama. Whisps ambazo tayari umetuma kwa kikundi hiki hazitaathiriwa."
+    },
+    "sendAWhisp": "Tuma Whisp",
+    "addMembers": "Ongeza wanachama",
+    "addFromContacts": "Ongeza kutoka Anwani",
+    "orAddManually": "au ongeza mwenyewe",
+    "namePlaceholder": "Jina (si lazima)",
+    "emailPlaceholder": "Barua pepe",
+    "phonePlaceholder": "Simu",
+    "addMember": "Ongeza mwanachama",
+    "unnamedContact": "Anwani isiyo na jina",
+    "noMembersYet": "Bado hakuna wanachama — ongeza wachache hapo juu.",
+    "toast": {
+      "addEmailOrPhone": "Ongeza barua pepe au namba ya simu",
+      "memberAdded": "Mwanachama ameongezwa",
+      "failedToAddMember": "Imeshindwa kuongeza mwanachama",
+      "noneHadContactInfo": "Hakuna hata mmoja wa anwani hizo aliyekuwa na barua pepe au namba ya simu",
+      "membersAdded_one": "Mwanachama {{count}} ameongezwa",
+      "membersAdded_other": "Wanachama {{count}} wameongezwa",
+      "failedToAddMembers": "Imeshindwa kuongeza wanachama",
+      "memberRemoved": "Mwanachama ameondolewa",
+      "failedToRemoveMember": "Imeshindwa kuondoa mwanachama",
+      "groupDeleted": "Kikundi kimefutwa",
+      "failedToDeleteGroup": "Imeshindwa kufuta kikundi"
+    }
+  },
+  "whisperGroups": {
+    "title": "Whisper Groups",
+    "subtitle": "Hifadhi kikundi cha anwani mara moja, kisha tuma whisp ile ile ya siri kwa wote mara moja.",
+    "tabs": {
+      "groups": "Vikundi",
+      "sentBatches": "Vipande Vilivyotumwa"
+    },
+    "createAGroup": "Unda kikundi",
+    "namePlaceholder": "mfano, Marafiki wa Chuo",
+    "create": "Unda",
+    "emptyGroups": "Bado hakuna vikundi — unda kimoja hapo juu ili kuanza.",
+    "emptySends": "Bado hakuna whisps za kikundi zilizotumwa.",
+    "groupFallback": "Kikundi",
+    "sendRow": {
+      "summary": "{{group}} · {{members}} · kupitia {{via}}",
+      "scheduled": "Imepangwa",
+      "stats": "{{opened}} wamefungua · {{watched}} wametazama · {{replied}} wamejibu"
+    },
+    "toast": {
+      "groupCreated": "Kikundi kimeundwa",
+      "failedToCreateGroup": "Imeshindwa kuunda kikundi"
+    }
+  },
+  "publicWhisp": {
+    "takeaway": "Ujumbe Muhimu",
+    "backToDashboard": "Dashibodi",
+    "becomeAWhisperer": "Kuwa Whisperer",
+    "lead": {
+      "group": "Mtu katika mzunguko wako alituma hii bila kujulikana — wewe ni mmoja wa watu {{count}} walioipokea 👀",
+      "individual": "Mtu anayekujali alifikiri unahitaji kuona hii 👀"
+    },
+    "expired": {
+      "title": "Whisp hii imekwisha muda",
+      "description": "Aliyeituma anaweza kukutumia mpya wakati wowote."
+    },
+    "expiresIn": "Inaisha muda katika {{time}}",
+    "appreciation": {
+      "yesResponse": "Tunafurahi hii ilikufikia.",
+      "noResponse": "Asante kwa kuwajulisha.",
+      "prompt": "Je, hii ilikuwa ni kitu ulichohitaji kusikia?",
+      "knowSomeone": "Unamjua mtu mwingine anayehitaji hii pia?",
+      "passItForward": "Isambaze mbele",
+      "yesButton": "Ndiyo",
+      "noButton": "Si kweli"
+    },
+    "circle": {
+      "like": "Penda",
+      "messagePosterPrivately": "Tuma ujumbe wa faragha kwa mchapishaji",
+      "commentCount_one": "Maoni {{count}}",
+      "commentCount_other": "Maoni {{count}}",
+      "beFirstToComment": "Kuwa wa kwanza kutoa maoni",
+      "commentPlaceholder": "Ongeza maoni... (bila kujulikana)",
+      "moreCommentOptionsAriaLabel": "Chaguo zaidi za maoni, ikiwemo kuambatanisha picha",
+      "commentingAs": "Unatoa maoni kama {{handle}}",
+      "anonymousHandle": "Asiyejulikana",
+      "changeName": "Badilisha jina",
+      "renamePlaceholder": "Jina jipya (herufi na nambari tu)",
+      "renameWarning": "Usitumie jina lako halisi au chochote kinachoweza kukutambulisha.",
+      "replyingTo": "Anajibu {{target}}",
+      "thePoster": "mchapishaji",
+      "aComment": "maoni",
+      "cancelReplyAriaLabel": "Ghairi jibu",
+      "attachmentPreviewAlt": "Onyesho la kiambatisho",
+      "removeImageAriaLabel": "Ondoa picha",
+      "attachPhoto": "Ambatanisha picha",
+      "couldntAttachImage": "Imeshindwa kuambatanisha picha hiyo",
+      "keepItKind": "Kuwa na wema — lengo hapa ni mazungumzo halisi na yenye tija.",
+      "unlimitedCommentsSuffix": "kwa maoni yasiyo na kikomo."
+    },
+    "reply": {
+      "headerConversation": "Mazungumzo ya siri",
+      "headerWantToReply": "Ungependa kujibu bila kujulikana?",
+      "theSender": "Mtumaji",
+      "expiredNotice": "Whisp hii imekwisha muda, kwa hivyo huwezi tena kujibu.",
+      "limitReached": {
+        "title": "Umetumia majibu yako yote ya siri hapa.",
+        "description": "Unda akaunti bure kuendelea na mazungumzo haya — bado utabaki bila kujulikana kwao.",
+        "signUpButton": "Jiunge ili kuendelea kujibu"
+      },
+      "compactPlaceholder": "Jibu bila kujulikana...",
+      "moreReplyOptionsAriaLabel": "Chaguo zaidi za majibu, ikiwemo jibu la video",
+      "replyingToPrefix": "Anajibu",
+      "thisVideoFallback": "video hii",
+      "orWriteYourOwn": "au andika lako mwenyewe",
+      "fullPlaceholder": "Andika jibu lako... (bila kujulikana)",
+      "whispVideoBack": "Jibu kwa video",
+      "videoLockedDescription": "Inahitaji akaunti bure — majibu yako ya maandishi bado yanafanya kazi",
+      "videoUnlockedDescription": "Tuma video pamoja na jibu lako — bado bila kujulikana",
+      "videoThumbnailAlt": "picha ndogo",
+      "videoUrlPlaceholder": "Bandika kiungo cha video...",
+      "addVideoButton": "Ongeza",
+      "lastReplyWarning": "Hili ni jibu lako la mwisho la siri — jiunge bure ili kuendelea.",
+      "repliesLeft_one": "Umebaki na jibu {{count}} la siri.",
+      "repliesLeft_other": "Umebaki na majibu {{count}} ya siri.",
+      "sendButton": "Tuma Jibu",
+      "guessToggle": "Kisia ni nani alituma hii 🕵️",
+      "guessHint": "Wao ndio watachagua jinsi ya kuitikia — si jibu la kiotomatiki kamwe.",
+      "guessPlaceholder": "Nadhani ni..."
+    },
+    "reveal": {
+      "viewerAccepted": "Umewajulisha kuwa ni sawa kujitambulisha.",
+      "viewerDeclined": "Umechagua kubaki bila kujulikana.",
+      "prompt": "Mtu aliyetuma hii anataka kujitambulisha.",
+      "question": "Je, unataka kujua ni nani aliyekutumia hii?",
+      "accept": "Kubali",
+      "decline": "Kataa"
+    },
+    "reminder": {
+      "finalNotice": "Tutakukumbusha mara moja ya mwisho — baada ya hapo whisp hii haitapatikana tena.",
+      "notice": "Tutakukumbusha kabla whisp hii haijaisha muda.",
+      "pickerHeading": "Tukukumbushe lini?",
+      "button": "Nikumbushe hili baadaye"
+    },
+    "signupCta": {
+      "heading": "Una kitu cha kusema, lakini si kwa sauti kubwa?",
+      "description": "Tuma video kwa mtu anayeihitaji — bila kujulikana, bila usumbufu wa kuisema mwenyewe. Hawatajua kamwe ni wewe, isipokuwa unataka wajue.",
+      "button": "Kuwa Whisperer Sasa",
+      "disclaimer": "Bure kuanza — hakuna kadi inayohitajika."
+    },
+    "subscribeCta": {
+      "heading": "Unataka zaidi, zinazokufaa?",
+      "description": "Pata whisps za siri kama hii kwenye kikasha chako zinapolingana na mada unazochagua."
+    },
+    "footer": {
+      "poweredByPrefix": "Inaendeshwa na",
+      "poweredBySuffix": "— tuma kinachohesabika, bila usumbufu."
+    },
+    "toast": {
+      "couldntScheduleReminder": "Imeshindwa kupanga ukumbusho huo",
+      "somethingWentWrong": "Kuna hitilafu imetokea",
+      "replySentAnonymously": "Jibu limetumwa bila kujulikana",
+      "failedToSendReply": "Imeshindwa kutuma jibu",
+      "createAccountToWhispVideo": "Unda akaunti bure ili kujibu kwa video",
+      "senderNotified": "Tumemjulisha mtumaji pia — anaweza kufungua majibu ya video kwa ajili yako.",
+      "freeCommentsUsed": "Umetumia maoni yako ya bure kwa sasa",
+      "signUpToComment": "Jiunge ili kutoa maoni wakati wowote, au rudi baada ya saa 24.",
+      "couldntPostComment": "Imeshindwa kuchapisha maoni hayo",
+      "nameUpdated": "Jina limesasishwa",
+      "couldntUpdateName": "Imeshindwa kusasisha jina hilo",
+      "couldntStartConversation": "Imeshindwa kuanzisha mazungumzo hayo",
+      "guessSentAnonymously": "Kisia chako kimetumwa! 🕵️"
+    },
+    "notFound": "Whisp hii haikupatikana."
+  }
+}

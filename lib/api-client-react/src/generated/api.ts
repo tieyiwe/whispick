@@ -20,11 +20,22 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AcceptPoliciesInput,
   AddWhisperGroupMembersInput,
+  AdminAccessMe,
+  AdminAuditLogResponse,
   AdminCategoryStatsResponse,
   AdminDeliveryMethodStatsResponse,
   AdminDemographicStatsResponse,
   AdminFunnelStats,
+  AdminGetTrafficByHourParams,
+  AdminGetUsageStatsParams,
+  AdminGrant,
+  AdminGrantInput,
+  AdminGrantListResponse,
+  AdminGrantUpdateInput,
+  AdminListAuditLogParams,
+  AdminListContentReportsParams,
   AdminListModerationFlagsParams,
   AdminListNotificationsParams,
   AdminListSuggestionsParams,
@@ -32,7 +43,12 @@ import type {
   AdminListUsersParams,
   AdminListWhispsParams,
   AdminLocationStatsResponse,
+  AdminMfaSetupResponse,
+  AdminMfaStatus,
+  AdminMfaVerifyInput,
+  AdminMfaVerifyResponse,
   AdminNotificationListResponse,
+  AdminOnlineNowResponse,
   AdminOpportunitiesResponse,
   AdminOverviewStats,
   AdminUser,
@@ -43,27 +59,70 @@ import type {
   ApiError,
   AppreciationInput,
   AppreciationResult,
+  ArchiveWhisp200,
+  BroadcastTextWhispInput,
+  BroadcastTextWhispResult,
   CheckoutRequest,
   CheckoutResponse,
   Circle,
+  CircleAgentSettings,
+  CircleComment,
   CircleFeedResponse,
   ClaimInviteInput,
   ClaimInviteResult,
+  CommentReactionResult,
+  ComplianceReminderInput,
   ConciergeInput,
   ConciergeResult,
   ConfirmPhoneVerificationInput,
+  ContentReport,
+  ContentReportListResponse,
   CreateCircleInput,
+  CreateContentReportInput,
+  CreateContentReportResponse,
+  CreatePolicyVersionInput,
   CreateSuggestionInput,
   CreditTransaction,
+  DebateAgentSettings,
+  DebateTopicComment,
+  DebateTopicCommentInput,
+  DebateTopicDetail,
+  DebateTopicFeedItem,
+  DebateTopicFeedResponse,
+  DebateTopicInput,
+  DebateTopicStats,
   DeleteMedia200,
+  DisableWhisperBox200,
+  EnableWhisperBox200,
+  FollowedOnlineStatusResponse,
+  GetDebateTopicParams,
+  GetFollowStats200,
+  GetPublicWhispParams,
+  GetPublicWhisperBox200,
+  GetUserRecapParams,
+  GetWhisperBoxUnreadCount200,
   GroupWhispSendDetail,
   GroupWhispSendSummary,
   HealthStatus,
+  HqProject,
+  HqProjectDetail,
+  HqProjectInput,
+  HqProjectListResponse,
+  HqProjectUpdateInput,
+  HqTask,
+  HqTaskComment,
+  HqTaskCommentInput,
+  HqTaskCommentListResponse,
+  HqTaskInput,
+  HqTaskUpdateInput,
   Invite,
   InviteInput,
   JoinCircleInput,
   ListCircleFeedParams,
+  ListDebateTopicsParams,
+  ListFollowingDebateTopicsParams,
   ListSuggestionsParams,
+  ListWhisperBoxMessages200,
   ListWhispsParams,
   MatchStats,
   ModerationFlag,
@@ -72,6 +131,15 @@ import type {
   NoteSuggestionsResult,
   NotificationListResponse,
   PhoneVerificationResult,
+  PinWhisp200,
+  PolicyStatusResponse,
+  PolicyVersion,
+  PolicyVersionListResponse,
+  PostCircleCommentBody,
+  PostCircleVideoInput,
+  PostCircleVideoResult,
+  PostDebateTopicInput,
+  PostDebateTopicResult,
   PublicInvite,
   PublicReplyInput,
   PublicTextWhisp,
@@ -79,15 +147,35 @@ import type {
   PushPublicKeyResponse,
   PushSubscriptionDeleteInput,
   PushSubscriptionInput,
+  ReactToCircleCommentBody,
+  ReactToDebateTopicCommentBody,
+  RecentRecipientListResponse,
+  RecordUsageInput,
+  RefreshWhisperBoxHandle200,
   RemindMeInput,
   RemindMeResult,
+  RenameCircleHandle200,
+  RenameCircleHandleBody,
+  RenameDebateTopicHandle200,
+  RenameDebateTopicHandleBody,
+  RepairProfilesResult,
+  ResolveContentReportInput,
+  ResolveContentReportResponse,
   RevealResponse,
   RevealResult,
+  RewhispDebateTopic200,
+  RewhispDebateTopicBody,
+  RunCircleAgentResult,
+  RunDebateAgentResult,
   RunSuggestionAgentResult,
   SendGroupWhispInput,
   SendGroupWhispResult,
   SendNotificationInput,
   SendNotificationResult,
+  SendWhisperBoxMessage201,
+  SendWhisperBoxMessageBody,
+  SetGuessReactionBody,
+  StartCircleDm201,
   StartPhoneVerificationInput,
   SubscribeInput,
   SubscribeResult,
@@ -100,17 +188,34 @@ import type {
   TextWhispInput,
   TextWhispReply,
   TextWhispReplyInput,
+  TextWhispToStaffInput,
+  TextWhispToStaffResult,
+  ToggleCircleLike200,
+  ToggleCircleLikeBody,
+  ToggleFollow200,
+  ToggleFollowBody,
   TrackingEventInput,
   TrackingResult,
+  TrafficByHourResponse,
   UnreadNotificationCountResponse,
   UnsubscribeFromMatching200,
   UnsubscribeFromMatchingParams,
   UpdateAdminUserInput,
+  UpdateCircleAgentConfigInput,
+  UpdateContentReportInput,
+  UpdateDebateAgentConfigInput,
+  UpdateDebateTopicHandleAvatar200,
+  UpdateDebateTopicHandleAvatarBody,
   UpdateModerationFlagInput,
+  UpdatePolicyVersionInput,
   UpdateSuggestionInput,
   UploadedVideo,
+  UsageInsightsInput,
+  UsageInsightsResponse,
+  UsageStatsResponse,
   UserProfile,
   UserProfileUpdate,
+  UserRecap,
   VerifySubscription200,
   VerifySubscriptionParams,
   VideoMeta,
@@ -248,7 +353,7 @@ export const getListWhispsUrl = (params?: ListWhispsParams,) => {
 }
 
 /**
- * @summary List all whisps sent by the current user
+ * @summary List whisps sent by the current user (default), or received by them
  */
 export const listWhisps = async (params?: ListWhispsParams, options?: RequestInit): Promise<Whisp[]> => {
 
@@ -295,7 +400,7 @@ export type ListWhispsQueryError = ErrorType<unknown>
 
 
 /**
- * @summary List all whisps sent by the current user
+ * @summary List whisps sent by the current user (default), or received by them
  */
 
 export function useListWhisps<TData = Awaited<ReturnType<typeof listWhisps>>, TError = ErrorType<unknown>>(
@@ -610,6 +715,146 @@ export const useDeleteWhisp = <TError = ErrorType<unknown>,
       return useMutation(getDeleteWhispMutationOptions(options));
     }
 
+export const getPinWhispUrl = (id: string,) => {
+
+
+
+
+  return `/api/whisps/${id}/pin`
+}
+
+/**
+ * @summary Toggle pin for whichever role (sender or matched recipient) the caller has on this whisp
+ */
+export const pinWhisp = async (id: string, options?: RequestInit): Promise<PinWhisp200> => {
+
+  return customFetch<PinWhisp200>(getPinWhispUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getPinWhispMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pinWhisp>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof pinWhisp>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['pinWhisp'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof pinWhisp>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  pinWhisp(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PinWhispMutationResult = NonNullable<Awaited<ReturnType<typeof pinWhisp>>>
+
+    export type PinWhispMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Toggle pin for whichever role (sender or matched recipient) the caller has on this whisp
+ */
+export const usePinWhisp = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pinWhisp>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof pinWhisp>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getPinWhispMutationOptions(options));
+    }
+
+export const getArchiveWhispUrl = (id: string,) => {
+
+
+
+
+  return `/api/whisps/${id}/archive`
+}
+
+/**
+ * @summary Toggle archive for whichever role the caller has on this whisp — reversible, calling it again un-archives
+ */
+export const archiveWhisp = async (id: string, options?: RequestInit): Promise<ArchiveWhisp200> => {
+
+  return customFetch<ArchiveWhisp200>(getArchiveWhispUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getArchiveWhispMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof archiveWhisp>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof archiveWhisp>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['archiveWhisp'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof archiveWhisp>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  archiveWhisp(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ArchiveWhispMutationResult = NonNullable<Awaited<ReturnType<typeof archiveWhisp>>>
+
+    export type ArchiveWhispMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Toggle archive for whichever role the caller has on this whisp — reversible, calling it again un-archives
+ */
+export const useArchiveWhisp = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof archiveWhisp>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof archiveWhisp>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getArchiveWhispMutationOptions(options));
+    }
+
 export const getListWhispRepliesUrl = (id: string,) => {
 
 
@@ -756,6 +1001,79 @@ export const useCreateWhispReply = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateWhispReplyMutationOptions(options));
+    }
+
+export const getSetGuessReactionUrl = (id: string,
+    replyId: string,) => {
+
+
+
+
+  return `/api/whisps/${id}/replies/${replyId}/guess-reaction`
+}
+
+/**
+ * @summary Sender manually reacts to a "guess who sent it" reply. The only way a guess ever gets a reaction — never computed automatically, see WhispReply.guessReaction.
+ */
+export const setGuessReaction = async (id: string,
+    replyId: string,
+    setGuessReactionBody: SetGuessReactionBody, options?: RequestInit): Promise<WhispReply> => {
+
+  return customFetch<WhispReply>(getSetGuessReactionUrl(id,replyId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(setGuessReactionBody)
+  }
+);}
+
+
+
+
+export const getSetGuessReactionMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setGuessReaction>>, TError,{id: string;replyId: string;data: BodyType<SetGuessReactionBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setGuessReaction>>, TError,{id: string;replyId: string;data: BodyType<SetGuessReactionBody>}, TContext> => {
+
+const mutationKey = ['setGuessReaction'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setGuessReaction>>, {id: string;replyId: string;data: BodyType<SetGuessReactionBody>}> = (props) => {
+          const {id,replyId,data} = props ?? {};
+
+          return  setGuessReaction(id,replyId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetGuessReactionMutationResult = NonNullable<Awaited<ReturnType<typeof setGuessReaction>>>
+    export type SetGuessReactionMutationBody = BodyType<SetGuessReactionBody>
+    export type SetGuessReactionMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Sender manually reacts to a "guess who sent it" reply. The only way a guess ever gets a reaction — never computed automatically, see WhispReply.guessReaction.
+ */
+export const useSetGuessReaction = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setGuessReaction>>, TError,{id: string;replyId: string;data: BodyType<SetGuessReactionBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setGuessReaction>>,
+        TError,
+        {id: string;replyId: string;data: BodyType<SetGuessReactionBody>},
+        TContext
+      > => {
+      return useMutation(getSetGuessReactionMutationOptions(options));
     }
 
 export const getRequestRevealUrl = (id: string,) => {
@@ -1853,6 +2171,76 @@ export const useCreateTextWhispReply = <TError = ErrorType<unknown>,
       return useMutation(getCreateTextWhispReplyMutationOptions(options));
     }
 
+export const getPingTextWhispTypingUrl = (id: string,) => {
+
+
+
+
+  return `/api/text-whisps/${id}/typing`
+}
+
+/**
+ * @summary Signal that the caller is currently typing a reply — sender or recipient only. Purely ephemeral presence (see TextWhisp.otherPartyTyping); no request body.
+ */
+export const pingTextWhispTyping = async (id: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getPingTextWhispTypingUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getPingTextWhispTypingMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pingTextWhispTyping>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof pingTextWhispTyping>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['pingTextWhispTyping'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof pingTextWhispTyping>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  pingTextWhispTyping(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PingTextWhispTypingMutationResult = NonNullable<Awaited<ReturnType<typeof pingTextWhispTyping>>>
+
+    export type PingTextWhispTypingMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Signal that the caller is currently typing a reply — sender or recipient only. Purely ephemeral presence (see TextWhisp.otherPartyTyping); no request body.
+ */
+export const usePingTextWhispTyping = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pingTextWhispTyping>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof pingTextWhispTyping>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getPingTextWhispTypingMutationOptions(options));
+    }
+
 export const getRequestTextWhispRevealUrl = (id: string,) => {
 
 
@@ -2064,20 +2452,29 @@ export const useScrapeVideoMeta = <TError = ErrorType<ApiError>,
       return useMutation(getScrapeVideoMetaMutationOptions(options));
     }
 
-export const getGetPublicWhispUrl = (token: string,) => {
+export const getGetPublicWhispUrl = (token: string,
+    params?: GetPublicWhispParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/public/w/${token}`
+  return stringifiedParams.length > 0 ? `/api/public/w/${token}?${stringifiedParams}` : `/api/public/w/${token}`
 }
 
 /**
  * @summary Public recipient landing page data (no auth required)
  */
-export const getPublicWhisp = async (token: string, options?: RequestInit): Promise<PublicWhisp> => {
+export const getPublicWhisp = async (token: string,
+    params?: GetPublicWhispParams, options?: RequestInit): Promise<PublicWhisp> => {
 
-  return customFetch<PublicWhisp>(getGetPublicWhispUrl(token),
+  return customFetch<PublicWhisp>(getGetPublicWhispUrl(token,params),
   {
     ...options,
     method: 'GET'
@@ -2090,23 +2487,25 @@ export const getPublicWhisp = async (token: string, options?: RequestInit): Prom
 
 
 
-export const getGetPublicWhispQueryKey = (token: string,) => {
+export const getGetPublicWhispQueryKey = (token: string,
+    params?: GetPublicWhispParams,) => {
     return [
-    `/api/public/w/${token}`
+    `/api/public/w/${token}`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetPublicWhispQueryOptions = <TData = Awaited<ReturnType<typeof getPublicWhisp>>, TError = ErrorType<ApiError>>(token: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicWhisp>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetPublicWhispQueryOptions = <TData = Awaited<ReturnType<typeof getPublicWhisp>>, TError = ErrorType<ApiError>>(token: string,
+    params?: GetPublicWhispParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicWhisp>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetPublicWhispQueryKey(token);
+  const queryKey =  queryOptions?.queryKey ?? getGetPublicWhispQueryKey(token,params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPublicWhisp>>> = ({ signal }) => getPublicWhisp(token, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPublicWhisp>>> = ({ signal }) => getPublicWhisp(token,params, { signal, ...requestOptions });
 
 
 
@@ -2124,11 +2523,12 @@ export type GetPublicWhispQueryError = ErrorType<ApiError>
  */
 
 export function useGetPublicWhisp<TData = Awaited<ReturnType<typeof getPublicWhisp>>, TError = ErrorType<ApiError>>(
- token: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicWhisp>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ token: string,
+    params?: GetPublicWhispParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicWhisp>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetPublicWhispQueryOptions(token,options)
+  const queryOptions = getGetPublicWhispQueryOptions(token,params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -2140,6 +2540,77 @@ export function useGetPublicWhisp<TData = Awaited<ReturnType<typeof getPublicWhi
 
 
 
+
+export const getRequestVideoReplyUrl = (token: string,) => {
+
+
+
+
+  return `/api/public/w/${token}/video-reply-request`
+}
+
+/**
+ * Called when an anonymous recipient taps a locked "whisp a video back" control, so the sender can be told (on the same deferred schedule as a reply notification) that adding credit would unlock it. Always 204 — an unknown token gets the same answer as a known one, so this can't be used to probe which tokens exist.
+ * @summary Record that the recipient wanted to whisp a video back but couldn't
+ */
+export const requestVideoReply = async (token: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRequestVideoReplyUrl(token),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRequestVideoReplyMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestVideoReply>>, TError,{token: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestVideoReply>>, TError,{token: string}, TContext> => {
+
+const mutationKey = ['requestVideoReply'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestVideoReply>>, {token: string}> = (props) => {
+          const {token} = props ?? {};
+
+          return  requestVideoReply(token,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestVideoReplyMutationResult = NonNullable<Awaited<ReturnType<typeof requestVideoReply>>>
+
+    export type RequestVideoReplyMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Record that the recipient wanted to whisp a video back but couldn't
+ */
+export const useRequestVideoReply = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestVideoReply>>, TError,{token: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestVideoReply>>,
+        TError,
+        {token: string},
+        TContext
+      > => {
+      return useMutation(getRequestVideoReplyMutationOptions(options));
+    }
 
 export const getTrackWhispEventUrl = (token: string,) => {
 
@@ -2352,6 +2823,447 @@ export const useSubmitAppreciation = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getSubmitAppreciationMutationOptions(options));
+    }
+
+export const getToggleCircleLikeUrl = (token: string,) => {
+
+
+
+
+  return `/api/public/w/${token}/like`
+}
+
+/**
+ * @summary Anonymous, idempotent like toggle — Blind Circle posts only
+ */
+export const toggleCircleLike = async (token: string,
+    toggleCircleLikeBody: ToggleCircleLikeBody, options?: RequestInit): Promise<ToggleCircleLike200> => {
+
+  return customFetch<ToggleCircleLike200>(getToggleCircleLikeUrl(token),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(toggleCircleLikeBody)
+  }
+);}
+
+
+
+
+export const getToggleCircleLikeMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleCircleLike>>, TError,{token: string;data: BodyType<ToggleCircleLikeBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof toggleCircleLike>>, TError,{token: string;data: BodyType<ToggleCircleLikeBody>}, TContext> => {
+
+const mutationKey = ['toggleCircleLike'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof toggleCircleLike>>, {token: string;data: BodyType<ToggleCircleLikeBody>}> = (props) => {
+          const {token,data} = props ?? {};
+
+          return  toggleCircleLike(token,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ToggleCircleLikeMutationResult = NonNullable<Awaited<ReturnType<typeof toggleCircleLike>>>
+    export type ToggleCircleLikeMutationBody = BodyType<ToggleCircleLikeBody>
+    export type ToggleCircleLikeMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Anonymous, idempotent like toggle — Blind Circle posts only
+ */
+export const useToggleCircleLike = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleCircleLike>>, TError,{token: string;data: BodyType<ToggleCircleLikeBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof toggleCircleLike>>,
+        TError,
+        {token: string;data: BodyType<ToggleCircleLikeBody>},
+        TContext
+      > => {
+      return useMutation(getToggleCircleLikeMutationOptions(options));
+    }
+
+export const getPostCircleCommentUrl = (token: string,) => {
+
+
+
+
+  return `/api/public/w/${token}/comments`
+}
+
+/**
+ * Anonymous by default, rate-limited to a handful per rolling 24h window per visitor (see lib/plans.ts's canPostAnonymousComment) — signing in removes the limit entirely, same as the anonymous reply cap elsewhere. isPoster on the response is set automatically when the caller is signed in and is this whisp's own sender. An anonymous handle is assigned automatically on a visitor's first comment in this thread (see anonymous_handles.ts). Also accepts multipart/form-data with the same fields plus an optional `image` file (max 5MB, jpeg/png/webp/gif) — intentionally not modeled here, same reasoning as POST /media/upload above: a `format: binary` body generates File/Blob-typed Zod schemas that don't compile in lib/api-zod's Node-only project. The frontend attaches an image via a hand-written multipart fetch to this same URL, mirroring lib/uploadMedia.ts.
+ * @summary Post a public comment on a Blind Circle post
+ */
+export const postCircleComment = async (token: string,
+    postCircleCommentBody: PostCircleCommentBody, options?: RequestInit): Promise<CircleComment> => {
+
+  return customFetch<CircleComment>(getPostCircleCommentUrl(token),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(postCircleCommentBody)
+  }
+);}
+
+
+
+
+export const getPostCircleCommentMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postCircleComment>>, TError,{token: string;data: BodyType<PostCircleCommentBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof postCircleComment>>, TError,{token: string;data: BodyType<PostCircleCommentBody>}, TContext> => {
+
+const mutationKey = ['postCircleComment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postCircleComment>>, {token: string;data: BodyType<PostCircleCommentBody>}> = (props) => {
+          const {token,data} = props ?? {};
+
+          return  postCircleComment(token,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostCircleCommentMutationResult = NonNullable<Awaited<ReturnType<typeof postCircleComment>>>
+    export type PostCircleCommentMutationBody = BodyType<PostCircleCommentBody>
+    export type PostCircleCommentMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Post a public comment on a Blind Circle post
+ */
+export const usePostCircleComment = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postCircleComment>>, TError,{token: string;data: BodyType<PostCircleCommentBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postCircleComment>>,
+        TError,
+        {token: string;data: BodyType<PostCircleCommentBody>},
+        TContext
+      > => {
+      return useMutation(getPostCircleCommentMutationOptions(options));
+    }
+
+export const getReactToCircleCommentUrl = (token: string,
+    commentId: string,) => {
+
+
+
+
+  return `/api/public/w/${token}/comments/${commentId}/reactions`
+}
+
+/**
+ * Idempotent toggle — reacting with the same reaction again removes it; reacting with the other one switches it.
+ * @summary Like or dislike a Blind Circle comment
+ */
+export const reactToCircleComment = async (token: string,
+    commentId: string,
+    reactToCircleCommentBody: ReactToCircleCommentBody, options?: RequestInit): Promise<CommentReactionResult> => {
+
+  return customFetch<CommentReactionResult>(getReactToCircleCommentUrl(token,commentId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(reactToCircleCommentBody)
+  }
+);}
+
+
+
+
+export const getReactToCircleCommentMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reactToCircleComment>>, TError,{token: string;commentId: string;data: BodyType<ReactToCircleCommentBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reactToCircleComment>>, TError,{token: string;commentId: string;data: BodyType<ReactToCircleCommentBody>}, TContext> => {
+
+const mutationKey = ['reactToCircleComment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reactToCircleComment>>, {token: string;commentId: string;data: BodyType<ReactToCircleCommentBody>}> = (props) => {
+          const {token,commentId,data} = props ?? {};
+
+          return  reactToCircleComment(token,commentId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReactToCircleCommentMutationResult = NonNullable<Awaited<ReturnType<typeof reactToCircleComment>>>
+    export type ReactToCircleCommentMutationBody = BodyType<ReactToCircleCommentBody>
+    export type ReactToCircleCommentMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Like or dislike a Blind Circle comment
+ */
+export const useReactToCircleComment = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reactToCircleComment>>, TError,{token: string;commentId: string;data: BodyType<ReactToCircleCommentBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reactToCircleComment>>,
+        TError,
+        {token: string;commentId: string;data: BodyType<ReactToCircleCommentBody>},
+        TContext
+      > => {
+      return useMutation(getReactToCircleCommentMutationOptions(options));
+    }
+
+export const getGetCircleCommentImageUrl = (token: string,
+    commentId: string,) => {
+
+
+
+
+  return `/api/public/w/${token}/comments/${commentId}/image`
+}
+
+/**
+ * @summary Fetch a Blind Circle comment's attached image
+ */
+export const getCircleCommentImage = async (token: string,
+    commentId: string, options?: RequestInit): Promise<Blob> => {
+
+  return customFetch<Blob>(getGetCircleCommentImageUrl(token,commentId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCircleCommentImageQueryKey = (token: string,
+    commentId: string,) => {
+    return [
+    `/api/public/w/${token}/comments/${commentId}/image`
+    ] as const;
+    }
+
+
+export const getGetCircleCommentImageQueryOptions = <TData = Awaited<ReturnType<typeof getCircleCommentImage>>, TError = ErrorType<ApiError>>(token: string,
+    commentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCircleCommentImage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCircleCommentImageQueryKey(token,commentId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCircleCommentImage>>> = ({ signal }) => getCircleCommentImage(token,commentId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: token !== null && token !== undefined && commentId !== null && commentId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCircleCommentImage>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCircleCommentImageQueryResult = NonNullable<Awaited<ReturnType<typeof getCircleCommentImage>>>
+export type GetCircleCommentImageQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Fetch a Blind Circle comment's attached image
+ */
+
+export function useGetCircleCommentImage<TData = Awaited<ReturnType<typeof getCircleCommentImage>>, TError = ErrorType<ApiError>>(
+ token: string,
+    commentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCircleCommentImage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCircleCommentImageQueryOptions(token,commentId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRenameCircleHandleUrl = (token: string,) => {
+
+
+
+
+  return `/api/public/w/${token}/handle`
+}
+
+/**
+ * @summary Rename the caller's own anonymous handle in this post's comment thread
+ */
+export const renameCircleHandle = async (token: string,
+    renameCircleHandleBody: RenameCircleHandleBody, options?: RequestInit): Promise<RenameCircleHandle200> => {
+
+  return customFetch<RenameCircleHandle200>(getRenameCircleHandleUrl(token),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(renameCircleHandleBody)
+  }
+);}
+
+
+
+
+export const getRenameCircleHandleMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameCircleHandle>>, TError,{token: string;data: BodyType<RenameCircleHandleBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof renameCircleHandle>>, TError,{token: string;data: BodyType<RenameCircleHandleBody>}, TContext> => {
+
+const mutationKey = ['renameCircleHandle'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof renameCircleHandle>>, {token: string;data: BodyType<RenameCircleHandleBody>}> = (props) => {
+          const {token,data} = props ?? {};
+
+          return  renameCircleHandle(token,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RenameCircleHandleMutationResult = NonNullable<Awaited<ReturnType<typeof renameCircleHandle>>>
+    export type RenameCircleHandleMutationBody = BodyType<RenameCircleHandleBody>
+    export type RenameCircleHandleMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Rename the caller's own anonymous handle in this post's comment thread
+ */
+export const useRenameCircleHandle = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameCircleHandle>>, TError,{token: string;data: BodyType<RenameCircleHandleBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof renameCircleHandle>>,
+        TError,
+        {token: string;data: BodyType<RenameCircleHandleBody>},
+        TContext
+      > => {
+      return useMutation(getRenameCircleHandleMutationOptions(options));
+    }
+
+export const getStartCircleDmUrl = (token: string,) => {
+
+
+
+
+  return `/api/public/w/${token}/circle-dm/start`
+}
+
+/**
+ * Mints a new whisp (deliveryMethod='circle_dm') the caller can now message the poster through via the ordinary POST /w/{token}/reply on the RETURNED token, exactly like a Whisper Link. The frontend is responsible for remembering the returned token per origin post (localStorage) so a repeat visitor resumes the same conversation instead of starting a new one on every click.
+ * @summary Start (or is idempotently expected to be reused for) a private anonymous conversation with a Blind Circle post's poster
+ */
+export const startCircleDm = async (token: string, options?: RequestInit): Promise<StartCircleDm201> => {
+
+  return customFetch<StartCircleDm201>(getStartCircleDmUrl(token),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getStartCircleDmMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startCircleDm>>, TError,{token: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startCircleDm>>, TError,{token: string}, TContext> => {
+
+const mutationKey = ['startCircleDm'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startCircleDm>>, {token: string}> = (props) => {
+          const {token} = props ?? {};
+
+          return  startCircleDm(token,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartCircleDmMutationResult = NonNullable<Awaited<ReturnType<typeof startCircleDm>>>
+
+    export type StartCircleDmMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Start (or is idempotently expected to be reused for) a private anonymous conversation with a Blind Circle post's poster
+ */
+export const useStartCircleDm = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startCircleDm>>, TError,{token: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startCircleDm>>,
+        TError,
+        {token: string},
+        TContext
+      > => {
+      return useMutation(getStartCircleDmMutationOptions(options));
     }
 
 export const getRequestWhispReminderUrl = (token: string,) => {
@@ -2570,6 +3482,160 @@ export const useUpdateUserProfile = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpdateUserProfileMutationOptions(options));
+    }
+
+export const getGetUserRecapUrl = (params?: GetUserRecapParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/user/recap?${stringifiedParams}` : `/api/user/recap`
+}
+
+/**
+ * @summary Personal "Wrapped"-style stats recap — real, honestly-computed numbers only, meant to be screenshotted and shared
+ */
+export const getUserRecap = async (params?: GetUserRecapParams, options?: RequestInit): Promise<UserRecap> => {
+
+  return customFetch<UserRecap>(getGetUserRecapUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetUserRecapQueryKey = (params?: GetUserRecapParams,) => {
+    return [
+    `/api/user/recap`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetUserRecapQueryOptions = <TData = Awaited<ReturnType<typeof getUserRecap>>, TError = ErrorType<unknown>>(params?: GetUserRecapParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUserRecap>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetUserRecapQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getUserRecap>>> = ({ signal }) => getUserRecap(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getUserRecap>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetUserRecapQueryResult = NonNullable<Awaited<ReturnType<typeof getUserRecap>>>
+export type GetUserRecapQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Personal "Wrapped"-style stats recap — real, honestly-computed numbers only, meant to be screenshotted and shared
+ */
+
+export function useGetUserRecap<TData = Awaited<ReturnType<typeof getUserRecap>>, TError = ErrorType<unknown>>(
+ params?: GetUserRecapParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUserRecap>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetUserRecapQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getDismissMfaNudgeUrl = () => {
+
+
+
+
+  return `/api/user/mfa-nudge/dismiss`
+}
+
+/**
+ * @summary "Skip for now" on the two-factor setup nudge — doesn't affect whether 2FA is actually enabled, only when the nudge is next shown
+ */
+export const dismissMfaNudge = async ( options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDismissMfaNudgeUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getDismissMfaNudgeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof dismissMfaNudge>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof dismissMfaNudge>>, TError,void, TContext> => {
+
+const mutationKey = ['dismissMfaNudge'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof dismissMfaNudge>>, void> = () => {
+
+
+          return  dismissMfaNudge(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DismissMfaNudgeMutationResult = NonNullable<Awaited<ReturnType<typeof dismissMfaNudge>>>
+
+    export type DismissMfaNudgeMutationError = ErrorType<unknown>
+
+    /**
+ * @summary "Skip for now" on the two-factor setup nudge — doesn't affect whether 2FA is actually enabled, only when the nudge is next shown
+ */
+export const useDismissMfaNudge = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof dismissMfaNudge>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof dismissMfaNudge>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getDismissMfaNudgeMutationOptions(options));
     }
 
 export const getGetPushPublicKeyUrl = () => {
@@ -3384,6 +4450,1800 @@ export function useListCircleFeed<TData = Awaited<ReturnType<typeof listCircleFe
 
 
 
+export const getCreateDebateTopicUrl = () => {
+
+
+
+
+  return `/api/debate-topics`
+}
+
+/**
+ * @summary Post a new debate topic (signed in, anonymous to other viewers)
+ */
+export const createDebateTopic = async (debateTopicInput: DebateTopicInput, options?: RequestInit): Promise<DebateTopicFeedItem> => {
+
+  return customFetch<DebateTopicFeedItem>(getCreateDebateTopicUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(debateTopicInput)
+  }
+);}
+
+
+
+
+export const getCreateDebateTopicMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDebateTopic>>, TError,{data: BodyType<DebateTopicInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createDebateTopic>>, TError,{data: BodyType<DebateTopicInput>}, TContext> => {
+
+const mutationKey = ['createDebateTopic'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createDebateTopic>>, {data: BodyType<DebateTopicInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createDebateTopic(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateDebateTopicMutationResult = NonNullable<Awaited<ReturnType<typeof createDebateTopic>>>
+    export type CreateDebateTopicMutationBody = BodyType<DebateTopicInput>
+    export type CreateDebateTopicMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Post a new debate topic (signed in, anonymous to other viewers)
+ */
+export const useCreateDebateTopic = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDebateTopic>>, TError,{data: BodyType<DebateTopicInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createDebateTopic>>,
+        TError,
+        {data: BodyType<DebateTopicInput>},
+        TContext
+      > => {
+      return useMutation(getCreateDebateTopicMutationOptions(options));
+    }
+
+export const getDeleteDebateTopicUrl = (id: string,) => {
+
+
+
+
+  return `/api/debate-topics/${id}`
+}
+
+/**
+ * @summary Retract a debate topic you posted — removes it from the public feed and detail lookup
+ */
+export const deleteDebateTopic = async (id: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteDebateTopicUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteDebateTopicMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDebateTopic>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteDebateTopic>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteDebateTopic'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteDebateTopic>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteDebateTopic(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteDebateTopicMutationResult = NonNullable<Awaited<ReturnType<typeof deleteDebateTopic>>>
+
+    export type DeleteDebateTopicMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Retract a debate topic you posted — removes it from the public feed and detail lookup
+ */
+export const useDeleteDebateTopic = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDebateTopic>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteDebateTopic>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getDeleteDebateTopicMutationOptions(options));
+    }
+
+export const getListFollowingDebateTopicsUrl = (params?: ListFollowingDebateTopicsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/debate-topics/following-feed?${stringifiedParams}` : `/api/debate-topics/following-feed`
+}
+
+/**
+ * @summary Debate Topics posted by accounts you follow, newest first (signed in)
+ */
+export const listFollowingDebateTopics = async (params?: ListFollowingDebateTopicsParams, options?: RequestInit): Promise<DebateTopicFeedResponse> => {
+
+  return customFetch<DebateTopicFeedResponse>(getListFollowingDebateTopicsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListFollowingDebateTopicsQueryKey = (params?: ListFollowingDebateTopicsParams,) => {
+    return [
+    `/api/debate-topics/following-feed`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListFollowingDebateTopicsQueryOptions = <TData = Awaited<ReturnType<typeof listFollowingDebateTopics>>, TError = ErrorType<unknown>>(params?: ListFollowingDebateTopicsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFollowingDebateTopics>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListFollowingDebateTopicsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFollowingDebateTopics>>> = ({ signal }) => listFollowingDebateTopics(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listFollowingDebateTopics>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListFollowingDebateTopicsQueryResult = NonNullable<Awaited<ReturnType<typeof listFollowingDebateTopics>>>
+export type ListFollowingDebateTopicsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Debate Topics posted by accounts you follow, newest first (signed in)
+ */
+
+export function useListFollowingDebateTopics<TData = Awaited<ReturnType<typeof listFollowingDebateTopics>>, TError = ErrorType<unknown>>(
+ params?: ListFollowingDebateTopicsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFollowingDebateTopics>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListFollowingDebateTopicsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetMyDebateTopicStatsUrl = () => {
+
+
+
+
+  return `/api/debate-topics/my-stats`
+}
+
+/**
+ * @summary Your own topic-engagement stats — how much your topics and comments have drawn (signed in)
+ */
+export const getMyDebateTopicStats = async ( options?: RequestInit): Promise<DebateTopicStats> => {
+
+  return customFetch<DebateTopicStats>(getGetMyDebateTopicStatsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyDebateTopicStatsQueryKey = () => {
+    return [
+    `/api/debate-topics/my-stats`
+    ] as const;
+    }
+
+
+export const getGetMyDebateTopicStatsQueryOptions = <TData = Awaited<ReturnType<typeof getMyDebateTopicStats>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyDebateTopicStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyDebateTopicStatsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyDebateTopicStats>>> = ({ signal }) => getMyDebateTopicStats({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyDebateTopicStats>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyDebateTopicStatsQueryResult = NonNullable<Awaited<ReturnType<typeof getMyDebateTopicStats>>>
+export type GetMyDebateTopicStatsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Your own topic-engagement stats — how much your topics and comments have drawn (signed in)
+ */
+
+export function useGetMyDebateTopicStats<TData = Awaited<ReturnType<typeof getMyDebateTopicStats>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyDebateTopicStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyDebateTopicStatsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getToggleFollowUrl = () => {
+
+
+
+
+  return `/api/follows`
+}
+
+/**
+ * Idempotent toggle — following an already-followed handle unfollows it. Resolves by whispererHandle, never a raw user id, matching this app's anti-enumeration posture everywhere else. Rejects following yourself.
+ * @summary Follow or unfollow the account behind a public Whisperer handle (signed in)
+ */
+export const toggleFollow = async (toggleFollowBody: ToggleFollowBody, options?: RequestInit): Promise<ToggleFollow200> => {
+
+  return customFetch<ToggleFollow200>(getToggleFollowUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(toggleFollowBody)
+  }
+);}
+
+
+
+
+export const getToggleFollowMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleFollow>>, TError,{data: BodyType<ToggleFollowBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof toggleFollow>>, TError,{data: BodyType<ToggleFollowBody>}, TContext> => {
+
+const mutationKey = ['toggleFollow'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof toggleFollow>>, {data: BodyType<ToggleFollowBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  toggleFollow(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ToggleFollowMutationResult = NonNullable<Awaited<ReturnType<typeof toggleFollow>>>
+    export type ToggleFollowMutationBody = BodyType<ToggleFollowBody>
+    export type ToggleFollowMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Follow or unfollow the account behind a public Whisperer handle (signed in)
+ */
+export const useToggleFollow = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleFollow>>, TError,{data: BodyType<ToggleFollowBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof toggleFollow>>,
+        TError,
+        {data: BodyType<ToggleFollowBody>},
+        TContext
+      > => {
+      return useMutation(getToggleFollowMutationOptions(options));
+    }
+
+export const getGetFollowStatsUrl = () => {
+
+
+
+
+  return `/api/follows/stats`
+}
+
+/**
+ * @summary Your own follower/following counts (signed in)
+ */
+export const getFollowStats = async ( options?: RequestInit): Promise<GetFollowStats200> => {
+
+  return customFetch<GetFollowStats200>(getGetFollowStatsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFollowStatsQueryKey = () => {
+    return [
+    `/api/follows/stats`
+    ] as const;
+    }
+
+
+export const getGetFollowStatsQueryOptions = <TData = Awaited<ReturnType<typeof getFollowStats>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFollowStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFollowStatsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFollowStats>>> = ({ signal }) => getFollowStats({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFollowStats>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFollowStatsQueryResult = NonNullable<Awaited<ReturnType<typeof getFollowStats>>>
+export type GetFollowStatsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Your own follower/following counts (signed in)
+ */
+
+export function useGetFollowStats<TData = Awaited<ReturnType<typeof getFollowStats>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFollowStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFollowStatsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetFollowedOnlineStatusUrl = () => {
+
+
+
+
+  return `/api/follows/online-status`
+}
+
+/**
+ * The only place in the app that surfaces presence at all — everywhere else is an anonymous thread where this would be a real deanonymization risk. Empty immediately if the viewer has their own visibility off.
+ * @summary Which followed Whisperer handles are online right now (signed in)
+ */
+export const getFollowedOnlineStatus = async ( options?: RequestInit): Promise<FollowedOnlineStatusResponse> => {
+
+  return customFetch<FollowedOnlineStatusResponse>(getGetFollowedOnlineStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFollowedOnlineStatusQueryKey = () => {
+    return [
+    `/api/follows/online-status`
+    ] as const;
+    }
+
+
+export const getGetFollowedOnlineStatusQueryOptions = <TData = Awaited<ReturnType<typeof getFollowedOnlineStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFollowedOnlineStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFollowedOnlineStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFollowedOnlineStatus>>> = ({ signal }) => getFollowedOnlineStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFollowedOnlineStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFollowedOnlineStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getFollowedOnlineStatus>>>
+export type GetFollowedOnlineStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Which followed Whisperer handles are online right now (signed in)
+ */
+
+export function useGetFollowedOnlineStatus<TData = Awaited<ReturnType<typeof getFollowedOnlineStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFollowedOnlineStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFollowedOnlineStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListDebateTopicsUrl = (params?: ListDebateTopicsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/public/debate-topics?${stringifiedParams}` : `/api/public/debate-topics`
+}
+
+/**
+ * @summary Public Debate Topics feed (no auth required)
+ */
+export const listDebateTopics = async (params?: ListDebateTopicsParams, options?: RequestInit): Promise<DebateTopicFeedResponse> => {
+
+  return customFetch<DebateTopicFeedResponse>(getListDebateTopicsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListDebateTopicsQueryKey = (params?: ListDebateTopicsParams,) => {
+    return [
+    `/api/public/debate-topics`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListDebateTopicsQueryOptions = <TData = Awaited<ReturnType<typeof listDebateTopics>>, TError = ErrorType<unknown>>(params?: ListDebateTopicsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDebateTopics>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListDebateTopicsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listDebateTopics>>> = ({ signal }) => listDebateTopics(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listDebateTopics>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListDebateTopicsQueryResult = NonNullable<Awaited<ReturnType<typeof listDebateTopics>>>
+export type ListDebateTopicsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Public Debate Topics feed (no auth required)
+ */
+
+export function useListDebateTopics<TData = Awaited<ReturnType<typeof listDebateTopics>>, TError = ErrorType<unknown>>(
+ params?: ListDebateTopicsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDebateTopics>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListDebateTopicsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetDebateTopicUrl = (id: string,
+    params?: GetDebateTopicParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/public/debate-topics/${id}?${stringifiedParams}` : `/api/public/debate-topics/${id}`
+}
+
+/**
+ * @summary A single debate topic with its full public comment thread (no auth required)
+ */
+export const getDebateTopic = async (id: string,
+    params?: GetDebateTopicParams, options?: RequestInit): Promise<DebateTopicDetail> => {
+
+  return customFetch<DebateTopicDetail>(getGetDebateTopicUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDebateTopicQueryKey = (id: string,
+    params?: GetDebateTopicParams,) => {
+    return [
+    `/api/public/debate-topics/${id}`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetDebateTopicQueryOptions = <TData = Awaited<ReturnType<typeof getDebateTopic>>, TError = ErrorType<ApiError>>(id: string,
+    params?: GetDebateTopicParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDebateTopic>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDebateTopicQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDebateTopic>>> = ({ signal }) => getDebateTopic(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDebateTopic>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDebateTopicQueryResult = NonNullable<Awaited<ReturnType<typeof getDebateTopic>>>
+export type GetDebateTopicQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary A single debate topic with its full public comment thread (no auth required)
+ */
+
+export function useGetDebateTopic<TData = Awaited<ReturnType<typeof getDebateTopic>>, TError = ErrorType<ApiError>>(
+ id: string,
+    params?: GetDebateTopicParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDebateTopic>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDebateTopicQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getPostDebateTopicCommentUrl = (id: string,) => {
+
+
+
+
+  return `/api/public/debate-topics/${id}/comments`
+}
+
+/**
+ * An anonymous handle is assigned automatically on a visitor's first comment in this thread (see anonymous_handles.ts). Also accepts multipart/form-data with the same fields plus an optional `image` file — intentionally not modeled here, same reasoning as POST /media/upload above; see postCircleComment's description for why.
+ * @summary Post an anonymous (or signed-in) comment on a debate topic (no auth required)
+ */
+export const postDebateTopicComment = async (id: string,
+    debateTopicCommentInput: DebateTopicCommentInput, options?: RequestInit): Promise<DebateTopicComment> => {
+
+  return customFetch<DebateTopicComment>(getPostDebateTopicCommentUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(debateTopicCommentInput)
+  }
+);}
+
+
+
+
+export const getPostDebateTopicCommentMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDebateTopicComment>>, TError,{id: string;data: BodyType<DebateTopicCommentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof postDebateTopicComment>>, TError,{id: string;data: BodyType<DebateTopicCommentInput>}, TContext> => {
+
+const mutationKey = ['postDebateTopicComment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postDebateTopicComment>>, {id: string;data: BodyType<DebateTopicCommentInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  postDebateTopicComment(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostDebateTopicCommentMutationResult = NonNullable<Awaited<ReturnType<typeof postDebateTopicComment>>>
+    export type PostDebateTopicCommentMutationBody = BodyType<DebateTopicCommentInput>
+    export type PostDebateTopicCommentMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Post an anonymous (or signed-in) comment on a debate topic (no auth required)
+ */
+export const usePostDebateTopicComment = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDebateTopicComment>>, TError,{id: string;data: BodyType<DebateTopicCommentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postDebateTopicComment>>,
+        TError,
+        {id: string;data: BodyType<DebateTopicCommentInput>},
+        TContext
+      > => {
+      return useMutation(getPostDebateTopicCommentMutationOptions(options));
+    }
+
+export const getGetDebateTopicCommentImageUrl = (commentId: string,) => {
+
+
+
+
+  return `/api/public/debate-topics/comments/${commentId}/image`
+}
+
+/**
+ * @summary Fetch a debate topic comment's attached image
+ */
+export const getDebateTopicCommentImage = async (commentId: string, options?: RequestInit): Promise<Blob> => {
+
+  return customFetch<Blob>(getGetDebateTopicCommentImageUrl(commentId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDebateTopicCommentImageQueryKey = (commentId: string,) => {
+    return [
+    `/api/public/debate-topics/comments/${commentId}/image`
+    ] as const;
+    }
+
+
+export const getGetDebateTopicCommentImageQueryOptions = <TData = Awaited<ReturnType<typeof getDebateTopicCommentImage>>, TError = ErrorType<ApiError>>(commentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDebateTopicCommentImage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDebateTopicCommentImageQueryKey(commentId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDebateTopicCommentImage>>> = ({ signal }) => getDebateTopicCommentImage(commentId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: commentId !== null && commentId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDebateTopicCommentImage>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDebateTopicCommentImageQueryResult = NonNullable<Awaited<ReturnType<typeof getDebateTopicCommentImage>>>
+export type GetDebateTopicCommentImageQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Fetch a debate topic comment's attached image
+ */
+
+export function useGetDebateTopicCommentImage<TData = Awaited<ReturnType<typeof getDebateTopicCommentImage>>, TError = ErrorType<ApiError>>(
+ commentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDebateTopicCommentImage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDebateTopicCommentImageQueryOptions(commentId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRenameDebateTopicHandleUrl = (id: string,) => {
+
+
+
+
+  return `/api/public/debate-topics/${id}/handle`
+}
+
+/**
+ * @summary Rename the caller's own anonymous handle in this topic's comment thread
+ */
+export const renameDebateTopicHandle = async (id: string,
+    renameDebateTopicHandleBody: RenameDebateTopicHandleBody, options?: RequestInit): Promise<RenameDebateTopicHandle200> => {
+
+  return customFetch<RenameDebateTopicHandle200>(getRenameDebateTopicHandleUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(renameDebateTopicHandleBody)
+  }
+);}
+
+
+
+
+export const getRenameDebateTopicHandleMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameDebateTopicHandle>>, TError,{id: string;data: BodyType<RenameDebateTopicHandleBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof renameDebateTopicHandle>>, TError,{id: string;data: BodyType<RenameDebateTopicHandleBody>}, TContext> => {
+
+const mutationKey = ['renameDebateTopicHandle'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof renameDebateTopicHandle>>, {id: string;data: BodyType<RenameDebateTopicHandleBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  renameDebateTopicHandle(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RenameDebateTopicHandleMutationResult = NonNullable<Awaited<ReturnType<typeof renameDebateTopicHandle>>>
+    export type RenameDebateTopicHandleMutationBody = BodyType<RenameDebateTopicHandleBody>
+    export type RenameDebateTopicHandleMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Rename the caller's own anonymous handle in this topic's comment thread
+ */
+export const useRenameDebateTopicHandle = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameDebateTopicHandle>>, TError,{id: string;data: BodyType<RenameDebateTopicHandleBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof renameDebateTopicHandle>>,
+        TError,
+        {id: string;data: BodyType<RenameDebateTopicHandleBody>},
+        TContext
+      > => {
+      return useMutation(getRenameDebateTopicHandleMutationOptions(options));
+    }
+
+export const getUpdateDebateTopicHandleAvatarUrl = (id: string,) => {
+
+
+
+
+  return `/api/public/debate-topics/${id}/avatar`
+}
+
+/**
+ * @summary Pick (or clear) the caller's own preset avatar in this topic's comment thread
+ */
+export const updateDebateTopicHandleAvatar = async (id: string,
+    updateDebateTopicHandleAvatarBody: UpdateDebateTopicHandleAvatarBody, options?: RequestInit): Promise<UpdateDebateTopicHandleAvatar200> => {
+
+  return customFetch<UpdateDebateTopicHandleAvatar200>(getUpdateDebateTopicHandleAvatarUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateDebateTopicHandleAvatarBody)
+  }
+);}
+
+
+
+
+export const getUpdateDebateTopicHandleAvatarMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDebateTopicHandleAvatar>>, TError,{id: string;data: BodyType<UpdateDebateTopicHandleAvatarBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateDebateTopicHandleAvatar>>, TError,{id: string;data: BodyType<UpdateDebateTopicHandleAvatarBody>}, TContext> => {
+
+const mutationKey = ['updateDebateTopicHandleAvatar'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateDebateTopicHandleAvatar>>, {id: string;data: BodyType<UpdateDebateTopicHandleAvatarBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateDebateTopicHandleAvatar(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateDebateTopicHandleAvatarMutationResult = NonNullable<Awaited<ReturnType<typeof updateDebateTopicHandleAvatar>>>
+    export type UpdateDebateTopicHandleAvatarMutationBody = BodyType<UpdateDebateTopicHandleAvatarBody>
+    export type UpdateDebateTopicHandleAvatarMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Pick (or clear) the caller's own preset avatar in this topic's comment thread
+ */
+export const useUpdateDebateTopicHandleAvatar = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDebateTopicHandleAvatar>>, TError,{id: string;data: BodyType<UpdateDebateTopicHandleAvatarBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateDebateTopicHandleAvatar>>,
+        TError,
+        {id: string;data: BodyType<UpdateDebateTopicHandleAvatarBody>},
+        TContext
+      > => {
+      return useMutation(getUpdateDebateTopicHandleAvatarMutationOptions(options));
+    }
+
+export const getReactToDebateTopicCommentUrl = (id: string,
+    commentId: string,) => {
+
+
+
+
+  return `/api/public/debate-topics/${id}/comments/${commentId}/reactions`
+}
+
+/**
+ * Idempotent toggle — reacting with the same reaction again removes it; reacting with the other one switches it.
+ * @summary Like or dislike a debate topic comment
+ */
+export const reactToDebateTopicComment = async (id: string,
+    commentId: string,
+    reactToDebateTopicCommentBody: ReactToDebateTopicCommentBody, options?: RequestInit): Promise<CommentReactionResult> => {
+
+  return customFetch<CommentReactionResult>(getReactToDebateTopicCommentUrl(id,commentId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(reactToDebateTopicCommentBody)
+  }
+);}
+
+
+
+
+export const getReactToDebateTopicCommentMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reactToDebateTopicComment>>, TError,{id: string;commentId: string;data: BodyType<ReactToDebateTopicCommentBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reactToDebateTopicComment>>, TError,{id: string;commentId: string;data: BodyType<ReactToDebateTopicCommentBody>}, TContext> => {
+
+const mutationKey = ['reactToDebateTopicComment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reactToDebateTopicComment>>, {id: string;commentId: string;data: BodyType<ReactToDebateTopicCommentBody>}> = (props) => {
+          const {id,commentId,data} = props ?? {};
+
+          return  reactToDebateTopicComment(id,commentId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReactToDebateTopicCommentMutationResult = NonNullable<Awaited<ReturnType<typeof reactToDebateTopicComment>>>
+    export type ReactToDebateTopicCommentMutationBody = BodyType<ReactToDebateTopicCommentBody>
+    export type ReactToDebateTopicCommentMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Like or dislike a debate topic comment
+ */
+export const useReactToDebateTopicComment = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reactToDebateTopicComment>>, TError,{id: string;commentId: string;data: BodyType<ReactToDebateTopicCommentBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reactToDebateTopicComment>>,
+        TError,
+        {id: string;commentId: string;data: BodyType<ReactToDebateTopicCommentBody>},
+        TContext
+      > => {
+      return useMutation(getReactToDebateTopicCommentMutationOptions(options));
+    }
+
+export const getRewhispDebateTopicUrl = (id: string,) => {
+
+
+
+
+  return `/api/public/debate-topics/${id}/rewhisp`
+}
+
+/**
+ * Idempotent toggle — rewhisping a topic already rewhisped by this visitor undoes it. No list of who rewhisped is ever exposed, only a count.
+ * @summary Rewhisp (retweet-style boost) a debate topic
+ */
+export const rewhispDebateTopic = async (id: string,
+    rewhispDebateTopicBody: RewhispDebateTopicBody, options?: RequestInit): Promise<RewhispDebateTopic200> => {
+
+  return customFetch<RewhispDebateTopic200>(getRewhispDebateTopicUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(rewhispDebateTopicBody)
+  }
+);}
+
+
+
+
+export const getRewhispDebateTopicMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rewhispDebateTopic>>, TError,{id: string;data: BodyType<RewhispDebateTopicBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof rewhispDebateTopic>>, TError,{id: string;data: BodyType<RewhispDebateTopicBody>}, TContext> => {
+
+const mutationKey = ['rewhispDebateTopic'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rewhispDebateTopic>>, {id: string;data: BodyType<RewhispDebateTopicBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  rewhispDebateTopic(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RewhispDebateTopicMutationResult = NonNullable<Awaited<ReturnType<typeof rewhispDebateTopic>>>
+    export type RewhispDebateTopicMutationBody = BodyType<RewhispDebateTopicBody>
+    export type RewhispDebateTopicMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Rewhisp (retweet-style boost) a debate topic
+ */
+export const useRewhispDebateTopic = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rewhispDebateTopic>>, TError,{id: string;data: BodyType<RewhispDebateTopicBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof rewhispDebateTopic>>,
+        TError,
+        {id: string;data: BodyType<RewhispDebateTopicBody>},
+        TContext
+      > => {
+      return useMutation(getRewhispDebateTopicMutationOptions(options));
+    }
+
+export const getGetPublicWhisperBoxUrl = (handle: string,) => {
+
+
+
+
+  return `/api/public/whisper-box/${handle}`
+}
+
+/**
+ * Same 404 whether the handle doesn't resolve to any account or resolves to one that has since turned its Whisper Box off — the response never distinguishes "no such person" from "that person disabled their box."
+ * @summary Resolve a Whisper Box handle to its public display info (no auth required)
+ */
+export const getPublicWhisperBox = async (handle: string, options?: RequestInit): Promise<GetPublicWhisperBox200> => {
+
+  return customFetch<GetPublicWhisperBox200>(getGetPublicWhisperBoxUrl(handle),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPublicWhisperBoxQueryKey = (handle: string,) => {
+    return [
+    `/api/public/whisper-box/${handle}`
+    ] as const;
+    }
+
+
+export const getGetPublicWhisperBoxQueryOptions = <TData = Awaited<ReturnType<typeof getPublicWhisperBox>>, TError = ErrorType<ApiError>>(handle: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicWhisperBox>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPublicWhisperBoxQueryKey(handle);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPublicWhisperBox>>> = ({ signal }) => getPublicWhisperBox(handle, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: handle !== null && handle !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPublicWhisperBox>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPublicWhisperBoxQueryResult = NonNullable<Awaited<ReturnType<typeof getPublicWhisperBox>>>
+export type GetPublicWhisperBoxQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Resolve a Whisper Box handle to its public display info (no auth required)
+ */
+
+export function useGetPublicWhisperBox<TData = Awaited<ReturnType<typeof getPublicWhisperBox>>, TError = ErrorType<ApiError>>(
+ handle: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicWhisperBox>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPublicWhisperBoxQueryOptions(handle,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSendWhisperBoxMessageUrl = (handle: string,) => {
+
+
+
+
+  return `/api/public/whisper-box/${handle}`
+}
+
+/**
+ * Deliberately minimal, constant-shaped response — no id, no confirmation of anything about the recipient — same anti-enumeration/no-feedback posture as POST /public/subscribe, since the response shape must never become an oracle on an unauthenticated endpoint.
+ * @summary Send an anonymous message to a Whisper Box (no auth required)
+ */
+export const sendWhisperBoxMessage = async (handle: string,
+    sendWhisperBoxMessageBody: SendWhisperBoxMessageBody, options?: RequestInit): Promise<SendWhisperBoxMessage201> => {
+
+  return customFetch<SendWhisperBoxMessage201>(getSendWhisperBoxMessageUrl(handle),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(sendWhisperBoxMessageBody)
+  }
+);}
+
+
+
+
+export const getSendWhisperBoxMessageMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendWhisperBoxMessage>>, TError,{handle: string;data: BodyType<SendWhisperBoxMessageBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendWhisperBoxMessage>>, TError,{handle: string;data: BodyType<SendWhisperBoxMessageBody>}, TContext> => {
+
+const mutationKey = ['sendWhisperBoxMessage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendWhisperBoxMessage>>, {handle: string;data: BodyType<SendWhisperBoxMessageBody>}> = (props) => {
+          const {handle,data} = props ?? {};
+
+          return  sendWhisperBoxMessage(handle,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendWhisperBoxMessageMutationResult = NonNullable<Awaited<ReturnType<typeof sendWhisperBoxMessage>>>
+    export type SendWhisperBoxMessageMutationBody = BodyType<SendWhisperBoxMessageBody>
+    export type SendWhisperBoxMessageMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Send an anonymous message to a Whisper Box (no auth required)
+ */
+export const useSendWhisperBoxMessage = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendWhisperBoxMessage>>, TError,{handle: string;data: BodyType<SendWhisperBoxMessageBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sendWhisperBoxMessage>>,
+        TError,
+        {handle: string;data: BodyType<SendWhisperBoxMessageBody>},
+        TContext
+      > => {
+      return useMutation(getSendWhisperBoxMessageMutationOptions(options));
+    }
+
+export const getEnableWhisperBoxUrl = () => {
+
+
+
+
+  return `/api/whisper-box/enable`
+}
+
+/**
+ * The Settings "Get your Whisper Box link" action. Assigns a whisperBoxHandle if the account doesn't have one yet — built from the account's display name (fullName) when one is set, so a friend can recognize it, or the same non-identifying random generator whispererHandle uses when it isn't — and flips the opt-in on. Also lazy-assigns the SEPARATE, always-anonymous whispererHandle used only by Debate Now/follows, so that stays ready too. One call does all of it so Settings only needs one button.
+ * @summary Turn on the caller's Whisper Box, assigning a Whisper Box handle first if they don't already have one
+ */
+export const enableWhisperBox = async ( options?: RequestInit): Promise<EnableWhisperBox200> => {
+
+  return customFetch<EnableWhisperBox200>(getEnableWhisperBoxUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getEnableWhisperBoxMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof enableWhisperBox>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof enableWhisperBox>>, TError,void, TContext> => {
+
+const mutationKey = ['enableWhisperBox'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof enableWhisperBox>>, void> = () => {
+
+
+          return  enableWhisperBox(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type EnableWhisperBoxMutationResult = NonNullable<Awaited<ReturnType<typeof enableWhisperBox>>>
+
+    export type EnableWhisperBoxMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Turn on the caller's Whisper Box, assigning a Whisper Box handle first if they don't already have one
+ */
+export const useEnableWhisperBox = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof enableWhisperBox>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof enableWhisperBox>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getEnableWhisperBoxMutationOptions(options));
+    }
+
+export const getRefreshWhisperBoxHandleUrl = () => {
+
+
+
+
+  return `/api/whisper-box/refresh-handle`
+}
+
+/**
+ * Overwrites whatever Whisper Box handle the caller has now (including a previously-personalized one) with a fresh one derived from their current fullName — a deliberate "update my link to match my name" action, never automatic. 400s if fullName isn't set, since there'd be nothing to personalize with. This is what the frontend calls right after capturing a display name from someone who tries to copy their link without having set one yet. Any previously-shared link using the old handle stops resolving once this runs.
+ * @summary Regenerate the caller's Whisper Box handle from their current display name
+ */
+export const refreshWhisperBoxHandle = async ( options?: RequestInit): Promise<RefreshWhisperBoxHandle200> => {
+
+  return customFetch<RefreshWhisperBoxHandle200>(getRefreshWhisperBoxHandleUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRefreshWhisperBoxHandleMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refreshWhisperBoxHandle>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof refreshWhisperBoxHandle>>, TError,void, TContext> => {
+
+const mutationKey = ['refreshWhisperBoxHandle'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof refreshWhisperBoxHandle>>, void> = () => {
+
+
+          return  refreshWhisperBoxHandle(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RefreshWhisperBoxHandleMutationResult = NonNullable<Awaited<ReturnType<typeof refreshWhisperBoxHandle>>>
+
+    export type RefreshWhisperBoxHandleMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Regenerate the caller's Whisper Box handle from their current display name
+ */
+export const useRefreshWhisperBoxHandle = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refreshWhisperBoxHandle>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof refreshWhisperBoxHandle>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getRefreshWhisperBoxHandleMutationOptions(options));
+    }
+
+export const getDisableWhisperBoxUrl = () => {
+
+
+
+
+  return `/api/whisper-box/disable`
+}
+
+/**
+ * @summary Turn off the caller's Whisper Box public page, without touching the handle itself
+ */
+export const disableWhisperBox = async ( options?: RequestInit): Promise<DisableWhisperBox200> => {
+
+  return customFetch<DisableWhisperBox200>(getDisableWhisperBoxUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getDisableWhisperBoxMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disableWhisperBox>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof disableWhisperBox>>, TError,void, TContext> => {
+
+const mutationKey = ['disableWhisperBox'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof disableWhisperBox>>, void> = () => {
+
+
+          return  disableWhisperBox(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DisableWhisperBoxMutationResult = NonNullable<Awaited<ReturnType<typeof disableWhisperBox>>>
+
+    export type DisableWhisperBoxMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Turn off the caller's Whisper Box public page, without touching the handle itself
+ */
+export const useDisableWhisperBox = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disableWhisperBox>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof disableWhisperBox>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getDisableWhisperBoxMutationOptions(options));
+    }
+
+export const getListWhisperBoxMessagesUrl = () => {
+
+
+
+
+  return `/api/whisper-box`
+}
+
+/**
+ * @summary The caller's own received Whisper Box messages, newest first
+ */
+export const listWhisperBoxMessages = async ( options?: RequestInit): Promise<ListWhisperBoxMessages200> => {
+
+  return customFetch<ListWhisperBoxMessages200>(getListWhisperBoxMessagesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListWhisperBoxMessagesQueryKey = () => {
+    return [
+    `/api/whisper-box`
+    ] as const;
+    }
+
+
+export const getListWhisperBoxMessagesQueryOptions = <TData = Awaited<ReturnType<typeof listWhisperBoxMessages>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWhisperBoxMessages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListWhisperBoxMessagesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listWhisperBoxMessages>>> = ({ signal }) => listWhisperBoxMessages({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listWhisperBoxMessages>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListWhisperBoxMessagesQueryResult = NonNullable<Awaited<ReturnType<typeof listWhisperBoxMessages>>>
+export type ListWhisperBoxMessagesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary The caller's own received Whisper Box messages, newest first
+ */
+
+export function useListWhisperBoxMessages<TData = Awaited<ReturnType<typeof listWhisperBoxMessages>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWhisperBoxMessages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListWhisperBoxMessagesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetWhisperBoxUnreadCountUrl = () => {
+
+
+
+
+  return `/api/whisper-box/unread-count`
+}
+
+/**
+ * @summary Lightweight unread count for a nav badge, without fetching the full list
+ */
+export const getWhisperBoxUnreadCount = async ( options?: RequestInit): Promise<GetWhisperBoxUnreadCount200> => {
+
+  return customFetch<GetWhisperBoxUnreadCount200>(getGetWhisperBoxUnreadCountUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWhisperBoxUnreadCountQueryKey = () => {
+    return [
+    `/api/whisper-box/unread-count`
+    ] as const;
+    }
+
+
+export const getGetWhisperBoxUnreadCountQueryOptions = <TData = Awaited<ReturnType<typeof getWhisperBoxUnreadCount>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWhisperBoxUnreadCount>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWhisperBoxUnreadCountQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWhisperBoxUnreadCount>>> = ({ signal }) => getWhisperBoxUnreadCount({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWhisperBoxUnreadCount>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWhisperBoxUnreadCountQueryResult = NonNullable<Awaited<ReturnType<typeof getWhisperBoxUnreadCount>>>
+export type GetWhisperBoxUnreadCountQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Lightweight unread count for a nav badge, without fetching the full list
+ */
+
+export function useGetWhisperBoxUnreadCount<TData = Awaited<ReturnType<typeof getWhisperBoxUnreadCount>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWhisperBoxUnreadCount>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWhisperBoxUnreadCountQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getMarkWhisperBoxMessageReadUrl = (id: string,) => {
+
+
+
+
+  return `/api/whisper-box/${id}/read`
+}
+
+/**
+ * @summary Mark one Whisper Box message as read
+ */
+export const markWhisperBoxMessageRead = async (id: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getMarkWhisperBoxMessageReadUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getMarkWhisperBoxMessageReadMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markWhisperBoxMessageRead>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof markWhisperBoxMessageRead>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['markWhisperBoxMessageRead'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markWhisperBoxMessageRead>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  markWhisperBoxMessageRead(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkWhisperBoxMessageReadMutationResult = NonNullable<Awaited<ReturnType<typeof markWhisperBoxMessageRead>>>
+
+    export type MarkWhisperBoxMessageReadMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Mark one Whisper Box message as read
+ */
+export const useMarkWhisperBoxMessageRead = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markWhisperBoxMessageRead>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof markWhisperBoxMessageRead>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getMarkWhisperBoxMessageReadMutationOptions(options));
+    }
+
+export const getDeleteWhisperBoxMessageUrl = (id: string,) => {
+
+
+
+
+  return `/api/whisper-box/${id}`
+}
+
+/**
+ * A hard delete, unlike whisps' soft delete — there's no sender-side copy to preserve, since there's no sender account at all.
+ * @summary Delete one of the caller's own received Whisper Box messages
+ */
+export const deleteWhisperBoxMessage = async (id: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteWhisperBoxMessageUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteWhisperBoxMessageMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteWhisperBoxMessage>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteWhisperBoxMessage>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteWhisperBoxMessage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteWhisperBoxMessage>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteWhisperBoxMessage(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteWhisperBoxMessageMutationResult = NonNullable<Awaited<ReturnType<typeof deleteWhisperBoxMessage>>>
+
+    export type DeleteWhisperBoxMessageMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Delete one of the caller's own received Whisper Box messages
+ */
+export const useDeleteWhisperBoxMessage = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteWhisperBoxMessage>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteWhisperBoxMessage>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getDeleteWhisperBoxMessageMutationOptions(options));
+    }
+
 export const getCreateCheckoutSessionUrl = () => {
 
 
@@ -3844,6 +6704,155 @@ export function useAdminListUserWhisps<TData = Awaited<ReturnType<typeof adminLi
 
 
 
+
+export const getAdminGetUsersOnlineNowUrl = () => {
+
+
+
+
+  return `/api/admin/users/online-now`
+}
+
+/**
+ * An admin-only aggregate headcount — not gated by any individual's showOnlineStatus, which only governs whether other users can see a specific person online, not whether the platform's own operators can see an anonymous count.
+ * @summary How many accounts have been active in the last presence window, for the Analytics "online now" tile (admin only)
+ */
+export const adminGetUsersOnlineNow = async ( options?: RequestInit): Promise<AdminOnlineNowResponse> => {
+
+  return customFetch<AdminOnlineNowResponse>(getAdminGetUsersOnlineNowUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetUsersOnlineNowQueryKey = () => {
+    return [
+    `/api/admin/users/online-now`
+    ] as const;
+    }
+
+
+export const getAdminGetUsersOnlineNowQueryOptions = <TData = Awaited<ReturnType<typeof adminGetUsersOnlineNow>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetUsersOnlineNow>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetUsersOnlineNowQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetUsersOnlineNow>>> = ({ signal }) => adminGetUsersOnlineNow({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetUsersOnlineNow>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetUsersOnlineNowQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetUsersOnlineNow>>>
+export type AdminGetUsersOnlineNowQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary How many accounts have been active in the last presence window, for the Analytics "online now" tile (admin only)
+ */
+
+export function useAdminGetUsersOnlineNow<TData = Awaited<ReturnType<typeof adminGetUsersOnlineNow>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetUsersOnlineNow>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetUsersOnlineNowQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminSendComplianceReminderUrl = () => {
+
+
+
+
+  return `/api/admin/users/compliance-reminder`
+}
+
+/**
+ * Same persisted-notification-plus-email delivery as POST /admin/notifications, just pre-written per compliance kind rather than admin-authored. Never re-verifies the flag is still true server-side before sending — a reminder sent after someone already fixed it is a harmless no-op.
+ * @summary Nudge specific users about a single missing compliance item, via in-app notification, best-effort push, and email (admin only)
+ */
+export const adminSendComplianceReminder = async (complianceReminderInput: ComplianceReminderInput, options?: RequestInit): Promise<SendNotificationResult> => {
+
+  return customFetch<SendNotificationResult>(getAdminSendComplianceReminderUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(complianceReminderInput)
+  }
+);}
+
+
+
+
+export const getAdminSendComplianceReminderMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminSendComplianceReminder>>, TError,{data: BodyType<ComplianceReminderInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminSendComplianceReminder>>, TError,{data: BodyType<ComplianceReminderInput>}, TContext> => {
+
+const mutationKey = ['adminSendComplianceReminder'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminSendComplianceReminder>>, {data: BodyType<ComplianceReminderInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminSendComplianceReminder(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminSendComplianceReminderMutationResult = NonNullable<Awaited<ReturnType<typeof adminSendComplianceReminder>>>
+    export type AdminSendComplianceReminderMutationBody = BodyType<ComplianceReminderInput>
+    export type AdminSendComplianceReminderMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Nudge specific users about a single missing compliance item, via in-app notification, best-effort push, and email (admin only)
+ */
+export const useAdminSendComplianceReminder = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminSendComplianceReminder>>, TError,{data: BodyType<ComplianceReminderInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminSendComplianceReminder>>,
+        TError,
+        {data: BodyType<ComplianceReminderInput>},
+        TContext
+      > => {
+      return useMutation(getAdminSendComplianceReminderMutationOptions(options));
+    }
 
 export const getAdminListWhispsUrl = (params?: AdminListWhispsParams,) => {
   const normalizedParams = new URLSearchParams();
@@ -4923,6 +7932,84 @@ export function useGetMyUnreadNotificationCount<TData = Awaited<ReturnType<typeo
 
 
 
+export const getGetMyRecentRecipientsUrl = () => {
+
+
+
+
+  return `/api/user/recent-recipients`
+}
+
+/**
+ * Only ever the caller's own sending history — addresses they typed themselves. Says nothing about whether any of them has a Blind Whisper account, which is the fact the anti-enumeration rules protect.
+ * @summary Contacts this user has sent to before, for autocompleting the recipient field
+ */
+export const getMyRecentRecipients = async ( options?: RequestInit): Promise<RecentRecipientListResponse> => {
+
+  return customFetch<RecentRecipientListResponse>(getGetMyRecentRecipientsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyRecentRecipientsQueryKey = () => {
+    return [
+    `/api/user/recent-recipients`
+    ] as const;
+    }
+
+
+export const getGetMyRecentRecipientsQueryOptions = <TData = Awaited<ReturnType<typeof getMyRecentRecipients>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyRecentRecipients>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyRecentRecipientsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyRecentRecipients>>> = ({ signal }) => getMyRecentRecipients({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyRecentRecipients>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyRecentRecipientsQueryResult = NonNullable<Awaited<ReturnType<typeof getMyRecentRecipients>>>
+export type GetMyRecentRecipientsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Contacts this user has sent to before, for autocompleting the recipient field
+ */
+
+export function useGetMyRecentRecipients<TData = Awaited<ReturnType<typeof getMyRecentRecipients>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyRecentRecipients>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyRecentRecipientsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getMarkNotificationReadUrl = (id: string,) => {
 
 
@@ -5216,6 +8303,2500 @@ export const useAdminUpdateModerationFlag = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getAdminUpdateModerationFlagMutationOptions(options));
+    }
+
+export const getAdminRemoveFlaggedContentUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/moderation/flags/${id}/remove-content`
+}
+
+/**
+ * Sets removedByAdminAt on whichever table the flag's contentType points at (whisp, circle_comment, debate_topic, or debate_topic_comment), excluding it from every public read path from then on. Distinct from PATCH's dismiss/undismiss, which never touches the underlying content.
+ * @summary Take down the content a flag points at (admin only)
+ */
+export const adminRemoveFlaggedContent = async (id: string, options?: RequestInit): Promise<ModerationFlag> => {
+
+  return customFetch<ModerationFlag>(getAdminRemoveFlaggedContentUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAdminRemoveFlaggedContentMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRemoveFlaggedContent>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminRemoveFlaggedContent>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['adminRemoveFlaggedContent'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminRemoveFlaggedContent>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adminRemoveFlaggedContent(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminRemoveFlaggedContentMutationResult = NonNullable<Awaited<ReturnType<typeof adminRemoveFlaggedContent>>>
+
+    export type AdminRemoveFlaggedContentMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Take down the content a flag points at (admin only)
+ */
+export const useAdminRemoveFlaggedContent = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRemoveFlaggedContent>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminRemoveFlaggedContent>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getAdminRemoveFlaggedContentMutationOptions(options));
+    }
+
+export const getReportContentUrl = () => {
+
+
+
+
+  return `/api/content-reports`
+}
+
+/**
+ * Files a user report against a debate topic or one of its comments, with a reason and optional free-text detail (capped at 300 words). Requires a signed-in account — the admin team's resolution is sent back to the reporter as an in-app notification. One open report per reporter per piece of content; re-reporting the same content while a previous report is still open returns 409.
+ * @summary Report a piece of Debate Now content for violating the Community Guidelines
+ */
+export const reportContent = async (createContentReportInput: CreateContentReportInput, options?: RequestInit): Promise<CreateContentReportResponse> => {
+
+  return customFetch<CreateContentReportResponse>(getReportContentUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createContentReportInput)
+  }
+);}
+
+
+
+
+export const getReportContentMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportContent>>, TError,{data: BodyType<CreateContentReportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reportContent>>, TError,{data: BodyType<CreateContentReportInput>}, TContext> => {
+
+const mutationKey = ['reportContent'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reportContent>>, {data: BodyType<CreateContentReportInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  reportContent(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReportContentMutationResult = NonNullable<Awaited<ReturnType<typeof reportContent>>>
+    export type ReportContentMutationBody = BodyType<CreateContentReportInput>
+    export type ReportContentMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Report a piece of Debate Now content for violating the Community Guidelines
+ */
+export const useReportContent = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportContent>>, TError,{data: BodyType<CreateContentReportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reportContent>>,
+        TError,
+        {data: BodyType<CreateContentReportInput>},
+        TContext
+      > => {
+      return useMutation(getReportContentMutationOptions(options));
+    }
+
+export const getAdminRepairUserProfilesUrl = () => {
+
+
+
+
+  return `/api/admin/users/repair-profiles`
+}
+
+/**
+ * Sweeps every user whose stored email is a fabricated `clerkId@...` placeholder and re-fetches their real profile from Clerk. Accounts with no email in Clerk (e.g. phone-only signups) and accounts whose real email already belongs to another row are left untouched and counted separately.
+ * @summary Backfill real emails/names/phones for accounts stuck with placeholder addresses (admin only)
+ */
+export const adminRepairUserProfiles = async ( options?: RequestInit): Promise<RepairProfilesResult> => {
+
+  return customFetch<RepairProfilesResult>(getAdminRepairUserProfilesUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAdminRepairUserProfilesMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRepairUserProfiles>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminRepairUserProfiles>>, TError,void, TContext> => {
+
+const mutationKey = ['adminRepairUserProfiles'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminRepairUserProfiles>>, void> = () => {
+
+
+          return  adminRepairUserProfiles(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminRepairUserProfilesMutationResult = NonNullable<Awaited<ReturnType<typeof adminRepairUserProfiles>>>
+
+    export type AdminRepairUserProfilesMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Backfill real emails/names/phones for accounts stuck with placeholder addresses (admin only)
+ */
+export const useAdminRepairUserProfiles = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRepairUserProfiles>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminRepairUserProfiles>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getAdminRepairUserProfilesMutationOptions(options));
+    }
+
+export const getGetMyPolicyStatusUrl = () => {
+
+
+
+
+  return `/api/user/policy-status`
+}
+
+/**
+ * @summary Latest published policy updates this user hasn't agreed to yet
+ */
+export const getMyPolicyStatus = async ( options?: RequestInit): Promise<PolicyStatusResponse> => {
+
+  return customFetch<PolicyStatusResponse>(getGetMyPolicyStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyPolicyStatusQueryKey = () => {
+    return [
+    `/api/user/policy-status`
+    ] as const;
+    }
+
+
+export const getGetMyPolicyStatusQueryOptions = <TData = Awaited<ReturnType<typeof getMyPolicyStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyPolicyStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyPolicyStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyPolicyStatus>>> = ({ signal }) => getMyPolicyStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyPolicyStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyPolicyStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getMyPolicyStatus>>>
+export type GetMyPolicyStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Latest published policy updates this user hasn't agreed to yet
+ */
+
+export function useGetMyPolicyStatus<TData = Awaited<ReturnType<typeof getMyPolicyStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyPolicyStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyPolicyStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAcceptPoliciesUrl = () => {
+
+
+
+
+  return `/api/user/policy-acceptances`
+}
+
+/**
+ * @summary Record agreement to one or more published policy updates
+ */
+export const acceptPolicies = async (acceptPoliciesInput: AcceptPoliciesInput, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getAcceptPoliciesUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(acceptPoliciesInput)
+  }
+);}
+
+
+
+
+export const getAcceptPoliciesMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptPolicies>>, TError,{data: BodyType<AcceptPoliciesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof acceptPolicies>>, TError,{data: BodyType<AcceptPoliciesInput>}, TContext> => {
+
+const mutationKey = ['acceptPolicies'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof acceptPolicies>>, {data: BodyType<AcceptPoliciesInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  acceptPolicies(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AcceptPoliciesMutationResult = NonNullable<Awaited<ReturnType<typeof acceptPolicies>>>
+    export type AcceptPoliciesMutationBody = BodyType<AcceptPoliciesInput>
+    export type AcceptPoliciesMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Record agreement to one or more published policy updates
+ */
+export const useAcceptPolicies = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptPolicies>>, TError,{data: BodyType<AcceptPoliciesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof acceptPolicies>>,
+        TError,
+        {data: BodyType<AcceptPoliciesInput>},
+        TContext
+      > => {
+      return useMutation(getAcceptPoliciesMutationOptions(options));
+    }
+
+export const getAdminListPolicyVersionsUrl = () => {
+
+
+
+
+  return `/api/admin/policy-versions`
+}
+
+/**
+ * @summary Policy update history with per-version acceptance counts (admin only)
+ */
+export const adminListPolicyVersions = async ( options?: RequestInit): Promise<PolicyVersionListResponse> => {
+
+  return customFetch<PolicyVersionListResponse>(getAdminListPolicyVersionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListPolicyVersionsQueryKey = () => {
+    return [
+    `/api/admin/policy-versions`
+    ] as const;
+    }
+
+
+export const getAdminListPolicyVersionsQueryOptions = <TData = Awaited<ReturnType<typeof adminListPolicyVersions>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListPolicyVersions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListPolicyVersionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListPolicyVersions>>> = ({ signal }) => adminListPolicyVersions({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListPolicyVersions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListPolicyVersionsQueryResult = NonNullable<Awaited<ReturnType<typeof adminListPolicyVersions>>>
+export type AdminListPolicyVersionsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Policy update history with per-version acceptance counts (admin only)
+ */
+
+export function useAdminListPolicyVersions<TData = Awaited<ReturnType<typeof adminListPolicyVersions>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListPolicyVersions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListPolicyVersionsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminCreatePolicyVersionUrl = () => {
+
+
+
+
+  return `/api/admin/policy-versions`
+}
+
+/**
+ * @summary Draft a policy update announcement (admin only)
+ */
+export const adminCreatePolicyVersion = async (createPolicyVersionInput: CreatePolicyVersionInput, options?: RequestInit): Promise<PolicyVersion> => {
+
+  return customFetch<PolicyVersion>(getAdminCreatePolicyVersionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createPolicyVersionInput)
+  }
+);}
+
+
+
+
+export const getAdminCreatePolicyVersionMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreatePolicyVersion>>, TError,{data: BodyType<CreatePolicyVersionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminCreatePolicyVersion>>, TError,{data: BodyType<CreatePolicyVersionInput>}, TContext> => {
+
+const mutationKey = ['adminCreatePolicyVersion'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminCreatePolicyVersion>>, {data: BodyType<CreatePolicyVersionInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminCreatePolicyVersion(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminCreatePolicyVersionMutationResult = NonNullable<Awaited<ReturnType<typeof adminCreatePolicyVersion>>>
+    export type AdminCreatePolicyVersionMutationBody = BodyType<CreatePolicyVersionInput>
+    export type AdminCreatePolicyVersionMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Draft a policy update announcement (admin only)
+ */
+export const useAdminCreatePolicyVersion = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreatePolicyVersion>>, TError,{data: BodyType<CreatePolicyVersionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminCreatePolicyVersion>>,
+        TError,
+        {data: BodyType<CreatePolicyVersionInput>},
+        TContext
+      > => {
+      return useMutation(getAdminCreatePolicyVersionMutationOptions(options));
+    }
+
+export const getAdminUpdatePolicyVersionUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/policy-versions/${id}`
+}
+
+/**
+ * @summary Edit a draft's summary — published versions are immutable (admin only)
+ */
+export const adminUpdatePolicyVersion = async (id: string,
+    updatePolicyVersionInput: UpdatePolicyVersionInput, options?: RequestInit): Promise<PolicyVersion> => {
+
+  return customFetch<PolicyVersion>(getAdminUpdatePolicyVersionUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updatePolicyVersionInput)
+  }
+);}
+
+
+
+
+export const getAdminUpdatePolicyVersionMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdatePolicyVersion>>, TError,{id: string;data: BodyType<UpdatePolicyVersionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminUpdatePolicyVersion>>, TError,{id: string;data: BodyType<UpdatePolicyVersionInput>}, TContext> => {
+
+const mutationKey = ['adminUpdatePolicyVersion'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminUpdatePolicyVersion>>, {id: string;data: BodyType<UpdatePolicyVersionInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  adminUpdatePolicyVersion(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminUpdatePolicyVersionMutationResult = NonNullable<Awaited<ReturnType<typeof adminUpdatePolicyVersion>>>
+    export type AdminUpdatePolicyVersionMutationBody = BodyType<UpdatePolicyVersionInput>
+    export type AdminUpdatePolicyVersionMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Edit a draft's summary — published versions are immutable (admin only)
+ */
+export const useAdminUpdatePolicyVersion = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdatePolicyVersion>>, TError,{id: string;data: BodyType<UpdatePolicyVersionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminUpdatePolicyVersion>>,
+        TError,
+        {id: string;data: BodyType<UpdatePolicyVersionInput>},
+        TContext
+      > => {
+      return useMutation(getAdminUpdatePolicyVersionMutationOptions(options));
+    }
+
+export const getAdminDeletePolicyVersionUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/policy-versions/${id}`
+}
+
+/**
+ * @summary Discard a draft — published versions are permanent history (admin only)
+ */
+export const adminDeletePolicyVersion = async (id: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getAdminDeletePolicyVersionUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getAdminDeletePolicyVersionMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeletePolicyVersion>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminDeletePolicyVersion>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['adminDeletePolicyVersion'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminDeletePolicyVersion>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adminDeletePolicyVersion(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminDeletePolicyVersionMutationResult = NonNullable<Awaited<ReturnType<typeof adminDeletePolicyVersion>>>
+
+    export type AdminDeletePolicyVersionMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Discard a draft — published versions are permanent history (admin only)
+ */
+export const useAdminDeletePolicyVersion = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeletePolicyVersion>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminDeletePolicyVersion>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getAdminDeletePolicyVersionMutationOptions(options));
+    }
+
+export const getAdminPublishPolicyVersionUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/policy-versions/${id}/publish`
+}
+
+/**
+ * @summary Publish a policy update — every signed-in user is prompted to agree from this moment (admin only)
+ */
+export const adminPublishPolicyVersion = async (id: string, options?: RequestInit): Promise<PolicyVersion> => {
+
+  return customFetch<PolicyVersion>(getAdminPublishPolicyVersionUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAdminPublishPolicyVersionMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminPublishPolicyVersion>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminPublishPolicyVersion>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['adminPublishPolicyVersion'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminPublishPolicyVersion>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adminPublishPolicyVersion(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminPublishPolicyVersionMutationResult = NonNullable<Awaited<ReturnType<typeof adminPublishPolicyVersion>>>
+
+    export type AdminPublishPolicyVersionMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Publish a policy update — every signed-in user is prompted to agree from this moment (admin only)
+ */
+export const useAdminPublishPolicyVersion = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminPublishPolicyVersion>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminPublishPolicyVersion>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getAdminPublishPolicyVersionMutationOptions(options));
+    }
+
+export const getRecordUsageEventsUrl = () => {
+
+
+
+
+  return `/api/public/usage-events`
+}
+
+/**
+ * @summary Record aggregated feature-usage counters (internal analytics; anonymous allowed)
+ */
+export const recordUsageEvents = async (recordUsageInput: RecordUsageInput, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRecordUsageEventsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(recordUsageInput)
+  }
+);}
+
+
+
+
+export const getRecordUsageEventsMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordUsageEvents>>, TError,{data: BodyType<RecordUsageInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof recordUsageEvents>>, TError,{data: BodyType<RecordUsageInput>}, TContext> => {
+
+const mutationKey = ['recordUsageEvents'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof recordUsageEvents>>, {data: BodyType<RecordUsageInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  recordUsageEvents(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RecordUsageEventsMutationResult = NonNullable<Awaited<ReturnType<typeof recordUsageEvents>>>
+    export type RecordUsageEventsMutationBody = BodyType<RecordUsageInput>
+    export type RecordUsageEventsMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Record aggregated feature-usage counters (internal analytics; anonymous allowed)
+ */
+export const useRecordUsageEvents = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordUsageEvents>>, TError,{data: BodyType<RecordUsageInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof recordUsageEvents>>,
+        TError,
+        {data: BodyType<RecordUsageInput>},
+        TContext
+      > => {
+      return useMutation(getRecordUsageEventsMutationOptions(options));
+    }
+
+export const getAdminGetUsageStatsUrl = (params?: AdminGetUsageStatsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/usage-stats?${stringifiedParams}` : `/api/admin/usage-stats`
+}
+
+/**
+ * @summary Per-feature usage totals over a window, most-used first (admin only)
+ */
+export const adminGetUsageStats = async (params?: AdminGetUsageStatsParams, options?: RequestInit): Promise<UsageStatsResponse> => {
+
+  return customFetch<UsageStatsResponse>(getAdminGetUsageStatsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetUsageStatsQueryKey = (params?: AdminGetUsageStatsParams,) => {
+    return [
+    `/api/admin/usage-stats`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getAdminGetUsageStatsQueryOptions = <TData = Awaited<ReturnType<typeof adminGetUsageStats>>, TError = ErrorType<unknown>>(params?: AdminGetUsageStatsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetUsageStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetUsageStatsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetUsageStats>>> = ({ signal }) => adminGetUsageStats(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetUsageStats>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetUsageStatsQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetUsageStats>>>
+export type AdminGetUsageStatsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Per-feature usage totals over a window, most-used first (admin only)
+ */
+
+export function useAdminGetUsageStats<TData = Awaited<ReturnType<typeof adminGetUsageStats>>, TError = ErrorType<unknown>>(
+ params?: AdminGetUsageStatsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetUsageStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetUsageStatsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminGetTrafficByHourUrl = (params?: AdminGetTrafficByHourParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/analytics/traffic-by-hour?${stringifiedParams}` : `/api/admin/analytics/traffic-by-hour`
+}
+
+/**
+ * Sums feature_events.count (not row count — one row can represent many clicks), not just how many events were logged.
+ * @summary 24-bucket UTC histogram of platform activity, for the Analytics "when is the app actually used" chart (admin only)
+ */
+export const adminGetTrafficByHour = async (params?: AdminGetTrafficByHourParams, options?: RequestInit): Promise<TrafficByHourResponse> => {
+
+  return customFetch<TrafficByHourResponse>(getAdminGetTrafficByHourUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetTrafficByHourQueryKey = (params?: AdminGetTrafficByHourParams,) => {
+    return [
+    `/api/admin/analytics/traffic-by-hour`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getAdminGetTrafficByHourQueryOptions = <TData = Awaited<ReturnType<typeof adminGetTrafficByHour>>, TError = ErrorType<unknown>>(params?: AdminGetTrafficByHourParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetTrafficByHour>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetTrafficByHourQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetTrafficByHour>>> = ({ signal }) => adminGetTrafficByHour(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetTrafficByHour>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetTrafficByHourQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetTrafficByHour>>>
+export type AdminGetTrafficByHourQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary 24-bucket UTC histogram of platform activity, for the Analytics "when is the app actually used" chart (admin only)
+ */
+
+export function useAdminGetTrafficByHour<TData = Awaited<ReturnType<typeof adminGetTrafficByHour>>, TError = ErrorType<unknown>>(
+ params?: AdminGetTrafficByHourParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetTrafficByHour>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetTrafficByHourQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminGenerateUsageInsightsUrl = () => {
+
+
+
+
+  return `/api/admin/usage-insights`
+}
+
+/**
+ * @summary AI analyzer — practical product insights from the usage counters (admin only)
+ */
+export const adminGenerateUsageInsights = async (usageInsightsInput?: UsageInsightsInput, options?: RequestInit): Promise<UsageInsightsResponse> => {
+
+  return customFetch<UsageInsightsResponse>(getAdminGenerateUsageInsightsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(usageInsightsInput)
+  }
+);}
+
+
+
+
+export const getAdminGenerateUsageInsightsMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminGenerateUsageInsights>>, TError,{data?: BodyType<UsageInsightsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminGenerateUsageInsights>>, TError,{data?: BodyType<UsageInsightsInput>}, TContext> => {
+
+const mutationKey = ['adminGenerateUsageInsights'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminGenerateUsageInsights>>, {data?: BodyType<UsageInsightsInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminGenerateUsageInsights(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminGenerateUsageInsightsMutationResult = NonNullable<Awaited<ReturnType<typeof adminGenerateUsageInsights>>>
+    export type AdminGenerateUsageInsightsMutationBody = BodyType<UsageInsightsInput> | undefined
+    export type AdminGenerateUsageInsightsMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary AI analyzer — practical product insights from the usage counters (admin only)
+ */
+export const useAdminGenerateUsageInsights = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminGenerateUsageInsights>>, TError,{data?: BodyType<UsageInsightsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminGenerateUsageInsights>>,
+        TError,
+        {data?: BodyType<UsageInsightsInput>},
+        TContext
+      > => {
+      return useMutation(getAdminGenerateUsageInsightsMutationOptions(options));
+    }
+
+export const getGetMyAdminAccessUrl = () => {
+
+
+
+
+  return `/api/admin/access/me`
+}
+
+/**
+ * @summary This admin's HQ identity — owner flag and permission set (any admin)
+ */
+export const getMyAdminAccess = async ( options?: RequestInit): Promise<AdminAccessMe> => {
+
+  return customFetch<AdminAccessMe>(getGetMyAdminAccessUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyAdminAccessQueryKey = () => {
+    return [
+    `/api/admin/access/me`
+    ] as const;
+    }
+
+
+export const getGetMyAdminAccessQueryOptions = <TData = Awaited<ReturnType<typeof getMyAdminAccess>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyAdminAccess>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyAdminAccessQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyAdminAccess>>> = ({ signal }) => getMyAdminAccess({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyAdminAccess>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyAdminAccessQueryResult = NonNullable<Awaited<ReturnType<typeof getMyAdminAccess>>>
+export type GetMyAdminAccessQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary This admin's HQ identity — owner flag and permission set (any admin)
+ */
+
+export function useGetMyAdminAccess<TData = Awaited<ReturnType<typeof getMyAdminAccess>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyAdminAccess>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyAdminAccessQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminListAccessGrantsUrl = () => {
+
+
+
+
+  return `/api/admin/access/grants`
+}
+
+/**
+ * @summary Staff grants, plus the permission catalog and role presets (owner only)
+ */
+export const adminListAccessGrants = async ( options?: RequestInit): Promise<AdminGrantListResponse> => {
+
+  return customFetch<AdminGrantListResponse>(getAdminListAccessGrantsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListAccessGrantsQueryKey = () => {
+    return [
+    `/api/admin/access/grants`
+    ] as const;
+    }
+
+
+export const getAdminListAccessGrantsQueryOptions = <TData = Awaited<ReturnType<typeof adminListAccessGrants>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListAccessGrants>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListAccessGrantsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListAccessGrants>>> = ({ signal }) => adminListAccessGrants({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListAccessGrants>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListAccessGrantsQueryResult = NonNullable<Awaited<ReturnType<typeof adminListAccessGrants>>>
+export type AdminListAccessGrantsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Staff grants, plus the permission catalog and role presets (owner only)
+ */
+
+export function useAdminListAccessGrants<TData = Awaited<ReturnType<typeof adminListAccessGrants>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListAccessGrants>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListAccessGrantsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminCreateAccessGrantUrl = () => {
+
+
+
+
+  return `/api/admin/access/grants`
+}
+
+/**
+ * @summary Invite a collaborator by email with a role and permission set (owner only)
+ */
+export const adminCreateAccessGrant = async (adminGrantInput: AdminGrantInput, options?: RequestInit): Promise<AdminGrant> => {
+
+  return customFetch<AdminGrant>(getAdminCreateAccessGrantUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(adminGrantInput)
+  }
+);}
+
+
+
+
+export const getAdminCreateAccessGrantMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateAccessGrant>>, TError,{data: BodyType<AdminGrantInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminCreateAccessGrant>>, TError,{data: BodyType<AdminGrantInput>}, TContext> => {
+
+const mutationKey = ['adminCreateAccessGrant'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminCreateAccessGrant>>, {data: BodyType<AdminGrantInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminCreateAccessGrant(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminCreateAccessGrantMutationResult = NonNullable<Awaited<ReturnType<typeof adminCreateAccessGrant>>>
+    export type AdminCreateAccessGrantMutationBody = BodyType<AdminGrantInput>
+    export type AdminCreateAccessGrantMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Invite a collaborator by email with a role and permission set (owner only)
+ */
+export const useAdminCreateAccessGrant = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateAccessGrant>>, TError,{data: BodyType<AdminGrantInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminCreateAccessGrant>>,
+        TError,
+        {data: BodyType<AdminGrantInput>},
+        TContext
+      > => {
+      return useMutation(getAdminCreateAccessGrantMutationOptions(options));
+    }
+
+export const getAdminUpdateAccessGrantUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/access/grants/${id}`
+}
+
+/**
+ * @summary Retitle or rescope a staff grant (owner only)
+ */
+export const adminUpdateAccessGrant = async (id: string,
+    adminGrantUpdateInput: AdminGrantUpdateInput, options?: RequestInit): Promise<AdminGrant> => {
+
+  return customFetch<AdminGrant>(getAdminUpdateAccessGrantUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(adminGrantUpdateInput)
+  }
+);}
+
+
+
+
+export const getAdminUpdateAccessGrantMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateAccessGrant>>, TError,{id: string;data: BodyType<AdminGrantUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminUpdateAccessGrant>>, TError,{id: string;data: BodyType<AdminGrantUpdateInput>}, TContext> => {
+
+const mutationKey = ['adminUpdateAccessGrant'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminUpdateAccessGrant>>, {id: string;data: BodyType<AdminGrantUpdateInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  adminUpdateAccessGrant(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminUpdateAccessGrantMutationResult = NonNullable<Awaited<ReturnType<typeof adminUpdateAccessGrant>>>
+    export type AdminUpdateAccessGrantMutationBody = BodyType<AdminGrantUpdateInput>
+    export type AdminUpdateAccessGrantMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Retitle or rescope a staff grant (owner only)
+ */
+export const useAdminUpdateAccessGrant = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateAccessGrant>>, TError,{id: string;data: BodyType<AdminGrantUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminUpdateAccessGrant>>,
+        TError,
+        {id: string;data: BodyType<AdminGrantUpdateInput>},
+        TContext
+      > => {
+      return useMutation(getAdminUpdateAccessGrantMutationOptions(options));
+    }
+
+export const getAdminRevokeAccessGrantUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/access/grants/${id}`
+}
+
+/**
+ * @summary Revoke a collaborator — their account loses the admin role entirely (owner only)
+ */
+export const adminRevokeAccessGrant = async (id: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getAdminRevokeAccessGrantUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getAdminRevokeAccessGrantMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRevokeAccessGrant>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminRevokeAccessGrant>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['adminRevokeAccessGrant'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminRevokeAccessGrant>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adminRevokeAccessGrant(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminRevokeAccessGrantMutationResult = NonNullable<Awaited<ReturnType<typeof adminRevokeAccessGrant>>>
+
+    export type AdminRevokeAccessGrantMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Revoke a collaborator — their account loses the admin role entirely (owner only)
+ */
+export const useAdminRevokeAccessGrant = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRevokeAccessGrant>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminRevokeAccessGrant>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getAdminRevokeAccessGrantMutationOptions(options));
+    }
+
+export const getAdminListProjectsUrl = () => {
+
+
+
+
+  return `/api/admin/projects`
+}
+
+/**
+ * @summary HQ projects with open/done task counts, plus the assignable staff list (projects permission)
+ */
+export const adminListProjects = async ( options?: RequestInit): Promise<HqProjectListResponse> => {
+
+  return customFetch<HqProjectListResponse>(getAdminListProjectsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListProjectsQueryKey = () => {
+    return [
+    `/api/admin/projects`
+    ] as const;
+    }
+
+
+export const getAdminListProjectsQueryOptions = <TData = Awaited<ReturnType<typeof adminListProjects>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListProjects>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListProjectsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListProjects>>> = ({ signal }) => adminListProjects({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListProjects>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListProjectsQueryResult = NonNullable<Awaited<ReturnType<typeof adminListProjects>>>
+export type AdminListProjectsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary HQ projects with open/done task counts, plus the assignable staff list (projects permission)
+ */
+
+export function useAdminListProjects<TData = Awaited<ReturnType<typeof adminListProjects>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListProjects>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListProjectsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminCreateProjectUrl = () => {
+
+
+
+
+  return `/api/admin/projects`
+}
+
+/**
+ * @summary Create an HQ project (projects permission)
+ */
+export const adminCreateProject = async (hqProjectInput: HqProjectInput, options?: RequestInit): Promise<HqProject> => {
+
+  return customFetch<HqProject>(getAdminCreateProjectUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(hqProjectInput)
+  }
+);}
+
+
+
+
+export const getAdminCreateProjectMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateProject>>, TError,{data: BodyType<HqProjectInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminCreateProject>>, TError,{data: BodyType<HqProjectInput>}, TContext> => {
+
+const mutationKey = ['adminCreateProject'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminCreateProject>>, {data: BodyType<HqProjectInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminCreateProject(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminCreateProjectMutationResult = NonNullable<Awaited<ReturnType<typeof adminCreateProject>>>
+    export type AdminCreateProjectMutationBody = BodyType<HqProjectInput>
+    export type AdminCreateProjectMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create an HQ project (projects permission)
+ */
+export const useAdminCreateProject = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateProject>>, TError,{data: BodyType<HqProjectInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminCreateProject>>,
+        TError,
+        {data: BodyType<HqProjectInput>},
+        TContext
+      > => {
+      return useMutation(getAdminCreateProjectMutationOptions(options));
+    }
+
+export const getAdminGetProjectUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/projects/${id}`
+}
+
+/**
+ * @summary One project with its tasks, assignees, and comment counts (projects permission)
+ */
+export const adminGetProject = async (id: string, options?: RequestInit): Promise<HqProjectDetail> => {
+
+  return customFetch<HqProjectDetail>(getAdminGetProjectUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetProjectQueryKey = (id: string,) => {
+    return [
+    `/api/admin/projects/${id}`
+    ] as const;
+    }
+
+
+export const getAdminGetProjectQueryOptions = <TData = Awaited<ReturnType<typeof adminGetProject>>, TError = ErrorType<ApiError>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetProject>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetProjectQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetProject>>> = ({ signal }) => adminGetProject(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetProject>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetProjectQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetProject>>>
+export type AdminGetProjectQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary One project with its tasks, assignees, and comment counts (projects permission)
+ */
+
+export function useAdminGetProject<TData = Awaited<ReturnType<typeof adminGetProject>>, TError = ErrorType<ApiError>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetProject>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetProjectQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminUpdateProjectUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/projects/${id}`
+}
+
+/**
+ * @summary Rename, describe, or archive a project (projects permission)
+ */
+export const adminUpdateProject = async (id: string,
+    hqProjectUpdateInput: HqProjectUpdateInput, options?: RequestInit): Promise<HqProject> => {
+
+  return customFetch<HqProject>(getAdminUpdateProjectUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(hqProjectUpdateInput)
+  }
+);}
+
+
+
+
+export const getAdminUpdateProjectMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateProject>>, TError,{id: string;data: BodyType<HqProjectUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminUpdateProject>>, TError,{id: string;data: BodyType<HqProjectUpdateInput>}, TContext> => {
+
+const mutationKey = ['adminUpdateProject'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminUpdateProject>>, {id: string;data: BodyType<HqProjectUpdateInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  adminUpdateProject(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminUpdateProjectMutationResult = NonNullable<Awaited<ReturnType<typeof adminUpdateProject>>>
+    export type AdminUpdateProjectMutationBody = BodyType<HqProjectUpdateInput>
+    export type AdminUpdateProjectMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Rename, describe, or archive a project (projects permission)
+ */
+export const useAdminUpdateProject = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateProject>>, TError,{id: string;data: BodyType<HqProjectUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminUpdateProject>>,
+        TError,
+        {id: string;data: BodyType<HqProjectUpdateInput>},
+        TContext
+      > => {
+      return useMutation(getAdminUpdateProjectMutationOptions(options));
+    }
+
+export const getAdminCreateTaskUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/projects/${id}/tasks`
+}
+
+/**
+ * @summary Add a task — assigning notifies the assignee in-app (projects permission)
+ */
+export const adminCreateTask = async (id: string,
+    hqTaskInput: HqTaskInput, options?: RequestInit): Promise<HqTask> => {
+
+  return customFetch<HqTask>(getAdminCreateTaskUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(hqTaskInput)
+  }
+);}
+
+
+
+
+export const getAdminCreateTaskMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateTask>>, TError,{id: string;data: BodyType<HqTaskInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminCreateTask>>, TError,{id: string;data: BodyType<HqTaskInput>}, TContext> => {
+
+const mutationKey = ['adminCreateTask'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminCreateTask>>, {id: string;data: BodyType<HqTaskInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  adminCreateTask(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminCreateTaskMutationResult = NonNullable<Awaited<ReturnType<typeof adminCreateTask>>>
+    export type AdminCreateTaskMutationBody = BodyType<HqTaskInput>
+    export type AdminCreateTaskMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Add a task — assigning notifies the assignee in-app (projects permission)
+ */
+export const useAdminCreateTask = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateTask>>, TError,{id: string;data: BodyType<HqTaskInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminCreateTask>>,
+        TError,
+        {id: string;data: BodyType<HqTaskInput>},
+        TContext
+      > => {
+      return useMutation(getAdminCreateTaskMutationOptions(options));
+    }
+
+export const getAdminUpdateTaskUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/tasks/${id}`
+}
+
+/**
+ * @summary Update a task — status to done stamps completion; a new assignee is notified (projects permission)
+ */
+export const adminUpdateTask = async (id: string,
+    hqTaskUpdateInput: HqTaskUpdateInput, options?: RequestInit): Promise<HqTask> => {
+
+  return customFetch<HqTask>(getAdminUpdateTaskUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(hqTaskUpdateInput)
+  }
+);}
+
+
+
+
+export const getAdminUpdateTaskMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateTask>>, TError,{id: string;data: BodyType<HqTaskUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminUpdateTask>>, TError,{id: string;data: BodyType<HqTaskUpdateInput>}, TContext> => {
+
+const mutationKey = ['adminUpdateTask'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminUpdateTask>>, {id: string;data: BodyType<HqTaskUpdateInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  adminUpdateTask(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminUpdateTaskMutationResult = NonNullable<Awaited<ReturnType<typeof adminUpdateTask>>>
+    export type AdminUpdateTaskMutationBody = BodyType<HqTaskUpdateInput>
+    export type AdminUpdateTaskMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Update a task — status to done stamps completion; a new assignee is notified (projects permission)
+ */
+export const useAdminUpdateTask = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateTask>>, TError,{id: string;data: BodyType<HqTaskUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminUpdateTask>>,
+        TError,
+        {id: string;data: BodyType<HqTaskUpdateInput>},
+        TContext
+      > => {
+      return useMutation(getAdminUpdateTaskMutationOptions(options));
+    }
+
+export const getAdminDeleteTaskUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/tasks/${id}`
+}
+
+/**
+ * @summary Delete a task and its comments (projects permission)
+ */
+export const adminDeleteTask = async (id: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getAdminDeleteTaskUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getAdminDeleteTaskMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteTask>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminDeleteTask>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['adminDeleteTask'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminDeleteTask>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adminDeleteTask(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminDeleteTaskMutationResult = NonNullable<Awaited<ReturnType<typeof adminDeleteTask>>>
+
+    export type AdminDeleteTaskMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Delete a task and its comments (projects permission)
+ */
+export const useAdminDeleteTask = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteTask>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminDeleteTask>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getAdminDeleteTaskMutationOptions(options));
+    }
+
+export const getAdminListTaskCommentsUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/tasks/${id}/comments`
+}
+
+/**
+ * @summary A task's comment thread (projects permission)
+ */
+export const adminListTaskComments = async (id: string, options?: RequestInit): Promise<HqTaskCommentListResponse> => {
+
+  return customFetch<HqTaskCommentListResponse>(getAdminListTaskCommentsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListTaskCommentsQueryKey = (id: string,) => {
+    return [
+    `/api/admin/tasks/${id}/comments`
+    ] as const;
+    }
+
+
+export const getAdminListTaskCommentsQueryOptions = <TData = Awaited<ReturnType<typeof adminListTaskComments>>, TError = ErrorType<ApiError>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListTaskComments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListTaskCommentsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListTaskComments>>> = ({ signal }) => adminListTaskComments(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListTaskComments>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListTaskCommentsQueryResult = NonNullable<Awaited<ReturnType<typeof adminListTaskComments>>>
+export type AdminListTaskCommentsQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary A task's comment thread (projects permission)
+ */
+
+export function useAdminListTaskComments<TData = Awaited<ReturnType<typeof adminListTaskComments>>, TError = ErrorType<ApiError>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListTaskComments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListTaskCommentsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminAddTaskCommentUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/tasks/${id}/comments`
+}
+
+/**
+ * @summary Comment on a task — the assignee is notified (projects permission)
+ */
+export const adminAddTaskComment = async (id: string,
+    hqTaskCommentInput: HqTaskCommentInput, options?: RequestInit): Promise<HqTaskComment> => {
+
+  return customFetch<HqTaskComment>(getAdminAddTaskCommentUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(hqTaskCommentInput)
+  }
+);}
+
+
+
+
+export const getAdminAddTaskCommentMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminAddTaskComment>>, TError,{id: string;data: BodyType<HqTaskCommentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminAddTaskComment>>, TError,{id: string;data: BodyType<HqTaskCommentInput>}, TContext> => {
+
+const mutationKey = ['adminAddTaskComment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminAddTaskComment>>, {id: string;data: BodyType<HqTaskCommentInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  adminAddTaskComment(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminAddTaskCommentMutationResult = NonNullable<Awaited<ReturnType<typeof adminAddTaskComment>>>
+    export type AdminAddTaskCommentMutationBody = BodyType<HqTaskCommentInput>
+    export type AdminAddTaskCommentMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Comment on a task — the assignee is notified (projects permission)
+ */
+export const useAdminAddTaskComment = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminAddTaskComment>>, TError,{id: string;data: BodyType<HqTaskCommentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminAddTaskComment>>,
+        TError,
+        {id: string;data: BodyType<HqTaskCommentInput>},
+        TContext
+      > => {
+      return useMutation(getAdminAddTaskCommentMutationOptions(options));
+    }
+
+export const getGetAdminMfaStatusUrl = () => {
+
+
+
+
+  return `/api/admin-mfa/status`
+}
+
+/**
+ * @summary Whether this admin account has finished authenticator enrollment (admin role only)
+ */
+export const getAdminMfaStatus = async ( options?: RequestInit): Promise<AdminMfaStatus> => {
+
+  return customFetch<AdminMfaStatus>(getGetAdminMfaStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminMfaStatusQueryKey = () => {
+    return [
+    `/api/admin-mfa/status`
+    ] as const;
+    }
+
+
+export const getGetAdminMfaStatusQueryOptions = <TData = Awaited<ReturnType<typeof getAdminMfaStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminMfaStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminMfaStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminMfaStatus>>> = ({ signal }) => getAdminMfaStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminMfaStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdminMfaStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminMfaStatus>>>
+export type GetAdminMfaStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Whether this admin account has finished authenticator enrollment (admin role only)
+ */
+
+export function useGetAdminMfaStatus<TData = Awaited<ReturnType<typeof getAdminMfaStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminMfaStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdminMfaStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSetupAdminMfaUrl = () => {
+
+
+
+
+  return `/api/admin-mfa/setup`
+}
+
+/**
+ * Never overwrites an already-enabled enrollment (409). Re-running while enrollment is still pending issues a fresh secret.
+ * @summary Start authenticator enrollment — returns the TOTP secret and otpauth URI (admin role only)
+ */
+export const setupAdminMfa = async ( options?: RequestInit): Promise<AdminMfaSetupResponse> => {
+
+  return customFetch<AdminMfaSetupResponse>(getSetupAdminMfaUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getSetupAdminMfaMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setupAdminMfa>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setupAdminMfa>>, TError,void, TContext> => {
+
+const mutationKey = ['setupAdminMfa'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setupAdminMfa>>, void> = () => {
+
+
+          return  setupAdminMfa(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetupAdminMfaMutationResult = NonNullable<Awaited<ReturnType<typeof setupAdminMfa>>>
+
+    export type SetupAdminMfaMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Start authenticator enrollment — returns the TOTP secret and otpauth URI (admin role only)
+ */
+export const useSetupAdminMfa = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setupAdminMfa>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setupAdminMfa>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getSetupAdminMfaMutationOptions(options));
+    }
+
+export const getVerifyAdminMfaUrl = () => {
+
+
+
+
+  return `/api/admin-mfa/verify`
+}
+
+/**
+ * The first successful verification activates the enrollment and returns the one-time backup codes. Every success returns a signed unlock token to send as the X-Admin-Mfa header on admin requests.
+ * @summary Confirm an authenticator code (or backup code) and receive an admin unlock token (admin role only)
+ */
+export const verifyAdminMfa = async (adminMfaVerifyInput: AdminMfaVerifyInput, options?: RequestInit): Promise<AdminMfaVerifyResponse> => {
+
+  return customFetch<AdminMfaVerifyResponse>(getVerifyAdminMfaUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(adminMfaVerifyInput)
+  }
+);}
+
+
+
+
+export const getVerifyAdminMfaMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyAdminMfa>>, TError,{data: BodyType<AdminMfaVerifyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof verifyAdminMfa>>, TError,{data: BodyType<AdminMfaVerifyInput>}, TContext> => {
+
+const mutationKey = ['verifyAdminMfa'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof verifyAdminMfa>>, {data: BodyType<AdminMfaVerifyInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  verifyAdminMfa(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VerifyAdminMfaMutationResult = NonNullable<Awaited<ReturnType<typeof verifyAdminMfa>>>
+    export type VerifyAdminMfaMutationBody = BodyType<AdminMfaVerifyInput>
+    export type VerifyAdminMfaMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Confirm an authenticator code (or backup code) and receive an admin unlock token (admin role only)
+ */
+export const useVerifyAdminMfa = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyAdminMfa>>, TError,{data: BodyType<AdminMfaVerifyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof verifyAdminMfa>>,
+        TError,
+        {data: BodyType<AdminMfaVerifyInput>},
+        TContext
+      > => {
+      return useMutation(getVerifyAdminMfaMutationOptions(options));
+    }
+
+export const getAdminListContentReportsUrl = (params?: AdminListContentReportsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/content-reports?${stringifiedParams}` : `/api/admin/content-reports`
+}
+
+/**
+ * User-filed reports against Debate Now content, ordered critical → high → medium → low and oldest-first within a priority. The openByPriority summary always reflects the full unresolved queue regardless of the current filter.
+ * @summary Community report queue, ordered by triage priority (admin only)
+ */
+export const adminListContentReports = async (params?: AdminListContentReportsParams, options?: RequestInit): Promise<ContentReportListResponse> => {
+
+  return customFetch<ContentReportListResponse>(getAdminListContentReportsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListContentReportsQueryKey = (params?: AdminListContentReportsParams,) => {
+    return [
+    `/api/admin/content-reports`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getAdminListContentReportsQueryOptions = <TData = Awaited<ReturnType<typeof adminListContentReports>>, TError = ErrorType<unknown>>(params?: AdminListContentReportsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListContentReports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListContentReportsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListContentReports>>> = ({ signal }) => adminListContentReports(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListContentReports>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListContentReportsQueryResult = NonNullable<Awaited<ReturnType<typeof adminListContentReports>>>
+export type AdminListContentReportsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Community report queue, ordered by triage priority (admin only)
+ */
+
+export function useAdminListContentReports<TData = Awaited<ReturnType<typeof adminListContentReports>>, TError = ErrorType<unknown>>(
+ params?: AdminListContentReportsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListContentReports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListContentReportsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminUpdateContentReportUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/content-reports/${id}`
+}
+
+/**
+ * @summary Review/triage tool — re-rank priority, claim into review, keep working notes (admin only)
+ */
+export const adminUpdateContentReport = async (id: string,
+    updateContentReportInput: UpdateContentReportInput, options?: RequestInit): Promise<ContentReport> => {
+
+  return customFetch<ContentReport>(getAdminUpdateContentReportUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateContentReportInput)
+  }
+);}
+
+
+
+
+export const getAdminUpdateContentReportMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateContentReport>>, TError,{id: string;data: BodyType<UpdateContentReportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminUpdateContentReport>>, TError,{id: string;data: BodyType<UpdateContentReportInput>}, TContext> => {
+
+const mutationKey = ['adminUpdateContentReport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminUpdateContentReport>>, {id: string;data: BodyType<UpdateContentReportInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  adminUpdateContentReport(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminUpdateContentReportMutationResult = NonNullable<Awaited<ReturnType<typeof adminUpdateContentReport>>>
+    export type AdminUpdateContentReportMutationBody = BodyType<UpdateContentReportInput>
+    export type AdminUpdateContentReportMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Review/triage tool — re-rank priority, claim into review, keep working notes (admin only)
+ */
+export const useAdminUpdateContentReport = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateContentReport>>, TError,{id: string;data: BodyType<UpdateContentReportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminUpdateContentReport>>,
+        TError,
+        {id: string;data: BodyType<UpdateContentReportInput>},
+        TContext
+      > => {
+      return useMutation(getAdminUpdateContentReportMutationOptions(options));
+    }
+
+export const getAdminResolveContentReportUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/content-reports/${id}/resolve`
+}
+
+/**
+ * resolution 'removed' sets removedByAdminAt on the reported content (excluding it from every public read); 'no_violation' leaves it up. Either way the reporter receives an in-app notification — the custom replyToReporter message when provided, an honest default for the chosen resolution otherwise. warnAuthor, when present, is delivered to the content author's account as a Community Guidelines warning; authorWarned is false in the response when the author has no account to deliver to (anonymous commenter).
+ * @summary Resolve a report — optionally take the content down, always notify the reporter, optionally warn the author (admin only)
+ */
+export const adminResolveContentReport = async (id: string,
+    resolveContentReportInput: ResolveContentReportInput, options?: RequestInit): Promise<ResolveContentReportResponse> => {
+
+  return customFetch<ResolveContentReportResponse>(getAdminResolveContentReportUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(resolveContentReportInput)
+  }
+);}
+
+
+
+
+export const getAdminResolveContentReportMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminResolveContentReport>>, TError,{id: string;data: BodyType<ResolveContentReportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminResolveContentReport>>, TError,{id: string;data: BodyType<ResolveContentReportInput>}, TContext> => {
+
+const mutationKey = ['adminResolveContentReport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminResolveContentReport>>, {id: string;data: BodyType<ResolveContentReportInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  adminResolveContentReport(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminResolveContentReportMutationResult = NonNullable<Awaited<ReturnType<typeof adminResolveContentReport>>>
+    export type AdminResolveContentReportMutationBody = BodyType<ResolveContentReportInput>
+    export type AdminResolveContentReportMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Resolve a report — optionally take the content down, always notify the reporter, optionally warn the author (admin only)
+ */
+export const useAdminResolveContentReport = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminResolveContentReport>>, TError,{id: string;data: BodyType<ResolveContentReportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminResolveContentReport>>,
+        TError,
+        {id: string;data: BodyType<ResolveContentReportInput>},
+        TContext
+      > => {
+      return useMutation(getAdminResolveContentReportMutationOptions(options));
     }
 
 export const getAdminListSuggestionsUrl = (params?: AdminListSuggestionsParams,) => {
@@ -5735,6 +11316,806 @@ export const useAdminDeleteSuggestion = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getAdminDeleteSuggestionMutationOptions(options));
+    }
+
+export const getAdminListAuditLogUrl = (params?: AdminListAuditLogParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/audit-log?${stringifiedParams}` : `/api/admin/audit-log`
+}
+
+/**
+ * @summary The admin-accountability trail — who took which sensitive action, on what, and when (admin only)
+ */
+export const adminListAuditLog = async (params?: AdminListAuditLogParams, options?: RequestInit): Promise<AdminAuditLogResponse> => {
+
+  return customFetch<AdminAuditLogResponse>(getAdminListAuditLogUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListAuditLogQueryKey = (params?: AdminListAuditLogParams,) => {
+    return [
+    `/api/admin/audit-log`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getAdminListAuditLogQueryOptions = <TData = Awaited<ReturnType<typeof adminListAuditLog>>, TError = ErrorType<unknown>>(params?: AdminListAuditLogParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListAuditLog>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListAuditLogQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListAuditLog>>> = ({ signal }) => adminListAuditLog(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListAuditLog>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListAuditLogQueryResult = NonNullable<Awaited<ReturnType<typeof adminListAuditLog>>>
+export type AdminListAuditLogQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary The admin-accountability trail — who took which sensitive action, on what, and when (admin only)
+ */
+
+export function useAdminListAuditLog<TData = Awaited<ReturnType<typeof adminListAuditLog>>, TError = ErrorType<unknown>>(
+ params?: AdminListAuditLogParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListAuditLog>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListAuditLogQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminGetDebateAgentConfigUrl = () => {
+
+
+
+
+  return `/api/admin/debate-agent/config`
+}
+
+/**
+ * @summary Get the Debate Topic posting agent's config + last run status, creating a default (disabled) row if none exists yet (admin only)
+ */
+export const adminGetDebateAgentConfig = async ( options?: RequestInit): Promise<DebateAgentSettings> => {
+
+  return customFetch<DebateAgentSettings>(getAdminGetDebateAgentConfigUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetDebateAgentConfigQueryKey = () => {
+    return [
+    `/api/admin/debate-agent/config`
+    ] as const;
+    }
+
+
+export const getAdminGetDebateAgentConfigQueryOptions = <TData = Awaited<ReturnType<typeof adminGetDebateAgentConfig>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetDebateAgentConfig>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetDebateAgentConfigQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetDebateAgentConfig>>> = ({ signal }) => adminGetDebateAgentConfig({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetDebateAgentConfig>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetDebateAgentConfigQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetDebateAgentConfig>>>
+export type AdminGetDebateAgentConfigQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the Debate Topic posting agent's config + last run status, creating a default (disabled) row if none exists yet (admin only)
+ */
+
+export function useAdminGetDebateAgentConfig<TData = Awaited<ReturnType<typeof adminGetDebateAgentConfig>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetDebateAgentConfig>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetDebateAgentConfigQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminUpdateDebateAgentConfigUrl = () => {
+
+
+
+
+  return `/api/admin/debate-agent/config`
+}
+
+/**
+ * @summary Update the Debate Topic posting agent's config — enabled, daily post count, and/or topic themes (admin only)
+ */
+export const adminUpdateDebateAgentConfig = async (updateDebateAgentConfigInput: UpdateDebateAgentConfigInput, options?: RequestInit): Promise<DebateAgentSettings> => {
+
+  return customFetch<DebateAgentSettings>(getAdminUpdateDebateAgentConfigUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateDebateAgentConfigInput)
+  }
+);}
+
+
+
+
+export const getAdminUpdateDebateAgentConfigMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateDebateAgentConfig>>, TError,{data: BodyType<UpdateDebateAgentConfigInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminUpdateDebateAgentConfig>>, TError,{data: BodyType<UpdateDebateAgentConfigInput>}, TContext> => {
+
+const mutationKey = ['adminUpdateDebateAgentConfig'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminUpdateDebateAgentConfig>>, {data: BodyType<UpdateDebateAgentConfigInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminUpdateDebateAgentConfig(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminUpdateDebateAgentConfigMutationResult = NonNullable<Awaited<ReturnType<typeof adminUpdateDebateAgentConfig>>>
+    export type AdminUpdateDebateAgentConfigMutationBody = BodyType<UpdateDebateAgentConfigInput>
+    export type AdminUpdateDebateAgentConfigMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Update the Debate Topic posting agent's config — enabled, daily post count, and/or topic themes (admin only)
+ */
+export const useAdminUpdateDebateAgentConfig = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateDebateAgentConfig>>, TError,{data: BodyType<UpdateDebateAgentConfigInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminUpdateDebateAgentConfig>>,
+        TError,
+        {data: BodyType<UpdateDebateAgentConfigInput>},
+        TContext
+      > => {
+      return useMutation(getAdminUpdateDebateAgentConfigMutationOptions(options));
+    }
+
+export const getAdminRunDebateAgentNowUrl = () => {
+
+
+
+
+  return `/api/admin/debate-agent/run-now`
+}
+
+/**
+ * @summary Trigger a Debate Topic agent posting sweep immediately, regardless of the enabled flag (admin only)
+ */
+export const adminRunDebateAgentNow = async ( options?: RequestInit): Promise<RunDebateAgentResult> => {
+
+  return customFetch<RunDebateAgentResult>(getAdminRunDebateAgentNowUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAdminRunDebateAgentNowMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRunDebateAgentNow>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminRunDebateAgentNow>>, TError,void, TContext> => {
+
+const mutationKey = ['adminRunDebateAgentNow'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminRunDebateAgentNow>>, void> = () => {
+
+
+          return  adminRunDebateAgentNow(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminRunDebateAgentNowMutationResult = NonNullable<Awaited<ReturnType<typeof adminRunDebateAgentNow>>>
+
+    export type AdminRunDebateAgentNowMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Trigger a Debate Topic agent posting sweep immediately, regardless of the enabled flag (admin only)
+ */
+export const useAdminRunDebateAgentNow = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRunDebateAgentNow>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminRunDebateAgentNow>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getAdminRunDebateAgentNowMutationOptions(options));
+    }
+
+export const getAdminPostDebateTopicUrl = () => {
+
+
+
+
+  return `/api/admin/debate-agent/post`
+}
+
+/**
+ * @summary Manually compose and publish a single Debate Topic under the system account, through the same moderation pass as every other topic (admin only)
+ */
+export const adminPostDebateTopic = async (postDebateTopicInput: PostDebateTopicInput, options?: RequestInit): Promise<PostDebateTopicResult> => {
+
+  return customFetch<PostDebateTopicResult>(getAdminPostDebateTopicUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(postDebateTopicInput)
+  }
+);}
+
+
+
+
+export const getAdminPostDebateTopicMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminPostDebateTopic>>, TError,{data: BodyType<PostDebateTopicInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminPostDebateTopic>>, TError,{data: BodyType<PostDebateTopicInput>}, TContext> => {
+
+const mutationKey = ['adminPostDebateTopic'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminPostDebateTopic>>, {data: BodyType<PostDebateTopicInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminPostDebateTopic(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminPostDebateTopicMutationResult = NonNullable<Awaited<ReturnType<typeof adminPostDebateTopic>>>
+    export type AdminPostDebateTopicMutationBody = BodyType<PostDebateTopicInput>
+    export type AdminPostDebateTopicMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Manually compose and publish a single Debate Topic under the system account, through the same moderation pass as every other topic (admin only)
+ */
+export const useAdminPostDebateTopic = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminPostDebateTopic>>, TError,{data: BodyType<PostDebateTopicInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminPostDebateTopic>>,
+        TError,
+        {data: BodyType<PostDebateTopicInput>},
+        TContext
+      > => {
+      return useMutation(getAdminPostDebateTopicMutationOptions(options));
+    }
+
+export const getAdminGetCircleAgentConfigUrl = () => {
+
+
+
+
+  return `/api/admin/circle-agent/config`
+}
+
+/**
+ * @summary Get the Blind Circle video-discovery posting agent's config + last run status, creating a default (disabled) row if none exists yet (admin only)
+ */
+export const adminGetCircleAgentConfig = async ( options?: RequestInit): Promise<CircleAgentSettings> => {
+
+  return customFetch<CircleAgentSettings>(getAdminGetCircleAgentConfigUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetCircleAgentConfigQueryKey = () => {
+    return [
+    `/api/admin/circle-agent/config`
+    ] as const;
+    }
+
+
+export const getAdminGetCircleAgentConfigQueryOptions = <TData = Awaited<ReturnType<typeof adminGetCircleAgentConfig>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetCircleAgentConfig>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetCircleAgentConfigQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetCircleAgentConfig>>> = ({ signal }) => adminGetCircleAgentConfig({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetCircleAgentConfig>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetCircleAgentConfigQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetCircleAgentConfig>>>
+export type AdminGetCircleAgentConfigQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the Blind Circle video-discovery posting agent's config + last run status, creating a default (disabled) row if none exists yet (admin only)
+ */
+
+export function useAdminGetCircleAgentConfig<TData = Awaited<ReturnType<typeof adminGetCircleAgentConfig>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetCircleAgentConfig>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetCircleAgentConfigQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminUpdateCircleAgentConfigUrl = () => {
+
+
+
+
+  return `/api/admin/circle-agent/config`
+}
+
+/**
+ * @summary Update the Blind Circle video-discovery posting agent's config — enabled, daily post count, and/or topics (admin only)
+ */
+export const adminUpdateCircleAgentConfig = async (updateCircleAgentConfigInput: UpdateCircleAgentConfigInput, options?: RequestInit): Promise<CircleAgentSettings> => {
+
+  return customFetch<CircleAgentSettings>(getAdminUpdateCircleAgentConfigUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateCircleAgentConfigInput)
+  }
+);}
+
+
+
+
+export const getAdminUpdateCircleAgentConfigMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateCircleAgentConfig>>, TError,{data: BodyType<UpdateCircleAgentConfigInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminUpdateCircleAgentConfig>>, TError,{data: BodyType<UpdateCircleAgentConfigInput>}, TContext> => {
+
+const mutationKey = ['adminUpdateCircleAgentConfig'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminUpdateCircleAgentConfig>>, {data: BodyType<UpdateCircleAgentConfigInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminUpdateCircleAgentConfig(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminUpdateCircleAgentConfigMutationResult = NonNullable<Awaited<ReturnType<typeof adminUpdateCircleAgentConfig>>>
+    export type AdminUpdateCircleAgentConfigMutationBody = BodyType<UpdateCircleAgentConfigInput>
+    export type AdminUpdateCircleAgentConfigMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Update the Blind Circle video-discovery posting agent's config — enabled, daily post count, and/or topics (admin only)
+ */
+export const useAdminUpdateCircleAgentConfig = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateCircleAgentConfig>>, TError,{data: BodyType<UpdateCircleAgentConfigInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminUpdateCircleAgentConfig>>,
+        TError,
+        {data: BodyType<UpdateCircleAgentConfigInput>},
+        TContext
+      > => {
+      return useMutation(getAdminUpdateCircleAgentConfigMutationOptions(options));
+    }
+
+export const getAdminRunCircleAgentNowUrl = () => {
+
+
+
+
+  return `/api/admin/circle-agent/run-now`
+}
+
+/**
+ * @summary Trigger a Blind Circle video-discovery agent posting sweep immediately, regardless of the enabled flag (admin only)
+ */
+export const adminRunCircleAgentNow = async ( options?: RequestInit): Promise<RunCircleAgentResult> => {
+
+  return customFetch<RunCircleAgentResult>(getAdminRunCircleAgentNowUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAdminRunCircleAgentNowMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRunCircleAgentNow>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminRunCircleAgentNow>>, TError,void, TContext> => {
+
+const mutationKey = ['adminRunCircleAgentNow'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminRunCircleAgentNow>>, void> = () => {
+
+
+          return  adminRunCircleAgentNow(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminRunCircleAgentNowMutationResult = NonNullable<Awaited<ReturnType<typeof adminRunCircleAgentNow>>>
+
+    export type AdminRunCircleAgentNowMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Trigger a Blind Circle video-discovery agent posting sweep immediately, regardless of the enabled flag (admin only)
+ */
+export const useAdminRunCircleAgentNow = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRunCircleAgentNow>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminRunCircleAgentNow>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getAdminRunCircleAgentNowMutationOptions(options));
+    }
+
+export const getAdminPostCircleVideoUrl = () => {
+
+
+
+
+  return `/api/admin/circle-agent/post`
+}
+
+/**
+ * @summary Manually post a specific video URL to the public Blind Circle feed under the system account, resolved/validated through the same allowlist every discovered candidate goes through (admin only)
+ */
+export const adminPostCircleVideo = async (postCircleVideoInput: PostCircleVideoInput, options?: RequestInit): Promise<PostCircleVideoResult> => {
+
+  return customFetch<PostCircleVideoResult>(getAdminPostCircleVideoUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(postCircleVideoInput)
+  }
+);}
+
+
+
+
+export const getAdminPostCircleVideoMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminPostCircleVideo>>, TError,{data: BodyType<PostCircleVideoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminPostCircleVideo>>, TError,{data: BodyType<PostCircleVideoInput>}, TContext> => {
+
+const mutationKey = ['adminPostCircleVideo'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminPostCircleVideo>>, {data: BodyType<PostCircleVideoInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminPostCircleVideo(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminPostCircleVideoMutationResult = NonNullable<Awaited<ReturnType<typeof adminPostCircleVideo>>>
+    export type AdminPostCircleVideoMutationBody = BodyType<PostCircleVideoInput>
+    export type AdminPostCircleVideoMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Manually post a specific video URL to the public Blind Circle feed under the system account, resolved/validated through the same allowlist every discovered candidate goes through (admin only)
+ */
+export const useAdminPostCircleVideo = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminPostCircleVideo>>, TError,{data: BodyType<PostCircleVideoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminPostCircleVideo>>,
+        TError,
+        {data: BodyType<PostCircleVideoInput>},
+        TContext
+      > => {
+      return useMutation(getAdminPostCircleVideoMutationOptions(options));
+    }
+
+export const getAdminBroadcastTextWhispUrl = () => {
+
+
+
+
+  return `/api/admin/text-whisps/broadcast`
+}
+
+/**
+ * Always sent from the reserved system account, not the acting admin — a platform broadcast shouldn't be attributed to whichever admin happened to click Send. Deliberately not anonymous to the recipient.
+ * @summary Send a platform Text Whisp to every user or a chosen set (admin only)
+ */
+export const adminBroadcastTextWhisp = async (broadcastTextWhispInput: BroadcastTextWhispInput, options?: RequestInit): Promise<BroadcastTextWhispResult> => {
+
+  return customFetch<BroadcastTextWhispResult>(getAdminBroadcastTextWhispUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(broadcastTextWhispInput)
+  }
+);}
+
+
+
+
+export const getAdminBroadcastTextWhispMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminBroadcastTextWhisp>>, TError,{data: BodyType<BroadcastTextWhispInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminBroadcastTextWhisp>>, TError,{data: BodyType<BroadcastTextWhispInput>}, TContext> => {
+
+const mutationKey = ['adminBroadcastTextWhisp'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminBroadcastTextWhisp>>, {data: BodyType<BroadcastTextWhispInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminBroadcastTextWhisp(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminBroadcastTextWhispMutationResult = NonNullable<Awaited<ReturnType<typeof adminBroadcastTextWhisp>>>
+    export type AdminBroadcastTextWhispMutationBody = BodyType<BroadcastTextWhispInput>
+    export type AdminBroadcastTextWhispMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Send a platform Text Whisp to every user or a chosen set (admin only)
+ */
+export const useAdminBroadcastTextWhisp = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminBroadcastTextWhisp>>, TError,{data: BodyType<BroadcastTextWhispInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminBroadcastTextWhisp>>,
+        TError,
+        {data: BodyType<BroadcastTextWhispInput>},
+        TContext
+      > => {
+      return useMutation(getAdminBroadcastTextWhispMutationOptions(options));
+    }
+
+export const getAdminSendTextWhispToStaffUrl = () => {
+
+
+
+
+  return `/api/admin/text-whisps/to-staff`
+}
+
+/**
+ * Sent from the acting admin's own account, not the system user — a genuinely one named colleague writing to another.
+ * @summary One staff member Text Whisping a colleague directly by account, skipping the phone-number lookup a normal Text Whisp needs (admin only)
+ */
+export const adminSendTextWhispToStaff = async (textWhispToStaffInput: TextWhispToStaffInput, options?: RequestInit): Promise<TextWhispToStaffResult> => {
+
+  return customFetch<TextWhispToStaffResult>(getAdminSendTextWhispToStaffUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(textWhispToStaffInput)
+  }
+);}
+
+
+
+
+export const getAdminSendTextWhispToStaffMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminSendTextWhispToStaff>>, TError,{data: BodyType<TextWhispToStaffInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminSendTextWhispToStaff>>, TError,{data: BodyType<TextWhispToStaffInput>}, TContext> => {
+
+const mutationKey = ['adminSendTextWhispToStaff'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminSendTextWhispToStaff>>, {data: BodyType<TextWhispToStaffInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminSendTextWhispToStaff(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminSendTextWhispToStaffMutationResult = NonNullable<Awaited<ReturnType<typeof adminSendTextWhispToStaff>>>
+    export type AdminSendTextWhispToStaffMutationBody = BodyType<TextWhispToStaffInput>
+    export type AdminSendTextWhispToStaffMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary One staff member Text Whisping a colleague directly by account, skipping the phone-number lookup a normal Text Whisp needs (admin only)
+ */
+export const useAdminSendTextWhispToStaff = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminSendTextWhispToStaff>>, TError,{data: BodyType<TextWhispToStaffInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminSendTextWhispToStaff>>,
+        TError,
+        {data: BodyType<TextWhispToStaffInput>},
+        TContext
+      > => {
+      return useMutation(getAdminSendTextWhispToStaffMutationOptions(options));
     }
 
 export const getListSuggestionsUrl = (params?: ListSuggestionsParams,) => {

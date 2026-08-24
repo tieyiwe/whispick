@@ -8,7 +8,11 @@
 
 export interface Whisp {
   id: string;
-  senderId: string;
+  /**
+     * The sender's real account id — present only when the CALLER is that sender (viewerRole === "sender"). null for a matched recipient viewing a whisp sent TO them (viewerRole === "recipient"), so the anonymous-sender guarantee Whisper Link is built around can't be broken by reading this field off a box=received/archived response.
+     * @nullable
+     */
+  senderId: string | null;
   videoUrl: string;
   /** @nullable */
   videoTitle?: string | null;
@@ -68,4 +72,15 @@ export interface Whisp {
      */
   conciergeRequestId?: string | null;
   createdAt: string;
+  /** True only when the caller is themselves this whisp's matched recipient (see GET /whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email/phone belongs to a verified account. */
+  viewerIsRecipient: boolean;
+  /**
+     * 'sender' | 'recipient' | null — which role the caller has on this whisp. Drives pinned/archived below, and (frontend-side) whether Delete is offered — only a sender may delete.
+     * @nullable
+     */
+  viewerRole: string | null;
+  /** Whether the CALLER's own copy of this whisp is pinned (see POST /whisps/{id}/pin) — never the other party's pin state. */
+  pinned: boolean;
+  /** Whether the CALLER's own copy of this whisp is archived (see POST /whisps/{id}/archive) — never the other party's archive state. */
+  archived: boolean;
 }

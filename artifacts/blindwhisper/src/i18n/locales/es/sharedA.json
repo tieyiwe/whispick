@@ -1,0 +1,114 @@
+{
+  "archivedWhispGate": {
+    "title": "Este whisp está archivado",
+    "description": "Está guardado en tu Archivo. Recupéralo para verlo o responder de nuevo.",
+    "descriptionWithTitle": "\"{{title}}\" está guardado en tu Archivo. Recupéralo para verlo o responder de nuevo.",
+    "back": "Atrás",
+    "unarchive": "Desarchivar para ver"
+  },
+  "avatarPickerGrid": {
+    "chooseAvatar": "Elige un avatar",
+    "noAvatar": "Sin avatar"
+  },
+  "cameraCapture": {
+    "modePhoto": "Foto",
+    "modeVideo": "Video",
+    "photoPrepareUnsupported": "Este navegador no puede preparar una foto para enviar — prueba con Video.",
+    "photoPrepareFailed": "No se pudo preparar esa foto para enviar. Vuelve a tomarla.",
+    "captureFailed": "No se pudo capturar una foto de la cámara.",
+    "photoClipUnsupported": "Las fotos no se pueden preparar para enviar en este navegador — prueba con Video, o vuelve a tomarla.",
+    "recordUnsupported": "Este navegador no puede grabar video — prueba con Foto o Subir en su lugar.",
+    "recordStartFailed": "No se pudo iniciar la grabación. Inténtalo de nuevo.",
+    "unsupportedFallback": "Usa Subir o Pegar un enlace en su lugar.",
+    "deniedFallback": "Subir y Pegar un enlace siguen disponibles si esto no funciona.",
+    "idlePromptPhoto": "Toma una foto con tu cámara",
+    "idlePromptVideo": "Graba un video corto con tu cámara",
+    "tryAgain": "Intentar de nuevo",
+    "enableCamera": "Activar cámara",
+    "requestingAccess": "Solicitando acceso a la cámara…",
+    "flipCamera": "Cambiar de cámara",
+    "takePhoto": "Tomar foto",
+    "stop": "Detener",
+    "startRecording": "Iniciar grabación",
+    "capturedPhotoAlt": "Foto capturada",
+    "preparingPhoto": "Preparando tu foto…",
+    "retake": "Repetir",
+    "useThisPhoto": "Usar esta foto",
+    "useThisVideo": "Usar este video",
+    "uploading": "Subiendo…"
+  },
+  "circleCommentRow": {
+    "poster": "Autor",
+    "you": "(tú)",
+    "reply": "Responder",
+    "attachedImageAlt": "Adjunto al comentario"
+  },
+  "circlePostComposer": {
+    "trigger": "Publicar en Blind Circle",
+    "dialogTitle": "Publicar en Blind Circle",
+    "uploadFailedGeneric": "Error al subir — los videos deben durar menos de {{seconds}} segundos",
+    "postedSuccess": "Publicado en Blind Circle",
+    "postFailedGeneric": "No se pudo publicar en Blind Circle",
+    "pasteLink": "Pegar un enlace",
+    "uploadVideo": "Subir un video",
+    "fetch": "Buscar",
+    "videoLinkPlaceholder": "Pega un enlace de video...",
+    "removeVideo": "Quitar video",
+    "titleLabel": "Título",
+    "titlePlaceholder": "¿Qué es? Ponle un título",
+    "chooseVideo": "Elegir un video",
+    "uploadingEllipsis": "Subiendo...",
+    "uploadHint": "Hasta {{seconds}} segundos. MP4, WebM o MOV.",
+    "notePlaceholderWithTitle": "Descripción breve (opcional)",
+    "notePlaceholderNoTitle": "Cuenta algo al respecto (opcional)",
+    "moodLabel": "Estado de ánimo (opcional)",
+    "aliasPlaceholder": "Fírmalo como... (opcional)",
+    "destinationLabel": "¿A dónde debería ir?",
+    "publicCircle": "Blind Circle público",
+    "anonymousDisclaimer": "Publicado de forma anónima — tu nombre nunca se muestra. Cualquiera que pueda ver este círculo puede ver la publicación.",
+    "postAnonymously": "Publicar de forma anónima"
+  },
+  "countryPhoneInput": {
+    "searchCountry": "Buscar país...",
+    "noCountryFound": "No se encontró ningún país."
+  },
+  "debateTopicCard": {
+    "shareTitle": "Blind Whisper — Debate Now",
+    "linkCopied": "Enlace copiado — envíalo para sumar a alguien al debate",
+    "copyFailed": "No se pudo copiar — cópialo manualmente",
+    "commentCount_one": "{{count}} comentario",
+    "commentCount_other": "{{count}} comentarios",
+    "shareTopicAria": "Compartir este tema",
+    "joinDebate": "Únete al debate",
+    "onlineAriaLabel": "En línea ahora"
+  },
+  "demographicsGateDialog": {
+    "title": "Solo una cosita rápida",
+    "description": "Antes de que salga tu primer whisp, ayúdanos a entender quién usa Blind Whisper y elige el idioma que debe usar la app. Nada de esto se muestra a la persona a la que le envías, y puedes cambiarlo después en Configuración.",
+    "languageLabel": "Idioma",
+    "genderLabel": "Género",
+    "ageRangeLabel": "Rango de edad",
+    "selectPlaceholder": "Selecciona...",
+    "continue": "Continuar",
+    "saveFailed": "No se pudieron guardar tus respuestas. Inténtalo de nuevo."
+  },
+  "enableNotificationsPrompt": {
+    "title": "Activa las notificaciones",
+    "description": "Entérate en el momento en que alguien te envíe un whisp o responda — directo en tu dispositivo, como cualquier otra app.",
+    "notNow": "Ahora no",
+    "enabling": "Activando...",
+    "enable": "Activar notificaciones"
+  },
+  "policyUpdate": {
+    "heading": "Hemos actualizado nuestras políticas",
+    "description": "Tómate un momento para revisar lo que cambió y confirmar que estás de acuerdo para seguir usando Blind Whisper.",
+    "privacyLabel": "Política de privacidad",
+    "termsLabel": "Términos del servicio",
+    "readLink": "Leer el documento completo",
+    "agreeButton": "Lo revisé — Estoy de acuerdo",
+    "laterButton": "Revisar más tarde",
+    "reminderPill": "Actualización de políticas — revisar y aceptar",
+    "toastThanks": "Gracias — tu aceptación ha sido registrada.",
+    "toastError": "No se pudo registrar tu aceptación. Inténtalo de nuevo."
+  }
+}

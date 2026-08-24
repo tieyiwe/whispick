@@ -1,0 +1,89 @@
+{
+  "groupName": "我的第一批 Whispers",
+  "steps": {
+    "friends": "好友",
+    "whatToSend": "发送内容",
+    "send": "发送"
+  },
+  "stepIndicator": "第 {{step}} 步，共 {{total}} 步",
+  "header": {
+    "title": "发送你的第一条 Whisper",
+    "subtitle": "选几位好友，挑一段内容，一次性匿名发送给他们所有人。"
+  },
+  "common": {
+    "next": "下一步",
+    "back": "返回"
+  },
+  "concierge": {
+    "defaultSituation": "想和朋友们分享点什么"
+  },
+  "step1": {
+    "heading": "你想给谁发 Whisp？",
+    "subtitle": "最多添加 5 位好友——每位只需要一个邮箱或手机号。",
+    "friendLabel": "好友 {{number}}",
+    "removeContact": "移除此联系人",
+    "namePlaceholder": "姓名（可选）",
+    "emailPlaceholder": "邮箱",
+    "phonePlaceholder": "手机号",
+    "addAnother": "添加另一位好友",
+    "pickFromContacts": "从通讯录选择",
+    "upToCount": "最多添加 {{count}} 位好友。",
+    "toast": {
+      "noneHadContactInfo": "所选联系人都没有邮箱或手机号",
+      "needAtLeastOne": "请至少添加一位有邮箱或手机号的好友"
+    }
+  },
+  "step2": {
+    "heading": "不知道发什么？",
+    "subtitle": "我们挑了几个可能合适的视频——点一下即可使用，无需打字。",
+    "loading": "正在为你寻找合适的内容…",
+    "untitledVideo": "无标题视频",
+    "noMatch": "没有特别合适的——试试换个情境描述，或在下方粘贴你自己的视频链接。",
+    "videoFallback": "视频链接",
+    "changeVideo": "更换",
+    "tryDifferentSituation": "换个情境试试",
+    "pasteOwnLink": "粘贴你自己的视频链接",
+    "situationPlaceholder": "描述这是给谁的，以及原因…",
+    "getNewSuggestions": "获取新推荐",
+    "customUrl": {
+      "placeholder": "粘贴视频链接（YouTube、TikTok、Instagram…）",
+      "invalidUrl": "请输入有效的网址"
+    },
+    "noteLabel": "添加留言（可选）",
+    "notePlaceholder": "写点匿名的话…"
+  },
+  "step3": {
+    "heading": "准备发送",
+    "subtitle": "将一次性发送给 {{count}} 位好友。",
+    "subtitle_other": "将一次性发送给 {{count}} 位好友。",
+    "channels": {
+      "email": "邮件",
+      "sms": "短信",
+      "whatsapp": "WhatsApp"
+    },
+    "sendButton": "发送给 {{count}} 人",
+    "sendButton_other": "发送给 {{count}} 人",
+    "toast": {
+      "sendFailed": "发送失败，请重试。",
+      "groupSetupFailed": "无法创建你的好友列表，请重试。"
+    }
+  },
+  "sent": {
+    "title": "已发送给 {{count}} 人！",
+    "title_other": "已发送给 {{count}} 人！",
+    "description": "你的 Whisp 正在发送中——一如既往，完全匿名。",
+    "description_other": "你的 Whisp 正在发送中——一如既往，完全匿名。",
+    "skippedHeading": "有 {{count}} 位联系人未能送达",
+    "skippedHeading_other": "有 {{count}} 位联系人未能送达",
+    "skippedUnnamed": "未命名联系人",
+    "viewSendButton": "查看此次发送",
+    "dashboardButton": "前往主页"
+  },
+  "dashboardCard": {
+    "title": "开始使用",
+    "heading": "发送你的第一条 Whisper",
+    "description": "用一段匿名视频一次性打动好几位好友——体验 Blind Whisper 最快的方式。",
+    "cta": "发送给几位好友",
+    "dismiss": "关闭"
+  }
+}

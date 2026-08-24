@@ -1,12 +1,15 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { startScheduledWhispDispatcher } from "./lib/scheduler";
+import { startScheduledTextWhispDispatcher } from "./lib/textWhispScheduler";
 import { startReminderDispatcher } from "./lib/reminderScheduler";
 import { startReplyNotificationScheduler } from "./lib/replyNotificationScheduler";
 import { startMediaRetentionScheduler } from "./lib/mediaRetentionScheduler";
 import { startTakeawayScheduler } from "./lib/takeawayScheduler";
 import { startMatchScheduler } from "./lib/matchScheduler";
 import { startSuggestionAgentScheduler } from "./lib/suggestionAgentScheduler";
+import { startDebateAgentScheduler } from "./lib/debateAgentScheduler";
+import { startCircleAgentScheduler } from "./lib/circleAgentScheduler";
 
 const rawPort = process.env["PORT"];
 
@@ -32,9 +35,12 @@ app.listen(port, (err) => {
 });
 
 startScheduledWhispDispatcher();
+startScheduledTextWhispDispatcher();
 startReminderDispatcher();
 startReplyNotificationScheduler();
 startMediaRetentionScheduler();
 startTakeawayScheduler();
 startMatchScheduler();
 startSuggestionAgentScheduler();
+startDebateAgentScheduler();
+startCircleAgentScheduler();

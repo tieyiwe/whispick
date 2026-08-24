@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import request from "supertest";
-import { db, usersTable } from "@workspace/db";
+import { db, usersTable, textWhispsTable } from "@workspace/db";
+import { randomUUID } from "crypto";
 import { eq } from "drizzle-orm";
 import { TEST_USER_HEADER } from "./setup";
 
@@ -149,5 +150,106 @@ describe("POST /api/user/phone/confirm-verification", () => {
     const newRow = await db.select().from(usersTable).where(eq(usersTable.clerkId, "clerk_recycle_new")).then((r) => r[0]);
     expect(newRow?.phone).toBe("+15557654321");
     expect(newRow?.phoneVerifiedAt).not.toBeNull();
+  });
+
+  // Regression for a real production report: a recipient who verifies their
+  // number AFTER a Text Whisp was already sent to it (the ordinary "I got a
+  // text, so I signed up" flow — routes/textWhisps.ts POST / only matches
+  // findVerifiedRecipient synchronously at send time, never again later)
+  // used to stay permanently unlinked from that Text Whisp: it never showed
+  // up in their own authenticated list/detail view, so there was no closed
+  // scroll to tap and no reveal — because the recipient-side query
+  // (recipientUserId = viewer) never matched the row at all.
+  it("backfills recipientUserId on any Text Whisp already sent to this number once it's verified", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(200, { status: "approved" })));
+
+    const senderId = randomUUID();
+    await db.insert(usersTable).values({
+      id: senderId,
+      clerkId: "clerk_backfill_sender",
+      email: "clerk_backfill_sender@example.com",
+      plan: "free",
+      boostCredits: 0,
+      whisperLinksUsed: 0,
+    });
+
+    const textWhispId = randomUUID();
+    await db.insert(textWhispsTable).values({
+      id: textWhispId,
+      senderId,
+      recipientUserId: null,
+      recipientPhone: "+15558889999",
+      publicToken: randomUUID().replace(/-/g, ""),
+      messageText: "sent before you verified",
+      status: "sent",
+    });
+
+    const res = await request(app)
+      .post("/api/user/phone/confirm-verification")
+      .set(asUser("clerk_backfill_recipient"))
+      .send({ phone: "+15558889999", code: "123456" });
+    expect(res.status).toBe(200);
+
+    const recipientRow = await db.select().from(usersTable).where(eq(usersTable.clerkId, "clerk_backfill_recipient")).then((r) => r[0]);
+    const textWhispRow = await db.select().from(textWhispsTable).where(eq(textWhispsTable.id, textWhispId)).then((r) => r[0]);
+    expect(textWhispRow?.recipientUserId).toBe(recipientRow?.id);
+  });
+
+  it("never backfills a Text Whisp the verifying user sent themselves (no self-recipient)", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(200, { status: "approved" })));
+
+    const senderClerkId = "clerk_backfill_self_sender";
+    await request(app).get("/api/user/profile").set(asUser(senderClerkId)); // ensureUser
+    const senderRow = await db.select().from(usersTable).where(eq(usersTable.clerkId, senderClerkId)).then((r) => r[0]!);
+
+    const textWhispId = randomUUID();
+    await db.insert(textWhispsTable).values({
+      id: textWhispId,
+      senderId: senderRow.id,
+      recipientUserId: null,
+      recipientPhone: "+15558887777",
+      publicToken: randomUUID().replace(/-/g, ""),
+      messageText: "sent to my own not-yet-verified number",
+      status: "sent",
+    });
+
+    await request(app)
+      .post("/api/user/phone/confirm-verification")
+      .set(asUser(senderClerkId))
+      .send({ phone: "+15558887777", code: "123456" });
+
+    const textWhispRow = await db.select().from(textWhispsTable).where(eq(textWhispsTable.id, textWhispId)).then((r) => r[0]);
+    expect(textWhispRow?.recipientUserId).toBeNull();
+  });
+
+  it("never reassigns a Text Whisp that's already matched to a different (prior) recipient", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(200, { status: "approved" })));
+
+    const senderId = randomUUID();
+    const priorRecipientId = randomUUID();
+    await db.insert(usersTable).values([
+      { id: senderId, clerkId: "clerk_backfill_sender2", email: "s2@example.com", plan: "free", boostCredits: 0, whisperLinksUsed: 0 },
+      { id: priorRecipientId, clerkId: "clerk_backfill_prior_recipient", email: "prior@example.com", plan: "free", boostCredits: 0, whisperLinksUsed: 0 },
+    ]);
+
+    const textWhispId = randomUUID();
+    await db.insert(textWhispsTable).values({
+      id: textWhispId,
+      senderId,
+      recipientUserId: priorRecipientId,
+      recipientPhone: "+15558886666",
+      publicToken: randomUUID().replace(/-/g, ""),
+      messageText: "already matched to someone",
+      status: "sent",
+    });
+
+    // A different person later verifies the same (recycled) number.
+    await request(app)
+      .post("/api/user/phone/confirm-verification")
+      .set(asUser("clerk_backfill_new_holder"))
+      .send({ phone: "+15558886666", code: "123456" });
+
+    const textWhispRow = await db.select().from(textWhispsTable).where(eq(textWhispsTable.id, textWhispId)).then((r) => r[0]);
+    expect(textWhispRow?.recipientUserId).toBe(priorRecipientId);
   });
 });

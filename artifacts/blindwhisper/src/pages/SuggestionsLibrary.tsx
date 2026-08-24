@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { useListSuggestions, getListSuggestionsQueryKey, type SuggestedVideo } from "@workspace/api-client-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,6 +13,8 @@ import { savePendingForward } from "@/lib/forwardVideo";
 import { Sparkles, Star, PlayCircle, Send } from "lucide-react";
 
 function SuggestionCard({ suggestion, onWhisper }: { suggestion: SuggestedVideo; onWhisper: (s: SuggestedVideo) => void }) {
+  const { t } = useTranslation("media");
+
   return (
     <Card className="bg-card border-border/50 overflow-hidden flex flex-col" data-testid={`suggestion-card-${suggestion.id}`}>
       <div className="relative aspect-video bg-muted">
@@ -24,7 +27,7 @@ function SuggestionCard({ suggestion, onWhisper }: { suggestion: SuggestedVideo;
         )}
         {suggestion.featured && (
           <Badge className="absolute top-2 left-2 bg-amber-500/90 text-white border-none rounded-full">
-            <Star className="w-3 h-3 mr-1 fill-white" /> Featured
+            <Star className="w-3 h-3 mr-1 fill-white" /> {t("suggestionsLibrary.featuredBadge")}
           </Badge>
         )}
       </div>
@@ -33,7 +36,7 @@ function SuggestionCard({ suggestion, onWhisper }: { suggestion: SuggestedVideo;
           <PlatformIcon platform={suggestion.videoPlatform} className="w-3.5 h-3.5" />
           <span className="text-xs text-muted-foreground capitalize">{suggestion.videoPlatform}</span>
         </div>
-        <p className="font-medium text-foreground text-sm leading-snug line-clamp-2">{suggestion.videoTitle || "Untitled video"}</p>
+        <p className="font-medium text-foreground text-sm leading-snug line-clamp-2">{suggestion.videoTitle || t("suggestionsLibrary.untitledVideo")}</p>
         {suggestion.aiSummary && <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">{suggestion.aiSummary}</p>}
         <div className="flex items-center gap-1.5 flex-wrap mt-auto pt-1">
           {suggestion.categories.slice(0, 3).map((c) => (
@@ -42,10 +45,10 @@ function SuggestionCard({ suggestion, onWhisper }: { suggestion: SuggestedVideo;
         </div>
         <div className="flex gap-2 pt-1">
           <Button asChild variant="outline" size="sm" className="flex-1 rounded-full">
-            <a href={suggestion.videoUrl} target="_blank" rel="noopener noreferrer">Watch</a>
+            <a href={suggestion.videoUrl} target="_blank" rel="noopener noreferrer">{t("suggestionsLibrary.watch")}</a>
           </Button>
           <Button size="sm" className="flex-1 rounded-full" onClick={() => onWhisper(suggestion)} data-testid={`button-whisper-suggestion-${suggestion.id}`}>
-            <Send className="w-3.5 h-3.5 mr-1.5" /> Whisper this
+            <Send className="w-3.5 h-3.5 mr-1.5" /> {t("suggestionsLibrary.whisperThis")}
           </Button>
         </div>
       </CardContent>
@@ -54,6 +57,7 @@ function SuggestionCard({ suggestion, onWhisper }: { suggestion: SuggestedVideo;
 }
 
 export function SuggestionsLibrary() {
+  const { t } = useTranslation("media");
   const [, setLocation] = useLocation();
   const [category, setCategory] = useState<string | null>(null);
   const [featuredOnly, setFeaturedOnly] = useState(false);
@@ -83,10 +87,10 @@ export function SuggestionsLibrary() {
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-serif font-bold text-foreground flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-primary" /> Suggestions Library
+            <Sparkles className="w-6 h-6 text-primary" /> {t("suggestionsLibrary.title")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Videos worth passing along. Find one that fits someone in your circle and whisper it to them anonymously.
+            {t("suggestionsLibrary.description")}
           </p>
         </div>
 
@@ -99,7 +103,7 @@ export function SuggestionsLibrary() {
             }`}
             data-testid="suggestion-filter-all"
           >
-            All
+            {t("suggestionsLibrary.filterAll")}
           </button>
           {data?.categories.map((c) => (
             <button
@@ -122,7 +126,7 @@ export function SuggestionsLibrary() {
             }`}
             data-testid="suggestion-filter-featured"
           >
-            <Star className={`w-3 h-3 ${featuredOnly ? "fill-amber-400" : ""}`} /> Featured
+            <Star className={`w-3 h-3 ${featuredOnly ? "fill-amber-400" : ""}`} /> {t("suggestionsLibrary.filterFeatured")}
           </button>
         </div>
 
@@ -136,7 +140,7 @@ export function SuggestionsLibrary() {
           </div>
         ) : (
           <Card className="bg-card/50 border-dashed border-border py-16 text-center">
-            <p className="text-muted-foreground">Nothing here yet — check back soon.</p>
+            <p className="text-muted-foreground">{t("suggestionsLibrary.emptyState")}</p>
           </Card>
         )}
       </div>

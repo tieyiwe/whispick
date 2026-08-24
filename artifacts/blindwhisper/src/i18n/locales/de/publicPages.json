@@ -1,0 +1,108 @@
+{
+  "landingPage": {
+    "header": {
+      "signIn": "Anmelden",
+      "getStarted": "Loslegen"
+    },
+    "hero": {
+      "badge": "Eine neue Art zu teilen",
+      "headline": "Sag ihnen, was sie <em>hören müssen</em>.<br />Ohne dass es komisch wird.",
+      "subtitle": "Eine emotionale, anonyme Plattform für Video-Empfehlungen. Wie ein handgeschriebener Zettel unter der Tür – nur im digitalen Zeitalter."
+    },
+    "cta": {
+      "startSendingWhisps": "Jetzt Whisps versenden"
+    },
+    "features": {
+      "anonymous": {
+        "title": "Vollkommen anonym",
+        "desc": "Niemand erfährt, dass du es warst – es sei denn, du willst es. Ein sicherer Raum für ehrliche Empfehlungen."
+      },
+      "resonant": {
+        "title": "Emotional berührend",
+        "desc": "Füge das passende Stimmungs-Tag und eine kurze Notiz hinzu, um den Kontext zu setzen, bevor überhaupt auf Play gedrückt wird."
+      },
+      "delivery": {
+        "title": "Du entscheidest, wie es ankommt",
+        "desc": "Schick einen privaten, anonymen Link direkt an die Person oder teile ihn im Blind Circle, damit die Community ihn organisch entdeckt."
+      }
+    },
+    "howItWorks": {
+      "heading": "Vom Link zum Versand in unter einer Minute",
+      "subheading": "Video einfügen, sagen, was du meinst, und ab geht's — anonym.",
+      "steps": {
+        "paste": {
+          "title": "Beliebigen Video-Link einfügen",
+          "desc": "YouTube, TikTok, Instagram, Facebook — oder lade dein eigenes hoch."
+        },
+        "note": {
+          "title": "Notiz hinzufügen, anonym bleiben",
+          "desc": "Sag, was du meinst. Sie erfahren nie, dass es von dir kam."
+        },
+        "sent": {
+          "title": "Gesendet — das war's",
+          "desc": "Wir sagen dir Bescheid, sobald es angesehen wurde."
+        }
+      }
+    },
+    "noAwkwardness": {
+      "badge": "Kein unangenehmer Augenkontakt nötig",
+      "heading": "Die Botschaft kommt an. <em>Der peinliche Moment nicht.</em>",
+      "body": "Wenn du etwas Sensibles laut aussprichst, musst du gleichzeitig steuern, wie die andere Person darauf reagiert, dass ausgerechnet <em>du</em> es sagst. Blind Whisper nimmt dich aus dem Raum — damit die Person sich wirklich auf das konzentrieren kann, was du meintest, statt dein Gesicht zu studieren, während du es sagst.",
+      "before": {
+        "label": "Es laut aussprechen",
+        "desc": "Sie wappnen sich dafür, wie du es sagen wirst. Du wappnest dich dafür, wie sie es aufnehmen. Die Botschaft geht in dieser Anspannung unter."
+      },
+      "after": {
+        "label": "Stattdessen als Whisp senden",
+        "desc": "Sie sehen es allein, zu ihrer eigenen Zeit, in ihrem eigenen Tempo. Nur die Botschaft — keine Inszenierung, keine Anspannung, keine unangenehme Stille danach."
+      }
+    },
+    "useCases": {
+      "heading": "Die Gespräche, die Blind Whisper leichter macht",
+      "subheading": "In jeder Beziehung gibt es etwas, das sich leichter senden als sagen lässt. Hier sind die Momente, für die Menschen Blind Whisper nutzen.",
+      "items": {
+        "parent": {
+          "relationship": "Ein Elternteil, an seine Tochter",
+          "quote": "Ich wollte mit ihr über etwas Sensibles sprechen, aber wollte nicht, dass sie sich auf meine Reaktion statt auf die Botschaft konzentriert. Sie hat es sich in Ruhe angeschaut — und ich habe schon gesehen, wie sie einen neuen Ansatz ausprobiert. Keine Peinlichkeit."
+        },
+        "friend": {
+          "relationship": "Ein Freund, der sich meldet",
+          "quote": "Er machte gerade eine Trennung durch, und ich wusste nicht, was ich sagen sollte, ohne wie eine Standpauke zu klingen. Also schickte ich stattdessen ein Video. Später sagte er mir, es sei genau das gewesen, was er gebraucht hatte — und es habe sich einfach angefühlt, als sei es angekommen, nicht als hätte ich es gesagt."
+        },
+        "partner": {
+          "relationship": "Ein Partner, der ein schwieriges Gespräch eröffnet",
+          "quote": "Es gibt einen Unterschied zwischen \"wir müssen reden\" und einfach... etwas zu zeigen. Ich habe das hier geschickt, statt einen Streit anzufangen. Es öffnete die Tür sanft, statt sie zuzuschlagen."
+        },
+        "colleague": {
+          "relationship": "Ein Kollege, der einen Denkanstoß gibt",
+          "quote": "Ich wollte, dass ein Teammitglied etwas über gutes Feedback sieht, ohne dass es sich wie eine Leistungsbeurteilung anfühlt. Die Anonymität sorgte dafür, dass es als Denkanstoß ankam, nicht als bloßgestellte Kritik."
+        },
+        "sibling": {
+          "relationship": "Ein Geschwisterteil, das das Unausgesprochene ausspricht",
+          "quote": "Wir \"reden\" eigentlich nicht wirklich miteinander. Aber ich konnte ihm etwas schicken, das sagte, was ich laut nicht hinbekommen hätte."
+        }
+      },
+      "previewCaption": "Anonym gesendet · Blind Whisper",
+      "disclaimer": "Beispielhafte Illustrationen, wie Menschen Blind Whisper nutzen — keine verifizierten Kundenbewertungen."
+    },
+    "faq": {
+      "heading": "Häufig gestellte Fragen",
+      "subheading": "Alles, was Menschen vor ihrem ersten Whisp meistens wissen möchten."
+    },
+    "closingCta": {
+      "heading": "Gibt es etwas, das du schon lange sagen wolltest?",
+      "body": "Du musst nicht die perfekten Worte finden. Finde einfach das Video und lass es sagen, was du meintest.",
+      "notReadyPrefix": "Noch nicht bereit, eins zu senden?",
+      "notReadyLink": "Erhalte anonyme Whisps zu Themen, die du selbst auswählst"
+    },
+    "footer": {
+      "privacyPolicy": "Datenschutzerklärung",
+      "termsOfService": "Nutzungsbedingungen",
+      "smsTerms": "SMS-Bedingungen"
+    }
+  },
+  "notFound": {
+    "title": "404 – Seite nicht gefunden",
+    "message": "Hast du vergessen, die Seite zum Router hinzuzufügen?"
+  }
+}

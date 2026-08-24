@@ -1,0 +1,39 @@
+{
+  "circleDetail": {
+    "backToMyCircles": "내 Blind Circles",
+    "titleFallback": "Blind Circle",
+    "description": "이 서클에 비공개로 남겨진 Whisps — 멤버들에게만 보입니다.",
+    "videoAlt": "동영상",
+    "someone": "누군가",
+    "emptyTitle": "아직 아무것도 없어요",
+    "emptyDescription": "whisp를 보낼 때 Blind Circle을 선택한 다음 이 서클을 골라서 여기에 공유하세요."
+  },
+  "circleFeed": {
+    "title": "Blind Circle",
+    "description": "커뮤니티에 익명으로 올라온 동영상들. 받는 사람도, 알고리즘도 없이 — 그저 자연스러운 발견만 있어요.",
+    "videoAlt": "동영상",
+    "someone": "누군가",
+    "whispThis": "이 Whisp 보내기",
+    "emptyTitle": "지금 Blind Circle이 조용하네요",
+    "emptyDescription": "아직 아무도 커뮤니티 피드에 동영상을 올리지 않았어요. 위의 Blind Circle에 게시를 눌러 첫 번째가 되어보세요."
+  },
+  "myCircles": {
+    "title": "내 Blind Circles",
+    "description": "몇몇 사람에게만 보여주고 싶은 whisps를 위한, 초대로만 들어올 수 있는 소규모 그룹이에요.",
+    "createCircle": "서클 만들기",
+    "createPlaceholder": "예: 독서 모임",
+    "create": "만들기",
+    "joinWithCode": "코드로 참여하기",
+    "invitePlaceholder": "초대 코드",
+    "join": "참여하기",
+    "toastCircleCreated": "Blind Circle이 생성되었어요",
+    "toastCreateFailed": "서클 생성에 실패했어요",
+    "toastJoined": "서클에 참여했어요",
+    "toastInvalidCode": "초대 코드가 올바르지 않아요",
+    "toastCodeCopied": "초대 코드가 복사되었어요",
+    "toastCopyFailed": "복사하지 못했어요 — 직접 복사해 주세요",
+    "tapToView": "탭하면 피드를 볼 수 있어요",
+    "emptyTitle": "아직 서클이 없어요",
+    "emptyDescription": "소규모 그룹과 whisps를 익명으로 공유하려면 서클을 만들거나, 초대 코드로 참여해보세요."
+  }
+}

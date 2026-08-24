@@ -10,7 +10,8 @@ import { requireAuth } from "../lib/auth";
 import { ensureUser } from "../lib/ensureUser";
 import { getPublicAppUrl } from "../lib/publicUrl";
 import { stripe, CREDIT_PACKS, PLAN_PRICES, type CreditPackId, type PlanId } from "../lib/stripe";
-import { PLAN_LIMITS } from "../lib/plans";
+import { PLAN_LIMITS, GHOST_BOOST_ENABLED } from "../lib/plans";
+import { billingCheckoutLimiter } from "../lib/rateLimit";
 import { logger } from "../lib/logger";
 
 const router = Router();
@@ -21,7 +22,7 @@ const checkoutSchema = z.object({
 });
 
 // POST /api/billing/checkout
-router.post("/checkout", requireAuth, async (req, res): Promise<void> => {
+router.post("/checkout", requireAuth, billingCheckoutLimiter, async (req, res): Promise<void> => {
   if (!stripe) {
     res.status(503).json({ error: "Billing is not configured. Set STRIPE_SECRET_KEY to enable payments." });
     return;
@@ -47,6 +48,11 @@ router.post("/checkout", requireAuth, async (req, res): Promise<void> => {
   }
 
   if (kind === "credit_pack") {
+    if (!GHOST_BOOST_ENABLED) {
+      res.status(403).json({ error: "Ghost Boost credit packs aren't available right now." });
+      return;
+    }
+
     const pack = CREDIT_PACKS[id as CreditPackId];
     if (!pack) {
       res.status(400).json({ error: "Unknown credit pack" });

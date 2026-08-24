@@ -17,6 +17,16 @@ vi.mock("../lib/categorizeWhisp", () => ({
   categorizeWhispsAsync: async () => {},
 }));
 
+// Ghost Boost is paused in production (GHOST_BOOST_ENABLED = false in
+// lib/plans.ts), but the matching/fan-out logic this file exercises is
+// still real, still tested code kept ready for when the feature comes
+// back — so this file overrides just that one flag to keep exercising it,
+// without touching anything else lib/plans.ts exports.
+vi.mock("../lib/plans", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../lib/plans")>();
+  return { ...actual, GHOST_BOOST_ENABLED: true };
+});
+
 // Sender-facing notifications go through notifyUserPersisted (persists an
 // in-app notification, then fires a best-effort push). Mocking it is the only
 // way to distinguish "the ghost_boost fan-out guard skipped the call" from
@@ -261,7 +271,7 @@ describe("POST /api/public/subscribe", () => {
     expect(row.categories).toEqual(["music", "comedy"]);
   });
 
-  it("updates categories when a still-subscribed existing subscriber signs up again", async () => {
+  it("does NOT rewrite categories for an already-verified, still-subscribed row on a bare re-POST", async () => {
     await request(app).post("/api/public/subscribe").send({ email: "repeat@example.com", categories: ["music"] });
     const first = await db
       .select()
@@ -274,18 +284,37 @@ describe("POST /api/public/subscribe", () => {
       .post("/api/public/subscribe")
       .send({ email: "repeat@example.com", categories: ["travel"] });
 
-    // alreadyVerified is now deliberately always false in the response to
-    // avoid an email-membership enumeration oracle — the categories still
-    // update, and the internal "don't re-email a confirmed subscriber" logic
-    // still runs, but the response no longer reveals prior-verification state.
+    // alreadyVerified is deliberately always false in the response to avoid
+    // an email-membership enumeration oracle. But a bare POST with no proof
+    // of inbox access must not be able to redirect what an ACTIVE, verified
+    // subscriber receives — categories stay exactly as they were confirmed.
     expect(res.body).toEqual({ ok: true, alreadyVerified: false });
     const updated = await db
       .select()
       .from(matchSubscribersTable)
       .where(eq(matchSubscribersTable.id, first.id))
       .then((r) => r[0]);
-    expect(updated.categories).toEqual(["travel"]);
+    expect(updated.categories).toEqual(["music"]);
     expect(updated.token).toBe(first.token);
+    expect(updated.verifiedAt).not.toBeNull();
+  });
+
+  it("still updates categories for an unverified subscriber who re-POSTs before confirming", async () => {
+    await request(app).post("/api/public/subscribe").send({ email: "unverified-repeat@example.com", categories: ["music"] });
+    const res = await request(app)
+      .post("/api/public/subscribe")
+      .send({ email: "unverified-repeat@example.com", categories: ["travel"] });
+
+    expect(res.body).toEqual({ ok: true, alreadyVerified: false });
+    const updated = await db
+      .select()
+      .from(matchSubscribersTable)
+      .where(eq(matchSubscribersTable.email, "unverified-repeat@example.com"))
+      .then((r) => r[0]);
+    // Not verified yet, so a re-POST is just the same person changing their
+    // mind before confirming — no inbox-access proof needed for that.
+    expect(updated.categories).toEqual(["travel"]);
+    expect(updated.verifiedAt).toBeNull();
   });
 
   it("normalizes email case so the same inbox can't create two rows", async () => {

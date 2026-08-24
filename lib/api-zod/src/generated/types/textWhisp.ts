@@ -19,12 +19,19 @@ export interface TextWhisp {
   senderAlias?: string | null;
   /** @maxLength 260 */
   messageText: string;
-  /** 'sent' | 'read' | 'replied' */
+  /** 'sent' | 'read' | 'replied' | 'scheduled' */
   status: string;
   revealRequested: boolean;
   /** @nullable */
   revealAccepted?: boolean | null;
+  /**
+     * Set only for a "schedule for later" send — delivery (the in-app notify or guest SMS) is held back until this time. Null for every immediately-sent Text Whisp.
+     * @nullable
+     */
+  scheduledAt?: string | null;
   /** @nullable */
   readAt?: string | null;
   createdAt: string;
+  /** True only while the OTHER party (never the caller's own ping echoed back) sent a typing ping within the last ~8s. See POST /text-whisps/{id}/typing. */
+  otherPartyTyping: boolean;
 }

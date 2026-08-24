@@ -20,21 +20,55 @@ import {
   conciergeRequestsTable,
   invitesTable,
   textWhispsTable,
+  circleCommentsTable,
+  debateTopicsTable,
+  debateTopicCommentsTable,
+  contentReportsTable,
+  policyVersionsTable,
+  policyAcceptancesTable,
+  featureEventsTable,
+  whisperBoxMessagesTable,
   type User,
 } from "@workspace/db";
 import { and, asc, count, desc, eq, gte, ilike, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
-import { requireAdmin } from "../lib/adminAuth";
+import { requireAdmin, requirePermission, isOwner } from "../lib/adminAuth";
+import { logAdminAction, listAdminAuditLog } from "../lib/adminAudit";
 import { VIDEO_CATEGORIES } from "../lib/categorize";
 import { computeOpportunities } from "../lib/insights";
 import { resolveVideoMeta } from "../lib/videoMeta";
 import { generateSuggestionSummaryAsync } from "../lib/suggestionSummary";
 import { runSuggestionDiscoveryAgent } from "../lib/suggestionAgent";
-import { notifyUser, notifyAllUsers } from "../lib/push";
+import { notifyUser, notifyAllUsers, notifyUserPersisted } from "../lib/push";
+import { fetchClerkProfile, isPlaceholderEmail } from "../lib/ensureUser";
+import { aggregateFeatureUsage, generateUsageInsights } from "../lib/usageInsights";
+import { sendEmail, adminAnnouncementEmailHtml } from "../lib/email";
 import { httpUrlString, isHttpUrlOrAppPath } from "../lib/safeUrl";
+import { complianceFlagsFor, matchesComplianceFilter, type ComplianceFilter } from "../lib/compliance";
+import { isOnline, ONLINE_WINDOW_MS } from "../lib/presence";
 
 const router = Router();
 
 router.use(requireAdmin);
+
+// Feature-area gates (lib/adminAuth.ts): the owner passes everything; a
+// collaborator passes only the areas their grant carries. Prefixes mirror
+// AdminLayout's nav groups one-to-one.
+router.use("/users", requirePermission("users"));
+router.use("/whisps", requirePermission("whisps"));
+router.use("/moderation", requirePermission("moderation"));
+router.use("/content-reports", requirePermission("reports"));
+router.use("/notifications", requirePermission("notifications"));
+router.use("/policy-versions", requirePermission("policies"));
+router.use("/suggestions", requirePermission("suggestions"));
+router.use("/stats", requirePermission("analytics"));
+router.use("/usage-stats", requirePermission("analytics"));
+router.use("/usage-insights", requirePermission("analytics"));
+// GET /analytics/traffic-by-hour lives under its own prefix (not /stats or
+// /usage-stats) — without this, a collaborator holding no "analytics" grant
+// at all could still read it, since router.use(requireAdmin) above only
+// checks for admin role, not any specific area permission.
+router.use("/analytics", requirePermission("analytics"));
+router.use("/audit-log", requirePermission("audit_log"));
 
 function categoryLabel(key: string): string {
   return VIDEO_CATEGORIES.find((c) => c.key === key)?.label ?? "Uncategorized";
@@ -51,12 +85,23 @@ function parsePagination(req: any): { page: number; pageSize: number } {
 // ---------------------------------------------------------------------------
 
 // GET /api/admin/users
+const COMPLIANCE_FILTERS: ComplianceFilter[] = ["mfa_missing", "policy_pending", "email_unverified", "phone_unverified"];
+// Compliance isn't a plain column — it's derived from a Clerk mirror plus a
+// join against policy_versions/policy_acceptances — so filtering on it can't
+// happen in the paginated SQL query above. Fetched and filtered in JS
+// instead, capped well above any realistic admin page size at this app's
+// scale; revisit with a real SQL join if the user base outgrows this.
+const COMPLIANCE_FILTER_SCAN_LIMIT = 1000;
+
 router.get("/users", async (req, res): Promise<void> => {
   const { page, pageSize } = parsePagination(req);
   const search = typeof req.query.search === "string" ? req.query.search.trim() : "";
   const planFilter = typeof req.query.plan === "string" ? req.query.plan : undefined;
   const roleFilter = typeof req.query.role === "string" ? req.query.role : undefined;
   const bannedFilter = req.query.banned === "true" ? true : req.query.banned === "false" ? false : undefined;
+  const complianceFilter = COMPLIANCE_FILTERS.includes(req.query.compliance as ComplianceFilter)
+    ? (req.query.compliance as ComplianceFilter)
+    : undefined;
 
   const conditions = [];
   if (search) conditions.push(or(ilike(usersTable.email, `%${search}%`), ilike(usersTable.fullName, `%${search}%`)));
@@ -65,12 +110,116 @@ router.get("/users", async (req, res): Promise<void> => {
   if (bannedFilter !== undefined) conditions.push(eq(usersTable.banned, bannedFilter));
   const where = conditions.length ? and(...conditions) : undefined;
 
+  if (complianceFilter) {
+    const scanned = await db.select().from(usersTable).where(where).orderBy(desc(usersTable.createdAt)).limit(COMPLIANCE_FILTER_SCAN_LIMIT);
+    const flagsById = await complianceFlagsFor(scanned);
+    const matching = scanned.filter((u) => matchesComplianceFilter(flagsById[u.id]!, complianceFilter));
+    const pageItems = matching.slice((page - 1) * pageSize, (page - 1) * pageSize + pageSize);
+    res.json({
+      items: pageItems.map((u) => ({ ...u, compliance: flagsById[u.id], online: isOnline(u.lastSeenAt) })),
+      total: matching.length,
+      page,
+      pageSize,
+    });
+    return;
+  }
+
   const [items, totalRow] = await Promise.all([
     db.select().from(usersTable).where(where).orderBy(desc(usersTable.createdAt)).limit(pageSize).offset((page - 1) * pageSize),
     db.select({ count: count() }).from(usersTable).where(where).then((r) => r[0]),
   ]);
+  const flagsById = await complianceFlagsFor(items);
 
-  res.json({ items, total: totalRow?.count ?? 0, page, pageSize });
+  res.json({
+    items: items.map((u) => ({ ...u, compliance: flagsById[u.id], online: isOnline(u.lastSeenAt) })),
+    total: totalRow?.count ?? 0,
+    page,
+    pageSize,
+  });
+});
+
+// GET /api/admin/users/online-now — how many accounts have been active in
+// the last ONLINE_WINDOW_MS, for the Analytics "online now" tile. Admin-only
+// aggregate count — not gated by any individual's showOnlineStatus, which
+// only governs whether OTHER USERS can see a specific person online, not
+// whether the platform's own operators can see an anonymous headcount.
+router.get("/users/online-now", async (_req, res): Promise<void> => {
+  const [{ count: onlineCount } = { count: 0 }] = await db
+    .select({ count: count() })
+    .from(usersTable)
+    .where(gte(usersTable.lastSeenAt, new Date(Date.now() - ONLINE_WINDOW_MS)));
+  res.json({ onlineCount, windowMinutes: ONLINE_WINDOW_MS / 60_000 });
+});
+
+const COMPLIANCE_REMINDER_COPY: Record<ComplianceFilter, { title: string; body: string; url: string }> = {
+  mfa_missing: {
+    title: "Turn on two-factor authentication",
+    body: "Add an authenticator app to your account in Settings → Account & Security — it only takes a minute and keeps your account a lot safer.",
+    url: "/account/security",
+  },
+  policy_pending: {
+    title: "Please review our updated policy",
+    body: "We've updated our Privacy Policy or Terms — open the app to review and accept before you continue.",
+    url: "/dashboard",
+  },
+  email_unverified: {
+    title: "We couldn't confirm your email",
+    body: "Your account's email on file looks off, which means you may be missing important notifications. Please check it in Settings.",
+    url: "/settings",
+  },
+  phone_unverified: {
+    title: "Verify your phone number",
+    body: "Verifying your phone lets Text Whisps and Whisper Links reach you directly instead of as a guest link. Add it in Settings.",
+    url: "/settings",
+  },
+};
+
+const complianceReminderSchema = z.object({
+  userIds: z.array(z.string().max(64)).min(1).max(200),
+  kind: z.enum(["mfa_missing", "policy_pending", "email_unverified", "phone_unverified"]),
+});
+
+// POST /api/admin/users/compliance-reminder — nudge specific users (one or
+// many, from the Users compliance dashboard) about a single missing thing.
+// Same persisted-notification-plus-email shape as POST /notifications, just
+// pre-written per compliance kind rather than admin-authored. Never verifies
+// the flag is still true server-side before sending — a reminder sent a
+// moment after someone already fixed it is a harmless no-op, not worth the
+// extra query on every send.
+router.post("/users/compliance-reminder", async (req, res): Promise<void> => {
+  const parsed = complianceReminderSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const adminUser = (req as any).adminUser as User;
+  const { title, body, url } = COMPLIANCE_REMINDER_COPY[parsed.data.kind];
+  const userIds = [...new Set(parsed.data.userIds)];
+
+  const recipients = await db.select().from(usersTable).where(inArray(usersTable.id, userIds));
+
+  await db.insert(notificationsTable).values(
+    recipients.map((r) => ({ id: randomUUID(), targetUserId: r.id, title, body, url, createdByAdminId: adminUser.id })),
+  );
+  const perUserCounts = await Promise.all(recipients.map((r) => notifyUser(r.id, title, body, url)));
+  const pushDelivered = perUserCounts.reduce((sum, n) => sum + n, 0);
+
+  let emailsSent = 0;
+  let emailsSkipped = 0;
+  const html = adminAnnouncementEmailHtml(title, body, url);
+  for (const r of recipients) {
+    if (!r.emailNotificationsEnabled || r.banned || isPlaceholderEmail(r.email, r.clerkId)) {
+      emailsSkipped++;
+      continue;
+    }
+    const ok = await sendEmail(r.email, title, html, { whispId: null, purpose: "admin_announcement" });
+    if (ok) emailsSent++;
+    else emailsSkipped++;
+  }
+
+  logAdminAction(adminUser.id, "users.compliance_reminder", { type: "user", id: "batch" }, { kind: parsed.data.kind, recipientCount: recipients.length, pushDelivered, emailsSent, emailsSkipped });
+
+  res.status(201).json({ recipientCount: recipients.length, pushDelivered, emailsSent, emailsSkipped });
 });
 
 // GET /api/admin/users/:id — everything needed to answer "what happened
@@ -86,7 +235,7 @@ router.get("/users/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  const [recentWhisps, totalWhispsRow, creditTransactions, statusRows, totalRepliesRow, moderationFlagRows] = await Promise.all([
+  const [recentWhisps, totalWhispsRow, creditTransactions, statusRows, totalRepliesRow, moderationFlagRows, debateTopics, debateTopicComments] = await Promise.all([
     db.select().from(whispsTable).where(eq(whispsTable.senderId, user.id)).orderBy(desc(whispsTable.createdAt)).limit(50),
     db.select({ count: count() }).from(whispsTable).where(eq(whispsTable.senderId, user.id)).then((r) => r[0]),
     db.select().from(creditTransactionsTable).where(eq(creditTransactionsTable.userId, user.id)).orderBy(desc(creditTransactionsTable.createdAt)).limit(50),
@@ -97,18 +246,22 @@ router.get("/users/:id", async (req, res): Promise<void> => {
       .innerJoin(whispsTable, eq(whispRepliesTable.whispId, whispsTable.id))
       .where(eq(whispsTable.senderId, user.id))
       .then((r) => r[0]),
-    // Every content-safety flag on this user's whisps AND text whisps,
+    // Every content-safety flag on this user's whisps, text whisps, circle
+    // comments, and debate topics/comments they posted while signed in,
     // dismissed or not — an admin reviewing one flag can see this person's
     // full flag history right here instead of hunting for it in the
-    // site-wide queue. leftJoin (not innerJoin) on both content tables since
-    // a flag row only ever has one of whispId/textWhispId set (see
-    // moderation_flags.ts's contentType) — an innerJoin on either alone
-    // would silently drop the other content type's flags.
+    // site-wide queue. leftJoin (not innerJoin) on every content table since
+    // a flag row only ever has one of whispId/textWhispId/circleCommentId/
+    // debateTopicId/debateTopicCommentId set (see moderation_flags.ts's
+    // contentType) — an innerJoin on any one alone would silently drop the
+    // other content types' flags.
     db
       .select({
         id: moderationFlagsTable.id,
         whispId: moderationFlagsTable.whispId,
         textWhispId: moderationFlagsTable.textWhispId,
+        debateTopicId: moderationFlagsTable.debateTopicId,
+        debateTopicCommentId: moderationFlagsTable.debateTopicCommentId,
         contentType: moderationFlagsTable.contentType,
         userId: moderationFlagsTable.userId,
         severity: moderationFlagsTable.severity,
@@ -120,16 +273,40 @@ router.get("/users/:id", async (req, res): Promise<void> => {
         createdAt: moderationFlagsTable.createdAt,
         videoTitle: whispsTable.videoTitle,
         textWhispMessage: textWhispsTable.messageText,
+        circleCommentText: circleCommentsTable.commentText,
+        debateTopicText: debateTopicsTable.topicText,
+        debateTopicCommentText: debateTopicCommentsTable.commentText,
       })
       .from(moderationFlagsTable)
       .leftJoin(whispsTable, eq(moderationFlagsTable.whispId, whispsTable.id))
       .leftJoin(textWhispsTable, eq(moderationFlagsTable.textWhispId, textWhispsTable.id))
+      .leftJoin(circleCommentsTable, eq(moderationFlagsTable.circleCommentId, circleCommentsTable.id))
+      .leftJoin(debateTopicsTable, eq(moderationFlagsTable.debateTopicId, debateTopicsTable.id))
+      .leftJoin(debateTopicCommentsTable, eq(moderationFlagsTable.debateTopicCommentId, debateTopicCommentsTable.id))
       .where(eq(moderationFlagsTable.userId, user.id))
       .orderBy(desc(moderationFlagsTable.createdAt)),
+    // Debate Topics/comments this account authored — never shown to the
+    // public (authorId is stripped everywhere in routes/debateTopics.ts),
+    // but useful for an investigation same as their whisps are. Bounded to
+    // the most recent 50, same posture as recentWhisps above.
+    db
+      .select({ id: debateTopicsTable.id, topicText: debateTopicsTable.topicText, createdAt: debateTopicsTable.createdAt, deletedByAuthorAt: debateTopicsTable.deletedByAuthorAt, removedByAdminAt: debateTopicsTable.removedByAdminAt })
+      .from(debateTopicsTable)
+      .where(eq(debateTopicsTable.authorId, user.id))
+      .orderBy(desc(debateTopicsTable.createdAt))
+      .limit(50),
+    db
+      .select({ id: debateTopicCommentsTable.id, topicId: debateTopicCommentsTable.topicId, commentText: debateTopicCommentsTable.commentText, createdAt: debateTopicCommentsTable.createdAt, removedByAdminAt: debateTopicCommentsTable.removedByAdminAt })
+      .from(debateTopicCommentsTable)
+      .where(eq(debateTopicCommentsTable.authorUserId, user.id))
+      .orderBy(desc(debateTopicCommentsTable.createdAt))
+      .limit(50),
   ]);
 
+  const flagsById = await complianceFlagsFor([user]);
+
   res.json({
-    user,
+    user: { ...user, compliance: flagsById[user.id], online: isOnline(user.lastSeenAt) },
     recentWhisps,
     totalWhisps: totalWhispsRow?.count ?? 0,
     creditTransactions,
@@ -137,6 +314,8 @@ router.get("/users/:id", async (req, res): Promise<void> => {
     totalReplies: totalRepliesRow?.count ?? 0,
     moderationFlagCount: moderationFlagRows.filter((f) => !f.dismissed).length,
     moderationFlags: moderationFlagRows,
+    debateTopics,
+    debateTopicComments,
   });
 });
 
@@ -241,8 +420,29 @@ router.patch("/users/:id", async (req, res): Promise<void> => {
     return;
   }
 
+  // The super admin account is managed by ADMIN_EMAILS, never from here —
+  // without this, any collaborator holding the `users` permission could ban
+  // or demote the owner and take over the HQ.
+  if (isOwner(target) && (parsed.data.banned === true || parsed.data.role === "user")) {
+    res.status(403).json({ error: "The super admin account can't be banned or demoted" });
+    return;
+  }
+  // Role changes (promoting to admin, demoting an admin) are the owner's
+  // call alone — otherwise a collaborator could mint admins entirely outside
+  // the Staff & Access grant system. Same for banning a fellow admin.
+  const targetsAdmin = target.role === "admin" || parsed.data.role === "admin";
+  if (!(req as any).adminIsOwner && targetsAdmin && (parsed.data.role !== undefined || parsed.data.banned !== undefined)) {
+    res.status(403).json({ error: "Only the super admin can change staff roles or ban staff accounts", code: "admin_owner_required" });
+    return;
+  }
+
   await db.update(usersTable).set(parsed.data).where(eq(usersTable.id, target.id));
   const updated = await db.select().from(usersTable).where(eq(usersTable.id, target.id)).then((r) => r[0]);
+
+  if (parsed.data.banned !== undefined || parsed.data.role !== undefined || parsed.data.plan !== undefined || parsed.data.boostCredits !== undefined) {
+    logAdminAction(adminUser.id, "user.update", { type: "user", id: target.id }, { before: { banned: target.banned, role: target.role, plan: target.plan, boostCredits: target.boostCredits }, after: parsed.data });
+  }
+
   res.json(updated);
 });
 
@@ -264,6 +464,17 @@ router.delete("/users/:id", async (req, res): Promise<void> => {
     return;
   }
 
+  // Same protections as PATCH: the owner is untouchable, and staff accounts
+  // can only be deleted by the owner.
+  if (isOwner(target)) {
+    res.status(403).json({ error: "The super admin account can't be deleted" });
+    return;
+  }
+  if (!(req as any).adminIsOwner && target.role === "admin") {
+    res.status(403).json({ error: "Only the super admin can delete staff accounts", code: "admin_owner_required" });
+    return;
+  }
+
   const whisps = await db.select({ id: whispsTable.id }).from(whispsTable).where(eq(whispsTable.senderId, target.id));
   const whispIds = whisps.map((w) => w.id);
 
@@ -279,6 +490,8 @@ router.delete("/users/:id", async (req, res): Promise<void> => {
   await db.delete(circleMembersTable).where(eq(circleMembersTable.userId, target.id));
   await db.delete(circlesTable).where(eq(circlesTable.ownerId, target.id));
   await db.delete(usersTable).where(eq(usersTable.id, target.id));
+
+  logAdminAction(adminUser.id, "user.delete", { type: "user", id: target.id }, { email: target.email });
 
   res.status(204).send();
 });
@@ -380,6 +593,9 @@ router.delete("/whisps/:id", async (req, res): Promise<void> => {
   await db.delete(whispRepliesTable).where(eq(whispRepliesTable.whispId, whisp.id));
   await db.delete(whispCategoriesTable).where(eq(whispCategoriesTable.whispId, whisp.id));
   await db.delete(whispsTable).where(eq(whispsTable.id, whisp.id));
+
+  const adminUser = (req as any).adminUser as User;
+  logAdminAction(adminUser.id, "whisp.delete", { type: "whisp", id: whisp.id }, { videoTitle: whisp.videoTitle, senderId: whisp.senderId });
 
   res.status(204).send();
 });
@@ -728,6 +944,12 @@ const sendNotificationSchema = z
     url: z.string().min(1).max(2048).refine(isHttpUrlOrAppPath, { message: "Must be an app path or http(s) URL" }).nullable().optional(),
     audience: z.enum(["all", "users"]),
     userIds: z.array(z.string()).optional(),
+    // Also deliver as a branded email to each recipient's inbox — the
+    // channel that reaches people who aren't in the app. Respects each
+    // user's emailNotificationsEnabled opt-out, and skips accounts whose
+    // stored address is a fabricated placeholder (undeliverable — see
+    // lib/ensureUser.ts).
+    sendEmail: z.boolean().optional(),
   })
   .refine((data) => data.audience !== "users" || (data.userIds && data.userIds.length > 0), {
     message: "userIds is required and must be non-empty when audience is 'users'",
@@ -779,7 +1001,31 @@ router.post("/notifications", async (req, res): Promise<void> => {
     pushDelivered = perUserCounts.reduce((sum, n) => sum + n, 0);
   }
 
-  res.status(201).json({ recipientCount, pushDelivered });
+  // Optional email channel. Recipients are filtered to people email can
+  // actually, appropriately reach: opted in (emailNotificationsEnabled),
+  // not banned, and not carrying a fabricated placeholder address.
+  let emailsSent = 0;
+  let emailsSkipped = 0;
+  if (parsed.data.sendEmail) {
+    const recipients =
+      audience === "all"
+        ? await db.select().from(usersTable).where(eq(usersTable.banned, false))
+        : await db.select().from(usersTable).where(inArray(usersTable.id, targetUserIds as string[]));
+    const html = adminAnnouncementEmailHtml(title, body, url);
+    for (const recipient of recipients) {
+      if (!recipient.emailNotificationsEnabled || recipient.banned || isPlaceholderEmail(recipient.email, recipient.clerkId)) {
+        emailsSkipped++;
+        continue;
+      }
+      const ok = await sendEmail(recipient.email, title, html, { whispId: null, purpose: "admin_announcement" });
+      if (ok) emailsSent++;
+      else emailsSkipped++;
+    }
+  }
+
+  logAdminAction(adminUser.id, "notification.send", { type: "notification", id: "batch" }, { audience, recipientCount, pushDelivered, emailsSent, emailsSkipped, emailed: !!parsed.data.sendEmail });
+
+  res.status(201).json({ recipientCount, pushDelivered, emailsSent, emailsSkipped });
 });
 
 // GET /api/admin/notifications — audit log of everything sent, newest first.
@@ -812,6 +1058,226 @@ router.get("/notifications", async (req, res): Promise<void> => {
   });
 });
 
+// POST /api/admin/users/repair-profiles — backfill for accounts stuck with
+// a fabricated `${clerkId}@...` email (a signup-day Clerk fetch failure —
+// see lib/ensureUser.ts). ensureUser self-heals such an account on that
+// user's NEXT sign-in, but a dormant account never triggers that, so this
+// sweeps every placeholder row against Clerk's API on demand. Per-row
+// outcomes:
+//   healed          — real email fetched and stored
+//   noEmailInClerk  — Clerk has no email for them (e.g. phone-only signup);
+//                     nothing to capture, placeholder stays
+//   conflict        — Clerk's email is already on ANOTHER account (the
+//                     same human signed up twice); left untouched rather
+//                     than guessing which account should own it
+router.post("/users/repair-profiles", async (req, res): Promise<void> => {
+  const candidates = await db
+    .select()
+    .from(usersTable)
+    .where(sql`${usersTable.email} LIKE ${usersTable.clerkId} || '@%'`)
+    .limit(200);
+
+  let healed = 0;
+  let noEmailInClerk = 0;
+  let conflicts = 0;
+  for (const user of candidates) {
+    // Belt and braces — the SQL LIKE above is the same predicate, but the
+    // shared helper stays the single definition of "placeholder."
+    if (!isPlaceholderEmail(user.email, user.clerkId)) continue;
+    const profile = await fetchClerkProfile(user.clerkId);
+    if (!profile.email) {
+      noEmailInClerk++;
+      continue;
+    }
+    try {
+      await db
+        .update(usersTable)
+        .set({
+          email: profile.email,
+          ...(user.fullName ? {} : { fullName: profile.fullName }),
+          ...(user.phone ? {} : { phone: profile.phone }),
+        })
+        .where(eq(usersTable.id, user.id));
+      healed++;
+    } catch {
+      // users_email_unique — the real email already belongs to another row.
+      conflicts++;
+    }
+  }
+
+  const adminUser = (req as any).adminUser as User;
+  logAdminAction(adminUser.id, "users.repair_profiles", { type: "user", id: "batch" }, { scanned: candidates.length, healed, noEmailInClerk, conflicts });
+
+  res.json({ scanned: candidates.length, healed, noEmailInClerk, conflicts });
+});
+
+// ---------------------------------------------------------------------------
+// Feature usage analytics — which buttons/features are actually used (and
+// which aren't), plus the AI analyzer that turns the counters into
+// practical trim/redesign recommendations. Capture side:
+// routes/usageEvents.ts + lib/featureUsage.ts (frontend).
+// ---------------------------------------------------------------------------
+
+// GET /api/admin/usage-stats?days=30
+router.get("/usage-stats", async (req, res): Promise<void> => {
+  const days = Math.min(365, Math.max(1, parseInt(String(req.query.days ?? "30"), 10) || 30));
+  const stats = await aggregateFeatureUsage(days);
+  res.json({ items: stats, days });
+});
+
+// GET /api/admin/analytics/traffic-by-hour — 24-bucket UTC histogram of
+// platform activity (summed feature_events.count, not row count — one row
+// can represent many clicks, see that table's own comment), for the
+// Analytics "when is the app actually used" chart. Same window param as
+// usage-stats.
+router.get("/analytics/traffic-by-hour", async (req, res): Promise<void> => {
+  const days = Math.min(365, Math.max(1, parseInt(String(req.query.days ?? "30"), 10) || 30));
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+  const rows = await db
+    .select({ hour: sql<number>`extract(hour from ${featureEventsTable.createdAt})`, total: sql<number>`sum(${featureEventsTable.count})` })
+    .from(featureEventsTable)
+    .where(gte(featureEventsTable.createdAt, since))
+    .groupBy(sql`extract(hour from ${featureEventsTable.createdAt})`);
+
+  const byHour = new Map(rows.map((r) => [Number(r.hour), Number(r.total)]));
+  const hours = Array.from({ length: 24 }, (_, hour) => ({ hour, count: byHour.get(hour) ?? 0 }));
+  const peak = hours.reduce((best, h) => (h.count > best.count ? h : best), hours[0]!);
+
+  res.json({ hours, peakHour: peak.count > 0 ? peak.hour : null, days });
+});
+
+// POST /api/admin/usage-insights — the smart analyzer: aggregates the same
+// window and asks Claude for practical, owner-actionable product insights.
+router.post("/usage-insights", async (req, res): Promise<void> => {
+  const days = Math.min(365, Math.max(1, parseInt(String((req.body ?? {}).days ?? "30"), 10) || 30));
+  try {
+    const result = await generateUsageInsights(days);
+    const adminUser = (req as any).adminUser as User;
+    logAdminAction(adminUser.id, "usage.analyze", { type: "analytics", id: "usage" }, { days, statsAnalyzed: result.statsAnalyzed });
+    res.json({ ...result, days });
+  } catch (err) {
+    res.status(502).json({ error: "The analyzer couldn't complete — try again in a moment." });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Policy updates — the admin side of the re-consent system
+// (policy_versions.ts): draft a "what changed" summary for the Privacy
+// Policy or Terms, publish it, and from that moment every signed-in user is
+// prompted to review and agree. The actual policy TEXT lives on the
+// /privacy and /terms pages (updated in code); this tracks announcement +
+// consent, not the prose.
+// ---------------------------------------------------------------------------
+
+// GET /api/admin/policy-versions — full history, newest first, with how
+// many users have accepted each published version (vs. the total user
+// count, for a progress read).
+router.get("/policy-versions", async (_req, res): Promise<void> => {
+  const [versions, acceptCounts, totalUsersRow] = await Promise.all([
+    db.select().from(policyVersionsTable).orderBy(desc(policyVersionsTable.createdAt)),
+    db
+      .select({ policyVersionId: policyAcceptancesTable.policyVersionId, count: count() })
+      .from(policyAcceptancesTable)
+      .groupBy(policyAcceptancesTable.policyVersionId),
+    db.select({ count: count() }).from(usersTable).then((r) => r[0]),
+  ]);
+  const countsById = Object.fromEntries(acceptCounts.map((c) => [c.policyVersionId, c.count]));
+  res.json({
+    items: versions.map((v) => ({ ...v, acceptedCount: countsById[v.id] ?? 0 })),
+    totalUsers: totalUsersRow?.count ?? 0,
+  });
+});
+
+const createPolicyVersionSchema = z.object({
+  docType: z.enum(["privacy", "terms"]),
+  summary: z.string().trim().min(1).max(1000),
+});
+
+// POST /api/admin/policy-versions — create a draft.
+router.post("/policy-versions", async (req, res): Promise<void> => {
+  const parsed = createPolicyVersionSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const adminUser = (req as any).adminUser as User;
+  const id = randomUUID();
+  await db.insert(policyVersionsTable).values({
+    id,
+    docType: parsed.data.docType,
+    summary: parsed.data.summary,
+    publishedAt: null,
+    createdByAdminId: adminUser.id,
+  });
+  logAdminAction(adminUser.id, "policy.draft", { type: "policy_version", id }, { docType: parsed.data.docType });
+  const created = await db.select().from(policyVersionsTable).where(eq(policyVersionsTable.id, id)).then((r) => r[0]);
+  res.status(201).json({ ...created, acceptedCount: 0 });
+});
+
+const updatePolicyVersionSchema = z.object({ summary: z.string().trim().min(1).max(1000) });
+
+// PATCH /api/admin/policy-versions/:id — edit a DRAFT's summary. A
+// published version is immutable: the consent record must stay exactly
+// what users saw and agreed to.
+router.patch("/policy-versions/:id", async (req, res): Promise<void> => {
+  const version = await db.select().from(policyVersionsTable).where(eq(policyVersionsTable.id, req.params.id)).then((r) => r[0]);
+  if (!version) {
+    res.status(404).json({ error: "Policy update not found" });
+    return;
+  }
+  if (version.publishedAt) {
+    res.status(409).json({ error: "A published policy update can't be edited — create a new version instead." });
+    return;
+  }
+  const parsed = updatePolicyVersionSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  await db.update(policyVersionsTable).set({ summary: parsed.data.summary }).where(eq(policyVersionsTable.id, version.id));
+  const updated = await db.select().from(policyVersionsTable).where(eq(policyVersionsTable.id, version.id)).then((r) => r[0]);
+  res.json({ ...updated, acceptedCount: 0 });
+});
+
+// DELETE /api/admin/policy-versions/:id — discard a draft. Published
+// versions are history and can't be deleted.
+router.delete("/policy-versions/:id", async (req, res): Promise<void> => {
+  const version = await db.select().from(policyVersionsTable).where(eq(policyVersionsTable.id, req.params.id)).then((r) => r[0]);
+  if (!version) {
+    res.status(404).json({ error: "Policy update not found" });
+    return;
+  }
+  if (version.publishedAt) {
+    res.status(409).json({ error: "A published policy update can't be deleted." });
+    return;
+  }
+  await db.delete(policyVersionsTable).where(eq(policyVersionsTable.id, version.id));
+  const adminUser = (req as any).adminUser as User;
+  logAdminAction(adminUser.id, "policy.discard_draft", { type: "policy_version", id: version.id }, { docType: version.docType });
+  res.status(204).send();
+});
+
+// POST /api/admin/policy-versions/:id/publish — the moment the prompt goes
+// live for every signed-in user (in-app, on refresh, or at next login —
+// however they arrive next, PolicyUpdateGate picks it up).
+router.post("/policy-versions/:id/publish", async (req, res): Promise<void> => {
+  const version = await db.select().from(policyVersionsTable).where(eq(policyVersionsTable.id, req.params.id)).then((r) => r[0]);
+  if (!version) {
+    res.status(404).json({ error: "Policy update not found" });
+    return;
+  }
+  if (version.publishedAt) {
+    res.status(409).json({ error: "This policy update is already published." });
+    return;
+  }
+  await db.update(policyVersionsTable).set({ publishedAt: new Date() }).where(eq(policyVersionsTable.id, version.id));
+  const adminUser = (req as any).adminUser as User;
+  logAdminAction(adminUser.id, "policy.publish", { type: "policy_version", id: version.id }, { docType: version.docType });
+  const updated = await db.select().from(policyVersionsTable).where(eq(policyVersionsTable.id, version.id)).then((r) => r[0]);
+  res.json({ ...updated, acceptedCount: 0 });
+});
+
 // ---------------------------------------------------------------------------
 // Moderation — the content-safety flag queue lib/moderation.ts's classifier
 // writes to. A flag is a "worth a human look" signal, not a verdict:
@@ -838,6 +1304,9 @@ router.get("/moderation/flags", async (req, res): Promise<void> => {
         id: moderationFlagsTable.id,
         whispId: moderationFlagsTable.whispId,
         textWhispId: moderationFlagsTable.textWhispId,
+        debateTopicId: moderationFlagsTable.debateTopicId,
+        debateTopicCommentId: moderationFlagsTable.debateTopicCommentId,
+        whisperBoxMessageId: moderationFlagsTable.whisperBoxMessageId,
         contentType: moderationFlagsTable.contentType,
         userId: moderationFlagsTable.userId,
         severity: moderationFlagsTable.severity,
@@ -849,14 +1318,26 @@ router.get("/moderation/flags", async (req, res): Promise<void> => {
         createdAt: moderationFlagsTable.createdAt,
         videoTitle: whispsTable.videoTitle,
         textWhispMessage: textWhispsTable.messageText,
+        circleCommentText: circleCommentsTable.commentText,
+        debateTopicText: debateTopicsTable.topicText,
+        debateTopicCommentText: debateTopicCommentsTable.commentText,
+        whisperBoxMessageText: whisperBoxMessagesTable.messageText,
         senderEmail: usersTable.email,
       })
       .from(moderationFlagsTable)
-      // leftJoin, not innerJoin — see the same comment on the
-      // /users/:id moderationFlags query above: a flag row only ever
-      // matches one of whispsTable/textWhispsTable.
+      // leftJoin, not innerJoin — a flag row only ever matches one of
+      // whispsTable/textWhispsTable/circleCommentsTable/debateTopicsTable/
+      // debateTopicCommentsTable/whisperBoxMessagesTable, per contentType.
+      // usersTable is also a leftJoin, not inner: a circle_comment,
+      // debate_topic_comment, or whisper_box_message flag has no account to
+      // attribute it to (userId=null) and should still show up here, just
+      // without a "Sender:" link to follow.
       .leftJoin(whispsTable, eq(moderationFlagsTable.whispId, whispsTable.id))
       .leftJoin(textWhispsTable, eq(moderationFlagsTable.textWhispId, textWhispsTable.id))
+      .leftJoin(circleCommentsTable, eq(moderationFlagsTable.circleCommentId, circleCommentsTable.id))
+      .leftJoin(debateTopicsTable, eq(moderationFlagsTable.debateTopicId, debateTopicsTable.id))
+      .leftJoin(debateTopicCommentsTable, eq(moderationFlagsTable.debateTopicCommentId, debateTopicCommentsTable.id))
+      .leftJoin(whisperBoxMessagesTable, eq(moderationFlagsTable.whisperBoxMessageId, whisperBoxMessagesTable.id))
       .leftJoin(usersTable, eq(moderationFlagsTable.userId, usersTable.id))
       .where(where)
       .orderBy(desc(moderationFlagsTable.createdAt))
@@ -890,8 +1371,301 @@ router.patch("/moderation/flags/:id", async (req, res): Promise<void> => {
     .set({ dismissed: parsed.data.dismissed, reviewedAt: new Date(), reviewedByAdminId: adminUser.id })
     .where(eq(moderationFlagsTable.id, existing.id));
 
+  logAdminAction(adminUser.id, "moderation.flag_review", { type: "moderation_flag", id: existing.id }, { dismissed: parsed.data.dismissed, contentType: existing.contentType });
+
   const updated = await db.select().from(moderationFlagsTable).where(eq(moderationFlagsTable.id, existing.id)).then((r) => r[0]);
   res.json(updated);
+});
+
+// POST /api/admin/moderation/flags/:id/remove-content — the real takedown
+// action this queue exists to lead to: PATCH above only ever dismisses or
+// leaves a flag as-is, neither of which touches the underlying content.
+// This pulls it from every public read path by setting removedByAdminAt on
+// whichever table the flag's contentType points at, distinct from
+// deletedByAuthorAt/deletedBySenderAt (the author's/sender's own choice) for
+// the accountability reasons each of those columns' comments describe.
+router.post("/moderation/flags/:id/remove-content", async (req, res): Promise<void> => {
+  const flag = await db.select().from(moderationFlagsTable).where(eq(moderationFlagsTable.id, req.params.id)).then((r) => r[0]);
+  if (!flag) {
+    res.status(404).json({ error: "Flag not found" });
+    return;
+  }
+
+  const now = new Date();
+  switch (flag.contentType) {
+    case "whisp":
+      if (!flag.whispId) { res.status(400).json({ error: "Flag has no associated whisp" }); return; }
+      await db.update(whispsTable).set({ removedByAdminAt: now }).where(eq(whispsTable.id, flag.whispId));
+      break;
+    case "circle_comment":
+      if (!flag.circleCommentId) { res.status(400).json({ error: "Flag has no associated comment" }); return; }
+      await db.update(circleCommentsTable).set({ removedByAdminAt: now }).where(eq(circleCommentsTable.id, flag.circleCommentId));
+      break;
+    case "debate_topic":
+      if (!flag.debateTopicId) { res.status(400).json({ error: "Flag has no associated topic" }); return; }
+      await db.update(debateTopicsTable).set({ removedByAdminAt: now }).where(eq(debateTopicsTable.id, flag.debateTopicId));
+      break;
+    case "debate_topic_comment":
+      if (!flag.debateTopicCommentId) { res.status(400).json({ error: "Flag has no associated comment" }); return; }
+      await db.update(debateTopicCommentsTable).set({ removedByAdminAt: now }).where(eq(debateTopicCommentsTable.id, flag.debateTopicCommentId));
+      break;
+    case "whisper_box_message":
+      if (!flag.whisperBoxMessageId) { res.status(400).json({ error: "Flag has no associated message" }); return; }
+      await db.update(whisperBoxMessagesTable).set({ removedByAdminAt: now }).where(eq(whisperBoxMessagesTable.id, flag.whisperBoxMessageId));
+      break;
+    default:
+      res.status(400).json({ error: "This content type can't be taken down from here" });
+      return;
+  }
+
+  const adminUser = (req as any).adminUser as User;
+  await db
+    .update(moderationFlagsTable)
+    .set({ dismissed: false, reviewedAt: now, reviewedByAdminId: adminUser.id })
+    .where(eq(moderationFlagsTable.id, flag.id));
+
+  logAdminAction(adminUser.id, "content.remove", { type: flag.contentType, id: flag.whispId ?? flag.circleCommentId ?? flag.debateTopicId ?? flag.debateTopicCommentId ?? flag.whisperBoxMessageId ?? flag.id }, { flagId: flag.id });
+
+  const updated = await db.select().from(moderationFlagsTable).where(eq(moderationFlagsTable.id, flag.id)).then((r) => r[0]);
+  res.json(updated);
+});
+
+// ---------------------------------------------------------------------------
+// Community reports — the user-filed queue (content_reports.ts), distinct
+// from the automated moderation_flags queue above. Reports arrive
+// pre-categorized (reason → stored priority, see routes/contentReports.ts's
+// REASON_PRIORITY) and this queue orders itself by that priority so the
+// worst things surface first; an admin can re-triage, take a report into
+// review, keep working notes, and finally resolve it — which is also the
+// moment the reporter hears back and (optionally) the author gets warned.
+// ---------------------------------------------------------------------------
+
+// Sorts critical → high → medium → low; anything unexpected sinks to the
+// bottom rather than breaking the queue.
+const reportPriorityRank = sql`CASE ${contentReportsTable.priority} WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 ELSE 4 END`;
+
+const REPORT_PRIORITIES = ["critical", "high", "medium", "low"] as const;
+
+// GET /api/admin/content-reports
+router.get("/content-reports", async (req, res): Promise<void> => {
+  const { page, pageSize } = parsePagination(req);
+  const statusFilter = typeof req.query.status === "string" ? req.query.status : "unresolved";
+  const priorityFilter = typeof req.query.priority === "string" ? req.query.priority : undefined;
+  const reasonFilter = typeof req.query.reason === "string" ? req.query.reason : undefined;
+
+  const conditions = [];
+  // "unresolved" (the default view) is the working queue: open + in_review.
+  if (statusFilter === "unresolved") conditions.push(inArray(contentReportsTable.status, ["open", "in_review"]));
+  else if (statusFilter !== "all") conditions.push(eq(contentReportsTable.status, statusFilter));
+  if (priorityFilter) conditions.push(eq(contentReportsTable.priority, priorityFilter));
+  if (reasonFilter) conditions.push(eq(contentReportsTable.reason, reasonFilter));
+  const where = conditions.length ? and(...conditions) : undefined;
+
+  const [rows, totalRow, summaryRows] = await Promise.all([
+    db
+      .select({
+        id: contentReportsTable.id,
+        contentType: contentReportsTable.contentType,
+        debateTopicId: contentReportsTable.debateTopicId,
+        debateTopicCommentId: contentReportsTable.debateTopicCommentId,
+        reporterUserId: contentReportsTable.reporterUserId,
+        reason: contentReportsTable.reason,
+        detail: contentReportsTable.detail,
+        priority: contentReportsTable.priority,
+        status: contentReportsTable.status,
+        resolution: contentReportsTable.resolution,
+        adminNotes: contentReportsTable.adminNotes,
+        adminReplyMessage: contentReportsTable.adminReplyMessage,
+        authorWarnedAt: contentReportsTable.authorWarnedAt,
+        resolvedAt: contentReportsTable.resolvedAt,
+        createdAt: contentReportsTable.createdAt,
+        reporterEmail: usersTable.email,
+        debateTopicText: debateTopicsTable.topicText,
+        debateTopicAuthorId: debateTopicsTable.authorId,
+        topicRemovedByAdminAt: debateTopicsTable.removedByAdminAt,
+        topicDeletedByAuthorAt: debateTopicsTable.deletedByAuthorAt,
+        debateTopicCommentText: debateTopicCommentsTable.commentText,
+        commentAuthorUserId: debateTopicCommentsTable.authorUserId,
+        commentRemovedByAdminAt: debateTopicCommentsTable.removedByAdminAt,
+      })
+      .from(contentReportsTable)
+      .leftJoin(usersTable, eq(contentReportsTable.reporterUserId, usersTable.id))
+      .leftJoin(debateTopicsTable, eq(contentReportsTable.debateTopicId, debateTopicsTable.id))
+      .leftJoin(debateTopicCommentsTable, eq(contentReportsTable.debateTopicCommentId, debateTopicCommentsTable.id))
+      .where(where)
+      // Priority first (critical work surfaces regardless of arrival
+      // order), oldest first within a priority — the report that's waited
+      // longest at the same severity gets looked at next, plain FIFO.
+      .orderBy(reportPriorityRank, asc(contentReportsTable.createdAt))
+      .limit(pageSize)
+      .offset((page - 1) * pageSize),
+    db.select({ count: count() }).from(contentReportsTable).where(where).then((r) => r[0]),
+    // The triage summary deliberately IGNORES the current filter: its
+    // whole job is "what's still waiting, at what severity," which should
+    // stay visible (and alarming, when critical > 0) even while the admin
+    // is browsing resolved history.
+    db
+      .select({ priority: contentReportsTable.priority, count: count() })
+      .from(contentReportsTable)
+      .where(inArray(contentReportsTable.status, ["open", "in_review"]))
+      .groupBy(contentReportsTable.priority),
+  ]);
+
+  const openByPriority: Record<string, number> = { critical: 0, high: 0, medium: 0, low: 0 };
+  for (const row of summaryRows) {
+    if (row.priority in openByPriority) openByPriority[row.priority] = row.count;
+  }
+
+  res.json({ items: rows, total: totalRow?.count ?? 0, page, pageSize, openByPriority });
+});
+
+const updateContentReportSchema = z.object({
+  priority: z.enum(REPORT_PRIORITIES).optional(),
+  // Only the two working states are settable here — "resolved" is reachable
+  // exclusively through POST /:id/resolve below, which is what enforces the
+  // notify-the-reporter step a resolution is supposed to carry.
+  status: z.enum(["open", "in_review"]).optional(),
+  adminNotes: z.string().max(2000).nullable().optional(),
+});
+
+// PATCH /api/admin/content-reports/:id — the review/triage tool: re-rank a
+// report's priority, claim it into review, keep working notes.
+router.patch("/content-reports/:id", async (req, res): Promise<void> => {
+  const report = await db.select().from(contentReportsTable).where(eq(contentReportsTable.id, req.params.id)).then((r) => r[0]);
+  if (!report) {
+    res.status(404).json({ error: "Report not found" });
+    return;
+  }
+  if (report.status === "resolved") {
+    res.status(409).json({ error: "This report is already resolved." });
+    return;
+  }
+
+  const parsed = updateContentReportSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const updates: Record<string, unknown> = {};
+  if (parsed.data.priority !== undefined) updates.priority = parsed.data.priority;
+  if (parsed.data.status !== undefined) updates.status = parsed.data.status;
+  if (parsed.data.adminNotes !== undefined) updates.adminNotes = parsed.data.adminNotes;
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json({ error: "Nothing to update" });
+    return;
+  }
+
+  await db.update(contentReportsTable).set(updates).where(eq(contentReportsTable.id, report.id));
+
+  const adminUser = (req as any).adminUser as User;
+  logAdminAction(adminUser.id, "report.update", { type: "content_report", id: report.id }, { before: { priority: report.priority, status: report.status }, after: parsed.data });
+
+  const updated = await db.select().from(contentReportsTable).where(eq(contentReportsTable.id, report.id)).then((r) => r[0]);
+  res.json(updated);
+});
+
+const resolveContentReportSchema = z.object({
+  resolution: z.enum(["removed", "no_violation"]),
+  // Optional custom message to the reporter — when omitted, a default
+  // template for the chosen resolution is sent instead. The reporter ALWAYS
+  // hears back; what's optional is only whether an admin personalizes it.
+  replyToReporter: z.string().trim().max(1000).optional(),
+  // When present, the content's author receives this as a Community
+  // Guidelines warning notification. Only possible when the author has an
+  // account — see the authorWarned flag in the response.
+  warnAuthor: z.string().trim().max(1000).optional(),
+});
+
+// POST /api/admin/content-reports/:id/resolve — closes the loop the report
+// opened: optionally takes the content down, always tells the reporter what
+// happened, optionally warns the author.
+router.post("/content-reports/:id/resolve", async (req, res): Promise<void> => {
+  const report = await db.select().from(contentReportsTable).where(eq(contentReportsTable.id, req.params.id)).then((r) => r[0]);
+  if (!report) {
+    res.status(404).json({ error: "Report not found" });
+    return;
+  }
+  if (report.status === "resolved") {
+    res.status(409).json({ error: "This report is already resolved." });
+    return;
+  }
+
+  const parsed = resolveContentReportSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const { resolution } = parsed.data;
+  const replyToReporter = parsed.data.replyToReporter?.trim() || null;
+  const warnAuthor = parsed.data.warnAuthor?.trim() || null;
+
+  const now = new Date();
+
+  // Resolve the content row + its author's account id (null = anonymous
+  // no-account commenter, who can't be warned).
+  let authorUserId: string | null = null;
+  if (report.contentType === "debate_topic" && report.debateTopicId) {
+    const topic = await db.select().from(debateTopicsTable).where(eq(debateTopicsTable.id, report.debateTopicId)).then((r) => r[0]);
+    authorUserId = topic?.authorId ?? null;
+    if (resolution === "removed" && topic && !topic.removedByAdminAt) {
+      await db.update(debateTopicsTable).set({ removedByAdminAt: now }).where(eq(debateTopicsTable.id, topic.id));
+    }
+  } else if (report.contentType === "debate_topic_comment" && report.debateTopicCommentId) {
+    const comment = await db.select().from(debateTopicCommentsTable).where(eq(debateTopicCommentsTable.id, report.debateTopicCommentId)).then((r) => r[0]);
+    authorUserId = comment?.authorUserId ?? null;
+    if (resolution === "removed" && comment && !comment.removedByAdminAt) {
+      await db.update(debateTopicCommentsTable).set({ removedByAdminAt: now }).where(eq(debateTopicCommentsTable.id, comment.id));
+    }
+  }
+
+  // The reporter always hears the outcome — a custom reply when the admin
+  // wrote one, an honest default otherwise. Silence is the one thing this
+  // endpoint refuses to do with a resolution.
+  const reporterBody =
+    replyToReporter ??
+    (resolution === "removed"
+      ? "Thanks for your report. We reviewed the content and removed it for violating our Community Guidelines."
+      : "Thanks for your report. We reviewed the content and found it doesn't violate our Community Guidelines, so it will stay up. We appreciate you looking out for the community.");
+  await notifyUserPersisted(report.reporterUserId, "Update on your report", reporterBody, "/community-guidelines", "report_update");
+
+  let authorWarned = false;
+  if (warnAuthor) {
+    if (authorUserId) {
+      await notifyUserPersisted(
+        authorUserId,
+        "Community Guidelines warning",
+        `${warnAuthor}\n\nPlease review our Community Guidelines. Repeated violations may result in account suspension.`,
+        "/community-guidelines",
+        "moderation_warning",
+      );
+      authorWarned = true;
+    }
+    // else: anonymous no-account author — nowhere to deliver a warning, so
+    // it's skipped; authorWarned:false in the response tells the admin so.
+  }
+
+  await db
+    .update(contentReportsTable)
+    .set({
+      status: "resolved",
+      resolution,
+      adminReplyMessage: reporterBody,
+      authorWarnedAt: authorWarned ? now : null,
+      resolvedAt: now,
+      resolvedByAdminId: ((req as any).adminUser as User).id,
+    })
+    .where(eq(contentReportsTable.id, report.id));
+
+  const adminUser = (req as any).adminUser as User;
+  logAdminAction(
+    adminUser.id,
+    "report.resolve",
+    { type: "content_report", id: report.id },
+    { resolution, contentType: report.contentType, contentId: report.debateTopicId ?? report.debateTopicCommentId, authorWarned, repliedWithCustomMessage: !!replyToReporter },
+  );
+
+  const updated = await db.select().from(contentReportsTable).where(eq(contentReportsTable.id, report.id)).then((r) => r[0]);
+  res.json({ ...updated, authorWarned });
 });
 
 // ---------------------------------------------------------------------------
@@ -1101,6 +1875,22 @@ router.delete("/suggestions/:id", async (req, res): Promise<void> => {
 
   await db.delete(suggestedVideosTable).where(eq(suggestedVideosTable.id, existing.id));
   res.status(204).send();
+});
+
+// ---------------------------------------------------------------------------
+// Audit log
+// ---------------------------------------------------------------------------
+
+// GET /api/admin/audit-log — the admin-accountability trail (lib/adminAudit.ts):
+// who did what sensitive action, to what, and when. Optionally filtered to
+// one admin or one target type.
+router.get("/audit-log", async (req, res): Promise<void> => {
+  const { page, pageSize } = parsePagination(req);
+  const adminUserId = typeof req.query.adminUserId === "string" ? req.query.adminUserId : undefined;
+  const targetType = typeof req.query.targetType === "string" ? req.query.targetType : undefined;
+
+  const items = await listAdminAuditLog({ page, pageSize, adminUserId, targetType });
+  res.json({ items, page, pageSize });
 });
 
 export default router;

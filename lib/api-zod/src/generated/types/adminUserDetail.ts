@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AdminUser } from './adminUser';
+import type { AdminUserDetailDebateTopicCommentsItem } from './adminUserDetailDebateTopicCommentsItem';
+import type { AdminUserDetailDebateTopicsItem } from './adminUserDetailDebateTopicsItem';
 import type { AdminUserDetailStatusCounts } from './adminUserDetailStatusCounts';
 import type { CreditTransaction } from './creditTransaction';
 import type { ModerationFlag } from './moderationFlag';
@@ -23,4 +25,8 @@ export interface AdminUserDetail {
   /** Non-dismissed content-safety flags across this user's whisps. */
   moderationFlagCount: number;
   moderationFlags: ModerationFlag[];
+  /** Debate Topics this account authored (never shown publicly under their real account either — see debate_topics.ts), most recent 50. */
+  debateTopics: AdminUserDetailDebateTopicsItem[];
+  /** Debate Topic comments this account posted while signed in, most recent 50. */
+  debateTopicComments: AdminUserDetailDebateTopicCommentsItem[];
 }

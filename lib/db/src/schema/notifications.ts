@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, index } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -48,8 +48,11 @@ export const notificationReadsTable = pgTable("notification_reads", {
   readAt: timestamp("read_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   // Serves the "is this (notification, user) pair already read" joins in
-  // routes/user.ts (GET /notifications, POST /notifications/:id/read).
-  index("notification_reads_notification_id_user_id_idx").on(table.notificationId, table.userId),
+  // routes/user.ts (GET /notifications, POST /notifications/:id/read) — and
+  // UNIQUE so two concurrent reads (two tabs, or read-all racing a per-item
+  // read) can't insert duplicate rows, which the GET's left join would then
+  // return as a duplicated notification. Inserts use onConflictDoNothing.
+  uniqueIndex("notification_reads_notification_id_user_id_idx").on(table.notificationId, table.userId),
   // routes/user.ts's POST /notifications/read-all also looks up every read
   // row for a user with no notificationId in the filter — not served by the
   // composite index above since userId isn't its leftmost column.

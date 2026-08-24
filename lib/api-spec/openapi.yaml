@@ -34,6 +34,10 @@ tags:
     description: Anonymous invite-a-friend — inviting someone to join Blind Whisper itself, sent the same anonymous way as a whisp
   - name: textWhisps
     description: Text Whisps — short, text-only anonymous messages between two known, verified Blind Whisper users, delivered entirely in-app
+  - name: debateTopics
+    description: Debate Topics — short, title-length debate prompts a Whisperer posts anonymously to a public feed anyone can browse and comment on, no account required to read or comment
+  - name: whisperBox
+    description: Whisper Box — a signed-in Whisperer's opt-in public page where anyone, without an account, can send them one short anonymous message
 paths:
   /healthz:
     get:
@@ -52,13 +56,20 @@ paths:
     get:
       operationId: listWhisps
       tags: [whisps]
-      summary: List all whisps sent by the current user
+      summary: List whisps sent by the current user (default), or received by them
       parameters:
         - in: query
           name: status
           schema:
             type: string
           required: false
+        - in: query
+          name: box
+          schema:
+            type: string
+            enum: [sent, received, archived]
+          required: false
+          description: "'sent' (default): whisps this user sent. 'received': whisps another Whisperer sent TO this user (matched at send time — see whisps.recipientUserId). 'archived': whichever of those this user archived from either side, combined into one list."
       responses:
         "200":
           description: List of whisps
@@ -143,6 +154,66 @@ paths:
         "204":
           description: Deleted
 
+  /whisps/{id}/pin:
+    post:
+      operationId: pinWhisp
+      tags: [whisps]
+      summary: Toggle pin for whichever role (sender or matched recipient) the caller has on this whisp
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: New pin state
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pinned:
+                    type: boolean
+                required:
+                  - pinned
+        "404":
+          description: Not found (or the caller has neither role on this whisp)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /whisps/{id}/archive:
+    post:
+      operationId: archiveWhisp
+      tags: [whisps]
+      summary: Toggle archive for whichever role the caller has on this whisp — reversible, calling it again un-archives
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: New archive state
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  archived:
+                    type: boolean
+                required:
+                  - archived
+        "404":
+          description: Not found (or the caller has neither role on this whisp)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /whisps/{id}/replies:
     get:
       operationId: listWhispReplies
@@ -186,6 +257,57 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WhispReply"
+
+  /whisps/{id}/replies/{replyId}/guess-reaction:
+    patch:
+      operationId: setGuessReaction
+      tags: [whisps]
+      summary: >-
+        Sender manually reacts to a "guess who sent it" reply. The only way a
+        guess ever gets a reaction — never computed automatically, see
+        WhispReply.guessReaction.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: replyId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reaction:
+                  type: string
+                  enum: [hot, cold, no_comment, confirmed]
+              required:
+                - reaction
+      responses:
+        "200":
+          description: Reaction set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhispReply"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Whisp not found, or the reply isn't a guess on this whisp
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
 
   /whisps/{id}/reveal:
     post:
@@ -528,6 +650,27 @@ paths:
               schema:
                 $ref: "#/components/schemas/TextWhispReply"
 
+  /text-whisps/{id}/typing:
+    post:
+      operationId: pingTextWhispTyping
+      tags: [textWhisps]
+      summary: Signal that the caller is currently typing a reply — sender or recipient only. Purely ephemeral presence (see TextWhisp.otherPartyTyping); no request body.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Recorded
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /text-whisps/{id}/reveal:
     post:
       operationId: requestTextWhispReveal
@@ -632,6 +775,17 @@ paths:
           required: true
           schema:
             type: string
+        - in: query
+          name: visitorId
+          required: false
+          schema:
+            type: string
+          description: >-
+            The anonymous, client-generated, localStorage-persisted id this
+            device uses for Circle likes/comments — affects whether the
+            response's viewerHasLiked, and each comment's viewerReaction/
+            isOwnComment, reflect this visitor. Omit for a Whisper Link/
+            circle_dm, where it's meaningless.
       responses:
         "200":
           description: Public whisp data
@@ -645,6 +799,27 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+
+  /public/w/{token}/video-reply-request:
+    post:
+      operationId: requestVideoReply
+      tags: [public]
+      summary: Record that the recipient wanted to whisp a video back but couldn't
+      description: >-
+        Called when an anonymous recipient taps a locked "whisp a video back"
+        control, so the sender can be told (on the same deferred schedule as a
+        reply notification) that adding credit would unlock it. Always 204 —
+        an unknown token gets the same answer as a known one, so this can't be
+        used to probe which tokens exist.
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Recorded, or intentionally ignored
 
   /public/w/{token}/track:
     post:
@@ -727,6 +902,283 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
 
+  /public/w/{token}/like:
+    post:
+      operationId: toggleCircleLike
+      tags: [public]
+      summary: Anonymous, idempotent like toggle — Blind Circle posts only
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                visitorId:
+                  type: string
+              required: [visitorId]
+      responses:
+        "200":
+          description: Toggled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  liked:
+                    type: boolean
+                  likeCount:
+                    type: integer
+                required: [liked, likeCount]
+        "400":
+          description: Not a Blind Circle post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/w/{token}/comments:
+    post:
+      operationId: postCircleComment
+      tags: [public]
+      summary: Post a public comment on a Blind Circle post
+      description: >-
+        Anonymous by default, rate-limited to a handful per rolling 24h
+        window per visitor (see lib/plans.ts's canPostAnonymousComment) —
+        signing in removes the limit entirely, same as the anonymous reply
+        cap elsewhere. isPoster on the response is set automatically when the
+        caller is signed in and is this whisp's own sender. An anonymous
+        handle is assigned automatically on a visitor's first comment in
+        this thread (see anonymous_handles.ts). Also accepts
+        multipart/form-data with the same fields plus an optional `image`
+        file (max 5MB, jpeg/png/webp/gif) — intentionally not modeled here,
+        same reasoning as POST /media/upload above: a `format: binary` body
+        generates File/Blob-typed Zod schemas that don't compile in
+        lib/api-zod's Node-only project. The frontend attaches an image via
+        a hand-written multipart fetch to this same URL, mirroring
+        lib/uploadMedia.ts.
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                commentText:
+                  type: string
+                visitorId:
+                  type: string
+                parentCommentId:
+                  type: ["string", "null"]
+              required: [commentText, visitorId]
+      responses:
+        "201":
+          description: Comment posted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CircleComment"
+        "400":
+          description: Not a Blind Circle post, or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Anonymous comment limit reached (code "comment_limit_reached")
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/w/{token}/comments/{commentId}/reactions:
+    post:
+      operationId: reactToCircleComment
+      tags: [public]
+      summary: Like or dislike a Blind Circle comment
+      description: Idempotent toggle — reacting with the same reaction again removes it; reacting with the other one switches it.
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: commentId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                visitorId:
+                  type: string
+                reaction:
+                  type: string
+                  enum: [like, dislike]
+              required: [visitorId, reaction]
+      responses:
+        "200":
+          description: Updated reaction state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentReactionResult"
+        "404":
+          description: Comment not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/w/{token}/comments/{commentId}/image:
+    get:
+      operationId: getCircleCommentImage
+      tags: [public]
+      summary: Fetch a Blind Circle comment's attached image
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: commentId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The image bytes
+          content:
+            image/*:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: No image, or it's pending/failed moderation review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/w/{token}/handle:
+    patch:
+      operationId: renameCircleHandle
+      tags: [public]
+      summary: Rename the caller's own anonymous handle in this post's comment thread
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                visitorId:
+                  type: string
+                handle:
+                  type: string
+              required: [visitorId, handle]
+      responses:
+        "200":
+          description: Handle updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  handle:
+                    type: string
+                required: [handle]
+        "400":
+          description: Invalid handle, or already taken in this thread
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/w/{token}/circle-dm/start:
+    post:
+      operationId: startCircleDm
+      tags: [public]
+      summary: Start (or is idempotently expected to be reused for) a private anonymous conversation with a Blind Circle post's poster
+      description: >-
+        Mints a new whisp (deliveryMethod='circle_dm') the caller can now
+        message the poster through via the ordinary POST /w/{token}/reply on
+        the RETURNED token, exactly like a Whisper Link. The frontend is
+        responsible for remembering the returned token per origin post
+        (localStorage) so a repeat visitor resumes the same conversation
+        instead of starting a new one on every click.
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+      responses:
+        "201":
+          description: Conversation started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  publicToken:
+                    type: string
+                required: [publicToken]
+        "400":
+          description: Not a Blind Circle post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /public/w/{token}/remind-me:
     post:
       operationId: requestWhispReminder
@@ -799,6 +1251,36 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UserProfile"
+
+  /user/recap:
+    get:
+      operationId: getUserRecap
+      tags: [user]
+      summary: "Personal \"Wrapped\"-style stats recap — real, honestly-computed numbers only, meant to be screenshotted and shared"
+      parameters:
+        - in: query
+          name: period
+          schema:
+            type: string
+            enum: [all_time, last_30_days]
+          required: false
+          description: Defaults to all_time; an unrecognized value also falls back to all_time rather than erroring.
+      responses:
+        "200":
+          description: Recap stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserRecap"
+
+  /user/mfa-nudge/dismiss:
+    post:
+      operationId: dismissMfaNudge
+      tags: [user]
+      summary: "\"Skip for now\" on the two-factor setup nudge — doesn't affect whether 2FA is actually enabled, only when the nudge is next shown"
+      responses:
+        "204":
+          description: Dismissed
 
   /user/push-public-key:
     get:
@@ -1029,6 +1511,715 @@ paths:
               schema:
                 $ref: "#/components/schemas/CircleFeedResponse"
 
+  /debate-topics:
+    post:
+      operationId: createDebateTopic
+      tags: [debateTopics]
+      summary: Post a new debate topic (signed in, anonymous to other viewers)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DebateTopicInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DebateTopicFeedItem"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /debate-topics/{id}:
+    delete:
+      operationId: deleteDebateTopic
+      tags: [debateTopics]
+      summary: Retract a debate topic you posted — removes it from the public feed and detail lookup
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Retracted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /debate-topics/following-feed:
+    get:
+      operationId: listFollowingDebateTopics
+      tags: [debateTopics]
+      summary: Debate Topics posted by accounts you follow, newest first (signed in)
+      parameters:
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Following feed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DebateTopicFeedResponse"
+
+  /debate-topics/my-stats:
+    get:
+      operationId: getMyDebateTopicStats
+      tags: [debateTopics]
+      summary: Your own topic-engagement stats — how much your topics and comments have drawn (signed in)
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DebateTopicStats"
+
+  /follows:
+    post:
+      operationId: toggleFollow
+      tags: [follows]
+      summary: Follow or unfollow the account behind a public Whisperer handle (signed in)
+      description: >-
+        Idempotent toggle — following an already-followed handle unfollows
+        it. Resolves by whispererHandle, never a raw user id, matching this
+        app's anti-enumeration posture everywhere else. Rejects following
+        yourself.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                handle:
+                  type: string
+              required: [handle]
+      responses:
+        "200":
+          description: Updated follow state
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  following:
+                    type: boolean
+                  followerCount:
+                    type: integer
+                required: [following, followerCount]
+        "400":
+          description: Tried to follow yourself
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: No account with that handle
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /follows/stats:
+    get:
+      operationId: getFollowStats
+      tags: [follows]
+      summary: Your own follower/following counts (signed in)
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  followerCount:
+                    type: integer
+                  followingCount:
+                    type: integer
+                required: [followerCount, followingCount]
+
+  /follows/online-status:
+    get:
+      operationId: getFollowedOnlineStatus
+      tags: [follows]
+      summary: Which followed Whisperer handles are online right now (signed in)
+      description: >-
+        The only place in the app that surfaces presence at all — everywhere
+        else is an anonymous thread where this would be a real
+        deanonymization risk. Empty immediately if the viewer has their own
+        visibility off.
+      responses:
+        "200":
+          description: Online status by handle
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FollowedOnlineStatusResponse"
+
+  /public/debate-topics:
+    get:
+      operationId: listDebateTopics
+      tags: [debateTopics]
+      summary: Public Debate Topics feed (no auth required)
+      parameters:
+        - in: query
+          name: cursor
+          schema:
+            type: string
+          required: false
+      responses:
+        "200":
+          description: Debate Topics feed page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DebateTopicFeedResponse"
+
+  /public/debate-topics/{id}:
+    get:
+      operationId: getDebateTopic
+      tags: [debateTopics]
+      summary: A single debate topic with its full public comment thread (no auth required)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: visitorId
+          required: false
+          schema:
+            type: string
+          description: >-
+            The caller's own anonymous, client-generated, localStorage-
+            persisted id — affects whether each comment's viewerReaction/
+            isOwnComment, and the topic's viewerRewhisped, reflect this
+            visitor.
+      responses:
+        "200":
+          description: Debate topic detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DebateTopicDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/debate-topics/{id}/comments:
+    post:
+      operationId: postDebateTopicComment
+      tags: [debateTopics]
+      summary: Post an anonymous (or signed-in) comment on a debate topic (no auth required)
+      description: >-
+        An anonymous handle is assigned automatically on a visitor's first
+        comment in this thread (see anonymous_handles.ts). Also accepts
+        multipart/form-data with the same fields plus an optional `image`
+        file — intentionally not modeled here, same reasoning as POST
+        /media/upload above; see postCircleComment's description for why.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DebateTopicCommentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DebateTopicComment"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Anonymous comment limit reached
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/debate-topics/comments/{commentId}/image:
+    get:
+      operationId: getDebateTopicCommentImage
+      tags: [debateTopics]
+      summary: Fetch a debate topic comment's attached image
+      parameters:
+        - in: path
+          name: commentId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The image bytes
+          content:
+            image/*:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: No image, or it's pending/failed moderation review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/debate-topics/{id}/handle:
+    patch:
+      operationId: renameDebateTopicHandle
+      tags: [debateTopics]
+      summary: Rename the caller's own anonymous handle in this topic's comment thread
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                visitorId:
+                  type: string
+                handle:
+                  type: string
+              required: [visitorId, handle]
+      responses:
+        "200":
+          description: Handle updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  handle:
+                    type: string
+                required: [handle]
+        "400":
+          description: Invalid handle, or already taken in this thread
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/debate-topics/{id}/avatar:
+    patch:
+      operationId: updateDebateTopicHandleAvatar
+      tags: [debateTopics]
+      summary: Pick (or clear) the caller's own preset avatar in this topic's comment thread
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                visitorId:
+                  type: string
+                avatarId:
+                  $ref: "#/components/schemas/AvatarId"
+              required: [visitorId, avatarId]
+      responses:
+        "200":
+          description: Avatar updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  avatarId:
+                    $ref: "#/components/schemas/AvatarId"
+                required: [avatarId]
+        "400":
+          description: Not a valid avatar id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/debate-topics/{id}/comments/{commentId}/reactions:
+    post:
+      operationId: reactToDebateTopicComment
+      tags: [debateTopics]
+      summary: Like or dislike a debate topic comment
+      description: Idempotent toggle — reacting with the same reaction again removes it; reacting with the other one switches it.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: commentId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                visitorId:
+                  type: string
+                reaction:
+                  type: string
+                  enum: [like, dislike]
+              required: [visitorId, reaction]
+      responses:
+        "200":
+          description: Updated reaction state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentReactionResult"
+        "404":
+          description: Comment not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/debate-topics/{id}/rewhisp:
+    post:
+      operationId: rewhispDebateTopic
+      tags: [debateTopics]
+      summary: Rewhisp (retweet-style boost) a debate topic
+      description: Idempotent toggle — rewhisping a topic already rewhisped by this visitor undoes it. No list of who rewhisped is ever exposed, only a count.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                visitorId:
+                  type: string
+              required: [visitorId]
+      responses:
+        "200":
+          description: Updated rewhisp state
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rewhispCount:
+                    type: integer
+                  viewerRewhisped:
+                    type: boolean
+                required: [rewhispCount, viewerRewhisped]
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/whisper-box/{handle}:
+    get:
+      operationId: getPublicWhisperBox
+      tags: [whisperBox]
+      summary: Resolve a Whisper Box handle to its public display info (no auth required)
+      description: >-
+        Same 404 whether the handle doesn't resolve to any account or
+        resolves to one that has since turned its Whisper Box off — the
+        response never distinguishes "no such person" from "that person
+        disabled their box."
+      parameters:
+        - in: path
+          name: handle
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Whisper Box is live for this handle
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  handle:
+                    type: string
+                  avatarId:
+                    type: ["string", "null"]
+                required: [handle, avatarId]
+        "404":
+          description: No such handle, or that account's Whisper Box is disabled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    post:
+      operationId: sendWhisperBoxMessage
+      tags: [whisperBox]
+      summary: Send an anonymous message to a Whisper Box (no auth required)
+      description: >-
+        Deliberately minimal, constant-shaped response — no id, no
+        confirmation of anything about the recipient — same
+        anti-enumeration/no-feedback posture as POST /public/subscribe, since
+        the response shape must never become an oracle on an unauthenticated
+        endpoint.
+      parameters:
+        - in: path
+          name: handle
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                messageText:
+                  type: string
+                  minLength: 1
+                  maxLength: 500
+                senderAlias:
+                  type: ["string", "null"]
+                  maxLength: 60
+              required: [messageText]
+      responses:
+        "201":
+          description: Sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required: [ok]
+        "400":
+          description: Invalid message
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: No such handle, or that account's Whisper Box is disabled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /whisper-box/enable:
+    post:
+      operationId: enableWhisperBox
+      tags: [whisperBox]
+      summary: Turn on the caller's Whisper Box, assigning a Whisper Box handle first if they don't already have one
+      description: >-
+        The Settings "Get your Whisper Box link" action. Assigns a
+        whisperBoxHandle if the account doesn't have one yet — built from
+        the account's display name (fullName) when one is set, so a friend
+        can recognize it, or the same non-identifying random generator
+        whispererHandle uses when it isn't — and flips the opt-in on. Also
+        lazy-assigns the SEPARATE, always-anonymous whispererHandle used
+        only by Debate Now/follows, so that stays ready too. One call does
+        all of it so Settings only needs one button.
+      responses:
+        "200":
+          description: Whisper Box enabled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  handle:
+                    type: string
+                    description: The Whisper Box handle (whisperBoxHandle) — NOT the same value as whispererHandle.
+                  avatarId:
+                    type: ["string", "null"]
+                  enabled:
+                    type: boolean
+                required: [handle, avatarId, enabled]
+
+  /whisper-box/refresh-handle:
+    post:
+      operationId: refreshWhisperBoxHandle
+      tags: [whisperBox]
+      summary: Regenerate the caller's Whisper Box handle from their current display name
+      description: >-
+        Overwrites whatever Whisper Box handle the caller has now (including
+        a previously-personalized one) with a fresh one derived from their
+        current fullName — a deliberate "update my link to match my name"
+        action, never automatic. 400s if fullName isn't set, since there'd
+        be nothing to personalize with. This is what the frontend calls
+        right after capturing a display name from someone who tries to copy
+        their link without having set one yet. Any previously-shared link
+        using the old handle stops resolving once this runs.
+      responses:
+        "200":
+          description: Handle refreshed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  handle:
+                    type: string
+                required: [handle]
+        "400":
+          description: No display name set yet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /whisper-box/disable:
+    post:
+      operationId: disableWhisperBox
+      tags: [whisperBox]
+      summary: Turn off the caller's Whisper Box public page, without touching the handle itself
+      responses:
+        "200":
+          description: Whisper Box disabled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  enabled:
+                    type: boolean
+                required: [enabled]
+
+  /whisper-box:
+    get:
+      operationId: listWhisperBoxMessages
+      tags: [whisperBox]
+      summary: The caller's own received Whisper Box messages, newest first
+      responses:
+        "200":
+          description: Messages
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/WhisperBoxMessage"
+                required: [items]
+
+  /whisper-box/unread-count:
+    get:
+      operationId: getWhisperBoxUnreadCount
+      tags: [whisperBox]
+      summary: Lightweight unread count for a nav badge, without fetching the full list
+      responses:
+        "200":
+          description: Unread count
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  unreadCount:
+                    type: integer
+                required: [unreadCount]
+
+  /whisper-box/{id}/read:
+    post:
+      operationId: markWhisperBoxMessageRead
+      tags: [whisperBox]
+      summary: Mark one Whisper Box message as read
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Marked read
+        "404":
+          description: Not found, or not owned by the caller
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /whisper-box/{id}:
+    delete:
+      operationId: deleteWhisperBoxMessage
+      tags: [whisperBox]
+      summary: Delete one of the caller's own received Whisper Box messages
+      description: >-
+        A hard delete, unlike whisps' soft delete — there's no sender-side
+        copy to preserve, since there's no sender account at all.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found, or not owned by the caller
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /billing/checkout:
     post:
       operationId: createCheckoutSession
@@ -1091,6 +2282,12 @@ paths:
           name: banned
           schema:
             type: string
+          required: false
+        - in: query
+          name: compliance
+          schema:
+            type: string
+            enum: [mfa_missing, policy_pending, email_unverified, phone_unverified]
           required: false
         - in: query
           name: page
@@ -1241,6 +2438,55 @@ paths:
                 $ref: "#/components/schemas/AdminWhispListResponse"
         "404":
           description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/users/online-now:
+    get:
+      operationId: adminGetUsersOnlineNow
+      tags: [admin]
+      summary: How many accounts have been active in the last presence window, for the Analytics "online now" tile (admin only)
+      description: >-
+        An admin-only aggregate headcount — not gated by any individual's
+        showOnlineStatus, which only governs whether other users can see a
+        specific person online, not whether the platform's own operators can
+        see an anonymous count.
+      responses:
+        "200":
+          description: Online count
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOnlineNowResponse"
+
+  /admin/users/compliance-reminder:
+    post:
+      operationId: adminSendComplianceReminder
+      tags: [admin]
+      summary: Nudge specific users about a single missing compliance item, via in-app notification, best-effort push, and email (admin only)
+      description: >-
+        Same persisted-notification-plus-email delivery as POST
+        /admin/notifications, just pre-written per compliance kind rather
+        than admin-authored. Never re-verifies the flag is still true
+        server-side before sending — a reminder sent after someone already
+        fixed it is a harmless no-op.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ComplianceReminderInput"
+      responses:
+        "201":
+          description: Sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SendNotificationResult"
+        "400":
+          description: Bad request
           content:
             application/json:
               schema:
@@ -1504,6 +2750,23 @@ paths:
               schema:
                 $ref: "#/components/schemas/UnreadNotificationCountResponse"
 
+  /user/recent-recipients:
+    get:
+      operationId: getMyRecentRecipients
+      tags: [user]
+      summary: Contacts this user has sent to before, for autocompleting the recipient field
+      description: >-
+        Only ever the caller's own sending history — addresses they typed themselves.
+        Says nothing about whether any of them has a Blind Whisper account, which is
+        the fact the anti-enumeration rules protect.
+      responses:
+        "200":
+          description: Previously used recipients, most recently used first
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecentRecipientListResponse"
+
   /user/notifications/{id}/read:
     post:
       operationId: markNotificationRead
@@ -1589,6 +2852,867 @@ paths:
                 $ref: "#/components/schemas/ModerationFlag"
         "404":
           description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/moderation/flags/{id}/remove-content:
+    post:
+      operationId: adminRemoveFlaggedContent
+      tags: [admin]
+      summary: Take down the content a flag points at (admin only)
+      description: >-
+        Sets removedByAdminAt on whichever table the flag's contentType
+        points at (whisp, circle_comment, debate_topic, or
+        debate_topic_comment), excluding it from every public read path from
+        then on. Distinct from PATCH's dismiss/undismiss, which never
+        touches the underlying content.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Content removed; updated flag returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModerationFlag"
+        "400":
+          description: This flag's content type can't be taken down from here, or the flag has no associated content id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /content-reports:
+    post:
+      operationId: reportContent
+      tags: [contentReports]
+      summary: Report a piece of Debate Now content for violating the Community Guidelines
+      description: >-
+        Files a user report against a debate topic or one of its comments,
+        with a reason and optional free-text detail (capped at 300 words).
+        Requires a signed-in account — the admin team's resolution is sent
+        back to the reporter as an in-app notification. One open report per
+        reporter per piece of content; re-reporting the same content while a
+        previous report is still open returns 409.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateContentReportInput"
+      responses:
+        "201":
+          description: Report filed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateContentReportResponse"
+        "400":
+          description: Invalid reason, or detail over the word cap
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: The content doesn't exist or is no longer publicly visible
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: This reporter already has an open report on this content
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/users/repair-profiles:
+    post:
+      operationId: adminRepairUserProfiles
+      tags: [admin]
+      summary: Backfill real emails/names/phones for accounts stuck with placeholder addresses (admin only)
+      description: >-
+        Sweeps every user whose stored email is a fabricated
+        `clerkId@...` placeholder and re-fetches their real profile from
+        Clerk. Accounts with no email in Clerk (e.g. phone-only signups) and
+        accounts whose real email already belongs to another row are left
+        untouched and counted separately.
+      responses:
+        "200":
+          description: Per-outcome counts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RepairProfilesResult"
+
+  /user/policy-status:
+    get:
+      operationId: getMyPolicyStatus
+      tags: [user]
+      summary: Latest published policy updates this user hasn't agreed to yet
+      responses:
+        "200":
+          description: Pending policy updates (empty = nothing to prompt)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyStatusResponse"
+
+  /user/policy-acceptances:
+    post:
+      operationId: acceptPolicies
+      tags: [user]
+      summary: Record agreement to one or more published policy updates
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AcceptPoliciesInput"
+      responses:
+        "204":
+          description: Recorded (idempotent)
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/policy-versions:
+    get:
+      operationId: adminListPolicyVersions
+      tags: [admin]
+      summary: Policy update history with per-version acceptance counts (admin only)
+      responses:
+        "200":
+          description: Versions, newest first
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyVersionListResponse"
+    post:
+      operationId: adminCreatePolicyVersion
+      tags: [admin]
+      summary: Draft a policy update announcement (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePolicyVersionInput"
+      responses:
+        "201":
+          description: Draft created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyVersion"
+
+  /admin/policy-versions/{id}:
+    patch:
+      operationId: adminUpdatePolicyVersion
+      tags: [admin]
+      summary: Edit a draft's summary — published versions are immutable (admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePolicyVersionInput"
+      responses:
+        "200":
+          description: Updated draft
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyVersion"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Already published
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      operationId: adminDeletePolicyVersion
+      tags: [admin]
+      summary: Discard a draft — published versions are permanent history (admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Already published
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/policy-versions/{id}/publish:
+    post:
+      operationId: adminPublishPolicyVersion
+      tags: [admin]
+      summary: Publish a policy update — every signed-in user is prompted to agree from this moment (admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Published version
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyVersion"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Already published
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/usage-events:
+    post:
+      operationId: recordUsageEvents
+      tags: [usage]
+      summary: Record aggregated feature-usage counters (internal analytics; anonymous allowed)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecordUsageInput"
+      responses:
+        "204":
+          description: Recorded
+        "400":
+          description: Invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/usage-stats:
+    get:
+      operationId: adminGetUsageStats
+      tags: [admin]
+      summary: Per-feature usage totals over a window, most-used first (admin only)
+      parameters:
+        - in: query
+          name: days
+          schema:
+            type: integer
+          required: false
+          description: Window in days (default 30, max 365).
+      responses:
+        "200":
+          description: Usage stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsageStatsResponse"
+
+  /admin/analytics/traffic-by-hour:
+    get:
+      operationId: adminGetTrafficByHour
+      tags: [admin]
+      summary: 24-bucket UTC histogram of platform activity, for the Analytics "when is the app actually used" chart (admin only)
+      description: Sums feature_events.count (not row count — one row can represent many clicks), not just how many events were logged.
+      parameters:
+        - in: query
+          name: days
+          schema:
+            type: integer
+          required: false
+          description: Window in days (default 30, max 365).
+      responses:
+        "200":
+          description: Traffic by hour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrafficByHourResponse"
+
+  /admin/usage-insights:
+    post:
+      operationId: adminGenerateUsageInsights
+      tags: [admin]
+      summary: AI analyzer — practical product insights from the usage counters (admin only)
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UsageInsightsInput"
+      responses:
+        "200":
+          description: Insights
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsageInsightsResponse"
+        "502":
+          description: Analyzer unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/access/me:
+    get:
+      operationId: getMyAdminAccess
+      tags: [admin]
+      summary: This admin's HQ identity — owner flag and permission set (any admin)
+      responses:
+        "200":
+          description: Access info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAccessMe"
+
+  /admin/access/grants:
+    get:
+      operationId: adminListAccessGrants
+      tags: [admin]
+      summary: Staff grants, plus the permission catalog and role presets (owner only)
+      responses:
+        "200":
+          description: Grants
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminGrantListResponse"
+    post:
+      operationId: adminCreateAccessGrant
+      tags: [admin]
+      summary: Invite a collaborator by email with a role and permission set (owner only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminGrantInput"
+      responses:
+        "201":
+          description: Grant created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminGrant"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Email already has a grant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/access/grants/{id}:
+    patch:
+      operationId: adminUpdateAccessGrant
+      tags: [admin]
+      summary: Retitle or rescope a staff grant (owner only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminGrantUpdateInput"
+      responses:
+        "200":
+          description: Updated grant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminGrant"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      operationId: adminRevokeAccessGrant
+      tags: [admin]
+      summary: Revoke a collaborator — their account loses the admin role entirely (owner only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Revoked
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/projects:
+    get:
+      operationId: adminListProjects
+      tags: [admin]
+      summary: HQ projects with open/done task counts, plus the assignable staff list (projects permission)
+      responses:
+        "200":
+          description: Projects
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HqProjectListResponse"
+    post:
+      operationId: adminCreateProject
+      tags: [admin]
+      summary: Create an HQ project (projects permission)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HqProjectInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HqProject"
+
+  /admin/projects/{id}:
+    get:
+      operationId: adminGetProject
+      tags: [admin]
+      summary: One project with its tasks, assignees, and comment counts (projects permission)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Project detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HqProjectDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    patch:
+      operationId: adminUpdateProject
+      tags: [admin]
+      summary: Rename, describe, or archive a project (projects permission)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HqProjectUpdateInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HqProject"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/projects/{id}/tasks:
+    post:
+      operationId: adminCreateTask
+      tags: [admin]
+      summary: Add a task — assigning notifies the assignee in-app (projects permission)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HqTaskInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HqTask"
+        "404":
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/tasks/{id}:
+    patch:
+      operationId: adminUpdateTask
+      tags: [admin]
+      summary: Update a task — status to done stamps completion; a new assignee is notified (projects permission)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HqTaskUpdateInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HqTask"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      operationId: adminDeleteTask
+      tags: [admin]
+      summary: Delete a task and its comments (projects permission)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/tasks/{id}/comments:
+    get:
+      operationId: adminListTaskComments
+      tags: [admin]
+      summary: A task's comment thread (projects permission)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Comments
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HqTaskCommentListResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    post:
+      operationId: adminAddTaskComment
+      tags: [admin]
+      summary: Comment on a task — the assignee is notified (projects permission)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HqTaskCommentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HqTaskComment"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin-mfa/status:
+    get:
+      operationId: getAdminMfaStatus
+      tags: [adminMfa]
+      summary: Whether this admin account has finished authenticator enrollment (admin role only)
+      responses:
+        "200":
+          description: Enrollment status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMfaStatus"
+
+  /admin-mfa/setup:
+    post:
+      operationId: setupAdminMfa
+      tags: [adminMfa]
+      summary: Start authenticator enrollment — returns the TOTP secret and otpauth URI (admin role only)
+      description: >-
+        Never overwrites an already-enabled enrollment (409). Re-running
+        while enrollment is still pending issues a fresh secret.
+      responses:
+        "200":
+          description: Provisioning material for the authenticator app
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMfaSetupResponse"
+        "409":
+          description: Already enrolled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin-mfa/verify:
+    post:
+      operationId: verifyAdminMfa
+      tags: [adminMfa]
+      summary: Confirm an authenticator code (or backup code) and receive an admin unlock token (admin role only)
+      description: >-
+        The first successful verification activates the enrollment and
+        returns the one-time backup codes. Every success returns a signed
+        unlock token to send as the X-Admin-Mfa header on admin requests.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminMfaVerifyInput"
+      responses:
+        "200":
+          description: Unlock token (plus backup codes on first activation)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMfaVerifyResponse"
+        "400":
+          description: Code didn't match, or enrollment hasn't been set up
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/content-reports:
+    get:
+      operationId: adminListContentReports
+      tags: [admin]
+      summary: Community report queue, ordered by triage priority (admin only)
+      description: >-
+        User-filed reports against Debate Now content, ordered critical →
+        high → medium → low and oldest-first within a priority. The
+        openByPriority summary always reflects the full unresolved queue
+        regardless of the current filter.
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+          required: false
+          description: "'unresolved' (default: open + in_review), 'open', 'in_review', 'resolved', or 'all'."
+        - in: query
+          name: priority
+          schema:
+            type: string
+          required: false
+          description: "Filter to one of 'critical' | 'high' | 'medium' | 'low'."
+        - in: query
+          name: reason
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: page
+          schema:
+            type: integer
+          required: false
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+          required: false
+      responses:
+        "200":
+          description: Reports page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContentReportListResponse"
+
+  /admin/content-reports/{id}:
+    patch:
+      operationId: adminUpdateContentReport
+      tags: [admin]
+      summary: Review/triage tool — re-rank priority, claim into review, keep working notes (admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateContentReportInput"
+      responses:
+        "200":
+          description: Updated report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContentReport"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Report already resolved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/content-reports/{id}/resolve:
+    post:
+      operationId: adminResolveContentReport
+      tags: [admin]
+      summary: Resolve a report — optionally take the content down, always notify the reporter, optionally warn the author (admin only)
+      description: >-
+        resolution 'removed' sets removedByAdminAt on the reported content
+        (excluding it from every public read); 'no_violation' leaves it up.
+        Either way the reporter receives an in-app notification — the custom
+        replyToReporter message when provided, an honest default for the
+        chosen resolution otherwise. warnAuthor, when present, is delivered
+        to the content author's account as a Community Guidelines warning;
+        authorWarned is false in the response when the author has no account
+        to deliver to (anonymous commenter).
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResolveContentReportInput"
+      responses:
+        "200":
+          description: Resolved report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResolveContentReportResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Report already resolved
           content:
             application/json:
               schema:
@@ -1778,6 +3902,241 @@ paths:
           description: Deleted
         "404":
           description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/audit-log:
+    get:
+      operationId: adminListAuditLog
+      tags: [admin]
+      summary: The admin-accountability trail — who took which sensitive action, on what, and when (admin only)
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+        - in: query
+          name: adminUserId
+          schema:
+            type: string
+          description: Filter to actions taken by one admin account.
+        - in: query
+          name: targetType
+          schema:
+            type: string
+          description: Filter to one target type, e.g. 'user', 'whisp', 'debate_topic'.
+      responses:
+        "200":
+          description: Audit log page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAuditLogResponse"
+
+  /admin/debate-agent/config:
+    get:
+      operationId: adminGetDebateAgentConfig
+      tags: [admin, debateTopics]
+      summary: Get the Debate Topic posting agent's config + last run status, creating a default (disabled) row if none exists yet (admin only)
+      responses:
+        "200":
+          description: Debate agent settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DebateAgentSettings"
+    patch:
+      operationId: adminUpdateDebateAgentConfig
+      tags: [admin, debateTopics]
+      summary: Update the Debate Topic posting agent's config — enabled, daily post count, and/or topic themes (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateDebateAgentConfigInput"
+      responses:
+        "200":
+          description: Updated debate agent settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DebateAgentSettings"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/debate-agent/run-now:
+    post:
+      operationId: adminRunDebateAgentNow
+      tags: [admin, debateTopics]
+      summary: Trigger a Debate Topic agent posting sweep immediately, regardless of the enabled flag (admin only)
+      responses:
+        "200":
+          description: Run result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunDebateAgentResult"
+
+  /admin/debate-agent/post:
+    post:
+      operationId: adminPostDebateTopic
+      tags: [admin, debateTopics]
+      summary: Manually compose and publish a single Debate Topic under the system account, through the same moderation pass as every other topic (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostDebateTopicInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostDebateTopicResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/circle-agent/config:
+    get:
+      operationId: adminGetCircleAgentConfig
+      tags: [admin]
+      summary: Get the Blind Circle video-discovery posting agent's config + last run status, creating a default (disabled) row if none exists yet (admin only)
+      responses:
+        "200":
+          description: Circle agent settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CircleAgentSettings"
+    patch:
+      operationId: adminUpdateCircleAgentConfig
+      tags: [admin]
+      summary: Update the Blind Circle video-discovery posting agent's config — enabled, daily post count, and/or topics (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCircleAgentConfigInput"
+      responses:
+        "200":
+          description: Updated circle agent settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CircleAgentSettings"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/circle-agent/run-now:
+    post:
+      operationId: adminRunCircleAgentNow
+      tags: [admin]
+      summary: Trigger a Blind Circle video-discovery agent posting sweep immediately, regardless of the enabled flag (admin only)
+      responses:
+        "200":
+          description: Run result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunCircleAgentResult"
+
+  /admin/circle-agent/post:
+    post:
+      operationId: adminPostCircleVideo
+      tags: [admin]
+      summary: Manually post a specific video URL to the public Blind Circle feed under the system account, resolved/validated through the same allowlist every discovered candidate goes through (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostCircleVideoInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostCircleVideoResult"
+        "400":
+          description: Bad request — the URL couldn't be resolved (unsupported host, private/restricted content, fetch failure)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/text-whisps/broadcast:
+    post:
+      operationId: adminBroadcastTextWhisp
+      tags: [admin]
+      summary: Send a platform Text Whisp to every user or a chosen set (admin only)
+      description: >-
+        Always sent from the reserved system account, not the acting admin —
+        a platform broadcast shouldn't be attributed to whichever admin
+        happened to click Send. Deliberately not anonymous to the recipient.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BroadcastTextWhispInput"
+      responses:
+        "201":
+          description: Sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BroadcastTextWhispResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/text-whisps/to-staff:
+    post:
+      operationId: adminSendTextWhispToStaff
+      tags: [admin]
+      summary: One staff member Text Whisping a colleague directly by account, skipping the phone-number lookup a normal Text Whisp needs (admin only)
+      description: Sent from the acting admin's own account, not the system user — a genuinely one named colleague writing to another.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TextWhispToStaffInput"
+      responses:
+        "201":
+          description: Sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TextWhispToStaffResult"
+        "400":
+          description: Bad request
           content:
             application/json:
               schema:
@@ -2322,7 +4681,14 @@ components:
         id:
           type: string
         senderId:
-          type: string
+          type: ["string", "null"]
+          description: >-
+            The sender's real account id — present only when the CALLER is
+            that sender (viewerRole === "sender"). null for a matched
+            recipient viewing a whisp sent TO them (viewerRole ===
+            "recipient"), so the anonymous-sender guarantee Whisper Link is
+            built around can't be broken by reading this field off a
+            box=received/archived response.
         videoUrl:
           type: string
         videoTitle:
@@ -2386,6 +4752,18 @@ components:
           description: Set when this whisp's video and/or note came from the "Not sure what to send?" AI concierge (see POST /whisps/concierge)
         createdAt:
           type: string
+        viewerIsRecipient:
+          type: boolean
+          description: True only when the caller is themselves this whisp's matched recipient (see GET /whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email/phone belongs to a verified account.
+        viewerRole:
+          type: ["string", "null"]
+          description: "'sender' | 'recipient' | null — which role the caller has on this whisp. Drives pinned/archived below, and (frontend-side) whether Delete is offered — only a sender may delete."
+        pinned:
+          type: boolean
+          description: Whether the CALLER's own copy of this whisp is pinned (see POST /whisps/{id}/pin) — never the other party's pin state.
+        archived:
+          type: boolean
+          description: Whether the CALLER's own copy of this whisp is archived (see POST /whisps/{id}/archive) — never the other party's archive state.
       required:
         - id
         - senderId
@@ -2395,6 +4773,10 @@ components:
         - publicToken
         - revealRequested
         - createdAt
+        - viewerIsRecipient
+        - viewerRole
+        - pinned
+        - archived
 
     WhispInput:
       type: object
@@ -2459,10 +4841,107 @@ components:
             Anonymous replies the recipient has left on this whisp. Null means
             uncapped. 0 means they can't reply again unless the sender adds
             more replies or the recipient signs up.
+        viewCount:
+          type: integer
+          description: >-
+            Blind Circle posts only (0 otherwise) — how many times this post
+            was opened, across every anonymous viewer.
+        likeCount:
+          type: integer
+          description: Blind Circle posts only (0 otherwise).
+        comments:
+          type: array
+          items:
+            $ref: "#/components/schemas/CircleComment"
+          description: Blind Circle posts only (empty otherwise).
+        circleConversations:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              publicToken:
+                type: string
+              createdAt:
+                type: string
+                format: date-time
+            required: [id, publicToken, createdAt]
+          description: >-
+            Private 1:1 conversations anonymous viewers started from this
+            Blind Circle post (see POST /w/{token}/circle-dm/start). Empty
+            for every other delivery method, including a circle_dm thread
+            itself — a conversation can't spawn another conversation.
       required:
         - whisp
         - trackingEvents
         - replies
+        - viewCount
+        - likeCount
+        - comments
+        - circleConversations
+
+    CircleComment:
+      type: object
+      description: A public comment on a Blind Circle post. Never carries a visitor identifier — see circle_comments.ts's schema comment for why.
+      properties:
+        id:
+          type: string
+        commentText:
+          type: string
+        parentCommentId:
+          type: ["string", "null"]
+          description: The comment this one replies to, if any — same flat quote-reference model as WhispReply.parentReplyId.
+        isPoster:
+          type: boolean
+          description: True when this comment came from the post's own (signed-in) sender — a role badge, never an identity.
+        createdAt:
+          type: string
+          format: date-time
+        handle:
+          type: string
+          description: This commenter's stable anonymous handle within this post's thread (e.g. "SwiftFalcon482") — see anonymous_handles.ts.
+        isOwnComment:
+          type: boolean
+          description: True when the caller's own visitorId matches this comment's author — lets the client show its own "you" state without ever exposing the raw visitorId to other viewers.
+        imageUrl:
+          type: ["string", "null"]
+          description: Proxy-served URL for an attached image, or null if there is none or it was flagged by moderation and is pending review.
+        likeCount:
+          type: integer
+        dislikeCount:
+          type: integer
+        viewerReaction:
+          type: ["string", "null"]
+          enum: [like, dislike, null]
+          description: The caller's own reaction to this comment, if any — requires visitorId to have been passed on the read.
+      required:
+        - id
+        - commentText
+        - isPoster
+        - createdAt
+        - handle
+        - isOwnComment
+        - imageUrl
+        - likeCount
+        - dislikeCount
+        - viewerReaction
+
+    CommentReactionResult:
+      type: object
+      description: The resulting reaction state after a like/dislike toggle — shared shape for Circle and Debate Topic comments.
+      properties:
+        likeCount:
+          type: integer
+        dislikeCount:
+          type: integer
+        viewerReaction:
+          type: ["string", "null"]
+          enum: [like, dislike, null]
+      required:
+        - likeCount
+        - dislikeCount
+        - viewerReaction
 
     WhispStats:
       type: object
@@ -2524,13 +5003,41 @@ components:
           type: ["string", "null"]
         moodTag:
           type: ["string", "null"]
+        parentReplyId:
+          type: ["string", "null"]
+          description: >-
+            The message this one answers, when it replies to a specific
+            earlier message rather than the thread as a whole. Always a reply
+            on the same whisp.
         createdAt:
           type: string
+        readAt:
+          type: ["string", "null"]
+          description: >-
+            When the other party in the conversation (whichever one didn't
+            author this message) is known to have viewed it — set the moment
+            they load a view containing it. Null means unread. Drives the
+            WhatsApp-style single/double checkmark next to a message the
+            current viewer sent themselves; never rendered on a message you
+            received.
+        isGuess:
+          type: boolean
+          description: True when the recipient flagged this reply as a "guess who sent it" guess.
+        guessReaction:
+          type: ["string", "null"]
+          description: >-
+            'hot' | 'cold' | 'no_comment' | 'confirmed' | null. Set only by
+            the whisp's sender, manually, via PATCH
+            /whisps/{id}/replies/{replyId}/guess-reaction — never computed by
+            the system, since auto-checking a guess against the real sender
+            would be an identity-enumeration oracle. Null until the sender
+            reacts (or on any reply that isn't a guess).
       required:
         - id
         - whispId
         - replyText
         - fromRecipient
+        - isGuess
         - createdAt
 
     WhispReplyInput:
@@ -2540,6 +5047,9 @@ components:
           type: string
         fromRecipient:
           type: boolean
+        parentReplyId:
+          type: ["string", "null"]
+          description: Reply to a specific earlier message on the same whisp.
       required:
         - replyText
 
@@ -2588,15 +5098,21 @@ components:
           maxLength: 260
         status:
           type: string
-          description: "'sent' | 'read' | 'replied'"
+          description: "'sent' | 'read' | 'replied' | 'scheduled'"
         revealRequested:
           type: boolean
         revealAccepted:
           type: ["boolean", "null"]
+        scheduledAt:
+          type: ["string", "null"]
+          description: Set only for a "schedule for later" send — delivery (the in-app notify or guest SMS) is held back until this time. Null for every immediately-sent Text Whisp.
         readAt:
           type: ["string", "null"]
         createdAt:
           type: string
+        otherPartyTyping:
+          type: boolean
+          description: True only while the OTHER party (never the caller's own ping echoed back) sent a typing ping within the last ~8s. See POST /text-whisps/{id}/typing.
       required:
         - id
         - senderId
@@ -2607,6 +5123,7 @@ components:
         - status
         - revealRequested
         - createdAt
+        - otherPartyTyping
 
     TextWhispInput:
       type: object
@@ -2618,6 +5135,9 @@ components:
           maxLength: 260
         senderAlias:
           type: ["string", "null"]
+        scheduledAt:
+          type: ["string", "null"]
+          description: A future ISO timestamp to hold delivery back until — omit or leave null to send immediately.
       required:
         - recipientPhone
         - messageText
@@ -2647,6 +5167,12 @@ components:
         replyText:
           type: string
           maxLength: 260
+        parentReplyId:
+          type: ["string", "null"]
+          description: The earlier reply in this same thread this one answers, if any — feeds the quoted-message UI in the shared ReplyThread component.
+        readAt:
+          type: ["string", "null"]
+          description: When the OTHER party opened the thread after this reply was sent. Null means sent but not yet seen.
         createdAt:
           type: string
       required:
@@ -2662,8 +5188,59 @@ components:
         replyText:
           type: string
           maxLength: 260
+        parentReplyId:
+          type: ["string", "null"]
       required:
         - replyText
+
+    BroadcastTextWhispInput:
+      type: object
+      properties:
+        messageText:
+          type: string
+          minLength: 1
+          maxLength: 260
+        audience:
+          type: string
+          enum: [all, selected]
+        userIds:
+          type: array
+          items:
+            type: string
+          maxItems: 5000
+          description: Recipients when audience is 'selected'; ignored for 'all'.
+      required:
+        - messageText
+        - audience
+
+    BroadcastTextWhispResult:
+      type: object
+      properties:
+        recipientCount:
+          type: integer
+      required:
+        - recipientCount
+
+    TextWhispToStaffInput:
+      type: object
+      properties:
+        recipientAdminId:
+          type: string
+        messageText:
+          type: string
+          minLength: 1
+          maxLength: 260
+      required:
+        - recipientAdminId
+        - messageText
+
+    TextWhispToStaffResult:
+      type: object
+      properties:
+        id:
+          type: string
+      required:
+        - id
 
     Invite:
       type: object
@@ -2806,6 +5383,12 @@ components:
       properties:
         id:
           type: string
+        viewerArchived:
+          type: boolean
+          description: True only when the caller is signed in, is this whisp's matched recipient, and has archived their copy (see POST /whisps/{id}/archive) — always false for an anonymous visitor or a signed-in non-recipient.
+        viewerPinned:
+          type: boolean
+          description: Same caller-relative scoping as viewerArchived, for pin instead.
         videoUrl:
           type: string
         videoTitle:
@@ -2854,6 +5437,45 @@ components:
           description: >-
             Anonymous replies this recipient has left on this whisp. Null
             means uncapped. Signing up removes the cap entirely.
+        videoRepliesAllowed:
+          type: boolean
+          description: >-
+            Whether this viewer may whisp a VIDEO back. Text replies stay open
+            to anonymous recipients up to their allowance; a video reply needs
+            either an account or reply credit the sender bought for this whisp.
+        hasWatched:
+          type: boolean
+          description: >-
+            Whether this whisp was already marked watched (whisps.watchedAt)
+            BEFORE this request — true only on a reopen, never on the load
+            that itself does the watching.
+        hasOpenedBefore:
+          type: boolean
+          description: >-
+            Whether this whisp was already opened (whisps.openedAt) BEFORE
+            this request — true only on a reopen, never on a true first
+            visit. This, not hasWatched, drives whether the appreciation
+            prompt starts expanded (first-ever open — visible right under
+            the video) or collapsed (any reopen, still one tap away):
+            watchedAt gets set the moment someone taps Play, before they've
+            actually watched anything, so it would spring the prompt open
+            too early; openedAt never does.
+        deliveryMethod:
+          type: string
+          description: "'whisper_link' | 'ghost_boost' | 'circle_drop' | 'group_whisper' | 'circle_dm'"
+        likeCount:
+          type: integer
+          description: Blind Circle posts only (0 otherwise).
+        viewerHasLiked:
+          type: boolean
+          description: >-
+            Whether the visitorId passed as a query param has already liked
+            this post. False (not just "unknown") when no visitorId is given.
+        comments:
+          type: array
+          items:
+            $ref: "#/components/schemas/CircleComment"
+          description: Blind Circle posts only (empty otherwise).
       required:
         - id
         - videoUrl
@@ -2861,6 +5483,10 @@ components:
         - expired
         - hasUpload
         - replies
+        - deliveryMethod
+        - likeCount
+        - viewerHasLiked
+        - comments
 
     TrackingEvent:
       type: object
@@ -2912,6 +5538,12 @@ components:
           type: ["string", "null"]
         moodTag:
           type: ["string", "null"]
+        parentReplyId:
+          type: ["string", "null"]
+          description: Reply to a specific earlier message on the same whisp.
+        isGuess:
+          type: boolean
+          description: Flags this as a "guess who sent it" reply (requires replyText). The system never auto-checks it against the real sender — see WhispReply.guessReaction.
 
     UserProfile:
       type: object
@@ -2931,12 +5563,34 @@ components:
         phoneVerifiedAt:
           type: ["string", "null"]
           description: Null means this phone number has NOT been confirmed via our own Twilio Verify one-time-code flow (see POST /user/phone/confirm-verification) — never trust `phone` alone as proof of ownership, even when set.
+        countryCode:
+          type: ["string", "null"]
+          description: ISO 3166-1 alpha-2, self-reported — captured from the country picker at phone-verification time (see users.countryCode), or set directly via PATCH /user/profile. Null until either happens.
         gender:
           type: ["string", "null"]
           description: "'woman' | 'man' | 'nonbinary' | 'prefer_not_to_say' | null (not yet answered)"
         ageRange:
           type: ["string", "null"]
           description: "'13-17' | '18-24' | '25-34' | '35-44' | '45-54' | '55-64' | '65+' | 'prefer_not_to_say' | null (not yet answered)"
+        preferredLanguage:
+          type: ["string", "null"]
+          description: >-
+            ISO 639-1 code from lib/languages.ts's SUPPORTED_LANGUAGES ('en'
+            | 'fr' | 'ar' | 'de' | 'es' | 'pt' | 'zh' | 'ja' | 'hi' | 'ru' |
+            'id' | 'bn' | 'sw' | 'ko'), or null (not yet answered). What the
+            app renders in, and what server-generated text (notifications,
+            emails) is sent in — see users.preferredLanguage.
+        whispererHandle:
+          type: ["string", "null"]
+          description: This account's persistent, public, followable Debate Topics handle — see users.whispererHandle. Null until first assigned (posting a topic, or commenting while signed in).
+        whispererAvatarId:
+          $ref: "#/components/schemas/AvatarId"
+        whisperBoxHandlePersonalized:
+          type: boolean
+          description: Whether this account's Whisper Box handle (see UserRecap.whisperBoxHandle) actually reflects the current fullName — i.e. whether it's the slug (or slug+3-digit-suffix) that name would produce right now, as opposed to a leftover from before a name was set or from a since-changed name. Drives whether WhisperBoxLinkDialog prompts to (re)personalize the link.
+        mfaNudgeDismissedAt:
+          type: ["string", "null"]
+          description: When this account last dismissed the two-factor setup nudge. Whether 2FA is actually ON is never included here — read Clerk's own user.twoFactorEnabled client-side for that; this is only "did they say not now."
         plan:
           type: string
         boostCredits:
@@ -2945,6 +5599,15 @@ components:
           type: integer
         role:
           type: string
+        emailNotificationsEnabled:
+          type: boolean
+          description: Whether this Whisperer wants the "you have a new whisp" email in addition to the in-app notification. On by default — see PATCH /user/profile to change it.
+        showOnlineStatus:
+          type: boolean
+          description: Whether accounts that follow this Whisperer can see them as online (see GET /follows/online-status). On by default.
+        twoFactorEnabled:
+          type: ["boolean", "null"]
+          description: Best-effort, admin-facing mirror of Clerk's own user.twoFactorEnabled — never used for any access-control decision. Null means never synced yet, distinct from false ("synced, and it's off").
         createdAt:
           type: string
       required:
@@ -2955,6 +5618,9 @@ components:
         - boostCredits
         - whisperLinksUsed
         - role
+        - emailNotificationsEnabled
+        - showOnlineStatus
+        - whisperBoxHandlePersonalized
         - createdAt
 
     UserProfileUpdate:
@@ -2968,12 +5634,29 @@ components:
           type: ["string", "null"]
         ageRange:
           type: ["string", "null"]
+        emailNotificationsEnabled:
+          type: boolean
+        showOnlineStatus:
+          type: boolean
+          description: Whether accounts that follow this Whisperer can see them as online (see GET /follows/online-status).
+        countryCode:
+          type: ["string", "null"]
+        preferredLanguage:
+          type: string
+          enum: [en, fr, ar, de, es, pt, zh, ja, hi, ru, id, bn, sw, ko]
+          description: Not nullable — unlike gender/ageRange there's no "prefer not to say" for the language the app actually renders in.
+        whispererAvatarId:
+          $ref: "#/components/schemas/AvatarId"
+          description: Sets (or, if null, clears) this account's own Debate Topics avatar — see UserProfile.whispererAvatarId.
 
     StartPhoneVerificationInput:
       type: object
       properties:
         phone:
           type: string
+        countryCode:
+          type: string
+          description: ISO 3166-1 alpha-2, from the country picker in CountryPhoneInput.tsx. Optional — phone is already a fully international "+"-prefixed value by the time it gets here.
       required:
         - phone
 
@@ -2984,6 +5667,9 @@ components:
           type: string
         code:
           type: string
+        countryCode:
+          type: string
+          description: Same as StartPhoneVerificationInput's — persisted to the user's account on a successful confirmation (see users.countryCode).
       required:
         - phone
         - code
@@ -2994,6 +5680,8 @@ components:
         phone:
           type: ["string", "null"]
         phoneVerifiedAt:
+          type: ["string", "null"]
+        countryCode:
           type: ["string", "null"]
       required:
         - phone
@@ -3020,6 +5708,17 @@ components:
         - type
         - amount
         - createdAt
+
+    FollowedOnlineStatusResponse:
+      type: object
+      properties:
+        online:
+          type: object
+          additionalProperties:
+            type: boolean
+          description: Keyed by whispererHandle. Only handles the viewer is allowed to see presence for are included — see GET /follows/online-status.
+      required:
+        - online
 
     CircleFeedItem:
       type: object
@@ -3062,6 +5761,298 @@ components:
       required:
         - items
         - nextCursor
+
+    DebateTopicInput:
+      type: object
+      properties:
+        topicText:
+          type: string
+          description: Title/subtitle length by design — a debate topic is a headline to react to, capped server-side at 200 characters.
+      required:
+        - topicText
+
+    AvatarId:
+      type: ["string", "null"]
+      description: >-
+        A preset id from the curated avatar library (api-server's
+        lib/avatars.ts), e.g. "flame-violet" — rendered as an icon-on-color
+        circle by the frontend's matching catalog. Never a file upload. null
+        means "no avatar" (a real, explicit choice — the frontend falls back
+        to the handle's first letter), not "not yet assigned."
+
+    DebateTopicFeedItem:
+      type: object
+      description: The raw account id is deliberately never included — only the public, followable authorHandle byline is.
+      properties:
+        id:
+          type: string
+        topicText:
+          type: string
+        authorHandle:
+          type: string
+          description: The author's persistent, public, followable Whisperer handle (e.g. "SwiftFalcon482") — see users.whispererHandle.
+        authorAvatarId:
+          $ref: "#/components/schemas/AvatarId"
+        commentCount:
+          type: integer
+        rewhispCount:
+          type: integer
+        createdAt:
+          type: string
+      required:
+        - id
+        - topicText
+        - authorHandle
+        - authorAvatarId
+        - commentCount
+        - rewhispCount
+        - createdAt
+
+    DebateTopicFeedResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DebateTopicFeedItem"
+        nextCursor:
+          type: ["string", "null"]
+      required:
+        - items
+        - nextCursor
+
+    DebateTopicComment:
+      type: object
+      description: visitorId is deliberately never included — see debate_topic_comments.ts. isPoster reveals a ROLE (the topic's own author), never an identity.
+      properties:
+        id:
+          type: string
+        commentText:
+          type: string
+        parentCommentId:
+          type: ["string", "null"]
+        isPoster:
+          type: boolean
+        createdAt:
+          type: string
+        handle:
+          type: string
+          description: >-
+            The commenter's display name. For a signed-in commenter, this is
+            their persistent, followable Whisperer handle (users.
+            whispererHandle) — the same one shown as their topic bylines
+            elsewhere, so "who am I talking to" stays consistent across the
+            whole app. For a purely anonymous (never-signed-in) commenter,
+            it's the ordinary per-thread-only handle (anonymous_handles.ts).
+        avatarId:
+          $ref: "#/components/schemas/AvatarId"
+        isOwnComment:
+          type: boolean
+          description: True when the caller's own visitorId matches this comment's author.
+        commentAuthorFollowed:
+          type: ["boolean", "null"]
+          description: >-
+            Whether the signed-in caller already follows this commenter.
+            null when there's nothing followable here — the commenter has
+            no account (purely anonymous), or the caller isn't signed in,
+            or it's the caller's own comment.
+        imageUrl:
+          type: ["string", "null"]
+          description: Proxy-served URL for an attached image, or null if there is none or it was flagged by moderation and is pending review.
+        likeCount:
+          type: integer
+        dislikeCount:
+          type: integer
+        viewerReaction:
+          type: ["string", "null"]
+          enum: [like, dislike, null]
+      required:
+        - id
+        - commentText
+        - parentCommentId
+        - isPoster
+        - createdAt
+        - handle
+        - avatarId
+        - isOwnComment
+        - commentAuthorFollowed
+        - imageUrl
+        - likeCount
+        - dislikeCount
+        - viewerReaction
+
+    DebateTopicCommentInput:
+      type: object
+      properties:
+        commentText:
+          type: string
+        visitorId:
+          type: string
+          description: Anonymous, client-generated id from lib/anonymousVisitor.ts — never linked to a real identity.
+        parentCommentId:
+          type: ["string", "null"]
+      required:
+        - commentText
+        - visitorId
+
+    DebateTopicDetail:
+      type: object
+      properties:
+        id:
+          type: string
+        topicText:
+          type: string
+        createdAt:
+          type: string
+        isOwnTopic:
+          type: boolean
+          description: True only when the caller is signed in and is this topic's own author — lets the author see a "Retract" control without revealing anything to anyone else.
+        authorHandle:
+          type: string
+          description: The author's persistent, public, followable Whisperer handle — see DebateTopicFeedItem.authorHandle.
+        authorAvatarId:
+          $ref: "#/components/schemas/AvatarId"
+        authorFollowed:
+          type: ["boolean", "null"]
+          description: Whether the signed-in caller already follows the author. null when the caller isn't signed in, or is the author themselves.
+        authorFollowerCount:
+          type: integer
+        commentCount:
+          type: integer
+        rewhispCount:
+          type: integer
+        viewerRewhisped:
+          type: boolean
+        comments:
+          type: array
+          items:
+            $ref: "#/components/schemas/DebateTopicComment"
+      required:
+        - id
+        - topicText
+        - createdAt
+        - isOwnTopic
+        - authorHandle
+        - authorAvatarId
+        - authorFollowed
+        - authorFollowerCount
+        - commentCount
+        - rewhispCount
+        - viewerRewhisped
+        - comments
+
+    DebateTopicStats:
+      type: object
+      description: The caller's own topic-engagement stats (GET /debate-topics/my-stats).
+      properties:
+        topicsPosted:
+          type: integer
+        commentsReceived:
+          type: integer
+          description: Total (non-removed) comments across every topic this account has posted.
+        rewhispsReceived:
+          type: integer
+          description: Total rewhisps across every topic this account has posted.
+        commentsPosted:
+          type: integer
+          description: Total comments this account has posted, across every topic.
+        commentLikesReceived:
+          type: integer
+          description: Total likes (not dislikes) this account's own comments have received, across every topic.
+      required:
+        - topicsPosted
+        - commentsReceived
+        - rewhispsReceived
+        - commentsPosted
+        - commentLikesReceived
+
+    WhisperBoxMessage:
+      type: object
+      description: >-
+        A message received through the caller's own Whisper Box. No senderId
+        anywhere on this shape — the sender is anonymous by design, with no
+        account to attribute the message to.
+      properties:
+        id:
+          type: string
+        recipientUserId:
+          type: string
+        messageText:
+          type: string
+          maxLength: 500
+        senderAlias:
+          type: ["string", "null"]
+          maxLength: 60
+          description: Purely decorative flavor text the sender typed — never an identity, never validated against anything.
+        status:
+          type: string
+          description: "'unread' | 'read'"
+        readAt:
+          type: ["string", "null"]
+        removedByAdminAt:
+          type: ["string", "null"]
+          description: Admin takedown (moderation_flags.contentType 'whisper_box_message'), distinct from the recipient's own delete.
+        createdAt:
+          type: string
+      required:
+        - id
+        - recipientUserId
+        - messageText
+        - status
+        - createdAt
+
+    UserRecap:
+      type: object
+      description: >-
+        The caller's own real stats for the requested period — no invented
+        percentile/"top X%" claims, there's no leaderboard infra to back
+        that up.
+      properties:
+        period:
+          type: string
+          description: "'all_time' | 'last_30_days' — echoes back the resolved period (invalid query values fall back to all_time)"
+        totalSent:
+          type: integer
+          description: Whisps sent, any deliveryMethod (whisper_link, group_whisper, circle_drop, circle_dm, ghost_boost).
+        totalReceived:
+          type: integer
+          description: Whisps received where deliveryMethod is whisper_link or group_whisper only.
+        repliesReceived:
+          type: integer
+          description: Replies received on the caller's own sent whisps.
+        circlePosts:
+          type: integer
+          description: Sent whisps with deliveryMethod circle_drop.
+        debateTopicsPosted:
+          type: integer
+        followerCount:
+          type: integer
+          description: Never period-scoped — always the current running total, even for last_30_days.
+        whisperBoxMessagesReceived:
+          type: ["integer", "null"]
+          description: Null unless the caller has whisperBoxEnabled; otherwise the count of messages received in the period.
+        topCategory:
+          type: ["string", "null"]
+          description: The caller's most frequent rank-1 whisp_categories result across their sent whisps in the period, or null if none.
+        memberSince:
+          type: string
+        whispererHandle:
+          type: ["string", "null"]
+          description: The Debate Now identity — always non-identifying (random word-pair), never the same value as whisperBoxHandle.
+        whisperBoxHandle:
+          type: ["string", "null"]
+          description: The SEPARATE handle used only for the Whisper Box URL — recognizable when the account has a display name set. Null until /whisper-box/enable has run once.
+      required:
+        - period
+        - totalSent
+        - totalReceived
+        - repliesReceived
+        - circlePosts
+        - debateTopicsPosted
+        - followerCount
+        - whisperBoxMessagesReceived
+        - topCategory
+        - memberSince
 
     Circle:
       type: object
@@ -3202,6 +6193,11 @@ components:
           type: ["string", "null"]
         createdAt:
           type: string
+        compliance:
+          $ref: "#/components/schemas/ComplianceFlags"
+        online:
+          type: boolean
+          description: Whether this account has been active in the last presence window (see lib/presence.ts) — an admin-only aggregate signal, not gated by the account's own showOnlineStatus preference.
       required:
         - id
         - clerkId
@@ -3212,6 +6208,26 @@ components:
         - role
         - banned
         - createdAt
+        - compliance
+        - online
+
+    ComplianceFlags:
+      type: object
+      description: Compliance signals for the admin Users dashboard — never used for any access-control decision, purely a "does this person need a nudge" view. See lib/compliance.ts.
+      properties:
+        emailVerified:
+          type: boolean
+        phoneVerified:
+          type: boolean
+        mfaEnabled:
+          type: ["boolean", "null"]
+          description: Mirrors AdminUser.compliance's users.twoFactorEnabled — null means never synced yet, distinct from false ("synced, and it's off").
+        policyUpToDate:
+          type: boolean
+      required:
+        - emailVerified
+        - phoneVerified
+        - policyUpToDate
 
     AdminUserListResponse:
       type: object
@@ -3262,6 +6278,40 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ModerationFlag"
+        debateTopics:
+          type: array
+          description: Debate Topics this account authored (never shown publicly under their real account either — see debate_topics.ts), most recent 50.
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              topicText:
+                type: string
+              createdAt:
+                type: string
+              deletedByAuthorAt:
+                type: ["string", "null"]
+              removedByAdminAt:
+                type: ["string", "null"]
+            required: [id, topicText, createdAt, deletedByAuthorAt, removedByAdminAt]
+        debateTopicComments:
+          type: array
+          description: Debate Topic comments this account posted while signed in, most recent 50.
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              topicId:
+                type: string
+              commentText:
+                type: string
+              createdAt:
+                type: string
+              removedByAdminAt:
+                type: ["string", "null"]
+            required: [id, topicId, commentText, createdAt, removedByAdminAt]
       required:
         - user
         - recentWhisps
@@ -3271,6 +6321,79 @@ components:
         - totalReplies
         - moderationFlagCount
         - moderationFlags
+        - debateTopics
+        - debateTopicComments
+
+    AdminOnlineNowResponse:
+      type: object
+      properties:
+        onlineCount:
+          type: integer
+        windowMinutes:
+          type: integer
+          description: Width of the presence window this count was computed over, in minutes.
+      required:
+        - onlineCount
+        - windowMinutes
+
+    ComplianceReminderInput:
+      type: object
+      properties:
+        userIds:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          maxItems: 200
+        kind:
+          type: string
+          enum: [mfa_missing, policy_pending, email_unverified, phone_unverified]
+      required:
+        - userIds
+        - kind
+
+    AdminAuditLogEntry:
+      type: object
+      description: See lib/adminAudit.ts and admin_audit_log.ts — an append-only record of one sensitive admin action.
+      properties:
+        id:
+          type: string
+        adminUserId:
+          type: string
+        action:
+          type: string
+          description: e.g. 'user.update', 'user.delete', 'whisp.delete', 'content.remove', 'debate_agent.config_update'.
+        targetType:
+          type: ["string", "null"]
+        targetId:
+          type: ["string", "null"]
+        metadata:
+          description: Action-specific detail — shape varies by action.
+        createdAt:
+          type: string
+      required:
+        - id
+        - adminUserId
+        - action
+        - targetType
+        - targetId
+        - createdAt
+
+    AdminAuditLogResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminAuditLogEntry"
+        page:
+          type: integer
+        pageSize:
+          type: integer
+      required:
+        - items
+        - page
+        - pageSize
 
     ModerationFlag:
       type: object
@@ -3279,21 +6402,50 @@ components:
           type: string
         whispId:
           type: ["string", "null"]
-          description: Set when contentType is 'whisp'; null when it's 'text_whisp'.
+          description: Set when contentType is 'whisp'; null otherwise.
         textWhispId:
           type: ["string", "null"]
-          description: Set when contentType is 'text_whisp'; null when it's 'whisp'.
+          description: Set when contentType is 'text_whisp'; null otherwise.
+        circleCommentId:
+          type: ["string", "null"]
+          description: Set when contentType is 'circle_comment'; null otherwise.
+        debateTopicId:
+          type: ["string", "null"]
+          description: Set when contentType is 'debate_topic'; null otherwise.
+        debateTopicCommentId:
+          type: ["string", "null"]
+          description: Set when contentType is 'debate_topic_comment'; null otherwise.
+        whisperBoxMessageId:
+          type: ["string", "null"]
+          description: Set when contentType is 'whisper_box_message'; null otherwise.
         contentType:
           type: string
-          description: "'whisp' | 'text_whisp'"
+          description: "'whisp' | 'text_whisp' | 'circle_comment' | 'debate_topic' | 'debate_topic_comment' | 'whisper_box_message'"
         userId:
-          type: string
+          type: ["string", "null"]
+          description: >-
+            Null only for contentType='circle_comment' or
+            contentType='debate_topic_comment' from a fully anonymous,
+            no-account commenter — there's no account to attribute the
+            flag to.
         videoTitle:
           type: ["string", "null"]
-          description: The flagged whisp's video title, denormalized for display in flag lists without a second lookup. Null for a text_whisp flag.
+          description: The flagged whisp's video title, denormalized for display in flag lists without a second lookup. Null unless contentType is 'whisp'.
         textWhispMessage:
           type: ["string", "null"]
-          description: The flagged text whisp's message text, denormalized for display the same way videoTitle is. Null for a whisp flag.
+          description: The flagged text whisp's message text, denormalized for display the same way videoTitle is. Null unless contentType is 'text_whisp'.
+        circleCommentText:
+          type: ["string", "null"]
+          description: The flagged comment's text, denormalized the same way. Null unless contentType is 'circle_comment'.
+        debateTopicText:
+          type: ["string", "null"]
+          description: The flagged debate topic's own text, denormalized the same way. Null unless contentType is 'debate_topic'.
+        debateTopicCommentText:
+          type: ["string", "null"]
+          description: The flagged debate topic comment's text, denormalized the same way. Null unless contentType is 'debate_topic_comment'.
+        whisperBoxMessageText:
+          type: ["string", "null"]
+          description: The flagged Whisper Box message's text, denormalized the same way. Null unless contentType is 'whisper_box_message'.
         senderEmail:
           type: ["string", "null"]
         severity:
@@ -3314,7 +6466,6 @@ components:
           type: string
       required:
         - id
-        - userId
         - contentType
         - severity
         - reasoning
@@ -3348,6 +6499,765 @@ components:
           type: boolean
       required:
         - dismissed
+
+    RepairProfilesResult:
+      type: object
+      properties:
+        scanned:
+          type: integer
+        healed:
+          type: integer
+        noEmailInClerk:
+          type: integer
+        conflicts:
+          type: integer
+      required:
+        - scanned
+        - healed
+        - noEmailInClerk
+        - conflicts
+
+    PolicyVersion:
+      type: object
+      properties:
+        id:
+          type: string
+        docType:
+          type: string
+          description: "'privacy' | 'terms'"
+        summary:
+          type: string
+          description: The short user-facing "what changed" message shown in the consent prompt.
+        publishedAt:
+          type: ["string", "null"]
+          description: Null while still a draft.
+        createdByAdminId:
+          type: string
+        createdAt:
+          type: string
+        acceptedCount:
+          type: integer
+      required:
+        - id
+        - docType
+        - summary
+        - createdByAdminId
+        - createdAt
+        - acceptedCount
+
+    PolicyVersionListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PolicyVersion"
+        totalUsers:
+          type: integer
+      required:
+        - items
+        - totalUsers
+
+    CreatePolicyVersionInput:
+      type: object
+      properties:
+        docType:
+          type: string
+          enum: [privacy, terms]
+        summary:
+          type: string
+          minLength: 1
+          maxLength: 1000
+      required:
+        - docType
+        - summary
+
+    UpdatePolicyVersionInput:
+      type: object
+      properties:
+        summary:
+          type: string
+          minLength: 1
+          maxLength: 1000
+      required:
+        - summary
+
+    PendingPolicy:
+      type: object
+      properties:
+        id:
+          type: string
+        docType:
+          type: string
+        summary:
+          type: string
+        publishedAt:
+          type: ["string", "null"]
+      required:
+        - id
+        - docType
+        - summary
+
+    PolicyStatusResponse:
+      type: object
+      properties:
+        pending:
+          type: array
+          items:
+            $ref: "#/components/schemas/PendingPolicy"
+      required:
+        - pending
+
+    AcceptPoliciesInput:
+      type: object
+      properties:
+        policyVersionIds:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          maxItems: 10
+      required:
+        - policyVersionIds
+
+    RecordUsageInput:
+      type: object
+      properties:
+        events:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            type: object
+            properties:
+              feature:
+                type: string
+              count:
+                type: integer
+                minimum: 1
+                maximum: 500
+            required:
+              - feature
+              - count
+      required:
+        - events
+
+    FeatureUsageStat:
+      type: object
+      properties:
+        feature:
+          type: string
+        totalCount:
+          type: integer
+        distinctUsers:
+          type: integer
+          description: Distinct signed-in users who used it (anonymous usage counts in totalCount only).
+        lastUsedAt:
+          type: ["string", "null"]
+      required:
+        - feature
+        - totalCount
+        - distinctUsers
+
+    UsageStatsResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/FeatureUsageStat"
+        days:
+          type: integer
+      required:
+        - items
+        - days
+
+    TrafficByHourResponse:
+      type: object
+      properties:
+        hours:
+          type: array
+          description: Exactly 24 entries, one per UTC hour (0-23), in order.
+          items:
+            type: object
+            properties:
+              hour:
+                type: integer
+              count:
+                type: integer
+            required:
+              - hour
+              - count
+        peakHour:
+          type: ["integer", "null"]
+          description: The hour with the highest count, or null if every bucket is 0 across the whole window.
+        days:
+          type: integer
+      required:
+        - hours
+        - peakHour
+        - days
+
+    UsageInsightsInput:
+      type: object
+      properties:
+        days:
+          type: integer
+
+    UsageInsight:
+      type: object
+      properties:
+        title:
+          type: string
+        detail:
+          type: string
+      required:
+        - title
+        - detail
+
+    UsageInsightsResponse:
+      type: object
+      properties:
+        insights:
+          type: array
+          items:
+            $ref: "#/components/schemas/UsageInsight"
+        statsAnalyzed:
+          type: integer
+        days:
+          type: integer
+      required:
+        - insights
+        - statsAnalyzed
+        - days
+
+    AdminAccessMe:
+      type: object
+      properties:
+        isOwner:
+          type: boolean
+        permissions:
+          type: array
+          items:
+            type: string
+      required:
+        - isOwner
+        - permissions
+
+    AdminGrant:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        userId:
+          type: ["string", "null"]
+        roleTitle:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+        linkedAt:
+          type: ["string", "null"]
+          description: Null while the invite waits for an account with this email to exist.
+        createdAt:
+          type: string
+        lastSeenAt:
+          type: ["string", "null"]
+      required:
+        - id
+        - email
+        - roleTitle
+        - permissions
+        - createdAt
+
+    RolePreset:
+      type: object
+      properties:
+        title:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+      required:
+        - title
+        - permissions
+
+    AdminGrantListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminGrant"
+        availablePermissions:
+          type: array
+          items:
+            type: string
+        rolePresets:
+          type: array
+          items:
+            $ref: "#/components/schemas/RolePreset"
+      required:
+        - items
+        - availablePermissions
+        - rolePresets
+
+    AdminGrantInput:
+      type: object
+      properties:
+        email:
+          type: string
+        roleTitle:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+          minItems: 1
+      required:
+        - email
+        - roleTitle
+        - permissions
+
+    AdminGrantUpdateInput:
+      type: object
+      properties:
+        roleTitle:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+          minItems: 1
+
+    HqStaffMember:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        roleTitle:
+          type: string
+      required:
+        - id
+        - email
+        - roleTitle
+
+    HqProject:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        status:
+          type: string
+          description: "'active' | 'archived'"
+        createdByAdminId:
+          type: string
+        createdAt:
+          type: string
+        openTasks:
+          type: integer
+        doneTasks:
+          type: integer
+      required:
+        - id
+        - name
+        - status
+        - createdByAdminId
+        - createdAt
+
+    HqProjectListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/HqProject"
+        staff:
+          type: array
+          items:
+            $ref: "#/components/schemas/HqStaffMember"
+      required:
+        - items
+        - staff
+
+    HqProjectInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: ["string", "null"]
+      required:
+        - name
+
+    HqProjectUpdateInput:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [active, archived]
+
+    HqTask:
+      type: object
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        title:
+          type: string
+        detail:
+          type: ["string", "null"]
+        status:
+          type: string
+          description: "'todo' | 'in_progress' | 'done'"
+        assigneeAdminId:
+          type: ["string", "null"]
+        assigneeEmail:
+          type: ["string", "null"]
+        dueAt:
+          type: ["string", "null"]
+        completedAt:
+          type: ["string", "null"]
+        createdByAdminId:
+          type: string
+        createdAt:
+          type: string
+        commentCount:
+          type: integer
+      required:
+        - id
+        - projectId
+        - title
+        - status
+        - createdByAdminId
+        - createdAt
+
+    HqProjectDetail:
+      allOf:
+        - $ref: "#/components/schemas/HqProject"
+        - type: object
+          properties:
+            tasks:
+              type: array
+              items:
+                $ref: "#/components/schemas/HqTask"
+            staff:
+              type: array
+              items:
+                $ref: "#/components/schemas/HqStaffMember"
+          required:
+            - tasks
+            - staff
+
+    HqTaskInput:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        detail:
+          type: ["string", "null"]
+        assigneeAdminId:
+          type: ["string", "null"]
+        dueAt:
+          type: ["string", "null"]
+      required:
+        - title
+
+    HqTaskUpdateInput:
+      type: object
+      properties:
+        title:
+          type: string
+        detail:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [todo, in_progress, done]
+        assigneeAdminId:
+          type: ["string", "null"]
+        dueAt:
+          type: ["string", "null"]
+
+    HqTaskComment:
+      type: object
+      properties:
+        id:
+          type: string
+        taskId:
+          type: string
+        authorAdminId:
+          type: string
+        authorEmail:
+          type: ["string", "null"]
+        body:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - taskId
+        - authorAdminId
+        - body
+        - createdAt
+
+    HqTaskCommentListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/HqTaskComment"
+      required:
+        - items
+
+    HqTaskCommentInput:
+      type: object
+      properties:
+        body:
+          type: string
+          minLength: 1
+          maxLength: 2000
+      required:
+        - body
+
+    AdminMfaStatus:
+      type: object
+      properties:
+        enrolled:
+          type: boolean
+      required:
+        - enrolled
+
+    AdminMfaSetupResponse:
+      type: object
+      properties:
+        secret:
+          type: string
+          description: Base32 TOTP secret, for manual entry into an authenticator app.
+        otpauthUrl:
+          type: string
+          description: otpauth:// provisioning URI — render as a QR code for scanning.
+      required:
+        - secret
+        - otpauthUrl
+
+    AdminMfaVerifyInput:
+      type: object
+      properties:
+        code:
+          type: string
+          description: 6-digit authenticator code, or (once enrolled) a one-time backup code.
+      required:
+        - code
+
+    AdminMfaVerifyResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: Signed unlock token — send as the X-Admin-Mfa header on /admin/* requests. Self-expires.
+        backupCodes:
+          type: array
+          items:
+            type: string
+          description: Present only on the first successful verification (enrollment activation) — the only time these exist in plaintext.
+        backupCodesRemaining:
+          type: integer
+          description: Present when a backup code was consumed — how many remain.
+      required:
+        - token
+
+    CreateContentReportInput:
+      type: object
+      properties:
+        contentType:
+          type: string
+          enum: [debate_topic, debate_topic_comment]
+        contentId:
+          type: string
+        reason:
+          type: string
+          enum: [child_safety, threat_or_violence, sexual_content, hate_speech, self_harm, harassment, inappropriate, misinformation, spam_or_scam, other]
+        detail:
+          type: ["string", "null"]
+          description: Optional free-text elaboration from the reporter, capped at 300 words server-side.
+      required:
+        - contentType
+        - contentId
+        - reason
+
+    CreateContentReportResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+      required:
+        - id
+        - status
+
+    ContentReport:
+      type: object
+      properties:
+        id:
+          type: string
+        contentType:
+          type: string
+          description: "'debate_topic' | 'debate_topic_comment'"
+        debateTopicId:
+          type: ["string", "null"]
+        debateTopicCommentId:
+          type: ["string", "null"]
+        reporterUserId:
+          type: string
+        reason:
+          type: string
+        detail:
+          type: ["string", "null"]
+        priority:
+          type: string
+          description: "'critical' | 'high' | 'medium' | 'low' — derived from reason at filing time, admin-overridable afterward."
+        status:
+          type: string
+          description: "'open' | 'in_review' | 'resolved'"
+        resolution:
+          type: ["string", "null"]
+          description: "Set once resolved: 'removed' | 'no_violation'."
+        adminNotes:
+          type: ["string", "null"]
+        adminReplyMessage:
+          type: ["string", "null"]
+          description: The message actually sent back to the reporter at resolve time.
+        authorWarnedAt:
+          type: ["string", "null"]
+        resolvedAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        reporterEmail:
+          type: ["string", "null"]
+          description: Joined for admin display; null if the reporter account was since deleted.
+        debateTopicText:
+          type: ["string", "null"]
+          description: The reported topic's text, denormalized for display. Null unless contentType is 'debate_topic'.
+        debateTopicAuthorId:
+          type: ["string", "null"]
+        topicRemovedByAdminAt:
+          type: ["string", "null"]
+        topicDeletedByAuthorAt:
+          type: ["string", "null"]
+        debateTopicCommentText:
+          type: ["string", "null"]
+          description: The reported comment's text. Null unless contentType is 'debate_topic_comment'.
+        commentAuthorUserId:
+          type: ["string", "null"]
+          description: Null when the comment came from an anonymous no-account visitor — such an author can't be warned.
+        commentRemovedByAdminAt:
+          type: ["string", "null"]
+      required:
+        - id
+        - contentType
+        - reporterUserId
+        - reason
+        - priority
+        - status
+        - createdAt
+
+    ContentReportListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContentReport"
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        openByPriority:
+          type: object
+          description: Unresolved (open + in_review) report counts per priority, independent of the current filter — the triage summary.
+          properties:
+            critical:
+              type: integer
+            high:
+              type: integer
+            medium:
+              type: integer
+            low:
+              type: integer
+          required:
+            - critical
+            - high
+            - medium
+            - low
+      required:
+        - items
+        - total
+        - page
+        - pageSize
+        - openByPriority
+
+    UpdateContentReportInput:
+      type: object
+      properties:
+        priority:
+          type: string
+          enum: [critical, high, medium, low]
+        status:
+          type: string
+          enum: [open, in_review]
+          description: Only the working states — 'resolved' is reachable exclusively through the resolve endpoint.
+        adminNotes:
+          type: ["string", "null"]
+
+    ResolveContentReportInput:
+      type: object
+      properties:
+        resolution:
+          type: string
+          enum: [removed, no_violation]
+        replyToReporter:
+          type: string
+          description: Optional custom message to the reporter; a default template for the resolution is sent when omitted.
+        warnAuthor:
+          type: string
+          description: When present, delivered to the content author's account as a Community Guidelines warning.
+      required:
+        - resolution
+
+    ResolveContentReportResponse:
+      allOf:
+        - $ref: "#/components/schemas/ContentReport"
+        - type: object
+          properties:
+            authorWarned:
+              type: boolean
+              description: False when a warning was requested but the author has no account to deliver it to.
+          required:
+            - authorWarned
 
     UpdateAdminUserInput:
       type: object
@@ -3987,6 +7897,12 @@ components:
           items:
             type: string
           description: Required (non-empty) when audience is 'users'; ignored for 'all'.
+        sendEmail:
+          type: boolean
+          description: >-
+            Also deliver as a branded email to each recipient's inbox.
+            Respects each user's email-notifications opt-out, skips banned
+            accounts and placeholder addresses.
       required:
         - title
         - body
@@ -4001,9 +7917,17 @@ components:
         pushDelivered:
           type: integer
           description: How many active push subscriptions were actually notified live (best-effort; recipients without one still see it in-app).
+        emailsSent:
+          type: integer
+          description: Emails delivered when sendEmail was requested (0 otherwise).
+        emailsSkipped:
+          type: integer
+          description: Recipients skipped for email — opted out, banned, placeholder address, or provider failure.
       required:
         - recipientCount
         - pushDelivered
+        - emailsSent
+        - emailsSkipped
 
     AdminNotificationListResponse:
       type: object
@@ -4051,6 +7975,37 @@ components:
       required:
         - unreadCount
         - unreadReplyCount
+
+    RecentRecipient:
+      type: object
+      properties:
+        value:
+          type: string
+          description: The address exactly as the sender last typed it.
+        kind:
+          type: string
+          enum: [email, phone]
+        lastUsedAt:
+          type: string
+          format: date-time
+        useCount:
+          type: integer
+          description: How many whisps this sender has sent to this address.
+      required:
+        - value
+        - kind
+        - lastUsedAt
+        - useCount
+
+    RecentRecipientListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecentRecipient"
+      required:
+        - items
 
     WhisperGroup:
       type: object
@@ -4665,3 +8620,167 @@ components:
       required:
         - inserted
         - skipped
+
+    DebateAgentSettings:
+      type: object
+      description: Singleton config + last-run-status row for the admin-controlled Debate Topic posting agent.
+      properties:
+        id:
+          type: string
+        enabled:
+          type: boolean
+        dailyPostCount:
+          type: integer
+          description: How many AI-generated debate topics to post per scheduled sweep (1-10).
+        topics:
+          type: array
+          items:
+            type: string
+          description: Short theme/category strings that steer what the agent generates each run.
+        lastRunAt:
+          type: ["string", "null"]
+        lastRunOk:
+          type: boolean
+        lastErrorMessage:
+          type: ["string", "null"]
+        lowCreditSuspected:
+          type: boolean
+        consecutiveFailures:
+          type: integer
+        updatedByAdminId:
+          type: ["string", "null"]
+        updatedAt:
+          type: ["string", "null"]
+      required:
+        - id
+        - enabled
+        - dailyPostCount
+        - topics
+        - lastRunOk
+        - lowCreditSuspected
+        - consecutiveFailures
+
+    UpdateDebateAgentConfigInput:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        dailyPostCount:
+          type: integer
+          minimum: 1
+          maximum: 10
+        topics:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          maxItems: 20
+
+    RunDebateAgentResult:
+      type: object
+      properties:
+        posted:
+          type: integer
+        skipped:
+          type: integer
+      required:
+        - posted
+        - skipped
+
+    PostDebateTopicInput:
+      type: object
+      properties:
+        topicText:
+          type: string
+      required:
+        - topicText
+
+    PostDebateTopicResult:
+      type: object
+      properties:
+        id:
+          type: string
+      required:
+        - id
+
+    CircleAgentSettings:
+      type: object
+      description: Singleton config + last-run-status row for the admin-controlled Blind Circle video-discovery posting agent ("Circle Scout").
+      properties:
+        id:
+          type: string
+        enabled:
+          type: boolean
+        dailyPostCount:
+          type: integer
+          description: How many AI-discovered videos to post per scheduled sweep (1-10).
+        topics:
+          type: array
+          items:
+            type: string
+          description: Short topic strings that steer what the agent searches for each run.
+        lastRunAt:
+          type: ["string", "null"]
+        lastRunOk:
+          type: boolean
+        lastErrorMessage:
+          type: ["string", "null"]
+        lowCreditSuspected:
+          type: boolean
+        consecutiveFailures:
+          type: integer
+        updatedByAdminId:
+          type: ["string", "null"]
+        updatedAt:
+          type: ["string", "null"]
+      required:
+        - id
+        - enabled
+        - dailyPostCount
+        - topics
+        - lastRunOk
+        - lowCreditSuspected
+        - consecutiveFailures
+
+    UpdateCircleAgentConfigInput:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        dailyPostCount:
+          type: integer
+          minimum: 1
+          maximum: 10
+        topics:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          maxItems: 20
+
+    RunCircleAgentResult:
+      type: object
+      properties:
+        posted:
+          type: integer
+        skipped:
+          type: integer
+      required:
+        - posted
+        - skipped
+
+    PostCircleVideoInput:
+      type: object
+      properties:
+        videoUrl:
+          type: string
+      required:
+        - videoUrl
+
+    PostCircleVideoResult:
+      type: object
+      properties:
+        id:
+          type: string
+      required:
+        - id

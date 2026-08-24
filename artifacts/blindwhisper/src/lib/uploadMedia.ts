@@ -4,7 +4,11 @@ import { getAuthToken } from "@workspace/api-client-react";
 // caps ever change. The server re-enforces these; this is purely so a
 // sender finds out their clip is too long/large before spending time on an
 // upload that would just get rejected.
-export const MAX_UPLOAD_DURATION_SECONDS = 120;
+//
+// 60s for now, for every plan — the plan-differentiated cap (e.g. a longer
+// limit for paid plans) is a deliberate future change, not done yet; see
+// lib/plans.ts if/when that's built.
+export const MAX_UPLOAD_DURATION_SECONDS = 60;
 export const MAX_UPLOAD_VIDEO_BYTES = 30 * 1024 * 1024;
 export const ALLOWED_UPLOAD_VIDEO_MIME_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
 
@@ -27,6 +31,17 @@ export class UploadValidationError extends Error {}
 // no ffmpeg (or any other video-processing binary) available server-side in
 // every environment this runs in, and this is essentially free since the
 // browser already has to decode the video to play it.
+//
+// A file straight out of MediaRecorder (CameraCapture.tsx's in-app record
+// flow) is a special case: Chrome/Android in particular writes WebM (and
+// sometimes MP4) blobs with no finalized duration in the container header,
+// so `video.duration` reads as Infinity/NaN on `loadedmetadata` even though
+// the recording is perfectly valid — a well-documented browser quirk, not a
+// real "unreadable" file. The fix is to force a seek near the end of the
+// file, which makes the browser walk the whole stream and compute the real
+// duration; only after THAT still fails do we treat it as genuinely
+// unreadable. A plain uploaded file (already has a real duration) never
+// takes this slower path at all.
 function captureVideoMetadata(file: File): Promise<{ durationSeconds: number; thumbnail: Blob | null }> {
   return new Promise((resolve, reject) => {
     const video = document.createElement("video");
@@ -37,9 +52,9 @@ function captureVideoMetadata(file: File): Promise<{ durationSeconds: number; th
     video.src = objectUrl;
 
     const cleanup = () => URL.revokeObjectURL(objectUrl);
+    let recoveryAttempted = false;
 
-    video.onloadedmetadata = () => {
-      const durationSeconds = video.duration;
+    function proceedWithDuration(durationSeconds: number) {
       if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) {
         cleanup();
         reject(new UploadValidationError("Couldn't read this video's length"));
@@ -47,17 +62,20 @@ function captureVideoMetadata(file: File): Promise<{ durationSeconds: number; th
       }
       if (durationSeconds > MAX_UPLOAD_DURATION_SECONDS) {
         cleanup();
+        const minutes = Math.floor(MAX_UPLOAD_DURATION_SECONDS / 60);
         reject(
           new UploadValidationError(
-            `Please keep uploads under ${Math.floor(MAX_UPLOAD_DURATION_SECONDS / 60)} minutes so they load fast for the recipient.`,
+            `Please keep uploads under ${minutes} minute${minutes === 1 ? "" : "s"} so they load fast for the recipient.`,
           ),
         );
         return;
       }
+      video.ontimeupdate = null;
+      video.onseeked = captureThumbnail;
       video.currentTime = Math.min(1, durationSeconds / 2);
-    };
+    }
 
-    video.onseeked = () => {
+    function captureThumbnail() {
       const canvas = document.createElement("canvas");
       canvas.width = video.videoWidth || 640;
       canvas.height = video.videoHeight || 360;
@@ -76,11 +94,30 @@ function captureVideoMetadata(file: File): Promise<{ durationSeconds: number; th
         "image/jpeg",
         0.8,
       );
+    }
+
+    video.onloadedmetadata = () => {
+      if (Number.isFinite(video.duration) && video.duration > 0) {
+        proceedWithDuration(video.duration);
+        return;
+      }
+      // Force the browser to walk the stream and recompute a real
+      // duration. `ontimeupdate` fires once that seek actually lands with
+      // an updated `video.duration`; a raw `Infinity` seek target is
+      // clamped to the file's real end by every browser that supports it.
+      recoveryAttempted = true;
+      video.ontimeupdate = () => {
+        video.ontimeupdate = null;
+        proceedWithDuration(video.duration);
+      };
+      video.currentTime = 1e10;
     };
+
+    video.onseeked = captureThumbnail;
 
     video.onerror = () => {
       cleanup();
-      reject(new UploadValidationError("Couldn't read this video file"));
+      reject(new UploadValidationError(recoveryAttempted ? "Couldn't read this video's length" : "Couldn't read this video file"));
     };
   });
 }

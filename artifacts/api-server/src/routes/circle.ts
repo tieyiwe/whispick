@@ -36,6 +36,7 @@ router.get("/circle", async (req, res): Promise<void> => {
     eq(whispsTable.deliveryMethod, "circle_drop"),
     isNull(whispsTable.circleId),
     eq(whispsTable.status, "delivered"),
+    isNull(whispsTable.removedByAdminAt),
   );
 
   const whisps = await db

@@ -1,0 +1,35 @@
+{
+  "mediaLibrary": {
+    "title": "媒体库",
+    "description": "你从设备上传的视频，随时可以在 Whisp 里重新使用。",
+    "uploadButton": "上传视频",
+    "uploadSuccess": "视频已上传",
+    "uploadFailedDefault": "上传失败，请重试。",
+    "deleteSuccess": "视频已删除",
+    "deleteError": "删除视频失败",
+    "emptyState": "还没有上传任何视频 — 上传一个开始吧。",
+    "unavailable": "已不可用",
+    "usageCount_other": "{{count}} 个 Whisp",
+    "expiresIn": "{{days}} 天后移除",
+    "whispIt": "发送 Whisp",
+    "postToCircle": "Blind Circle",
+    "removeDialog": {
+      "title": "删除这个视频？",
+      "description": "已经使用过它的 whisp 将显示「已不可用」，而不会显示视频。",
+      "cancel": "取消",
+      "confirm": "删除"
+    },
+    "previewError": "无法加载此视频进行预览。"
+  },
+  "suggestionsLibrary": {
+    "title": "推荐库",
+    "description": "值得分享的视频。找一个适合你圈子里某人的视频，匿名悄悄发给他们吧。",
+    "filterAll": "全部",
+    "filterFeatured": "精选",
+    "featuredBadge": "精选",
+    "untitledVideo": "无标题视频",
+    "watch": "观看",
+    "whisperThis": "悄悄发送",
+    "emptyState": "这里还什么都没有 — 稍后再来看看吧。"
+  }
+}

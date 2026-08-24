@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
   useListWhisperGroups,
@@ -19,6 +20,7 @@ import { deliveryLabel } from "@/lib/deliveryMethod";
 import { UsersRound, Plus, Loader2, PlayCircle, ChevronRight } from "lucide-react";
 
 export function WhisperGroups() {
+  const { t } = useTranslation("whisp");
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [newGroupName, setNewGroupName] = useState("");
@@ -40,9 +42,9 @@ export function WhisperGroups() {
         onSuccess: () => {
           setNewGroupName("");
           queryClient.invalidateQueries({ queryKey: getListWhisperGroupsQueryKey() });
-          toast({ title: "Group created" });
+          toast({ title: t("whisperGroups.toast.groupCreated") });
         },
-        onError: () => toast({ title: "Failed to create group", variant: "destructive" }),
+        onError: () => toast({ title: t("whisperGroups.toast.failedToCreateGroup"), variant: "destructive" }),
       }
     );
   }
@@ -52,28 +54,28 @@ export function WhisperGroups() {
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-serif font-bold text-foreground flex items-center gap-3">
-            <UsersRound className="w-7 h-7 text-primary" /> Whisper Groups
+            <UsersRound className="w-7 h-7 text-primary" /> {t("whisperGroups.title")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Save a group of contacts once, then send the same anonymous whisp to all of them at once.
+            {t("whisperGroups.subtitle")}
           </p>
         </div>
 
         <Tabs defaultValue="groups">
           <TabsList>
-            <TabsTrigger value="groups" data-testid="tab-groups">Groups</TabsTrigger>
-            <TabsTrigger value="sends" data-testid="tab-sent-batches">Sent Batches</TabsTrigger>
+            <TabsTrigger value="groups" data-testid="tab-groups">{t("whisperGroups.tabs.groups")}</TabsTrigger>
+            <TabsTrigger value="sends" data-testid="tab-sent-batches">{t("whisperGroups.tabs.sentBatches")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="groups" className="space-y-4">
             <Card className="bg-card border-border/50">
               <CardContent className="p-5 space-y-3">
                 <p className="font-medium text-foreground flex items-center gap-2">
-                  <Plus className="w-4 h-4 text-primary" /> Create a group
+                  <Plus className="w-4 h-4 text-primary" /> {t("whisperGroups.createAGroup")}
                 </p>
                 <div className="flex gap-2">
                   <Input
-                    placeholder="e.g. College Friends"
+                    placeholder={t("whisperGroups.namePlaceholder")}
                     className="bg-input/50 border-border/50 rounded-xl"
                     value={newGroupName}
                     onChange={(e) => setNewGroupName(e.target.value)}
@@ -86,7 +88,7 @@ export function WhisperGroups() {
                     className="rounded-xl shrink-0"
                     data-testid="button-create-group"
                   >
-                    {createGroup.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create"}
+                    {createGroup.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : t("whisperGroups.create")}
                   </Button>
                 </div>
               </CardContent>
@@ -107,7 +109,7 @@ export function WhisperGroups() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-foreground truncate">{group.name}</p>
-                          <p className="text-xs text-muted-foreground">{group.memberCount} member{group.memberCount === 1 ? "" : "s"}</p>
+                          <p className="text-xs text-muted-foreground">{t("shared.memberCount", { count: group.memberCount })}</p>
                         </div>
                         <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
                       </CardContent>
@@ -117,7 +119,7 @@ export function WhisperGroups() {
               </div>
             ) : (
               <Card className="bg-card/50 border-dashed border-border py-12 text-center">
-                <p className="text-muted-foreground">No groups yet — create one above to get started.</p>
+                <p className="text-muted-foreground">{t("whisperGroups.emptyGroups")}</p>
               </Card>
             )}
           </TabsContent>
@@ -138,12 +140,20 @@ export function WhisperGroups() {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-foreground truncate">{s.videoTitle || s.videoUrl}</p>
                         <p className="text-xs text-muted-foreground truncate">
-                          {s.groupName ?? "Group"} · {s.memberCount} member{s.memberCount === 1 ? "" : "s"} · via {deliveryLabel("whisper_link", s.whisperChannel)}
+                          {t("whisperGroups.sendRow.summary", {
+                            group: s.groupName ?? t("whisperGroups.groupFallback"),
+                            members: t("shared.memberCount", { count: s.memberCount }),
+                            via: deliveryLabel("whisper_link", s.whisperChannel),
+                          })}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {s.scheduledCount === s.memberCount && s.memberCount > 0
-                            ? "Scheduled"
-                            : `${s.openedCount} opened · ${s.watchedCount} watched · ${s.repliedCount} replied`}
+                            ? t("whisperGroups.sendRow.scheduled")
+                            : t("whisperGroups.sendRow.stats", {
+                                opened: s.openedCount,
+                                watched: s.watchedCount,
+                                replied: s.repliedCount,
+                              })}
                         </p>
                       </div>
                       <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
@@ -153,7 +163,7 @@ export function WhisperGroups() {
               ))
             ) : (
               <Card className="bg-card/50 border-dashed border-border py-12 text-center">
-                <p className="text-muted-foreground">No group whisps sent yet.</p>
+                <p className="text-muted-foreground">{t("whisperGroups.emptySends")}</p>
               </Card>
             )}
           </TabsContent>

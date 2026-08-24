@@ -1,0 +1,94 @@
+{
+  "groupName": "Mis primeros Whispers",
+  "steps": {
+    "friends": "Amigos",
+    "whatToSend": "Qué enviar",
+    "send": "Enviar"
+  },
+  "stepIndicator": "Paso {{step}} de {{total}}",
+  "header": {
+    "title": "Envía tus primeros Whispers",
+    "subtitle": "Elige a algunos amigos, escoge algo para enviar y llega a todos a la vez, de forma anónima."
+  },
+  "common": {
+    "next": "Siguiente",
+    "back": "Atrás"
+  },
+  "concierge": {
+    "defaultSituation": "con ganas de compartir algo con mis amigos"
+  },
+  "step1": {
+    "heading": "¿A quién quieres enviarle un Whisp?",
+    "subtitle": "Añade hasta 5 amigos — solo necesitas un correo o número de teléfono para cada uno.",
+    "friendLabel": "Amigo {{number}}",
+    "removeContact": "Quitar este contacto",
+    "namePlaceholder": "Nombre (opcional)",
+    "emailPlaceholder": "Correo electrónico",
+    "phonePlaceholder": "Número de teléfono",
+    "addAnother": "Añadir otro amigo",
+    "pickFromContacts": "Elegir de mis contactos",
+    "upToCount": "Añade hasta {{count}} amigos.",
+    "toast": {
+      "noneHadContactInfo": "Ninguno de los contactos que elegiste tenía correo o teléfono",
+      "needAtLeastOne": "Añade al menos un amigo con correo o teléfono"
+    }
+  },
+  "step2": {
+    "heading": "¿No sabes qué enviar?",
+    "subtitle": "Elegimos algunos videos que podrían encajar — toca uno para usarlo, sin necesidad de escribir nada.",
+    "loading": "Buscando algo para ti...",
+    "untitledVideo": "Video sin título",
+    "noMatch": "Nada encajó del todo — prueba con otra situación, o pega el enlace de tu propio video abajo.",
+    "videoFallback": "Enlace de video",
+    "changeVideo": "Cambiar",
+    "tryDifferentSituation": "Probar otra situación",
+    "pasteOwnLink": "Pegar tu propio enlace de video",
+    "situationPlaceholder": "Describe para quién es esto y por qué...",
+    "getNewSuggestions": "Obtener nuevas sugerencias",
+    "customUrl": {
+      "placeholder": "Pega un enlace de video (YouTube, TikTok, Instagram...)",
+      "invalidUrl": "Por favor introduce una URL válida"
+    },
+    "noteLabel": "Añade una nota (opcional)",
+    "notePlaceholder": "Escribe algo anónimo..."
+  },
+  "step3": {
+    "heading": "Listo para enviar",
+    "subtitle": "Enviando a {{count}} amigo, todos a la vez.",
+    "subtitle_one": "Enviando a {{count}} amigo, todos a la vez.",
+    "subtitle_other": "Enviando a {{count}} amigos, todos a la vez.",
+    "channels": {
+      "email": "Correo",
+      "sms": "Texto",
+      "whatsapp": "WhatsApp"
+    },
+    "sendButton": "Enviar a {{count}}",
+    "sendButton_one": "Enviar a {{count}} amigo",
+    "sendButton_other": "Enviar a {{count}} amigos",
+    "toast": {
+      "sendFailed": "No se pudo enviar. Inténtalo de nuevo.",
+      "groupSetupFailed": "No se pudo preparar tu lista de amigos. Inténtalo de nuevo."
+    }
+  },
+  "sent": {
+    "title": "¡Enviado a {{count}}!",
+    "title_one": "¡Enviado a {{count}} amigo!",
+    "title_other": "¡Enviado a {{count}} amigos!",
+    "description": "Tus Whisps están en camino — totalmente anónimos, como siempre.",
+    "description_one": "Tu Whisp está en camino — totalmente anónimo, como siempre.",
+    "description_other": "Tus Whisps están en camino — totalmente anónimos, como siempre.",
+    "skippedHeading": "{{count}} contacto no se pudo alcanzar",
+    "skippedHeading_one": "{{count}} contacto no se pudo alcanzar",
+    "skippedHeading_other": "{{count}} contactos no se pudieron alcanzar",
+    "skippedUnnamed": "Contacto sin nombre",
+    "viewSendButton": "Ver este envío",
+    "dashboardButton": "Ir al Panel"
+  },
+  "dashboardCard": {
+    "title": "Primeros pasos",
+    "heading": "Envía tus primeros Whispers",
+    "description": "Llega a varios amigos a la vez con un video anónimo — la forma más rápida de descubrir Blind Whisper.",
+    "cta": "Enviar a varios amigos",
+    "dismiss": "Descartar"
+  }
+}

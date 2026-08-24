@@ -1,0 +1,94 @@
+{
+  "groupName": "Meine ersten Whispers",
+  "steps": {
+    "friends": "Freunde",
+    "whatToSend": "Was senden",
+    "send": "Senden"
+  },
+  "stepIndicator": "Schritt {{step}} von {{total}}",
+  "header": {
+    "title": "Sende deine ersten Whispers",
+    "subtitle": "Wähle ein paar Freunde aus, entscheide dich für etwas zum Senden und erreiche alle auf einmal — anonym."
+  },
+  "common": {
+    "next": "Weiter",
+    "back": "Zurück"
+  },
+  "concierge": {
+    "defaultSituation": "möchte etwas mit Freunden teilen"
+  },
+  "step1": {
+    "heading": "Wem möchtest du einen Whisp senden?",
+    "subtitle": "Füge bis zu 5 Freunde hinzu — du brauchst nur eine E-Mail-Adresse oder Telefonnummer für jeden.",
+    "friendLabel": "Freund {{number}}",
+    "removeContact": "Diesen Kontakt entfernen",
+    "namePlaceholder": "Name (optional)",
+    "emailPlaceholder": "E-Mail",
+    "phonePlaceholder": "Telefonnummer",
+    "addAnother": "Weiteren Freund hinzufügen",
+    "pickFromContacts": "Aus Kontakten auswählen",
+    "upToCount": "Füge bis zu {{count}} Freunde hinzu.",
+    "toast": {
+      "noneHadContactInfo": "Keiner der ausgewählten Kontakte hatte eine E-Mail-Adresse oder Telefonnummer",
+      "needAtLeastOne": "Füge mindestens einen Freund mit E-Mail-Adresse oder Telefonnummer hinzu"
+    }
+  },
+  "step2": {
+    "heading": "Nicht sicher, was du senden sollst?",
+    "subtitle": "Wir haben ein paar Videos ausgewählt, die passen könnten — tippe auf eines, um es zu verwenden, ganz ohne Tippen.",
+    "loading": "Wir suchen etwas Passendes für dich...",
+    "untitledVideo": "Video ohne Titel",
+    "noMatch": "Nichts hat so richtig gepasst — versuche eine andere Situation oder füge unten den Link zu deinem eigenen Video ein.",
+    "videoFallback": "Video-Link",
+    "changeVideo": "Ändern",
+    "tryDifferentSituation": "Andere Situation ausprobieren",
+    "pasteOwnLink": "Eigenen Video-Link einfügen",
+    "situationPlaceholder": "Beschreibe, für wen das ist und warum...",
+    "getNewSuggestions": "Neue Vorschläge erhalten",
+    "customUrl": {
+      "placeholder": "Video-Link einfügen (YouTube, TikTok, Instagram...)",
+      "invalidUrl": "Bitte gib eine gültige URL ein"
+    },
+    "noteLabel": "Notiz hinzufügen (optional)",
+    "notePlaceholder": "Schreibe etwas Anonymes..."
+  },
+  "step3": {
+    "heading": "Bereit zum Senden",
+    "subtitle": "Wird an {{count}} Freund gesendet, alle auf einmal.",
+    "subtitle_one": "Wird an {{count}} Freund gesendet, alle auf einmal.",
+    "subtitle_other": "Wird an {{count}} Freunde gesendet, alle auf einmal.",
+    "channels": {
+      "email": "E-Mail",
+      "sms": "SMS",
+      "whatsapp": "WhatsApp"
+    },
+    "sendButton": "An {{count}} senden",
+    "sendButton_one": "An {{count}} Freund senden",
+    "sendButton_other": "An {{count}} Freunde senden",
+    "toast": {
+      "sendFailed": "Senden fehlgeschlagen. Bitte versuche es erneut.",
+      "groupSetupFailed": "Deine Freundesliste konnte nicht angelegt werden. Bitte versuche es erneut."
+    }
+  },
+  "sent": {
+    "title": "An {{count}} gesendet!",
+    "title_one": "An {{count}} Freund gesendet!",
+    "title_other": "An {{count}} Freunde gesendet!",
+    "description": "Deine Whisps sind unterwegs — komplett anonym, wie immer.",
+    "description_one": "Dein Whisp ist unterwegs — komplett anonym, wie immer.",
+    "description_other": "Deine Whisps sind unterwegs — komplett anonym, wie immer.",
+    "skippedHeading": "{{count}} Kontakt konnte nicht erreicht werden",
+    "skippedHeading_one": "{{count}} Kontakt konnte nicht erreicht werden",
+    "skippedHeading_other": "{{count}} Kontakte konnten nicht erreicht werden",
+    "skippedUnnamed": "Unbenannter Kontakt",
+    "viewSendButton": "Diesen Versand ansehen",
+    "dashboardButton": "Zur Übersicht"
+  },
+  "dashboardCard": {
+    "title": "Erste Schritte",
+    "heading": "Sende deine ersten Whispers",
+    "description": "Erreiche mehrere Freunde gleichzeitig mit einem anonymen Video — der schnellste Weg, Blind Whisper kennenzulernen.",
+    "cta": "An mehrere Freunde senden",
+    "dismiss": "Verwerfen"
+  }
+}

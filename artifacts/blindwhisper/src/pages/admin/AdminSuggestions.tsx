@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import {
   useAdminListSuggestions,
@@ -355,6 +355,13 @@ export function AdminSuggestions() {
   }
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1;
+
+  // Removing the last row of the last page leaves `page` pointing past the
+  // end (the shrunken total no longer covers it) — snap back to the real
+  // last page instead of stranding an empty view.
+  useEffect(() => {
+    if (data && page > totalPages) setPage(totalPages);
+  }, [data, page, totalPages]);
 
   return (
     <AdminLayout>

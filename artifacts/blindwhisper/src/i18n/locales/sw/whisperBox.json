@@ -1,0 +1,101 @@
+{
+  "publicWhisperBoxPage": {
+    "notFoundTitle": "Kiungo hiki cha Whisper Box hakipo hai",
+    "notFoundDescription": "Huenda kiungo si sahihi, au mtu huyu amezima Whisper Box yake.",
+    "heading": "Tuma ujumbe usiojulikana kwa {{handle}}",
+    "promptLine": "Unaweza kuniambia chochote ninachohitaji kusikia au kuona — bila kujitambulisha.",
+    "subheading": "Hatawahi kujua ni wewe — isipokuwa ukimwambia mwenyewe.",
+    "messageLabel": "Ujumbe wako",
+    "messagePlaceholder": "Andika kilicho moyoni mwako...",
+    "aliasLabel": "Tia sahihi kama (si lazima)",
+    "aliasPlaceholder": "mf. Rafiki, Mtu anayekujali...",
+    "privacyNote": "Huu ni ujumbe usiojulikana kabisa. Hakuna kinachohusiana na wewe kinachoshirikiwa — si jina lako, akaunti yako, wala kitu kingine chochote.",
+    "sendButton": "Tuma bila jina",
+    "successTitle": "Ujumbe umetumwa",
+    "successDescription": "Umefikishwa bila jina lako kujulikana. Hakuna njia ya kujua ni wewe uliyetuma.",
+    "sendAnotherButton": "Tuma ujumbe mwingine",
+    "signUpPrompt": "Unataka Whisper Box yako mwenyewe?",
+    "signUpLinkText": "Jisajili bure",
+    "poweredByPrefix": "Inaendeshwa na",
+    "poweredBySuffix": "— tuma whisps zisizojulikana kwa watu unaowajali.",
+    "toastValidationError": "Ujumbe huo haukutumwa — tafadhali uangalie kisha ujaribu tena.",
+    "toastRateLimitedTitle": "Unatuma ujumbe mwingi sana",
+    "toastRateLimitedDescription": "Tafadhali subiri kidogo kabla ya kutuma mwingine.",
+    "toastSendFailed": "Imeshindikana kutuma ujumbe huo. Tafadhali jaribu tena."
+  },
+  "whisperBoxInbox": {
+    "title": "Whisper Box",
+    "subtitle": "Ujumbe usiojulikana uliotumwa kwenye kiungo chako cha umma cha Whisper Box.",
+    "anonymous": "Bila jina",
+    "newBadge": "Mpya",
+    "timeAgo": "{{time}} zilizopita",
+    "deleteButton": "Futa",
+    "deleteDialog": {
+      "title": "Futa ujumbe huu?",
+      "description": "Hili haliwezi kutenduliwa. Ujumbe utaondolewa kabisa kutoka kwenye Whisper Box yako.",
+      "cancel": "Ghairi",
+      "confirm": "Futa"
+    },
+    "toastDeleteSuccess": "Ujumbe umefutwa",
+    "toastDeleteError": "Imeshindikana kufuta ujumbe huo",
+    "toastMarkReadError": "Imeshindikana kusasisha ujumbe huo",
+    "emptyState": {
+      "titleEnabled": "Whisper Box yako iko wazi",
+      "descriptionEnabled": "Shiriki kiungo chako na ujumbe usiojulikana utaanza kuonekana hapa.",
+      "manageCta": "Pata kiungo chako",
+      "titleDisabled": "Whisper Box haijawashwa",
+      "descriptionDisabled": "Iwashe kwenye Mipangilio ili upate kiungo cha umma ambapo mtu yeyote anaweza kukutumia ujumbe mmoja usiojulikana — bila kuhitaji akaunti kwa upande wao.",
+      "enableCta": "Washa kwenye Mipangilio"
+    }
+  },
+  "settingsSection": {
+    "cardTitle": "Whisper Box",
+    "toggleLabel": "Whisper Box",
+    "enabledDescription": "Yeyote mwenye kiungo chako anaweza kukutumia ujumbe mmoja usiojulikana — bila akaunti.",
+    "disabledDescription": "Washa hii ili upate kiungo cha umma ambapo mtu yeyote anaweza kukutumia ujumbe usiojulikana.",
+    "shareButton": "Shiriki",
+    "shareTitle": "Blind Whisper — Whisper Box",
+    "toastLinkCopied": "Kiungo kimenakiliwa — kishiriki popote",
+    "toastCopyFailed": "Imeshindikana kunakili — tafadhali kinakili wewe mwenyewe",
+    "toastEnabled": "Whisper Box imewashwa",
+    "toastDisabled": "Whisper Box imezimwa",
+    "toastToggleFailed": "Imeshindikana kusasisha hilo. Tafadhali jaribu tena.",
+    "shareStoryButton": "Shiriki kwenye Hadithi",
+    "storyPromptText": "Nitumie Whisper isiyojulikana 👀",
+    "storyShareText": "Nitumie Whisper isiyojulikana — hakuna akaunti inayohitajika.",
+    "toastStoryDownloaded": "Picha imehifadhiwa — iweke kwenye Hadithi yako!",
+    "toastStoryShared": "Kiungo pia kimenakiliwa — kibandike kama programu haikiongezi kiotomatiki.",
+    "toastStoryUnsupported": "Kushiriki hakutumiki kwenye kivinjari hiki — jaribu kunakili kiungo badala yake.",
+    "toastStoryFailed": "Imeshindikana kutengeneza picha ya kushiriki. Tafadhali jaribu tena."
+  },
+  "linkDialog": {
+    "title": "Kiungo chako cha Whisper Box",
+    "description": "Mtu yeyote mwenye kiungo hiki — au anayeskani msimbo wa QR — anaweza kukutumia ujumbe mmoja usiojulikana.",
+    "copyButton": "Nakili kiungo",
+    "namePromptTitle": "Ongeza jina lako kwanza?",
+    "namePromptDescription": "Kiungo chako cha Whisper Box hutengenezwa kutoka jina lako la kuonyesha, ili marafiki waweze kukitambua kweli. Bila jina, utapata kiungo cha nasibu badala yake.",
+    "nameInputLabel": "Jina la kuonyesha",
+    "nameInputPlaceholder": "Jina lako",
+    "nameSaveCta": "Hifadhi na upate kiungo changu",
+    "nameSkipCta": "Ruka kwa sasa",
+    "toastPersonalized": "Kiungo chako sasa kinalingana na jina lako",
+    "toastPersonalizeFailed": "Imeshindikana kusasisha. Tafadhali jaribu tena."
+  },
+  "searchBar": {
+    "sectionTitle": "Tafuta Whisper Box ya mtu",
+    "placeholder": "@jina",
+    "button": "Tafuta"
+  },
+  "dashboardCard": {
+    "title": "Whisper Box",
+    "getStartedTitle": "Pata Whisper Box yako",
+    "getStartedDescription": "Kiungo cha umma ambapo mtu yeyote anaweza kukutumia ujumbe mmoja usiojulikana. Kishiriki kwenye bio yako.",
+    "getStartedCta": "Iwashe",
+    "unreadTitle_one": "Una ujumbe {{count}} mpya",
+    "unreadTitle_other": "Una jumbe {{count}} mpya",
+    "unreadDescription": "Mtu amekutumia ujumbe usiojulikana.",
+    "idleTitle": "Whisper Box",
+    "idleDescription": "Shiriki kiungo chako ili upate ujumbe zaidi usiojulikana.",
+    "viewInboxCta": "Angalia Kikasha"
+  }
+}
