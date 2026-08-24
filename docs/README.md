@@ -27,6 +27,9 @@ It lives in the repository so it versions with the code.
 - **Product terms stay in English in all languages:** Blind Whisper, Whisp(s), Whisper Link(s),
   Whisperer(s), Blind Circle(s), Debate Now, Town Crier, Circle Scout, Ghost Boost, Whisper Box.
 - **Ghost Boost is currently disabled** and must not appear in public metadata or marketing.
+  **On hold until further notice** — do not build real ad-network integration
+  (Meta/TikTok Ads API) or otherwise resume work on it without an explicit
+  request; the honest credit-spend queue stays as the parked implementation.
 - Private links (`/w/…`, `/tw/…`) are secrets — never logged, never indexed, never shared in
   marketing material.
 - The admin panel and legal pages are English-only by convention.
