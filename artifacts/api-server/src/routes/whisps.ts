@@ -944,6 +944,59 @@ router.post("/:id/replies", requireAuth, async (req, res): Promise<void> => {
   }
 });
 
+const GUESS_REACTIONS = ["hot", "cold", "no_comment", "confirmed"] as const;
+
+// PATCH /api/whisps/:id/replies/:replyId/guess-reaction — the sender's
+// manual response to a "guess who sent it" reply. Deliberately the ONLY way
+// a guess ever gets a reaction: there is no automated check anywhere against
+// the real sender identity, because that would be an oracle a recipient
+// could hammer with names until one came back "correct" — the exact thing
+// this app's anti-enumeration rules exist to prevent (see toWhispResponse
+// above and whisp_replies.ts's schema comment). The sender decides, the same
+// way they decide whether to accept a Reveal request.
+router.patch("/:id/replies/:replyId/guess-reaction", requireAuth, async (req, res): Promise<void> => {
+  const { userId } = getAuth(req);
+  const user = await ensureUser(userId!, req);
+
+  const parsed = z.object({ reaction: z.enum(GUESS_REACTIONS) }).safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const whisp = await db
+    .select({ id: whispsTable.id })
+    .from(whispsTable)
+    .where(and(eq(whispsTable.id, req.params.id), eq(whispsTable.senderId, user.id), excludeMatchDeliveries(), excludeDeleted()))
+    .then(r => r[0]);
+
+  if (!whisp) {
+    res.status(404).json({ error: "Whisp not found" });
+    return;
+  }
+
+  const reply = await db
+    .select({ id: whispRepliesTable.id })
+    .from(whispRepliesTable)
+    .where(and(
+      eq(whispRepliesTable.id, req.params.replyId),
+      eq(whispRepliesTable.whispId, whisp.id),
+      eq(whispRepliesTable.isGuess, true),
+      eq(whispRepliesTable.fromRecipient, true),
+    ))
+    .then(r => r[0]);
+
+  if (!reply) {
+    res.status(404).json({ error: "Guess not found" });
+    return;
+  }
+
+  await db.update(whispRepliesTable).set({ guessReaction: parsed.data.reaction }).where(eq(whispRepliesTable.id, reply.id));
+
+  const updated = await db.select().from(whispRepliesTable).where(eq(whispRepliesTable.id, reply.id)).then(r => r[0]);
+  res.json(updated);
+});
+
 // POST /api/whisps/:id/reveal
 router.post("/:id/reveal", requireAuth, async (req, res): Promise<void> => {
   const { userId } = getAuth(req);

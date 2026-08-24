@@ -23,7 +23,7 @@ per table. New tables must also be added to the test truncate list in
 | Table | Purpose |
 |---|---|
 | `whisps` | The core content row for video whisps AND circle posts AND circle DMs (`delivery_method`: whisper_link / group_whisper / ghost_boost / circle_drop / circle_dm). Status machine, `public_token` (unique capability token), video fields (always server-derived), note/alias/mood, recipient matching (`recipient_user_id`), scheduling, expiry, per-role pin/archive, soft-delete + admin takedown, AI takeaway fields, `posted_by`, reply credits, group fan-out ids |
-| `whisp_replies` | Private whisp thread: `from_recipient`, optional video, flat quote `parent_reply_id`, `read_at` receipts, deferred sender-notification stamps |
+| `whisp_replies` | Private whisp thread: `from_recipient`, optional video, flat quote `parent_reply_id`, `read_at` receipts, deferred sender-notification stamps, `is_guess`/`guess_reaction` (sender-only manual reaction to a "guess who sent it" reply — never an automated identity check, see features-whisps.md) |
 | `whisp_categories` | Keyword-taxonomy categorization results (top 3, rank + score) |
 | `uploaded_videos` | Media Library rows: object-storage keys only, `status` (ready/deleted/expired), 7-day retention stamps. Rows are never deleted (stale refs 410) |
 | `tracking_events` | Public-page events per whisp (opened/clicked/watched_*) |

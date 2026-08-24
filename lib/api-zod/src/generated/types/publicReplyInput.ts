@@ -26,4 +26,6 @@ export interface PublicReplyInput {
      * @nullable
      */
   parentReplyId?: string | null;
+  /** Flags this as a "guess who sent it" reply (requires replyText). The system never auto-checks it against the real sender — see WhispReply.guessReaction. */
+  isGuess?: boolean;
 }

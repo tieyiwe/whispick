@@ -75,6 +75,7 @@ pin/archive timestamps (flattened to `pinned`/`archived`/`viewerRole` by
 | DELETE | `/:id` | Sender soft delete |
 | POST | `/:id/pin`, `/:id/archive` | Toggle for the caller's role (sender or matched recipient) |
 | GET/POST | `/:id/replies` | Thread / sender follow-up (`fromRecipient` forced false) |
+| PATCH | `/:id/replies/:replyId/guess-reaction` | Sender reacts to a "guess who sent it" reply |
 | POST | `/:id/reveal` | Sender requests identity reveal |
 | PATCH | `/:id/reveal` | **Unauthenticated** — recipient accepts/declines |
 
@@ -167,6 +168,21 @@ Table `whisp_replies`: text ≤300, `from_recipient`, optional video columns,
   (`canRecipientWhispVideoBack`); a blocked attempt records a one-time
   "wanted to whisp a video back" request via conditional update (unauthenticated
   endpoint pointed at the sender's inbox — must stay once-only).
+
+## Guess who sent it (light gamification)
+
+The recipient can flag a reply as a guess (`is_guess`, `POST
+/api/public/w/:token/reply` body `isGuess: true`, requires text). **The system
+never auto-checks a guess against the real sender** — that would be an
+identity-enumeration oracle (try names one at a time, watch for "correct"),
+the exact thing `toWhispResponse`'s `recipientUserId`-stripping exists to
+prevent. Instead the sender manually picks a reaction on their own reply
+(`PATCH /:id/replies/:replyId/guess-reaction`, one of `hot | cold |
+no_comment | confirmed`, only valid on a row with `is_guess=true` and
+`from_recipient=true`), stored on `guess_reaction`. Same trust model as
+Reveal below: the platform relays a manual human decision, it never verifies
+identity itself. A guess consumes a reply the same as any other reply (same
+credit pool, same rate limiting) — no separate spam surface.
 
 ## Reveal & appreciation
 

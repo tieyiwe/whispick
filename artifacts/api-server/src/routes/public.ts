@@ -57,6 +57,8 @@ const RECIPIENT_SAFE_REPLY_COLUMNS = {
   parentReplyId: whispRepliesTable.parentReplyId,
   createdAt: whispRepliesTable.createdAt,
   readAt: whispRepliesTable.readAt,
+  isGuess: whispRepliesTable.isGuess,
+  guessReaction: whispRepliesTable.guessReaction,
 } as const;
 
 // A Ghost Boost fan-out row (see lib/matching.ts) shares its senderId with
@@ -872,9 +874,17 @@ router.post("/w/:token/reply", async (req, res): Promise<void> => {
       videoPlatform: z.string().max(50).nullable().optional(),
       moodTag: z.string().max(50).nullable().optional(),
       parentReplyId: z.string().max(64).nullable().optional(),
+      // "Guess who sent it" — flags this reply as a guess so the sender's
+      // inbox can offer the hot/cold/confirmed reaction UI on it. Requires
+      // text (a video can't carry a guess); the system never checks it
+      // against the real sender, see whisp_replies.ts's schema comment.
+      isGuess: z.boolean().optional(),
     })
     .refine((data) => !!data.replyText?.trim() || !!data.videoUrl, {
       message: "Reply must include text or a video",
+    })
+    .refine((data) => !data.isGuess || !!data.replyText?.trim(), {
+      message: "A guess needs to say who you think sent it",
     });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) {
@@ -999,6 +1009,7 @@ router.post("/w/:token/reply", async (req, res): Promise<void> => {
       moodTag: parsed.data.moodTag ?? null,
       parentReplyId,
       notifySenderAt,
+      isGuess: parsed.data.isGuess ?? false,
     });
 
     await tx.update(whispsTable).set({ status: "replied" }).where(eq(whispsTable.id, whisp.id));

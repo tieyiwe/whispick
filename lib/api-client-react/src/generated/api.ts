@@ -173,6 +173,7 @@ import type {
   SendNotificationResult,
   SendWhisperBoxMessage201,
   SendWhisperBoxMessageBody,
+  SetGuessReactionBody,
   StartCircleDm201,
   StartPhoneVerificationInput,
   SubscribeInput,
@@ -999,6 +1000,79 @@ export const useCreateWhispReply = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateWhispReplyMutationOptions(options));
+    }
+
+export const getSetGuessReactionUrl = (id: string,
+    replyId: string,) => {
+
+
+
+
+  return `/api/whisps/${id}/replies/${replyId}/guess-reaction`
+}
+
+/**
+ * @summary Sender manually reacts to a "guess who sent it" reply. The only way a guess ever gets a reaction — never computed automatically, see WhispReply.guessReaction.
+ */
+export const setGuessReaction = async (id: string,
+    replyId: string,
+    setGuessReactionBody: SetGuessReactionBody, options?: RequestInit): Promise<WhispReply> => {
+
+  return customFetch<WhispReply>(getSetGuessReactionUrl(id,replyId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(setGuessReactionBody)
+  }
+);}
+
+
+
+
+export const getSetGuessReactionMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setGuessReaction>>, TError,{id: string;replyId: string;data: BodyType<SetGuessReactionBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setGuessReaction>>, TError,{id: string;replyId: string;data: BodyType<SetGuessReactionBody>}, TContext> => {
+
+const mutationKey = ['setGuessReaction'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setGuessReaction>>, {id: string;replyId: string;data: BodyType<SetGuessReactionBody>}> = (props) => {
+          const {id,replyId,data} = props ?? {};
+
+          return  setGuessReaction(id,replyId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetGuessReactionMutationResult = NonNullable<Awaited<ReturnType<typeof setGuessReaction>>>
+    export type SetGuessReactionMutationBody = BodyType<SetGuessReactionBody>
+    export type SetGuessReactionMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Sender manually reacts to a "guess who sent it" reply. The only way a guess ever gets a reaction — never computed automatically, see WhispReply.guessReaction.
+ */
+export const useSetGuessReaction = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setGuessReaction>>, TError,{id: string;replyId: string;data: BodyType<SetGuessReactionBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setGuessReaction>>,
+        TError,
+        {id: string;replyId: string;data: BodyType<SetGuessReactionBody>},
+        TContext
+      > => {
+      return useMutation(getSetGuessReactionMutationOptions(options));
     }
 
 export const getRequestRevealUrl = (id: string,) => {

@@ -258,6 +258,57 @@ paths:
               schema:
                 $ref: "#/components/schemas/WhispReply"
 
+  /whisps/{id}/replies/{replyId}/guess-reaction:
+    patch:
+      operationId: setGuessReaction
+      tags: [whisps]
+      summary: >-
+        Sender manually reacts to a "guess who sent it" reply. The only way a
+        guess ever gets a reaction — never computed automatically, see
+        WhispReply.guessReaction.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: replyId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reaction:
+                  type: string
+                  enum: [hot, cold, no_comment, confirmed]
+              required:
+                - reaction
+      responses:
+        "200":
+          description: Reaction set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhispReply"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Whisp not found, or the reply isn't a guess on this whisp
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /whisps/{id}/reveal:
     post:
       operationId: requestReveal
@@ -4932,11 +4983,24 @@ components:
             WhatsApp-style single/double checkmark next to a message the
             current viewer sent themselves; never rendered on a message you
             received.
+        isGuess:
+          type: boolean
+          description: True when the recipient flagged this reply as a "guess who sent it" guess.
+        guessReaction:
+          type: ["string", "null"]
+          description: >-
+            'hot' | 'cold' | 'no_comment' | 'confirmed' | null. Set only by
+            the whisp's sender, manually, via PATCH
+            /whisps/{id}/replies/{replyId}/guess-reaction — never computed by
+            the system, since auto-checking a guess against the real sender
+            would be an identity-enumeration oracle. Null until the sender
+            reacts (or on any reply that isn't a guess).
       required:
         - id
         - whispId
         - replyText
         - fromRecipient
+        - isGuess
         - createdAt
 
     WhispReplyInput:
@@ -5440,6 +5504,9 @@ components:
         parentReplyId:
           type: ["string", "null"]
           description: Reply to a specific earlier message on the same whisp.
+        isGuess:
+          type: boolean
+          description: Flags this as a "guess who sent it" reply (requires replyText). The system never auto-checks it against the real sender — see WhispReply.guessReaction.
 
     UserProfile:
       type: object

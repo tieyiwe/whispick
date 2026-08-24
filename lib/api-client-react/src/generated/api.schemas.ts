@@ -178,6 +178,13 @@ export interface WhispReply {
      * @nullable
      */
   readAt?: string | null;
+  /** True when the recipient flagged this reply as a "guess who sent it" guess. */
+  isGuess: boolean;
+  /**
+     * 'hot' | 'cold' | 'no_comment' | 'confirmed' | null. Set only by the whisp's sender, manually, via PATCH /whisps/{id}/replies/{replyId}/guess-reaction — never computed by the system, since auto-checking a guess against the real sender would be an identity-enumeration oracle. Null until the sender reacts (or on any reply that isn't a guess).
+     * @nullable
+     */
+  guessReaction?: string | null;
 }
 
 /**
@@ -578,6 +585,8 @@ export interface PublicReplyInput {
      * @nullable
      */
   parentReplyId?: string | null;
+  /** Flags this as a "guess who sent it" reply (requires replyText). The system never auto-checks it against the real sender — see WhispReply.guessReaction. */
+  isGuess?: boolean;
 }
 
 /**
@@ -2641,6 +2650,20 @@ export type PinWhisp200 = {
 
 export type ArchiveWhisp200 = {
   archived: boolean;
+};
+
+export type SetGuessReactionBodyReaction = typeof SetGuessReactionBodyReaction[keyof typeof SetGuessReactionBodyReaction];
+
+
+export const SetGuessReactionBodyReaction = {
+  hot: 'hot',
+  cold: 'cold',
+  no_comment: 'no_comment',
+  confirmed: 'confirmed',
+} as const;
+
+export type SetGuessReactionBody = {
+  reaction: SetGuessReactionBodyReaction;
 };
 
 export type GetPublicWhispParams = {

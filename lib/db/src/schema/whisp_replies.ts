@@ -50,6 +50,17 @@ export const whispRepliesTable = pgTable("whisp_replies", {
   // separately choosing to open their own view later — so there's no
   // equivalent proximity signal to protect against here.
   readAt: timestamp("read_at", { withTimezone: true }),
+  // "Guess who sent it" light gamification (fromRecipient=true only — a
+  // sender can't guess their own identity). The system NEVER auto-checks a
+  // guess against the real sender: that would turn this into an
+  // identity-enumeration oracle (try names one at a time, watch for
+  // "correct"), which is exactly what this app's anti-enumeration posture
+  // exists to prevent — see routes/whisps.ts's toWhispResponse comment.
+  // Instead the sender manually picks a reaction, same trust model as the
+  // Reveal handshake: the platform is a permission/reaction relay, never an
+  // automated verifier of who anyone is.
+  isGuess: boolean("is_guess").notNull().default(false),
+  guessReaction: text("guess_reaction"), // 'hot' | 'cold' | 'no_comment' | 'confirmed', sender-set only
 }, (table) => [
   index("whisp_replies_whisp_id_idx").on(table.whispId),
   index("whisp_replies_notify_sender_at_idx").on(table.notifySenderAt),

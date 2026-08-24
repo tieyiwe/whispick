@@ -252,7 +252,9 @@ export const GetWhispResponse = zod.object({
   "moodTag": zod.string().nullish(),
   "parentReplyId": zod.string().nullish().describe('The message this one answers, when it replies to a specific earlier message rather than the thread as a whole. Always a reply on the same whisp.'),
   "createdAt": zod.string(),
-  "readAt": zod.string().nullish().describe('When the other party in the conversation (whichever one didn\'t author this message) is known to have viewed it — set the moment they load a view containing it. Null means unread. Drives the WhatsApp-style single\/double checkmark next to a message the current viewer sent themselves; never rendered on a message you received.')
+  "readAt": zod.string().nullish().describe('When the other party in the conversation (whichever one didn\'t author this message) is known to have viewed it — set the moment they load a view containing it. Null means unread. Drives the WhatsApp-style single\/double checkmark next to a message the current viewer sent themselves; never rendered on a message you received.'),
+  "isGuess": zod.boolean().describe('True when the recipient flagged this reply as a \"guess who sent it\" guess.'),
+  "guessReaction": zod.string().nullish().describe('\'hot\' | \'cold\' | \'no_comment\' | \'confirmed\' | null. Set only by the whisp\'s sender, manually, via PATCH \/whisps\/{id}\/replies\/{replyId}\/guess-reaction — never computed by the system, since auto-checking a guess against the real sender would be an identity-enumeration oracle. Null until the sender reacts (or on any reply that isn\'t a guess).')
 })),
   "recipientRepliesRemaining": zod.number().nullish().describe('Anonymous replies the recipient has left on this whisp. Null means uncapped. 0 means they can\'t reply again unless the sender adds more replies or the recipient signs up.'),
   "viewCount": zod.number().describe('Blind Circle posts only (0 otherwise) — how many times this post was opened, across every anonymous viewer.'),
@@ -332,7 +334,9 @@ export const ListWhispRepliesResponseItem = zod.object({
   "moodTag": zod.string().nullish(),
   "parentReplyId": zod.string().nullish().describe('The message this one answers, when it replies to a specific earlier message rather than the thread as a whole. Always a reply on the same whisp.'),
   "createdAt": zod.string(),
-  "readAt": zod.string().nullish().describe('When the other party in the conversation (whichever one didn\'t author this message) is known to have viewed it — set the moment they load a view containing it. Null means unread. Drives the WhatsApp-style single\/double checkmark next to a message the current viewer sent themselves; never rendered on a message you received.')
+  "readAt": zod.string().nullish().describe('When the other party in the conversation (whichever one didn\'t author this message) is known to have viewed it — set the moment they load a view containing it. Null means unread. Drives the WhatsApp-style single\/double checkmark next to a message the current viewer sent themselves; never rendered on a message you received.'),
+  "isGuess": zod.boolean().describe('True when the recipient flagged this reply as a \"guess who sent it\" guess.'),
+  "guessReaction": zod.string().nullish().describe('\'hot\' | \'cold\' | \'no_comment\' | \'confirmed\' | null. Set only by the whisp\'s sender, manually, via PATCH \/whisps\/{id}\/replies\/{replyId}\/guess-reaction — never computed by the system, since auto-checking a guess against the real sender would be an identity-enumeration oracle. Null until the sender reacts (or on any reply that isn\'t a guess).')
 })
 export const ListWhispRepliesResponse = zod.array(ListWhispRepliesResponseItem)
 
@@ -363,7 +367,40 @@ export const CreateWhispReplyResponse = zod.object({
   "moodTag": zod.string().nullish(),
   "parentReplyId": zod.string().nullish().describe('The message this one answers, when it replies to a specific earlier message rather than the thread as a whole. Always a reply on the same whisp.'),
   "createdAt": zod.string(),
-  "readAt": zod.string().nullish().describe('When the other party in the conversation (whichever one didn\'t author this message) is known to have viewed it — set the moment they load a view containing it. Null means unread. Drives the WhatsApp-style single\/double checkmark next to a message the current viewer sent themselves; never rendered on a message you received.')
+  "readAt": zod.string().nullish().describe('When the other party in the conversation (whichever one didn\'t author this message) is known to have viewed it — set the moment they load a view containing it. Null means unread. Drives the WhatsApp-style single\/double checkmark next to a message the current viewer sent themselves; never rendered on a message you received.'),
+  "isGuess": zod.boolean().describe('True when the recipient flagged this reply as a \"guess who sent it\" guess.'),
+  "guessReaction": zod.string().nullish().describe('\'hot\' | \'cold\' | \'no_comment\' | \'confirmed\' | null. Set only by the whisp\'s sender, manually, via PATCH \/whisps\/{id}\/replies\/{replyId}\/guess-reaction — never computed by the system, since auto-checking a guess against the real sender would be an identity-enumeration oracle. Null until the sender reacts (or on any reply that isn\'t a guess).')
+})
+
+
+/**
+ * @summary Sender manually reacts to a "guess who sent it" reply. The only way a guess ever gets a reaction — never computed automatically, see WhispReply.guessReaction.
+ */
+export const SetGuessReactionParams = zod.object({
+  "id": zod.coerce.string(),
+  "replyId": zod.coerce.string()
+})
+
+export const SetGuessReactionBody = zod.object({
+  "reaction": zod.enum(['hot', 'cold', 'no_comment', 'confirmed'])
+})
+
+export const SetGuessReactionResponse = zod.object({
+  "id": zod.string(),
+  "whispId": zod.string(),
+  "replyText": zod.string(),
+  "fromRecipient": zod.boolean(),
+  "videoUrl": zod.string().nullish(),
+  "videoTitle": zod.string().nullish(),
+  "videoThumbnail": zod.string().nullish(),
+  "videoEmbedUrl": zod.string().nullish(),
+  "videoPlatform": zod.string().nullish(),
+  "moodTag": zod.string().nullish(),
+  "parentReplyId": zod.string().nullish().describe('The message this one answers, when it replies to a specific earlier message rather than the thread as a whole. Always a reply on the same whisp.'),
+  "createdAt": zod.string(),
+  "readAt": zod.string().nullish().describe('When the other party in the conversation (whichever one didn\'t author this message) is known to have viewed it — set the moment they load a view containing it. Null means unread. Drives the WhatsApp-style single\/double checkmark next to a message the current viewer sent themselves; never rendered on a message you received.'),
+  "isGuess": zod.boolean().describe('True when the recipient flagged this reply as a \"guess who sent it\" guess.'),
+  "guessReaction": zod.string().nullish().describe('\'hot\' | \'cold\' | \'no_comment\' | \'confirmed\' | null. Set only by the whisp\'s sender, manually, via PATCH \/whisps\/{id}\/replies\/{replyId}\/guess-reaction — never computed by the system, since auto-checking a guess against the real sender would be an identity-enumeration oracle. Null until the sender reacts (or on any reply that isn\'t a guess).')
 })
 
 
@@ -858,7 +895,9 @@ export const GetPublicWhispResponse = zod.object({
   "moodTag": zod.string().nullish(),
   "parentReplyId": zod.string().nullish().describe('The message this one answers, when it replies to a specific earlier message rather than the thread as a whole. Always a reply on the same whisp.'),
   "createdAt": zod.string(),
-  "readAt": zod.string().nullish().describe('When the other party in the conversation (whichever one didn\'t author this message) is known to have viewed it — set the moment they load a view containing it. Null means unread. Drives the WhatsApp-style single\/double checkmark next to a message the current viewer sent themselves; never rendered on a message you received.')
+  "readAt": zod.string().nullish().describe('When the other party in the conversation (whichever one didn\'t author this message) is known to have viewed it — set the moment they load a view containing it. Null means unread. Drives the WhatsApp-style single\/double checkmark next to a message the current viewer sent themselves; never rendered on a message you received.'),
+  "isGuess": zod.boolean().describe('True when the recipient flagged this reply as a \"guess who sent it\" guess.'),
+  "guessReaction": zod.string().nullish().describe('\'hot\' | \'cold\' | \'no_comment\' | \'confirmed\' | null. Set only by the whisp\'s sender, manually, via PATCH \/whisps\/{id}\/replies\/{replyId}\/guess-reaction — never computed by the system, since auto-checking a guess against the real sender would be an identity-enumeration oracle. Null until the sender reacts (or on any reply that isn\'t a guess).')
 })),
   "recipientRepliesRemaining": zod.number().nullish().describe('Anonymous replies this recipient has left on this whisp. Null means uncapped. Signing up removes the cap entirely.'),
   "videoRepliesAllowed": zod.boolean().optional().describe('Whether this viewer may whisp a VIDEO back. Text replies stay open to anonymous recipients up to their allowance; a video reply needs either an account or reply credit the sender bought for this whisp.'),
@@ -925,7 +964,8 @@ export const PublicReplyBody = zod.object({
   "videoEmbedUrl": zod.string().nullish(),
   "videoPlatform": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
-  "parentReplyId": zod.string().nullish().describe('Reply to a specific earlier message on the same whisp.')
+  "parentReplyId": zod.string().nullish().describe('Reply to a specific earlier message on the same whisp.'),
+  "isGuess": zod.boolean().optional().describe('Flags this as a \"guess who sent it\" reply (requires replyText). The system never auto-checks it against the real sender — see WhispReply.guessReaction.')
 })
 
 export const PublicReplyResponse = zod.object({
@@ -941,7 +981,9 @@ export const PublicReplyResponse = zod.object({
   "moodTag": zod.string().nullish(),
   "parentReplyId": zod.string().nullish().describe('The message this one answers, when it replies to a specific earlier message rather than the thread as a whole. Always a reply on the same whisp.'),
   "createdAt": zod.string(),
-  "readAt": zod.string().nullish().describe('When the other party in the conversation (whichever one didn\'t author this message) is known to have viewed it — set the moment they load a view containing it. Null means unread. Drives the WhatsApp-style single\/double checkmark next to a message the current viewer sent themselves; never rendered on a message you received.')
+  "readAt": zod.string().nullish().describe('When the other party in the conversation (whichever one didn\'t author this message) is known to have viewed it — set the moment they load a view containing it. Null means unread. Drives the WhatsApp-style single\/double checkmark next to a message the current viewer sent themselves; never rendered on a message you received.'),
+  "isGuess": zod.boolean().describe('True when the recipient flagged this reply as a \"guess who sent it\" guess.'),
+  "guessReaction": zod.string().nullish().describe('\'hot\' | \'cold\' | \'no_comment\' | \'confirmed\' | null. Set only by the whisp\'s sender, manually, via PATCH \/whisps\/{id}\/replies\/{replyId}\/guess-reaction — never computed by the system, since auto-checking a guess against the real sender would be an identity-enumeration oracle. Null until the sender reacts (or on any reply that isn\'t a guess).')
 })
 
 
@@ -2193,7 +2235,9 @@ export const AdminGetWhispResponse = zod.object({
   "moodTag": zod.string().nullish(),
   "parentReplyId": zod.string().nullish().describe('The message this one answers, when it replies to a specific earlier message rather than the thread as a whole. Always a reply on the same whisp.'),
   "createdAt": zod.string(),
-  "readAt": zod.string().nullish().describe('When the other party in the conversation (whichever one didn\'t author this message) is known to have viewed it — set the moment they load a view containing it. Null means unread. Drives the WhatsApp-style single\/double checkmark next to a message the current viewer sent themselves; never rendered on a message you received.')
+  "readAt": zod.string().nullish().describe('When the other party in the conversation (whichever one didn\'t author this message) is known to have viewed it — set the moment they load a view containing it. Null means unread. Drives the WhatsApp-style single\/double checkmark next to a message the current viewer sent themselves; never rendered on a message you received.'),
+  "isGuess": zod.boolean().describe('True when the recipient flagged this reply as a \"guess who sent it\" guess.'),
+  "guessReaction": zod.string().nullish().describe('\'hot\' | \'cold\' | \'no_comment\' | \'confirmed\' | null. Set only by the whisp\'s sender, manually, via PATCH \/whisps\/{id}\/replies\/{replyId}\/guess-reaction — never computed by the system, since auto-checking a guess against the real sender would be an identity-enumeration oracle. Null until the sender reacts (or on any reply that isn\'t a guess).')
 })),
   "categories": zod.array(zod.object({
   "id": zod.string(),
@@ -3877,7 +3921,9 @@ export const GetGroupWhispSendResponse = zod.object({
   "moodTag": zod.string().nullish(),
   "parentReplyId": zod.string().nullish().describe('The message this one answers, when it replies to a specific earlier message rather than the thread as a whole. Always a reply on the same whisp.'),
   "createdAt": zod.string(),
-  "readAt": zod.string().nullish().describe('When the other party in the conversation (whichever one didn\'t author this message) is known to have viewed it — set the moment they load a view containing it. Null means unread. Drives the WhatsApp-style single\/double checkmark next to a message the current viewer sent themselves; never rendered on a message you received.')
+  "readAt": zod.string().nullish().describe('When the other party in the conversation (whichever one didn\'t author this message) is known to have viewed it — set the moment they load a view containing it. Null means unread. Drives the WhatsApp-style single\/double checkmark next to a message the current viewer sent themselves; never rendered on a message you received.'),
+  "isGuess": zod.boolean().describe('True when the recipient flagged this reply as a \"guess who sent it\" guess.'),
+  "guessReaction": zod.string().nullish().describe('\'hot\' | \'cold\' | \'no_comment\' | \'confirmed\' | null. Set only by the whisp\'s sender, manually, via PATCH \/whisps\/{id}\/replies\/{replyId}\/guess-reaction — never computed by the system, since auto-checking a guess against the real sender would be an identity-enumeration oracle. Null until the sender reacts (or on any reply that isn\'t a guess).')
 }))
 }))
 })

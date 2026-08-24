@@ -221,6 +221,8 @@ export * from './sendNotificationInputAudience';
 export * from './sendNotificationResult';
 export * from './sendWhisperBoxMessage201';
 export * from './sendWhisperBoxMessageBody';
+export * from './setGuessReactionBody';
+export * from './setGuessReactionBodyReaction';
 export * from './skippedGroupMember';
 export * from './startCircleDm201';
 export * from './startPhoneVerificationInput';

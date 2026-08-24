@@ -33,3 +33,5 @@ export type {
 export type { UpdateDebateTopicHandleAvatarBody } from "./generated/types";
 // Same collision, added with the Whisper Box public send endpoint.
 export type { SendWhisperBoxMessageBody } from "./generated/types";
+// Same collision, added with the "guess who sent it" reaction endpoint.
+export type { SetGuessReactionBody } from "./generated/types";
