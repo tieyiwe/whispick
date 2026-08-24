@@ -31,12 +31,21 @@ import i18n from "@/i18n";
 // them about it earlier.
 export function WhisperBoxLinkDialog({
   handle,
-  hasDisplayName,
+  handlePersonalized,
+  currentDisplayName,
   open,
   onOpenChange,
 }: {
   handle: string;
-  hasDisplayName: boolean;
+  /** Whether `handle` already reflects the caller's current display name —
+   *  see routes/user.ts's whisperBoxHandlePersonalized doc comment. False
+   *  also covers "no display name yet", so this alone decides whether the
+   *  name-capture step below shows, not a separate hasDisplayName check. */
+  handlePersonalized: boolean;
+  /** Prefills the name-capture input when it does show — e.g. the account
+   *  already has a display name on file, it just changed since the link was
+   *  last (re)personalized, so re-typing it would be pure friction. */
+  currentDisplayName?: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -55,15 +64,16 @@ export function WhisperBoxLinkDialog({
   // eventually catch up, but the popup shouldn't flicker back to a
   // capture step (or a stale handle) in the meantime.
   const [resolvedHandle, setResolvedHandle] = useState<string | null>(null);
-  const [needsName, setNeedsName] = useState(!hasDisplayName);
+  const [needsName, setNeedsName] = useState(!handlePersonalized);
 
   useEffect(() => {
     if (open) {
-      setNeedsName(!hasDisplayName);
+      setNeedsName(!handlePersonalized);
       setResolvedHandle(null);
-      setNameDraft("");
+      setNameDraft(currentDisplayName ?? "");
     }
-  }, [open, hasDisplayName]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, handlePersonalized]);
 
   const effectiveHandle = resolvedHandle ?? handle;
   const url = whisperBoxShareUrl(effectiveHandle);

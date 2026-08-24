@@ -109,13 +109,13 @@ export function SettingsPage() {
   const disableWhisperBox = useDisableWhisperBox();
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   // Gates the two quick share actions below — see WhisperBoxLinkDialog's
-  // comment for why an un-personalized (random-word) handle isn't worth
-  // sharing. Deliberately the last-SAVED profile value, not the live
-  // `fullName` draft in the input above — the backend's handle only ever
-  // reflects what was actually persisted, so gating on an unsaved keystroke
-  // would let this skip the capture dialog while the handle itself is
-  // still the old fallback.
-  const hasDisplayName = !!profile?.fullName?.trim();
+  // comment for why an un-personalized (random-word, or stale-name) handle
+  // isn't worth sharing. Backend-computed (routes/user.ts) rather than a
+  // local `!!fullName` check, so a display name change that hasn't been
+  // captured into the handle yet still routes through the capture dialog —
+  // `!!fullName` alone couldn't tell "never personalized" apart from
+  // "personalized, then the name changed since".
+  const handlePersonalized = profile?.whisperBoxHandlePersonalized ?? false;
 
   function handleWhisperBoxToggleSuccess(enabled: boolean, handle: string | null) {
     // Write straight into the shared recap cache so the switch and share
@@ -152,7 +152,7 @@ export function SettingsPage() {
 
   function handleShareWhisperBoxLink() {
     if (!whisperBoxHandle) return;
-    if (!hasDisplayName) {
+    if (!handlePersonalized) {
       setLinkDialogOpen(true);
       return;
     }
@@ -176,7 +176,7 @@ export function SettingsPage() {
   // rather than sharing a bare link.
   async function handleShareWhisperBoxStory() {
     if (!whisperBoxHandle || storyShareLoading) return;
-    if (!hasDisplayName) {
+    if (!handlePersonalized) {
       setLinkDialogOpen(true);
       return;
     }
@@ -746,7 +746,8 @@ export function SettingsPage() {
       {whisperBoxHandle && (
         <WhisperBoxLinkDialog
           handle={whisperBoxHandle}
-          hasDisplayName={hasDisplayName}
+          handlePersonalized={handlePersonalized}
+          currentDisplayName={profile?.fullName ?? null}
           open={linkDialogOpen}
           onOpenChange={setLinkDialogOpen}
         />

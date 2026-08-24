@@ -5585,6 +5585,9 @@ components:
           description: This account's persistent, public, followable Debate Topics handle — see users.whispererHandle. Null until first assigned (posting a topic, or commenting while signed in).
         whispererAvatarId:
           $ref: "#/components/schemas/AvatarId"
+        whisperBoxHandlePersonalized:
+          type: boolean
+          description: Whether this account's Whisper Box handle (see UserRecap.whisperBoxHandle) actually reflects the current fullName — i.e. whether it's the slug (or slug+3-digit-suffix) that name would produce right now, as opposed to a leftover from before a name was set or from a since-changed name. Drives whether WhisperBoxLinkDialog prompts to (re)personalize the link.
         mfaNudgeDismissedAt:
           type: ["string", "null"]
           description: When this account last dismissed the two-factor setup nudge. Whether 2FA is actually ON is never included here — read Clerk's own user.twoFactorEnabled client-side for that; this is only "did they say not now."
@@ -5617,6 +5620,7 @@ components:
         - role
         - emailNotificationsEnabled
         - showOnlineStatus
+        - whisperBoxHandlePersonalized
         - createdAt
 
     UserProfileUpdate:

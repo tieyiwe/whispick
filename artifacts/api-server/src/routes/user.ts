@@ -24,7 +24,7 @@ import { ensureUser } from "../lib/ensureUser";
 import { getVapidPublicKey } from "../lib/push";
 import { GENDER_OPTIONS, AGE_RANGE_OPTIONS } from "../lib/demographics";
 import { SUPPORTED_LANGUAGES } from "../lib/languages";
-import { updateWhispererAvatar } from "../lib/whispererHandle";
+import { updateWhispererAvatar, isWhisperBoxHandlePersonalized } from "../lib/whispererHandle";
 import { normalizePhoneE164 } from "../lib/phone";
 import { startPhoneVerification, checkPhoneVerification } from "../lib/phoneVerification";
 import { phoneVerificationLimiter, confirmPhoneVerificationLimiter } from "../lib/rateLimit";
@@ -49,6 +49,7 @@ router.get("/profile", requireAuth, async (req, res): Promise<void> => {
     preferredLanguage: user.preferredLanguage,
     whispererHandle: user.whispererHandle,
     whispererAvatarId: user.whispererAvatarId,
+    whisperBoxHandlePersonalized: isWhisperBoxHandlePersonalized(user.whisperBoxHandle, user.fullName),
     mfaNudgeDismissedAt: user.mfaNudgeDismissedAt,
     plan: user.plan,
     boostCredits: user.boostCredits,

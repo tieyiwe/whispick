@@ -78,10 +78,12 @@ const NAV_ITEMS = [
 const MOBILE_TAB_ITEMS_LEFT = [
   { href: "/dashboard", labelKey: "nav.home", icon: LayoutDashboard },
   { href: "/whisps", labelKey: "nav.myWhisps", icon: ListVideo },
+  { href: "/circle", labelKey: "nav.blindCircle", icon: Users },
 ];
 
+// Plus the "More" button rendered after these, so the right side also ends
+// up with 3 — balanced against the 3 on the left around the center Send button.
 const MOBILE_TAB_ITEMS_RIGHT = [
-  { href: "/circle", labelKey: "nav.blindCircle", icon: Users },
   { href: "/replies", labelKey: "nav.replies", icon: MessageSquareHeart },
   { href: "/whisper-box", labelKey: "nav.whisperBox", icon: Mailbox },
 ];

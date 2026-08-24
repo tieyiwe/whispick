@@ -185,6 +185,22 @@ export async function assignWhisperBoxHandle(userId: string, displayName: string
   throw new Error("Failed to assign a Whisper Box handle after several attempts");
 }
 
+// Whether `handle` actually reflects `displayName` — i.e. whether it's the
+// bare slug or slug+3-digit-suffix assignWhisperBoxHandle would produce for
+// this name right now, as opposed to a leftover from before the name was
+// set (or from a since-changed name). Purely computed from the two values
+// already on the users row — no extra column needed. Drives the "personalize
+// your link" prompt in WhisperBoxLinkDialog: a stale/anonymous handle should
+// still nudge the user to refresh it even though they do have a display name
+// on file, which `!!fullName` alone can't tell apart from an up-to-date one.
+export function isWhisperBoxHandlePersonalized(handle: string | null, displayName: string | null): boolean {
+  if (!handle || !displayName) return false;
+  const slug = slugifyDisplayName(displayName);
+  if (!slug) return false;
+  if (handle === slug) return true;
+  return handle.startsWith(slug) && /^\d{3}$/.test(handle.slice(slug.length));
+}
+
 export async function userIdForWhisperBoxHandle(handle: string): Promise<string | null> {
   const row = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.whisperBoxHandle, handle)).then((r) => r[0]);
   return row?.id ?? null;

@@ -48,6 +48,8 @@ export interface UserProfile {
      */
   whispererHandle?: string | null;
   whispererAvatarId?: AvatarId | null;
+  /** Whether this account's Whisper Box handle (see UserRecap.whisperBoxHandle) actually reflects the current fullName — i.e. whether it's the slug (or slug+3-digit-suffix) that name would produce right now, as opposed to a leftover from before a name was set or from a since-changed name. Drives whether WhisperBoxLinkDialog prompts to (re)personalize the link. */
+  whisperBoxHandlePersonalized: boolean;
   /**
      * When this account last dismissed the two-factor setup nudge. Whether 2FA is actually ON is never included here — read Clerk's own user.twoFactorEnabled client-side for that; this is only "did they say not now."
      * @nullable

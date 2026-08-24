@@ -55,9 +55,10 @@ export function WhisperBoxInbox() {
   const whisperBoxEnabled = recap ? recap.whisperBoxMessagesReceived !== null : undefined;
   // Only needed to decide whether a share action should detour through
   // WhisperBoxLinkDialog's name-capture step first — see that component's
-  // comment for why an un-personalized handle isn't worth sharing.
+  // comment for why an un-personalized (or stale-name) handle isn't worth
+  // sharing. Backend-computed — see routes/user.ts's whisperBoxHandlePersonalized.
   const { data: profile } = useGetUserProfile();
-  const hasDisplayName = !!profile?.fullName?.trim();
+  const handlePersonalized = profile?.whisperBoxHandlePersonalized ?? false;
 
   const markRead = useMarkWhisperBoxMessageRead();
   const deleteMessage = useDeleteWhisperBoxMessage();
@@ -73,7 +74,7 @@ export function WhisperBoxInbox() {
   // through the name-capture dialog first when there's no display name yet
   // — sharing an unpersonalized (random-word) handle defeats the point.
   async function handleShareWhisperBoxStory() {
-    if (!hasDisplayName) {
+    if (!handlePersonalized) {
       setLinkDialogOpen(true);
       return;
     }
@@ -302,7 +303,8 @@ export function WhisperBoxInbox() {
         {recap?.whisperBoxHandle && (
           <WhisperBoxLinkDialog
             handle={recap.whisperBoxHandle}
-            hasDisplayName={hasDisplayName}
+            handlePersonalized={handlePersonalized}
+            currentDisplayName={profile?.fullName ?? null}
             open={linkDialogOpen}
             onOpenChange={setLinkDialogOpen}
           />
