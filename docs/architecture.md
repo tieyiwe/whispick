@@ -21,7 +21,9 @@ whispick/
 
 - **Frontend:** React 18, Vite, wouter (routing), TanStack Query v5 (all server state via
   generated hooks), Tailwind CSS + shadcn/ui (Radix), i18next (8 languages), PWA
-  (service worker + push), lazy-loaded routes via `React.lazy`.
+  (service worker + push + Badge API app-icon unread count, `lib/useAppBadge.ts` —
+  the web-native equivalent of a home-screen widget; no true OS widget without a
+  native app shell), lazy-loaded routes via `React.lazy`.
 - **Backend:** Express, pino logging, Drizzle ORM on node-postgres, zod validation from
   the generated `@workspace/api-zod` package.
 - **Database:** PostgreSQL (Replit-hosted; separate dev and production databases).

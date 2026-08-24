@@ -112,7 +112,7 @@ Per-area endpoint tables live in the feature pages:
   `/media-library`, `/replies`, `/credits`, `/settings`,
   `/account/security/*`, `/invite`, `/debate-topics/new`,
   `/debate-topics/following`, `/send-text`, `/text-whisps[/:id]`,
-  `/whisper-box` (inbox), `/recap`.
+  `/whisper-box` (inbox), `/recap`, `/onboarding/first-whispers`.
 - **Public:** `/debate-topics[/:id]`, `/w/:token`, `/tw/:token`,
   `/invite/:token`, `/whisper-box/:handle`, `/privacy(-policy)`,
   `/terms(-and-conditions)`, `/sms-terms`, `/community-guidelines`,

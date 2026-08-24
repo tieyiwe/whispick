@@ -197,6 +197,35 @@ percentile/"top X%" claims — there's no leaderboard infra to back that up):
 (`null` unless the box is enabled), `topCategory` (rank-1
 `whisp_categories`, most frequent), `memberSince`, `whispererHandle`.
 
+**Share to Story** (`lib/whisperBoxStoryCard.ts`, frontend-only, no backend
+endpoint): generates a branded, Story-aspect-ratio (1080×1920) PNG client-side
+via the raw Canvas 2D API — logo mark, handle, prompt line, QR code (the
+`qrcode` package, already a dependency for admin 2FA) + the Whisper Box URL as
+text. Shared via the Web Share API's file-sharing path
+(`navigator.canShare({files})`) so it lands directly in the native share sheet
+where Instagram/Snapchat/TikTok Stories appear as targets; falls back to
+link-only share, then a plain browser download, on unsupported browsers.
+Buttons live next to the existing copy-link share action in Settings' Whisper
+Box card and in the Whisper Box inbox's empty state.
+
+## Contact bulk-send onboarding ("first Whispers")
+
+A `/onboarding/first-whispers` flow (frontend-only — reuses existing Whisper
+Group + concierge endpoints, no new backend) surfaced as a dismissible
+Dashboard card for accounts with zero sent whisps
+(`FirstWhispersOnboardingCta.tsx`, dismiss state in `localStorage`, mirrors
+`phoneVerificationDialog.ts`'s pattern). Three steps: (1) add up to 5 contacts
+by hand or via the Contact Picker API where supported (Android Chrome only —
+progressive enhancement, manual entry is the real path everywhere else); (2)
+one-tap video pick from `POST /whisps/concierge`'s suggestions (custom
+situation text re-runs it; pasting a URL is the fallback), (3) pick a channel
+filtered to what the entered contacts actually support, then
+`POST /whisper-groups` → `.../members` → `.../send` — a real, persistent
+Whisper Group named "My First Whispers," same fan-out machinery as any manual
+group send. Same `demographics_required` gate/retry pattern as `SendWhisp.tsx`.
+Skipped contacts (missing the chosen channel's contact info) are reported back
+on success, never silently dropped.
+
 ## Suggestions Library
 
 `suggested_videos`: admin-curated third-party video links (never uploaded
