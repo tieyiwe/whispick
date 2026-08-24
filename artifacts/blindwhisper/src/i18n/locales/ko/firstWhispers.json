@@ -1,0 +1,89 @@
+{
+  "groupName": "나의 첫 Whispers",
+  "steps": {
+    "friends": "친구",
+    "whatToSend": "보낼 내용",
+    "send": "보내기"
+  },
+  "stepIndicator": "{{total}} 단계 중 {{step}}단계",
+  "header": {
+    "title": "첫 Whisper를 보내보세요",
+    "subtitle": "몇 명의 친구를 선택하고 보낼 내용을 고른 뒤, 익명으로 모두에게 한 번에 전달하세요."
+  },
+  "common": {
+    "next": "다음",
+    "back": "뒤로"
+  },
+  "concierge": {
+    "defaultSituation": "친구들과 무언가를 나누고 싶어요"
+  },
+  "step1": {
+    "heading": "누구에게 Whisp를 보낼까요?",
+    "subtitle": "최대 5명의 친구를 추가하세요 — 각 친구의 이메일이나 전화번호만 있으면 됩니다.",
+    "friendLabel": "친구 {{number}}",
+    "removeContact": "이 연락처 삭제",
+    "namePlaceholder": "이름 (선택 사항)",
+    "emailPlaceholder": "이메일",
+    "phonePlaceholder": "전화번호",
+    "addAnother": "친구 추가하기",
+    "pickFromContacts": "연락처에서 선택",
+    "upToCount": "최대 {{count}}명의 친구를 추가하세요.",
+    "toast": {
+      "noneHadContactInfo": "선택한 연락처 중 이메일이나 전화번호가 있는 항목이 없습니다",
+      "needAtLeastOne": "이메일이나 전화번호가 있는 친구를 한 명 이상 추가하세요"
+    }
+  },
+  "step2": {
+    "heading": "무엇을 보낼지 모르시나요?",
+    "subtitle": "어울릴 만한 영상 몇 개를 골라봤어요 — 하나를 탭하면 바로 사용할 수 있어요, 따로 입력할 필요 없이요.",
+    "loading": "어울리는 영상을 찾는 중...",
+    "untitledVideo": "제목 없는 영상",
+    "noMatch": "딱 맞는 영상이 없었어요 — 다른 상황을 설명해 보거나, 아래에 원하는 영상 링크를 붙여넣어 보세요.",
+    "videoFallback": "영상 링크",
+    "changeVideo": "변경",
+    "tryDifferentSituation": "다른 상황으로 다시 찾기",
+    "pasteOwnLink": "직접 영상 링크 붙여넣기",
+    "situationPlaceholder": "누구를 위한 것인지, 왜인지 설명해 주세요...",
+    "getNewSuggestions": "새 추천 받기",
+    "customUrl": {
+      "placeholder": "영상 링크를 붙여넣으세요 (YouTube, TikTok, Instagram 등)",
+      "invalidUrl": "올바른 URL을 입력해 주세요"
+    },
+    "noteLabel": "메모 추가 (선택 사항)",
+    "notePlaceholder": "익명으로 전할 말을 적어보세요..."
+  },
+  "step3": {
+    "heading": "보낼 준비가 되었어요",
+    "subtitle": "친구 {{count}}명에게 한 번에 보냅니다.",
+    "subtitle_other": "친구 {{count}}명에게 한 번에 보냅니다.",
+    "channels": {
+      "email": "이메일",
+      "sms": "문자",
+      "whatsapp": "WhatsApp"
+    },
+    "sendButton": "{{count}}명에게 보내기",
+    "sendButton_other": "{{count}}명에게 보내기",
+    "toast": {
+      "sendFailed": "보내지 못했습니다. 다시 시도해 주세요.",
+      "groupSetupFailed": "친구 목록을 준비하지 못했습니다. 다시 시도해 주세요."
+    }
+  },
+  "sent": {
+    "title": "{{count}}명에게 보냈어요!",
+    "title_other": "{{count}}명에게 보냈어요!",
+    "description": "Whisp가 전송되는 중이에요 — 언제나처럼 완전히 익명이에요.",
+    "description_other": "Whisp가 전송되는 중이에요 — 언제나처럼 완전히 익명이에요.",
+    "skippedHeading": "연락처 {{count}}개에는 보낼 수 없었어요",
+    "skippedHeading_other": "연락처 {{count}}개에는 보낼 수 없었어요",
+    "skippedUnnamed": "이름 없는 연락처",
+    "viewSendButton": "이 발송 보기",
+    "dashboardButton": "대시보드로 이동"
+  },
+  "dashboardCard": {
+    "title": "시작하기",
+    "heading": "첫 Whisper를 보내보세요",
+    "description": "익명 영상 하나로 여러 친구에게 한 번에 전달해 보세요 — Blind Whisper를 가장 빠르게 경험하는 방법이에요.",
+    "cta": "여러 친구에게 보내기",
+    "dismiss": "닫기"
+  }
+}

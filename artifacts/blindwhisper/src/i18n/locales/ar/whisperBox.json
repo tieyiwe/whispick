@@ -58,7 +58,13 @@
     "toastCopyFailed": "تعذّر النسخ — يُرجى نسخه يدويًا",
     "toastEnabled": "‏Whisper Box مفعّلة الآن",
     "toastDisabled": "‏Whisper Box متوقفة الآن",
-    "toastToggleFailed": "تعذّر تحديث ذلك. يُرجى المحاولة مرة أخرى."
+    "toastToggleFailed": "تعذّر تحديث ذلك. يُرجى المحاولة مرة أخرى.",
+    "shareStoryButton": "مشاركة في القصة",
+    "storyPromptText": "أرسل لي Whisper مجهول الهوية 👀",
+    "storyShareText": "أرسل لي Whisper مجهول الهوية — دون الحاجة لحساب.",
+    "toastStoryDownloaded": "تم حفظ الصورة — شاركها في قصتك!",
+    "toastStoryUnsupported": "المشاركة غير مدعومة في هذا المتصفح — جرّب نسخ الرابط بدلاً من ذلك.",
+    "toastStoryFailed": "تعذّر إنشاء صورة المشاركة. يُرجى المحاولة مرة أخرى."
   },
   "dashboardCard": {
     "title": "Whisper Box",

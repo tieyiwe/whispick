@@ -72,6 +72,7 @@ const SubscribePage = lazy(() => import("@/pages/SubscribePage").then((m) => ({ 
 const VerifySubscriptionPage = lazy(() => import("@/pages/VerifySubscriptionPage").then((m) => ({ default: m.VerifySubscriptionPage })));
 const UnsubscribeFromMatchingPage = lazy(() => import("@/pages/UnsubscribeFromMatchingPage").then((m) => ({ default: m.UnsubscribeFromMatchingPage })));
 const RecapPage = lazy(() => import("@/pages/RecapPage").then((m) => ({ default: m.RecapPage })));
+const FirstWhispersOnboarding = lazy(() => import("@/pages/FirstWhispersOnboarding").then((m) => ({ default: m.FirstWhispersOnboarding })));
 
 // Admin panel — highest-value split. Most users never load any of this, and
 // AdminAnalytics alone pulls in the recharts charting library.
@@ -297,6 +298,7 @@ function ClerkProviderWithRoutes() {
 
             <Route path="/dashboard" component={() => <ProtectedRoute component={Dashboard} />} />
             <Route path="/send" component={() => <ProtectedRoute component={SendWhisp} />} />
+            <Route path="/onboarding/first-whispers" component={() => <ProtectedRoute component={FirstWhispersOnboarding} />} />
             <Route path="/suggestions" component={() => <ProtectedRoute component={SuggestionsLibrary} />} />
             <Route path="/whisps/:id" component={() => <ProtectedRoute component={WhispDetail} />} />
             <Route path="/whisps" component={() => <ProtectedRoute component={WhispsList} />} />

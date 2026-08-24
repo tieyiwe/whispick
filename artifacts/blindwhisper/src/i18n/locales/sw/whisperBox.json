@@ -58,7 +58,13 @@
     "toastCopyFailed": "Imeshindikana kunakili — tafadhali kinakili wewe mwenyewe",
     "toastEnabled": "Whisper Box imewashwa",
     "toastDisabled": "Whisper Box imezimwa",
-    "toastToggleFailed": "Imeshindikana kusasisha hilo. Tafadhali jaribu tena."
+    "toastToggleFailed": "Imeshindikana kusasisha hilo. Tafadhali jaribu tena.",
+    "shareStoryButton": "Shiriki kwenye Hadithi",
+    "storyPromptText": "Nitumie Whisper isiyojulikana 👀",
+    "storyShareText": "Nitumie Whisper isiyojulikana — hakuna akaunti inayohitajika.",
+    "toastStoryDownloaded": "Picha imehifadhiwa — iweke kwenye Hadithi yako!",
+    "toastStoryUnsupported": "Kushiriki hakutumiki kwenye kivinjari hiki — jaribu kunakili kiungo badala yake.",
+    "toastStoryFailed": "Imeshindikana kutengeneza picha ya kushiriki. Tafadhali jaribu tena."
   },
   "dashboardCard": {
     "title": "Whisper Box",

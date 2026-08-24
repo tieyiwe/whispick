@@ -14,6 +14,7 @@ import { hasPendingForward, savePendingForward } from "@/lib/forwardVideo";
 import { hasDismissedPhoneVerificationDialog, dismissPhoneVerificationDialog } from "@/lib/phoneVerificationDialog";
 import { GHOST_BOOST_ENABLED } from "@/lib/featureFlags";
 import { MfaNudgeBanner } from "@/components/shared/MfaNudgeBanner";
+import { FirstWhispersOnboardingCta } from "@/components/shared/FirstWhispersOnboardingCta";
 
 // Lazy, even though Dashboard itself deliberately isn't (see the code-split
 // comment in App.tsx): the phone verification flow pulls in libphonenumber-js
@@ -260,6 +261,12 @@ export function Dashboard() {
           </div>
 
           <div className="space-y-4">
+            {/* Cold-start growth nudge — self-contained, additive block, same
+                reasoning as the Whisper Box/Recap cards below: Dashboard.tsx
+                is shared with other in-flight work. Renders nothing once the
+                account has sent its first Whisp or dismissed this card. */}
+            <FirstWhispersOnboardingCta />
+
             {GHOST_BOOST_ENABLED && (
               <>
                 <h2 className="text-xl font-serif font-semibold">{t("dashboard.ghostBoosts.title")}</h2>

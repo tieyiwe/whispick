@@ -58,7 +58,13 @@
     "toastCopyFailed": "复制失败——请手动复制",
     "toastEnabled": "Whisper Box 已开启",
     "toastDisabled": "Whisper Box 已关闭",
-    "toastToggleFailed": "更新失败，请重试。"
+    "toastToggleFailed": "更新失败，请重试。",
+    "shareStoryButton": "分享到限时动态",
+    "storyPromptText": "给我发一条匿名 Whisper 👀",
+    "storyShareText": "给我发一条匿名 Whisper——无需账号。",
+    "toastStoryDownloaded": "图片已保存——快分享到你的限时动态吧！",
+    "toastStoryUnsupported": "此浏览器不支持分享——请尝试手动复制链接。",
+    "toastStoryFailed": "无法生成分享图片，请重试。"
   },
   "dashboardCard": {
     "title": "Whisper Box",
