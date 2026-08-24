@@ -11,7 +11,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { TextWhispScroll } from "@/components/shared/TextWhispScroll";
 import { useMobileSendAction } from "@/contexts/MobileSendAction";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, ArrowRight, Phone, Loader2, ScrollText, CalendarClock } from "lucide-react";
+import { isContactPickerSupported, pickContact } from "@/lib/contactPicker";
+import { ArrowLeft, ArrowRight, Phone, Loader2, ScrollText, CalendarClock, Contact } from "lucide-react";
 
 const MESSAGE_MAX_LENGTH = 260;
 
@@ -77,6 +78,21 @@ export function SendTextWhisp() {
         },
       },
     );
+  }
+
+  // Single-recipient counterpart to SendWhisp.tsx's handlePickContact — this
+  // field takes exactly one phone number, so multiple:false and we take
+  // whichever tel the OS contact picker returns first (a contact can have
+  // several). Same no-formatting behavior as manual typing: the raw string
+  // goes straight into `phone`, trimmed only on submit.
+  async function handlePickContact() {
+    const contact = await pickContact();
+    if (!contact) return;
+    if (!contact.tel) {
+      toast({ title: t("sendTextWhisp.toastNoPhoneOnContact"), variant: "destructive" });
+      return;
+    }
+    setPhone(contact.tel);
   }
 
   const remaining = MESSAGE_MAX_LENGTH - messageText.length;
@@ -227,13 +243,32 @@ export function SendTextWhisp() {
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary" />
                 <Input
-                  className="pl-9 h-12 bg-input border-2 border-primary/40 hover:border-primary/60 focus-visible:border-primary rounded-xl text-base placeholder:text-muted-foreground/80"
+                  className={`pl-9 h-12 bg-input border-2 border-primary/40 hover:border-primary/60 focus-visible:border-primary rounded-xl text-base placeholder:text-muted-foreground/80 ${
+                    isContactPickerSupported() ? "pr-11" : ""
+                  }`}
                   placeholder={t("sendTextWhisp.phonePlaceholder")}
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   data-testid="input-text-whisp-recipient-phone"
                 />
+                {/* Progressive enhancement — Android Chrome/Edge/Samsung
+                    Internet only (see lib/contactPicker.ts). Sits as a
+                    trailing adornment inside the same field rather than a
+                    separate button, so the one-tap "pick instead of type"
+                    path reads as part of this field, not bolted on. */}
+                {isContactPickerSupported() && (
+                  <button
+                    type="button"
+                    onClick={handlePickContact}
+                    aria-label={t("sendTextWhisp.pickFromContactsLabel")}
+                    title={t("sendTextWhisp.pickFromContactsLabel")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-primary/70 hover:text-primary hover:bg-primary/10 transition-colors"
+                    data-testid="button-text-whisp-pick-contact"
+                  >
+                    <Contact className="w-4 h-4" />
+                  </button>
+                )}
               </div>
               {/* A2P 10DLC-required disclosure, shown at the exact point a
                   phone number is collected for SMS delivery — mirrors
