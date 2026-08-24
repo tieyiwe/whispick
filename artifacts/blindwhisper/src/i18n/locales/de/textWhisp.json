@@ -59,7 +59,14 @@
     "toastRevealDeclined": "Du hast die Anfrage zum Erkennen abgelehnt",
     "toastRespondFailed": "Antwort fehlgeschlagen",
     "toastDeleted": "Text-Whisp gelöscht",
-    "toastDeleteFailed": "Löschen fehlgeschlagen"
+    "toastDeleteFailed": "Löschen fehlgeschlagen",
+    "deliveryTimeline": "Zustellungs-Zeitleiste",
+    "scheduledToSend": "Geplant zum Senden am {{date}}",
+    "timeline": {
+      "sent": "Gesendet",
+      "read": "Gelesen",
+      "replied": "Geantwortet"
+    }
   },
   "textWhispsList": {
     "heading": "Text-Whisps",

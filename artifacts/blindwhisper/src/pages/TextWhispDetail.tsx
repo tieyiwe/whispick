@@ -34,8 +34,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { TextWhispScroll } from "@/components/shared/TextWhispScroll";
 import { ReplyThread, ThreadComposer, type ThreadReply } from "@/components/shared/ReplyThread";
+import { TimelineTrack, type TimelineStepData } from "@/components/shared/DeliveryTimelineTrack";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Eye, Loader2, MessageSquare, Trash2, Check, X } from "lucide-react";
+import { ArrowLeft, Eye, Loader2, MessageSquare, Trash2, Check, X, ChevronDown, CalendarClock } from "lucide-react";
 
 // A reply that arrives while the page is open should feel instant, the way
 // WhatsApp does, not like a page you have to leave and re-enter — and the
@@ -61,6 +62,7 @@ export function TextWhispDetail() {
   const [replyText, setReplyText] = useState("");
   const [replyingTo, setReplyingTo] = useState<ThreadReply | null>(null);
   const [opened, setOpened] = useState(false);
+  const [timelineOpen, setTimelineOpen] = useState(true);
 
   const { data: profile } = useGetUserProfile();
   // Polled while this page is open — see LIVE_POLL_MS above — so a reply (or
@@ -167,6 +169,36 @@ export function TextWhispDetail() {
     createdAt: reply.createdAt,
     readAt: reply.readAt,
   }));
+
+  // Sender-facing funnel timeline — the Text Whisp equivalent of
+  // WhispDetail.tsx's own timelineSteps, built from the exact same shared
+  // TimelineTrack component so the two features read as one product. Only
+  // three real stages exist here: unlike a video Whisp, an in-app Text
+  // Whisp has no observable "delivered vs opened" distinction to show (SMS/
+  // push delivery isn't tracked at that granularity) — so this deliberately
+  // does NOT invent a "Delivered" step with no real backing signal, the
+  // same "never claim a status the data doesn't support" discipline the
+  // Personal Recap feature follows. Sent and Read are always real (createdAt/
+  // readAt); Replied reuses the same "first reply FROM the recipient"
+  // lookup WhispDetail.tsx's own timeline uses.
+  const recipientReplied = threadReplies.some((r) => r.fromRecipient);
+  const textWhispTimelineSteps: TimelineStepData[] = [
+    { label: t("textWhispDetail.timeline.sent"), time: textWhisp.createdAt, done: true },
+    {
+      label: t("textWhispDetail.timeline.read"),
+      time: textWhisp.readAt,
+      done: !!textWhisp.readAt,
+      active: !textWhisp.readAt,
+    },
+    {
+      label: t("textWhispDetail.timeline.replied"),
+      time: threadReplies.find((r) => r.fromRecipient)?.createdAt,
+      done: recipientReplied,
+      active: !!textWhisp.readAt && !recipientReplied,
+    },
+  ];
+  // Furthest stage actually reached — shown in the header while collapsed.
+  const textWhispCurrentStage = textWhispTimelineSteps.filter((s) => s.done).at(-1)?.label ?? null;
 
   function handleReply() {
     if (!replyText.trim()) return;
@@ -277,6 +309,55 @@ export function TextWhispDetail() {
             initiallyOpen={!startsClosed}
           />
         </div>
+
+        {/* Delivery timeline — sender-facing only, mirroring WhispDetail.tsx's
+            own timeline exactly (same reasoning: the recipient doesn't need
+            to watch their own read receipt happen). A scheduled send hasn't
+            gone out yet, so it gets its own pre-Sent state instead of a
+            track whose first step would misleadingly already read "done". */}
+        {isSender && textWhisp.status === "scheduled" && textWhisp.scheduledAt && (
+          <Card className="bg-card border-border/50">
+            <CardContent className="p-4 flex items-center gap-2 text-sm text-violet-400">
+              <CalendarClock className="w-4 h-4 flex-shrink-0" />
+              {t("textWhispDetail.scheduledToSend", {
+                date: new Date(textWhisp.scheduledAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }),
+              })}
+            </CardContent>
+          </Card>
+        )}
+        {isSender && textWhisp.status !== "scheduled" && (
+          <Card className="bg-card border-border/50">
+            {/* Collapsible, same as WhispDetail.tsx's timeline card — once a
+                Text Whisp has been read (or replied to) it's settled
+                history, and open by default since "did they see it?" is the
+                reason most senders open this page at all. */}
+            <button
+              type="button"
+              onClick={() => setTimelineOpen((open) => !open)}
+              aria-expanded={timelineOpen}
+              aria-controls="text-whisp-delivery-timeline"
+              data-testid="button-toggle-text-whisp-timeline"
+              className="flex w-full items-center gap-2 px-6 py-4 text-left"
+            >
+              <CardTitle className="text-base font-serif">{t("textWhispDetail.deliveryTimeline")}</CardTitle>
+              {!timelineOpen && textWhispCurrentStage && (
+                <span className="rounded-full bg-primary/12 px-2 py-0.5 text-[11px] font-medium text-primary">
+                  {textWhispCurrentStage}
+                </span>
+              )}
+              <ChevronDown
+                className={`ml-auto h-4 w-4 flex-shrink-0 text-muted-foreground transition-transform ${
+                  timelineOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+            {timelineOpen && (
+              <CardContent id="text-whisp-delivery-timeline" className="pt-0">
+                <TimelineTrack steps={textWhispTimelineSteps} />
+              </CardContent>
+            )}
+          </Card>
+        )}
 
         {(!isRecipient || opened) && (
           <>

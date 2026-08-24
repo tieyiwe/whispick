@@ -59,7 +59,14 @@
     "toastRevealDeclined": "رفضت طلب الكشف",
     "toastRespondFailed": "تعذّرت الاستجابة",
     "toastDeleted": "تم حذف الـ Text Whisp",
-    "toastDeleteFailed": "تعذّر الحذف"
+    "toastDeleteFailed": "تعذّر الحذف",
+    "deliveryTimeline": "الخط الزمني للتوصيل",
+    "scheduledToSend": "مجدول للإرسال {{date}}",
+    "timeline": {
+      "sent": "تم الإرسال",
+      "read": "تمت القراءة",
+      "replied": "تم الرد"
+    }
   },
   "textWhispsList": {
     "heading": "Text Whisps",

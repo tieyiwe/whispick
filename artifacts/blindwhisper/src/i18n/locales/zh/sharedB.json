@@ -90,6 +90,8 @@
   "statusBadge": {
     "pending": "待处理",
     "scheduled": "已排期",
+    "sent": "已发送",
+    "read": "已读",
     "delivered": "已送达",
     "opened": "已打开",
     "watched": "已观看",

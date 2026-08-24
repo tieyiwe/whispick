@@ -90,6 +90,8 @@
   "statusBadge": {
     "pending": "대기 중",
     "scheduled": "예약됨",
+    "sent": "보냄",
+    "read": "읽음",
     "delivered": "전달됨",
     "opened": "열어봄",
     "watched": "시청함",

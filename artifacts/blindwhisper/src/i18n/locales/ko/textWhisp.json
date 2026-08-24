@@ -59,7 +59,14 @@
     "toastRevealDeclined": "공개 요청을 거절했어요",
     "toastRespondFailed": "응답에 실패했어요",
     "toastDeleted": "문자 Whisp가 삭제됐어요",
-    "toastDeleteFailed": "삭제에 실패했어요"
+    "toastDeleteFailed": "삭제에 실패했어요",
+    "deliveryTimeline": "전달 타임라인",
+    "scheduledToSend": "{{date}}에 전송 예약됨",
+    "timeline": {
+      "sent": "보냄",
+      "read": "읽음",
+      "replied": "답장함"
+    }
   },
   "textWhispsList": {
     "heading": "문자 Whisps",

@@ -91,6 +91,8 @@
   "statusBadge": {
     "pending": "Pendiente",
     "scheduled": "Programado",
+    "sent": "Enviado",
+    "read": "Leído",
     "delivered": "Entregado",
     "opened": "Abierto",
     "watched": "Visto",

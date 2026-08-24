@@ -59,7 +59,14 @@
     "toastRevealDeclined": "You declined the reveal request",
     "toastRespondFailed": "Failed to respond",
     "toastDeleted": "Text Whisp deleted",
-    "toastDeleteFailed": "Failed to delete"
+    "toastDeleteFailed": "Failed to delete",
+    "deliveryTimeline": "Delivery Timeline",
+    "scheduledToSend": "Scheduled to send {{date}}",
+    "timeline": {
+      "sent": "Sent",
+      "read": "Read",
+      "replied": "Replied"
+    }
   },
   "textWhispsList": {
     "heading": "Text Whisps",

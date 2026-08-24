@@ -91,6 +91,8 @@
   "statusBadge": {
     "pending": "Ausstehend",
     "scheduled": "Geplant",
+    "sent": "Gesendet",
+    "read": "Gelesen",
     "delivered": "Zugestellt",
     "opened": "Geöffnet",
     "watched": "Angesehen",

@@ -489,6 +489,30 @@ router.post("/phone/confirm-verification", requireAuth, confirmPhoneVerification
     })
     .where(eq(usersTable.id, user.id));
 
+  // Backfill: link any Text Whisp already sent to this exact number, whose
+  // recipient wasn't a known verified account YET at send time
+  // (routes/textWhisps.ts POST / only matches synchronously against
+  // findVerifiedRecipient at that instant — recipientUserId is never
+  // re-checked later). Without this, a real recipient who verifies their
+  // number moments — or days — after a Text Whisp was already sent to it
+  // (the ordinary "I got a text, so I signed up" flow, or a scheduled send
+  // that fires after they verify) stays permanently unlinked: it never
+  // shows up in their own authenticated Text Whisps list/detail view at
+  // all — no closed scroll to tap, because the recipient-side query
+  // (recipientUserId = viewer) simply never matches that row — even though
+  // they now hold the exact verified number it was sent to. Scoped to rows
+  // still unmatched (recipientUserId is null) and excludes this user's own
+  // sends (ne senderId) so someone who Text Whisped their own not-yet-
+  // verified number before verifying it doesn't become their own
+  // recipient. Never touches an already-matched row — this only fills a
+  // gap, never reassigns an existing match (e.g. after the recycled-number
+  // clear above, a prior holder's already-answered Text Whisps stay theirs,
+  // not silently handed to whoever verifies the number next).
+  await db
+    .update(textWhispsTable)
+    .set({ recipientUserId: user.id })
+    .where(and(eq(textWhispsTable.recipientPhone, normalized), isNull(textWhispsTable.recipientUserId), ne(textWhispsTable.senderId, user.id)));
+
   const updated = await db.select().from(usersTable).where(eq(usersTable.id, user.id)).then((r) => r[0]!);
   res.status(200).json({ phone: updated.phone, phoneVerifiedAt: updated.phoneVerifiedAt, countryCode: updated.countryCode });
 });

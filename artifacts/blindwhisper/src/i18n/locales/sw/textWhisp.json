@@ -59,7 +59,14 @@
     "toastRevealDeclined": "Umekataa ombi la kujitambulisha",
     "toastRespondFailed": "Imeshindwa kujibu",
     "toastDeleted": "Whisp ya Maandishi imefutwa",
-    "toastDeleteFailed": "Imeshindwa kufuta"
+    "toastDeleteFailed": "Imeshindwa kufuta",
+    "deliveryTimeline": "Mstari wa Muda wa Uwasilishaji",
+    "scheduledToSend": "Imepangwa kutumwa {{date}}",
+    "timeline": {
+      "sent": "Imetumwa",
+      "read": "Imesomwa",
+      "replied": "Imejibiwa"
+    }
   },
   "textWhispsList": {
     "heading": "Whisps za Maandishi",

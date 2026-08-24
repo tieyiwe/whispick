@@ -59,7 +59,14 @@
     "toastRevealDeclined": "Vous avez refusé la demande de révélation",
     "toastRespondFailed": "Échec de la réponse",
     "toastDeleted": "Whisp texte supprimé",
-    "toastDeleteFailed": "Échec de la suppression"
+    "toastDeleteFailed": "Échec de la suppression",
+    "deliveryTimeline": "Chronologie de livraison",
+    "scheduledToSend": "Programmé pour être envoyé {{date}}",
+    "timeline": {
+      "sent": "Envoyé",
+      "read": "Lu",
+      "replied": "Répondu"
+    }
   },
   "textWhispsList": {
     "heading": "Whisps texte",

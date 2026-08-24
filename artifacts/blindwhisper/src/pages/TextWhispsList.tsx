@@ -4,6 +4,7 @@ import { useListTextWhisps, useGetUserProfile } from "@workspace/api-client-reac
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Link } from "wouter";
 import { ScrollText, Send, Inbox, PlusCircle, Phone, Clock } from "lucide-react";
 
@@ -125,9 +126,7 @@ export function TextWhispsList() {
                             <p className="text-xs font-medium text-secondary truncate flex items-center gap-1" data-testid={`text-whisp-sent-to-${w.id}`}>
                               <Phone className="w-3 h-3 flex-shrink-0" /> {t("textWhispsList.toPrefix")} {w.recipientPhone}
                             </p>
-                            <span className="text-[10px] uppercase tracking-wide font-semibold text-muted-foreground shrink-0 bg-muted/50 rounded-full px-2 py-0.5 capitalize">
-                              {w.status}
-                            </span>
+                            <StatusBadge status={w.status} />
                           </div>
                           <p className="text-sm text-foreground truncate mt-0.5">{truncate(w.messageText, 60)}</p>
                           <p className="flex items-center gap-1 text-xs text-muted-foreground mt-1.5">

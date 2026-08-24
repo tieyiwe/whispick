@@ -59,7 +59,14 @@
     "toastRevealDeclined": "你已拒绝揭晓身份请求",
     "toastRespondFailed": "回应失败",
     "toastDeleted": "文字 Whisp 已删除",
-    "toastDeleteFailed": "删除失败"
+    "toastDeleteFailed": "删除失败",
+    "deliveryTimeline": "送达时间线",
+    "scheduledToSend": "已安排在 {{date}} 发送",
+    "timeline": {
+      "sent": "已发送",
+      "read": "已读",
+      "replied": "已回复"
+    }
   },
   "textWhispsList": {
     "heading": "文字 Whisps",

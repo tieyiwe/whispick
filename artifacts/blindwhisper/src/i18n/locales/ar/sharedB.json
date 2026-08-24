@@ -95,6 +95,8 @@
   "statusBadge": {
     "pending": "قيد الانتظار",
     "scheduled": "مجدولة",
+    "sent": "تم الإرسال",
+    "read": "تمت القراءة",
     "delivered": "تم التسليم",
     "opened": "فُتحت",
     "watched": "شوهدت",

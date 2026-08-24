@@ -91,6 +91,8 @@
   "statusBadge": {
     "pending": "Inasubiri",
     "scheduled": "Imeratibiwa",
+    "sent": "Imetumwa",
+    "read": "Imesomwa",
     "delivered": "Imefikishwa",
     "opened": "Imefunguliwa",
     "watched": "Imeangaliwa",
