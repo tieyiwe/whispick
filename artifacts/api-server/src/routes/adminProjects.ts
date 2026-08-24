@@ -23,8 +23,21 @@ const router: IRouter = Router();
 // "projects" permission, which every staff role preset includes: the
 // workspace is where the team coordinates, so staff belong in it by
 // default.
-router.use(requireAdmin);
-router.use(requirePermission("projects"));
+//
+// Scoped to this router's own two prefixes ("/projects", "/tasks") — same
+// reasoning as adminDebateAgent.ts/adminCircleAgent.ts's own comments. This
+// router is mounted at the bare "/admin" base (routes/index.ts), ahead of
+// other "/admin"-base routers (e.g. adminTextWhisps.ts's distinct
+// "/admin/text-whisps" prefix is mounted after it) — an unscoped
+// router.use(requirePermission("projects")) here would run for every
+// /admin/* request that falls through this far without a matching route
+// yet, wrongly 403'ing a collaborator who holds "notifications" (or any
+// other permission) but not "projects" out of unrelated areas mounted
+// later in the chain, exactly the bug docs/api.md warns about.
+router.use("/projects", requireAdmin);
+router.use("/projects", requirePermission("projects"));
+router.use("/tasks", requireAdmin);
+router.use("/tasks", requirePermission("projects"));
 
 // GET /api/admin/projects
 router.get("/projects", async (_req, res): Promise<void> => {

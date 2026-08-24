@@ -13,6 +13,7 @@ import {
   getGetUserProfileQueryKey,
   getGetPushPublicKeyQueryKey,
   getGetUserRecapQueryKey,
+  type UserRecap,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -94,14 +95,16 @@ export function SettingsPage() {
   // frontend can read directly — the recap endpoint's whisperBoxMessagesReceived
   // is null unless the caller has whisperBoxEnabled (see UserRecap's own doc
   // comment), which is the signal this card uses instead. enableWhisperBox /
-  // disableWhisperBox's own responses drive `whisperBoxOverride` so the
-  // switch and share link update instantly rather than waiting on a second
-  // round trip to refetch recap.
+  // disableWhisperBox's own responses are written straight into the recap
+  // query cache (setQueryData below) rather than a separate local override —
+  // a local override would keep shadowing the query forever, including
+  // after a handle change from somewhere else (e.g. WhisperBoxLinkDialog's
+  // personalize step), leaving this card stuck showing a stale handle. This
+  // way every consumer of the same recap query (Dashboard, Inbox, this
+  // page) reads the same, always-current value.
   const { data: recap, isLoading: recapLoading } = useGetUserRecap();
-  const [whisperBoxOverride, setWhisperBoxOverride] = useState<{ enabled: boolean; handle: string | null } | null>(null);
-  const recapWhisperBoxEnabled = recap ? recap.whisperBoxMessagesReceived !== null : undefined;
-  const whisperBoxEnabled = whisperBoxOverride?.enabled ?? recapWhisperBoxEnabled ?? false;
-  const whisperBoxHandle = whisperBoxOverride?.handle ?? recap?.whisperBoxHandle ?? null;
+  const whisperBoxEnabled = recap ? recap.whisperBoxMessagesReceived !== null : false;
+  const whisperBoxHandle = recap?.whisperBoxHandle ?? null;
   const enableWhisperBox = useEnableWhisperBox();
   const disableWhisperBox = useDisableWhisperBox();
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
@@ -115,7 +118,15 @@ export function SettingsPage() {
   const hasDisplayName = !!profile?.fullName?.trim();
 
   function handleWhisperBoxToggleSuccess(enabled: boolean, handle: string | null) {
-    setWhisperBoxOverride({ enabled, handle });
+    // Write straight into the shared recap cache so the switch and share
+    // link update instantly (no flash back to the old state while the
+    // invalidated query refetches), and every other consumer of this same
+    // query key sees it too.
+    queryClient.setQueryData<UserRecap | undefined>(getGetUserRecapQueryKey(), (old) =>
+      old
+        ? { ...old, whisperBoxHandle: handle, whisperBoxMessagesReceived: enabled ? (old.whisperBoxMessagesReceived ?? 0) : null }
+        : old,
+    );
     queryClient.invalidateQueries({ queryKey: getGetUserRecapQueryKey() });
     queryClient.invalidateQueries({ queryKey: getGetUserProfileQueryKey() });
     toast({ title: enabled ? tWhisperBox("settingsSection.toastEnabled") : tWhisperBox("settingsSection.toastDisabled") });
@@ -640,7 +651,7 @@ export function SettingsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {recapLoading && whisperBoxOverride === null ? (
+            {recapLoading ? (
               <Skeleton className="h-10 rounded-xl" />
             ) : (
               <>

@@ -63,6 +63,11 @@ router.use("/suggestions", requirePermission("suggestions"));
 router.use("/stats", requirePermission("analytics"));
 router.use("/usage-stats", requirePermission("analytics"));
 router.use("/usage-insights", requirePermission("analytics"));
+// GET /analytics/traffic-by-hour lives under its own prefix (not /stats or
+// /usage-stats) — without this, a collaborator holding no "analytics" grant
+// at all could still read it, since router.use(requireAdmin) above only
+// checks for admin role, not any specific area permission.
+router.use("/analytics", requirePermission("analytics"));
 router.use("/audit-log", requirePermission("audit_log"));
 
 function categoryLabel(key: string): string {
@@ -1419,7 +1424,7 @@ router.post("/moderation/flags/:id/remove-content", async (req, res): Promise<vo
     .set({ dismissed: false, reviewedAt: now, reviewedByAdminId: adminUser.id })
     .where(eq(moderationFlagsTable.id, flag.id));
 
-  logAdminAction(adminUser.id, "content.remove", { type: flag.contentType, id: flag.whispId ?? flag.circleCommentId ?? flag.debateTopicId ?? flag.debateTopicCommentId ?? flag.id }, { flagId: flag.id });
+  logAdminAction(adminUser.id, "content.remove", { type: flag.contentType, id: flag.whispId ?? flag.circleCommentId ?? flag.debateTopicId ?? flag.debateTopicCommentId ?? flag.whisperBoxMessageId ?? flag.id }, { flagId: flag.id });
 
   const updated = await db.select().from(moderationFlagsTable).where(eq(moderationFlagsTable.id, flag.id)).then((r) => r[0]);
   res.json(updated);

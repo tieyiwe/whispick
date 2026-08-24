@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import request from "supertest";
 import app from "../app";
 import { TEST_USER_HEADER, clerkGetUserMock } from "./setup";
-import { adminHeaders } from "./adminTestUtils";
+import { adminHeaders, collaboratorHeaders } from "./adminTestUtils";
 import { db, usersTable, textWhispsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
@@ -150,6 +150,47 @@ describe("POST /api/admin/text-whisps/broadcast", () => {
   it("requires admin auth", async () => {
     const res = await request(app).post("/api/admin/text-whisps/broadcast").send({ messageText: "Hi", audience: "all" });
     expect(res.status).toBe(401);
+  });
+
+  // Regression test: adminProjects.ts is mounted at the bare "/admin" base
+  // (routes/index.ts) ahead of adminTextWhisps.ts's own "/admin/text-whisps"
+  // prefix. If adminProjects.ts's requireAdmin/requirePermission("projects")
+  // middleware were ever left unscoped (not prefixed to "/projects/"tasks"),
+  // every /admin/* request that falls through this far without a matching
+  // route — including /admin/text-whisps/* — would incorrectly demand the
+  // "projects" permission before ever reaching adminTextWhisps.ts's own
+  // (correct) "notifications" check. A collaborator granted "notifications"
+  // but deliberately NOT "projects" must still be able to broadcast.
+  it("a collaborator holding only 'notifications' (no 'projects') can still broadcast", async () => {
+    const owner = await asOwner();
+    const collabEmail = `tw_bcast_notif_only_${randomUUID()}@example.com`;
+    const collabClerkId = `clerk_tw_bcast_notif_only_${randomUUID()}`;
+    await signInWithEmail(collabClerkId, collabEmail);
+
+    const grant = await request(app)
+      .post("/api/admin/access/grants")
+      .set(owner)
+      .send({ email: collabEmail, roleTitle: "Notifications-only", permissions: ["notifications"] });
+    expect(grant.status).toBe(201);
+
+    const collabProfile = await signInWithEmail(collabClerkId, collabEmail);
+    expect(collabProfile.role).toBe("admin");
+    const collab = await collaboratorHeaders(collabClerkId);
+
+    const target = await signIn(`clerk_tw_bcast_notif_target_${randomUUID()}`);
+    const res = await request(app)
+      .post("/api/admin/text-whisps/broadcast")
+      .set(collab)
+      .send({ messageText: "Notifications-only collaborator broadcast.", audience: "selected", userIds: [target.id] });
+
+    expect(res.status).toBe(201);
+    expect(res.body.recipientCount).toBe(1);
+
+    // Meanwhile the projects area — correctly — stays off-limits.
+    const projectsRes = await request(app).get("/api/admin/projects").set(collab);
+    expect(projectsRes.status).toBe(403);
+    expect(projectsRes.body.code).toBe("admin_permission_required");
+    expect(projectsRes.body.permission).toBe("projects");
   });
 });
 

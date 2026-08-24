@@ -74,6 +74,12 @@ describe("Admin access control", () => {
     expect(denied.body.code).toBe("admin_permission_required");
     const analytics = await request(app).get("/api/admin/usage-stats").set(collab);
     expect(analytics.status).toBe(403);
+    // /analytics/traffic-by-hour lives under a different prefix than
+    // /stats and /usage-stats — regression check for the gap where it was
+    // reachable by any admin regardless of their "analytics" grant.
+    const trafficByHour = await request(app).get("/api/admin/analytics/traffic-by-hour").set(collab);
+    expect(trafficByHour.status).toBe(403);
+    expect(trafficByHour.body.code).toBe("admin_permission_required");
 
     // Not the owner: can't see or manage grants.
     const meRes = await request(app).get("/api/admin/access/me").set(collab);

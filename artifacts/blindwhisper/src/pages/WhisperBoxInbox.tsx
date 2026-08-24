@@ -10,6 +10,7 @@ import {
   useGetUserProfile,
   getListWhisperBoxMessagesQueryKey,
   getGetWhisperBoxUnreadCountQueryKey,
+  getGetUserRecapQueryKey,
   type WhisperBoxMessage,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -104,6 +105,12 @@ export function WhisperBoxInbox() {
   function invalidateAfterChange() {
     queryClient.invalidateQueries({ queryKey: getListWhisperBoxMessagesQueryKey() });
     queryClient.invalidateQueries({ queryKey: getGetWhisperBoxUnreadCountQueryKey() });
+    // Deleting a message is a hard delete (see routes/whisperBox.ts), so it
+    // also moves recap's whisperBoxMessagesReceived count — invalidate it
+    // too so RecapPage/Dashboard/Settings don't sit on a stale, one-too-high
+    // count for up to staleTime. A harmless no-op refetch on the mark-read
+    // path, which doesn't change that count.
+    queryClient.invalidateQueries({ queryKey: getGetUserRecapQueryKey() });
   }
 
   function handleToggleExpand(message: WhisperBoxMessage) {
