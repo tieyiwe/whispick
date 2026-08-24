@@ -156,6 +156,11 @@ router.get("/recap", requireAuth, async (req, res): Promise<void> => {
     topCategory: topCategoryRows[0]?.category ?? null,
     memberSince: user.createdAt,
     whispererHandle: user.whispererHandle,
+    // The SEPARATE, display-name-based handle used only for the Whisper Box
+    // URL — see users.ts's whisperBoxHandle column comment. Null until
+    // enable() has run once; distinct from whisperBoxMessagesReceived above,
+    // which is null for a different reason (box currently disabled).
+    whisperBoxHandle: user.whisperBoxHandle,
   });
 });
 

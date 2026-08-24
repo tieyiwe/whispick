@@ -15,6 +15,7 @@
     "noNameSet": "Aucun nom défini",
     "displayName": "Nom affiché",
     "namePlaceholder": "Votre nom",
+    "displayNameHandleHint": "Utilisé pour créer votre lien Whisper Box, afin que vos amis puissent le reconnaître.",
     "language": "Langue",
     "notSet": "Non défini",
     "gender": "Genre",

@@ -15,6 +15,7 @@
     "noNameSet": "이름이 설정되지 않음",
     "displayName": "표시 이름",
     "namePlaceholder": "이름",
+    "displayNameHandleHint": "Whisper Box 링크를 만드는 데 사용돼요. 친구들이 알아볼 수 있도록요.",
     "language": "언어",
     "notSet": "설정 안 됨",
     "gender": "성별",

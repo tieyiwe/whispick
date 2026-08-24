@@ -15,6 +15,7 @@
     "noNameSet": "لم يتم تعيين اسم",
     "displayName": "الاسم المعروض",
     "namePlaceholder": "اسمك",
+    "displayNameHandleHint": "يُستخدم لإنشاء رابط Whisper Box الخاص بك، حتى يتعرف عليه أصدقاؤك.",
     "language": "اللغة",
     "notSet": "غير محدد",
     "gender": "الجنس",

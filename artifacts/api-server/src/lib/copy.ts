@@ -103,3 +103,10 @@ export function textWhispRevealRespondedHookLine(accepted: boolean): string {
 // hand, same as HOOK_LINE.
 export const TEXT_WHISP_GUEST_HOOK_LINE =
   "You've received an anonymous Text Whisp on Blind Whisper — a short note just for you.";
+
+// The Open Graph description for a shared Whisper Box link (routes/
+// whisperBoxLink.ts's GET /wb/:handle) — what shows up in the link-preview
+// card when someone pastes their link into iMessage/Instagram/WhatsApp/etc.
+// Keep in sync with PublicWhisperBoxPage.tsx's own subheading by hand, same
+// as HOOK_LINE.
+export const WHISPER_BOX_HOOK_LINE = "You can tell me anything I need to hear or see — anonymously.";

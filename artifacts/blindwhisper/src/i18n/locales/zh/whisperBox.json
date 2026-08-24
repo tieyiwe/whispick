@@ -3,6 +3,7 @@
     "notFoundTitle": "此 Whisper Box 链接未启用",
     "notFoundDescription": "链接可能有误，或者对方已关闭了自己的 Whisper Box。",
     "heading": "给 {{handle}} 发送一条匿名消息",
+    "promptLine": "有什么想让我听到或看到的，都可以匿名告诉我。",
     "subheading": "除非你自己告诉对方，否则对方永远不会知道是你发的。",
     "messageLabel": "你的消息",
     "messagePlaceholder": "写下你想说的话...",
@@ -69,7 +70,20 @@
   "linkDialog": {
     "title": "你的 Whisper Box 链接",
     "description": "任何拥有此链接、或扫描二维码的人，都可以给你发一条匿名消息。",
-    "copyButton": "复制链接"
+    "copyButton": "复制链接",
+    "namePromptTitle": "要先添加你的名字吗？",
+    "namePromptDescription": "你的 Whisper Box 链接是根据你的显示名字生成的，这样朋友才能真正认出它。如果没有名字，你会得到一个随机链接。",
+    "nameInputLabel": "显示名字",
+    "nameInputPlaceholder": "你的名字",
+    "nameSaveCta": "保存并获取我的链接",
+    "nameSkipCta": "暂时跳过",
+    "toastPersonalized": "你的链接现在和你的名字对应了",
+    "toastPersonalizeFailed": "更新失败，请重试。"
+  },
+  "searchBar": {
+    "sectionTitle": "查找某人的 Whisper Box",
+    "placeholder": "@用户名",
+    "button": "搜索"
   },
   "dashboardCard": {
     "title": "Whisper Box",

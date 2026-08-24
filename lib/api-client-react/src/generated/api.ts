@@ -151,6 +151,7 @@ import type {
   ReactToDebateTopicCommentBody,
   RecentRecipientListResponse,
   RecordUsageInput,
+  RefreshWhisperBoxHandle200,
   RemindMeInput,
   RemindMeResult,
   RenameCircleHandle200,
@@ -5745,8 +5746,8 @@ export const getEnableWhisperBoxUrl = () => {
 }
 
 /**
- * The Settings "Get your Whisper Box link" action. One call both lazy-assigns a whispererHandle (same lazy-assign as the first Debate Now post/comment) and flips the opt-in on, so Settings only needs one button.
- * @summary Turn on the caller's Whisper Box, assigning a Whisperer handle first if they don't already have one
+ * The Settings "Get your Whisper Box link" action. Assigns a whisperBoxHandle if the account doesn't have one yet — built from the account's display name (fullName) when one is set, so a friend can recognize it, or the same non-identifying random generator whispererHandle uses when it isn't — and flips the opt-in on. Also lazy-assigns the SEPARATE, always-anonymous whispererHandle used only by Debate Now/follows, so that stays ready too. One call does all of it so Settings only needs one button.
+ * @summary Turn on the caller's Whisper Box, assigning a Whisper Box handle first if they don't already have one
  */
 export const enableWhisperBox = async ( options?: RequestInit): Promise<EnableWhisperBox200> => {
 
@@ -5794,7 +5795,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type EnableWhisperBoxMutationError = ErrorType<unknown>
 
     /**
- * @summary Turn on the caller's Whisper Box, assigning a Whisperer handle first if they don't already have one
+ * @summary Turn on the caller's Whisper Box, assigning a Whisper Box handle first if they don't already have one
  */
 export const useEnableWhisperBox = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof enableWhisperBox>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -5805,6 +5806,77 @@ export const useEnableWhisperBox = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getEnableWhisperBoxMutationOptions(options));
+    }
+
+export const getRefreshWhisperBoxHandleUrl = () => {
+
+
+
+
+  return `/api/whisper-box/refresh-handle`
+}
+
+/**
+ * Overwrites whatever Whisper Box handle the caller has now (including a previously-personalized one) with a fresh one derived from their current fullName — a deliberate "update my link to match my name" action, never automatic. 400s if fullName isn't set, since there'd be nothing to personalize with. This is what the frontend calls right after capturing a display name from someone who tries to copy their link without having set one yet. Any previously-shared link using the old handle stops resolving once this runs.
+ * @summary Regenerate the caller's Whisper Box handle from their current display name
+ */
+export const refreshWhisperBoxHandle = async ( options?: RequestInit): Promise<RefreshWhisperBoxHandle200> => {
+
+  return customFetch<RefreshWhisperBoxHandle200>(getRefreshWhisperBoxHandleUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRefreshWhisperBoxHandleMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refreshWhisperBoxHandle>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof refreshWhisperBoxHandle>>, TError,void, TContext> => {
+
+const mutationKey = ['refreshWhisperBoxHandle'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof refreshWhisperBoxHandle>>, void> = () => {
+
+
+          return  refreshWhisperBoxHandle(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RefreshWhisperBoxHandleMutationResult = NonNullable<Awaited<ReturnType<typeof refreshWhisperBoxHandle>>>
+
+    export type RefreshWhisperBoxHandleMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Regenerate the caller's Whisper Box handle from their current display name
+ */
+export const useRefreshWhisperBoxHandle = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refreshWhisperBoxHandle>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof refreshWhisperBoxHandle>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getRefreshWhisperBoxHandleMutationOptions(options));
     }
 
 export const getDisableWhisperBoxUrl = () => {

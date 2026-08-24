@@ -932,8 +932,16 @@ export interface UserRecap {
      */
   topCategory: string | null;
   memberSince: string;
-  /** @nullable */
+  /**
+     * The Debate Now identity — always non-identifying (random word-pair), never the same value as whisperBoxHandle.
+     * @nullable
+     */
   whispererHandle?: string | null;
+  /**
+     * The SEPARATE handle used only for the Whisper Box URL — recognizable when the account has a display name set. Null until /whisper-box/enable has run once.
+     * @nullable
+     */
+  whisperBoxHandle?: string | null;
 }
 
 export interface Circle {
@@ -2827,10 +2835,15 @@ export type SendWhisperBoxMessage201 = {
 };
 
 export type EnableWhisperBox200 = {
+  /** The Whisper Box handle (whisperBoxHandle) — NOT the same value as whispererHandle. */
   handle: string;
   /** @nullable */
   avatarId: string | null;
   enabled: boolean;
+};
+
+export type RefreshWhisperBoxHandle200 = {
+  handle: string;
 };
 
 export type DisableWhisperBox200 = {

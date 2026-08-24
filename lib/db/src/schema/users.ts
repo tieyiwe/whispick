@@ -113,6 +113,23 @@ export const usersTable = pgTable("users", {
   // a deliberate choice (falls back to the handle's first letter), not
   // "not yet assigned"; assignment always sets a real value up front.
   whispererAvatarId: text("whisperer_avatar_id"),
+  // A SEPARATE persistent public handle, only ever used for the Whisper Box
+  // URL (/whisper-box/:handle) — deliberately not the same value as
+  // whispererHandle above. Debate Now's handle must stay a random,
+  // non-identifying word-pair so people can argue anonymously; Whisper Box
+  // is the opposite case — it's shared knowingly on a real bio link, so a
+  // friend recognizing it is the whole point. Derived from the account's
+  // fullName ("display name") when one is set (lib/whispererHandle.ts's
+  // assignWhisperBoxHandle slugifies it, e.g. "Jane Doe" -> "JaneDoe" or
+  // "JaneDoe482" on a collision); falls back to the same random
+  // adjective-noun-digits generator as whispererHandle when no display name
+  // is available yet, so the feature still works before that's captured.
+  // Assigned once at first enable and left stable across future enable/
+  // disable toggles — changing it would 404 any link the user already
+  // shared, so it's only ever regenerated through the explicit
+  // POST /whisper-box/refresh-handle flow (prompted when a user without a
+  // display name goes to copy their link), never silently.
+  whisperBoxHandle: text("whisper_box_handle").unique(),
   // ISO 639-1 code (see lib/languages.ts's SUPPORTED_LANGUAGES) — captured
   // once at onboarding (the same one-time gate demographics.ts already
   // enforces before a user's first whisp send, extended to also require

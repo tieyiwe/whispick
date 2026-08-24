@@ -3,6 +3,7 @@
     "notFoundTitle": "Este enlace de Whisper Box no está activo",
     "notFoundDescription": "Puede que el enlace sea incorrecto, o que esta persona haya desactivado su Whisper Box.",
     "heading": "Envía a {{handle}} un mensaje anónimo",
+    "promptLine": "Puedes contarme cualquier cosa que necesite oír o ver — de forma anónima.",
     "subheading": "Nunca sabrán que fuiste tú, a menos que decidas contárselo.",
     "messageLabel": "Tu mensaje",
     "messagePlaceholder": "Escribe lo que tengas en mente...",
@@ -69,7 +70,20 @@
   "linkDialog": {
     "title": "Tu enlace de Whisper Box",
     "description": "Cualquiera con este enlace — o que escanee el código QR — puede enviarte un mensaje anónimo.",
-    "copyButton": "Copiar enlace"
+    "copyButton": "Copiar enlace",
+    "namePromptTitle": "¿Añades tu nombre primero?",
+    "namePromptDescription": "Tu enlace de Whisper Box se genera a partir de tu nombre, para que tus amigos lo reconozcan de verdad. Sin uno, tendrás un enlace aleatorio en su lugar.",
+    "nameInputLabel": "Nombre para mostrar",
+    "nameInputPlaceholder": "Tu nombre",
+    "nameSaveCta": "Guardar y obtener mi enlace",
+    "nameSkipCta": "Omitir por ahora",
+    "toastPersonalized": "Tu enlace ahora coincide con tu nombre",
+    "toastPersonalizeFailed": "No se pudo actualizar. Inténtalo de nuevo."
+  },
+  "searchBar": {
+    "sectionTitle": "Buscar el Whisper Box de alguien",
+    "placeholder": "@usuario",
+    "button": "Buscar"
   },
   "dashboardCard": {
     "title": "Whisper Box",

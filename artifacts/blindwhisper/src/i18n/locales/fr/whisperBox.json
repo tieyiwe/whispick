@@ -3,6 +3,7 @@
     "notFoundTitle": "Ce lien Whisper Box n'est pas actif",
     "notFoundDescription": "Le lien est peut-être incorrect, ou cette personne a désactivé sa Whisper Box.",
     "heading": "Envoyer un message anonyme à {{handle}}",
+    "promptLine": "Vous pouvez me dire tout ce que j'ai besoin d'entendre ou de voir — anonymement.",
     "subheading": "Cette personne ne saura jamais que c'était vous — à moins que vous ne le lui disiez.",
     "messageLabel": "Votre message",
     "messagePlaceholder": "Dites ce que vous avez sur le cœur...",
@@ -69,7 +70,20 @@
   "linkDialog": {
     "title": "Votre lien Whisper Box",
     "description": "Toute personne ayant ce lien — ou qui scanne le QR code — peut vous envoyer un message anonyme.",
-    "copyButton": "Copier le lien"
+    "copyButton": "Copier le lien",
+    "namePromptTitle": "Ajouter votre nom d'abord ?",
+    "namePromptDescription": "Votre lien Whisper Box est construit à partir de votre nom affiché, pour que vos amis le reconnaissent vraiment. Sans nom, vous aurez un lien aléatoire à la place.",
+    "nameInputLabel": "Nom affiché",
+    "nameInputPlaceholder": "Votre nom",
+    "nameSaveCta": "Enregistrer et obtenir mon lien",
+    "nameSkipCta": "Ignorer pour l'instant",
+    "toastPersonalized": "Votre lien correspond maintenant à votre nom",
+    "toastPersonalizeFailed": "Impossible de mettre à jour. Veuillez réessayer."
+  },
+  "searchBar": {
+    "sectionTitle": "Trouver le Whisper Box de quelqu'un",
+    "placeholder": "@pseudo",
+    "button": "Rechercher"
   },
   "dashboardCard": {
     "title": "Whisper Box",

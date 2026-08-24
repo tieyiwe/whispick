@@ -1218,7 +1218,8 @@ export const GetUserRecapResponse = zod.object({
   "whisperBoxMessagesReceived": zod.number().nullable().describe('Null unless the caller has whisperBoxEnabled; otherwise the count of messages received in the period.'),
   "topCategory": zod.string().nullable().describe('The caller\'s most frequent rank-1 whisp_categories result across their sent whisps in the period, or null if none.'),
   "memberSince": zod.string(),
-  "whispererHandle": zod.string().nullish()
+  "whispererHandle": zod.string().nullish().describe('The Debate Now identity — always non-identifying (random word-pair), never the same value as whisperBoxHandle.'),
+  "whisperBoxHandle": zod.string().nullish().describe('The SEPARATE handle used only for the Whisper Box URL — recognizable when the account has a display name set. Null until \/whisper-box\/enable has run once.')
 }).describe('The caller\'s own real stats for the requested period — no invented percentile\/\"top X%\" claims, there\'s no leaderboard infra to back that up.')
 
 
@@ -1706,13 +1707,22 @@ export const SendWhisperBoxMessageResponse = zod.object({
 
 
 /**
- * The Settings "Get your Whisper Box link" action. One call both lazy-assigns a whispererHandle (same lazy-assign as the first Debate Now post/comment) and flips the opt-in on, so Settings only needs one button.
- * @summary Turn on the caller's Whisper Box, assigning a Whisperer handle first if they don't already have one
+ * The Settings "Get your Whisper Box link" action. Assigns a whisperBoxHandle if the account doesn't have one yet — built from the account's display name (fullName) when one is set, so a friend can recognize it, or the same non-identifying random generator whispererHandle uses when it isn't — and flips the opt-in on. Also lazy-assigns the SEPARATE, always-anonymous whispererHandle used only by Debate Now/follows, so that stays ready too. One call does all of it so Settings only needs one button.
+ * @summary Turn on the caller's Whisper Box, assigning a Whisper Box handle first if they don't already have one
  */
 export const EnableWhisperBoxResponse = zod.object({
-  "handle": zod.string(),
+  "handle": zod.string().describe('The Whisper Box handle (whisperBoxHandle) — NOT the same value as whispererHandle.'),
   "avatarId": zod.string().nullable(),
   "enabled": zod.boolean()
+})
+
+
+/**
+ * Overwrites whatever Whisper Box handle the caller has now (including a previously-personalized one) with a fresh one derived from their current fullName — a deliberate "update my link to match my name" action, never automatic. 400s if fullName isn't set, since there'd be nothing to personalize with. This is what the frontend calls right after capturing a display name from someone who tries to copy their link without having set one yet. Any previously-shared link using the old handle stops resolving once this runs.
+ * @summary Regenerate the caller's Whisper Box handle from their current display name
+ */
+export const RefreshWhisperBoxHandleResponse = zod.object({
+  "handle": zod.string()
 })
 
 

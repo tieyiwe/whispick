@@ -15,6 +15,7 @@
     "noNameSet": "未设置姓名",
     "displayName": "显示名称",
     "namePlaceholder": "你的名字",
+    "displayNameHandleHint": "会用来生成你的 Whisper Box 链接，方便朋友认出是你。",
     "language": "语言",
     "notSet": "未设置",
     "gender": "性别",

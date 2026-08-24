@@ -9,6 +9,7 @@ import userRouter from "./user";
 import creditsRouter from "./credits";
 import billingRouter from "./billing";
 import linkRouter from "./link";
+import whisperBoxLinkRouter from "./whisperBoxLink";
 import adminRouter from "./admin";
 import adminMfaRouter from "./adminMfa";
 import adminAccessRouter from "./adminAccess";
@@ -73,6 +74,7 @@ router.use("/user", userRouter);
 router.use("/credits", creditsRouter);
 router.use("/billing", billingRouter);
 router.use("/l", publicEndpointLimiter, linkRouter);
+router.use("/wb", publicEndpointLimiter, whisperBoxLinkRouter);
 // Mounted OUTSIDE the /admin router's requireAdmin chain on purpose: these
 // are the enrollment/unlock endpoints the MFA gate sends a locked-out
 // admin through (they do their own signed-in + admin-role check inline).

@@ -24,7 +24,8 @@ handler that never echoes messages/stacks.
 | 15 | `/user` | user.ts | profile, notifications, phone verification, push subscription, policy status/accept |
 | 16 | `/credits` | credits.ts | |
 | 17 | `/billing` | billing.ts | checkout only; webhook in app.ts |
-| 18 | `/l` | limiter + link.ts | shared-link OG/redirect |
+| 18 | `/l` | limiter + link.ts | shared-link OG/redirect (whisps) |
+| 18b | `/wb` | limiter + whisperBoxLink.ts | shared-link OG/redirect (Whisper Box) — `GET /wb/:handle` |
 | 19 | `/admin-mfa` | adminMfa.ts | **outside** requireAdmin on purpose — enrollment/unlock for a locked-out admin (own inline role check) |
 | 20 | `/admin/access` | adminAccess.ts | **before** `/admin` so it terminates here |
 | 21 | `/admin` | admin.ts | main admin router (per-prefix `requirePermission`) |

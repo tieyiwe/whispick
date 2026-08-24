@@ -36,7 +36,7 @@ describe("Whisper Box", () => {
     expect(disabled.body).toEqual(unknown.body);
   });
 
-  it("enable lazily assigns a whispererHandle and is idempotent", async () => {
+  it("enable assigns a Whisper Box handle SEPARATE from the anonymous whispererHandle, and is idempotent", async () => {
     const clerkId = `clerk_wb_enable_${randomUUID()}`;
     const before = await ensureAndGet(clerkId);
     expect(before.whispererHandle).toBeNull();
@@ -44,13 +44,87 @@ describe("Whisper Box", () => {
     const first = await request(app).post("/api/whisper-box/enable").set(asUser(clerkId));
     expect(first.status).toBe(200);
     expect(first.body.enabled).toBe(true);
-    expect(first.body.handle).toMatch(/^[A-Za-z]+[A-Za-z]+\d+$/);
+    expect(first.body.handle).toMatch(/^[A-Za-z0-9]{3,24}$/);
 
     const second = await request(app).post("/api/whisper-box/enable").set(asUser(clerkId));
     expect(second.body.handle).toBe(first.body.handle); // same identity, not re-rolled
 
+    // Debate Now's identity is still lazily assigned alongside it (topics/
+    // follows need it ready), but it must be a DIFFERENT value — the whole
+    // point of the split is that Debate Now stays anonymous even though
+    // Whisper Box's handle doesn't have to.
     const after = await ensureAndGet(clerkId);
-    expect(after.whispererHandle).toBe(first.body.handle);
+    expect(after.whispererHandle).toBeTruthy();
+    expect(after.whispererHandle).not.toBe(first.body.handle);
+  });
+
+  it("derives the Whisper Box handle from the display name when one is already set at enable time", async () => {
+    const clerkId = `clerk_wb_named_${randomUUID()}`;
+    await ensureAndGet(clerkId);
+    await request(app).patch("/api/user/profile").set(asUser(clerkId)).send({ fullName: "Jane Q. Doe!!" });
+
+    const enable = await request(app).post("/api/whisper-box/enable").set(asUser(clerkId));
+    expect(enable.status).toBe(200);
+    // Punctuation/spaces stripped, case preserved — a recognizable handle,
+    // not lowercased or hyphenated.
+    expect(enable.body.handle).toBe("JaneQDoe");
+  });
+
+  it("personalizes an existing fallback handle via refresh-handle once a display name is set, and the old link stops resolving", async () => {
+    const clerkId = `clerk_wb_refresh_${randomUUID()}`;
+    await ensureAndGet(clerkId);
+
+    const enable = await request(app).post("/api/whisper-box/enable").set(asUser(clerkId));
+    const fallbackHandle = enable.body.handle as string;
+    expect(fallbackHandle).toMatch(/^[A-Za-z0-9]{3,24}$/);
+
+    // Can't personalize before a display name exists.
+    const refreshTooSoon = await request(app).post("/api/whisper-box/refresh-handle").set(asUser(clerkId));
+    expect(refreshTooSoon.status).toBe(400);
+
+    await request(app).patch("/api/user/profile").set(asUser(clerkId)).send({ fullName: "Amara Okafor" });
+    const refresh = await request(app).post("/api/whisper-box/refresh-handle").set(asUser(clerkId));
+    expect(refresh.status).toBe(200);
+    expect(refresh.body.handle).toBe("AmaraOkafor");
+    expect(refresh.body.handle).not.toBe(fallbackHandle);
+
+    const oldResolve = await request(app).get(`/api/public/whisper-box/${fallbackHandle}`);
+    expect(oldResolve.status).toBe(404); // the previously-shared link no longer works
+
+    const newResolve = await request(app).get(`/api/public/whisper-box/${refresh.body.handle}`);
+    expect(newResolve.status).toBe(200);
+  });
+
+  it("two accounts with the same display name get distinct handles (bare name, then a digit-suffixed one)", async () => {
+    const clerkIdA = `clerk_wb_dup_a_${randomUUID()}`;
+    const clerkIdB = `clerk_wb_dup_b_${randomUUID()}`;
+    await ensureAndGet(clerkIdA);
+    await ensureAndGet(clerkIdB);
+    await request(app).patch("/api/user/profile").set(asUser(clerkIdA)).send({ fullName: "Same Name" });
+    await request(app).patch("/api/user/profile").set(asUser(clerkIdB)).send({ fullName: "Same Name" });
+
+    const enableA = await request(app).post("/api/whisper-box/enable").set(asUser(clerkIdA));
+    const enableB = await request(app).post("/api/whisper-box/enable").set(asUser(clerkIdB));
+
+    expect(enableA.body.handle).toBe("SameName");
+    expect(enableB.body.handle).toMatch(/^SameName\d{3}$/);
+    expect(enableB.body.handle).not.toBe(enableA.body.handle);
+  });
+
+  it("a pre-migration account (whisperBoxEnabled with only the old shared whispererHandle) keeps resolving and self-migrates onto its own whisperBoxHandle", async () => {
+    const clerkId = `clerk_wb_legacy_${randomUUID()}`;
+    const user = await ensureAndGet(clerkId);
+    // Simulate data from before this split existed: enabled, a handle only
+    // in the old shared column, nothing yet in the new one.
+    const legacyHandle = `LegacyHandle${randomUUID().replace(/-/g, "").slice(0, 6)}`;
+    await db.update(usersTable).set({ whisperBoxEnabled: true, whispererHandle: legacyHandle }).where(eq(usersTable.id, user.id));
+
+    const resolve = await request(app).get(`/api/public/whisper-box/${legacyHandle}`);
+    expect(resolve.status).toBe(200);
+    expect(resolve.body.handle).toBe(legacyHandle);
+
+    const migrated = await db.select({ whisperBoxHandle: usersTable.whisperBoxHandle }).from(usersTable).where(eq(usersTable.id, user.id)).then((r) => r[0]);
+    expect(migrated?.whisperBoxHandle).toBe(legacyHandle); // lazily backfilled, so the same link keeps working going forward too
   });
 
   it("full flow: send (anonymous, no auth) → notifies recipient → appears unread → mark read → delete", async () => {

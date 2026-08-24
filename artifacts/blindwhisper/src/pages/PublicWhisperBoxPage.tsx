@@ -11,6 +11,7 @@ import { Mailbox, Send, Loader2, CheckCircle2, Sparkles } from "lucide-react";
 import { LogoLockup } from "@/components/ui/logo";
 import { AvatarCircle } from "@/components/shared/AvatarCircle";
 import { PullToRefresh } from "@/components/shared/PullToRefresh";
+import { WhisperBoxSearchBar } from "@/components/shared/WhisperBoxSearchBar";
 
 const MESSAGE_MAX_LENGTH = 500;
 const ALIAS_MAX_LENGTH = 60;
@@ -113,6 +114,9 @@ export function PublicWhisperBoxPage() {
               </div>
               <p className="text-muted-foreground">{t("publicWhisperBoxPage.notFoundTitle")}</p>
               <p className="text-sm text-muted-foreground/80 max-w-xs mx-auto">{t("publicWhisperBoxPage.notFoundDescription")}</p>
+              <div className="pt-2 max-w-xs mx-auto text-left">
+                <WhisperBoxSearchBar />
+              </div>
             </div>
           ) : sent ? (
             <div className="rounded-2xl overflow-hidden bg-card border border-border/50 glow-card p-6 space-y-4 text-center">
@@ -140,6 +144,7 @@ export function PublicWhisperBoxPage() {
                 <p className="text-xl font-serif text-foreground leading-snug">
                   {t("publicWhisperBoxPage.heading", { handle: box.handle })}
                 </p>
+                <p className="text-base font-serif italic text-foreground/90">{t("publicWhisperBoxPage.promptLine")}</p>
                 <p className="text-sm text-muted-foreground">{t("publicWhisperBoxPage.subheading")}</p>
               </div>
 

@@ -15,6 +15,7 @@
     "noNameSet": "No name set",
     "displayName": "Display Name",
     "namePlaceholder": "Your name",
+    "displayNameHandleHint": "Used to build your Whisper Box link, so friends can recognize it.",
     "language": "Language",
     "notSet": "Not set",
     "gender": "Gender",

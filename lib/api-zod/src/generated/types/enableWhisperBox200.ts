@@ -7,6 +7,7 @@
  */
 
 export type EnableWhisperBox200 = {
+  /** The Whisper Box handle (whisperBoxHandle) — NOT the same value as whispererHandle. */
   handle: string;
   /** @nullable */
   avatarId: string | null;

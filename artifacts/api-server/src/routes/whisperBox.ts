@@ -6,7 +6,13 @@ import { randomUUID } from "crypto";
 import { z } from "zod";
 import { requireAuth } from "../lib/auth";
 import { ensureUser } from "../lib/ensureUser";
-import { userIdForWhispererHandle, assignOrGetWhispererIdentity } from "../lib/whispererHandle";
+import {
+  assignOrGetWhispererIdentity,
+  userIdForWhisperBoxHandle,
+  assignOrGetWhisperBoxHandle,
+  assignWhisperBoxHandle,
+  userIdForWhispererHandle,
+} from "../lib/whispererHandle";
 import { notifyUserPersisted } from "../lib/push";
 import { moderateWhisperBoxMessageAsync } from "../lib/moderation";
 import { whisperBoxSendLimiter } from "../lib/rateLimit";
@@ -26,26 +32,48 @@ const MESSAGE_MAX_LENGTH = 500;
 // Public — no account needed, ever, for these three.
 // ---------------------------------------------------------------------------
 
+// Resolves a Whisper Box handle to its (enabled) owner's userId. Tries the
+// dedicated whisperBoxHandle column first; if that misses, falls back to
+// the OLD resolution (whispererHandle) for links shared before that column
+// existed, and — only when the account is still whisperBoxEnabled and has
+// no whisperBoxHandle of its own yet — lazily migrates it onto one built
+// from that same legacy value, so an already-shared link keeps resolving to
+// the exact same URL rather than 404ing the moment this shipped. A one-time
+// self-heal, not a standing dual-lookup: once migrated, the fallback branch
+// is never hit again for that account.
+export async function resolveWhisperBoxOwner(handle: string): Promise<{ userId: string; whisperBoxEnabled: boolean } | null> {
+  const userId = await userIdForWhisperBoxHandle(handle);
+  if (userId) {
+    const account = await db.select({ whisperBoxEnabled: usersTable.whisperBoxEnabled }).from(usersTable).where(eq(usersTable.id, userId)).then((r) => r[0]);
+    return account ? { userId, whisperBoxEnabled: account.whisperBoxEnabled } : null;
+  }
+
+  const legacyUserId = await userIdForWhispererHandle(handle);
+  if (!legacyUserId) return null;
+  const legacy = await db
+    .select({ whisperBoxEnabled: usersTable.whisperBoxEnabled, whisperBoxHandle: usersTable.whisperBoxHandle, whispererHandle: usersTable.whispererHandle })
+    .from(usersTable)
+    .where(eq(usersTable.id, legacyUserId))
+    .then((r) => r[0]);
+  if (!legacy || legacy.whisperBoxHandle) return null; // already migrated onto a DIFFERENT handle — this old one is stale, not a match
+  if (legacy.whisperBoxEnabled && legacy.whispererHandle === handle) {
+    await db.update(usersTable).set({ whisperBoxHandle: legacy.whispererHandle }).where(and(eq(usersTable.id, legacyUserId), isNull(usersTable.whisperBoxHandle)));
+  }
+  return { userId: legacyUserId, whisperBoxEnabled: legacy.whisperBoxEnabled };
+}
+
 // GET /api/public/whisper-box/:handle — resolve a handle to a live Whisper
 // Box. Same shape whether the handle doesn't exist or exists but has the
 // box turned off, so a bare 404 never distinguishes "no such person" from
 // "that person disabled their box."
 router.get("/public/whisper-box/:handle", async (req, res): Promise<void> => {
-  const userId = await userIdForWhispererHandle(req.params.handle);
-  if (!userId) {
+  const owner = await resolveWhisperBoxOwner(req.params.handle);
+  if (!owner?.whisperBoxEnabled) {
     res.status(404).json({ error: "This Whisper Box link isn't active." });
     return;
   }
-  const account = await db
-    .select({ whisperBoxEnabled: usersTable.whisperBoxEnabled, whispererAvatarId: usersTable.whispererAvatarId, whispererHandle: usersTable.whispererHandle })
-    .from(usersTable)
-    .where(eq(usersTable.id, userId))
-    .then((r) => r[0]);
-  if (!account?.whisperBoxEnabled) {
-    res.status(404).json({ error: "This Whisper Box link isn't active." });
-    return;
-  }
-  res.json({ handle: account.whispererHandle, avatarId: account.whispererAvatarId });
+  const account = await db.select({ whispererAvatarId: usersTable.whispererAvatarId }).from(usersTable).where(eq(usersTable.id, owner.userId)).then((r) => r[0]);
+  res.json({ handle: req.params.handle, avatarId: account?.whispererAvatarId ?? null });
 });
 
 const sendMessageSchema = z.object({
@@ -77,16 +105,12 @@ router.post("/public/whisper-box/:handle", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const userId = await userIdForWhispererHandle(req.params.handle);
-  if (!userId) {
+  const owner = await resolveWhisperBoxOwner(req.params.handle);
+  if (!owner?.whisperBoxEnabled) {
     res.status(404).json({ error: "This Whisper Box link isn't active." });
     return;
   }
-  const account = await db.select({ whisperBoxEnabled: usersTable.whisperBoxEnabled }).from(usersTable).where(eq(usersTable.id, userId)).then((r) => r[0]);
-  if (!account?.whisperBoxEnabled) {
-    res.status(404).json({ error: "This Whisper Box link isn't active." });
-    return;
-  }
+  const userId = owner.userId;
 
   const id = randomUUID();
   await db.insert(whisperBoxMessagesTable).values({
@@ -111,15 +135,40 @@ function excludeRemoved() {
 }
 
 // POST /api/whisper-box/enable — the Settings "Get your Whisper Box link"
-// action. Assigns a whispererHandle if the account doesn't have one yet
-// (same lazy-assign as the first Debate Now post/comment), then flips the
-// opt-in on. One call does both so Settings only needs one button.
+// action. Assigns a whisperBoxHandle if the account doesn't have one yet —
+// built from the account's display name (fullName) when one is set, so a
+// friend can actually recognize it, or the same anonymous-style fallback
+// whispererHandle uses when it isn't. Also lazily assigns the SEPARATE
+// whispererHandle/avatar (assignOrGetWhispererIdentity) so Debate Now stays
+// ready the moment it's needed — that identity must stay non-identifying,
+// which is exactly why it's never reused as the Whisper Box handle. One
+// call does all of it so Settings only needs one button.
 router.post("/whisper-box/enable", requireAuth, async (req, res): Promise<void> => {
   const { userId: clerkId } = getAuth(req);
   const user = await ensureUser(clerkId!, req);
-  const identity = await assignOrGetWhispererIdentity(user.id);
+  const debateIdentity = await assignOrGetWhispererIdentity(user.id);
+  const whisperBox = await assignOrGetWhisperBoxHandle(user.id, user.fullName);
   await db.update(usersTable).set({ whisperBoxEnabled: true }).where(eq(usersTable.id, user.id));
-  res.json({ handle: identity.handle, avatarId: identity.avatarId, enabled: true });
+  res.json({ handle: whisperBox.handle, avatarId: debateIdentity.avatarId, enabled: true });
+});
+
+// POST /api/whisper-box/refresh-handle — regenerates the caller's Whisper
+// Box handle from their CURRENT display name, overwriting whatever handle
+// they have now (including a personalized one — this is a deliberate
+// "update my link to match my name" action, not automatic). Only meaningful
+// once fullName is actually set: 400s otherwise, since there'd be nothing
+// to personalize with. This is the endpoint the frontend calls right after
+// capturing a display name from someone who tries to copy their link
+// without having set one yet.
+router.post("/whisper-box/refresh-handle", requireAuth, async (req, res): Promise<void> => {
+  const { userId: clerkId } = getAuth(req);
+  const user = await ensureUser(clerkId!, req);
+  if (!user.fullName?.trim()) {
+    res.status(400).json({ error: "A display name is required to personalize your Whisper Box link." });
+    return;
+  }
+  const whisperBox = await assignWhisperBoxHandle(user.id, user.fullName);
+  res.json({ handle: whisperBox.handle });
 });
 
 // POST /api/whisper-box/disable — turns the public page off without

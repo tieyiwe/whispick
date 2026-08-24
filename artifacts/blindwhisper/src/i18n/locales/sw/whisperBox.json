@@ -3,6 +3,7 @@
     "notFoundTitle": "Kiungo hiki cha Whisper Box hakipo hai",
     "notFoundDescription": "Huenda kiungo si sahihi, au mtu huyu amezima Whisper Box yake.",
     "heading": "Tuma ujumbe usiojulikana kwa {{handle}}",
+    "promptLine": "Unaweza kuniambia chochote ninachohitaji kusikia au kuona — bila kujitambulisha.",
     "subheading": "Hatawahi kujua ni wewe — isipokuwa ukimwambia mwenyewe.",
     "messageLabel": "Ujumbe wako",
     "messagePlaceholder": "Andika kilicho moyoni mwako...",
@@ -69,7 +70,20 @@
   "linkDialog": {
     "title": "Kiungo chako cha Whisper Box",
     "description": "Mtu yeyote mwenye kiungo hiki — au anayeskani msimbo wa QR — anaweza kukutumia ujumbe mmoja usiojulikana.",
-    "copyButton": "Nakili kiungo"
+    "copyButton": "Nakili kiungo",
+    "namePromptTitle": "Ongeza jina lako kwanza?",
+    "namePromptDescription": "Kiungo chako cha Whisper Box hutengenezwa kutoka jina lako la kuonyesha, ili marafiki waweze kukitambua kweli. Bila jina, utapata kiungo cha nasibu badala yake.",
+    "nameInputLabel": "Jina la kuonyesha",
+    "nameInputPlaceholder": "Jina lako",
+    "nameSaveCta": "Hifadhi na upate kiungo changu",
+    "nameSkipCta": "Ruka kwa sasa",
+    "toastPersonalized": "Kiungo chako sasa kinalingana na jina lako",
+    "toastPersonalizeFailed": "Imeshindikana kusasisha. Tafadhali jaribu tena."
+  },
+  "searchBar": {
+    "sectionTitle": "Tafuta Whisper Box ya mtu",
+    "placeholder": "@jina",
+    "button": "Tafuta"
   },
   "dashboardCard": {
     "title": "Whisper Box",

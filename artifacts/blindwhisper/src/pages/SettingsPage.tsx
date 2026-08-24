@@ -28,6 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, User, Mail, Shield, Bell, Phone, ShieldCheck, Swords, Mailbox, Share2, Image } from "lucide-react";
 import { isPushSupported, getExistingPushSubscription, subscribeToPush, pushSubscriptionToJson } from "@/lib/push";
 import { shareWhisperBoxStoryCard } from "@/lib/whisperBoxStoryCard";
+import { whisperBoxShareUrl } from "@/lib/whisperBoxUrl";
 import { isAppBadgeSupported, useAppBadgeEnabled } from "@/lib/useAppBadge";
 import { GENDER_OPTIONS, AGE_RANGE_OPTIONS } from "@/lib/demographics";
 import { useTranslation } from "react-i18next";
@@ -36,6 +37,7 @@ import i18n from "@/i18n";
 import { PhoneVerificationFlow } from "@/components/shared/PhoneVerificationFlow";
 import { AvatarCircle } from "@/components/shared/AvatarCircle";
 import { AvatarPickerGrid } from "@/components/shared/AvatarPickerGrid";
+import { WhisperBoxLinkDialog } from "@/components/shared/WhisperBoxLinkDialog";
 
 const WHISPER_LINK_LIMITS: Record<string, number | null> = {
   free: 3,
@@ -99,9 +101,18 @@ export function SettingsPage() {
   const [whisperBoxOverride, setWhisperBoxOverride] = useState<{ enabled: boolean; handle: string | null } | null>(null);
   const recapWhisperBoxEnabled = recap ? recap.whisperBoxMessagesReceived !== null : undefined;
   const whisperBoxEnabled = whisperBoxOverride?.enabled ?? recapWhisperBoxEnabled ?? false;
-  const whisperBoxHandle = whisperBoxOverride?.handle ?? profile?.whispererHandle ?? null;
+  const whisperBoxHandle = whisperBoxOverride?.handle ?? recap?.whisperBoxHandle ?? null;
   const enableWhisperBox = useEnableWhisperBox();
   const disableWhisperBox = useDisableWhisperBox();
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  // Gates the two quick share actions below — see WhisperBoxLinkDialog's
+  // comment for why an un-personalized (random-word) handle isn't worth
+  // sharing. Deliberately the last-SAVED profile value, not the live
+  // `fullName` draft in the input above — the backend's handle only ever
+  // reflects what was actually persisted, so gating on an unsaved keystroke
+  // would let this skip the capture dialog while the handle itself is
+  // still the old fallback.
+  const hasDisplayName = !!profile?.fullName?.trim();
 
   function handleWhisperBoxToggleSuccess(enabled: boolean, handle: string | null) {
     setWhisperBoxOverride({ enabled, handle });
@@ -130,7 +141,11 @@ export function SettingsPage() {
 
   function handleShareWhisperBoxLink() {
     if (!whisperBoxHandle) return;
-    const url = `${window.location.origin}/whisper-box/${whisperBoxHandle}`;
+    if (!hasDisplayName) {
+      setLinkDialogOpen(true);
+      return;
+    }
+    const url = whisperBoxShareUrl(whisperBoxHandle);
     if (navigator.share) {
       navigator.share({ title: tWhisperBox("settingsSection.shareTitle"), url }).catch(() => {});
       return;
@@ -150,9 +165,13 @@ export function SettingsPage() {
   // rather than sharing a bare link.
   async function handleShareWhisperBoxStory() {
     if (!whisperBoxHandle || storyShareLoading) return;
+    if (!hasDisplayName) {
+      setLinkDialogOpen(true);
+      return;
+    }
     setStoryShareLoading(true);
     try {
-      const url = `${window.location.origin}/whisper-box/${whisperBoxHandle}`;
+      const url = whisperBoxShareUrl(whisperBoxHandle);
       const result = await shareWhisperBoxStoryCard({
         handle: whisperBoxHandle,
         url,
@@ -336,6 +355,9 @@ export function SettingsPage() {
                 onChange={(e) => setFullName(e.target.value)}
                 data-testid="input-full-name"
               />
+              <p className="text-xs text-muted-foreground" data-testid="text-display-name-handle-hint">
+                {t("settingsPage.displayNameHandleHint")}
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -643,7 +665,7 @@ export function SettingsPage() {
                     <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/30 border border-border/40">
                       <Input
                         readOnly
-                        value={`${window.location.origin}/whisper-box/${whisperBoxHandle}`}
+                        value={whisperBoxShareUrl(whisperBoxHandle)}
                         onFocus={(e) => e.currentTarget.select()}
                         className="text-xs bg-transparent border-none px-0 h-auto flex-1 truncate focus-visible:ring-0"
                         data-testid="input-whisper-box-link"
@@ -709,6 +731,15 @@ export function SettingsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {whisperBoxHandle && (
+        <WhisperBoxLinkDialog
+          handle={whisperBoxHandle}
+          hasDisplayName={hasDisplayName}
+          open={linkDialogOpen}
+          onOpenChange={setLinkDialogOpen}
+        />
+      )}
     </AppLayout>
   );
 }

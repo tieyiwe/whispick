@@ -121,3 +121,71 @@ export async function userIdForWhispererHandle(handle: string): Promise<string |
   const row = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.whispererHandle, handle)).then((r) => r[0]);
   return row?.id ?? null;
 }
+
+// ---------------------------------------------------------------------------
+// Whisper Box handle — a SEPARATE identity from everything above. See
+// users.ts's whisperBoxHandle column comment for why this must never reuse
+// whispererHandle: that one has to stay anonymous for Debate Now, this one
+// is meant to be recognized by a friend who already knows the person shared
+// it. Kept in this file (not a new one) since it shares HANDLE_PATTERN and
+// the same collision-retry shape as the generator above.
+// ---------------------------------------------------------------------------
+
+const MAX_SLUG_LEN = 20; // + up to a 3-digit suffix stays within HANDLE_PATTERN's 24-char cap
+
+// Strips a display name down to just what HANDLE_PATTERN allows. Returns
+// null rather than a too-short/empty result — callers fall back to the
+// anonymous-style generator in that case, same as having no display name.
+function slugifyDisplayName(name: string): string | null {
+  const cleaned = name.replace(/[^A-Za-z0-9]/g, "").slice(0, MAX_SLUG_LEN);
+  return cleaned.length >= 3 ? cleaned : null;
+}
+
+// Assigns (or returns the existing) Whisper Box handle. Prefers a slug of
+// `displayName` — tried bare first for the cleanest possible handle, then
+// with a random 3-digit suffix on collision — and only falls back to the
+// same non-identifying random generator as whispererHandle when there's no
+// usable display name yet (empty/too-short after stripping punctuation/
+// emoji/whitespace). Idempotent: an account that already has a handle keeps
+// it, since regenerating would 404 any link already shared — see
+// assignWhisperBoxHandle's callers for the one explicit exception
+// (POST /whisper-box/refresh-handle).
+export async function assignOrGetWhisperBoxHandle(userId: string, displayName: string | null): Promise<{ handle: string }> {
+  const existing = await db.select({ whisperBoxHandle: usersTable.whisperBoxHandle }).from(usersTable).where(eq(usersTable.id, userId)).then((r) => r[0]);
+  if (existing?.whisperBoxHandle) return { handle: existing.whisperBoxHandle };
+  return assignWhisperBoxHandle(userId, displayName);
+}
+
+// Unconditionally generates and persists a fresh Whisper Box handle,
+// overwriting any existing one — only meant to be called from the explicit
+// "personalize my link" flow, never automatically.
+export async function assignWhisperBoxHandle(userId: string, displayName: string | null): Promise<{ handle: string }> {
+  const slug = displayName ? slugifyDisplayName(displayName) : null;
+  const candidates: Array<() => string> = [];
+  if (slug) {
+    candidates.push(() => slug); // nicest case: the bare name, no digits
+    for (let i = 0; i < 4; i++) candidates.push(() => `${slug}${randomInt(100, 1000)}`);
+  }
+  for (let i = 0; i < 5; i++) candidates.push(randomHandle);
+
+  for (const makeCandidate of candidates) {
+    const candidate = makeCandidate();
+    try {
+      await db.update(usersTable).set({ whisperBoxHandle: candidate }).where(eq(usersTable.id, userId));
+      return { handle: candidate };
+    } catch {
+      // Unique-constraint collision — try the next candidate. A rare race
+      // against a concurrent call for this SAME user would also land here;
+      // re-reading and returning what's actually stored covers that case
+      // too, same as assignOrGetWhispererIdentity above.
+      const raced = await db.select({ whisperBoxHandle: usersTable.whisperBoxHandle }).from(usersTable).where(eq(usersTable.id, userId)).then((r) => r[0]);
+      if (raced?.whisperBoxHandle === candidate) return { handle: candidate };
+    }
+  }
+  throw new Error("Failed to assign a Whisper Box handle after several attempts");
+}
+
+export async function userIdForWhisperBoxHandle(handle: string): Promise<string | null> {
+  const row = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.whisperBoxHandle, handle)).then((r) => r[0]);
+  return row?.id ?? null;
+}

@@ -7,6 +7,7 @@ import {
   useMarkWhisperBoxMessageRead,
   useDeleteWhisperBoxMessage,
   useGetUserRecap,
+  useGetUserProfile,
   getListWhisperBoxMessagesQueryKey,
   getGetWhisperBoxUnreadCountQueryKey,
   type WhisperBoxMessage,
@@ -29,7 +30,9 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Mailbox, Trash2, Clock, Image, Loader2 } from "lucide-react";
 import { shareWhisperBoxStoryCard } from "@/lib/whisperBoxStoryCard";
+import { whisperBoxShareUrl } from "@/lib/whisperBoxUrl";
 import { WhisperBoxLinkDialog } from "@/components/shared/WhisperBoxLinkDialog";
+import { WhisperBoxSearchBar } from "@/components/shared/WhisperBoxSearchBar";
 import i18n from "@/i18n";
 
 // The recipient's own view of their Whisper Box — see routes/whisperBox.ts's
@@ -49,6 +52,11 @@ export function WhisperBoxInbox() {
   // exactly the signal the empty state below needs to pick its copy.
   const { data: recap, isLoading: isLoadingRecap } = useGetUserRecap();
   const whisperBoxEnabled = recap ? recap.whisperBoxMessagesReceived !== null : undefined;
+  // Only needed to decide whether a share action should detour through
+  // WhisperBoxLinkDialog's name-capture step first — see that component's
+  // comment for why an un-personalized handle isn't worth sharing.
+  const { data: profile } = useGetUserProfile();
+  const hasDisplayName = !!profile?.fullName?.trim();
 
   const markRead = useMarkWhisperBoxMessageRead();
   const deleteMessage = useDeleteWhisperBoxMessage();
@@ -60,13 +68,19 @@ export function WhisperBoxInbox() {
 
   // Same branded-image share as SettingsPage's Whisper Box card (see
   // src/lib/whisperBoxStoryCard.ts) — surfaced here too since the empty
-  // state is the other natural moment to prompt "go share your link".
+  // state is the other natural moment to prompt "go share your link". Routed
+  // through the name-capture dialog first when there's no display name yet
+  // — sharing an unpersonalized (random-word) handle defeats the point.
   async function handleShareWhisperBoxStory() {
-    const handle = recap?.whispererHandle;
+    if (!hasDisplayName) {
+      setLinkDialogOpen(true);
+      return;
+    }
+    const handle = recap?.whisperBoxHandle;
     if (!handle || storyShareLoading) return;
     setStoryShareLoading(true);
     try {
-      const url = `${window.location.origin}/whisper-box/${handle}`;
+      const url = whisperBoxShareUrl(handle);
       const result = await shareWhisperBoxStoryCard({
         handle,
         url,
@@ -145,6 +159,11 @@ export function WhisperBoxInbox() {
           <p className="text-muted-foreground mt-1">{t("whisperBoxInbox.subtitle")}</p>
         </div>
 
+        <div className="space-y-2">
+          <h2 className="text-sm font-medium text-muted-foreground">{t("searchBar.sectionTitle")}</h2>
+          <WhisperBoxSearchBar className="max-w-md" />
+        </div>
+
         {messages.length === 0 ? (
           <Card className="bg-card/50 border-dashed border-border py-16 text-center px-6">
             <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
@@ -157,7 +176,7 @@ export function WhisperBoxInbox() {
               {whisperBoxEnabled ? t("whisperBoxInbox.emptyState.descriptionEnabled") : t("whisperBoxInbox.emptyState.descriptionDisabled")}
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
-              {whisperBoxEnabled && recap?.whispererHandle && (
+              {whisperBoxEnabled && recap?.whisperBoxHandle && (
                 <Button
                   type="button"
                   onClick={handleShareWhisperBoxStory}
@@ -273,8 +292,13 @@ export function WhisperBoxInbox() {
           </AlertDialogContent>
         </AlertDialog>
 
-        {recap?.whispererHandle && (
-          <WhisperBoxLinkDialog handle={recap.whispererHandle} open={linkDialogOpen} onOpenChange={setLinkDialogOpen} />
+        {recap?.whisperBoxHandle && (
+          <WhisperBoxLinkDialog
+            handle={recap.whisperBoxHandle}
+            hasDisplayName={hasDisplayName}
+            open={linkDialogOpen}
+            onOpenChange={setLinkDialogOpen}
+          />
         )}
       </div>
     </AppLayout>

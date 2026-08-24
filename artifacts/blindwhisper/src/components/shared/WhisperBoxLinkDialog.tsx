@@ -1,37 +1,75 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import QRCode from "qrcode";
+import {
+  useUpdateUserProfile,
+  useRefreshWhisperBoxHandle,
+  getGetUserRecapQueryKey,
+  getGetUserProfileQueryKey,
+} from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Copy, Share2, Image, Loader2 } from "lucide-react";
+import { Copy, Share2, Image, Loader2, Sparkles } from "lucide-react";
 import { shareWhisperBoxStoryCard } from "@/lib/whisperBoxStoryCard";
+import { whisperBoxShareUrl } from "@/lib/whisperBoxUrl";
 import i18n from "@/i18n";
 
 // Centered popup showing the caller's Whisper Box link, so "Get your link"
-// doesn't have to send them off to Settings just to see it — the actual bug
-// this fixes was that button navigating to /settings and landing at the top
-// of the page (profile section) instead of anywhere near the Whisper Box
-// card. Reuses the exact same copy/share/story-share logic SettingsPage's
-// Whisper Box card already has, rather than duplicating three toast strings
-// under a new key set.
+// doesn't have to send them off to Settings just to see it. Also owns the
+// "personalize before you share" step: a Whisper Box handle is only
+// recognizable to a friend if it's built from a display name (see
+// whisperBoxHandle's schema comment) — without one, the handle is the same
+// anonymous-style random word-pair whispererHandle uses. So whenever the
+// caller has no display name set yet, this dialog captures one first (via
+// PATCH /user/profile) and immediately regenerates the handle from it
+// (POST /whisper-box/refresh-handle) before showing the QR/link — matching
+// the moment someone actually cares about their link, rather than nagging
+// them about it earlier.
 export function WhisperBoxLinkDialog({
   handle,
+  hasDisplayName,
   open,
   onOpenChange,
 }: {
   handle: string;
+  hasDisplayName: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
   const { t } = useTranslation("whisperBox");
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const updateProfile = useUpdateUserProfile();
+  const refreshHandle = useRefreshWhisperBoxHandle();
+
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [storyShareLoading, setStoryShareLoading] = useState(false);
-  const url = `${window.location.origin}/whisper-box/${handle}`;
+  const [nameDraft, setNameDraft] = useState("");
+  const [personalizing, setPersonalizing] = useState(false);
+  // Once personalization succeeds this replaces the `handle` prop for the
+  // rest of this dialog's lifetime — the parent's own query refetch will
+  // eventually catch up, but the popup shouldn't flicker back to a
+  // capture step (or a stale handle) in the meantime.
+  const [resolvedHandle, setResolvedHandle] = useState<string | null>(null);
+  const [needsName, setNeedsName] = useState(!hasDisplayName);
 
   useEffect(() => {
-    if (!open) return;
+    if (open) {
+      setNeedsName(!hasDisplayName);
+      setResolvedHandle(null);
+      setNameDraft("");
+    }
+  }, [open, hasDisplayName]);
+
+  const effectiveHandle = resolvedHandle ?? handle;
+  const url = whisperBoxShareUrl(effectiveHandle);
+
+  useEffect(() => {
+    if (!open || needsName) return;
     let cancelled = false;
     void QRCode.toDataURL(url, { width: 220, margin: 1 }).then((dataUrl) => {
       if (!cancelled) setQrDataUrl(dataUrl);
@@ -40,7 +78,40 @@ export function WhisperBoxLinkDialog({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, url]);
+  }, [open, needsName, url]);
+
+  function handlePersonalizeSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmed = nameDraft.trim();
+    if (!trimmed || personalizing) return;
+    setPersonalizing(true);
+    updateProfile.mutate(
+      { data: { fullName: trimmed } },
+      {
+        onSuccess: () => {
+          refreshHandle.mutate(undefined, {
+            onSuccess: (result) => {
+              setResolvedHandle(result.handle);
+              setNeedsName(false);
+              queryClient.invalidateQueries({ queryKey: getGetUserRecapQueryKey() });
+              queryClient.invalidateQueries({ queryKey: getGetUserProfileQueryKey() });
+              toast({ title: t("linkDialog.toastPersonalized") });
+            },
+            onError: () => toast({ title: t("linkDialog.toastPersonalizeFailed"), variant: "destructive" }),
+            onSettled: () => setPersonalizing(false),
+          });
+        },
+        onError: () => {
+          toast({ title: t("linkDialog.toastPersonalizeFailed"), variant: "destructive" });
+          setPersonalizing(false);
+        },
+      },
+    );
+  }
+
+  function handleSkip() {
+    setNeedsName(false);
+  }
 
   function handleCopy() {
     navigator.clipboard
@@ -62,7 +133,7 @@ export function WhisperBoxLinkDialog({
     setStoryShareLoading(true);
     try {
       const result = await shareWhisperBoxStoryCard({
-        handle,
+        handle: effectiveHandle,
         url,
         promptText: t("settingsSection.storyPromptText"),
         dir: i18n.dir(),
@@ -84,47 +155,98 @@ export function WhisperBoxLinkDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md text-center">
-        <DialogHeader>
-          <DialogTitle className="text-center">{t("linkDialog.title")}</DialogTitle>
-          <DialogDescription className="text-center">{t("linkDialog.description")}</DialogDescription>
-        </DialogHeader>
+        {needsName ? (
+          <>
+            <DialogHeader>
+              <DialogTitle className="text-center flex items-center justify-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-primary" />
+                {t("linkDialog.namePromptTitle")}
+              </DialogTitle>
+              <DialogDescription className="text-center">{t("linkDialog.namePromptDescription")}</DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handlePersonalizeSubmit} className="space-y-4 pt-1">
+              <div className="space-y-2 text-left">
+                <Label htmlFor="whisper-box-name-draft" className="text-muted-foreground">
+                  {t("linkDialog.nameInputLabel")}
+                </Label>
+                <Input
+                  id="whisper-box-name-draft"
+                  className="bg-input/50 border-border/50 rounded-xl"
+                  placeholder={t("linkDialog.nameInputPlaceholder")}
+                  value={nameDraft}
+                  onChange={(e) => setNameDraft(e.target.value)}
+                  autoFocus
+                  data-testid="input-whisper-box-dialog-name"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Button
+                  type="submit"
+                  disabled={!nameDraft.trim() || personalizing}
+                  className="w-full rounded-full"
+                  data-testid="button-whisper-box-dialog-personalize"
+                >
+                  {personalizing ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : null}
+                  {t("linkDialog.nameSaveCta")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={handleSkip}
+                  disabled={personalizing}
+                  className="w-full rounded-full text-muted-foreground"
+                  data-testid="button-whisper-box-dialog-skip"
+                >
+                  {t("linkDialog.nameSkipCta")}
+                </Button>
+              </div>
+            </form>
+          </>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle className="text-center">{t("linkDialog.title")}</DialogTitle>
+              <DialogDescription className="text-center">{t("linkDialog.description")}</DialogDescription>
+            </DialogHeader>
 
-        {qrDataUrl && (
-          <div className="flex justify-center py-2">
-            <img src={qrDataUrl} alt="" className="rounded-xl border border-border/50 bg-white p-2" width={160} height={160} />
-          </div>
-        )}
+            {qrDataUrl && (
+              <div className="flex justify-center py-2">
+                <img src={qrDataUrl} alt="" className="rounded-xl border border-border/50 bg-white p-2" width={160} height={160} />
+              </div>
+            )}
 
-        <div
-          className="rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-sm text-foreground break-all select-all"
-          data-testid="text-whisper-box-dialog-link"
-        >
-          {url}
-        </div>
-
-        <div className="flex flex-col gap-2 pt-1">
-          <Button type="button" onClick={handleCopy} className="w-full rounded-full" data-testid="button-whisper-box-dialog-copy">
-            <Copy className="w-4 h-4 mr-1.5" />
-            {t("linkDialog.copyButton")}
-          </Button>
-          <div className="flex gap-2">
-            <Button type="button" variant="outline" onClick={handleShare} className="flex-1 rounded-full" data-testid="button-whisper-box-dialog-share">
-              <Share2 className="w-4 h-4 mr-1.5" />
-              {t("settingsSection.shareButton")}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleShareStory}
-              disabled={storyShareLoading}
-              className="flex-1 rounded-full"
-              data-testid="button-whisper-box-dialog-share-story"
+            <div
+              className="rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-sm text-foreground break-all select-all"
+              data-testid="text-whisper-box-dialog-link"
             >
-              {storyShareLoading ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <Image className="w-4 h-4 mr-1.5" />}
-              {t("settingsSection.shareStoryButton")}
-            </Button>
-          </div>
-        </div>
+              {url}
+            </div>
+
+            <div className="flex flex-col gap-2 pt-1">
+              <Button type="button" onClick={handleCopy} className="w-full rounded-full" data-testid="button-whisper-box-dialog-copy">
+                <Copy className="w-4 h-4 mr-1.5" />
+                {t("linkDialog.copyButton")}
+              </Button>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" onClick={handleShare} className="flex-1 rounded-full" data-testid="button-whisper-box-dialog-share">
+                  <Share2 className="w-4 h-4 mr-1.5" />
+                  {t("settingsSection.shareButton")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleShareStory}
+                  disabled={storyShareLoading}
+                  className="flex-1 rounded-full"
+                  data-testid="button-whisper-box-dialog-share-story"
+                >
+                  {storyShareLoading ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <Image className="w-4 h-4 mr-1.5" />}
+                  {t("settingsSection.shareStoryButton")}
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

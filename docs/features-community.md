@@ -143,20 +143,54 @@ Whisperer identity so agent topics get a byline.
 
 The platform's one deliberately anonymous-**sender** surface, and its main
 pull-growth mechanic: a signed-in user opts in (`users.whisperBoxEnabled`,
-default **false**) and gets a public page at `/whisper-box/:whispererHandle`
+default **false**) and gets a public page at `/whisper-box/:whisperBoxHandle`
 where literally anyone — no account, no sign-in — can send them one short
 (≤500 char) anonymous message. Meant to be shared on a public bio link
 (Instagram/TikTok/etc.), the same growth mechanic NGL/Sarahah/tbh used.
 
-**Why it's opt-in and separate from just having a handle:** a
+**Why it's opt-in and separate from just having a Debate Now handle:** a
 `whispererHandle` is already assigned automatically the first time someone
 posts or comments in Debate Now (`lib/whispererHandle.ts`). Without a
 separate flag, everyone active in Debate Now would silently become
 receivable by strangers the moment they got a handle. `whisperBoxEnabled`
-is the only thing that turns the public page on; `POST /whisper-box/enable`
-(Settings) does double duty — lazily assigns a handle if missing, then
-flips the flag — and `POST /whisper-box/disable` turns the page off without
-touching the handle (still usable for Debate Now/follows).
+is the only thing that turns the public page on.
+
+**Two SEPARATE handles, deliberately never the same value**
+(`lib/whispererHandle.ts`): `whispererHandle` stays a random,
+non-identifying word-pair (`SwiftFalcon482`) — it has to, since Debate Now
+is anonymous even to followers. `whisperBoxHandle` is the opposite case: the
+whole point of Whisper Box is a friend recognizing the link, so it's derived
+from the account's display name (`users.fullName`) when one is set —
+`assignOrGetWhisperBoxHandle`/`assignWhisperBoxHandle` slugify it (strip to
+`[A-Za-z0-9]`, cap at 20 chars), try the bare name first, then the name plus
+a random 3-digit suffix on a collision — and falls back to the same
+non-identifying random generator whispererHandle uses when there's no
+display name yet, so the feature still works before that's captured. Once
+assigned it's stable across enable/disable toggles (changing it would 404
+any link already shared) — the only way it changes is the explicit
+`POST /whisper-box/refresh-handle` (personalize-my-link) flow below.
+`POST /whisper-box/enable` (Settings) assigns both handles in one call —
+`whisperBoxHandle` from `fullName`, and `whispererHandle` lazily too, so
+Debate Now stays ready — then flips the opt-in on; `POST /whisper-box/disable`
+turns the page off without touching either handle.
+
+**Personalize-my-link capture flow** (`WhisperBoxLinkDialog.tsx`, shared by
+Settings' Whisper Box card and the Whisper Box inbox's "Get your link" /
+Share-to-Story actions): if the account has no `fullName` yet, the dialog
+asks for one first (skippable), `PATCH /user/profile`s it, then calls
+`POST /whisper-box/refresh-handle` to regenerate `whisperBoxHandle` from it
+before showing the QR/link — so a friend actually recognizes the handle by
+the time it's shared, rather than getting the anonymous-style fallback.
+Settings' own Full Name field carries a hint (`account.json`'s
+`displayNameHandleHint`) saying as much.
+
+**Backward compatibility**: `resolveWhisperBoxOwner()` (`routes/whisperBox.ts`,
+exported for reuse) tries `whisperBoxHandle` first; on a miss it falls back
+to the legacy `whispererHandle` resolution and — only if that account is
+still `whisperBoxEnabled` and has no `whisperBoxHandle` of its own yet —
+lazily migrates it onto one built from that same legacy value, so a link
+shared before this split existed keeps resolving to the exact same URL
+instead of 404ing.
 
 **The core architectural inversion:** every other send path (Whisper Link,
 Text Whisp, Whisper Group) requires the SENDER to be a signed-in,
@@ -183,7 +217,26 @@ rest of the public surface.
 **Authenticated inbox** (`/whisper-box`): list, unread count, mark-read,
 delete (hard delete — no sender-side copy to preserve). Moderation flags
 carry `contentType: 'whisper_box_message'`; admin takedown sets
-`removedByAdminAt`, which the recipient's own inbox also excludes.
+`removedByAdminAt`, which the recipient's own inbox also excludes. The
+inbox also has a "Find someone's Whisper Box" search bar
+(`WhisperBoxSearchBar.tsx`) — normalizes an `@handle` and navigates straight
+to `/whisper-box/:handle`, letting that page's own fetch resolve it rather
+than duplicating a pre-check; the same bar appears on the public page's own
+not-found state.
+
+**Link preview** (`GET /wb/:handle`, `routes/whisperBoxLink.ts`, mounted at
+`/api/wb`): the actual URL every share action (Settings' Share/Copy,
+Share-to-Story, `WhisperBoxLinkDialog`, the Story card's embedded QR)
+constructs — `lib/whisperBoxUrl.ts`'s `whisperBoxShareUrl()` on the
+frontend. Same pattern as `link.ts`'s `GET /l/:token` for whisp links: the
+production frontend is static files with one `index.html` for every route,
+so it can never show a crawler a per-account preview. A recognized
+link-unfurling crawler UA gets a small server-rendered page with real Open
+Graph tags (`WHISPER_BOX_HOOK_LINE` in `lib/copy.ts` as the description,
+kept in sync by hand with `PublicWhisperBoxPage.tsx`'s own prompt line);
+everyone else — and an unknown/disabled handle even to a crawler, so this
+can't become an enumeration oracle — gets redirected straight to the real
+`/whisper-box/:handle` page.
 
 ## Personal Recap (shareable stats)
 

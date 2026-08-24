@@ -3,6 +3,7 @@
     "notFoundTitle": "이 Whisper Box 링크는 활성화되어 있지 않습니다",
     "notFoundDescription": "링크가 잘못되었거나, 이 사람이 Whisper Box를 꺼두었을 수 있습니다.",
     "heading": "{{handle}}님에게 익명 메시지 보내기",
+    "promptLine": "제가 듣거나 봐야 할 건 뭐든 말해줘도 돼요 — 익명으로요.",
     "subheading": "직접 말하지 않는 이상, 보낸 사람이 당신이라는 걸 절대 알 수 없어요.",
     "messageLabel": "메시지",
     "messagePlaceholder": "하고 싶은 말을 적어보세요...",
@@ -69,7 +70,20 @@
   "linkDialog": {
     "title": "내 Whisper Box 링크",
     "description": "이 링크를 가진 사람이나 QR 코드를 스캔한 사람은 누구나 익명 메시지를 보낼 수 있어요.",
-    "copyButton": "링크 복사"
+    "copyButton": "링크 복사",
+    "namePromptTitle": "먼저 이름을 추가할까요?",
+    "namePromptDescription": "Whisper Box 링크는 표시 이름을 바탕으로 만들어져서, 친구들이 진짜로 알아볼 수 있어요. 이름이 없으면 대신 임의의 링크가 생성돼요.",
+    "nameInputLabel": "표시 이름",
+    "nameInputPlaceholder": "이름",
+    "nameSaveCta": "저장하고 링크 받기",
+    "nameSkipCta": "나중에 하기",
+    "toastPersonalized": "이제 링크가 이름과 일치해요",
+    "toastPersonalizeFailed": "업데이트하지 못했어요. 다시 시도해 주세요."
+  },
+  "searchBar": {
+    "sectionTitle": "다른 사람의 Whisper Box 찾기",
+    "placeholder": "@핸들",
+    "button": "검색"
   },
   "dashboardCard": {
     "title": "Whisper Box",

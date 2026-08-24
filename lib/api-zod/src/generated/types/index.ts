@@ -195,6 +195,7 @@ export * from './recentRecipientKind';
 export * from './recentRecipientListResponse';
 export * from './recordUsageInput';
 export * from './recordUsageInputEventsItem';
+export * from './refreshWhisperBoxHandle200';
 export * from './remindMeInput';
 export * from './remindMeResult';
 export * from './renameCircleHandle200';

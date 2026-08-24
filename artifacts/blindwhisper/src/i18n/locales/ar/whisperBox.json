@@ -3,6 +3,7 @@
     "notFoundTitle": "‏رابط Whisper Box هذا غير مفعّل",
     "notFoundDescription": "قد يكون الرابط غير صحيح، أو أن هذا الشخص أوقف Whisper Box الخاصة به.",
     "heading": "أرسل رسالة مجهولة الهوية إلى {{handle}}",
+    "promptLine": "يمكنك أن تخبرني بأي شيء أحتاج إلى سماعه أو رؤيته — دون الكشف عن هويتك.",
     "subheading": "لن يعرف أبدًا أنك من أرسلها — إلا إذا أخبرته بنفسك.",
     "messageLabel": "رسالتك",
     "messagePlaceholder": "اكتب ما يدور في ذهنك...",
@@ -69,7 +70,20 @@
   "linkDialog": {
     "title": "رابط Whisper Box الخاص بك",
     "description": "أي شخص لديه هذا الرابط — أو يمسح رمز QR — يمكنه إرسال رسالة واحدة مجهولة إليك.",
-    "copyButton": "نسخ الرابط"
+    "copyButton": "نسخ الرابط",
+    "namePromptTitle": "هل تضيف اسمك أولاً؟",
+    "namePromptDescription": "رابط Whisper Box الخاص بك يُبنى من اسمك الظاهر، حتى يتعرف عليه أصدقاؤك فعلاً. بدونه، ستحصل على رابط عشوائي بدلاً من ذلك.",
+    "nameInputLabel": "الاسم الظاهر",
+    "nameInputPlaceholder": "اسمك",
+    "nameSaveCta": "احفظ واحصل على رابطي",
+    "nameSkipCta": "تخطَّ الآن",
+    "toastPersonalized": "أصبح رابطك مطابقًا لاسمك الآن",
+    "toastPersonalizeFailed": "تعذّر التحديث. يُرجى المحاولة مرة أخرى."
+  },
+  "searchBar": {
+    "sectionTitle": "ابحث عن Whisper Box لشخص ما",
+    "placeholder": "‎@المعرّف",
+    "button": "بحث"
   },
   "dashboardCard": {
     "title": "Whisper Box",

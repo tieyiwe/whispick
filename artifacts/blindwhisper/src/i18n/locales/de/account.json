@@ -15,6 +15,7 @@
     "noNameSet": "Kein Name angegeben",
     "displayName": "Anzeigename",
     "namePlaceholder": "Dein Name",
+    "displayNameHandleHint": "Wird für deinen Whisper-Box-Link verwendet, damit Freunde ihn wiedererkennen.",
     "language": "Sprache",
     "notSet": "Nicht festgelegt",
     "gender": "Geschlecht",
