@@ -64,6 +64,7 @@
     "storyPromptText": "Send me an anonymous Whisper 👀",
     "storyShareText": "Send me an anonymous Whisper — no account needed.",
     "toastStoryDownloaded": "Image saved — post it to your story!",
+    "toastStoryShared": "Link copied too — paste it in if your story app doesn't add it automatically.",
     "toastStoryUnsupported": "Sharing isn't supported in this browser — try copying the link instead.",
     "toastStoryFailed": "Couldn't create the share image. Please try again."
   },

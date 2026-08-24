@@ -386,6 +386,13 @@ export async function shareWhisperBoxStoryCard(
 
   if (file && typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
     navigator.share({ files: [file], title: options.shareTitle, text: textWithLink, url: options.url }).catch(() => {});
+    // Best-effort, silent — `url` riding alongside `files` in the share call
+    // above is the documented path to a tappable Instagram Story link
+    // sticker, but it's the destination app's call whether to honor it, not
+    // something this page can verify. Also having the link sitting on the
+    // clipboard means it's one paste away regardless, rather than the QR
+    // code being the only fallback if a given target ignores `url`.
+    navigator.clipboard?.writeText(options.url).catch(() => {});
     return "shared-image";
   }
   if (navigator.share) {

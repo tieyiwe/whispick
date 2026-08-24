@@ -193,6 +193,8 @@ export function SettingsPage() {
       });
       if (result === "downloaded") {
         toast({ title: tWhisperBox("settingsSection.toastStoryDownloaded") });
+      } else if (result === "shared-image") {
+        toast({ title: tWhisperBox("settingsSection.toastStoryShared") });
       } else if (result === "unsupported") {
         toast({ title: tWhisperBox("settingsSection.toastStoryUnsupported"), variant: "destructive" });
       }

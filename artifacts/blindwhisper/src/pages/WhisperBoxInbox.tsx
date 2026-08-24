@@ -93,6 +93,8 @@ export function WhisperBoxInbox() {
       });
       if (result === "downloaded") {
         toast({ title: t("settingsSection.toastStoryDownloaded") });
+      } else if (result === "shared-image") {
+        toast({ title: t("settingsSection.toastStoryShared") });
       } else if (result === "unsupported") {
         toast({ title: t("settingsSection.toastStoryUnsupported"), variant: "destructive" });
       }

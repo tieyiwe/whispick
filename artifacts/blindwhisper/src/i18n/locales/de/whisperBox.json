@@ -64,6 +64,7 @@
     "storyPromptText": "Schick mir einen anonymen Whisper 👀",
     "storyShareText": "Schick mir einen anonymen Whisper — ganz ohne Konto.",
     "toastStoryDownloaded": "Bild gespeichert — teile es in deiner Story!",
+    "toastStoryShared": "Link wurde auch kopiert — füge ihn ein, falls die App ihn nicht automatisch hinzufügt.",
     "toastStoryUnsupported": "Teilen wird in diesem Browser nicht unterstützt — kopiere stattdessen den Link.",
     "toastStoryFailed": "Das Bild zum Teilen konnte nicht erstellt werden. Bitte versuche es erneut."
   },
