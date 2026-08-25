@@ -11,6 +11,7 @@ import { getPublicAppUrl } from "./lib/publicUrl";
 import router from "./routes";
 import { handleStripeWebhook } from "./routes/billing";
 import { logger } from "./lib/logger";
+import { recordBugReport } from "./lib/bugRabbit";
 
 const app: Express = express();
 
@@ -151,6 +152,20 @@ app.use("/api", (_req, res) => {
 // values, internal state) that wasn't meant to be user-facing.
 const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   req.log?.error({ err }, "Unhandled error");
+  // BugRabbit capture — fire-and-forget (recordBugReport catches its own
+  // failures, see lib/bugRabbit.ts), so this never delays or risks the
+  // response below. userId is left null rather than resolved from the
+  // Clerk session here: that would add a DB round trip to every unhandled-
+  // error path for a best-effort tracker, and the request is already fully
+  // captured in the structured log line just above via req.log.
+  void recordBugReport({
+    source: "backend",
+    message: err instanceof Error ? err.message : String(err),
+    stack: err instanceof Error ? (err.stack ?? null) : null,
+    url: req.originalUrl,
+    userAgent: req.headers["user-agent"] ?? null,
+    userId: null,
+  });
   if (res.headersSent) return;
   res.status(500).json({ error: "Internal server error" });
 };

@@ -3135,6 +3135,135 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
 
+  /public/bug-reports:
+    post:
+      operationId: reportBug
+      tags: [bugRabbit]
+      summary: BugRabbit's frontend ingestion sink — report a caught error (anonymous allowed)
+      description: >-
+        Fire-and-forget from the client (see lib/bugRabbitCapture.ts): every
+        free-text field is scrubbed of likely PII/secrets and grouped by a
+        stable fingerprint into a BugRabbit issue rather than stored
+        one-row-per-occurrence forever, so repeats collapse into an
+        occurrence count instead of flooding the admin queue. Rate-limited
+        (see bugReportLimiter) as a backstop against a client-side crash
+        loop, in addition to the client's own per-fingerprint throttle.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportBugInput"
+      responses:
+        "204":
+          description: Recorded
+        "400":
+          description: Invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/bug-rabbit/issues:
+    get:
+      operationId: adminListBugIssues
+      tags: [admin]
+      summary: BugRabbit's issue queue (admin only)
+      description: >-
+        One row per distinct bug (grouped by fingerprint), not per
+        occurrence. "recency" sort (default) surfaces what's actively still
+        happening; "frequency" surfaces the highest-occurrence issue, for
+        triaging by how many people it's hurting rather than how recently it
+        last fired.
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+          required: false
+          description: "'unresolved' (default), 'resolved', or 'all'."
+        - in: query
+          name: sort
+          schema:
+            type: string
+          required: false
+          description: "'recency' (default) or 'frequency'."
+        - in: query
+          name: page
+          schema:
+            type: integer
+          required: false
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+          required: false
+      responses:
+        "200":
+          description: Issues page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BugIssueListResponse"
+
+  /admin/bug-rabbit/issues/{id}:
+    get:
+      operationId: adminGetBugIssue
+      tags: [admin]
+      summary: BugRabbit issue detail — stack trace and recent occurrences (admin only)
+      description: >-
+        occurrences is capped at MAX_STORED_OCCURRENCES per issue (see
+        lib/bugRabbit.ts) — the issue's own occurrenceCount keeps counting
+        past that cap even once detailed rows stop accumulating.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Issue detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BugIssueDetailResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    patch:
+      operationId: adminUpdateBugIssue
+      tags: [admin]
+      summary: Mark a BugRabbit issue resolved or reopen it (admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBugIssueInput"
+      responses:
+        "200":
+          description: Updated issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BugIssue"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /admin/usage-stats:
     get:
       operationId: adminGetUsageStats
@@ -7219,6 +7348,120 @@ components:
         - page
         - pageSize
         - openByPriority
+
+    ReportBugInput:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Capped at 2000 chars server-side before scrubbing/truncating further to 500.
+        stack:
+          type: string
+          description: Optional — omitted when the source event carried no Error object (e.g. a bare window.onerror).
+        url:
+          type: string
+          description: Page path the error happened on. Query string is stripped server-side before storage.
+      required:
+        - message
+
+    BugIssue:
+      type: object
+      properties:
+        id:
+          type: string
+        fingerprint:
+          type: string
+          description: Stable grouping key — see lib/bugRabbit.ts's fingerprintFor(). Not meant to be read for anything but dedup.
+        source:
+          type: string
+          description: "'frontend' | 'backend'"
+        message:
+          type: string
+          description: Scrubbed, truncated error message from the FIRST occurrence — stays stable as later occurrences increment the counters below rather than overwriting it.
+        occurrenceCount:
+          type: integer
+        firstSeenAt:
+          type: string
+        lastSeenAt:
+          type: string
+        resolved:
+          type: boolean
+        resolvedAt:
+          type: ["string", "null"]
+        resolvedByAdminId:
+          type: ["string", "null"]
+      required:
+        - id
+        - fingerprint
+        - source
+        - message
+        - occurrenceCount
+        - firstSeenAt
+        - lastSeenAt
+        - resolved
+
+    BugIssueListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/BugIssue"
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+      required:
+        - items
+        - total
+        - page
+        - pageSize
+
+    BugOccurrence:
+      type: object
+      properties:
+        id:
+          type: string
+        stack:
+          type: ["string", "null"]
+        url:
+          type: ["string", "null"]
+        userAgent:
+          type: ["string", "null"]
+        userId:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        userEmail:
+          type: ["string", "null"]
+          description: Joined for admin display when the occurrence had a signed-in user; null for anonymous occurrences or a since-deleted account.
+      required:
+        - id
+        - createdAt
+
+    BugIssueDetailResponse:
+      type: object
+      properties:
+        issue:
+          $ref: "#/components/schemas/BugIssue"
+        occurrences:
+          type: array
+          items:
+            $ref: "#/components/schemas/BugOccurrence"
+          description: Most recent first, capped at MAX_STORED_OCCURRENCES — see lib/bugRabbit.ts.
+      required:
+        - issue
+        - occurrences
+
+    UpdateBugIssueInput:
+      type: object
+      properties:
+        resolved:
+          type: boolean
+      required:
+        - resolved
 
     UpdateContentReportInput:
       type: object

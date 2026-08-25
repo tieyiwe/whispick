@@ -20,6 +20,7 @@ export const ALL_ADMIN_PERMISSIONS = [
   "analytics",
   "audit_log",
   "projects",
+  "bugrabbit",
 ] as const;
 export type AdminPermission = (typeof ALL_ADMIN_PERMISSIONS)[number];
 
