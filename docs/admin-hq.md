@@ -10,7 +10,7 @@ business function in one place. The admin UI is English-only by convention.
 - `components/layout/AdminLayout.tsx` — the HQ shell. Nav groups: **Business**
   (Overview, Analytics, Projects), **Community** (Users, Moderation, Reports),
   **Content** (Whisps, Suggestions, Town Crier, Circle Scout), **Outreach**
-  (Notifications, Policies), **System** (Audit Log, Staff & Access).
+  (Notifications, Policies), **System** (Audit Log, BugRabbit, Staff & Access).
 - Nav items carry `permission` / `ownerOnly` and are filtered by
   `useGetMyAdminAccess`; collaborators landing on `/admin_pro` without the
   `analytics` permission are redirected to their first permitted page.
@@ -40,7 +40,7 @@ can manage Staff & Access.
 
 Permission keys (`ALL_ADMIN_PERMISSIONS` in `lib/adminAuth.ts`):
 `users, whisps, moderation, reports, suggestions, agents, notifications, policies,
-analytics, audit_log, projects`.
+analytics, audit_log, projects, bugrabbit`.
 
 Role presets (`ROLE_PRESETS`): Admin (all), Content Manager (agents, suggestions,
 whisps, projects), Moderator (moderation, reports, projects), Assistant
@@ -140,6 +140,40 @@ plus every admin **login**: each successful MFA unlock (`admin_mfa.unlock`,
 distinct from one-time `admin_mfa.enroll`) is logged with the method used
 (TOTP vs. backup code), so "who accessed the HQ and when" is answerable
 alongside "what they did once inside."
+
+## BugRabbit (`/admin_pro/bug-rabbit`)
+
+In-house, Sentry-shaped error tracker (permission `bugrabbit`, not in any
+preset by default — the owner grants it explicitly). Tables `bug_issues`
+(one row per distinct bug) and `bug_occurrences` (one row per time it
+actually happened, capped at `MAX_STORED_OCCURRENCES` — 20 — per issue so a
+hot error loop can't grow the table unbounded; `occurrenceCount`/
+`lastSeenAt` on the issue keep counting past that cap regardless). Core
+logic in `lib/bugRabbit.ts` (fingerprinting + the upsert) and
+`lib/piiScrub.ts` (redacts emails/phone-shaped digit runs/JWTs/known
+secret-key prefixes from every message/stack/url before it's ever stored —
+the only writer, so no call site can skip it); routes in
+`routes/adminBugRabbit.ts` (`/api/admin/bug-rabbit/issues`).
+
+- **Capture**: frontend `window.onerror`/`unhandledrejection`
+  (`lib/bugRabbitCapture.ts`, imported for its side effect in `App.tsx`,
+  live from first script evaluation) and `AppErrorBoundary`'s
+  `componentDidCatch` (skipping the stale-chunk-reload case, which isn't a
+  real bug to fix) POST to public `POST /api/public/bug-reports` — anonymous
+  allowed, since a crash can happen before sign-in resolves. The backend's
+  own terminal Express error handler (`app.ts`) records every unhandled
+  exception the same way, in-process.
+- **Grouping**: `fingerprintFor()` normalizes digits/quoted-strings out of
+  the message and drops `:line:col` off the top few stack frames before
+  hashing, so the same bug across different inputs/builds collapses into
+  one issue instead of flooding the queue.
+- **Rate limiting**: `bugReportLimiter` is its own dedicated instance (not
+  the shared `publicEndpointLimiter` budget) so a client-side crash loop
+  only ever costs itself, never other public traffic from the same IP. The
+  frontend capture hook also self-throttles per fingerprint client-side.
+- UI: filter by unresolved/resolved/all, sort by recency or frequency, click
+  a row to expand its recent occurrences (stack, url, user, timestamp).
+  Resolve/reopen is audited (`bug_issue.resolve` / `bug_issue.reopen`).
 
 ## Users: compliance dashboard & reminders
 

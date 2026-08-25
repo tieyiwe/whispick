@@ -2872,6 +2872,107 @@ export const RecordUsageEventsResponse = zod.void()
 
 
 /**
+ * Fire-and-forget from the client (see lib/bugRabbitCapture.ts): every free-text field is scrubbed of likely PII/secrets and grouped by a stable fingerprint into a BugRabbit issue rather than stored one-row-per-occurrence forever, so repeats collapse into an occurrence count instead of flooding the admin queue. Rate-limited (see bugReportLimiter) as a backstop against a client-side crash loop, in addition to the client's own per-fingerprint throttle.
+ * @summary BugRabbit's frontend ingestion sink — report a caught error (anonymous allowed)
+ */
+export const ReportBugBody = zod.object({
+  "message": zod.string().describe('Capped at 2000 chars server-side before scrubbing\/truncating further to 500.'),
+  "stack": zod.string().optional().describe('Optional — omitted when the source event carried no Error object (e.g. a bare window.onerror).'),
+  "url": zod.string().optional().describe('Page path the error happened on. Query string is stripped server-side before storage.')
+})
+
+export const ReportBugResponse = zod.void()
+
+
+/**
+ * One row per distinct bug (grouped by fingerprint), not per occurrence. "recency" sort (default) surfaces what's actively still happening; "frequency" surfaces the highest-occurrence issue, for triaging by how many people it's hurting rather than how recently it last fired.
+ * @summary BugRabbit's issue queue (admin only)
+ */
+export const AdminListBugIssuesQueryParams = zod.object({
+  "status": zod.coerce.string().optional().describe('\'unresolved\' (default), \'resolved\', or \'all\'.'),
+  "sort": zod.coerce.string().optional().describe('\'recency\' (default) or \'frequency\'.'),
+  "page": zod.coerce.number().optional(),
+  "pageSize": zod.coerce.number().optional()
+})
+
+export const AdminListBugIssuesResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "fingerprint": zod.string().describe('Stable grouping key — see lib\/bugRabbit.ts\'s fingerprintFor(). Not meant to be read for anything but dedup.'),
+  "source": zod.string().describe('\'frontend\' | \'backend\''),
+  "message": zod.string().describe('Scrubbed, truncated error message from the FIRST occurrence — stays stable as later occurrences increment the counters below rather than overwriting it.'),
+  "occurrenceCount": zod.number(),
+  "firstSeenAt": zod.string(),
+  "lastSeenAt": zod.string(),
+  "resolved": zod.boolean(),
+  "resolvedAt": zod.string().nullish(),
+  "resolvedByAdminId": zod.string().nullish()
+})),
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number()
+})
+
+
+/**
+ * occurrences is capped at MAX_STORED_OCCURRENCES per issue (see lib/bugRabbit.ts) — the issue's own occurrenceCount keeps counting past that cap even once detailed rows stop accumulating.
+ * @summary BugRabbit issue detail — stack trace and recent occurrences (admin only)
+ */
+export const AdminGetBugIssueParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const AdminGetBugIssueResponse = zod.object({
+  "issue": zod.object({
+  "id": zod.string(),
+  "fingerprint": zod.string().describe('Stable grouping key — see lib\/bugRabbit.ts\'s fingerprintFor(). Not meant to be read for anything but dedup.'),
+  "source": zod.string().describe('\'frontend\' | \'backend\''),
+  "message": zod.string().describe('Scrubbed, truncated error message from the FIRST occurrence — stays stable as later occurrences increment the counters below rather than overwriting it.'),
+  "occurrenceCount": zod.number(),
+  "firstSeenAt": zod.string(),
+  "lastSeenAt": zod.string(),
+  "resolved": zod.boolean(),
+  "resolvedAt": zod.string().nullish(),
+  "resolvedByAdminId": zod.string().nullish()
+}),
+  "occurrences": zod.array(zod.object({
+  "id": zod.string(),
+  "stack": zod.string().nullish(),
+  "url": zod.string().nullish(),
+  "userAgent": zod.string().nullish(),
+  "userId": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "userEmail": zod.string().nullish().describe('Joined for admin display when the occurrence had a signed-in user; null for anonymous occurrences or a since-deleted account.')
+})).describe('Most recent first, capped at MAX_STORED_OCCURRENCES — see lib\/bugRabbit.ts.')
+})
+
+
+/**
+ * @summary Mark a BugRabbit issue resolved or reopen it (admin only)
+ */
+export const AdminUpdateBugIssueParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const AdminUpdateBugIssueBody = zod.object({
+  "resolved": zod.boolean()
+})
+
+export const AdminUpdateBugIssueResponse = zod.object({
+  "id": zod.string(),
+  "fingerprint": zod.string().describe('Stable grouping key — see lib\/bugRabbit.ts\'s fingerprintFor(). Not meant to be read for anything but dedup.'),
+  "source": zod.string().describe('\'frontend\' | \'backend\''),
+  "message": zod.string().describe('Scrubbed, truncated error message from the FIRST occurrence — stays stable as later occurrences increment the counters below rather than overwriting it.'),
+  "occurrenceCount": zod.number(),
+  "firstSeenAt": zod.string(),
+  "lastSeenAt": zod.string(),
+  "resolved": zod.boolean(),
+  "resolvedAt": zod.string().nullish(),
+  "resolvedByAdminId": zod.string().nullish()
+})
+
+
+/**
  * @summary Per-feature usage totals over a window, most-used first (admin only)
  */
 export const AdminGetUsageStatsQueryParams = zod.object({

@@ -21,6 +21,7 @@ import {
   FileCheck2,
   KeyRound,
   KanbanSquare,
+  Bug,
 } from "lucide-react";
 
 // Odoo-style command-center navigation: one left rail, grouped by the job
@@ -68,6 +69,7 @@ const ADMIN_NAV_GROUPS: { heading: string; items: NavItem[] }[] = [
     heading: "System",
     items: [
       { href: "/admin_pro/audit-log", label: "Audit Log", icon: ScrollText, permission: "audit_log" },
+      { href: "/admin_pro/bug-rabbit", label: "BugRabbit", icon: Bug, permission: "bugrabbit" },
       { href: "/admin_pro/access", label: "Staff & Access", icon: KeyRound, ownerOnly: true },
     ],
   },

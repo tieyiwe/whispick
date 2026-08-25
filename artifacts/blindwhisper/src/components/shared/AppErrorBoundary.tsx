@@ -2,6 +2,7 @@ import { Component, type ReactNode } from "react";
 import { withTranslation, type WithTranslation } from "react-i18next";
 import { Logo } from "@/components/ui/logo";
 import { Button } from "@/components/ui/button";
+import { reportErrorToBugRabbit } from "@/lib/bugRabbitCapture";
 
 // Every non-critical page is React.lazy()-loaded (see App.tsx), which means
 // its JS chunk is fetched over the network the first time a route is
@@ -61,10 +62,20 @@ class AppErrorBoundaryBase extends Component<{ children: ReactNode } & WithTrans
   }
 
   componentDidCatch(error: Error): void {
-    if (isChunkLoadError(error) && shouldAutoReload()) {
-      markReloaded();
-      window.location.reload();
+    // A chunk-load error is already covered above by watchForUpdates/the
+    // reload guard — genuinely useful to reload past, not useful to file as
+    // a BugRabbit issue (it's the same stale-tab-vs-new-deploy race every
+    // time, not a code bug to fix and redeploy). Every other render crash
+    // this boundary catches is real product code throwing, exactly what
+    // BugRabbit exists to surface.
+    if (isChunkLoadError(error)) {
+      if (shouldAutoReload()) {
+        markReloaded();
+        window.location.reload();
+      }
+      return;
     }
+    reportErrorToBugRabbit(error.message, error.stack);
   }
 
   render() {

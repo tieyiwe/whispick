@@ -10,6 +10,11 @@ import { registerServiceWorker } from "@/lib/push";
 // App.tsx's own eager bundle specifically so the listener is live before any
 // of that.
 import "@/lib/installApp";
+// Same reasoning as lib/installApp above — BugRabbit's window.onerror/
+// unhandledrejection listeners (lib/bugRabbitCapture.ts) need to be live
+// from the moment this script evaluates, not from whenever some lazily-
+// loaded route happens to mount, or a crash before that point goes uncaught.
+import "@/lib/bugRabbitCapture";
 import { PinToTaskbarTip } from "@/components/shared/PinToTaskbarTip";
 import { EnableNotificationsPrompt } from "@/components/shared/EnableNotificationsPrompt";
 import { AppErrorBoundary } from "@/components/shared/AppErrorBoundary";
@@ -92,6 +97,7 @@ const AdminNotifications = lazy(() => import("@/pages/admin/AdminNotifications")
 const AdminDebateAgent = lazy(() => import("@/pages/admin/AdminDebateAgent").then((m) => ({ default: m.AdminDebateAgent })));
 const AdminCircleAgent = lazy(() => import("@/pages/admin/AdminCircleAgent").then((m) => ({ default: m.AdminCircleAgent })));
 const AdminAuditLog = lazy(() => import("@/pages/admin/AdminAuditLog").then((m) => ({ default: m.AdminAuditLog })));
+const AdminBugRabbit = lazy(() => import("@/pages/admin/AdminBugRabbit").then((m) => ({ default: m.AdminBugRabbit })));
 
 // Route-level Suspense fallback — same full-page centered spinner AdminRoute
 // already uses while it waits on the user profile fetch, so a lazy chunk
@@ -337,6 +343,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/admin_pro/debate-agent" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminDebateAgent} />} />} />
             <Route path="/admin_pro/circle-agent" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminCircleAgent} />} />} />
             <Route path="/admin_pro/audit-log" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminAuditLog} />} />} />
+            <Route path="/admin_pro/bug-rabbit" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminBugRabbit} />} />} />
             <Route path="/admin_pro" component={() => <ProtectedRoute component={() => <AdminRoute component={AdminDashboard} />} />} />
 
             <Route path="/debate-topics/:id" component={DebateTopicDetail} />

@@ -35,6 +35,7 @@ import type {
   AdminGrantListResponse,
   AdminGrantUpdateInput,
   AdminListAuditLogParams,
+  AdminListBugIssuesParams,
   AdminListContentReportsParams,
   AdminListModerationFlagsParams,
   AdminListNotificationsParams,
@@ -62,6 +63,9 @@ import type {
   ArchiveWhisp200,
   BroadcastTextWhispInput,
   BroadcastTextWhispResult,
+  BugIssue,
+  BugIssueDetailResponse,
+  BugIssueListResponse,
   CheckoutRequest,
   CheckoutResponse,
   Circle,
@@ -159,6 +163,7 @@ import type {
   RenameDebateTopicHandle200,
   RenameDebateTopicHandleBody,
   RepairProfilesResult,
+  ReportBugInput,
   ResolveContentReportInput,
   ResolveContentReportResponse,
   RevealResponse,
@@ -201,6 +206,7 @@ import type {
   UnsubscribeFromMatching200,
   UnsubscribeFromMatchingParams,
   UpdateAdminUserInput,
+  UpdateBugIssueInput,
   UpdateCircleAgentConfigInput,
   UpdateContentReportInput,
   UpdateDebateAgentConfigInput,
@@ -9091,6 +9097,311 @@ export const useRecordUsageEvents = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getRecordUsageEventsMutationOptions(options));
+    }
+
+export const getReportBugUrl = () => {
+
+
+
+
+  return `/api/public/bug-reports`
+}
+
+/**
+ * Fire-and-forget from the client (see lib/bugRabbitCapture.ts): every free-text field is scrubbed of likely PII/secrets and grouped by a stable fingerprint into a BugRabbit issue rather than stored one-row-per-occurrence forever, so repeats collapse into an occurrence count instead of flooding the admin queue. Rate-limited (see bugReportLimiter) as a backstop against a client-side crash loop, in addition to the client's own per-fingerprint throttle.
+ * @summary BugRabbit's frontend ingestion sink — report a caught error (anonymous allowed)
+ */
+export const reportBug = async (reportBugInput: ReportBugInput, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getReportBugUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(reportBugInput)
+  }
+);}
+
+
+
+
+export const getReportBugMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportBug>>, TError,{data: BodyType<ReportBugInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reportBug>>, TError,{data: BodyType<ReportBugInput>}, TContext> => {
+
+const mutationKey = ['reportBug'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reportBug>>, {data: BodyType<ReportBugInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  reportBug(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReportBugMutationResult = NonNullable<Awaited<ReturnType<typeof reportBug>>>
+    export type ReportBugMutationBody = BodyType<ReportBugInput>
+    export type ReportBugMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary BugRabbit's frontend ingestion sink — report a caught error (anonymous allowed)
+ */
+export const useReportBug = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportBug>>, TError,{data: BodyType<ReportBugInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reportBug>>,
+        TError,
+        {data: BodyType<ReportBugInput>},
+        TContext
+      > => {
+      return useMutation(getReportBugMutationOptions(options));
+    }
+
+export const getAdminListBugIssuesUrl = (params?: AdminListBugIssuesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/bug-rabbit/issues?${stringifiedParams}` : `/api/admin/bug-rabbit/issues`
+}
+
+/**
+ * One row per distinct bug (grouped by fingerprint), not per occurrence. "recency" sort (default) surfaces what's actively still happening; "frequency" surfaces the highest-occurrence issue, for triaging by how many people it's hurting rather than how recently it last fired.
+ * @summary BugRabbit's issue queue (admin only)
+ */
+export const adminListBugIssues = async (params?: AdminListBugIssuesParams, options?: RequestInit): Promise<BugIssueListResponse> => {
+
+  return customFetch<BugIssueListResponse>(getAdminListBugIssuesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListBugIssuesQueryKey = (params?: AdminListBugIssuesParams,) => {
+    return [
+    `/api/admin/bug-rabbit/issues`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getAdminListBugIssuesQueryOptions = <TData = Awaited<ReturnType<typeof adminListBugIssues>>, TError = ErrorType<unknown>>(params?: AdminListBugIssuesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListBugIssues>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListBugIssuesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListBugIssues>>> = ({ signal }) => adminListBugIssues(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListBugIssues>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListBugIssuesQueryResult = NonNullable<Awaited<ReturnType<typeof adminListBugIssues>>>
+export type AdminListBugIssuesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary BugRabbit's issue queue (admin only)
+ */
+
+export function useAdminListBugIssues<TData = Awaited<ReturnType<typeof adminListBugIssues>>, TError = ErrorType<unknown>>(
+ params?: AdminListBugIssuesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListBugIssues>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListBugIssuesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminGetBugIssueUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/bug-rabbit/issues/${id}`
+}
+
+/**
+ * occurrences is capped at MAX_STORED_OCCURRENCES per issue (see lib/bugRabbit.ts) — the issue's own occurrenceCount keeps counting past that cap even once detailed rows stop accumulating.
+ * @summary BugRabbit issue detail — stack trace and recent occurrences (admin only)
+ */
+export const adminGetBugIssue = async (id: string, options?: RequestInit): Promise<BugIssueDetailResponse> => {
+
+  return customFetch<BugIssueDetailResponse>(getAdminGetBugIssueUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetBugIssueQueryKey = (id: string,) => {
+    return [
+    `/api/admin/bug-rabbit/issues/${id}`
+    ] as const;
+    }
+
+
+export const getAdminGetBugIssueQueryOptions = <TData = Awaited<ReturnType<typeof adminGetBugIssue>>, TError = ErrorType<ApiError>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetBugIssue>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetBugIssueQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetBugIssue>>> = ({ signal }) => adminGetBugIssue(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetBugIssue>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetBugIssueQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetBugIssue>>>
+export type AdminGetBugIssueQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary BugRabbit issue detail — stack trace and recent occurrences (admin only)
+ */
+
+export function useAdminGetBugIssue<TData = Awaited<ReturnType<typeof adminGetBugIssue>>, TError = ErrorType<ApiError>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetBugIssue>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetBugIssueQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminUpdateBugIssueUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/bug-rabbit/issues/${id}`
+}
+
+/**
+ * @summary Mark a BugRabbit issue resolved or reopen it (admin only)
+ */
+export const adminUpdateBugIssue = async (id: string,
+    updateBugIssueInput: UpdateBugIssueInput, options?: RequestInit): Promise<BugIssue> => {
+
+  return customFetch<BugIssue>(getAdminUpdateBugIssueUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateBugIssueInput)
+  }
+);}
+
+
+
+
+export const getAdminUpdateBugIssueMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateBugIssue>>, TError,{id: string;data: BodyType<UpdateBugIssueInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminUpdateBugIssue>>, TError,{id: string;data: BodyType<UpdateBugIssueInput>}, TContext> => {
+
+const mutationKey = ['adminUpdateBugIssue'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminUpdateBugIssue>>, {id: string;data: BodyType<UpdateBugIssueInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  adminUpdateBugIssue(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminUpdateBugIssueMutationResult = NonNullable<Awaited<ReturnType<typeof adminUpdateBugIssue>>>
+    export type AdminUpdateBugIssueMutationBody = BodyType<UpdateBugIssueInput>
+    export type AdminUpdateBugIssueMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Mark a BugRabbit issue resolved or reopen it (admin only)
+ */
+export const useAdminUpdateBugIssue = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateBugIssue>>, TError,{id: string;data: BodyType<UpdateBugIssueInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminUpdateBugIssue>>,
+        TError,
+        {id: string;data: BodyType<UpdateBugIssueInput>},
+        TContext
+      > => {
+      return useMutation(getAdminUpdateBugIssueMutationOptions(options));
     }
 
 export const getAdminGetUsageStatsUrl = (params?: AdminGetUsageStatsParams,) => {

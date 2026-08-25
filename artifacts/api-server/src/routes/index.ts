@@ -30,6 +30,8 @@ import followsRouter from "./follows";
 import contentReportsRouter from "./contentReports";
 import usageEventsRouter from "./usageEvents";
 import whisperBoxRouter from "./whisperBox";
+import bugReportsRouter from "./bugReports";
+import adminBugRabbitRouter from "./adminBugRabbit";
 import { publicEndpointLimiter } from "../lib/rateLimit";
 
 const router: IRouter = Router();
@@ -53,6 +55,7 @@ router.use("/public", subscribeRouter);
 router.use("/public", publicInvitesRouter);
 router.use("/public", publicTextWhispsRouter);
 router.use("/public", usageEventsRouter);
+router.use("/public", bugReportsRouter);
 // No prefix: debateTopicsRouter defines its own full paths (both the
 // authenticated "/debate-topics" create/delete and the public
 // "/public/debate-topics..." routes), same pattern healthRouter uses above.
@@ -99,6 +102,9 @@ router.use("/admin", adminProjectsRouter);
 // "/admin"-base agent routers, which is why THEY need router.use("/prefix", mw)
 // instead of router.use(mw): see adminDebateAgent.ts's own comment.
 router.use("/admin/text-whisps", adminTextWhispsRouter);
+// Own distinct prefix, same reasoning as adminTextWhispsRouter above —
+// /api/admin/bug-rabbit/..., gated behind the "bugrabbit" permission.
+router.use("/admin/bug-rabbit", adminBugRabbitRouter);
 router.use("/whisper-groups", whisperGroupsRouter);
 router.use("/media", mediaRouter);
 router.use("/suggestions", suggestionsRouter);

@@ -215,3 +215,21 @@ export const whisperBoxSendLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+// POST /public/bug-reports (routes/bugReports.ts) — must work fully
+// unauthenticated (a crash can happen before sign-in resolves, or on a
+// public page), so this is IP-keyed like publicEndpointLimiter, but its own
+// dedicated instance rather than sharing that 60/5min budget: a genuine
+// client-side crash loop (a broken render path re-throwing on every
+// re-render) could burn through the shared public quota in seconds and
+// start 429ing unrelated public traffic — Whisper Box sends, circle
+// comments — from anyone on the same IP. Isolating it here means a runaway
+// error loop only ever costs itself, never anything else. The frontend
+// capture hook (lib/bugRabbitCapture.ts) also self-throttles per
+// fingerprint client-side, so this is a backstop, not the primary defense.
+export const bugReportLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+});

@@ -41,6 +41,7 @@ const PERMISSION_LABELS: Record<string, string> = {
   analytics: "Analytics & Overview",
   audit_log: "Audit Log",
   projects: "Projects & Tasks",
+  bugrabbit: "BugRabbit (error tracker)",
 };
 
 function PermissionPicker({

@@ -1710,6 +1710,68 @@ export interface ContentReportListResponse {
   openByPriority: ContentReportListResponseOpenByPriority;
 }
 
+export interface ReportBugInput {
+  /** Capped at 2000 chars server-side before scrubbing/truncating further to 500. */
+  message: string;
+  /** Optional — omitted when the source event carried no Error object (e.g. a bare window.onerror). */
+  stack?: string;
+  /** Page path the error happened on. Query string is stripped server-side before storage. */
+  url?: string;
+}
+
+export interface BugIssue {
+  id: string;
+  /** Stable grouping key — see lib/bugRabbit.ts's fingerprintFor(). Not meant to be read for anything but dedup. */
+  fingerprint: string;
+  /** 'frontend' | 'backend' */
+  source: string;
+  /** Scrubbed, truncated error message from the FIRST occurrence — stays stable as later occurrences increment the counters below rather than overwriting it. */
+  message: string;
+  occurrenceCount: number;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  resolved: boolean;
+  /** @nullable */
+  resolvedAt?: string | null;
+  /** @nullable */
+  resolvedByAdminId?: string | null;
+}
+
+export interface BugIssueListResponse {
+  items: BugIssue[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface BugOccurrence {
+  id: string;
+  /** @nullable */
+  stack?: string | null;
+  /** @nullable */
+  url?: string | null;
+  /** @nullable */
+  userAgent?: string | null;
+  /** @nullable */
+  userId?: string | null;
+  createdAt: string;
+  /**
+     * Joined for admin display when the occurrence had a signed-in user; null for anonymous occurrences or a since-deleted account.
+     * @nullable
+     */
+  userEmail?: string | null;
+}
+
+export interface BugIssueDetailResponse {
+  issue: BugIssue;
+  /** Most recent first, capped at MAX_STORED_OCCURRENCES — see lib/bugRabbit.ts. */
+  occurrences: BugOccurrence[];
+}
+
+export interface UpdateBugIssueInput {
+  resolved: boolean;
+}
+
 export type UpdateContentReportInputPriority = typeof UpdateContentReportInputPriority[keyof typeof UpdateContentReportInputPriority];
 
 
@@ -2911,6 +2973,19 @@ export type AdminListModerationFlagsParams = {
  */
 dismissed?: string;
 severity?: string;
+page?: number;
+pageSize?: number;
+};
+
+export type AdminListBugIssuesParams = {
+/**
+ * 'unresolved' (default), 'resolved', or 'all'.
+ */
+status?: string;
+/**
+ * 'recency' (default) or 'frequency'.
+ */
+sort?: string;
 page?: number;
 pageSize?: number;
 };
