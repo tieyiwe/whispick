@@ -379,6 +379,20 @@ function blockResponse(status: number): { error: string; code: "video_private" |
   return null;
 }
 
+// Matches the videoTitle column's cap, duplicated as a literal `.max(300)`
+// across routes/whisps.ts, routes/whisperGroups.ts, and routes/public.ts —
+// this is the one place a scraped title is actually produced, so capping it
+// here is what keeps every one of those from ever rejecting a send over an
+// oversized title. YouTube/TikTok/Vimeo oEmbed titles are always short, but
+// Facebook and X/Twitter have no real distinct "title" for a post — their
+// og:title (and the og:description Facebook/Instagram fall back to) often
+// echoes back the full post caption, which routinely runs past 300 chars.
+const MAX_TITLE_LEN = 300;
+
+export function truncateTitle(title: string): string {
+  return title.length > MAX_TITLE_LEN ? `${title.slice(0, MAX_TITLE_LEN - 1)}…` : title;
+}
+
 export type VideoMetaOutcome =
   | { kind: "invalid_url" }
   | { kind: "unsupported" }
@@ -454,7 +468,7 @@ export async function resolveVideoMeta(url: string): Promise<VideoMetaOutcome> {
 
   return {
     kind: "ok",
-    title: result?.title ?? null,
+    title: result?.title ? truncateTitle(result.title) : null,
     thumbnail: result?.thumbnail ?? null,
     platform,
     embedUrl: buildEmbedUrl(url, platform),
