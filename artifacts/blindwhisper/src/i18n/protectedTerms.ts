@@ -18,6 +18,7 @@ export const PROTECTED_TERMS = [
   "Blind Circle",
   "Blind Circles",
   "Debate Now",
-  "Town Crier",
+  "Debado",
   "Circle Scout",
+  "Intelo",
 ] as const;

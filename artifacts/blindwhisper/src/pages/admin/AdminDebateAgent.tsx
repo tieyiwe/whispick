@@ -78,7 +78,7 @@ export function AdminDebateAgent() {
           // rather than leaving the cleared/invalid value on screen.
           if (!countValid && config) setDailyPostCount(String(config.dailyPostCount));
           invalidate();
-          toast({ title: "Town Crier settings saved" });
+          toast({ title: "Debado settings saved" });
         },
         onError: (err: any) => toast({ title: err?.data?.error ?? "Couldn't save those settings", variant: "destructive" }),
       }
@@ -89,7 +89,7 @@ export function AdminDebateAgent() {
     runNow.mutate(undefined, {
       onSuccess: (result) => {
         invalidate();
-        toast({ title: `Town Crier run complete — ${result.posted} posted, ${result.skipped} skipped` });
+        toast({ title: `Debado run complete — ${result.posted} posted, ${result.skipped} skipped` });
       },
       onError: (err: any) => toast({ title: err?.data?.error ?? "Run failed to complete", variant: "destructive" }),
     });
@@ -128,14 +128,14 @@ export function AdminDebateAgent() {
       <div className="max-w-3xl mx-auto space-y-6">
         <div>
           <h1 className="text-3xl font-serif font-bold text-foreground flex items-center gap-2">
-            <Megaphone className="w-7 h-7 text-primary" /> Town Crier
+            <Megaphone className="w-7 h-7 text-primary" /> Debado
           </h1>
           <p className="text-muted-foreground mt-1">
             The AI agent that generates and posts to Debate Now automatically.
           </p>
         </div>
 
-        <AgentStatusCard agentLabel="Town Crier" status={config} onRunNow={handleRunNow} runPending={runNow.isPending} />
+        <AgentStatusCard agentLabel="Debado" status={config} onRunNow={handleRunNow} runPending={runNow.isPending} />
 
         <Card className="bg-card border-border/50">
           <CardHeader>
@@ -145,7 +145,7 @@ export function AdminDebateAgent() {
             <div className="flex items-center justify-between p-3 rounded-xl border border-border/50">
               <div>
                 <p className="text-sm font-medium text-foreground">Enabled</p>
-                <p className="text-xs text-muted-foreground">When off, Town Crier never posts on its own schedule.</p>
+                <p className="text-xs text-muted-foreground">When off, Debado never posts on its own schedule.</p>
               </div>
               <Switch checked={enabled} onCheckedChange={setEnabled} data-testid="switch-agent-enabled" />
             </div>

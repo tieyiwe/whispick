@@ -35,7 +35,7 @@ const PERMISSION_LABELS: Record<string, string> = {
   moderation: "Moderation",
   reports: "Reports",
   suggestions: "Suggestions",
-  agents: "Content agents (Town Crier & Circle Scout)",
+  agents: "Content agents (Debado & Circle Scout)",
   notifications: "Notifications",
   policies: "Policies",
   analytics: "Analytics & Overview",

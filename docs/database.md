@@ -52,7 +52,7 @@ per table. New tables must also be added to the test truncate list in
 | `suggested_videos` | Curated Suggestions Library links: categories, featured, status pending/published/archived, source admin/ai_agent, AI summary fields |
 | `suggestion_agent_status` | Singleton status row for the discovery agent |
 | `whisper_box_messages` | Anonymous inbound messages via a user's public Whisper Box link: `recipientUserId`, `messageText` (≤500), `senderAlias` (decorative only), status unread/read, `removedByAdminAt`. Deliberately no `senderId` — no account, no way to trace or warn an author |
-| `debate_agent_settings` / `circle_agent_settings` | Singleton config+status for Town Crier / Circle Scout (enabled, dailyPostCount, topics, run health) |
+| `debate_agent_settings` / `circle_agent_settings` | Singleton config+status for Debado / Circle Scout (enabled, dailyPostCount, topics, run health) |
 
 ## Growth & delivery
 

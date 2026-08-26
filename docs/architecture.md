@@ -90,4 +90,4 @@ sync with public pages.
 The api-server registers recurring in-process jobs on boot (`lib/scheduler.ts` +
 per-feature `*Scheduler.ts` files): whisp expiration, media retention, AI takeaways,
 reply notifications, text-whisp scheduled sends, subscriber matching, reminders, and the
-two content agents (Town Crier, Circle Scout). Details in the feature pages.
+two content agents (Debado, Circle Scout). Details in the feature pages.
