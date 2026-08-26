@@ -230,9 +230,9 @@ function AgentStatusBanner() {
       onSuccess: (result) => {
         queryClient.invalidateQueries({ queryKey: getAdminGetSuggestionAgentStatusQueryKey() });
         queryClient.invalidateQueries({ queryKey: ["/api/admin/suggestions"] });
-        toast({ title: `Discovery run complete — ${result.inserted} added, ${result.skipped} skipped` });
+        toast({ title: `Intelo run complete — ${result.inserted} added, ${result.skipped} skipped` });
       },
-      onError: () => toast({ title: "Discovery run failed to complete", variant: "destructive" }),
+      onError: () => toast({ title: "Intelo run failed to complete", variant: "destructive" }),
     });
   }
 
@@ -248,7 +248,7 @@ function AgentStatusBanner() {
       <Card className="bg-card border-border/50" data-testid="agent-status-banner-never-run">
         <CardContent className="p-4 flex items-center justify-between gap-4 flex-wrap">
           <p className="text-sm text-muted-foreground">
-            The AI discovery agent hasn't run yet — it checks automatically once a day, or you can trigger it now.
+            Intelo hasn't run yet — it checks automatically once a day, or you can trigger it now.
           </p>
           {runNowButton}
         </CardContent>
@@ -268,8 +268,8 @@ function AgentStatusBanner() {
             <div>
               <p className={`text-sm font-medium ${status.lowCreditSuspected ? "text-destructive" : "text-amber-400"}`}>
                 {status.lowCreditSuspected
-                  ? "AI discovery agent stopped — your Anthropic credit balance looks too low"
-                  : "The last AI discovery run failed"}
+                  ? "Intelo stopped — your Anthropic credit balance looks too low"
+                  : "Intelo's last run failed"}
               </p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {status.lowCreditSuspected
@@ -289,7 +289,7 @@ function AgentStatusBanner() {
     <Card className="bg-card border-border/50" data-testid="agent-status-banner-ok">
       <CardContent className="p-4 flex items-center justify-between gap-4 flex-wrap">
         <p className="text-sm text-muted-foreground">
-          AI discovery last ran {new Date(status.lastRunAt).toLocaleString()} — looking healthy.
+          Intelo last ran {new Date(status.lastRunAt).toLocaleString()} — looking healthy.
         </p>
         {runNowButton}
       </CardContent>

@@ -9,7 +9,7 @@ business function in one place. The admin UI is English-only by convention.
 
 - `components/layout/AdminLayout.tsx` — the HQ shell. Nav groups: **Business**
   (Overview, Analytics, Projects), **Community** (Users, Moderation, Reports),
-  **Content** (Whisps, Suggestions, Town Crier, Circle Scout), **Outreach**
+  **Content** (Whisps, Suggestions, Debado, Circle Scout), **Outreach**
   (Notifications, Policies), **System** (Audit Log, BugRabbit, Staff & Access).
 - Nav items carry `permission` / `ownerOnly` and are filtered by
   `useGetMyAdminAccess`; collaborators landing on `/admin_pro` without the
@@ -238,7 +238,7 @@ delivery for `source: 'admin'` rows never consults it.
 
 ## Content agents
 
-Town Crier (`/admin_pro/debate-agent`) and Circle Scout (`/admin_pro/circle-agent`)
+Debado (`/admin_pro/debate-agent`) and Circle Scout (`/admin_pro/circle-agent`)
 panels control the two AI content agents — see
 [features-community.md](features-community.md). Their routers share the `/admin`
 mount; their middleware **must stay scoped** to their own prefixes

@@ -11,7 +11,7 @@ import {
 } from "../lib/debateAgent";
 import { MAX_TOPIC_TEXT_LENGTH } from "./debateTopics";
 
-// Admin control surface for the Debate Topic posting agent ("Town Crier" in
+// Admin control surface for the Debate Topic posting agent ("Debado" in
 // admin UI copy) — config, manual trigger, and manual compose-and-publish.
 // Deliberately a separate router/file from routes/admin.ts (rather than
 // appended to that already-large file) to avoid merge collisions with other

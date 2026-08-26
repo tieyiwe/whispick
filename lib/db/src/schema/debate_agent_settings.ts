@@ -2,7 +2,7 @@ import { pgTable, text, timestamp, boolean, integer } from "drizzle-orm/pg-core"
 
 // A single-row config+status table (always id="singleton", same convention
 // as suggestion_agent_status.ts) for the admin-controlled Debate Topic
-// posting agent ("Town Crier" in admin UI copy) — see lib/debateAgent.ts.
+// posting agent ("Debado" in admin UI copy) — see lib/debateAgent.ts.
 // Config and status are combined in one table rather than split across two:
 // there's exactly one admin panel screen for this feature, and it always
 // wants both pieces of information (the current settings, and how the last

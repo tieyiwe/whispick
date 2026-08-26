@@ -54,7 +54,7 @@ const ADMIN_NAV_GROUPS: { heading: string; items: NavItem[] }[] = [
     items: [
       { href: "/admin_pro/whisps", label: "Whisps", icon: ListVideo, permission: "whisps" },
       { href: "/admin_pro/suggestions", label: "Suggestions", icon: Sparkles, permission: "suggestions" },
-      { href: "/admin_pro/debate-agent", label: "Town Crier", icon: Megaphone, permission: "agents" },
+      { href: "/admin_pro/debate-agent", label: "Debado", icon: Megaphone, permission: "agents" },
       { href: "/admin_pro/circle-agent", label: "Circle Scout", icon: Video, permission: "agents" },
     ],
   },

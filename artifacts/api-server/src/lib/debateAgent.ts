@@ -8,7 +8,7 @@ import { moderateDebateTopicAsync } from "./moderation";
 import { MAX_TOPIC_TEXT_LENGTH } from "../routes/debateTopics";
 import { logger } from "./logger";
 
-// The admin-controlled AI agent ("Town Crier" in admin UI copy) that posts
+// The admin-controlled AI agent ("Debado" in admin UI copy) that posts
 // Debate Topic entries to the PUBLIC Debate Topics feed — either on a daily
 // schedule (lib/debateAgentScheduler.ts) or on-demand via an admin "post
 // now" trigger (routes/adminDebateAgent.ts). Modeled on

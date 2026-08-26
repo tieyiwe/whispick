@@ -119,7 +119,7 @@ A run only counts as failed when *every* item fails (systemic problem);
 declared untrusted data in every prompt. Missing `ANTHROPIC_API_KEY` = "not
 attempted".
 
-- **Town Crier** (debate agent, `debate_agent_settings`): generates ≤200-char
+- **Debado** (debate agent, `debate_agent_settings`): generates ≤200-char
   debate prompts straight to the public feed (no approval queue). Default 3/day,
   themes rotated daily; news-flavored themes get web search restricted to
   apnews/reuters/bbc/npr; output cleaned + hard-truncated; 30-day dedupe.
@@ -288,3 +288,14 @@ archived`), `source` (`admin | ai_agent`), and an AI one-liner summary
 User-facing `GET /api/suggestions` (published only, category/featured filters) +
 `GET /:id` feed the "Whisper this" forward flow and the concierge's matching
 pool.
+
+**Intelo** (`lib/suggestionAgent.ts`, surfaced on the `/admin_pro/suggestions`
+page itself rather than its own nav entry) is the AI discovery agent behind
+`source: 'ai_agent'` rows: rotates through `VIDEO_CATEGORIES` day-by-day,
+asks Claude (with the `web_search` tool, results treated as untrusted data —
+never instructions) for real video URLs per category, validates every one
+through `resolveVideoMeta()`'s allowlist before inserting as `status:
+'pending'` for admin review. Prompted to return a mix of short-form (under
+~3 min — Shorts/Reels count) and longer videos rather than all one length,
+and to actively draw from both YouTube and Facebook specifically, not just
+whichever platform the search happens to settle on first.
