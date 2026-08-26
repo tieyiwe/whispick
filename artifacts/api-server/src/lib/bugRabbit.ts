@@ -119,3 +119,28 @@ export async function recordBugReport(input: RecordBugReportInput): Promise<void
     logger.error({ err }, "Failed to record bug report");
   }
 }
+
+// Convenience wrapper for every backend call site OUTSIDE the Express
+// request/response cycle — the ~10 setInterval-based background schedulers
+// (reminderScheduler, matchScheduler, the content agents, etc.), and the
+// process-level uncaughtException/unhandledRejection nets in index.ts.
+// app.ts's terminal error handler covers a thrown/rejected route handler;
+// nothing else does, since Express error middleware only ever sees errors
+// passed through its own request pipeline — an error thrown inside a
+// setInterval callback, or a fire-and-forget `void someAsyncFn()` that
+// rejects, never reaches it. `context` is a short, stable label (e.g.
+// "scheduler:reminderScheduler") stored in the same `url` column
+// route-sourced reports use for the request path — there's no real URL for
+// a background job, but the column is otherwise exactly "where this
+// happened," which a synthetic label serves just as well.
+export function reportSystemError(err: unknown, context: string): void {
+  const error = err instanceof Error ? err : new Error(String(err));
+  void recordBugReport({
+    source: "backend",
+    message: error.message,
+    stack: error.stack ?? null,
+    url: context,
+    userAgent: null,
+    userId: null,
+  });
+}
