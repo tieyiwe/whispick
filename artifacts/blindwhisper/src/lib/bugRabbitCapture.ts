@@ -61,11 +61,14 @@ export function reportErrorToBugRabbit(message: string, stack?: string | null): 
     const fingerprint = clientFingerprint(message, stack ?? undefined);
     if (recentlySent(fingerprint)) return;
 
-    void reportBug({
-      message,
-      ...(stack ? { stack } : {}),
-      url: window.location.pathname,
-    }).catch(() => {});
+    // keepalive lets this request outlive a page unload/navigation — the
+    // same reliability sendBeacon exists for, without needing a second code
+    // path just for that one moment. Most relevant for a crash that happens
+    // as part of the very navigation/reload that would otherwise cancel it.
+    void reportBug(
+      { message, ...(stack ? { stack } : {}), url: window.location.pathname },
+      { keepalive: true },
+    ).catch(() => {});
   } catch {
     // A failure IN the error-reporting path must never become a second
     // error for this same handler to catch.

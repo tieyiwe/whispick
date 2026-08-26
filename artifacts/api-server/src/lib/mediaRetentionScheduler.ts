@@ -5,6 +5,7 @@ import { sendEmail, mediaExpiringEmailHtml } from "./email";
 import { notifyUserPersisted } from "./push";
 import { UPLOAD_DELETION_WARNING_DAYS } from "./uploads";
 import { logger } from "./logger";
+import { reportSystemError } from "./bugRabbit";
 
 const POLL_INTERVAL_MS = 60 * 60 * 1000; // retention is day-granularity — hourly is plenty
 // Same bounded-sweep reasoning as lib/scheduler.ts's BATCH_LIMIT — both
@@ -24,6 +25,7 @@ export function startMediaRetentionScheduler(): void {
       await deleteExpiredMedia();
     } catch (err) {
       logger.error({ err }, "Media retention sweep failed");
+      reportSystemError(err, "scheduler:mediaRetentionScheduler");
     }
   }, POLL_INTERVAL_MS);
 }

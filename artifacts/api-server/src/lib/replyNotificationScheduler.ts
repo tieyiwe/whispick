@@ -4,6 +4,7 @@ import { eq, and, lte, isNull, isNotNull } from "drizzle-orm";
 import { sendEmail, replyNotificationEmailHtml } from "./email";
 import { notifyUserPersisted } from "./push";
 import { logger } from "./logger";
+import { reportSystemError } from "./bugRabbit";
 
 const POLL_INTERVAL_MS = 60_000;
 // Same bounded-sweep reasoning as lib/scheduler.ts's BATCH_LIMIT — this loop
@@ -120,6 +121,7 @@ export function startReplyNotificationScheduler(): void {
       logger.info({ count: due.length }, "Dispatched deferred reply notifications");
     } catch (err) {
       logger.error({ err }, "Deferred reply notification dispatch failed");
+      reportSystemError(err, "scheduler:replyNotificationScheduler:reply");
     }
 
     // Separate try block: a failure dispatching these must not stop reply
@@ -147,6 +149,7 @@ export function startReplyNotificationScheduler(): void {
       }
     } catch (err) {
       logger.error({ err }, "Deferred video-reply-request dispatch failed");
+      reportSystemError(err, "scheduler:replyNotificationScheduler:videoReplyRequest");
     }
   }, POLL_INTERVAL_MS);
 }

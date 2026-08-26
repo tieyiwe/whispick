@@ -1,5 +1,6 @@
 import { runDebateTopicAgentSweep } from "./debateAgent";
 import { logger } from "./logger";
+import { reportSystemError } from "./bugRabbit";
 
 // Once a day is plenty — this posts a small, config-bounded number of
 // topics, not a real-time feed, same cadence reasoning as
@@ -13,6 +14,7 @@ export function startDebateAgentScheduler(): void {
       await runDebateTopicAgentSweep();
     } catch (err) {
       logger.error({ err }, "Debate topic agent sweep failed");
+      reportSystemError(err, "scheduler:debateAgentScheduler");
     }
   }, POLL_INTERVAL_MS);
 }

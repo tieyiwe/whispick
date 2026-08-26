@@ -5,6 +5,7 @@ import { deliverInApp } from "./deliver";
 import { sendSms, textWhispGuestSmsBody } from "./sms";
 import { textWhispHookLine } from "./copy";
 import { logger } from "./logger";
+import { reportSystemError } from "./bugRabbit";
 
 const POLL_INTERVAL_MS = 60_000;
 // Same bounded-sweep reasoning as lib/scheduler.ts's BATCH_LIMIT — this loop
@@ -82,6 +83,7 @@ export function startScheduledTextWhispDispatcher(): void {
       logger.info({ count: due.length }, "Dispatched scheduled Text Whisps");
     } catch (err) {
       logger.error({ err }, "Scheduled Text Whisp dispatch failed");
+      reportSystemError(err, "scheduler:textWhispScheduler");
     }
   }, POLL_INTERVAL_MS);
 }

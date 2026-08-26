@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { randomUUID } from "crypto";
 import { db, bugIssuesTable, bugOccurrencesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { fingerprintFor, recordBugReport, MAX_STORED_OCCURRENCES } from "../lib/bugRabbit";
+import { fingerprintFor, recordBugReport, reportSystemError, MAX_STORED_OCCURRENCES } from "../lib/bugRabbit";
 
 // Digit-free so it can never accidentally trip piiScrub's phone-number
 // pattern (a plain randomUUID() sometimes contains a long enough all-digit
@@ -104,5 +104,39 @@ describe("recordBugReport", () => {
 
   it("never throws even when given an empty message", async () => {
     await expect(recordBugReport({ source: "backend", message: "" })).resolves.toBeUndefined();
+  });
+});
+
+// reportSystemError is the wrapper every background scheduler's catch block
+// (and process.on('unhandledRejection')) calls instead of recordBugReport
+// directly — it exists specifically to cover call sites that have no HTTP
+// request to hang the report on, using `context` as a synthetic "where"
+// (e.g. "scheduler:reminderScheduler") in place of a real request URL.
+describe("reportSystemError", () => {
+  it("records a real Error under the given context as the report's url", async () => {
+    const marker = safeMarker();
+    const err = new Error(`Scheduler blew up ${marker}`);
+
+    reportSystemError(err, "scheduler:reminderScheduler");
+    // Fire-and-forget by design (matches every other scheduler catch-block
+    // call site) — give its internal recordBugReport a tick to land.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const issues = await db.select().from(bugIssuesTable);
+    const issue = issues.find((i) => i.message.includes(marker));
+    expect(issue).toBeTruthy();
+
+    const occurrences = await db.select().from(bugOccurrencesTable).where(eq(bugOccurrencesTable.issueId, issue!.id));
+    expect(occurrences[0]!.url).toBe("scheduler:reminderScheduler");
+  });
+
+  it("coerces a non-Error thrown value into a reportable message instead of throwing itself", async () => {
+    const marker = safeMarker();
+    expect(() => reportSystemError(`plain string rejection ${marker}`, "process:unhandledRejection")).not.toThrow();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const issues = await db.select().from(bugIssuesTable);
+    const issue = issues.find((i) => i.message.includes(marker));
+    expect(issue).toBeTruthy();
   });
 });

@@ -1,5 +1,6 @@
 import { runCircleContentAgentSweep } from "./circleContentAgent";
 import { logger } from "./logger";
+import { reportSystemError } from "./bugRabbit";
 
 // Once a day is plenty — this posts a small, config-bounded number of
 // videos, not a real-time feed, same cadence reasoning as
@@ -14,6 +15,7 @@ export function startCircleAgentScheduler(): void {
       await runCircleContentAgentSweep();
     } catch (err) {
       logger.error({ err }, "Circle content agent sweep failed");
+      reportSystemError(err, "scheduler:circleAgentScheduler");
     }
   }, POLL_INTERVAL_MS);
 }

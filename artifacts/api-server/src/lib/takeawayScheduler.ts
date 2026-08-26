@@ -2,6 +2,7 @@ import { db, whispsTable } from "@workspace/db";
 import { eq, and, or, lte, isNull } from "drizzle-orm";
 import { generateTakeawayAsync } from "./aiTakeaway";
 import { logger } from "./logger";
+import { reportSystemError } from "./bugRabbit";
 
 const POLL_INTERVAL_MS = 30 * 60 * 1000; // not time-critical — half-hourly is plenty
 const UNWATCHED_NUDGE_HOURS = 6;
@@ -40,6 +41,7 @@ export function startTakeawayScheduler(): void {
       }
     } catch (err) {
       logger.error({ err }, "Takeaway sweep failed");
+      reportSystemError(err, "scheduler:takeawayScheduler");
     }
   }, POLL_INTERVAL_MS);
 }

@@ -5,6 +5,7 @@ import { deliverWhisperLink } from "./deliver";
 import { reminderHookLine } from "./copy";
 import { isExpired, MAX_REMINDERS } from "./expiration";
 import { logger } from "./logger";
+import { reportSystemError } from "./bugRabbit";
 
 const POLL_INTERVAL_MS = 60_000;
 // Same bounded-sweep reasoning as lib/scheduler.ts's BATCH_LIMIT — this loop
@@ -61,6 +62,7 @@ export function startReminderDispatcher(): void {
       logger.info({ count: due.length }, "Dispatched whisp reminders");
     } catch (err) {
       logger.error({ err }, "Reminder dispatch failed");
+      reportSystemError(err, "scheduler:reminderScheduler");
     }
   }, POLL_INTERVAL_MS);
 }

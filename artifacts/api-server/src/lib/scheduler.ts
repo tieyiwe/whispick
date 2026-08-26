@@ -6,6 +6,7 @@ import { groupHookLine } from "./copy";
 import { computeExpiresAt } from "./expiration";
 import { notifyUserPersisted } from "./push";
 import { logger } from "./logger";
+import { reportSystemError } from "./bugRabbit";
 
 const POLL_INTERVAL_MS = 60_000;
 // Bounds the work done per sweep regardless of how large the due backlog
@@ -108,6 +109,7 @@ export function startScheduledWhispDispatcher(): void {
       logger.info({ count: due.length }, "Dispatched scheduled whisps");
     } catch (err) {
       logger.error({ err }, "Scheduled whisp dispatch failed");
+      reportSystemError(err, "scheduler:whispDispatcher");
     }
   }, POLL_INTERVAL_MS);
 }

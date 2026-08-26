@@ -2,6 +2,7 @@ import { db, whispsTable } from "@workspace/db";
 import { eq, and, isNull } from "drizzle-orm";
 import { matchGhostBoostWhisp } from "./matching";
 import { logger } from "./logger";
+import { reportSystemError } from "./bugRabbit";
 
 const POLL_INTERVAL_MS = 10 * 60 * 1000; // matching isn't time-critical
 // Same bounded-sweep reasoning as lib/scheduler.ts's BATCH_LIMIT — each
@@ -52,6 +53,7 @@ export function startMatchScheduler(): void {
       }
     } catch (err) {
       logger.error({ err }, "Ghost Boost matching sweep failed");
+      reportSystemError(err, "scheduler:matchScheduler");
     }
   }, POLL_INTERVAL_MS);
 }
