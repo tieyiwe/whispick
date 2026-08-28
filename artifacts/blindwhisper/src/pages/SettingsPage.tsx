@@ -47,7 +47,18 @@ const WHISPER_LINK_LIMITS: Record<string, number | null> = {
 };
 
 export function SettingsPage() {
-  const { data: profile, isLoading } = useGetUserProfile();
+  // refetchOnMount: "always" (not the default staleTime-gated refetch) —
+  // this page is the "Get your Whisper Box link" entry point, and
+  // whisperBoxHandlePersonalized/whisperBoxEnabled can change from
+  // elsewhere in the same session (another tab, the onboarding flow) with
+  // no local mutation here to invalidate this query's cache. Without this,
+  // a stale cached profile can wrongly show the "personalize your link"
+  // name-capture step (or hide copy/share) until *some* mutation on this
+  // page happens to invalidate it — which is exactly the "had to toggle it
+  // off and on before copy/share worked" bug this fixes.
+  const { data: profile, isLoading } = useGetUserProfile({
+    query: { refetchOnMount: "always", queryKey: getGetUserProfileQueryKey() },
+  });
   const { isLoaded: clerkLoaded, user } = useUser();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -102,7 +113,13 @@ export function SettingsPage() {
   // personalize step), leaving this card stuck showing a stale handle. This
   // way every consumer of the same recap query (Dashboard, Inbox, this
   // page) reads the same, always-current value.
-  const { data: recap, isLoading: recapLoading } = useGetUserRecap();
+  // Same refetchOnMount:"always" reasoning as the profile query above —
+  // whisperBoxEnabled/whisperBoxHandle here gate the entire copy/share UI
+  // and need to reflect live state every time this page is opened, not
+  // whatever was cached from earlier in the session.
+  const { data: recap, isLoading: recapLoading } = useGetUserRecap(undefined, {
+    query: { refetchOnMount: "always", queryKey: getGetUserRecapQueryKey() },
+  });
   const whisperBoxEnabled = recap ? recap.whisperBoxMessagesReceived !== null : false;
   const whisperBoxHandle = recap?.whisperBoxHandle ?? null;
   const enableWhisperBox = useEnableWhisperBox();

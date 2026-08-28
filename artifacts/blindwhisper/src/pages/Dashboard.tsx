@@ -1,6 +1,6 @@
 import { useEffect, useState, lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
-import { useGetWhispStats, useListSuggestions, getListSuggestionsQueryKey, useGetUserProfile, useGetUserRecap, useGetWhisperBoxUnreadCount } from "@workspace/api-client-react";
+import { useGetWhispStats, useListSuggestions, getListSuggestionsQueryKey, useGetUserProfile, useGetUserRecap, getGetUserRecapQueryKey, useGetWhisperBoxUnreadCount } from "@workspace/api-client-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Send, Eye, PlayCircle, MessageSquareHeart, TrendingUp, Ghost, Sparkles, Repeat, Heart, PartyPopper, Mailbox } from "lucide-react";
@@ -42,7 +42,13 @@ export function Dashboard() {
   // whisperBoxMessagesReceived is null unless the caller has whisperBoxEnabled
   // — see UserRecap's own doc comment. There's no dedicated boolean field for
   // this anywhere else the frontend can read, so recap doubles as the signal.
-  const { data: recap } = useGetUserRecap();
+  // refetchOnMount: "always" so this dashboard card's enabled/disabled state
+  // reflects reality every time the dashboard is opened, rather than
+  // whatever was cached from earlier in the session (see SettingsPage.tsx's
+  // matching comment for the bug this avoids).
+  const { data: recap } = useGetUserRecap(undefined, {
+    query: { refetchOnMount: "always", queryKey: getGetUserRecapQueryKey() },
+  });
   const whisperBoxEnabled = recap ? recap.whisperBoxMessagesReceived !== null : false;
   const { data: whisperBoxUnread } = useGetWhisperBoxUnreadCount();
   const whisperBoxUnreadCount = whisperBoxUnread?.unreadCount ?? 0;

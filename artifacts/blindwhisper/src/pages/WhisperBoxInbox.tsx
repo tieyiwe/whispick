@@ -11,6 +11,7 @@ import {
   getListWhisperBoxMessagesQueryKey,
   getGetWhisperBoxUnreadCountQueryKey,
   getGetUserRecapQueryKey,
+  getGetUserProfileQueryKey,
   type WhisperBoxMessage,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -51,13 +52,24 @@ export function WhisperBoxInbox() {
   // recap endpoint's whisperBoxMessagesReceived is null unless the caller
   // has whisperBoxEnabled (see UserRecap's own doc comment), which is
   // exactly the signal the empty state below needs to pick its copy.
-  const { data: recap, isLoading: isLoadingRecap } = useGetUserRecap();
+  // refetchOnMount: "always" on both queries below — this inbox is a
+  // second entry point (alongside Settings) into the same "share your
+  // Whisper Box link" flow, and whisperBoxEnabled/whisperBoxHandlePersonalized
+  // can change from elsewhere in the session with no local mutation here to
+  // invalidate this page's cached copy. Without it, a stale cache can wrongly
+  // route into WhisperBoxLinkDialog's name-capture step (or hide the share
+  // actions) until something unrelated happens to refresh these queries.
+  const { data: recap, isLoading: isLoadingRecap } = useGetUserRecap(undefined, {
+    query: { refetchOnMount: "always", queryKey: getGetUserRecapQueryKey() },
+  });
   const whisperBoxEnabled = recap ? recap.whisperBoxMessagesReceived !== null : undefined;
   // Only needed to decide whether a share action should detour through
   // WhisperBoxLinkDialog's name-capture step first — see that component's
   // comment for why an un-personalized (or stale-name) handle isn't worth
   // sharing. Backend-computed — see routes/user.ts's whisperBoxHandlePersonalized.
-  const { data: profile } = useGetUserProfile();
+  const { data: profile } = useGetUserProfile({
+    query: { refetchOnMount: "always", queryKey: getGetUserProfileQueryKey() },
+  });
   const handlePersonalized = profile?.whisperBoxHandlePersonalized ?? false;
 
   const markRead = useMarkWhisperBoxMessageRead();
