@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { useGetUserRecap, GetUserRecapPeriod, type UserRecap } from "@workspace/api-client-react";
+import { useGetUserRecap, getGetUserRecapQueryKey, GetUserRecapPeriod, type UserRecap } from "@workspace/api-client-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -74,7 +74,15 @@ export function RecapPage() {
   const { toast } = useToast();
   const [period, setPeriod] = useState<GetUserRecapPeriod>(GetUserRecapPeriod.all_time);
 
-  const { data, isLoading, isError, refetch } = useGetUserRecap({ period });
+  // refetchOnMount: "always" — this is a distinct cache entry (keyed by
+  // `period`) from the plain useGetUserRecap() used elsewhere, so it never
+  // benefited from those pages' identical fix for the same staleness bug:
+  // whisperBoxMessagesReceived here can go stale relative to a Whisper Box
+  // enable/disable made in another tab or on Settings moments earlier.
+  const { data, isLoading, isError, refetch } = useGetUserRecap(
+    { period },
+    { query: { refetchOnMount: "always", queryKey: getGetUserRecapQueryKey({ period }) } },
+  );
 
   function handleShare() {
     if (!data) return;

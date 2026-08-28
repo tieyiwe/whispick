@@ -34,7 +34,7 @@ per table. New tables must also be added to the test truncate list in
 
 | Table | Purpose |
 |---|---|
-| `text_whisps` | Text-only anonymous messages by phone: `recipientPhone` (E.164) + nullable `recipientUserId` (verified match at send time only), `publicToken`, status scheduled/sent/read/replied, `scheduledAt`, typing indicator columns, reveal handshake, sender soft delete, `source` ('user' default \| 'admin' — admin broadcast/staff-direct sends, always in-app-only) |
+| `text_whisps` | Text-only anonymous messages by phone: `recipientPhone` (E.164) + nullable `recipientUserId` (verified match at send time only), `publicToken`, status scheduled/sent/read/replied, `scheduledAt`, typing indicator columns, reveal handshake, sender soft delete (`deletedBySenderAt`, sender-only), admin moderation takedown (`removedByAdminAt`, hides it from sender AND recipient alike, plus the public guest landing page), `source` ('user' default \| 'admin' — admin broadcast/staff-direct sends, always in-app-only) |
 | `text_whisp_replies` | Authenticated two-party thread: `senderId`, quote `parentReplyId`, `readAt` receipts |
 
 ## Community

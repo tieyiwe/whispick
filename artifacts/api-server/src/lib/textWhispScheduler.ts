@@ -61,6 +61,24 @@ export function startScheduledTextWhispDispatcher(): void {
       }
 
       for (const textWhisp of due) {
+        // Claim BEFORE sending (conditional on the row still being
+        // 'scheduled') so an overlapping sweep — this loop awaits a real
+        // SMS/in-app send per row, so a backlog can still be mid-batch when
+        // the next POLL_INTERVAL_MS fires — can't re-select this same row
+        // and send it a second time (a real double SMS charge, since
+        // sendSms makes a live Twilio call). Zero rows claimed means another
+        // sweep already has it. Same pattern as reminderScheduler.ts's and
+        // scheduler.ts's own claim-before-send.
+        const claimed = await db
+          .update(textWhispsTable)
+          .set({ status: "sent" })
+          .where(and(eq(textWhispsTable.id, textWhisp.id), eq(textWhispsTable.status, "scheduled")))
+          .returning({ id: textWhispsTable.id });
+        if (claimed.length === 0) continue;
+
+        // Best-effort, same as the immediate-send path (routes/textWhisps.ts
+        // never checks deliverInApp/sendSms's own success flag either) —
+        // status reflects "delivery was attempted," not transport success.
         const logCtx = { whispId: null, purpose: "text_whisp" as const };
         if (textWhisp.recipientUserId) {
           await deliverInApp(
@@ -74,10 +92,6 @@ export function startScheduledTextWhispDispatcher(): void {
         } else {
           await sendSms(textWhisp.recipientPhone, textWhispGuestSmsBody(`${appUrl}/tw/${textWhisp.publicToken}`), logCtx);
         }
-        // Best-effort, same as the immediate-send path (routes/textWhisps.ts
-        // never checks deliverInApp/sendSms's own success flag either) —
-        // status reflects "delivery was attempted," not transport success.
-        await db.update(textWhispsTable).set({ status: "sent" }).where(eq(textWhispsTable.id, textWhisp.id));
       }
 
       logger.info({ count: due.length }, "Dispatched scheduled Text Whisps");

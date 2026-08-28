@@ -532,8 +532,17 @@ export function DebateTopicDetail() {
     });
   }
 
+  // There's only one useReactToDebateTopicComment() mutation instance for
+  // the whole thread, so its own .isPending is shared across every comment
+  // — passing that directly as each CommentCard's reactPending would
+  // disable like/dislike on EVERY comment while any one reaction is in
+  // flight. Tracking which comment actually owns the in-flight request
+  // lets each CommentCard only disable itself.
+  const [pendingReactionCommentId, setPendingReactionCommentId] = useState<string | null>(null);
+
   function handleReact(commentId: string, reaction: "like" | "dislike") {
     if (!id) return;
+    setPendingReactionCommentId(commentId);
     reactToComment.mutate(
       { id, commentId, data: { visitorId, reaction } },
       {
@@ -548,6 +557,7 @@ export function DebateTopicDetail() {
           );
         },
         onError: () => toast({ title: t("debateTopicDetail.toast.reactionError"), variant: "destructive" }),
+        onSettled: () => setPendingReactionCommentId((current) => (current === commentId ? null : current)),
       },
     );
   }
@@ -908,7 +918,7 @@ export function DebateTopicDetail() {
                       online={!!onlineMap[root.handle]}
                       onReply={() => setReplyTo({ id: root.id, handle: root.handle })}
                       onReact={(reaction) => handleReact(root.id, reaction)}
-                      reactPending={reactToComment.isPending}
+                      reactPending={pendingReactionCommentId === root.id}
                       onFollowToggle={(patch) => handleCommentFollowToggled(root.id, patch)}
                     />
                     {replies.length > 0 && (
@@ -923,7 +933,7 @@ export function DebateTopicDetail() {
                             online={!!onlineMap[reply.handle]}
                             onReply={() => setReplyTo({ id: reply.id, handle: reply.handle })}
                             onReact={(reaction) => handleReact(reply.id, reaction)}
-                            reactPending={reactToComment.isPending}
+                            reactPending={pendingReactionCommentId === reply.id}
                             onFollowToggle={(patch) => handleCommentFollowToggled(reply.id, patch)}
                           />
                         ))}

@@ -101,6 +101,15 @@ export const textWhispsTable = pgTable("text_whisps", {
   // Team"), deliberately NOT anonymous — this is the platform or a named
   // colleague speaking, not a stranger.
   source: text("source").notNull().default("user"),
+  // Admin-initiated takedown of a flagged Text Whisp — same reasoning as
+  // whisps.removedByAdminAt/whisper_box_messages.removedByAdminAt. Distinct
+  // from deletedBySenderAt above: that one only ever hides the message from
+  // the SENDER's own list; this hides it from BOTH the recipient's inbox and
+  // the public guest landing page (routes/publicTextWhisps.ts), since a
+  // moderation takedown needs to actually stop the recipient from seeing
+  // flagged content, not just tidy the sender's view. Admins still see
+  // everything regardless (routes/admin.ts never filters on this).
+  removedByAdminAt: timestamp("removed_by_admin_at", { withTimezone: true }),
 }, (table) => [
   index("text_whisps_sender_id_idx").on(table.senderId),
   index("text_whisps_recipient_user_id_idx").on(table.recipientUserId),

@@ -2,11 +2,12 @@ import { describe, it, expect } from "vitest";
 import { randomUUID } from "crypto";
 import request from "supertest";
 import app from "../app";
-import { db, usersTable, textWhispsTable, textWhispRepliesTable, notificationsTable } from "@workspace/db";
+import { db, usersTable, textWhispsTable, textWhispRepliesTable, notificationsTable, moderationFlagsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { TEST_USER_HEADER } from "./setup";
 import { textWhispGuestSmsBody } from "../lib/sms";
 import { getDueTextWhisps } from "../lib/textWhispScheduler";
+import { adminHeaders } from "./adminTestUtils";
 
 const USER_A = "clerk_text_whisp_a"; // sender
 const USER_B = "clerk_text_whisp_b"; // recipient — verified
@@ -629,6 +630,55 @@ describe("GET /api/public/text-whisps/:token", () => {
   it("404s on an unknown/expired token", async () => {
     const res = await request(app).get("/api/public/text-whisps/not-a-real-token");
     expect(res.status).toBe(404);
+  });
+
+  it("404s on a token whose text whisp was taken down by admin — same shape as an unknown token, never a distinct signal", async () => {
+    const { publicToken } = await createGuestTextWhisp();
+
+    const row = await db.select().from(textWhispsTable).where(eq(textWhispsTable.publicToken, publicToken)).then((r) => r[0]);
+    await db.update(textWhispsTable).set({ removedByAdminAt: new Date() }).where(eq(textWhispsTable.id, row.id));
+
+    const res = await request(app).get(`/api/public/text-whisps/${publicToken}`);
+    expect(res.status).toBe(404);
+  });
+});
+
+describe("Admin takedown of a flagged Text Whisp", () => {
+  it("removes the content and hides it from both the recipient's list and the public guest page", async () => {
+    const { senderClerkId, senderId, recipientClerkId } = await setupFreshSenderAndVerifiedRecipient();
+    const send = await request(app)
+      .post("/api/text-whisps")
+      .set(asUser(senderClerkId))
+      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "message pending moderation" });
+    const textWhispId = send.body.id as string;
+
+    // Moderation runs async off ANTHROPIC_API_KEY in real life (mocked in
+    // tests) — simulate the flag it would have written, same as
+    // whisperBox.test.ts's identical takedown test does.
+    await db.insert(moderationFlagsTable).values({
+      id: randomUUID(),
+      textWhispId,
+      contentType: "text_whisp",
+      userId: senderId,
+      severity: "high",
+      reasoning: "test flag",
+      source: "ai_classifier",
+    });
+    const flag = await db.select().from(moderationFlagsTable).where(eq(moderationFlagsTable.textWhispId, textWhispId)).then((r) => r[0]);
+
+    const adminClerkId = `clerk_tw_admin_${randomUUID()}`;
+    const owner = await adminHeaders(adminClerkId, `${adminClerkId}@blindwhisper.com`);
+    const flagsList = await request(app).get("/api/admin/moderation/flags").set(owner);
+    expect(flagsList.body.items.some((f: any) => f.id === flag.id && f.textWhispMessage === "message pending moderation")).toBe(true);
+
+    const takedown = await request(app).post(`/api/admin/moderation/flags/${flag.id}/remove-content`).set(owner);
+    expect(takedown.status).toBe(200);
+
+    const recipientList = await request(app).get("/api/text-whisps").set(asUser(recipientClerkId));
+    expect(recipientList.body.some((tw: any) => tw.id === textWhispId)).toBe(false);
+
+    const recipientDetail = await request(app).get(`/api/text-whisps/${textWhispId}`).set(asUser(recipientClerkId));
+    expect(recipientDetail.status).toBe(404);
   });
 });
 

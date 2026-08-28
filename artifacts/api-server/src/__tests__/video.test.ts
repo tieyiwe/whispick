@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import request from "supertest";
 import app from "../app";
-import { looksLikeBareWallTitle, looksPrivate, truncateTitle } from "../lib/videoMeta";
+import { looksLikeBareWallTitle, looksPrivate, truncateTitle, isAllowedThumbnailUrl } from "../lib/videoMeta";
 
 describe("looksLikeBareWallTitle", () => {
   it("flags a bare platform-name title for facebook/instagram (a login-wall page's <title>, not a real post's)", () => {
@@ -60,6 +60,39 @@ describe("truncateTitle", () => {
   it("leaves a title exactly at the cap untouched", () => {
     const exact = "B".repeat(300);
     expect(truncateTitle(exact)).toBe(exact);
+  });
+});
+
+describe("isAllowedThumbnailUrl", () => {
+  // The SSRF/deanonymization guard: a whisp preview thumbnail auto-loads in
+  // the recipient's browser with zero user action, so an attacker-controlled
+  // host here is a beacon that leaks the viewer's IP. resolveVideoMeta's
+  // "ok" return (the single choke point every caller — routes/video.ts, the
+  // admin Suggestions Library, and lib/suggestionAgent.ts's discovery agent
+  // alike — reads its thumbnail from) filters through exactly this function,
+  // so a real platform CDN thumbnail always survives and anything else is
+  // dropped to null rather than stored/returned unfiltered.
+  it("allows a real platform CDN thumbnail, including a regional subdomain", () => {
+    expect(isAllowedThumbnailUrl("https://i.ytimg.com/vi/abc123/hqdefault.jpg")).toBe(true);
+    expect(isAllowedThumbnailUrl("https://scontent-lhr8-1.cdninstagram.com/foo.jpg")).toBe(true);
+    expect(isAllowedThumbnailUrl("https://p16-sign-va.tiktokcdn.com/foo.jpg")).toBe(true);
+  });
+
+  it("rejects a non-CDN or attacker-controlled host", () => {
+    expect(isAllowedThumbnailUrl("https://evil.example.com/beacon.jpg")).toBe(false);
+    expect(isAllowedThumbnailUrl("http://169.254.169.254/latest/meta-data/")).toBe(false);
+  });
+
+  it("rejects a suffix-spoofed host — 'ytimg.com.evil.tld' is not ytimg.com", () => {
+    expect(isAllowedThumbnailUrl("https://ytimg.com.evil.tld/x.jpg")).toBe(false);
+  });
+
+  it("rejects plain http even on an otherwise-allowed host", () => {
+    expect(isAllowedThumbnailUrl("http://i.ytimg.com/vi/abc123/hqdefault.jpg")).toBe(false);
+  });
+
+  it("rejects a malformed URL instead of throwing", () => {
+    expect(isAllowedThumbnailUrl("not a url")).toBe(false);
   });
 });
 

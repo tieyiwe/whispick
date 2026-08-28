@@ -466,10 +466,20 @@ export async function resolveVideoMeta(url: string): Promise<VideoMetaOutcome> {
     return { kind: "no_preview", platform };
   }
 
+  // isAllowedThumbnailUrl at this single choke point, same reasoning as
+  // truncateTitle above — every caller of resolveVideoMeta gets the SSRF/
+  // deanonymization-safe thumbnail automatically, rather than each call site
+  // needing to separately remember to re-derive/filter it (deriveVideoFields
+  // exists for callers building fields from a client-supplied thumbnail
+  // instead, but resolveVideoMeta's own scraped thumbnail was going out
+  // unfiltered before this — see docs on isAllowedThumbnailUrl for why an
+  // attacker-controlled thumbnail host matters here).
+  const thumbnail = result?.thumbnail && isAllowedThumbnailUrl(result.thumbnail) ? result.thumbnail : null;
+
   return {
     kind: "ok",
     title: result?.title ? truncateTitle(result.title) : null,
-    thumbnail: result?.thumbnail ?? null,
+    thumbnail,
     platform,
     embedUrl: buildEmbedUrl(url, platform),
     authorName: (oembed as any)?.authorName ?? null,
