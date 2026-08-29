@@ -7,7 +7,15 @@
     "hero": {
       "badge": "A new way to share",
       "headline": "Send what they <em>need</em> to hear.<br />Without making it weird.",
-      "subtitle": "An emotionally charged, anonymous video recommendation platform. Like slipping a handwritten note under someone's door in the digital age."
+      "subtitle": "An emotionally charged, anonymous video recommendation platform. Like slipping a handwritten note under someone's door in the digital age.",
+      "flow": {
+        "slide1Title": "Whisp a message or video",
+        "slide1Desc": "Say what they need to hear — a note, or any video link.",
+        "slide2Title": "Sent anonymously",
+        "slide2Desc": "They'll never know it was you.",
+        "slide3Title": "Unless you want them to",
+        "slide3Desc": "Reveal yourself anytime — it's always your choice."
+      }
     },
     "cta": {
       "startSendingWhisps": "Start Sending Whisps"

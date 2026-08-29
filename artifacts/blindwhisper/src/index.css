@@ -286,6 +286,44 @@
   }
 }
 
+/* LandingPage hero's small looping "what this app does" visual — three
+   panels stacked absolutely in the same box, cross-fading in a shared
+   10.2s loop via staggered animation-delay (0s / 3.4s / 6.8s — a third of
+   the cycle apart) rather than a JS timer, same trick as an auto-rotating
+   testimonial strip. */
+@keyframes hero-flow-panel {
+  0%, 5% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  11%, 27% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  33%, 100% {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+.hero-flow-panel {
+  opacity: 0;
+  animation: hero-flow-panel 10.2s ease-in-out infinite;
+}
+
+/* Freeze on the first panel instead of cycling — a static "what it does"
+   card still gets the message across without the motion. */
+@media (prefers-reduced-motion: reduce) {
+  .hero-flow-panel {
+    animation: none;
+    opacity: 0;
+    transform: none;
+  }
+  .hero-flow-panel:first-child {
+    opacity: 1;
+  }
+}
+
 /* The reply thread's own scroll area. The scrollbar is deliberately always
    visible rather than the overlay kind that fades out: it doubles as the
    signal that there is more conversation above, which is the whole reason

@@ -7,7 +7,15 @@
     "hero": {
       "badge": "Njia mpya ya kushiriki",
       "headline": "Watumie kile <em>wanachohitaji</em> kusikia.<br />Bila kufanya iwe ya ajabu.",
-      "subtitle": "Jukwaa la mapendekezo ya video ya kihisia, lisilofichua utambulisho. Kama kuteremsha barua iliyoandikwa kwa mkono chini ya mlango wa mtu, lakini katika enzi ya kidijitali."
+      "subtitle": "Jukwaa la mapendekezo ya video ya kihisia, lisilofichua utambulisho. Kama kuteremsha barua iliyoandikwa kwa mkono chini ya mlango wa mtu, lakini katika enzi ya kidijitali.",
+      "flow": {
+        "slide1Title": "Tuma Whisp — ujumbe au video",
+        "slide1Desc": "Watumie kile wanachohitaji kusikia — ujumbe mfupi, au kiungo chochote cha video.",
+        "slide2Title": "Imetumwa bila kujulikana",
+        "slide2Desc": "Hawatajua kamwe ni wewe.",
+        "slide3Title": "Isipokuwa unataka wajue",
+        "slide3Desc": "Jifichue wakati wowote — ni chaguo lako kila wakati."
+      }
     },
     "cta": {
       "startSendingWhisps": "Anza Kutuma Whisps"

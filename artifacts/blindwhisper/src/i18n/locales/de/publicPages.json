@@ -7,7 +7,15 @@
     "hero": {
       "badge": "Eine neue Art zu teilen",
       "headline": "Sag ihnen, was sie <em>hören müssen</em>.<br />Ohne dass es komisch wird.",
-      "subtitle": "Eine emotionale, anonyme Plattform für Video-Empfehlungen. Wie ein handgeschriebener Zettel unter der Tür – nur im digitalen Zeitalter."
+      "subtitle": "Eine emotionale, anonyme Plattform für Video-Empfehlungen. Wie ein handgeschriebener Zettel unter der Tür – nur im digitalen Zeitalter.",
+      "flow": {
+        "slide1Title": "Whispe eine Nachricht oder ein Video",
+        "slide1Desc": "Sag ihnen, was sie hören müssen — ein paar Worte, oder ein Video-Link.",
+        "slide2Title": "Anonym gesendet",
+        "slide2Desc": "Sie erfahren nie, dass du es warst.",
+        "slide3Title": "Es sei denn, du willst es",
+        "slide3Desc": "Gib dich jederzeit zu erkennen — es ist immer deine Entscheidung."
+      }
     },
     "cta": {
       "startSendingWhisps": "Jetzt Whisps versenden"
