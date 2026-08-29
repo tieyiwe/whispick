@@ -7,7 +7,15 @@
     "hero": {
       "badge": "Una nueva forma de compartir",
       "headline": "Diles lo que <em>necesitan</em> oír.<br />Sin que resulte incómodo.",
-      "subtitle": "Una plataforma de recomendaciones de video anónima y cargada de emoción. Como deslizar una nota escrita a mano bajo la puerta de alguien, pero en la era digital."
+      "subtitle": "Una plataforma de recomendaciones de video anónima y cargada de emoción. Como deslizar una nota escrita a mano bajo la puerta de alguien, pero en la era digital.",
+      "flow": {
+        "slide1Title": "Whisp un mensaje o video",
+        "slide1Desc": "Diles lo que necesitan oír — una nota, o cualquier enlace de video.",
+        "slide2Title": "Enviado de forma anónima",
+        "slide2Desc": "Nunca sabrán que fuiste tú.",
+        "slide3Title": "A menos que quieras que lo sepan",
+        "slide3Desc": "Revélate cuando quieras — siempre es tu decisión."
+      }
     },
     "cta": {
       "startSendingWhisps": "Empieza a enviar Whisps"

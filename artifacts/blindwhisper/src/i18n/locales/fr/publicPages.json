@@ -7,7 +7,15 @@
     "hero": {
       "badge": "Une nouvelle façon de partager",
       "headline": "Dites-leur ce qu'ils <em>ont besoin</em> d'entendre.<br />Sans que ce soit gênant.",
-      "subtitle": "Une plateforme de recommandations vidéo anonymes et chargées d'émotion. Comme glisser un mot écrit à la main sous la porte de quelqu'un, à l'ère du numérique."
+      "subtitle": "Une plateforme de recommandations vidéo anonymes et chargées d'émotion. Comme glisser un mot écrit à la main sous la porte de quelqu'un, à l'ère du numérique.",
+      "flow": {
+        "slide1Title": "Envoie un Whisp — message ou vidéo",
+        "slide1Desc": "Dis-leur ce qu'ils ont besoin d'entendre — un mot, ou n'importe quel lien vidéo.",
+        "slide2Title": "Envoyé anonymement",
+        "slide2Desc": "Ils ne sauront jamais que c'était toi.",
+        "slide3Title": "À moins que tu ne le veuilles",
+        "slide3Desc": "Révèle-toi quand tu veux — c'est toujours ton choix."
+      }
     },
     "cta": {
       "startSendingWhisps": "Commencer à envoyer des Whisps"

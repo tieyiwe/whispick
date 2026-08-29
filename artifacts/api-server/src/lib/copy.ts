@@ -109,4 +109,4 @@ export const TEXT_WHISP_GUEST_HOOK_LINE =
 // card when someone pastes their link into iMessage/Instagram/WhatsApp/etc.
 // Keep in sync with PublicWhisperBoxPage.tsx's own subheading by hand, same
 // as HOOK_LINE.
-export const WHISPER_BOX_HOOK_LINE = "Send me anything I need to see or hear anonymously.";
+export const WHISPER_BOX_HOOK_LINE = "You can tell me anything or share a video I need to see anonymously.";

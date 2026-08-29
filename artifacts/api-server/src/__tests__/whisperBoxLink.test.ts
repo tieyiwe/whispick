@@ -36,7 +36,7 @@ describe("GET /wb/:handle", () => {
     expect(res.status).toBe(200);
     expect(res.headers["content-type"]).toContain("text/html");
     expect(res.text).toContain(handle);
-    expect(res.text).toContain("Send me anything I need to see or hear anonymously");
+    expect(res.text).toContain("You can tell me anything or share a video I need to see anonymously");
     expect(res.text).toContain(`/whisper-box/${handle}`);
     expect(res.text).toContain('property="og:site_name" content="Blind Whisper"');
     // "Anonymous" belongs in the title itself, not only the description —

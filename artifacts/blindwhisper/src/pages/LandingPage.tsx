@@ -9,7 +9,8 @@ import { InstallAppPrompt } from "@/components/shared/InstallAppPrompt";
 import { guessBrowserLanguage } from "@/lib/languages";
 import { APP_VERSION, APP_VERSION_NAME } from "@/lib/appVersion";
 import i18n from "@/i18n";
-import { Send, Heart, Shield, Sparkles, PlayCircle, Users2, Users, Briefcase, UserRound, X, Check, ChevronDown } from "lucide-react";
+import { Send, Heart, Shield, Sparkles, PlayCircle, Users2, Users, Briefcase, UserRound, X, Check, ChevronDown, CheckCircle2 } from "lucide-react";
+import { AnonymousMark } from "@/components/shared/AnonymousMark";
 
 // icon/mood are presentational and stay static here; the relationship/quote
 // copy for each card is looked up via `key` against
@@ -133,6 +134,60 @@ export function LandingPage() {
                   <Send className="w-5 h-5 mr-2" /> {t("landingPage.cta.startSendingWhisps")}
                 </Button>
               </Link>
+            </div>
+          </div>
+
+          {/* Hero visual — a small looping "what this actually does" cue for
+              a visitor who hasn't scrolled to the screenshot-driven "See it
+              in action" section yet. Three panels cross-fade on a shared,
+              staggered CSS animation (.hero-flow-panel in index.css), no JS
+              timer — same technique as an auto-rotating testimonial strip.
+              Reuses AnonymousMark (the app's own logo mark standing in for
+              "no identity") and the Whisper Box page's traveling-dot
+              connector, so this tells the same "anonymous, until you choose
+              otherwise" story using vocabulary already established
+              elsewhere in the product. Respects prefers-reduced-motion by
+              freezing on the first panel. */}
+          <div className="mt-16 sm:mt-20 relative z-10 w-full max-w-sm mx-auto px-4">
+            <div className="relative h-56 rounded-3xl border border-border/60 bg-card/50 backdrop-blur overflow-hidden shadow-[0_0_40px_rgba(124,92,252,0.15)]">
+              <div className="hero-flow-panel absolute inset-0 flex flex-col items-center justify-center gap-4 px-6 text-center">
+                <div className="flex items-center gap-3">
+                  <AnonymousMark size="lg" pulse />
+                  <div className="w-14 h-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                    <PlayCircle className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">{t("landingPage.hero.flow.slide1Title")}</p>
+                  <p className="text-xs text-muted-foreground mt-1 max-w-[240px]">{t("landingPage.hero.flow.slide1Desc")}</p>
+                </div>
+              </div>
+
+              <div className="hero-flow-panel absolute inset-0 flex flex-col items-center justify-center gap-4 px-6 text-center" style={{ animationDelay: "3.4s" }}>
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <AnonymousMark size="lg" pulse />
+                  <div className="relative w-14 h-px bg-border/60 shrink-0">
+                    <div className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-primary whisper-flow-dot" />
+                  </div>
+                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <Heart className="w-6 h-6 text-primary" />
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">{t("landingPage.hero.flow.slide2Title")}</p>
+                  <p className="text-xs text-muted-foreground mt-1 max-w-[240px]">{t("landingPage.hero.flow.slide2Desc")}</p>
+                </div>
+              </div>
+
+              <div className="hero-flow-panel absolute inset-0 flex flex-col items-center justify-center gap-4 px-6 text-center" style={{ animationDelay: "6.8s" }}>
+                <div className="w-16 h-16 rounded-full bg-primary/15 flex items-center justify-center">
+                  <CheckCircle2 className="w-7 h-7 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">{t("landingPage.hero.flow.slide3Title")}</p>
+                  <p className="text-xs text-muted-foreground mt-1 max-w-[240px]">{t("landingPage.hero.flow.slide3Desc")}</p>
+                </div>
+              </div>
             </div>
           </div>
 
