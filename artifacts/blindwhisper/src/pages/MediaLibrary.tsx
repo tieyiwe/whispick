@@ -30,8 +30,25 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
 }
 
-function daysUntil(dateString: string): number {
-  return Math.max(0, Math.ceil((new Date(dateString).getTime() - Date.now()) / (24 * 60 * 60 * 1000)));
+const HOUR_MS = 60 * 60 * 1000;
+const DAY_MS = 24 * HOUR_MS;
+// Matches lib/uploads.ts's UPLOAD_DELETION_WARNING_DAYS (2) — the same
+// threshold the backend uses to decide when to email/push-notify the owner
+// about an upcoming deletion, reused here so the badge turns urgent at
+// exactly the moment the owner's also getting proactively warned elsewhere.
+const URGENT_THRESHOLD_MS = 2 * DAY_MS;
+
+// Day-granularity once there's more than a day left (matches the retention
+// scheduler's own hourly sweep — see mediaRetentionScheduler.ts's comment on
+// why sub-hour precision isn't meaningful here), hour-granularity inside the
+// final day so the countdown actually reads like a countdown as the deadline
+// gets close, not a "1d" that silently sits there for 23 hours.
+function timeRemaining(dateString: string): { unit: "days" | "hours" | "lessThanHour"; count: number; urgent: boolean } {
+  const ms = Math.max(0, new Date(dateString).getTime() - Date.now());
+  const urgent = ms <= URGENT_THRESHOLD_MS;
+  if (ms < HOUR_MS) return { unit: "lessThanHour", count: 0, urgent };
+  if (ms < DAY_MS) return { unit: "hours", count: Math.ceil(ms / HOUR_MS), urgent };
+  return { unit: "days", count: Math.ceil(ms / DAY_MS), urgent };
 }
 
 export function MediaLibrary() {
@@ -167,11 +184,22 @@ export function MediaLibrary() {
                     <span>{formatSize(item.sizeBytes)}</span>
                     <span>{t("mediaLibrary.usageCount", { count: item.usageCount })}</span>
                   </div>
-                  {item.status === "ready" && (
-                    <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-                      <Clock className="w-3 h-3" /> {t("mediaLibrary.expiresIn", { days: daysUntil(item.expiresAt) })}
-                    </p>
-                  )}
+                  {item.status === "ready" && (() => {
+                    const remaining = timeRemaining(item.expiresAt);
+                    return (
+                      <p
+                        className={`text-[11px] flex items-center gap-1 ${remaining.urgent ? "text-amber-500 font-medium" : "text-muted-foreground"}`}
+                        data-testid={`text-expires-${item.id}`}
+                      >
+                        <Clock className="w-3 h-3 shrink-0" />
+                        {remaining.unit === "lessThanHour"
+                          ? t("mediaLibrary.expiresInLessThanHour")
+                          : remaining.unit === "hours"
+                            ? t("mediaLibrary.expiresInHours", { count: remaining.count })
+                            : t("mediaLibrary.expiresInDays", { count: remaining.count })}
+                      </p>
+                    );
+                  })()}
                   <div className="flex items-center gap-2 pt-1">
                     {item.status === "ready" && (
                       <Button
