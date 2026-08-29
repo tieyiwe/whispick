@@ -24,6 +24,7 @@ import { SVGProps } from "react";
 export function Logo({
   waveOnce = false,
   waveTwice = false,
+  animated = true,
   ...props
 }: SVGProps<SVGSVGElement> & {
   /** Plays the arc pulse through a single cycle instead of looping forever —
@@ -34,8 +35,17 @@ export function Logo({
   /** Same one-off idea as waveOnce, but two cycles instead of one — see
    *  .logo-wave-twice in index.css. Takes precedence if both are set. */
   waveTwice?: boolean;
+  /** False renders the mark fully at rest, no animation class at all — not
+   *  even a single cycle. Each arc still carries its own resting `opacity`
+   *  attribute directly (the same value prefers-reduced-motion falls back
+   *  to), so it looks complete and correct, just still. For a small mark
+   *  repeated many times in a list (AnonymousMark.tsx) — a dozen looping
+   *  ripples at once reads as noise, not a considered detail; reserve
+   *  motion for the one-at-a-time moments (waveOnce/waveTwice/the ambient
+   *  default) instead. */
+  animated?: boolean;
 }) {
-  const waveClassName = waveTwice ? "logo-wave-twice" : waveOnce ? "logo-wave-once" : "logo-wave";
+  const waveClassName = !animated ? undefined : waveTwice ? "logo-wave-twice" : waveOnce ? "logo-wave-once" : "logo-wave";
   return (
     <svg viewBox="88 74 112 138" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
       <g stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" fill="none">

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { MoodTag } from "@/components/shared/MoodTag";
 import { ArrowLeft, PlayCircle, VenetianMask } from "lucide-react";
+import { AnonymousMark } from "@/components/shared/AnonymousMark";
 
 export function CircleDetail() {
   const { t } = useTranslation("circle");
@@ -67,9 +68,12 @@ export function CircleDetail() {
                     {item.anonymousNote && (
                       <p className="text-sm text-muted-foreground italic line-clamp-2">"{item.anonymousNote}"</p>
                     )}
-                    <p className="text-xs text-muted-foreground mt-auto">
-                      {item.senderAlias ?? t("circleDetail.someone")} · {new Date(item.createdAt).toLocaleDateString()}
-                    </p>
+                    <div className="flex items-center gap-1.5 mt-auto">
+                      <AnonymousMark size="sm" />
+                      <p className="text-xs text-muted-foreground">
+                        {item.senderAlias ?? t("circleDetail.someone")} · {new Date(item.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
                   </div>
                 </Card>
               </Link>
