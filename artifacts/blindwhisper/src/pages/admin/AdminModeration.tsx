@@ -31,11 +31,20 @@ import { ChevronLeft, ChevronRight, ShieldAlert, RotateCcw, Check, Trash2 } from
 
 const PAGE_SIZE = 20;
 
-// The remove-content endpoint only knows how to take down these four
-// content types (see admin.ts's remove-content route) — a Text Whisp is a
-// private send between two people, not published anywhere public, so
-// there's nothing for it to pull off a public read path.
-const REMOVABLE_CONTENT_TYPES = new Set(["whisp", "circle_comment", "debate_topic", "debate_topic_comment"]);
+// Every content type the remove-content endpoint knows how to take down
+// (see admin.ts's remove-content route) — a Text Whisp or Whisper Box
+// message is a private send to one specific recipient, not published
+// anywhere public, but that recipient is still exposed to it indefinitely
+// until it's removed, same as any publicly-posted content — there's just no
+// "public feed" for it to disappear from, only that one recipient's inbox.
+const REMOVABLE_CONTENT_TYPES = new Set([
+  "whisp",
+  "text_whisp",
+  "circle_comment",
+  "debate_topic",
+  "debate_topic_comment",
+  "whisper_box_message",
+]);
 
 function flagContentDescriptor(f: ModerationFlag): { label: string; text: string | null } {
   switch (f.contentType) {
@@ -47,6 +56,8 @@ function flagContentDescriptor(f: ModerationFlag): { label: string; text: string
       return { label: "Debate Now", text: f.debateTopicText ?? null };
     case "debate_topic_comment":
       return { label: "Debate Now comment", text: f.debateTopicCommentText ?? null };
+    case "whisper_box_message":
+      return { label: "Whisper Box message", text: f.whisperBoxMessageText ?? null };
     default:
       return { label: "Whisp", text: f.videoTitle ?? null };
   }

@@ -1397,6 +1397,10 @@ router.post("/moderation/flags/:id/remove-content", async (req, res): Promise<vo
       if (!flag.whispId) { res.status(400).json({ error: "Flag has no associated whisp" }); return; }
       await db.update(whispsTable).set({ removedByAdminAt: now }).where(eq(whispsTable.id, flag.whispId));
       break;
+    case "text_whisp":
+      if (!flag.textWhispId) { res.status(400).json({ error: "Flag has no associated text whisp" }); return; }
+      await db.update(textWhispsTable).set({ removedByAdminAt: now }).where(eq(textWhispsTable.id, flag.textWhispId));
+      break;
     case "circle_comment":
       if (!flag.circleCommentId) { res.status(400).json({ error: "Flag has no associated comment" }); return; }
       await db.update(circleCommentsTable).set({ removedByAdminAt: now }).where(eq(circleCommentsTable.id, flag.circleCommentId));

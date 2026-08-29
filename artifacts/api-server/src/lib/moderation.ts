@@ -532,18 +532,38 @@ export async function moderateCommentImageAsync(input: {
 // visible warning — not a silent log line — through the same in-app
 // notification system admins use (see routes/admin.ts's POST
 // /notifications), so it shows up in their notification bell with a
-// best-effort live push too. Only fires exactly at the threshold crossing,
-// not on every flag past it, so one user doesn't get spammed with a warning
-// per additional flag.
+// best-effort live push too. Fires once per user (guarded by the "already
+// warned" check below), not on every flag past the threshold, so one user
+// doesn't get spammed with a warning per additional flag.
 async function maybeWarnUser(userId: string): Promise<void> {
   const flags = await db
     .select({ id: moderationFlagsTable.id })
     .from(moderationFlagsTable)
     .where(and(eq(moderationFlagsTable.userId, userId), eq(moderationFlagsTable.dismissed, false)));
 
-  if (flags.length !== WARNING_THRESHOLD) return;
+  if (flags.length < WARNING_THRESHOLD) return;
 
   const title = "Content warning";
+
+  // maybeWarnUser is called fire-and-forget from several independent
+  // moderation passes (whisp/text-whisp/circle-comment/debate-topic/etc).
+  // Two flags on the same user landing close together can both run this
+  // SELECT after both inserts have committed, so an exact `=== threshold`
+  // check (the previous version of this guard) can be permanently skipped
+  // once the count jumps straight past it — the user would then never get
+  // warned, no matter how many more flags accrue. Checking for an existing
+  // warning notification instead of an exact count keeps this idempotent
+  // (>= threshold, not spammed on every later flag) without that failure
+  // mode; the narrow remaining race — two calls both passing this check in
+  // the same instant — just means an occasional duplicate warning, not a
+  // permanently skipped one.
+  const alreadyWarned = await db
+    .select({ id: notificationsTable.id })
+    .from(notificationsTable)
+    .where(and(eq(notificationsTable.targetUserId, userId), eq(notificationsTable.title, title)))
+    .limit(1);
+  if (alreadyWarned.length > 0) return;
+
   const body =
     "Something you sent was flagged for review as possibly violating our content guidelines (no sexually explicit content). This is a warning — repeated violations may result in account suspension.";
 

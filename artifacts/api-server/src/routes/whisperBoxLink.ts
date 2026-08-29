@@ -35,7 +35,11 @@ router.get("/:handle", async (req, res): Promise<void> => {
     return;
   }
 
-  const title = escapeHtml(`Whisper Box — @${req.params.handle}`);
+  // "Anonymous" lives in the title itself, not just the description below —
+  // some crawlers/clients (notably iMessage) only surface the title text in
+  // their compact preview, so the anonymity pitch needs to survive on its
+  // own without relying on the description also being shown.
+  const title = escapeHtml(`Anonymous Whisper Box — @${req.params.handle}`);
   const description = escapeHtml(WHISPER_BOX_HOOK_LINE);
   const image = escapeHtml(`${appUrl}/opengraph.jpg`);
   const url = escapeHtml(destination);

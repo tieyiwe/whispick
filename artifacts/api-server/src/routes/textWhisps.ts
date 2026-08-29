@@ -41,11 +41,26 @@ function excludeDeleted() {
   return isNull(textWhispsTable.deletedBySenderAt);
 }
 
+// Admin-initiated moderation takedown — unlike excludeDeleted() above, this
+// hides the row from EVERYONE (sender and recipient alike), same as
+// whisper_box_messages.ts's excludeRemoved(): a takedown exists specifically
+// to stop the recipient from being exposed to flagged content, and there's
+// no reason for the sender to keep seeing it either once it's been removed.
+export function excludeRemoved() {
+  return isNull(textWhispsTable.removedByAdminAt);
+}
+
 async function loadTextWhispForUser(id: string, userId: string) {
   const textWhisp = await db
     .select()
     .from(textWhispsTable)
-    .where(and(eq(textWhispsTable.id, id), or(eq(textWhispsTable.senderId, userId), eq(textWhispsTable.recipientUserId, userId))))
+    .where(
+      and(
+        eq(textWhispsTable.id, id),
+        or(eq(textWhispsTable.senderId, userId), eq(textWhispsTable.recipientUserId, userId)),
+        excludeRemoved(),
+      ),
+    )
     .then((r) => r[0]);
 
   if (!textWhisp) return null;
@@ -101,6 +116,7 @@ router.get("/", requireAuth, async (req, res): Promise<void> => {
         // whisp this user received (sent by someone else) is never hidden
         // by the sender's own delete, same as whisps.ts.
         or(eq(textWhispsTable.recipientUserId, user.id), excludeDeleted()),
+        excludeRemoved(),
       ),
     )
     .orderBy(desc(textWhispsTable.createdAt));

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { db, textWhispsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
+import { excludeRemoved } from "./textWhisps";
 
 const router = Router();
 
@@ -17,9 +18,13 @@ router.get("/text-whisps/:token", async (req, res): Promise<void> => {
   const textWhisp = await db
     .select()
     .from(textWhispsTable)
-    .where(eq(textWhispsTable.publicToken, req.params.token))
+    .where(and(eq(textWhispsTable.publicToken, req.params.token), excludeRemoved()))
     .then((r) => r[0]);
 
+  // Same identical-404 shape for "no such token" and "removed by a
+  // moderator" — an admin takedown must not become an oracle telling a
+  // guest which is which (same anti-enumeration posture as every other
+  // public lookup in this codebase).
   if (!textWhisp) {
     res.status(404).json({ error: "Not found" });
     return;

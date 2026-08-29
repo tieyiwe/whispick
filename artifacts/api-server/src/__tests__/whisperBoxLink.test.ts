@@ -39,6 +39,9 @@ describe("GET /api/wb/:handle", () => {
     expect(res.text).toContain("You can tell me anything I need to hear or see");
     expect(res.text).toContain(`/whisper-box/${handle}`);
     expect(res.text).toContain('property="og:site_name" content="Blind Whisper"');
+    // "Anonymous" belongs in the title itself, not only the description —
+    // some crawlers/clients only surface the title in their compact preview.
+    expect(res.text).toContain('property="og:title" content="Anonymous Whisper Box');
   });
 
   it("redirects (never unfurls) an unknown handle or a disabled box, even to a crawler", async () => {

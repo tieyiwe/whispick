@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import QRCode from "qrcode";
 import {
   useGetUserProfile,
+  getGetUserProfileQueryKey,
   useGetAdminMfaStatus,
   useSetupAdminMfa,
   useVerifyAdminMfa,
@@ -208,7 +209,17 @@ function UnlockScreen({ onUnlocked }: { onUnlocked: () => void }) {
 
 export function AdminRoute({ component: Component }: { component: React.ComponentType }) {
   const queryClient = useQueryClient();
-  const { data: profile, isLoading } = useGetUserProfile();
+  // refetchOnMount: "always" — this gate decides whether the admin panel
+  // renders at all, and role changes made by ANOTHER admin (promoting or
+  // demoting this account) have no way to invalidate this tab's cached
+  // profile. Without this, a just-demoted admin can keep seeing (and
+  // attempting actions in) the admin panel for up to the query's staleTime
+  // after being revoked — the backend still rejects the actual mutations,
+  // but the UI shouldn't be showing a demoted user the panel at all. Same
+  // staleness class as the Whisper Box bug fixed in SettingsPage.tsx et al.
+  const { data: profile, isLoading } = useGetUserProfile({
+    query: { refetchOnMount: "always", queryKey: getGetUserProfileQueryKey() },
+  });
   const gateState = useSyncExternalStore(subscribeAdminMfaState, getAdminMfaStateSnapshot);
   // The token read must be reactive too: on a cold-opened tab gateState is
   // already null, so the only thing that changes after a successful verify
