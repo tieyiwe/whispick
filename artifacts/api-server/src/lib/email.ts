@@ -3,6 +3,7 @@ import { logger } from "./logger";
 import { HOOK_LINE, INVITE_HOOK_LINE } from "./copy";
 import { logDeliveryAttempt, type DeliveryLogContext } from "./deliveryLog";
 import { escapeHtml } from "./escapeHtml";
+import { UPLOAD_RETENTION_DAYS } from "./uploads";
 
 // Primary transport: SMTP through the Titan mailbox (sender@blindwhisper.com).
 // Titan is a mailbox provider, not an email API, so delivery goes over
@@ -366,6 +367,18 @@ export function mediaExpiringEmailHtml(filename: string, expiresAt: Date): strin
      ${emailText(
        `"${escapeHtml(filename)}" will be removed from Blind Whisper on ${when} — save a copy now if you still need it.`,
      )}
+     ${emailNote("Whisps that already used it aren't affected, as long as the recipient opened them in time.")}`,
+  );
+}
+
+// Sent once the video is actually gone (see mediaRetentionScheduler.ts's
+// deleteExpiredMedia), distinct from mediaExpiringEmailHtml above which
+// fires a couple of days beforehand while there's still time to save a
+// copy — this one is purely informational, nothing left to act on.
+export function mediaExpiredEmailHtml(filename: string): string {
+  return emailShell(
+    `${emailHeading("Your uploaded video has been removed")}
+     ${emailText(`"${escapeHtml(filename)}" has been removed from Blind Whisper after ${UPLOAD_RETENTION_DAYS} days, as expected.`)}
      ${emailNote("Whisps that already used it aren't affected, as long as the recipient opened them in time.")}`,
   );
 }
