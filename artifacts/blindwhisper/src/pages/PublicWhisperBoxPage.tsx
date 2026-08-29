@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Mailbox, Send, Loader2, CheckCircle2, Sparkles } from "lucide-react";
+import { Mailbox, Send, Loader2, CheckCircle2, Sparkles, UserPlus, Video } from "lucide-react";
 import { LogoLockup } from "@/components/ui/logo";
 import { AvatarCircle } from "@/components/shared/AvatarCircle";
 import { PullToRefresh } from "@/components/shared/PullToRefresh";
@@ -201,14 +201,60 @@ export function PublicWhisperBoxPage() {
                 </Button>
               </div>
 
-              <div className="rounded-2xl border border-border/40 p-4 text-center space-y-2">
-                <p className="text-sm text-muted-foreground">
-                  {t("publicWhisperBoxPage.signUpPrompt")}{" "}
-                  <button type="button" onClick={handleSignUp} className="text-primary hover:underline font-medium" data-testid="button-sign-up-to-get-whisper-box">
-                    <Sparkles className="w-3.5 h-3.5 inline -mt-0.5 mr-0.5" />
-                    {t("publicWhisperBoxPage.signUpLinkText")}
-                  </button>
-                </p>
+              {/* Marketing block — this is the moment a stranger who just
+                  used the product (or is about to) learns it isn't only
+                  for replying to this one person: they can create a free
+                  account and Whisp a message or video to someone in their
+                  own life, anonymously, same as what they're doing here.
+                  The two-step row below is a real (if tiny) "how it works"
+                  — a traveling dot between the steps rather than static
+                  bullets, so the pitch shows the product doing the thing
+                  it promises instead of just describing it. */}
+              <div className="relative overflow-hidden rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/12 via-card to-card p-6 space-y-5 glow-card">
+                <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full blur-[60px] pointer-events-none bg-primary/25" />
+
+                <div className="relative text-center space-y-1.5">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-medium">
+                    <Video className="w-3 h-3" />
+                    <span>{t("publicWhisperBoxPage.marketingBadge")}</span>
+                  </div>
+                  <p className="font-serif text-lg font-semibold text-foreground pt-1">
+                    {t("publicWhisperBoxPage.marketingHeading")}
+                  </p>
+                  <p className="text-sm text-muted-foreground max-w-xs mx-auto leading-relaxed">
+                    {t("publicWhisperBoxPage.marketingDescription")}
+                  </p>
+                </div>
+
+                <div className="relative flex items-center justify-center gap-2 sm:gap-4 pt-1">
+                  <div className="flex flex-col items-center text-center gap-2 w-24 sm:w-28">
+                    <div className="w-11 h-11 rounded-full bg-primary/15 flex items-center justify-center">
+                      <UserPlus className="w-5 h-5 text-primary" />
+                    </div>
+                    <p className="text-xs font-medium text-foreground leading-snug">{t("publicWhisperBoxPage.howItWorksStep1")}</p>
+                  </div>
+
+                  <div className="relative flex-1 max-w-[56px] h-px bg-border/60 shrink-0">
+                    <div className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-primary whisper-flow-dot" />
+                  </div>
+
+                  <div className="flex flex-col items-center text-center gap-2 w-24 sm:w-28">
+                    <div className="w-11 h-11 rounded-full bg-primary/15 flex items-center justify-center">
+                      <Send className="w-5 h-5 text-primary" />
+                    </div>
+                    <p className="text-xs font-medium text-foreground leading-snug">{t("publicWhisperBoxPage.howItWorksStep2")}</p>
+                  </div>
+                </div>
+
+                <Button
+                  size="lg"
+                  className="relative w-full rounded-full h-12 text-base font-medium shadow-[0_0_20px_rgba(124,92,252,0.3)] hover:shadow-[0_0_30px_rgba(124,92,252,0.5)] transition-all"
+                  onClick={handleSignUp}
+                  data-testid="button-sign-up-to-get-whisper-box"
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  {t("publicWhisperBoxPage.signUpLinkText")}
+                </Button>
               </div>
             </>
           )}

@@ -252,6 +252,40 @@
   }
 }
 
+/* A small "message in flight" cue between the two steps of a compact
+   how-it-works block (PublicWhisperBoxPage's marketing CTA) — a dot
+   traveling left to right on a loop, standing in for "here's the thing
+   this app actually does" instead of a static arrow between two icons. */
+@keyframes whisper-flow {
+  0%, 8% {
+    left: 0%;
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  92%, 100% {
+    left: 100%;
+    opacity: 0;
+  }
+}
+
+.whisper-flow-dot {
+  left: 0%;
+  animation: whisper-flow 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .whisper-flow-dot {
+    animation: none;
+    left: 50%;
+    opacity: 1;
+  }
+}
+
 /* The reply thread's own scroll area. The scrollbar is deliberately always
    visible rather than the overlay kind that fades out: it doubles as the
    signal that there is more conversation above, which is the whole reason
