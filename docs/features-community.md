@@ -224,8 +224,12 @@ to `/whisper-box/:handle`, letting that page's own fetch resolve it rather
 than duplicating a pre-check; the same bar appears on the public page's own
 not-found state.
 
-**Link preview** (`GET /wb/:handle`, `routes/whisperBoxLink.ts`, mounted at
-`/api/wb`): the actual URL every share action (Settings' Share/Copy,
+**Link preview** (`GET /wb/:handle`, `routes/whisperBoxLink.ts`, mounted
+directly in `app.ts` at the bare `/wb` prefix — not under `/api` — so a
+shared link reads as `blindwhisper.com/wb/handle`; see
+`.replit-artifact/artifact.toml`, which registers `/wb` as this service's
+own second top-level path alongside `/api`): the actual URL every share
+action (Settings' Share/Copy,
 Share-to-Story, `WhisperBoxLinkDialog`, the Story card's embedded QR)
 constructs — `lib/whisperBoxUrl.ts`'s `whisperBoxShareUrl()` on the
 frontend. Same pattern as `link.ts`'s `GET /l/:token` for whisp links: the

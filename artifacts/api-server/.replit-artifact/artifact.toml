@@ -7,7 +7,14 @@ id = "3B4_FFSkEVBkAeYMFRJ2e"
 [[services]]
 localPort = 8080
 name = "API Server"
-paths = ["/api"]
+# "/wb" is a second, bare top-level prefix (not under "/api") so a shared
+# Whisper Box link reads as blindwhisper.com/wb/handle instead of
+# blindwhisper.com/api/wb/handle — see routes/whisperBoxLink.ts. It has to
+# be this server (not the static-hosted frontend) that owns it: only a
+# running Node process can tell a link-preview crawler apart from a real
+# browser and return real per-handle Open Graph tags instead of the static
+# site's generic ones.
+paths = ["/api", "/wb"]
 
 [services.development]
 run = "pnpm --filter @workspace/api-server run dev"

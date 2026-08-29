@@ -10,6 +10,8 @@ import {
 import { getPublicAppUrl } from "./lib/publicUrl";
 import router from "./routes";
 import { handleStripeWebhook } from "./routes/billing";
+import whisperBoxLinkRouter from "./routes/whisperBoxLink";
+import { publicEndpointLimiter } from "./lib/rateLimit";
 import { logger } from "./lib/logger";
 import { recordBugReport } from "./lib/bugRabbit";
 
@@ -132,6 +134,17 @@ app.use(
     publishableKey: CLERK_BACKEND_PUBLISHABLE_KEY,
   })),
 );
+
+// Mounted at the bare "/wb" prefix (not under "/api") so a shared Whisper
+// Box link reads as blindwhisper.com/wb/handle — see this repo's
+// .replit-artifact/artifact.toml, which registers "/wb" as this service's
+// own second top-level path alongside "/api" (Replit's path router sends
+// anything under either prefix here; everything else goes to the
+// static-hosted frontend). Has to be this server, not the frontend: only a
+// running Node process can tell a link-preview crawler apart from a real
+// browser and return real per-handle Open Graph tags — see
+// routes/whisperBoxLink.ts's own comment.
+app.use("/wb", publicEndpointLimiter, whisperBoxLinkRouter);
 
 app.use("/api", router);
 

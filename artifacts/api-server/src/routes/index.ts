@@ -9,7 +9,6 @@ import userRouter from "./user";
 import creditsRouter from "./credits";
 import billingRouter from "./billing";
 import linkRouter from "./link";
-import whisperBoxLinkRouter from "./whisperBoxLink";
 import adminRouter from "./admin";
 import adminMfaRouter from "./adminMfa";
 import adminAccessRouter from "./adminAccess";
@@ -77,7 +76,10 @@ router.use("/user", userRouter);
 router.use("/credits", creditsRouter);
 router.use("/billing", billingRouter);
 router.use("/l", publicEndpointLimiter, linkRouter);
-router.use("/wb", publicEndpointLimiter, whisperBoxLinkRouter);
+// whisperBoxLinkRouter is NOT mounted here — it's mounted directly in
+// app.ts at the bare "/wb" prefix (not "/api/wb"), so a shared Whisper Box
+// link reads as blindwhisper.com/wb/handle. See app.ts's own comment and
+// this router's file for why it still needs to be backend-owned.
 // Mounted OUTSIDE the /admin router's requireAdmin chain on purpose: these
 // are the enrollment/unlock endpoints the MFA gate sends a locked-out
 // admin through (they do their own signed-in + admin-role check inline).
