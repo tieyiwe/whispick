@@ -2904,10 +2904,14 @@ export type EnableWhisperBox200 = {
   /** @nullable */
   avatarId: string | null;
   enabled: boolean;
+  /** True when the account has a display name but someone else already holds the exact slug of it, so `handle` had to fall back to a suffixed or fully anonymous variant instead of the bare name. False whenever there's no display name yet, or the bare name was actually available. */
+  requestedNameTaken: boolean;
 };
 
 export type RefreshWhisperBoxHandle200 = {
   handle: string;
+  /** True when someone else already holds the exact slug of the caller's current display name, so `handle` had to fall back to a suffixed or fully anonymous variant. */
+  requestedNameTaken: boolean;
 };
 
 export type DisableWhisperBox200 = {

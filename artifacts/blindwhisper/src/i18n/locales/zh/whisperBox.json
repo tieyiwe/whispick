@@ -79,7 +79,8 @@
     "nameSaveCta": "保存并获取我的链接",
     "nameSkipCta": "暂时跳过",
     "toastPersonalized": "你的链接现在和你的名字对应了",
-    "toastPersonalizeFailed": "更新失败，请重试。"
+    "toastPersonalizeFailed": "更新失败，请重试。",
+    "toastNameTaken": "这个名字已被占用 — 已改为分配 {{handle}}"
   },
   "searchBar": {
     "sectionTitle": "查找某人的 Whisper Box",

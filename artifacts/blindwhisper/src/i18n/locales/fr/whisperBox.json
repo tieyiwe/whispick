@@ -79,7 +79,8 @@
     "nameSaveCta": "Enregistrer et obtenir mon lien",
     "nameSkipCta": "Ignorer pour l'instant",
     "toastPersonalized": "Votre lien correspond maintenant à votre nom",
-    "toastPersonalizeFailed": "Impossible de mettre à jour. Veuillez réessayer."
+    "toastPersonalizeFailed": "Impossible de mettre à jour. Veuillez réessayer.",
+    "toastNameTaken": "Ce nom est déjà pris — vous avez reçu {{handle}} à la place"
   },
   "searchBar": {
     "sectionTitle": "Trouver le Whisper Box de quelqu'un",

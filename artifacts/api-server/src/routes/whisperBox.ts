@@ -149,7 +149,7 @@ router.post("/whisper-box/enable", requireAuth, async (req, res): Promise<void> 
   const debateIdentity = await assignOrGetWhispererIdentity(user.id);
   const whisperBox = await assignOrGetWhisperBoxHandle(user.id, user.fullName);
   await db.update(usersTable).set({ whisperBoxEnabled: true }).where(eq(usersTable.id, user.id));
-  res.json({ handle: whisperBox.handle, avatarId: debateIdentity.avatarId, enabled: true });
+  res.json({ handle: whisperBox.handle, avatarId: debateIdentity.avatarId, enabled: true, requestedNameTaken: whisperBox.requestedNameTaken });
 });
 
 // POST /api/whisper-box/refresh-handle — regenerates the caller's Whisper
@@ -168,7 +168,7 @@ router.post("/whisper-box/refresh-handle", requireAuth, async (req, res): Promis
     return;
   }
   const whisperBox = await assignWhisperBoxHandle(user.id, user.fullName);
-  res.json({ handle: whisperBox.handle });
+  res.json({ handle: whisperBox.handle, requestedNameTaken: whisperBox.requestedNameTaken });
 });
 
 // POST /api/whisper-box/disable — turns the public page off without

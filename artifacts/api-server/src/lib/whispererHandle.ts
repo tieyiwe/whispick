@@ -150,16 +150,27 @@ function slugifyDisplayName(name: string): string | null {
 // it, since regenerating would 404 any link already shared — see
 // assignWhisperBoxHandle's callers for the one explicit exception
 // (POST /whisper-box/refresh-handle).
-export async function assignOrGetWhisperBoxHandle(userId: string, displayName: string | null): Promise<{ handle: string }> {
+export async function assignOrGetWhisperBoxHandle(userId: string, displayName: string | null): Promise<{ handle: string; requestedNameTaken: boolean }> {
   const existing = await db.select({ whisperBoxHandle: usersTable.whisperBoxHandle }).from(usersTable).where(eq(usersTable.id, userId)).then((r) => r[0]);
-  if (existing?.whisperBoxHandle) return { handle: existing.whisperBoxHandle };
+  // Already has one — this call isn't requesting a NEW name, just reusing
+  // whatever's on file, so there's nothing to report as taken.
+  if (existing?.whisperBoxHandle) return { handle: existing.whisperBoxHandle, requestedNameTaken: false };
   return assignWhisperBoxHandle(userId, displayName);
 }
 
 // Unconditionally generates and persists a fresh Whisper Box handle,
 // overwriting any existing one — only meant to be called from the explicit
 // "personalize my link" flow, never automatically.
-export async function assignWhisperBoxHandle(userId: string, displayName: string | null): Promise<{ handle: string }> {
+//
+// requestedNameTaken tells the caller whether the bare slug (the exact name
+// requested) was actually available — false whenever there's no usable
+// display name to begin with, true whenever someone ELSE already holds that
+// exact slug and this account had to fall back to slug+digits (or, if every
+// digit variant was also taken, to a fully anonymous handle) instead. The
+// frontend uses this to tell the person their name was already in use,
+// rather than silently handing them a different-looking link than the one
+// they typed.
+export async function assignWhisperBoxHandle(userId: string, displayName: string | null): Promise<{ handle: string; requestedNameTaken: boolean }> {
   const slug = displayName ? slugifyDisplayName(displayName) : null;
   const candidates: Array<() => string> = [];
   if (slug) {
@@ -168,18 +179,18 @@ export async function assignWhisperBoxHandle(userId: string, displayName: string
   }
   for (let i = 0; i < 5; i++) candidates.push(randomHandle);
 
-  for (const makeCandidate of candidates) {
+  for (const [index, makeCandidate] of candidates.entries()) {
     const candidate = makeCandidate();
     try {
       await db.update(usersTable).set({ whisperBoxHandle: candidate }).where(eq(usersTable.id, userId));
-      return { handle: candidate };
+      return { handle: candidate, requestedNameTaken: !!slug && index > 0 };
     } catch {
       // Unique-constraint collision — try the next candidate. A rare race
       // against a concurrent call for this SAME user would also land here;
       // re-reading and returning what's actually stored covers that case
       // too, same as assignOrGetWhispererIdentity above.
       const raced = await db.select({ whisperBoxHandle: usersTable.whisperBoxHandle }).from(usersTable).where(eq(usersTable.id, userId)).then((r) => r[0]);
-      if (raced?.whisperBoxHandle === candidate) return { handle: candidate };
+      if (raced?.whisperBoxHandle === candidate) return { handle: candidate, requestedNameTaken: !!slug && index > 0 };
     }
   }
   throw new Error("Failed to assign a Whisper Box handle after several attempts");

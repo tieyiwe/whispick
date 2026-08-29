@@ -79,7 +79,8 @@
     "nameSaveCta": "احفظ واحصل على رابطي",
     "nameSkipCta": "تخطَّ الآن",
     "toastPersonalized": "أصبح رابطك مطابقًا لاسمك الآن",
-    "toastPersonalizeFailed": "تعذّر التحديث. يُرجى المحاولة مرة أخرى."
+    "toastPersonalizeFailed": "تعذّر التحديث. يُرجى المحاولة مرة أخرى.",
+    "toastNameTaken": "هذا الاسم مُستخدم بالفعل — حصلت على {{handle}} بدلًا منه"
   },
   "searchBar": {
     "sectionTitle": "ابحث عن Whisper Box لشخص ما",

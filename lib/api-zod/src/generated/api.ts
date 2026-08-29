@@ -1715,7 +1715,8 @@ export const SendWhisperBoxMessageResponse = zod.object({
 export const EnableWhisperBoxResponse = zod.object({
   "handle": zod.string().describe('The Whisper Box handle (whisperBoxHandle) — NOT the same value as whispererHandle.'),
   "avatarId": zod.string().nullable(),
-  "enabled": zod.boolean()
+  "enabled": zod.boolean(),
+  "requestedNameTaken": zod.boolean().describe('True when the account has a display name but someone else already holds the exact slug of it, so `handle` had to fall back to a suffixed or fully anonymous variant instead of the bare name. False whenever there\'s no display name yet, or the bare name was actually available.')
 })
 
 
@@ -1724,7 +1725,8 @@ export const EnableWhisperBoxResponse = zod.object({
  * @summary Regenerate the caller's Whisper Box handle from their current display name
  */
 export const RefreshWhisperBoxHandleResponse = zod.object({
-  "handle": zod.string()
+  "handle": zod.string(),
+  "requestedNameTaken": zod.boolean().describe('True when someone else already holds the exact slug of the caller\'s current display name, so `handle` had to fall back to a suffixed or fully anonymous variant.')
 })
 
 

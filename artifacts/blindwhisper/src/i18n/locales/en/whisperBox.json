@@ -79,7 +79,8 @@
     "nameSaveCta": "Save and get my link",
     "nameSkipCta": "Skip for now",
     "toastPersonalized": "Your link now matches your name",
-    "toastPersonalizeFailed": "Couldn't update that. Please try again."
+    "toastPersonalizeFailed": "Couldn't update that. Please try again.",
+    "toastNameTaken": "That name is already taken — you got {{handle}} instead"
   },
   "searchBar": {
     "sectionTitle": "Find someone's Whisper Box",
