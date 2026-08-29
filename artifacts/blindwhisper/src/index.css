@@ -197,6 +197,61 @@
   }
 }
 
+/* A guided flow's step content arriving like a page turning, not a form
+   field snapping into place — used by FirstWhispersOnboarding so each of
+   its three steps reads as a small moment rather than an instant DOM swap.
+   Each step's wrapper is a distinct conditional branch, so React already
+   unmounts/remounts it on step change — this class just gives that mount
+   something to animate in with. */
+@keyframes step-in {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.step-in {
+  animation: step-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .step-in {
+    animation: none;
+  }
+}
+
+/* A brief overshoot pop for a flow's payoff moment (e.g. the checkmark on
+   FirstWhispersOnboarding's "sent" screen) — the same settle-in feel as
+   message-in, just bigger, since this fires once per flow rather than once
+   per message. */
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.pop-in {
+  animation: pop-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pop-in {
+    animation: none;
+  }
+}
+
 /* The reply thread's own scroll area. The scrollbar is deliberately always
    visible rather than the overlay kind that fades out: it doubles as the
    signal that there is more conversation above, which is the whole reason
