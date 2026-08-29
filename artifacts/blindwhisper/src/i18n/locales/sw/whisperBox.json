@@ -79,7 +79,8 @@
     "nameSaveCta": "Hifadhi na upate kiungo changu",
     "nameSkipCta": "Ruka kwa sasa",
     "toastPersonalized": "Kiungo chako sasa kinalingana na jina lako",
-    "toastPersonalizeFailed": "Imeshindikana kusasisha. Tafadhali jaribu tena."
+    "toastPersonalizeFailed": "Imeshindikana kusasisha. Tafadhali jaribu tena.",
+    "toastNameTaken": "Jina hilo tayari limetumika — umepewa {{handle}} badala yake"
   },
   "searchBar": {
     "sectionTitle": "Tafuta Whisper Box ya mtu",

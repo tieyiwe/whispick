@@ -8,4 +8,6 @@
 
 export type RefreshWhisperBoxHandle200 = {
   handle: string;
+  /** True when someone else already holds the exact slug of the caller's current display name, so `handle` had to fall back to a suffixed or fully anonymous variant. */
+  requestedNameTaken: boolean;
 };

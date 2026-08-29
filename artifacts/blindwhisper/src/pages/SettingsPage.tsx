@@ -134,7 +134,7 @@ export function SettingsPage() {
   // "personalized, then the name changed since".
   const handlePersonalized = profile?.whisperBoxHandlePersonalized ?? false;
 
-  function handleWhisperBoxToggleSuccess(enabled: boolean, handle: string | null) {
+  function handleWhisperBoxToggleSuccess(enabled: boolean, handle: string | null, requestedNameTaken = false) {
     // Write straight into the shared recap cache so the switch and share
     // link update instantly (no flash back to the old state while the
     // invalidated query refetches), and every other consumer of this same
@@ -146,7 +146,11 @@ export function SettingsPage() {
     );
     queryClient.invalidateQueries({ queryKey: getGetUserRecapQueryKey() });
     queryClient.invalidateQueries({ queryKey: getGetUserProfileQueryKey() });
-    toast({ title: enabled ? tWhisperBox("settingsSection.toastEnabled") : tWhisperBox("settingsSection.toastDisabled") });
+    toast(
+      requestedNameTaken && handle
+        ? { title: tWhisperBox("linkDialog.toastNameTaken", { handle }) }
+        : { title: enabled ? tWhisperBox("settingsSection.toastEnabled") : tWhisperBox("settingsSection.toastDisabled") },
+    );
   }
 
   function handleWhisperBoxToggleError() {
@@ -156,7 +160,7 @@ export function SettingsPage() {
   function handleToggleWhisperBox(enabled: boolean) {
     if (enabled) {
       enableWhisperBox.mutate(undefined, {
-        onSuccess: (result) => handleWhisperBoxToggleSuccess(true, result.handle),
+        onSuccess: (result) => handleWhisperBoxToggleSuccess(true, result.handle, result.requestedNameTaken),
         onError: handleWhisperBoxToggleError,
       });
     } else {

@@ -95,7 +95,7 @@ describe("Whisper Box", () => {
     expect(newResolve.status).toBe(200);
   });
 
-  it("two accounts with the same display name get distinct handles (bare name, then a digit-suffixed one)", async () => {
+  it("two accounts with the same display name get distinct handles (bare name, then a digit-suffixed one), and the second is told their exact name was taken", async () => {
     const clerkIdA = `clerk_wb_dup_a_${randomUUID()}`;
     const clerkIdB = `clerk_wb_dup_b_${randomUUID()}`;
     await ensureAndGet(clerkIdA);
@@ -107,8 +107,16 @@ describe("Whisper Box", () => {
     const enableB = await request(app).post("/api/whisper-box/enable").set(asUser(clerkIdB));
 
     expect(enableA.body.handle).toBe("SameName");
+    expect(enableA.body.requestedNameTaken).toBe(false); // got the bare name — nothing was actually taken
     expect(enableB.body.handle).toMatch(/^SameName\d{3}$/);
     expect(enableB.body.handle).not.toBe(enableA.body.handle);
+    expect(enableB.body.requestedNameTaken).toBe(true); // had to fall back — the exact name was unavailable
+
+    // Same signal on the explicit "personalize my link" action, not just
+    // the auto-assign-on-enable path.
+    const refreshB = await request(app).post("/api/whisper-box/refresh-handle").set(asUser(clerkIdB));
+    expect(refreshB.body.handle).toMatch(/^SameName\d{3}$/);
+    expect(refreshB.body.requestedNameTaken).toBe(true);
   });
 
   it("a pre-migration account (whisperBoxEnabled with only the old shared whispererHandle) keeps resolving and self-migrates onto its own whisperBoxHandle", async () => {

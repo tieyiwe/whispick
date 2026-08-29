@@ -79,7 +79,8 @@
     "nameSaveCta": "Speichern und Link holen",
     "nameSkipCta": "Vorerst überspringen",
     "toastPersonalized": "Dein Link passt jetzt zu deinem Namen",
-    "toastPersonalizeFailed": "Konnte nicht aktualisiert werden. Bitte versuche es erneut."
+    "toastPersonalizeFailed": "Konnte nicht aktualisiert werden. Bitte versuche es erneut.",
+    "toastNameTaken": "Dieser Name ist bereits vergeben — du hast stattdessen {{handle}} erhalten"
   },
   "searchBar": {
     "sectionTitle": "Jemandes Whisper Box finden",

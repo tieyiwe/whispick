@@ -79,7 +79,8 @@
     "nameSaveCta": "저장하고 링크 받기",
     "nameSkipCta": "나중에 하기",
     "toastPersonalized": "이제 링크가 이름과 일치해요",
-    "toastPersonalizeFailed": "업데이트하지 못했어요. 다시 시도해 주세요."
+    "toastPersonalizeFailed": "업데이트하지 못했어요. 다시 시도해 주세요.",
+    "toastNameTaken": "이미 사용 중인 이름이에요 — 대신 {{handle}}을(를) 받았어요"
   },
   "searchBar": {
     "sectionTitle": "다른 사람의 Whisper Box 찾기",

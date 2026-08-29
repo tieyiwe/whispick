@@ -2088,7 +2088,16 @@ paths:
                     type: ["string", "null"]
                   enabled:
                     type: boolean
-                required: [handle, avatarId, enabled]
+                  requestedNameTaken:
+                    type: boolean
+                    description: >-
+                      True when the account has a display name but someone
+                      else already holds the exact slug of it, so `handle`
+                      had to fall back to a suffixed or fully anonymous
+                      variant instead of the bare name. False whenever
+                      there's no display name yet, or the bare name was
+                      actually available.
+                required: [handle, avatarId, enabled, requestedNameTaken]
 
   /whisper-box/refresh-handle:
     post:
@@ -2114,7 +2123,13 @@ paths:
                 properties:
                   handle:
                     type: string
-                required: [handle]
+                  requestedNameTaken:
+                    type: boolean
+                    description: >-
+                      True when someone else already holds the exact slug of
+                      the caller's current display name, so `handle` had to
+                      fall back to a suffixed or fully anonymous variant.
+                required: [handle, requestedNameTaken]
         "400":
           description: No display name set yet
           content:

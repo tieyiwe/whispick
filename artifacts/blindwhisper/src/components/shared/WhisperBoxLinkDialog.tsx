@@ -105,7 +105,11 @@ export function WhisperBoxLinkDialog({
               setNeedsName(false);
               queryClient.invalidateQueries({ queryKey: getGetUserRecapQueryKey() });
               queryClient.invalidateQueries({ queryKey: getGetUserProfileQueryKey() });
-              toast({ title: t("linkDialog.toastPersonalized") });
+              toast(
+                result.requestedNameTaken
+                  ? { title: t("linkDialog.toastNameTaken", { handle: result.handle }) }
+                  : { title: t("linkDialog.toastPersonalized") },
+              );
             },
             onError: () => toast({ title: t("linkDialog.toastPersonalizeFailed"), variant: "destructive" }),
             onSettled: () => setPersonalizing(false),
