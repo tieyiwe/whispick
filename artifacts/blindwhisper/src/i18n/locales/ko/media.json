@@ -10,7 +10,9 @@
     "emptyState": "아직 업로드한 동영상이 없어요 — 동영상을 추가해 보세요.",
     "unavailable": "더 이상 볼 수 없어요",
     "usageCount_other": "Whisp {{count}}개",
-    "expiresIn": "{{days}}일 후 삭제돼요",
+    "expiresInDays_other": "{{count}}일 후 미디어 라이브러리에서 삭제되니 지금 Whisp로 보내세요",
+    "expiresInHours_other": "{{count}}시간 후 미디어 라이브러리에서 삭제되니 지금 Whisp로 보내세요",
+    "expiresInLessThanHour": "곧 미디어 라이브러리에서 삭제되니 지금 Whisp로 보내세요",
     "whispIt": "Whisp로 보내기",
     "postToCircle": "Blind Circle",
     "removeDialog": {

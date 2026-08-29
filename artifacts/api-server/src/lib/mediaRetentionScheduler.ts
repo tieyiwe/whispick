@@ -1,7 +1,7 @@
 import { db, uploadedVideosTable, usersTable } from "@workspace/db";
 import { eq, and, lte, isNull } from "drizzle-orm";
 import { deleteObject } from "./objectStorage";
-import { sendEmail, mediaExpiringEmailHtml } from "./email";
+import { sendEmail, mediaExpiringEmailHtml, mediaExpiredEmailHtml } from "./email";
 import { notifyUserPersisted } from "./push";
 import { UPLOAD_DELETION_WARNING_DAYS } from "./uploads";
 import { logger } from "./logger";
@@ -86,6 +86,12 @@ async function deleteExpiredMedia(): Promise<void> {
     .where(and(eq(uploadedVideosTable.status, "ready"), lte(uploadedVideosTable.expiresAt, new Date())))
     .limit(BATCH_LIMIT);
 
+  // Same PUBLIC_APP_URL gate warnUpcomingDeletions uses above, kept for
+  // consistency even though notifyUserPersisted's own url param here is
+  // always relative — every other scheduler-emitted notification in this
+  // codebase is gated the same way.
+  const appUrl = process.env.PUBLIC_APP_URL;
+
   for (const media of due) {
     await deleteObject(media.objectKey);
     if (media.thumbnailObjectKey) await deleteObject(media.thumbnailObjectKey);
@@ -94,6 +100,26 @@ async function deleteExpiredMedia(): Promise<void> {
       .update(uploadedVideosTable)
       .set({ status: "expired", deletedAt: new Date() })
       .where(eq(uploadedVideosTable.id, media.id));
+
+    // Distinct from warnUpcomingDeletions' "about to expire" notice above —
+    // this one fires once the video is actually gone, so the owner isn't
+    // left wondering why "Whisp It" quietly stopped working on something
+    // they saw in their library days ago and forgot about.
+    const owner = await db.select().from(usersTable).where(eq(usersTable.id, media.ownerId)).then((r) => r[0]);
+    if (owner?.email) {
+      void sendEmail(owner.email, "Your uploaded video has been removed", mediaExpiredEmailHtml(media.originalFilename), {
+        whispId: null,
+        purpose: "media_expired",
+      });
+    }
+    if (owner && appUrl) {
+      void notifyUserPersisted(
+        owner.id,
+        "Video removed",
+        `"${media.originalFilename}" has been removed from your Media Library.`,
+        "/media-library",
+      );
+    }
   }
 
   if (due.length > 0) {

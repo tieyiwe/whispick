@@ -11,7 +11,11 @@
     "unavailable": "No longer available",
     "usageCount_one": "{{count}} whisp",
     "usageCount_other": "{{count}} whisps",
-    "expiresIn": "Removed in {{days}}d",
+    "expiresInDays_one": "Whisp it in {{count}}d before it's removed from Media",
+    "expiresInDays_other": "Whisp it in {{count}}d before it's removed from Media",
+    "expiresInHours_one": "Whisp it in {{count}}h before it's removed from Media",
+    "expiresInHours_other": "Whisp it in {{count}}h before it's removed from Media",
+    "expiresInLessThanHour": "Whisp it in under an hour before it's removed from Media",
     "whispIt": "Whisp It",
     "postToCircle": "Blind Circle",
     "removeDialog": {

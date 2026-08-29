@@ -14,6 +14,7 @@ export type DeliveryPurpose =
   | "appreciation_notification"
   | "subscription_verification"
   | "media_expiring"
+  | "media_expired"
   | "reveal_request"
   | "reply_to_recipient"
   // Anonymous invite-a-friend's initial send (routes/invites.ts) — not tied

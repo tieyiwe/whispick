@@ -10,7 +10,9 @@
     "emptyState": "还没有上传任何视频 — 上传一个开始吧。",
     "unavailable": "已不可用",
     "usageCount_other": "{{count}} 个 Whisp",
-    "expiresIn": "{{days}} 天后移除",
+    "expiresInDays_other": "{{count}} 天后将从媒体库中移除，赶快发送 Whisp 吧",
+    "expiresInHours_other": "{{count}} 小时后将从媒体库中移除，赶快发送 Whisp 吧",
+    "expiresInLessThanHour": "即将从媒体库中移除，赶快发送 Whisp 吧",
     "whispIt": "发送 Whisp",
     "postToCircle": "Blind Circle",
     "removeDialog": {

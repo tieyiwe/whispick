@@ -11,7 +11,11 @@
     "unavailable": "Plus disponible",
     "usageCount_one": "{{count}} whisp",
     "usageCount_other": "{{count}} whisps",
-    "expiresIn": "Supprimée dans {{days}} j",
+    "expiresInDays_one": "Envoie-le en Whisp dans {{count}} j avant qu'il soit supprimé de la Médiathèque",
+    "expiresInDays_other": "Envoie-le en Whisp dans {{count}} j avant qu'il soit supprimé de la Médiathèque",
+    "expiresInHours_one": "Envoie-le en Whisp dans {{count}} h avant qu'il soit supprimé de la Médiathèque",
+    "expiresInHours_other": "Envoie-le en Whisp dans {{count}} h avant qu'il soit supprimé de la Médiathèque",
+    "expiresInLessThanHour": "Envoie-le en Whisp dans moins d'une heure avant qu'il soit supprimé de la Médiathèque",
     "whispIt": "Envoyer en Whisp",
     "postToCircle": "Blind Circle",
     "removeDialog": {
