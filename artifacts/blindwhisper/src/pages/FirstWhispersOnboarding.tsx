@@ -321,7 +321,7 @@ export function FirstWhispersOnboarding() {
     return (
       <AppLayout>
         <div className="max-w-xl mx-auto text-center py-16 space-y-6">
-          <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+          <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center pop-in">
             <CheckCircle2 className="w-8 h-8 text-primary" />
           </div>
           <h1 className="text-3xl font-serif font-bold text-foreground">{t("sent.title", { count: result.memberCount })}</h1>
@@ -393,7 +393,7 @@ export function FirstWhispersOnboarding() {
           <CardContent className="p-6 space-y-5">
             {/* Step 1: add friends */}
             {step === 1 && (
-              <div className="space-y-4">
+              <div className="space-y-4 step-in">
                 <h2 className="text-xl font-serif font-semibold">{t("step1.heading")}</h2>
                 <p className="text-sm text-muted-foreground">{t("step1.subtitle")}</p>
 
@@ -401,7 +401,12 @@ export function FirstWhispersOnboarding() {
                   {contacts.map((c, i) => (
                     <div key={c.id} className="p-3 rounded-xl border border-border/50 bg-muted/10 space-y-2" data-testid={`contact-row-${i}`}>
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-muted-foreground">{t("step1.friendLabel", { number: i + 1 })}</span>
+                        <span className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                          <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary text-[11px] font-semibold shrink-0">
+                            {i + 1}
+                          </span>
+                          {t("step1.friendLabel", { number: i + 1 })}
+                        </span>
                         {contacts.length > 1 && (
                           <button
                             type="button"
@@ -467,7 +472,7 @@ export function FirstWhispersOnboarding() {
 
             {/* Step 2: pick something to send */}
             {step === 2 && (
-              <div className="space-y-4">
+              <div className="space-y-4 step-in">
                 <h2 className="text-xl font-serif font-semibold flex items-center gap-1.5">
                   <Sparkles className="w-4 h-4 text-primary" /> {t("step2.heading")}
                 </h2>
@@ -635,7 +640,7 @@ export function FirstWhispersOnboarding() {
 
             {/* Step 3: channel + send */}
             {step === 3 && (
-              <div className="space-y-4">
+              <div className="space-y-4 step-in">
                 <h2 className="text-xl font-serif font-semibold">{t("step3.heading")}</h2>
                 <p className="text-sm text-muted-foreground">
                   {t("step3.subtitle", { count: validContacts.length })}

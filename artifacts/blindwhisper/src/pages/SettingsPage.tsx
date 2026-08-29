@@ -352,13 +352,21 @@ export function SettingsPage() {
 
   return (
     <AppLayout>
-      <div className="max-w-xl mx-auto space-y-6">
+      <div className="max-w-xl mx-auto space-y-8">
         <div>
           <h1 className="text-3xl font-serif font-bold text-foreground">{t("settingsPage.title")}</h1>
           <p className="text-muted-foreground mt-1">{t("settingsPage.subtitle")}</p>
         </div>
 
-        {/* Profile */}
+        {/* Profile + Debate Now identity — who you are, in this app and in
+            Debate Now specifically. Grouped under one label so the settings
+            list reads as a few labeled clusters instead of 8 identical
+            unlabeled boxes in a row. */}
+        <div className="space-y-4">
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 px-1">
+            {t("settingsPage.sectionGroupProfile")}
+          </h2>
+
         <Card className="bg-card border-border/50">
           <CardHeader>
             <CardTitle className="text-base font-serif flex items-center gap-2">
@@ -496,6 +504,15 @@ export function SettingsPage() {
             </Button>
           </CardContent>
         </Card>
+        </div>
+
+        {/* Account, Security, Phone number — the account's identity and
+            access surfaces, grouped separately from the profile-presentation
+            cards above. */}
+        <div className="space-y-4">
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 px-1">
+            {t("settingsPage.sectionGroupAccountSecurity")}
+          </h2>
 
         {/* Account info */}
         <Card className="bg-card border-border/50">
@@ -587,6 +604,15 @@ export function SettingsPage() {
             )}
           </CardContent>
         </Card>
+        </div>
+
+        {/* Notifications, Whisper Box, Privacy — how the app reaches you and
+            what it does with your data, grouped last since these are the
+            "set it and forget it" preferences rather than identity/security. */}
+        <div className="space-y-4">
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 px-1">
+            {t("settingsPage.sectionGroupPreferences")}
+          </h2>
 
         {/* Notifications */}
         <Card className="bg-card border-border/50">
@@ -764,6 +790,7 @@ export function SettingsPage() {
             </p>
           </CardContent>
         </Card>
+        </div>
       </div>
 
       {whisperBoxHandle && (

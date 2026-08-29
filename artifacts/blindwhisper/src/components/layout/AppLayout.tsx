@@ -270,8 +270,20 @@ export function AppLayout({ children }: { children: ReactNode }) {
     // hiding instead of running under it. PullToRefresh checks its ancestors
     // for a scrolled container (not just window.scrollY), which is what keeps
     // the swipe-down gesture working now that the window never scrolls.
-    <div className="h-[100dvh] overflow-hidden bg-background flex flex-col md:flex-row">
-      <aside className="w-full md:w-64 border-r border-border bg-card/50 backdrop-blur-xl flex-col hidden md:flex md:h-full md:shrink-0">
+    <div className="relative h-[100dvh] overflow-hidden bg-background flex flex-col md:flex-row">
+      {/* Ambient depth for the authenticated shell — same treatment every
+          public page (PublicWhisperBoxPage, PublicWhispPage, etc.) already
+          uses, just not previously extended in here. Fixed relative to the
+          shell (not `main`'s own scroll region), so it reads as an
+          atmospheric backdrop content scrolls past rather than something
+          that scrolls with it. Two blobs, not one: a single centered glow
+          reads as a spotlight; two offset, differently-sized ones read as
+          depth/atmosphere, matching the public pages' own pattern.
+          pointer-events-none so it never intercepts a tap meant for the
+          sidebar/nav/content stacked in front of it. */}
+      <div className="absolute top-[-10%] left-[-10%] w-[55%] h-[40%] rounded-full blur-[120px] pointer-events-none bg-primary/8" />
+      <div className="absolute bottom-[-15%] right-[-10%] w-[45%] h-[35%] rounded-full blur-[110px] pointer-events-none bg-secondary/5" />
+      <aside className="relative w-full md:w-64 border-r border-border bg-card/50 backdrop-blur-xl flex-col hidden md:flex md:h-full md:shrink-0">
         <div className="p-6 flex items-center justify-between gap-2">
           <Link href="/dashboard" className="hover:opacity-80 transition-opacity min-w-0">
             <LogoLockup />

@@ -127,7 +127,18 @@ export function AdminLayout({ children }: { children: ReactNode }) {
     // sticky rail scrolled away with the page. An internally-scrolled main
     // keeps the header and rail genuinely static (PullToRefresh already
     // supports internally-scrolled containers — it walks ancestor scrollTop).
-    <div className="admin-theme h-[100dvh] bg-background text-foreground flex flex-col overflow-hidden">
+    <div className="admin-theme relative h-[100dvh] bg-background text-foreground flex flex-col overflow-hidden">
+      {/* Ambient depth for the HQ shell — same two-blob treatment AppLayout
+          uses for the member-facing app, so the admin surface isn't flatter
+          than the app it's managing. Colors resolve against admin-theme's
+          own palette (matte yellow --primary, violet-grey --secondary
+          above), not the member app's, since this div is inside the
+          .admin-theme scope. Flex items paint in tree order regardless of
+          position (CSS Flexbox painting rules), so simply listing these
+          first among the root's flex children is what keeps them behind
+          the header/rail/main — no z-index juggling needed. */}
+      <div className="absolute top-[-12%] left-[-8%] w-[45%] h-[35%] rounded-full blur-[110px] pointer-events-none bg-primary/5" />
+      <div className="absolute bottom-[-15%] right-[-10%] w-[40%] h-[35%] rounded-full blur-[100px] pointer-events-none bg-secondary/10" />
       <header
         className="border-b border-border bg-card z-40 shrink-0"
         style={{ paddingTop: "env(safe-area-inset-top)" }}

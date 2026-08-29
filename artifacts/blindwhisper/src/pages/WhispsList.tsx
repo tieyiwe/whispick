@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
@@ -51,15 +51,9 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { deliveryLabel } from "@/lib/deliveryMethod";
 import { savePendingForward, type ForwardVideo } from "@/lib/forwardVideo";
+import { useLongPress } from "@/lib/useLongPress";
 
 type Box = "sent" | "received" | "archived";
-
-// How long a press has to hold before it counts as "long press, open the
-// options menu" instead of "tap, navigate" — and how far a finger can drift
-// during that hold before it reads as a scroll gesture instead (which
-// cancels the press rather than opening anything).
-const LONG_PRESS_MS = 500;
-const LONG_PRESS_MOVE_TOLERANCE_PX = 10;
 
 export function WhispsList() {
   const { t } = useTranslation("whisp");
@@ -74,47 +68,14 @@ export function WhispsList() {
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
   // A press-and-hold on the card itself opens the same options menu the
-  // "⋯" button does — tracked with refs (not state) since every pointer
-  // event on every card would otherwise re-render the whole list.
-  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const longPressFiredRef = useRef(false);
-  const pressStartRef = useRef<{ x: number; y: number } | null>(null);
-
-  function clearLongPressTimer() {
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = null;
-    }
-  }
-
-  function handleCardPointerDown(e: React.PointerEvent, whispId: string) {
-    if (e.pointerType === "mouse" && e.button !== 0) return;
-    pressStartRef.current = { x: e.clientX, y: e.clientY };
-    longPressFiredRef.current = false;
-    clearLongPressTimer();
-    longPressTimerRef.current = setTimeout(() => {
-      longPressFiredRef.current = true;
-      setOpenMenuId(whispId);
-      navigator.vibrate?.(10);
-    }, LONG_PRESS_MS);
-  }
-
-  function handleCardPointerMove(e: React.PointerEvent) {
-    if (!pressStartRef.current) return;
-    const dx = e.clientX - pressStartRef.current.x;
-    const dy = e.clientY - pressStartRef.current.y;
-    if (Math.hypot(dx, dy) > LONG_PRESS_MOVE_TOLERANCE_PX) clearLongPressTimer();
-  }
+  // "⋯" button does.
+  const longPress = useLongPress<string>((whispId) => setOpenMenuId(whispId));
 
   // A long press that DID fire must swallow the click that follows it
   // (pointerup on touch devices dispatches a synthetic click right after) —
   // otherwise opening the menu would also navigate to the whisp underneath it.
   function handleCardClick(e: React.MouseEvent) {
-    clearLongPressTimer();
-    if (longPressFiredRef.current) {
-      e.preventDefault();
-      longPressFiredRef.current = false;
-    }
+    if (longPress.wasLongPress()) e.preventDefault();
   }
 
   // Pin/archive/delete can all move a whisp between boxes (or in/out of the
@@ -343,10 +304,10 @@ export function WhispsList() {
                     ring regardless of box, since a pin means "important to
                     me" independent of sent/received/archived. */}
                 <Card
-                  onPointerDown={(e) => handleCardPointerDown(e, whisp.id)}
-                  onPointerMove={handleCardPointerMove}
-                  onPointerUp={clearLongPressTimer}
-                  onPointerCancel={clearLongPressTimer}
+                  onPointerDown={(e) => longPress.onPointerDown(e, whisp.id)}
+                  onPointerMove={longPress.onPointerMove}
+                  onPointerUp={longPress.onPointerUp}
+                  onPointerCancel={longPress.onPointerUp}
                   className={`bg-card hover:bg-card/80 transition-colors cursor-pointer overflow-hidden group select-none ${
                     whisp.pinned ? "ring-1 ring-gilded/40" : ""
                   } ${

@@ -31,6 +31,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Mailbox, Trash2, Clock, Image, Loader2 } from "lucide-react";
+import { AnonymousMark } from "@/components/shared/AnonymousMark";
+import { useLongPress } from "@/lib/useLongPress";
 import { shareWhisperBoxStoryCard } from "@/lib/whisperBoxStoryCard";
 import { whisperBoxShareUrl } from "@/lib/whisperBoxUrl";
 import { WhisperBoxLinkDialog } from "@/components/shared/WhisperBoxLinkDialog";
@@ -79,6 +81,13 @@ export function WhisperBoxInbox() {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [storyShareLoading, setStoryShareLoading] = useState(false);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+
+  // Press-and-hold jumps straight to the delete confirm — read and delete
+  // are the only two things a message here can ever do, so holding a card
+  // is unambiguous (no options menu needed, unlike WhispsList's pin/archive/
+  // delete). Saves a tap-to-expand-then-find-the-small-trash-icon detour on
+  // mobile for the one destructive action this list has.
+  const longPress = useLongPress<string>((id) => setPendingDeleteId(id));
 
   // Same branded-image share as SettingsPage's Whisper Box card (see
   // src/lib/whisperBoxStoryCard.ts) — surfaced here too since the empty
@@ -251,13 +260,22 @@ export function WhisperBoxInbox() {
                 >
                   <button
                     type="button"
-                    onClick={() => handleToggleExpand(message)}
-                    className="w-full text-left p-4 flex items-start gap-3"
+                    onClick={() => {
+                      // A long press that DID fire must swallow the click
+                      // that follows it (pointerup on touch dispatches a
+                      // synthetic click right after) — otherwise opening the
+                      // delete confirm would also toggle the card expanded.
+                      if (longPress.wasLongPress()) return;
+                      handleToggleExpand(message);
+                    }}
+                    onPointerDown={(e) => longPress.onPointerDown(e, message.id)}
+                    onPointerMove={longPress.onPointerMove}
+                    onPointerUp={longPress.onPointerUp}
+                    onPointerCancel={longPress.onPointerUp}
+                    className="w-full text-left p-4 flex items-start gap-3 select-none"
                     data-testid={`button-toggle-whisper-box-message-${message.id}`}
                   >
-                    <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <Mailbox className="w-4 h-4 text-primary" />
-                    </div>
+                    <AnonymousMark size="md" className="mt-0.5" />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-sm font-medium text-foreground truncate flex items-center gap-1.5" data-testid={`whisper-box-sender-${message.id}`}>
