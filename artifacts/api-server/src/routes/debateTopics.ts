@@ -15,6 +15,7 @@ import { assignOrGetWhispererIdentity, getOrBackfillWhispererIdentities } from "
 import { toggleReaction, reactionCountsFor, viewerReactionsFor } from "../lib/commentReactions";
 import { commentImageUpload, storeCommentImage } from "../lib/commentImages";
 import { notifyUserPersisted } from "../lib/push";
+import { notifyAdminsOfNewDebateTopic } from "../lib/adminNotify";
 import { downloadObject } from "../lib/objectStorage";
 
 const router: IRouter = Router();
@@ -76,6 +77,8 @@ router.post("/debate-topics", requireAuth, createDebateTopicLimiter, async (req,
     .from(debateTopicsTable)
     .where(eq(debateTopicsTable.id, id))
     .then((r) => r[0]);
+
+  void notifyAdminsOfNewDebateTopic({ id, authorId: user.id, authorHandle: authorIdentity.handle });
 
   res.status(201).json({ ...topic, authorHandle: authorIdentity.handle, authorAvatarId: authorIdentity.avatarId, commentCount: 0, rewhispCount: 0 });
 });

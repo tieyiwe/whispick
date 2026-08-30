@@ -57,6 +57,8 @@ router.get("/profile", requireAuth, async (req, res): Promise<void> => {
     role: user.role,
     emailNotificationsEnabled: user.emailNotificationsEnabled,
     showOnlineStatus: user.showOnlineStatus,
+    notifyOnNewSignup: user.notifyOnNewSignup,
+    notifyOnNewDebateTopic: user.notifyOnNewDebateTopic,
     twoFactorEnabled: user.twoFactorEnabled,
     createdAt: user.createdAt,
   });
@@ -194,6 +196,8 @@ router.patch("/profile", requireAuth, async (req, res): Promise<void> => {
     ageRange: z.enum(AGE_RANGE_OPTIONS).nullable().optional(),
     emailNotificationsEnabled: z.boolean().optional(),
     showOnlineStatus: z.boolean().optional(),
+    notifyOnNewSignup: z.boolean().optional(),
+    notifyOnNewDebateTopic: z.boolean().optional(),
     countryCode: z.string().length(2).nullable().optional(),
     preferredLanguage: z.enum(SUPPORTED_LANGUAGES).optional(),
     whispererAvatarId: z.string().max(50).nullable().optional(),
@@ -240,6 +244,8 @@ router.patch("/profile", requireAuth, async (req, res): Promise<void> => {
     whisperLinksUsed: updated.whisperLinksUsed,
     emailNotificationsEnabled: updated.emailNotificationsEnabled,
     showOnlineStatus: updated.showOnlineStatus,
+    notifyOnNewSignup: updated.notifyOnNewSignup,
+    notifyOnNewDebateTopic: updated.notifyOnNewDebateTopic,
     createdAt: updated.createdAt,
   });
 });

@@ -26,7 +26,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, User, Mail, Shield, Bell, Phone, ShieldCheck, Swords, Mailbox, Share2, Image } from "lucide-react";
+import { Loader2, User, Mail, Shield, Bell, Phone, ShieldCheck, ShieldAlert, Swords, Mailbox, Share2, Image, UserPlus, MessageSquareText } from "lucide-react";
 import { isPushSupported, getExistingPushSubscription, subscribeToPush, pushSubscriptionToJson } from "@/lib/push";
 import { shareWhisperBoxStoryCard } from "@/lib/whisperBoxStoryCard";
 import { whisperBoxShareUrl } from "@/lib/whisperBoxUrl";
@@ -305,6 +305,46 @@ export function SettingsPage() {
             title: enabled
               ? t("settingsPage.toastShowOnlineStatusOn")
               : t("settingsPage.toastShowOnlineStatusOff"),
+          });
+        },
+        onError: () => toast({ title: t("settingsPage.toastUpdateFailed"), variant: "destructive" }),
+      }
+    );
+  }
+
+  // Admin-only preferences (Settings' "Admin notifications" card, gated on
+  // profile.role === "admin") — whether THIS admin account gets alerted
+  // when a new user signs up or a new Debate Now topic is posted. Separate
+  // toggles on purpose, same reasoning as the email/online-status pair
+  // above: one alert type being noisy shouldn't force turning off the
+  // other too.
+  function handleToggleAdminNewSignup(enabled: boolean) {
+    updateProfile.mutate(
+      { data: { notifyOnNewSignup: enabled } },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetUserProfileQueryKey() });
+          toast({
+            title: enabled
+              ? t("settingsPage.toastAdminNewSignupOn")
+              : t("settingsPage.toastAdminNewSignupOff"),
+          });
+        },
+        onError: () => toast({ title: t("settingsPage.toastUpdateFailed"), variant: "destructive" }),
+      }
+    );
+  }
+
+  function handleToggleAdminNewDebateTopic(enabled: boolean) {
+    updateProfile.mutate(
+      { data: { notifyOnNewDebateTopic: enabled } },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetUserProfileQueryKey() });
+          toast({
+            title: enabled
+              ? t("settingsPage.toastAdminNewDebateTopicOn")
+              : t("settingsPage.toastAdminNewDebateTopicOff"),
           });
         },
         onError: () => toast({ title: t("settingsPage.toastUpdateFailed"), variant: "destructive" }),
@@ -688,6 +728,56 @@ export function SettingsPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Admin notifications — only rendered for an admin account (owner
+            or collaborator; see adminAuth.ts). Two independent toggles, not
+            one "admin alerts" switch, matching the ask that either can be
+            turned off without silencing the other. Backend delivery is the
+            same in-app bell + best-effort push every other notification
+            uses (lib/adminNotify.ts) — an admin sees these exactly where
+            they'd see any other notification, since an admin is still just
+            a user underneath. */}
+        {profile?.role === "admin" && (
+          <Card className="bg-card border-border/50">
+            <CardHeader>
+              <CardTitle className="text-base font-serif flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 text-primary" /> {t("settingsPage.adminNotificationsCardTitle")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-start gap-2.5">
+                  <UserPlus className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{t("settingsPage.adminNewSignupLabel")}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{t("settingsPage.adminNewSignupDescription")}</p>
+                  </div>
+                </div>
+                <Switch
+                  checked={profile?.notifyOnNewSignup ?? true}
+                  onCheckedChange={handleToggleAdminNewSignup}
+                  disabled={updateProfile.isPending}
+                  data-testid="switch-admin-notify-new-signup"
+                />
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-start gap-2.5">
+                  <MessageSquareText className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{t("settingsPage.adminNewDebateTopicLabel")}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{t("settingsPage.adminNewDebateTopicDescription")}</p>
+                  </div>
+                </div>
+                <Switch
+                  checked={profile?.notifyOnNewDebateTopic ?? true}
+                  onCheckedChange={handleToggleAdminNewDebateTopic}
+                  disabled={updateProfile.isPending}
+                  data-testid="switch-admin-notify-new-debate-topic"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Whisper Box — the app's one deliberately anonymous-SENDER
             surface: opting in gets a public link anyone (no account needed)
