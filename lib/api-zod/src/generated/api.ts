@@ -1155,6 +1155,8 @@ export const GetUserProfileResponse = zod.object({
   "role": zod.string(),
   "emailNotificationsEnabled": zod.boolean().describe('Whether this Whisperer wants the \"you have a new whisp\" email in addition to the in-app notification. On by default — see PATCH \/user\/profile to change it.'),
   "showOnlineStatus": zod.boolean().describe('Whether accounts that follow this Whisperer can see them as online (see GET \/follows\/online-status). On by default.'),
+  "notifyOnNewSignup": zod.boolean().describe('Admin-only preference — whether this account (when role is \'admin\') gets notified when a new user signs up. Inert for a non-admin row. On by default. See lib\/adminNotify.ts.'),
+  "notifyOnNewDebateTopic": zod.boolean().describe('Admin-only preference — whether this account (when role is \'admin\') gets notified when a new Debate Now topic is posted. Inert for a non-admin row. On by default. See lib\/adminNotify.ts.'),
   "twoFactorEnabled": zod.boolean().nullish().describe('Best-effort, admin-facing mirror of Clerk\'s own user.twoFactorEnabled — never used for any access-control decision. Null means never synced yet, distinct from false (\"synced, and it\'s off\").'),
   "createdAt": zod.string()
 })
@@ -1170,6 +1172,8 @@ export const UpdateUserProfileBody = zod.object({
   "ageRange": zod.string().nullish(),
   "emailNotificationsEnabled": zod.boolean().optional(),
   "showOnlineStatus": zod.boolean().optional().describe('Whether accounts that follow this Whisperer can see them as online (see GET \/follows\/online-status).'),
+  "notifyOnNewSignup": zod.boolean().optional().describe('Admin-only preference — see UserProfile.notifyOnNewSignup.'),
+  "notifyOnNewDebateTopic": zod.boolean().optional().describe('Admin-only preference — see UserProfile.notifyOnNewDebateTopic.'),
   "countryCode": zod.string().nullish(),
   "preferredLanguage": zod.enum(['en', 'fr', 'ar', 'de', 'es', 'pt', 'zh', 'ja', 'hi', 'ru', 'id', 'bn', 'sw', 'ko']).optional().describe('Not nullable — unlike gender\/ageRange there\'s no \"prefer not to say\" for the language the app actually renders in.'),
   "whispererAvatarId": zod.string().nullish().describe('Sets (or, if null, clears) this account\'s own Debate Topics avatar — see UserProfile.whispererAvatarId.')
@@ -1197,6 +1201,8 @@ export const UpdateUserProfileResponse = zod.object({
   "role": zod.string(),
   "emailNotificationsEnabled": zod.boolean().describe('Whether this Whisperer wants the \"you have a new whisp\" email in addition to the in-app notification. On by default — see PATCH \/user\/profile to change it.'),
   "showOnlineStatus": zod.boolean().describe('Whether accounts that follow this Whisperer can see them as online (see GET \/follows\/online-status). On by default.'),
+  "notifyOnNewSignup": zod.boolean().describe('Admin-only preference — whether this account (when role is \'admin\') gets notified when a new user signs up. Inert for a non-admin row. On by default. See lib\/adminNotify.ts.'),
+  "notifyOnNewDebateTopic": zod.boolean().describe('Admin-only preference — whether this account (when role is \'admin\') gets notified when a new Debate Now topic is posted. Inert for a non-admin row. On by default. See lib\/adminNotify.ts.'),
   "twoFactorEnabled": zod.boolean().nullish().describe('Best-effort, admin-facing mirror of Clerk\'s own user.twoFactorEnabled — never used for any access-control decision. Null means never synced yet, distinct from false (\"synced, and it\'s off\").'),
   "createdAt": zod.string()
 })

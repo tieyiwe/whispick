@@ -88,6 +88,27 @@ Admin → user messaging. Sends persisted in-app notifications and, optionally, 
 (toggle). Email sends skip opted-out, banned, and placeholder-email accounts; the
 result reports `emailsSent` / `emailsSkipped`.
 
+## Admin alerts (`lib/adminNotify.ts`)
+
+The other direction: the app telling admins something happened, rather than an
+admin composing a message to send. Two events, each independently toggleable per
+admin (not a single owner-only setting):
+
+- **New user signup** — fires from `ensureUser.ts`'s account-creation path.
+- **New Debate Now topic** — fires from `POST /api/debate-topics`, after the topic
+  and its author's handle are resolved; never self-notifies an admin who posted
+  their own topic.
+
+Both fan out to every `role: 'admin'` account (owner and collaborators alike) whose
+`users.notifyOnNewSignup` / `notifyOnNewDebateTopic` is `true` (default on),
+delivered through the same `notifyUserPersisted` two-layer helper (in-app bell row
++ best-effort push) every ordinary user-facing notification uses — an admin sees
+these in the exact same bell as anything else, since an admin account is still just
+a `usersTable` row underneath. Toggled from Settings' "Admin notifications" card,
+shown only when `profile.role === 'admin'`. Fire-and-forget (`void`) at both call
+sites — a notification failure never blocks the signup or the topic post that
+triggered it.
+
 ## Analytics (`/admin_pro/analytics` + Overview)
 
 - Platform stats + **feature usage analytics**: the frontend

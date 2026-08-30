@@ -155,6 +155,17 @@ export const usersTable = pgTable("users", {
   // can lag reality by up to a day — acceptable for a dashboard signal, not
   // used for any access-control decision.
   twoFactorEnabled: boolean("two_factor_enabled"),
+  // Admin-facing notification preferences (lib/adminNotify.ts). Stored on
+  // every row rather than only admin ones — simpler than a separate
+  // preferences table for two booleans — but only ever consulted for a row
+  // whose role is currently 'admin'; a regular user's value is inert. Each
+  // is independently toggleable (Settings' "Admin notifications" card,
+  // shown only to admins) so one alert type can be turned off without
+  // silencing the other. Opt-out, on by default: a newly-promoted admin
+  // (bootstrap or collaborator grant) starts seeing both rather than
+  // silently missing them until they discover the toggle.
+  notifyOnNewSignup: boolean("notify_on_new_signup").notNull().default(true),
+  notifyOnNewDebateTopic: boolean("notify_on_new_debate_topic").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

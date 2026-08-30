@@ -5749,6 +5749,12 @@ components:
         showOnlineStatus:
           type: boolean
           description: Whether accounts that follow this Whisperer can see them as online (see GET /follows/online-status). On by default.
+        notifyOnNewSignup:
+          type: boolean
+          description: Admin-only preference — whether this account (when role is 'admin') gets notified when a new user signs up. Inert for a non-admin row. On by default. See lib/adminNotify.ts.
+        notifyOnNewDebateTopic:
+          type: boolean
+          description: Admin-only preference — whether this account (when role is 'admin') gets notified when a new Debate Now topic is posted. Inert for a non-admin row. On by default. See lib/adminNotify.ts.
         twoFactorEnabled:
           type: ["boolean", "null"]
           description: Best-effort, admin-facing mirror of Clerk's own user.twoFactorEnabled — never used for any access-control decision. Null means never synced yet, distinct from false ("synced, and it's off").
@@ -5764,6 +5770,8 @@ components:
         - role
         - emailNotificationsEnabled
         - showOnlineStatus
+        - notifyOnNewSignup
+        - notifyOnNewDebateTopic
         - whisperBoxHandlePersonalized
         - createdAt
 
@@ -5783,6 +5791,12 @@ components:
         showOnlineStatus:
           type: boolean
           description: Whether accounts that follow this Whisperer can see them as online (see GET /follows/online-status).
+        notifyOnNewSignup:
+          type: boolean
+          description: Admin-only preference — see UserProfile.notifyOnNewSignup.
+        notifyOnNewDebateTopic:
+          type: boolean
+          description: Admin-only preference — see UserProfile.notifyOnNewDebateTopic.
         countryCode:
           type: ["string", "null"]
         preferredLanguage:

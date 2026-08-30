@@ -20,6 +20,10 @@ export interface UserProfileUpdate {
   emailNotificationsEnabled?: boolean;
   /** Whether accounts that follow this Whisperer can see them as online (see GET /follows/online-status). */
   showOnlineStatus?: boolean;
+  /** Admin-only preference — see UserProfile.notifyOnNewSignup. */
+  notifyOnNewSignup?: boolean;
+  /** Admin-only preference — see UserProfile.notifyOnNewDebateTopic. */
+  notifyOnNewDebateTopic?: boolean;
   /** @nullable */
   countryCode?: string | null;
   /** Not nullable — unlike gender/ageRange there's no "prefer not to say" for the language the app actually renders in. */

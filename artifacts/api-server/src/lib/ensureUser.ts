@@ -5,6 +5,7 @@ import { randomUUID } from "crypto";
 import { clerkClient } from "@clerk/express";
 import { lookupGeoIp } from "./geoip";
 import { logger } from "./logger";
+import { notifyAdminsOfNewSignup } from "./adminNotify";
 
 // App owner(s) bootstrap: comma-separated emails that are auto-promoted to
 // the admin role. This is the only way to create the first admin — there's
@@ -188,6 +189,10 @@ export async function ensureUser(clerkId: string, req: any): Promise<User> {
       })
       .catch((err) => logger.warn({ err, userId: id }, "Geo-IP lookup failed"));
   }
+
+  // Fire-and-forget — an admin alert must never add latency to (or fail)
+  // the request that's actually creating this account.
+  void notifyAdminsOfNewSignup({ id, fullName, email });
 
   const created = await db.select().from(usersTable).where(eq(usersTable.clerkId, clerkId)).then(r => r[0]!);
   return maybeApplyAdminGrant(created);

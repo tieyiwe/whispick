@@ -63,6 +63,10 @@ export interface UserProfile {
   emailNotificationsEnabled: boolean;
   /** Whether accounts that follow this Whisperer can see them as online (see GET /follows/online-status). On by default. */
   showOnlineStatus: boolean;
+  /** Admin-only preference — whether this account (when role is 'admin') gets notified when a new user signs up. Inert for a non-admin row. On by default. See lib/adminNotify.ts. */
+  notifyOnNewSignup: boolean;
+  /** Admin-only preference — whether this account (when role is 'admin') gets notified when a new Debate Now topic is posted. Inert for a non-admin row. On by default. See lib/adminNotify.ts. */
+  notifyOnNewDebateTopic: boolean;
   /**
      * Best-effort, admin-facing mirror of Clerk's own user.twoFactorEnabled — never used for any access-control decision. Null means never synced yet, distinct from false ("synced, and it's off").
      * @nullable
