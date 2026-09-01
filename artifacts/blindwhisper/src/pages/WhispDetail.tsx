@@ -297,40 +297,70 @@ export function WhispDetail() {
           <Button variant="ghost" onClick={() => setLocation("/whisps")} className="text-muted-foreground -ml-2" data-testid="button-back">
             <ArrowLeft className="w-4 h-4 mr-1" /> {t("shared.back")}
           </Button>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
+          <div className="flex items-center gap-1">
+            {/* Duplicate of the full Reveal button down in the reveal-flow
+                section below — that one sits past the video, timeline, and
+                whatever reply thread has piled up, so it's easy to never
+                scroll to. Same handler, same gating, just reachable without
+                scrolling at all. */}
+            {!isGhostBoost && !whisp.revealRequested && (
               <Button
                 variant="ghost"
                 size="icon"
-                disabled={deleteWhisp.isPending}
-                className="text-muted-foreground hover:text-destructive min-w-11 min-h-11"
-                data-testid="button-delete-whisp"
+                onClick={() => setRevealCountdownOpen(true)}
+                disabled={requestReveal.isPending}
+                className="text-primary hover:bg-primary/10 min-w-11 min-h-11"
+                aria-label={t("whispDetail.revealYourself")}
+                data-testid="button-reveal-yourself-header"
               >
-                <Trash2 className="w-4 h-4" />
+                <Eye className="w-4 h-4" />
               </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>{t("whispDetail.deleteDialog.title")}</AlertDialogTitle>
-                <AlertDialogDescription>
-                  {replies.length > 0
-                    ? t("whispDetail.deleteDialog.descriptionWithReplies", { count: replies.length })
-                    : t("whispDetail.deleteDialog.descriptionNoReplies")}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>{t("shared.cancel")}</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleDelete}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  data-testid="button-confirm-delete-whisp"
+            )}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  disabled={deleteWhisp.isPending}
+                  className="text-muted-foreground hover:text-destructive min-w-11 min-h-11"
+                  data-testid="button-delete-whisp"
                 >
-                  {t("shared.delete")}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{t("whispDetail.deleteDialog.title")}</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {replies.length > 0
+                      ? t("whispDetail.deleteDialog.descriptionWithReplies", { count: replies.length })
+                      : t("whispDetail.deleteDialog.descriptionNoReplies")}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>{t("shared.cancel")}</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDelete}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    data-testid="button-confirm-delete-whisp"
+                  >
+                    {t("shared.delete")}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
+
+        {/* Single shared instance for both the header shortcut above and the
+            full button below — deliberately NOT gated on `!whisp.revealRequested`
+            the way the two trigger buttons are, so a reveal that just
+            succeeded (which flips that flag via the query invalidation in
+            handleReveal) doesn't unmount this mid-way through its own 2s
+            aborted/revealed result display. */}
+        {!isGhostBoost && (
+          <RevealCountdownDialog open={revealCountdownOpen} onOpenChange={setRevealCountdownOpen} onConfirm={handleReveal} />
+        )}
 
         {/* Video preview */}
         <Card className="bg-card border-border/50 overflow-hidden">
@@ -650,19 +680,16 @@ export function WhispDetail() {
 
         {/* Reveal flow */}
         {!isGhostBoost && !whisp.revealRequested && (
-          <>
-            <Button
-              variant="outline"
-              className="w-full rounded-full border-primary/30 hover:bg-primary/10 hover:text-primary"
-              onClick={() => setRevealCountdownOpen(true)}
-              disabled={requestReveal.isPending}
-              data-testid="button-reveal-yourself"
-            >
-              {requestReveal.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-              {t("whispDetail.revealYourself")}
-            </Button>
-            <RevealCountdownDialog open={revealCountdownOpen} onOpenChange={setRevealCountdownOpen} onConfirm={handleReveal} />
-          </>
+          <Button
+            variant="outline"
+            className="w-full rounded-full border-primary/30 hover:bg-primary/10 hover:text-primary"
+            onClick={() => setRevealCountdownOpen(true)}
+            disabled={requestReveal.isPending}
+            data-testid="button-reveal-yourself"
+          >
+            {requestReveal.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
+            {t("whispDetail.revealYourself")}
+          </Button>
         )}
         {!isGhostBoost && whisp.revealRequested && (
           <Card className="bg-primary/10 border-primary/20">

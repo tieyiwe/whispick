@@ -264,40 +264,69 @@ export function TextWhispDetail() {
           <Button variant="ghost" onClick={() => setLocation("/text-whisps")} className="text-muted-foreground -ml-2" data-testid="button-back">
             <ArrowLeft className="w-4 h-4 mr-1" /> {t("textWhispDetail.backButton")}
           </Button>
-          {isSender && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  disabled={deleteTextWhisp.isPending}
-                  className="text-muted-foreground hover:text-destructive min-w-11 min-h-11"
-                  data-testid="button-delete-text-whisp"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>{t("textWhispDetail.deleteDialogTitle")}</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {t("textWhispDetail.deleteDialogDescription")}
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>{t("textWhispDetail.cancelButton")}</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={handleDelete}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    data-testid="button-confirm-delete-text-whisp"
+          <div className="flex items-center gap-1">
+            {/* Duplicate of the full Reveal button further down the page —
+                that one sits below the scroll, the delivery timeline, and
+                the whole reply thread, so it's easy to never scroll to.
+                Same handler, same gating, just reachable without scrolling. */}
+            {isSender && !textWhisp.revealRequested && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setRevealCountdownOpen(true)}
+                disabled={requestReveal.isPending}
+                className="text-primary hover:bg-primary/10 min-w-11 min-h-11"
+                aria-label={t("textWhispDetail.revealYourselfButton")}
+                data-testid="button-reveal-yourself-text-whisp-header"
+              >
+                <Eye className="w-4 h-4" />
+              </Button>
+            )}
+            {isSender && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    disabled={deleteTextWhisp.isPending}
+                    className="text-muted-foreground hover:text-destructive min-w-11 min-h-11"
+                    data-testid="button-delete-text-whisp"
                   >
-                    {t("textWhispDetail.deleteButton")}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>{t("textWhispDetail.deleteDialogTitle")}</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {t("textWhispDetail.deleteDialogDescription")}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>{t("textWhispDetail.cancelButton")}</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDelete}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      data-testid="button-confirm-delete-text-whisp"
+                    >
+                      {t("textWhispDetail.deleteButton")}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
         </div>
+
+        {/* Single shared instance for both the header shortcut above and the
+            full button further down — deliberately NOT gated on
+            `!textWhisp.revealRequested` the way the two trigger buttons are,
+            so a reveal that just succeeded (which flips that flag via the
+            query invalidation in handleReveal) doesn't unmount this mid-way
+            through its own 2s aborted/revealed result display. */}
+        {isSender && (
+          <RevealCountdownDialog open={revealCountdownOpen} onOpenChange={setRevealCountdownOpen} onConfirm={handleReveal} />
+        )}
 
         {/* A dark "scene" gutter around the parchment card so the warm accent
             reads as an intentional focal moment, not a light-mode patch. */}
@@ -422,19 +451,16 @@ export function TextWhispDetail() {
                 reveal — see routes/textWhisps.ts's toResponse() and its
                 ANTI-ENUMERATION comment. */}
             {isSender && !textWhisp.revealRequested && (
-              <>
-                <Button
-                  variant="outline"
-                  className="w-full rounded-full border-primary/30 hover:bg-primary/10 hover:text-primary"
-                  onClick={() => setRevealCountdownOpen(true)}
-                  disabled={requestReveal.isPending}
-                  data-testid="button-reveal-yourself-text-whisp"
-                >
-                  {requestReveal.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-                  {t("textWhispDetail.revealYourselfButton")}
-                </Button>
-                <RevealCountdownDialog open={revealCountdownOpen} onOpenChange={setRevealCountdownOpen} onConfirm={handleReveal} />
-              </>
+              <Button
+                variant="outline"
+                className="w-full rounded-full border-primary/30 hover:bg-primary/10 hover:text-primary"
+                onClick={() => setRevealCountdownOpen(true)}
+                disabled={requestReveal.isPending}
+                data-testid="button-reveal-yourself-text-whisp"
+              >
+                {requestReveal.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
+                {t("textWhispDetail.revealYourselfButton")}
+              </Button>
             )}
             {isSender && textWhisp.revealRequested && (
               <Card className="bg-primary/10 border-primary/20">
