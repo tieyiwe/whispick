@@ -179,7 +179,10 @@
     "toastInviteSent": "Mwaliko umetumwa bila jina",
     "toastInviteSendFailed": "Imeshindikana kutuma mwaliko",
     "toastRevealRequestSent": "Ombi la kufichua limetumwa",
-    "toastRevealRequestFailed": "Imeshindikana kuomba kufichua"
+    "toastRevealRequestFailed": "Imeshindikana kuomba kufichua",
+    "smsDisclosure": "Kwa kutuma kwa namba ya simu, unamtumia ujumbe kwa jina lako mwenyewe. Gharama za ujumbe na data zinaweza kutumika. Jibu STOP kujitoa, HELP kwa msaada. Angalia",
+    "smsTermsLinkText": "Masharti ya SMS",
+    "smsConsentCheckbox": "Ninathibitisha nina ruhusa ya mtu huyu kupokea ujumbe wa maandishi kutoka kwangu kupitia Blind Whisper."
   },
   "publicInvitePage": {
     "notFound": "Mwaliko huu haukuweza kupatikana.",

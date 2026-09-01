@@ -179,7 +179,10 @@
     "toastInviteSent": "초대가 익명으로 전송되었습니다",
     "toastInviteSendFailed": "초대 전송에 실패했습니다",
     "toastRevealRequestSent": "신원 공개 요청을 보냈습니다",
-    "toastRevealRequestFailed": "신원 공개 요청에 실패했습니다"
+    "toastRevealRequestFailed": "신원 공개 요청에 실패했습니다",
+    "smsDisclosure": "전화번호로 보내면 당신 이름으로 문자를 보내는 거예요. 메시지 및 데이터 요금이 부과될 수 있어요. 수신 거부는 STOP, 도움이 필요하면 HELP로 답장하세요. 자세한 내용은",
+    "smsTermsLinkText": "SMS 약관",
+    "smsConsentCheckbox": "이 사람이 Blind Whisper를 통해 저로부터 문자를 받는 것에 동의했음을 확인합니다."
   },
   "publicInvitePage": {
     "notFound": "이 초대를 찾을 수 없습니다.",

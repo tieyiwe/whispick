@@ -42,6 +42,10 @@ export function InvitePage() {
   const [channel, setChannel] = useState<Channel>("email");
   const [recipientEmail, setRecipientEmail] = useState("");
   const [recipientPhone, setRecipientPhone] = useState("");
+  // A2P 10DLC opt-in evidence for the SMS channel specifically — WhatsApp
+  // isn't carrier-regulated the same way, same carve-out SendWhisp.tsx and
+  // SendTextWhisp.tsx already use for their own SMS-only consent checkbox.
+  const [smsConsentConfirmed, setSmsConsentConfirmed] = useState(false);
   // Single shared countdown dialog for the whole list — which invite it's
   // for is just which id is currently non-null here, same "one shared
   // component, id picks the target" shape as a per-row menu/dialog
@@ -52,7 +56,10 @@ export function InvitePage() {
   const createInvite = useCreateInvite();
   const requestReveal = useRequestInviteReveal();
 
-  const canSend = channel === "email" ? !!recipientEmail.trim() : !!recipientPhone.trim();
+  const canSend =
+    channel === "email"
+      ? !!recipientEmail.trim()
+      : !!recipientPhone.trim() && (channel !== "sms" || smsConsentConfirmed);
 
   function handleSend() {
     createInvite.mutate(
@@ -139,6 +146,32 @@ export function InvitePage() {
                 onChange={(e) => setRecipientPhone(e.target.value)}
                 data-testid="input-invite-phone"
               />
+            )}
+
+            {/* A2P 10DLC-required disclosure + opt-in checkbox, shown at the
+                exact point a phone number is collected for SMS delivery —
+                mirrors SendWhisp.tsx/SendTextWhisp.tsx's own version. Only
+                for the SMS channel; WhatsApp delivery isn't carrier-
+                regulated the same way. */}
+            {channel === "sms" && (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground" data-testid="text-sms-consent-disclosure">
+                  {t("invitePage.smsDisclosure")}{" "}
+                  <a href="/sms-terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                    {t("invitePage.smsTermsLinkText")}
+                  </a>.
+                </p>
+                <label className="flex items-start gap-2 text-sm text-foreground cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={smsConsentConfirmed}
+                    onChange={(e) => setSmsConsentConfirmed(e.target.checked)}
+                    className="rounded border-border/50 mt-0.5"
+                    data-testid="checkbox-sms-consent"
+                  />
+                  {t("invitePage.smsConsentCheckbox")}
+                </label>
+              </div>
             )}
 
             <Button

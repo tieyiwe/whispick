@@ -26,7 +26,8 @@
     "backButton": "문자 Whisps로 돌아가기",
     "viewButton": "이 문자 Whisp 보기",
     "sendAnotherButton": "또 보내기",
-    "toastSendFailed": "문자 Whisp 전송에 실패했어요"
+    "toastSendFailed": "문자 Whisp 전송에 실패했어요",
+    "smsConsentCheckbox": "이 사람이 Blind Whisper를 통해 저로부터 문자를 받는 것에 동의했음을 확인합니다."
   },
   "textWhispDetail": {
     "notFound": "문자 Whisp를 찾을 수 없어요.",

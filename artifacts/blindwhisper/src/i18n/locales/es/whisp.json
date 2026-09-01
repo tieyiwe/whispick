@@ -183,7 +183,8 @@
       "smsDisclosure": "Al enviar a un número de teléfono, le estás escribiendo en tu propio nombre. Pueden aplicarse tarifas de mensajes y datos. Responde STOP para darte de baja, HELP para ayuda. Consulta nuestros",
       "smsTermsLinkText": "Términos de SMS",
       "or": "o",
-      "chooseFromContacts": "Elegir de Contactos"
+      "chooseFromContacts": "Elegir de Contactos",
+      "smsConsentCheckbox": "Confirmo que tengo el permiso de esta persona para recibir un mensaje de texto de mi parte a través de Blind Whisper."
     },
     "step6": {
       "heading": "¿Listo para enviar?",

@@ -26,7 +26,8 @@
     "backButton": "Retour aux Whisps texte",
     "viewButton": "Voir ce Whisp texte",
     "sendAnotherButton": "En envoyer un autre",
-    "toastSendFailed": "Échec de l'envoi du Whisp texte"
+    "toastSendFailed": "Échec de l'envoi du Whisp texte",
+    "smsConsentCheckbox": "Je confirme avoir la permission de cette personne de recevoir un texto de ma part via Blind Whisper."
   },
   "textWhispDetail": {
     "notFound": "Whisp texte introuvable.",
