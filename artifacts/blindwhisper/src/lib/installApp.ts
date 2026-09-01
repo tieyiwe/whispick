@@ -12,14 +12,7 @@
 //   themselves. Nothing we write can perform it, so on iOS the honest product
 //   is a clear set of instructions, not a button that pretends.
 
-const DISMISSED_KEY = "blindwhisper:installPromptDismissedAt";
 const INSTALLED_KEY = "blindwhisper:installed";
-
-// A dismissal is "not now", not "never" — but re-asking every session is how
-// an install prompt becomes the thing people learn to swat away. Two weeks is
-// long enough that the second ask lands on someone who has since decided the
-// app is worth keeping.
-const SNOOZE_MS = 14 * 24 * 60 * 60 * 1000;
 
 export type InstallPlatform = "android" | "ios" | "unsupported";
 
@@ -83,8 +76,17 @@ export function isMobileDevice(): boolean {
 }
 
 /**
- * Whether we should stay quiet: already installed, previously installed on
- * this device, or snoozed recently.
+ * Whether we should stay quiet: already installed, or already running
+ * standalone. Deliberately does NOT check for a past dismissal — a "Not
+ * now" only silences the prompt for the page view it was clicked on
+ * (InstallAppPrompt's own `visible` state already handles that, in-memory,
+ * for free). Refreshing, opening a new tab, or relaunching the browser/app
+ * all start a fresh mount with no memory of an earlier dismiss, so any of
+ * those asks again — a real "maybe later" someone can act on next time they
+ * happen to be back, not a multi-week cooldown that outlives their actual
+ * change of mind. `rememberInstalled` below is the one signal that IS
+ * genuinely permanent, since it's a fact ("this device has the app"), not a
+ * mood ("not right now").
  *
  * localStorage is read defensively — private browsing and locked-down
  * profiles throw on access, and an install nudge is never worth a crash.
@@ -92,9 +94,7 @@ export function isMobileDevice(): boolean {
 export function shouldStayQuiet(): boolean {
   if (isStandalone()) return true;
   try {
-    if (localStorage.getItem(INSTALLED_KEY)) return true;
-    const dismissedAt = Number(localStorage.getItem(DISMISSED_KEY) ?? 0);
-    return Number.isFinite(dismissedAt) && Date.now() - dismissedAt < SNOOZE_MS;
+    return !!localStorage.getItem(INSTALLED_KEY);
   } catch {
     return false;
   }
@@ -110,13 +110,13 @@ export function rememberInstalled(): void {
   }
 }
 
-export function rememberDismissed(): void {
-  try {
-    localStorage.setItem(DISMISSED_KEY, String(Date.now()));
-  } catch {
-    // Same reasoning as above.
-  }
-}
+// A dismissal used to persist a multi-week snooze here (localStorage) — now
+// deliberately a no-op. See shouldStayQuiet's comment: a "Not now" should
+// only last for the page view it was clicked on, and a persistent snooze
+// directly fought that by surviving refreshes and fresh launches. Kept as a
+// named function (rather than removed) so InstallAppPrompt.tsx's call sites
+// stay unchanged and this stays the one place that decision lives.
+export function rememberDismissed(): void {}
 
 /** The `beforeinstallprompt` event, which TypeScript's DOM lib doesn't type. */
 export interface BeforeInstallPromptEvent extends Event {
