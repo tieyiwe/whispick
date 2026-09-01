@@ -8,7 +8,8 @@
     "title": "Dich zu erkennen geben?",
     "description": "Sobald es passiert, gibt es kein Zurück mehr — sie werden wissen, dass du es warst.",
     "message": "Deine Identität wird in {{seconds}}s enthüllt",
-    "stopButton": "Enthüllung jetzt stoppen"
+    "stopButton": "Enthüllung jetzt stoppen",
+    "abortedToast": "Enthüllung abgebrochen"
   },
   "installAppPrompt": {
     "dialogAriaLabel": "Blind Whisper installieren",

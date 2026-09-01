@@ -101,6 +101,14 @@
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
 
+  /* A cool jade green, deliberately not the generic Tailwind green(142) —
+     pulled a little toward aqua(180) so it sits in the same cool family as
+     primary/aqua instead of clashing warm-green against violet. Used only
+     for progress states that read as "plenty of time/room left" (e.g. the
+     reveal countdown ring's first half); --gilded and --destructive cover
+     the "getting close" and "urgent" states that follow it. */
+  --success: 152 55% 48%;
+
   --border: 247 24% 30%;
   --input: 247 24% 22%;
   --ring: 252 97% 67%;
