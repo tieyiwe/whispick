@@ -179,7 +179,10 @@
     "toastInviteSent": "Invitación enviada de forma anónima",
     "toastInviteSendFailed": "No se pudo enviar la invitación",
     "toastRevealRequestSent": "Solicitud de revelación enviada",
-    "toastRevealRequestFailed": "No se pudo solicitar la revelación"
+    "toastRevealRequestFailed": "No se pudo solicitar la revelación",
+    "smsDisclosure": "Al enviar a un número de teléfono, le estás escribiendo en tu propio nombre. Pueden aplicarse tarifas de mensajes y datos. Responde STOP para darte de baja, HELP para ayuda. Consulta nuestros",
+    "smsTermsLinkText": "Términos de SMS",
+    "smsConsentCheckbox": "Confirmo que tengo el permiso de esta persona para recibir un mensaje de texto de mi parte a través de Blind Whisper."
   },
   "publicInvitePage": {
     "notFound": "No se pudo encontrar esta invitación.",

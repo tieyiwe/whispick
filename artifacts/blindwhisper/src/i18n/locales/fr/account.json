@@ -179,7 +179,10 @@
     "toastInviteSent": "Invitation envoyée anonymement",
     "toastInviteSendFailed": "Échec de l'envoi de l'invitation",
     "toastRevealRequestSent": "Demande de révélation envoyée",
-    "toastRevealRequestFailed": "Échec de la demande de révélation"
+    "toastRevealRequestFailed": "Échec de la demande de révélation",
+    "smsDisclosure": "En envoyant à un numéro de téléphone, tu lui écris en ton nom propre. Des frais de messages et de données peuvent s'appliquer. Réponds STOP pour te désabonner, HELP pour de l'aide. Consulte nos",
+    "smsTermsLinkText": "Conditions SMS",
+    "smsConsentCheckbox": "Je confirme avoir la permission de cette personne de recevoir un texto de ma part via Blind Whisper."
   },
   "publicInvitePage": {
     "notFound": "Cette invitation est introuvable.",

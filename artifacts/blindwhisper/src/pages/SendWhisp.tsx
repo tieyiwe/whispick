@@ -167,6 +167,12 @@ export function SendWhisp() {
   const [recipientCaret, setRecipientCaret] = useState(0);
   const recipientsRef = useRef<HTMLTextAreaElement>(null);
   const [preferWhatsApp, setPreferWhatsApp] = useState(false);
+  // A2P 10DLC opt-in evidence: an affirmative, unchecked-by-default
+  // confirmation the Sender must actively check before an SMS send can
+  // proceed — not just the disclosure text next to it, which a carrier/
+  // Twilio reviewer can't verify was ever actually read or acted on. See
+  // canContinueFromRecipients below for where this gates the Next button.
+  const [smsConsentConfirmed, setSmsConsentConfirmed] = useState(false);
   const [sendingBatch, setSendingBatch] = useState(false);
   const [sentCount, setSentCount] = useState(1);
   const [startTimestamp, setStartTimestamp] = useState("");
@@ -637,8 +643,13 @@ export function SendWhisp() {
     });
   }
   const hasPhoneRecipient = parsedRecipients.recipients.some((r) => r.kind === "phone");
+  // WhatsApp isn't carrier-regulated under A2P 10DLC the same way SMS is —
+  // same carve-out the disclosure text below already uses.
+  const requiresSmsConsent = hasPhoneRecipient && !preferWhatsApp;
   const canContinueFromRecipients =
-    parsedRecipients.recipients.length > 0 && parsedRecipients.invalid.length === 0;
+    parsedRecipients.recipients.length > 0 &&
+    parsedRecipients.invalid.length === 0 &&
+    (!requiresSmsConsent || smsConsentConfirmed);
 
   const steps = [
     t("sendWhisp.steps.video"),
@@ -1509,13 +1520,30 @@ export function SendWhisp() {
                       a phone number is collected for SMS delivery — not just
                       buried in the Terms. Only for the SMS path; WhatsApp
                       delivery isn't carrier-regulated the same way. */}
-                  {hasPhoneRecipient && !preferWhatsApp && (
-                    <p className="text-xs text-muted-foreground" data-testid="text-sms-consent-disclosure">
-                      {t("sendWhisp.step5.smsDisclosure")}{" "}
-                      <a href="/sms-terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                        {t("sendWhisp.step5.smsTermsLinkText")}
-                      </a>.
-                    </p>
+                  {requiresSmsConsent && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground" data-testid="text-sms-consent-disclosure">
+                        {t("sendWhisp.step5.smsDisclosure")}{" "}
+                        <a href="/sms-terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                          {t("sendWhisp.step5.smsTermsLinkText")}
+                        </a>.
+                      </p>
+                      {/* The actual opt-in evidence: an affirmative,
+                          unchecked-by-default checkbox, not just the
+                          disclosure text above — a reviewer can verify this
+                          was actively checked, unlike passive text they
+                          can't confirm was read. */}
+                      <label className="flex items-start gap-2 text-sm text-foreground cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={smsConsentConfirmed}
+                          onChange={(e) => setSmsConsentConfirmed(e.target.checked)}
+                          className="rounded border-border/50 mt-0.5"
+                          data-testid="checkbox-sms-consent"
+                        />
+                        {t("sendWhisp.step5.smsConsentCheckbox")}
+                      </label>
+                    </div>
                   )}
 
                   {isContactPickerSupported() && (

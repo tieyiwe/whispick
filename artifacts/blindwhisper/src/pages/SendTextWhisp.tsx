@@ -46,6 +46,11 @@ export function SendTextWhisp() {
   const [scheduleEnabled, setScheduleEnabled] = useState(false);
   const [scheduledAtValue, setScheduledAtValue] = useState("");
   const [wasScheduled, setWasScheduled] = useState(false);
+  // A2P 10DLC opt-in evidence: an affirmative, unchecked-by-default
+  // confirmation the Sender must actively check before Send is enabled —
+  // mirrors SendWhisp.tsx's own smsConsentConfirmed, right down to the
+  // reasoning (disclosure text alone isn't verifiable as having been read).
+  const [smsConsentConfirmed, setSmsConsentConfirmed] = useState(false);
 
   const createTextWhisp = useCreateTextWhisp();
 
@@ -100,7 +105,8 @@ export function SendTextWhisp() {
     phone.trim().length > 0 &&
     messageText.trim().length > 0 &&
     remaining >= 0 &&
-    (!scheduleEnabled || !!scheduledAtValue);
+    (!scheduleEnabled || !!scheduledAtValue) &&
+    smsConsentConfirmed;
 
   // Drives the mobile bottom nav's raised round button while this page is
   // composing — see AppLayout.tsx and contexts/MobileSendAction.tsx. Without
@@ -284,6 +290,18 @@ export function SendTextWhisp() {
                   {t("sendTextWhisp.smsTermsLinkText")}
                 </a>.
               </p>
+              {/* The actual opt-in evidence: an affirmative, unchecked-by-
+                  default checkbox, not just the disclosure text above. */}
+              <label className="flex items-start gap-2 text-sm text-foreground cursor-pointer mt-2">
+                <input
+                  type="checkbox"
+                  checked={smsConsentConfirmed}
+                  onChange={(e) => setSmsConsentConfirmed(e.target.checked)}
+                  className="rounded border-border/50 mt-0.5"
+                  data-testid="checkbox-sms-consent"
+                />
+                {t("sendTextWhisp.smsConsentCheckbox")}
+              </label>
             </div>
 
             <div className="space-y-2 pt-1">

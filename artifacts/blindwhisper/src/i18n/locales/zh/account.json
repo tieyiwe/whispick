@@ -179,7 +179,10 @@
     "toastInviteSent": "邀请已匿名发送",
     "toastInviteSendFailed": "邀请发送失败",
     "toastRevealRequestSent": "揭示身份请求已发送",
-    "toastRevealRequestFailed": "揭示身份请求发送失败"
+    "toastRevealRequestFailed": "揭示身份请求发送失败",
+    "smsDisclosure": "发送到电话号码时,你是以自己的名义给对方发短信。可能会产生消息和流量费用。回复 STOP 可退订,回复 HELP 获取帮助。请查看我们的",
+    "smsTermsLinkText": "短信条款",
+    "smsConsentCheckbox": "我确认已获得对方许可，可以通过 Blind Whisper 向其发送短信。"
   },
   "publicInvitePage": {
     "notFound": "找不到这个邀请。",

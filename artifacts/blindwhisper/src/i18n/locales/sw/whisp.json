@@ -183,7 +183,8 @@
       "smsDisclosure": "Kwa kutuma kwa namba ya simu, unamtumia ujumbe kwa jina lako mwenyewe. Gharama za ujumbe na data zinaweza kutumika. Jibu STOP kujitoa, HELP kwa msaada. Angalia",
       "smsTermsLinkText": "Masharti ya SMS",
       "or": "au",
-      "chooseFromContacts": "Chagua kutoka Anwani"
+      "chooseFromContacts": "Chagua kutoka Anwani",
+      "smsConsentCheckbox": "Ninathibitisha nina ruhusa ya mtu huyu kupokea ujumbe wa maandishi kutoka kwangu kupitia Blind Whisper."
     },
     "step6": {
       "heading": "Uko tayari kutuma?",

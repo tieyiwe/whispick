@@ -183,7 +183,8 @@
       "smsDisclosure": "发送到电话号码时,你是以自己的名义给对方发短信。可能会产生消息和流量费用。回复 STOP 可退订,回复 HELP 获取帮助。请查看我们的",
       "smsTermsLinkText": "短信条款",
       "or": "或",
-      "chooseFromContacts": "从通讯录中选择"
+      "chooseFromContacts": "从通讯录中选择",
+      "smsConsentCheckbox": "我确认已获得对方许可，可以通过 Blind Whisper 向其发送短信。"
     },
     "step6": {
       "heading": "准备好发送了吗?",

@@ -179,7 +179,10 @@
     "toastInviteSent": "أُرسلت الدعوة بشكل مجهول",
     "toastInviteSendFailed": "تعذّر إرسال الدعوة",
     "toastRevealRequestSent": "أُرسل طلب الكشف",
-    "toastRevealRequestFailed": "تعذّر إرسال طلب الكشف"
+    "toastRevealRequestFailed": "تعذّر إرسال طلب الكشف",
+    "smsDisclosure": "بإرسالك إلى رقم هاتف، فأنت تراسل صاحبه بالأصالة عن نفسك. قد تُطبَّق رسوم الرسائل والبيانات. أرسل STOP لإيقاف الرسائل، وHELP للمساعدة. راجع",
+    "smsTermsLinkText": "شروط SMS",
+    "smsConsentCheckbox": "أؤكد أن لدي إذن هذا الشخص لتلقي رسالة نصية مني عبر Blind Whisper."
   },
   "publicInvitePage": {
     "notFound": "تعذّر العثور على هذه الدعوة.",

@@ -26,7 +26,8 @@
     "backButton": "العودة إلى Text Whisps",
     "viewButton": "عرض هذه الـ Text Whisp",
     "sendAnotherButton": "إرسال أخرى",
-    "toastSendFailed": "تعذّر إرسال الـ Text Whisp"
+    "toastSendFailed": "تعذّر إرسال الـ Text Whisp",
+    "smsConsentCheckbox": "أؤكد أن لدي إذن هذا الشخص لتلقي رسالة نصية مني عبر Blind Whisper."
   },
   "textWhispDetail": {
     "notFound": "لم يُعثر على الـ Text Whisp.",

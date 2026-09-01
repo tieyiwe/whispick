@@ -195,7 +195,8 @@
       "smsDisclosure": "بإرسالك إلى رقم هاتف، فأنت تراسل صاحبه بالأصالة عن نفسك. قد تُطبَّق رسوم الرسائل والبيانات. أرسل STOP لإيقاف الرسائل، وHELP للمساعدة. راجع",
       "smsTermsLinkText": "شروط SMS",
       "or": "أو",
-      "chooseFromContacts": "اختر من جهات الاتصال"
+      "chooseFromContacts": "اختر من جهات الاتصال",
+      "smsConsentCheckbox": "أؤكد أن لدي إذن هذا الشخص لتلقي رسالة نصية مني عبر Blind Whisper."
     },
     "step6": {
       "heading": "جاهز للإرسال؟",

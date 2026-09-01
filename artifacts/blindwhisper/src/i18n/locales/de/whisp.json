@@ -183,7 +183,8 @@
       "smsDisclosure": "Wenn du an eine Telefonnummer sendest, schreibst du ihr in deinem eigenen Namen. Es können Nachrichten- und Datenkosten anfallen. Antworte mit STOP zum Abbestellen, HELP für Hilfe. Siehe unsere",
       "smsTermsLinkText": "SMS-Bedingungen",
       "or": "oder",
-      "chooseFromContacts": "Aus Kontakten wählen"
+      "chooseFromContacts": "Aus Kontakten wählen",
+      "smsConsentCheckbox": "Ich bestätige, dass ich die Erlaubnis dieser Person habe, eine SMS von mir über Blind Whisper zu erhalten."
     },
     "step6": {
       "heading": "Bereit zum Senden?",

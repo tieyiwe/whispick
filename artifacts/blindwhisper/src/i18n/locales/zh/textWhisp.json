@@ -26,7 +26,8 @@
     "backButton": "返回文字 Whisps",
     "viewButton": "查看这条文字 Whisp",
     "sendAnotherButton": "再发一条",
-    "toastSendFailed": "文字 Whisp 发送失败"
+    "toastSendFailed": "文字 Whisp 发送失败",
+    "smsConsentCheckbox": "我确认已获得对方许可，可以通过 Blind Whisper 向其发送短信。"
   },
   "textWhispDetail": {
     "notFound": "未找到该文字 Whisp。",

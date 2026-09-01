@@ -26,7 +26,8 @@
     "backButton": "Rudi kwenye Whisps za Maandishi",
     "viewButton": "Angalia Whisp hii ya Maandishi",
     "sendAnotherButton": "Tuma nyingine",
-    "toastSendFailed": "Imeshindwa kutuma Whisp ya Maandishi"
+    "toastSendFailed": "Imeshindwa kutuma Whisp ya Maandishi",
+    "smsConsentCheckbox": "Ninathibitisha nina ruhusa ya mtu huyu kupokea ujumbe wa maandishi kutoka kwangu kupitia Blind Whisper."
   },
   "textWhispDetail": {
     "notFound": "Whisp ya Maandishi haikupatikana.",
