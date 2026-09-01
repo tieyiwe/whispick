@@ -1,5 +1,5 @@
 import { logger } from "./logger";
-import { HOOK_LINE, INVITE_HOOK_LINE, TEXT_WHISP_GUEST_HOOK_LINE } from "./copy";
+import { HOOK_LINE, INVITE_HOOK_LINE, TEXT_WHISP_GUEST_HOOK_LINE, debateTopicWhispHookLine } from "./copy";
 import { logDeliveryAttempt, type DeliveryLogContext } from "./deliveryLog";
 
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
@@ -137,4 +137,15 @@ export function inviteSmsBody(inviteUrl: string): string {
 // above, pointed at the public Text Whisp landing page instead.
 export function textWhispGuestSmsBody(publicUrl: string): string {
   return `${TEXT_WHISP_GUEST_HOOK_LINE}\n${publicUrl}\n— sent anonymously via Blind Whisper\n${COMPLIANCE_FOOTER}`;
+}
+
+// Debate Now topic whisp (routes/debateTopicWhisps.ts) — same
+// hook-line/link/compliance-footer shape as the others above, plus the
+// sender's optional note inserted between the hook line and the link when
+// present. Deliberately doesn't include the topic text itself (keeps the
+// SMS short — the topic is right there once they open the link, same
+// restraint whisperLinkSmsBody shows toward a whisp's video title).
+export function debateTopicWhispSmsBody(publicUrl: string, note?: string | null): string {
+  const noteLine = note ? `\n"${note}"` : "";
+  return `${debateTopicWhispHookLine()}${noteLine}\n${publicUrl}\n— sent anonymously via Blind Whisper\n${COMPLIANCE_FOOTER}`;
 }

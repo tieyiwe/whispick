@@ -95,6 +95,26 @@
       "copyFailed": "No se pudo copiar — cópialo manualmente",
       "topicRetracted": "Tema retirado",
       "retractError": "No se pudo retirar el tema"
+    },
+    "sendWhispDialog": {
+      "title": "Whisper este tema",
+      "description": "Envíalo a alguien de forma anónima, para que se una al debate.",
+      "channels": { "email": "Correo", "sms": "Mensaje de texto", "whatsapp": "WhatsApp" },
+      "emailPlaceholder": "su@correo.com",
+      "phonePlaceholder": "Su número de teléfono",
+      "pickFromContactsLabel": "Elegir de contactos",
+      "notePlaceholder": "Agrega una nota (opcional)",
+      "aliasPlaceholder": "Fírmalo como (opcional)",
+      "privacyNote": "Esto se envía de forma anónima. No sabrán que fuiste tú a menos que se lo digas.",
+      "sendButton": "Enviar",
+      "copyLinkInsteadButton": "O simplemente comparte el enlace",
+      "sentTitle": "Enviado",
+      "sentDescription": "Recibirán un enlace a este tema, de forma anónima.",
+      "sendAnotherButton": "Enviar a alguien más",
+      "doneButton": "Listo",
+      "toastSendFailed": "No se pudo enviar — inténtalo de nuevo",
+      "toastNoEmailOnContact": "Ese contacto no tiene un correo electrónico",
+      "toastNoPhoneOnContact": "Ese contacto no tiene un número de teléfono"
     }
   },
   "debateTopics": {

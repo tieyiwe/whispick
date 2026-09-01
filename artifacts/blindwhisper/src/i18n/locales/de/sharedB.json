@@ -4,6 +4,12 @@
     "follow": "Folgen",
     "couldntUpdateFollowStatus": "Follow-Status konnte nicht aktualisiert werden"
   },
+  "revealCountdownDialog": {
+    "title": "Dich zu erkennen geben?",
+    "description": "Sobald es passiert, gibt es kein Zurück mehr — sie werden wissen, dass du es warst.",
+    "message": "Deine Identität wird in {{seconds}}s enthüllt",
+    "stopButton": "Enthüllung jetzt stoppen"
+  },
   "installAppPrompt": {
     "dialogAriaLabel": "Blind Whisper installieren",
     "titleMobile": "Blind Whisper zu deinem Handy hinzufügen",

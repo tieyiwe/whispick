@@ -35,6 +35,7 @@ import {
 import { TextWhispScroll } from "@/components/shared/TextWhispScroll";
 import { ReplyThread, ThreadComposer, type ThreadReply } from "@/components/shared/ReplyThread";
 import { TimelineTrack, type TimelineStepData } from "@/components/shared/DeliveryTimelineTrack";
+import { RevealCountdownDialog } from "@/components/shared/RevealCountdownDialog";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Eye, Loader2, MessageSquare, Trash2, Check, X, ChevronDown, CalendarClock } from "lucide-react";
 
@@ -63,6 +64,7 @@ export function TextWhispDetail() {
   const [replyingTo, setReplyingTo] = useState<ThreadReply | null>(null);
   const [opened, setOpened] = useState(false);
   const [timelineOpen, setTimelineOpen] = useState(true);
+  const [revealCountdownOpen, setRevealCountdownOpen] = useState(false);
 
   const { data: profile } = useGetUserProfile();
   // Polled while this page is open — see LIVE_POLL_MS above — so a reply (or
@@ -420,16 +422,19 @@ export function TextWhispDetail() {
                 reveal — see routes/textWhisps.ts's toResponse() and its
                 ANTI-ENUMERATION comment. */}
             {isSender && !textWhisp.revealRequested && (
-              <Button
-                variant="outline"
-                className="w-full rounded-full border-primary/30 hover:bg-primary/10 hover:text-primary"
-                onClick={handleReveal}
-                disabled={requestReveal.isPending}
-                data-testid="button-reveal-yourself-text-whisp"
-              >
-                {requestReveal.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-                {t("textWhispDetail.revealYourselfButton")}
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  className="w-full rounded-full border-primary/30 hover:bg-primary/10 hover:text-primary"
+                  onClick={() => setRevealCountdownOpen(true)}
+                  disabled={requestReveal.isPending}
+                  data-testid="button-reveal-yourself-text-whisp"
+                >
+                  {requestReveal.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
+                  {t("textWhispDetail.revealYourselfButton")}
+                </Button>
+                <RevealCountdownDialog open={revealCountdownOpen} onOpenChange={setRevealCountdownOpen} onConfirm={handleReveal} />
+              </>
             )}
             {isSender && textWhisp.revealRequested && (
               <Card className="bg-primary/10 border-primary/20">

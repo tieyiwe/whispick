@@ -95,6 +95,26 @@
       "copyFailed": "Imeshindikana kunakili — tafadhali nakili mwenyewe",
       "topicRetracted": "Mada imeondolewa",
       "retractError": "Imeshindikana kuondoa mada hiyo"
+    },
+    "sendWhispDialog": {
+      "title": "Whisp mada hii",
+      "description": "Itume kwa mtu bila kujulikana, ili ajiunge na mjadala.",
+      "channels": { "email": "Barua pepe", "sms": "Ujumbe mfupi", "whatsapp": "WhatsApp" },
+      "emailPlaceholder": "Barua pepe yao",
+      "phonePlaceholder": "Nambari yao ya simu",
+      "pickFromContactsLabel": "Chagua kutoka anwani",
+      "notePlaceholder": "Ongeza ujumbe (si lazima)",
+      "aliasPlaceholder": "Tia sahihi kama (si lazima)",
+      "privacyNote": "Hii inatumwa bila kujulikana. Hawatajua ni wewe isipokuwa uwaambie.",
+      "sendButton": "Tuma",
+      "copyLinkInsteadButton": "Au shiriki kiungo tu",
+      "sentTitle": "Imetumwa",
+      "sentDescription": "Watapata kiungo cha mada hii, bila kujulikana.",
+      "sendAnotherButton": "Tuma kwa mtu mwingine",
+      "doneButton": "Imekamilika",
+      "toastSendFailed": "Imeshindikana kutuma — tafadhali jaribu tena",
+      "toastNoEmailOnContact": "Anwani hiyo haina barua pepe",
+      "toastNoPhoneOnContact": "Anwani hiyo haina nambari ya simu"
     }
   },
   "debateTopics": {

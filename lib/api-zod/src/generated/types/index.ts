@@ -120,6 +120,8 @@ export * from './debateTopicFeedItem';
 export * from './debateTopicFeedResponse';
 export * from './debateTopicInput';
 export * from './debateTopicStats';
+export * from './debateTopicWhisp';
+export * from './debateTopicWhispInput';
 export * from './deleteMedia200';
 export * from './deliveryAttempt';
 export * from './disableWhisperBox200';

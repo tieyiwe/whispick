@@ -190,6 +190,18 @@ Sender may request identity reveal (`reveal_requested`); recipient
 accepts/declines via the public PATCH (response exposes only the reveal fields).
 Recipients can answer an appreciation prompt (`appreciation_response` yes/no).
 
+**Reveal countdown** (`components/shared/RevealCountdownDialog.tsx`): clicking
+"Reveal Yourself" — here, on a Text Whisp (`TextWhispDetail.tsx`), and on an
+Invite (`InvitePage.tsx`) — no longer fires the reveal-request immediately. It
+opens a shared dialog that ticks down from 20s (an animated ring + "your
+identity will be revealed in Xs"); the actual `POST .../reveal` call only
+fires if the countdown reaches 0. A "Stop Reveal Now" button, Escape, or a
+backdrop click all cancel identically — nothing has happened server-side
+until the countdown completes, so there's nothing to undo either way. All
+three backend `.../reveal` endpoints are unchanged: a single idempotent "set
+revealRequested=true + notify the other party," which is what makes delaying
+the call client-side safe.
+
 ## External touch points
 
 YouTube watch/caption scraping (no API key), oEmbed (YouTube/Vimeo/TikTok/Twitter),

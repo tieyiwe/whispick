@@ -29,6 +29,7 @@ import { getVisitorId } from "@/lib/anonymousVisitor";
 import { FollowButton } from "@/components/shared/FollowButton";
 import { AvatarCircle } from "@/components/shared/AvatarCircle";
 import { ReportContentDialog } from "@/components/shared/ReportContentDialog";
+import { SendDebateTopicWhispDialog } from "@/components/shared/SendDebateTopicWhispDialog";
 import { AvatarPickerGrid } from "@/components/shared/AvatarPickerGrid";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
@@ -392,6 +393,7 @@ export function DebateTopicDetail() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [isPostingWithImage, setIsPostingWithImage] = useState(false);
+  const [whispDialogOpen, setWhispDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const visitorId = useMemo(() => getVisitorId(), []);
@@ -602,21 +604,6 @@ export function DebateTopicDetail() {
     );
   }
 
-  function handleShareTopic() {
-    if (!id) return;
-    const url = `${window.location.origin}/debate-topics/${id}`;
-    if (navigator.share) {
-      navigator.share({ title: t("debateTopicDetail.shareTitle"), text: topic?.topicText, url }).catch(() => {});
-      return;
-    }
-    navigator.clipboard
-      .writeText(url)
-      .then(() => toast({ title: t("debateTopicDetail.toast.linkCopied") }))
-      // A rejected clipboard write (permissions, unfocused document) should
-      // say so rather than vanish silently.
-      .catch(() => toast({ title: t("debateTopicDetail.toast.copyFailed"), variant: "destructive" }));
-  }
-
   function handleRetract() {
     if (!id) return;
     deleteTopic.mutate(
@@ -731,7 +718,7 @@ export function DebateTopicDetail() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={handleShareTopic}
+                      onClick={() => setWhispDialogOpen(true)}
                       className="rounded-full h-7 px-2.5 text-muted-foreground hover:text-primary hover:bg-primary/10"
                       data-testid="button-whisper-topic"
                     >
@@ -946,6 +933,15 @@ export function DebateTopicDetail() {
           </>
         )}
       </main>
+
+      {topic && (
+        <SendDebateTopicWhispDialog
+          topicId={topic.id}
+          topicText={topic.topicText}
+          open={whispDialogOpen}
+          onOpenChange={setWhispDialogOpen}
+        />
+      )}
     </div>
   );
 }

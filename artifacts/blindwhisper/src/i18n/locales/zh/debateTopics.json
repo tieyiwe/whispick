@@ -93,6 +93,26 @@
       "copyFailed": "复制失败 — 请手动复制",
       "topicRetracted": "话题已撤回",
       "retractError": "撤回话题失败"
+    },
+    "sendWhispDialog": {
+      "title": "Whisp 这个话题",
+      "description": "匿名发送给某人,让他们加入辩论。",
+      "channels": { "email": "邮件", "sms": "短信", "whatsapp": "WhatsApp" },
+      "emailPlaceholder": "对方邮箱",
+      "phonePlaceholder": "对方电话号码",
+      "pickFromContactsLabel": "从通讯录选择",
+      "notePlaceholder": "添加备注(可选)",
+      "aliasPlaceholder": "署名为(可选)",
+      "privacyNote": "此消息匿名发送。除非你告诉他们,否则他们不会知道是你。",
+      "sendButton": "发送",
+      "copyLinkInsteadButton": "或者直接分享链接",
+      "sentTitle": "已发送",
+      "sentDescription": "对方将匿名收到这个话题的链接。",
+      "sendAnotherButton": "发送给其他人",
+      "doneButton": "完成",
+      "toastSendFailed": "发送失败——请重试",
+      "toastNoEmailOnContact": "该联系人没有邮箱地址",
+      "toastNoPhoneOnContact": "该联系人没有电话号码"
     }
   },
   "debateTopics": {

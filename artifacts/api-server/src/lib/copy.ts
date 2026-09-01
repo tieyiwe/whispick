@@ -110,3 +110,14 @@ export const TEXT_WHISP_GUEST_HOOK_LINE =
 // Keep in sync with PublicWhisperBoxPage.tsx's own subheading by hand, same
 // as HOOK_LINE.
 export const WHISPER_BOX_HOOK_LINE = "You can tell me anything or share a video I need to see anonymously.";
+
+// Debate Now topic whisp (routes/debateTopicWhisps.ts) — sent when someone
+// Whispers a topic to a specific contact instead of (or alongside) plain
+// link-sharing. Deliberately doesn't name the sender or hint at a
+// relationship the way HOOK_LINE does ("someone who cares about you") —
+// this is "someone thought you'd want to weigh in", not necessarily
+// personal, since any signed-in viewer of a topic can send it, not just
+// people who know the recipient well.
+export function debateTopicWhispHookLine(): string {
+  return "Someone thinks you'd have something to say about this 🗣️";
+}

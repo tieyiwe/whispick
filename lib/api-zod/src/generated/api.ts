@@ -516,6 +516,36 @@ export const CreateInviteResponse = zod.object({
 
 
 /**
+ * @summary Whisper a debate topic to one contact over email/SMS/WhatsApp, anonymously
+ */
+export const SendDebateTopicWhispParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const SendDebateTopicWhispBody = zod.object({
+  "recipientEmail": zod.string().nullish(),
+  "recipientPhone": zod.string().nullish(),
+  "channel": zod.string().describe('\'email\' | \'sms\' | \'whatsapp\''),
+  "note": zod.string().nullish().describe('Optional personal line from the sender, shown alongside the topic teaser. Max 200 characters.'),
+  "senderAlias": zod.string().nullish()
+})
+
+export const SendDebateTopicWhispResponse = zod.object({
+  "id": zod.string(),
+  "senderId": zod.string(),
+  "debateTopicId": zod.string(),
+  "recipientUserId": zod.string().nullish().describe('Set only when the recipient contact matched a known, verified Blind Whisper account at send time — see UserProfile-adjacent lib\/deliver.ts findVerifiedRecipient(ByEmail).'),
+  "recipientEmail": zod.string().nullish(),
+  "recipientPhone": zod.string().nullish(),
+  "channel": zod.string().describe('\'email\' | \'sms\' | \'whatsapp\''),
+  "note": zod.string().nullish(),
+  "senderAlias": zod.string().nullish(),
+  "status": zod.string().describe('\'sent\' | \'failed\''),
+  "createdAt": zod.string()
+})
+
+
+/**
  * @summary Attribute the current (just signed-up) account back to the invite that brought them here
  */
 export const ClaimInviteBody = zod.object({

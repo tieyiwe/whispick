@@ -395,6 +395,43 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
 
+  /debate-topics/{id}/whisp:
+    post:
+      operationId: sendDebateTopicWhisp
+      tags: [debateTopics]
+      summary: Whisper a debate topic to one contact over email/SMS/WhatsApp, anonymously
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DebateTopicWhispInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DebateTopicWhisp"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Debate topic not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /invites/claim:
     post:
       operationId: claimInvite
@@ -5431,6 +5468,60 @@ components:
           type: ["string", "null"]
         channel:
           type: string
+      required:
+        - channel
+
+    DebateTopicWhisp:
+      type: object
+      properties:
+        id:
+          type: string
+        senderId:
+          type: string
+        debateTopicId:
+          type: string
+        recipientUserId:
+          type: ["string", "null"]
+          description: Set only when the recipient contact matched a known, verified Blind Whisper account at send time — see UserProfile-adjacent lib/deliver.ts findVerifiedRecipient(ByEmail).
+        recipientEmail:
+          type: ["string", "null"]
+        recipientPhone:
+          type: ["string", "null"]
+        channel:
+          type: string
+          description: "'email' | 'sms' | 'whatsapp'"
+        note:
+          type: ["string", "null"]
+        senderAlias:
+          type: ["string", "null"]
+        status:
+          type: string
+          description: "'sent' | 'failed'"
+        createdAt:
+          type: string
+      required:
+        - id
+        - senderId
+        - debateTopicId
+        - channel
+        - status
+        - createdAt
+
+    DebateTopicWhispInput:
+      type: object
+      properties:
+        recipientEmail:
+          type: ["string", "null"]
+        recipientPhone:
+          type: ["string", "null"]
+        channel:
+          type: string
+          description: "'email' | 'sms' | 'whatsapp'"
+        note:
+          type: ["string", "null"]
+          description: Optional personal line from the sender, shown alongside the topic teaser. Max 200 characters.
+        senderAlias:
+          type: ["string", "null"]
       required:
         - channel
 

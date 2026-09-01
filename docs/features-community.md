@@ -85,6 +85,23 @@ by `commentType`; unique per `(commentType, commentId, visitorId)`;
 **Rewhisps** (`debate_topic_rewhisps`): retweet-equivalent, unique per
 `(debateTopicId, visitorId)`, count-only. Debate-only.
 
+**Whisper this topic** (`debate_topic_whisps`, `routes/debateTopicWhisps.ts`,
+mounted at `/debate-topics`): sends a topic to one contact over
+email/SMS/WhatsApp, anonymously — a real point-to-point send through the same
+delivery primitives every whisp type uses (`findVerifiedRecipient(ByEmail)` +
+`deliverInApp` for a matched account, `sendEmail`/`sendSms`/`sendWhatsApp`
+otherwise; see `lib/deliver.ts`), not the plain native-share/copy-link `handleShareTopic` used to be. Deliberately its own small table
+rather than living in `whisps.ts` (`videoUrl` is `NOT NULL` there) or growing
+into a Text-Whisp-style mini-app — the destination is just the topic's own
+already-public, already-anonymous-comment-capable page
+(`/debate-topics/:id`), so there's no guest landing page or reply thread to
+build. Open to any signed-in viewer, not only the topic's author. Both
+channels are offered (unlike Invites, which are phone/email but never
+in-app-matched, and Text Whisps, which are phone-only). `sendDebateTopicWhispLimiter`
+caps it at 20/hr per sender. DebateTopicDetail.tsx's "Whisper this topic"
+button opens `SendDebateTopicWhispDialog.tsx`, which also keeps the original
+plain-link share/copy as a secondary option in the same dialog.
+
 **Notifications** (only ever to real `authorUserId`, never self):
 `debate_comment_reply`, `debate_topic_comment`, `debate_comment_reaction`, and
 the `circle_*` equivalents.

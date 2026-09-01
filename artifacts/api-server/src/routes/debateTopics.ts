@@ -20,7 +20,9 @@ import { downloadObject } from "../lib/objectStorage";
 
 const router: IRouter = Router();
 
-function topicUrl(topicId: string): string {
+// Exported for routes/debateTopicWhisps.ts — one definition of "what a
+// topic's in-app path looks like", reused rather than duplicated.
+export function topicUrl(topicId: string): string {
   return `/debate-topics/${topicId}`;
 }
 
@@ -36,7 +38,10 @@ export const PAGE_SIZE = 20;
 
 // A topic never surfaced once its author retracts it (see DELETE below) or
 // an admin takes it down — every public lookup filters on this.
-function notRetracted() {
+// Exported for routes/debateTopicWhisps.ts, which needs the exact same
+// "is this topic still live" check before letting anyone whisp it to a
+// contact — one definition, not two copies that could drift.
+export function notRetracted() {
   return and(isNull(debateTopicsTable.deletedByAuthorAt), isNull(debateTopicsTable.removedByAdminAt));
 }
 

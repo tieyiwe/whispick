@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
 import { logger } from "./logger";
-import { HOOK_LINE, INVITE_HOOK_LINE } from "./copy";
+import { HOOK_LINE, INVITE_HOOK_LINE, debateTopicWhispHookLine } from "./copy";
 import { logDeliveryAttempt, type DeliveryLogContext } from "./deliveryLog";
 import { escapeHtml } from "./escapeHtml";
 import { UPLOAD_RETENTION_DAYS } from "./uploads";
@@ -405,6 +405,22 @@ export function inviteEmailHtml(inviteUrl: string): string {
      ${emailNote(
        "Sent anonymously through Blind Whisper. The inviter's identity isn't included unless they choose to reveal it.",
      )}`,
+  );
+}
+
+// Debate Now topic whisp (routes/debateTopicWhisps.ts) — topicText and note
+// both originate from real users (a topic's author, and the sender of this
+// whisp respectively), so both are escaped before landing in this
+// unescaped-HTML-string template, same reasoning as replyNotificationEmailHtml's
+// videoTitle above.
+export function debateTopicWhispEmailHtml(topicText: string, topicUrl: string, note?: string | null): string {
+  return emailShell(
+    `${emailHeading(debateTopicWhispHookLine())}
+     ${emailText(`"${escapeHtml(topicText)}"`)}
+     ${note ? emailText(escapeHtml(note)) : ""}
+     ${emailButton(topicUrl, "Join the debate")}
+     ${emailFallbackLink(topicUrl)}
+     ${emailNote("Sent anonymously through Blind Whisper.")}`,
   );
 }
 

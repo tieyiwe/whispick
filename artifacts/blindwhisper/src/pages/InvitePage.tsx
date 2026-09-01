@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { Mail, MessageSquare, UserPlus, Eye, Loader2 } from "lucide-react";
+import { RevealCountdownDialog } from "@/components/shared/RevealCountdownDialog";
 
 type Channel = "email" | "sms" | "whatsapp";
 
@@ -41,6 +42,11 @@ export function InvitePage() {
   const [channel, setChannel] = useState<Channel>("email");
   const [recipientEmail, setRecipientEmail] = useState("");
   const [recipientPhone, setRecipientPhone] = useState("");
+  // Single shared countdown dialog for the whole list — which invite it's
+  // for is just which id is currently non-null here, same "one shared
+  // component, id picks the target" shape as a per-row menu/dialog
+  // elsewhere in this app (e.g. WhispsList.tsx's openMenuId).
+  const [revealCountdownInviteId, setRevealCountdownInviteId] = useState<string | null>(null);
 
   const { data: invites, isLoading } = useListInvites();
   const createInvite = useCreateInvite();
@@ -178,7 +184,7 @@ export function InvitePage() {
                         size="sm"
                         variant="outline"
                         className="rounded-full border-primary/30 hover:bg-primary/10 hover:text-primary"
-                        onClick={() => handleReveal(invite.id)}
+                        onClick={() => setRevealCountdownInviteId(invite.id)}
                         disabled={requestReveal.isPending}
                         data-testid={`button-reveal-invite-${invite.id}`}
                       >
@@ -202,6 +208,14 @@ export function InvitePage() {
           )}
         </div>
       </div>
+
+      <RevealCountdownDialog
+        open={!!revealCountdownInviteId}
+        onOpenChange={(open) => !open && setRevealCountdownInviteId(null)}
+        onConfirm={() => {
+          if (revealCountdownInviteId) handleReveal(revealCountdownInviteId);
+        }}
+      />
     </AppLayout>
   );
 }

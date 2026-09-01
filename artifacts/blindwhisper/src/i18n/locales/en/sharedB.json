@@ -4,6 +4,12 @@
     "follow": "Follow",
     "couldntUpdateFollowStatus": "Couldn't update follow status"
   },
+  "revealCountdownDialog": {
+    "title": "Reveal yourself?",
+    "description": "Once it happens, there's no undoing it — they'll know it was you.",
+    "message": "Your identity will be revealed in {{seconds}}s",
+    "stopButton": "Stop Reveal Now"
+  },
   "installAppPrompt": {
     "dialogAriaLabel": "Install Blind Whisper",
     "titleMobile": "Add Blind Whisper to your phone",

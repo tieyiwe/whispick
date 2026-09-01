@@ -134,6 +134,17 @@ export const createDebateTopicLimiter = rateLimit({
   keyGenerator: authKeyGenerator,
 });
 
+// Whisping a Debate Now topic to a contact (routes/debateTopicWhisps.ts)
+// triggers a real email/SMS/WhatsApp send, same recurring-cost reasoning
+// (and same 20/hour cap) as inviteLimiter above.
+export const sendDebateTopicWhispLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: authKeyGenerator,
+});
+
 // Filing a content report (routes/contentReports.ts) is free and writes a
 // row an admin has to personally read — the classic shape for both
 // griefing (mass-reporting someone you disagree with) and queue-flooding.

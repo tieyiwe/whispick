@@ -95,6 +95,26 @@
       "copyFailed": "Kopieren fehlgeschlagen — bitte manuell kopieren",
       "topicRetracted": "Thema zurückgezogen",
       "retractError": "Thema konnte nicht zurückgezogen werden"
+    },
+    "sendWhispDialog": {
+      "title": "Whispe dieses Thema",
+      "description": "Sende es anonym an jemanden, damit er/sie in die Debatte einsteigen kann.",
+      "channels": { "email": "E-Mail", "sms": "SMS", "whatsapp": "WhatsApp" },
+      "emailPlaceholder": "ihre@email.com",
+      "phonePlaceholder": "Ihre Telefonnummer",
+      "pickFromContactsLabel": "Aus Kontakten wählen",
+      "notePlaceholder": "Notiz hinzufügen (optional)",
+      "aliasPlaceholder": "Unterschreiben als (optional)",
+      "privacyNote": "Das wird anonym gesendet. Sie erfahren nicht, dass du es warst, es sei denn, du sagst es ihnen.",
+      "sendButton": "Senden",
+      "copyLinkInsteadButton": "Oder einfach den Link teilen",
+      "sentTitle": "Gesendet",
+      "sentDescription": "Sie erhalten einen Link zu diesem Thema, anonym.",
+      "sendAnotherButton": "An jemand anderen senden",
+      "doneButton": "Fertig",
+      "toastSendFailed": "Konnte nicht gesendet werden — bitte erneut versuchen",
+      "toastNoEmailOnContact": "Dieser Kontakt hat keine E-Mail-Adresse",
+      "toastNoPhoneOnContact": "Dieser Kontakt hat keine Telefonnummer"
     }
   },
   "debateTopics": {

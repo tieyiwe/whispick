@@ -4,6 +4,12 @@
     "follow": "Suivre",
     "couldntUpdateFollowStatus": "Impossible de mettre à jour le statut d'abonnement"
   },
+  "revealCountdownDialog": {
+    "title": "Te révéler ?",
+    "description": "Une fois que c'est fait, impossible de revenir en arrière — ils sauront que c'était toi.",
+    "message": "Ton identité sera révélée dans {{seconds}}s",
+    "stopButton": "Arrêter la révélation"
+  },
   "installAppPrompt": {
     "dialogAriaLabel": "Installer Blind Whisper",
     "titleMobile": "Ajoute Blind Whisper à ton téléphone",
