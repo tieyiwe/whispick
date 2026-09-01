@@ -55,6 +55,8 @@ import type {
   AdminUser,
   AdminUserDetail,
   AdminUserListResponse,
+  AdminVisitorsOnlineResponse,
+  AdminVisitorsResponse,
   AdminWhispDetail,
   AdminWhispListResponse,
   ApiError,
@@ -228,6 +230,7 @@ import type {
   VerifySubscriptionParams,
   VideoMeta,
   VideoMetaRequest,
+  VisitorPingInput,
   Whisp,
   WhispDetail,
   WhispInput,
@@ -6862,6 +6865,162 @@ export function useAdminGetUsersOnlineNow<TData = Awaited<ReturnType<typeof admi
 
 
 
+export const getAdminGetVisitorsOnlineUrl = () => {
+
+
+
+
+  return `/api/admin/visitors/online`
+}
+
+/**
+ * A cheap, index-backed count meant to be polled far more often than GET /admin/visitors (the frontend polls this roughly every second) — deliberately a bare number with no breakdown, so the fast poll stays fast.
+ * @summary Live "currently on the platform" headcount, signed-in and anonymous combined (admin only)
+ */
+export const adminGetVisitorsOnline = async ( options?: RequestInit): Promise<AdminVisitorsOnlineResponse> => {
+
+  return customFetch<AdminVisitorsOnlineResponse>(getAdminGetVisitorsOnlineUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetVisitorsOnlineQueryKey = () => {
+    return [
+    `/api/admin/visitors/online`
+    ] as const;
+    }
+
+
+export const getAdminGetVisitorsOnlineQueryOptions = <TData = Awaited<ReturnType<typeof adminGetVisitorsOnline>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetVisitorsOnline>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetVisitorsOnlineQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetVisitorsOnline>>> = ({ signal }) => adminGetVisitorsOnline({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetVisitorsOnline>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetVisitorsOnlineQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetVisitorsOnline>>>
+export type AdminGetVisitorsOnlineQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Live "currently on the platform" headcount, signed-in and anonymous combined (admin only)
+ */
+
+export function useAdminGetVisitorsOnline<TData = Awaited<ReturnType<typeof adminGetVisitorsOnline>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetVisitorsOnline>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetVisitorsOnlineQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminGetVisitorsUrl = () => {
+
+
+
+
+  return `/api/admin/visitors`
+}
+
+/**
+ * Everyone currently on the platform (same live window as GET /admin/visitors/online), broken down by country and device type, plus the 50 most recently pinged sessions for a live feed. Heavier than the online-count endpoint, so the frontend polls this on a slower cadence.
+ * @summary Live visitor roster — country/device breakdowns and the most recent individual sessions (admin only)
+ */
+export const adminGetVisitors = async ( options?: RequestInit): Promise<AdminVisitorsResponse> => {
+
+  return customFetch<AdminVisitorsResponse>(getAdminGetVisitorsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetVisitorsQueryKey = () => {
+    return [
+    `/api/admin/visitors`
+    ] as const;
+    }
+
+
+export const getAdminGetVisitorsQueryOptions = <TData = Awaited<ReturnType<typeof adminGetVisitors>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetVisitors>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetVisitorsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetVisitors>>> = ({ signal }) => adminGetVisitors({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetVisitors>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetVisitorsQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetVisitors>>>
+export type AdminGetVisitorsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Live visitor roster — country/device breakdowns and the most recent individual sessions (admin only)
+ */
+
+export function useAdminGetVisitors<TData = Awaited<ReturnType<typeof adminGetVisitors>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetVisitors>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetVisitorsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getAdminSendComplianceReminderUrl = () => {
 
 
@@ -9170,6 +9329,77 @@ export const useRecordUsageEvents = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getRecordUsageEventsMutationOptions(options));
+    }
+
+export const getSendVisitorPingUrl = () => {
+
+
+
+
+  return `/api/public/visitor-ping`
+}
+
+/**
+ * Fire-and-forget from every open tab (see lib/visitorPing.ts on the frontend) — upserts one row per visitor (keyed by account id when signed in, otherwise the client-generated visitorId) recording country (best-effort IP geolocation) and device type, so GET /admin/visitors can show who's live right now. Never creates an account or touches users.lastSeenAt; a missed ping just drops that visitor out of the live count a little early, nothing more.
+ * @summary Periodic live-presence heartbeat, signed-in or anonymous (internal analytics; anonymous allowed)
+ */
+export const sendVisitorPing = async (visitorPingInput?: VisitorPingInput, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getSendVisitorPingUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(visitorPingInput)
+  }
+);}
+
+
+
+
+export const getSendVisitorPingMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendVisitorPing>>, TError,{data?: BodyType<VisitorPingInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendVisitorPing>>, TError,{data?: BodyType<VisitorPingInput>}, TContext> => {
+
+const mutationKey = ['sendVisitorPing'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendVisitorPing>>, {data?: BodyType<VisitorPingInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  sendVisitorPing(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendVisitorPingMutationResult = NonNullable<Awaited<ReturnType<typeof sendVisitorPing>>>
+    export type SendVisitorPingMutationBody = BodyType<VisitorPingInput> | undefined
+    export type SendVisitorPingMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Periodic live-presence heartbeat, signed-in or anonymous (internal analytics; anonymous allowed)
+ */
+export const useSendVisitorPing = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendVisitorPing>>, TError,{data?: BodyType<VisitorPingInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sendVisitorPing>>,
+        TError,
+        {data?: BodyType<VisitorPingInput>},
+        TContext
+      > => {
+      return useMutation(getSendVisitorPingMutationOptions(options));
     }
 
 export const getReportBugUrl = () => {

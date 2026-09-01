@@ -33,6 +33,8 @@ import usageEventsRouter from "./usageEvents";
 import whisperBoxRouter from "./whisperBox";
 import bugReportsRouter from "./bugReports";
 import adminBugRabbitRouter from "./adminBugRabbit";
+import visitorPingRouter from "./visitorPing";
+import adminVisitorsRouter from "./adminVisitors";
 import { publicEndpointLimiter } from "../lib/rateLimit";
 
 const router: IRouter = Router();
@@ -56,6 +58,7 @@ router.use("/public", subscribeRouter);
 router.use("/public", publicInvitesRouter);
 router.use("/public", publicTextWhispsRouter);
 router.use("/public", usageEventsRouter);
+router.use("/public", visitorPingRouter);
 router.use("/public", bugReportsRouter);
 // No prefix: debateTopicsRouter defines its own full paths (both the
 // authenticated "/debate-topics" create/delete and the public
@@ -116,6 +119,7 @@ router.use("/admin/text-whisps", adminTextWhispsRouter);
 // Own distinct prefix, same reasoning as adminTextWhispsRouter above —
 // /api/admin/bug-rabbit/..., gated behind the "bugrabbit" permission.
 router.use("/admin/bug-rabbit", adminBugRabbitRouter);
+router.use("/admin/visitors", adminVisitorsRouter);
 router.use("/whisper-groups", whisperGroupsRouter);
 router.use("/media", mediaRouter);
 router.use("/suggestions", suggestionsRouter);

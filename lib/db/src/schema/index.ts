@@ -38,3 +38,4 @@ export * from "./debate_agent_settings";
 export * from "./circle_agent_settings";
 export * from "./whisper_box_messages";
 export * from "./bug_reports";
+export * from "./visitor_sessions";

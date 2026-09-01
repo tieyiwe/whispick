@@ -2146,6 +2146,39 @@ export const AdminGetUsersOnlineNowResponse = zod.object({
 
 
 /**
+ * A cheap, index-backed count meant to be polled far more often than GET /admin/visitors (the frontend polls this roughly every second) — deliberately a bare number with no breakdown, so the fast poll stays fast.
+ * @summary Live "currently on the platform" headcount, signed-in and anonymous combined (admin only)
+ */
+export const AdminGetVisitorsOnlineResponse = zod.object({
+  "onlineCount": zod.number(),
+  "windowSeconds": zod.number().describe('Width of the live-visitor window this count was computed over, in seconds.')
+})
+
+
+/**
+ * Everyone currently on the platform (same live window as GET /admin/visitors/online), broken down by country and device type, plus the 50 most recently pinged sessions for a live feed. Heavier than the online-count endpoint, so the frontend polls this on a slower cadence.
+ * @summary Live visitor roster — country/device breakdowns and the most recent individual sessions (admin only)
+ */
+export const AdminGetVisitorsResponse = zod.object({
+  "byCountry": zod.array(zod.object({
+  "country": zod.string().describe('\"Unknown\" when geolocation failed or was skipped (private\/local IP), never null — see lib\/visitorTracking.ts.'),
+  "count": zod.number()
+})),
+  "byDevice": zod.array(zod.object({
+  "deviceType": zod.string().describe('\'mobile\' | \'tablet\' | \'desktop\' | \'unknown\' — see lib\/deviceType.ts.'),
+  "count": zod.number()
+})),
+  "recent": zod.array(zod.object({
+  "country": zod.string().nullable(),
+  "deviceType": zod.string(),
+  "isSignedIn": zod.boolean(),
+  "lastPingAt": zod.string()
+})).describe('The 50 most recently pinged sessions currently within the live window, newest first.'),
+  "windowSeconds": zod.number()
+})
+
+
+/**
  * Same persisted-notification-plus-email delivery as POST /admin/notifications, just pre-written per compliance kind rather than admin-authored. Never re-verifies the flag is still true server-side before sending — a reminder sent after someone already fixed it is a harmless no-op.
  * @summary Nudge specific users about a single missing compliance item, via in-app notification, best-effort push, and email (admin only)
  */
@@ -2911,6 +2944,21 @@ export const RecordUsageEventsBody = zod.object({
 })
 
 export const RecordUsageEventsResponse = zod.void()
+
+
+/**
+ * Fire-and-forget from every open tab (see lib/visitorPing.ts on the frontend) — upserts one row per visitor (keyed by account id when signed in, otherwise the client-generated visitorId) recording country (best-effort IP geolocation) and device type, so GET /admin/visitors can show who's live right now. Never creates an account or touches users.lastSeenAt; a missed ping just drops that visitor out of the live count a little early, nothing more.
+ * @summary Periodic live-presence heartbeat, signed-in or anonymous (internal analytics; anonymous allowed)
+ */
+export const sendVisitorPingBodyVisitorIdMax = 100;
+
+
+
+export const SendVisitorPingBody = zod.object({
+  "visitorId": zod.string().min(1).max(sendVisitorPingBodyVisitorIdMax).optional().describe('The client-generated visitorId (lib\/anonymousVisitor.ts) — only meaningful when signed out; a signed-in ping\'s account id wins even if this is also sent.')
+})
+
+export const SendVisitorPingResponse = zod.void()
 
 
 /**
