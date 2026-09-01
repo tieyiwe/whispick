@@ -32,6 +32,17 @@ const IOS_APPEAR_DELAY_MS = 3000;
 const SIGN_IN_APPEAR_DELAY_MS = 5000;
 const REFRESH_APPEAR_DELAY_MS = 3000;
 
+// After an explicit "Not now", auto-reappear later in this same tab/session
+// rather than staying silent until the visitor happens to refresh or open a
+// new tab — a few hours is long enough to not feel like nagging right after
+// someone just said no, short enough that it's still the same sitting for
+// most visitors rather than "maybe next week". A refresh or fresh open never
+// waits on this timer at all: shouldStayQuiet() (lib/installApp.ts) only
+// checks install/standalone status, never a past dismissal, so a fresh mount
+// always re-evaluates on its own short appear-delay regardless of how
+// recently this fired.
+const REPROMPT_AFTER_DISMISS_MS = 4 * 60 * 60 * 1000;
+
 /**
  * Offers to install Blind Whisper to the home screen, once.
  *
@@ -56,6 +67,7 @@ export function InstallAppPrompt() {
   const [visible, setVisible] = useState(false);
   const [installing, setInstalling] = useState(false);
   const deferredRef = useRef<BeforeInstallPromptEvent | null>(null);
+  const repromptTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const ios = isIos();
   // Read once — this doesn't change over the component's lifetime, and the
   // whole point is to pick copy that matches the device, not to react to it.
@@ -118,6 +130,17 @@ export function InstallAppPrompt() {
     }
   }, []);
 
+  // Belt-and-suspenders for the reprompt timer scheduled in handleDismiss:
+  // it's already cleared before being replaced there, but this also clears
+  // it if the component unmounts (route change out of AppLayout, sign-out)
+  // while one is still pending, so it doesn't fire setVisible on a gone
+  // component.
+  useEffect(() => {
+    return () => {
+      if (repromptTimerRef.current) clearTimeout(repromptTimerRef.current);
+    };
+  }, []);
+
   async function handleInstall() {
     const deferred = deferredRef.current;
     if (!deferred) return;
@@ -152,6 +175,15 @@ export function InstallAppPrompt() {
   function handleDismiss() {
     rememberDismissed();
     setVisible(false);
+
+    // Not wired into handleInstall's decline branch above: that path has
+    // already consumed deferredRef.current (nulled in its `finally`), so
+    // forcing the banner back open there would show a dead Install button.
+    // This path's deferred event is still intact, so it's safe to reappear.
+    if (repromptTimerRef.current) clearTimeout(repromptTimerRef.current);
+    repromptTimerRef.current = setTimeout(() => {
+      if (!shouldStayQuiet()) setVisible(true);
+    }, REPROMPT_AFTER_DISMISS_MS);
   }
 
   if (!visible) return null;
