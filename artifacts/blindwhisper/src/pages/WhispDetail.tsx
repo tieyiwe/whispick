@@ -35,6 +35,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { MoodTag } from "@/components/shared/MoodTag";
 import { ReplyThread, ThreadComposer, type ThreadReply, type GuessReactionValue } from "@/components/shared/ReplyThread";
+import { RevealCountdownDialog } from "@/components/shared/RevealCountdownDialog";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import {
@@ -70,6 +71,7 @@ export function WhispDetail() {
   const [timelineOpen, setTimelineOpen] = useState(true);
   const [posterCommentText, setPosterCommentText] = useState("");
   const [posterCommentReplyingTo, setPosterCommentReplyingTo] = useState<CircleComment | null>(null);
+  const [revealCountdownOpen, setRevealCountdownOpen] = useState(false);
   const postComment = usePostCircleComment();
 
   // Polled so a reply arriving while this page is open shows up on its own.
@@ -648,16 +650,19 @@ export function WhispDetail() {
 
         {/* Reveal flow */}
         {!isGhostBoost && !whisp.revealRequested && (
-          <Button
-            variant="outline"
-            className="w-full rounded-full border-primary/30 hover:bg-primary/10 hover:text-primary"
-            onClick={handleReveal}
-            disabled={requestReveal.isPending}
-            data-testid="button-reveal-yourself"
-          >
-            {requestReveal.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-            {t("whispDetail.revealYourself")}
-          </Button>
+          <>
+            <Button
+              variant="outline"
+              className="w-full rounded-full border-primary/30 hover:bg-primary/10 hover:text-primary"
+              onClick={() => setRevealCountdownOpen(true)}
+              disabled={requestReveal.isPending}
+              data-testid="button-reveal-yourself"
+            >
+              {requestReveal.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
+              {t("whispDetail.revealYourself")}
+            </Button>
+            <RevealCountdownDialog open={revealCountdownOpen} onOpenChange={setRevealCountdownOpen} onConfirm={handleReveal} />
+          </>
         )}
         {!isGhostBoost && whisp.revealRequested && (
           <Card className="bg-primary/10 border-primary/20">

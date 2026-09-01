@@ -4,6 +4,12 @@
     "follow": "متابعة",
     "couldntUpdateFollowStatus": "تعذّر تحديث حالة المتابعة"
   },
+  "revealCountdownDialog": {
+    "title": "هل تريد الكشف عن نفسك؟",
+    "description": "بمجرد حدوث ذلك، لا يمكن التراجع عنه — سيعرفون أنك أنت.",
+    "message": "سيتم الكشف عن هويتك خلال {{seconds}} ثانية",
+    "stopButton": "إيقاف الكشف الآن"
+  },
   "installAppPrompt": {
     "dialogAriaLabel": "تثبيت Blind Whisper",
     "titleMobile": "أضف Blind Whisper إلى هاتفك",

@@ -4,6 +4,12 @@
     "follow": "Fuata",
     "couldntUpdateFollowStatus": "Imeshindikana kusasisha hali ya kufuata"
   },
+  "revealCountdownDialog": {
+    "title": "Ujifichue?",
+    "description": "Mara ikitokea, hakuna kurudi nyuma — watajua ni wewe.",
+    "message": "Utambulisho wako utafichuliwa baada ya sekunde {{seconds}}",
+    "stopButton": "Simamisha Ufichuzi Sasa"
+  },
   "installAppPrompt": {
     "dialogAriaLabel": "Sakinisha Blind Whisper",
     "titleMobile": "Ongeza Blind Whisper kwenye simu yako",
