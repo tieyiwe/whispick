@@ -13,7 +13,12 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 // replaced a corner toast for the same message: a toast is easy to miss
 // since attention is already on the dialog, while showing the result in the
 // exact spot the countdown was just occupying can't be missed.
-const RESULT_DISPLAY_MS = 1000;
+const RESULT_DISPLAY_MS = 2000;
+
+// Aborted borrows the countdown ring's own red (--destructive) rather than a
+// neutral grey — it's the same "stop" signal the ring was already showing in
+// its last 15%, just held still instead of pulsing. Revealed uses --success,
+// matching the ring's own "all clear" green from the first half.
 
 type Phase = "counting" | "aborted" | "revealed";
 
@@ -181,7 +186,12 @@ export function RevealCountdownDialog({
                 </span>
               </>
             ) : phase === "aborted" ? (
-              <XCircle className="w-12 h-12 text-muted-foreground" aria-hidden data-testid="reveal-aborted-icon" />
+              <XCircle
+                className="w-12 h-12"
+                style={{ color: "hsl(var(--destructive))" }}
+                aria-hidden
+                data-testid="reveal-aborted-icon"
+              />
             ) : (
               <CheckCircle2
                 className="w-12 h-12"
