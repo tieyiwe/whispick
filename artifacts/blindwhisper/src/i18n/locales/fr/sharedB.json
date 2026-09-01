@@ -9,7 +9,8 @@
     "description": "Une fois que c'est fait, impossible de revenir en arrière — ils sauront que c'était toi.",
     "message": "Ton identité sera révélée dans {{seconds}}s",
     "stopButton": "Arrêter la révélation",
-    "abortedToast": "Révélation arrêtée"
+    "abortedMessage": "Révélation arrêtée",
+    "revealedMessage": "Révélé"
   },
   "installAppPrompt": {
     "dialogAriaLabel": "Installer Blind Whisper",

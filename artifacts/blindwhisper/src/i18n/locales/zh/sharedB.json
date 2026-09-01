@@ -9,7 +9,8 @@
     "description": "一旦发生就无法撤销——他们会知道是你。",
     "message": "你的身份将在 {{seconds}} 秒后被公开",
     "stopButton": "立即停止公开",
-    "abortedToast": "已停止公开"
+    "abortedMessage": "已停止公开",
+    "revealedMessage": "已公开"
   },
   "installAppPrompt": {
     "dialogAriaLabel": "安装 Blind Whisper",

@@ -2,11 +2,20 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { Eye } from "lucide-react";
+import { Eye, CheckCircle2, XCircle } from "lucide-react";
 
 const RADIUS = 46;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+
+// How long the result (aborted or revealed) sits inside the dialog itself
+// before it closes on its own — long enough to register as a deliberate
+// confirmation, short enough that nobody has to act to dismiss it. This
+// replaced a corner toast for the same message: a toast is easy to miss
+// since attention is already on the dialog, while showing the result in the
+// exact spot the countdown was just occupying can't be missed.
+const RESULT_DISPLAY_MS = 1000;
+
+type Phase = "counting" | "aborted" | "revealed";
 
 // Three zones instead of one flat primary-colored ring, so the ring itself
 // communicates urgency without anyone having to read the number: calm green
@@ -61,9 +70,10 @@ export function RevealCountdownDialog({
   seconds?: number;
 }) {
   const { t } = useTranslation("sharedB");
-  const { toast } = useToast();
   const [remaining, setRemaining] = useState(seconds);
+  const [phase, setPhase] = useState<Phase>("counting");
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function clear() {
     if (timerRef.current) {
@@ -72,24 +82,39 @@ export function RevealCountdownDialog({
     }
   }
 
+  function clearCloseTimer() {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  }
+
   useEffect(() => {
     if (!open) {
       clear();
+      clearCloseTimer();
       return;
     }
+    setPhase("counting");
     setRemaining(seconds);
     timerRef.current = setInterval(() => {
       setRemaining((s) => {
         if (s <= 1) {
           clear();
+          // Fired the moment it hits 0, same as before — only the dialog's
+          // own close is delayed, never the actual reveal request.
           onConfirm();
-          onOpenChange(false);
+          setPhase("revealed");
+          closeTimerRef.current = setTimeout(() => onOpenChange(false), RESULT_DISPLAY_MS);
           return 0;
         }
         return s - 1;
       });
     }, 1000);
-    return clear;
+    return () => {
+      clear();
+      clearCloseTimer();
+    };
     // Deliberately re-armed only by `open` toggling, not by onConfirm/
     // onOpenChange identity — a parent re-render passing new (but
     // behaviorally identical) callback props must not restart the countdown
@@ -98,27 +123,35 @@ export function RevealCountdownDialog({
   }, [open, seconds]);
 
   function handleCancel() {
+    // Already resolving (revealed just fired, or a previous cancel already
+    // did) — the pending closeTimerRef will finish the job; a second Escape
+    // or outside-click here shouldn't restart or double-schedule anything.
+    if (phase !== "counting") return;
     clear();
-    onOpenChange(false);
-    // handleCancel only ever runs while the countdown is still live — the
-    // natural completion path above calls onConfirm/onOpenChange directly
-    // and never touches this function — so every call here really is a
-    // deliberate abort worth confirming back to the user.
-    toast({ title: t("revealCountdownDialog.abortedToast") });
+    setPhase("aborted");
+    closeTimerRef.current = setTimeout(() => onOpenChange(false), RESULT_DISPLAY_MS);
   }
 
   const progress = (seconds - remaining) / seconds;
   const ringColor = `hsl(var(${ringColorVar(progress)}))`;
-  const inDangerZone = progress >= YELLOW_UNTIL;
+  const inDangerZone = phase === "counting" && progress >= YELLOW_UNTIL;
 
   return (
     <Dialog open={open} onOpenChange={(next) => (!next ? handleCancel() : undefined)}>
       <DialogContent className="sm:max-w-sm text-center">
         <DialogHeader>
           <DialogTitle className="text-center flex items-center justify-center gap-1.5">
-            <Eye className="w-4 h-4 text-primary" /> {t("revealCountdownDialog.title")}
+            {phase === "counting" && (
+              <>
+                <Eye className="w-4 h-4 text-primary" /> {t("revealCountdownDialog.title")}
+              </>
+            )}
+            {phase === "aborted" && t("revealCountdownDialog.abortedMessage")}
+            {phase === "revealed" && t("revealCountdownDialog.revealedMessage")}
           </DialogTitle>
-          <DialogDescription className="text-center">{t("revealCountdownDialog.description")}</DialogDescription>
+          {phase === "counting" && (
+            <DialogDescription className="text-center">{t("revealCountdownDialog.description")}</DialogDescription>
+          )}
         </DialogHeader>
 
         <div className="py-2 flex flex-col items-center gap-4">
@@ -126,33 +159,50 @@ export function RevealCountdownDialog({
             className={`relative w-24 h-24 rounded-full flex items-center justify-center ${inDangerZone ? "policy-pulse" : ""}`}
             data-testid="reveal-countdown-ring"
           >
-            <svg className="absolute inset-0 -rotate-90" viewBox="0 0 100 100" aria-hidden>
-              <circle cx="50" cy="50" r={RADIUS} fill="none" stroke="hsl(var(--border))" strokeWidth="6" />
-              <circle
-                cx="50"
-                cy="50"
-                r={RADIUS}
-                fill="none"
-                stroke={ringColor}
-                strokeWidth="6"
-                strokeLinecap="round"
-                strokeDasharray={CIRCUMFERENCE}
-                strokeDashoffset={CIRCUMFERENCE * (1 - progress)}
-                style={{ transition: "stroke-dashoffset 1s linear, stroke 0.3s ease" }}
+            {phase === "counting" ? (
+              <>
+                <svg className="absolute inset-0 -rotate-90" viewBox="0 0 100 100" aria-hidden>
+                  <circle cx="50" cy="50" r={RADIUS} fill="none" stroke="hsl(var(--border))" strokeWidth="6" />
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r={RADIUS}
+                    fill="none"
+                    stroke={ringColor}
+                    strokeWidth="6"
+                    strokeLinecap="round"
+                    strokeDasharray={CIRCUMFERENCE}
+                    strokeDashoffset={CIRCUMFERENCE * (1 - progress)}
+                    style={{ transition: "stroke-dashoffset 1s linear, stroke 0.3s ease" }}
+                  />
+                </svg>
+                <span className="text-3xl font-serif font-bold text-foreground tabular-nums" data-testid="text-reveal-countdown-seconds">
+                  {remaining}
+                </span>
+              </>
+            ) : phase === "aborted" ? (
+              <XCircle className="w-12 h-12 text-muted-foreground" aria-hidden data-testid="reveal-aborted-icon" />
+            ) : (
+              <CheckCircle2
+                className="w-12 h-12"
+                style={{ color: "hsl(var(--success))" }}
+                aria-hidden
+                data-testid="reveal-confirmed-icon"
               />
-            </svg>
-            <span className="text-3xl font-serif font-bold text-foreground tabular-nums" data-testid="text-reveal-countdown-seconds">
-              {remaining}
-            </span>
+            )}
           </div>
-          <p className="text-sm text-muted-foreground" data-testid="text-reveal-countdown-message">
-            {t("revealCountdownDialog.message", { seconds: remaining })}
-          </p>
+          {phase === "counting" && (
+            <p className="text-sm text-muted-foreground" data-testid="text-reveal-countdown-message">
+              {t("revealCountdownDialog.message", { seconds: remaining })}
+            </p>
+          )}
         </div>
 
-        <Button variant="outline" className="w-full rounded-full" onClick={handleCancel} data-testid="button-stop-reveal">
-          {t("revealCountdownDialog.stopButton")}
-        </Button>
+        {phase === "counting" && (
+          <Button variant="outline" className="w-full rounded-full" onClick={handleCancel} data-testid="button-stop-reveal">
+            {t("revealCountdownDialog.stopButton")}
+          </Button>
+        )}
       </DialogContent>
     </Dialog>
   );

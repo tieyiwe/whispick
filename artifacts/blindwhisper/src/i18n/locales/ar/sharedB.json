@@ -9,7 +9,8 @@
     "description": "بمجرد حدوث ذلك، لا يمكن التراجع عنه — سيعرفون أنك أنت.",
     "message": "سيتم الكشف عن هويتك خلال {{seconds}} ثانية",
     "stopButton": "إيقاف الكشف الآن",
-    "abortedToast": "تم إيقاف الكشف"
+    "abortedMessage": "تم إيقاف الكشف",
+    "revealedMessage": "تم الكشف"
   },
   "installAppPrompt": {
     "dialogAriaLabel": "تثبيت Blind Whisper",

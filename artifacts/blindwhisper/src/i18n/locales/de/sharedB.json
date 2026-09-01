@@ -9,7 +9,8 @@
     "description": "Sobald es passiert, gibt es kein Zurück mehr — sie werden wissen, dass du es warst.",
     "message": "Deine Identität wird in {{seconds}}s enthüllt",
     "stopButton": "Enthüllung jetzt stoppen",
-    "abortedToast": "Enthüllung abgebrochen"
+    "abortedMessage": "Enthüllung abgebrochen",
+    "revealedMessage": "Enthüllt"
   },
   "installAppPrompt": {
     "dialogAriaLabel": "Blind Whisper installieren",

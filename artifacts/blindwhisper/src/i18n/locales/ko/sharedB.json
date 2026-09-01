@@ -9,7 +9,8 @@
     "description": "한번 밝혀지면 되돌릴 수 없어요 — 상대방이 당신인 줄 알게 됩니다.",
     "message": "{{seconds}}초 후 정체가 밝혀집니다",
     "stopButton": "지금 공개 중지",
-    "abortedToast": "공개가 중지되었습니다"
+    "abortedMessage": "공개가 중지되었습니다",
+    "revealedMessage": "공개됨"
   },
   "installAppPrompt": {
     "dialogAriaLabel": "Blind Whisper 설치",
