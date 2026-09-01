@@ -1251,6 +1251,40 @@ export interface AdminOnlineNowResponse {
   windowMinutes: number;
 }
 
+export interface AdminVisitorsOnlineResponse {
+  onlineCount: number;
+  /** Width of the live-visitor window this count was computed over, in seconds. */
+  windowSeconds: number;
+}
+
+export interface AdminVisitorCountryBreakdown {
+  /** "Unknown" when geolocation failed or was skipped (private/local IP), never null — see lib/visitorTracking.ts. */
+  country: string;
+  count: number;
+}
+
+export interface AdminVisitorDeviceBreakdown {
+  /** 'mobile' | 'tablet' | 'desktop' | 'unknown' — see lib/deviceType.ts. */
+  deviceType: string;
+  count: number;
+}
+
+export interface AdminVisitorSession {
+  /** @nullable */
+  country: string | null;
+  deviceType: string;
+  isSignedIn: boolean;
+  lastPingAt: string;
+}
+
+export interface AdminVisitorsResponse {
+  byCountry: AdminVisitorCountryBreakdown[];
+  byDevice: AdminVisitorDeviceBreakdown[];
+  /** The 50 most recently pinged sessions currently within the live window, newest first. */
+  recent: AdminVisitorSession[];
+  windowSeconds: number;
+}
+
 export type ComplianceReminderInputKind = typeof ComplianceReminderInputKind[keyof typeof ComplianceReminderInputKind];
 
 
@@ -1392,6 +1426,15 @@ export interface RecordUsageInput {
      * @maxItems 50
      */
   events: RecordUsageInputEventsItem[];
+}
+
+export interface VisitorPingInput {
+  /**
+     * The client-generated visitorId (lib/anonymousVisitor.ts) — only meaningful when signed out; a signed-in ping's account id wins even if this is also sent.
+     * @minLength 1
+     * @maxLength 100
+     */
+  visitorId?: string;
 }
 
 export interface FeatureUsageStat {

@@ -2513,6 +2513,43 @@ paths:
               schema:
                 $ref: "#/components/schemas/AdminOnlineNowResponse"
 
+  /admin/visitors/online:
+    get:
+      operationId: adminGetVisitorsOnline
+      tags: [admin]
+      summary: Live "currently on the platform" headcount, signed-in and anonymous combined (admin only)
+      description: >-
+        A cheap, index-backed count meant to be polled far more often than
+        GET /admin/visitors (the frontend polls this roughly every second) —
+        deliberately a bare number with no breakdown, so the fast poll stays
+        fast.
+      responses:
+        "200":
+          description: Live visitor count
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminVisitorsOnlineResponse"
+
+  /admin/visitors:
+    get:
+      operationId: adminGetVisitors
+      tags: [admin]
+      summary: Live visitor roster — country/device breakdowns and the most recent individual sessions (admin only)
+      description: >-
+        Everyone currently on the platform (same live window as
+        GET /admin/visitors/online), broken down by country and device
+        type, plus the 50 most recently pinged sessions for a live feed.
+        Heavier than the online-count endpoint, so the frontend polls this
+        on a slower cadence.
+      responses:
+        "200":
+          description: Live visitor roster
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminVisitorsResponse"
+
   /admin/users/compliance-reminder:
     post:
       operationId: adminSendComplianceReminder
@@ -3180,6 +3217,34 @@ paths:
       responses:
         "204":
           description: Recorded
+        "400":
+          description: Invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /public/visitor-ping:
+    post:
+      operationId: sendVisitorPing
+      tags: [visitors]
+      summary: Periodic live-presence heartbeat, signed-in or anonymous (internal analytics; anonymous allowed)
+      description: >-
+        Fire-and-forget from every open tab (see lib/visitorPing.ts on the
+        frontend) — upserts one row per visitor (keyed by account id when
+        signed in, otherwise the client-generated visitorId) recording
+        country (best-effort IP geolocation) and device type, so
+        GET /admin/visitors can show who's live right now. Never creates an
+        account or touches users.lastSeenAt; a missed ping just drops that
+        visitor out of the live count a little early, nothing more.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VisitorPingInput"
+      responses:
+        "204":
+          description: Recorded (or silently no-op'd if neither an account nor a visitorId was resolvable)
         "400":
           description: Invalid payload
           content:
@@ -6589,6 +6654,83 @@ components:
         - onlineCount
         - windowMinutes
 
+    AdminVisitorsOnlineResponse:
+      type: object
+      properties:
+        onlineCount:
+          type: integer
+        windowSeconds:
+          type: integer
+          description: Width of the live-visitor window this count was computed over, in seconds.
+      required:
+        - onlineCount
+        - windowSeconds
+
+    AdminVisitorCountryBreakdown:
+      type: object
+      properties:
+        country:
+          type: string
+          description: '"Unknown" when geolocation failed or was skipped (private/local IP), never null — see lib/visitorTracking.ts.'
+        count:
+          type: integer
+      required:
+        - country
+        - count
+
+    AdminVisitorDeviceBreakdown:
+      type: object
+      properties:
+        deviceType:
+          type: string
+          description: "'mobile' | 'tablet' | 'desktop' | 'unknown' — see lib/deviceType.ts."
+        count:
+          type: integer
+      required:
+        - deviceType
+        - count
+
+    AdminVisitorSession:
+      type: object
+      properties:
+        country:
+          type: ["string", "null"]
+        deviceType:
+          type: string
+        isSignedIn:
+          type: boolean
+        lastPingAt:
+          type: string
+      required:
+        - country
+        - deviceType
+        - isSignedIn
+        - lastPingAt
+
+    AdminVisitorsResponse:
+      type: object
+      properties:
+        byCountry:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminVisitorCountryBreakdown"
+        byDevice:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminVisitorDeviceBreakdown"
+        recent:
+          type: array
+          description: The 50 most recently pinged sessions currently within the live window, newest first.
+          items:
+            $ref: "#/components/schemas/AdminVisitorSession"
+        windowSeconds:
+          type: integer
+      required:
+        - byCountry
+        - byDevice
+        - recent
+        - windowSeconds
+
     ComplianceReminderInput:
       type: object
       properties:
@@ -6894,6 +7036,15 @@ components:
               - count
       required:
         - events
+
+    VisitorPingInput:
+      type: object
+      properties:
+        visitorId:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: The client-generated visitorId (lib/anonymousVisitor.ts) — only meaningful when signed out; a signed-in ping's account id wins even if this is also sent.
 
     FeatureUsageStat:
       type: object
