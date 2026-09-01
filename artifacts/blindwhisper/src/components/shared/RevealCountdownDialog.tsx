@@ -2,10 +2,27 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import { Eye } from "lucide-react";
 
 const RADIUS = 46;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+
+// Three zones instead of one flat primary-colored ring, so the ring itself
+// communicates urgency without anyone having to read the number: calm green
+// for the first half, gilded yellow as it gets closer, destructive red (with
+// the app's existing danger pulse) for the final stretch where backing out
+// is still possible but not for much longer. Both --success and --gilded
+// are already tuned as violet's complements (see index.css), so the zones
+// read as part of the same palette rather than a stock red/yellow/green.
+const GREEN_UNTIL = 0.5;
+const YELLOW_UNTIL = 0.75;
+
+function ringColorVar(progress: number): string {
+  if (progress < GREEN_UNTIL) return "--success";
+  if (progress < YELLOW_UNTIL) return "--gilded";
+  return "--destructive";
+}
 
 /**
  * Shared confirm-with-a-countdown step for every "Reveal Yourself" button in
@@ -44,6 +61,7 @@ export function RevealCountdownDialog({
   seconds?: number;
 }) {
   const { t } = useTranslation("sharedB");
+  const { toast } = useToast();
   const [remaining, setRemaining] = useState(seconds);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -82,9 +100,16 @@ export function RevealCountdownDialog({
   function handleCancel() {
     clear();
     onOpenChange(false);
+    // handleCancel only ever runs while the countdown is still live — the
+    // natural completion path above calls onConfirm/onOpenChange directly
+    // and never touches this function — so every call here really is a
+    // deliberate abort worth confirming back to the user.
+    toast({ title: t("revealCountdownDialog.abortedToast") });
   }
 
   const progress = (seconds - remaining) / seconds;
+  const ringColor = `hsl(var(${ringColorVar(progress)}))`;
+  const inDangerZone = progress >= YELLOW_UNTIL;
 
   return (
     <Dialog open={open} onOpenChange={(next) => (!next ? handleCancel() : undefined)}>
@@ -97,7 +122,10 @@ export function RevealCountdownDialog({
         </DialogHeader>
 
         <div className="py-2 flex flex-col items-center gap-4">
-          <div className="relative w-24 h-24 flex items-center justify-center" data-testid="reveal-countdown-ring">
+          <div
+            className={`relative w-24 h-24 rounded-full flex items-center justify-center ${inDangerZone ? "policy-pulse" : ""}`}
+            data-testid="reveal-countdown-ring"
+          >
             <svg className="absolute inset-0 -rotate-90" viewBox="0 0 100 100" aria-hidden>
               <circle cx="50" cy="50" r={RADIUS} fill="none" stroke="hsl(var(--border))" strokeWidth="6" />
               <circle
@@ -105,12 +133,12 @@ export function RevealCountdownDialog({
                 cy="50"
                 r={RADIUS}
                 fill="none"
-                stroke="hsl(var(--primary))"
+                stroke={ringColor}
                 strokeWidth="6"
                 strokeLinecap="round"
                 strokeDasharray={CIRCUMFERENCE}
                 strokeDashoffset={CIRCUMFERENCE * (1 - progress)}
-                style={{ transition: "stroke-dashoffset 1s linear" }}
+                style={{ transition: "stroke-dashoffset 1s linear, stroke 0.3s ease" }}
               />
             </svg>
             <span className="text-3xl font-serif font-bold text-foreground tabular-nums" data-testid="text-reveal-countdown-seconds">
