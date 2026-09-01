@@ -7,10 +7,11 @@ const SUPPORT_EMAIL = "support@blindwhisper.com";
 // flow/opt-in, verbatim sample messages, frequency, and opt-out — without
 // having to piece it together from Section 1.7/1.10 of the Privacy Policy
 // and Section 5/7 of the Terms. Every sample message below must stay a
-// byte-for-byte copy of what lib/sms.ts actually sends (COMPLIANCE_FOOTER,
-// whisperLinkSmsBody, inviteSmsBody, textWhispGuestSmsBody) — that
-// consistency is exactly what a rejected registration is checked against on
-// resubmission.
+// byte-for-byte copy of what lib/sms.ts actually sends (COMPLIANCE_FOOTER
+// plus lib/copy.ts's SMS_WHISPER_LINK_LEAD/SMS_INVITE_LEAD/
+// SMS_TEXT_WHISP_LEAD, via whisperLinkSmsBody/inviteSmsBody/
+// textWhispGuestSmsBody) — that consistency is exactly what a rejected
+// registration is checked against on resubmission.
 export function SmsTerms() {
   return (
     <LegalLayout title="SMS Messaging Program" updatedDate="August 18, 2026">
@@ -18,16 +19,18 @@ export function SmsTerms() {
 
       <LegalSection heading="What this program is">
         <p>
-          Blind Whisper is an anonymous video-recommendation and messaging platform. A registered, signed-in Blind
-          Whisper user (a "Sender") can choose a specific phone number belonging to someone they know (a
-          "Recipient") and ask Blind Whisper to deliver a message to that number on their behalf — a link to a
-          video recommendation, a short anonymous text note, or an invitation to join Blind Whisper. Blind Whisper
-          delivers that message by SMS when the number isn't already a verified Blind Whisper account.
+          Blind Whisper is a software platform operated by TIBLOGICS, offering free and paid subscription plans.
+          A registered, signed-in customer ("Sender") uses a built-in platform feature to notify a specific phone
+          number they choose (a "Recipient") about content shared through our software — a video recommendation,
+          a short note, or an account invitation. Our software generates and sends every message from a fixed set
+          of templates; a Sender never composes free-form text that goes out over SMS.
         </p>
         <p>
-          Blind Whisper itself does not choose who receives a message, and never sends marketing, advertising, or
-          promotional messages about Blind Whisper to a phone number. Every message is triggered by one specific
-          Sender's one specific action, addressed to one specific Recipient of that Sender's choosing.
+          This is a one-way notification, not a text conversation: a Recipient engages with what was shared by
+          opening the link and using the Blind Whisper web app, never by replying to the SMS thread itself — our
+          system does not read or act on inbound message content beyond the carrier-mandated STOP/HELP keywords.
+          Blind Whisper itself never selects who receives a message and never sends marketing, advertising, or
+          promotional messages to a phone number.
         </p>
       </LegalSection>
 
@@ -36,7 +39,7 @@ export function SmsTerms() {
           The Recipient does not sign up, opt in, or give Blind Whisper their phone number before receiving a first
           message — the Sender does, entirely from within the Blind Whisper web app, using a number the Sender
           already has. Consent is captured from the Sender, not collected from the Recipient in advance, because
-          the Sender is our platform's user and the party accountable for the send:
+          the Sender is our platform's registered customer and the party accountable for the send:
         </p>
         <ul className="list-disc pl-5 space-y-1">
           <li>Every Sender creates a Blind Whisper account and, in doing so, agrees to our Terms of Service.</li>
@@ -50,12 +53,17 @@ export function SmsTerms() {
             consented to hearing from unknown parties, or who has asked not to be contacted, on pain of account
             termination.
           </li>
+          <li>
+            At the exact point in the app where a Sender enters a Recipient's phone number, the Sender must also
+            check a required, unchecked-by-default box reading: "I confirm I have this person's permission to
+            receive a text from me via Blind Whisper." The send action stays disabled until this is checked.
+          </li>
         </ul>
         <p>There are three ways a message reaches a Recipient by SMS:</p>
         <ol className="list-decimal pl-5 space-y-1">
           <li><strong>Whisper Link / Whisper Group</strong> — a Sender addresses a video recommendation to the Recipient's phone number.</li>
           <li><strong>Invite</strong> — a Sender invites someone they know to create a Blind Whisper account.</li>
-          <li><strong>Text Whisp</strong> — a Sender sends a short (up to 260-character) anonymous text note to a phone number that isn't already a verified Blind Whisper account.</li>
+          <li><strong>Text Whisp</strong> — a Sender sends a short (up to 260-character) note to a phone number that isn't already a verified Blind Whisper account.</li>
         </ol>
         <p>
           After that first message, the Recipient is in full control of any further contact: replying{" "}
@@ -70,22 +78,18 @@ export function SmsTerms() {
       <LegalSection heading="Sample messages">
         <p>These are sent verbatim — nothing is added or removed per Recipient beyond the link itself:</p>
         <div className="rounded-lg border border-border/50 bg-muted/30 p-4 font-mono text-xs sm:text-sm whitespace-pre-wrap">
-          Someone who cares about you thought you needed to see this 👀{"\n"}
+          Blind Whisper: Someone you know shared a video with you.{"\n"}
           https://blindwhisper.com/w/AbC123XyZ{"\n"}
-          — sent anonymously via Blind Whisper{"\n"}
           Reply STOP to opt out, HELP for help. Msg & data rates may apply.
         </div>
         <div className="rounded-lg border border-border/50 bg-muted/30 p-4 font-mono text-xs sm:text-sm whitespace-pre-wrap">
-          Someone who cares about you is inviting you to install Blind Whisper — for honest conversations without
-          the awkwardness, kept confidential and anonymous.{"\n"}
+          Blind Whisper: Someone you know invited you to join Blind Whisper.{"\n"}
           https://blindwhisper.com/invite/AbC123XyZ{"\n"}
-          — sent anonymously via Blind Whisper{"\n"}
           Reply STOP to opt out, HELP for help. Msg & data rates may apply.
         </div>
         <div className="rounded-lg border border-border/50 bg-muted/30 p-4 font-mono text-xs sm:text-sm whitespace-pre-wrap">
-          You've received an anonymous Text Whisp on Blind Whisper — a short note just for you.{"\n"}
+          Blind Whisper: You have a new message on Blind Whisper.{"\n"}
           https://blindwhisper.com/tw/AbC123XyZ{"\n"}
-          — sent anonymously via Blind Whisper{"\n"}
           Reply STOP to opt out, HELP for help. Msg & data rates may apply.
         </div>
       </LegalSection>

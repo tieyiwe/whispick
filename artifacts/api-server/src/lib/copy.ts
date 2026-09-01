@@ -104,6 +104,21 @@ export function textWhispRevealRespondedHookLine(accepted: boolean): string {
 export const TEXT_WHISP_GUEST_HOOK_LINE =
   "You've received an anonymous Text Whisp on Blind Whisper — a short note just for you.";
 
+// SMS-only compliant leads for A2P 10DLC — deliberately separate from the
+// HOOK_LINE family above, which also drives in-app notification bodies and
+// public-page copy and varies per trigger (reminder/group/reply/reveal —
+// see reminderHookLine/groupHookLine/newReplyHookLine/revealRequestHookLine).
+// A carrier-reviewed SMS body needs ONE fixed, brand-led, third-person
+// template per delivery type used for every send of that type — variant
+// wording that was never registered as its own sample message is exactly
+// what got this app's last A2P submission rejected. Email and in-app still
+// get the fuller, varying hookLine copy; only the SMS channel — the one a
+// carrier actually reviews — is pinned to these.
+export const SMS_WHISPER_LINK_LEAD = "Blind Whisper: Someone you know shared a video with you.";
+export const SMS_INVITE_LEAD = "Blind Whisper: Someone you know invited you to join Blind Whisper.";
+export const SMS_TEXT_WHISP_LEAD = "Blind Whisper: You have a new message on Blind Whisper.";
+export const SMS_DEBATE_TOPIC_WHISP_LEAD = "Blind Whisper: Someone you know shared a discussion topic with you.";
+
 // The Open Graph description for a shared Whisper Box link (routes/
 // whisperBoxLink.ts's GET /wb/:handle) — what shows up in the link-preview
 // card when someone pastes their link into iMessage/Instagram/WhatsApp/etc.

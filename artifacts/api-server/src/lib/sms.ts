@@ -1,5 +1,5 @@
 import { logger } from "./logger";
-import { HOOK_LINE, INVITE_HOOK_LINE, TEXT_WHISP_GUEST_HOOK_LINE, debateTopicWhispHookLine } from "./copy";
+import { SMS_WHISPER_LINK_LEAD, SMS_INVITE_LEAD, SMS_TEXT_WHISP_LEAD, SMS_DEBATE_TOPIC_WHISP_LEAD } from "./copy";
 import { logDeliveryAttempt, type DeliveryLogContext } from "./deliveryLog";
 
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
@@ -118,34 +118,39 @@ export async function sendWhatsApp(to: string, linkUrl: string, logCtx: Delivery
 // carrier compliance regardless.
 const COMPLIANCE_FOOTER = "Reply STOP to opt out, HELP for help. Msg & data rates may apply.";
 
-export function whisperLinkSmsBody(publicUrl: string, hookLine: string = HOOK_LINE): string {
-  return `${hookLine}\n${publicUrl}\n— sent anonymously via Blind Whisper\n${COMPLIANCE_FOOTER}`;
+// Deliberately ignores whatever hookLine a caller (deliver.ts's
+// deliverWhisperLink) is using for the email/in-app copy of this same
+// notification — see SMS_WHISPER_LINK_LEAD's own comment for why the SMS
+// channel specifically is pinned to one fixed, compliant template instead
+// of varying by trigger (initial send / reminder / group / reply / reveal).
+export function whisperLinkSmsBody(publicUrl: string): string {
+  return `${SMS_WHISPER_LINK_LEAD}\n${publicUrl}\n${COMPLIANCE_FOOTER}`;
 }
 
-// Anonymous invite-a-friend (routes/invites.ts) — same structure as
-// whisperLinkSmsBody above (product's required hook line, link, compliance
-// footer), just pointed at the invite landing page instead of a whisp.
+// Invite-a-friend (routes/invites.ts) — same structure as
+// whisperLinkSmsBody above (fixed compliant lead, link, compliance footer),
+// just pointed at the invite landing page instead of a whisp.
 export function inviteSmsBody(inviteUrl: string): string {
-  return `${INVITE_HOOK_LINE}\n${inviteUrl}\n— sent anonymously via Blind Whisper\n${COMPLIANCE_FOOTER}`;
+  return `${SMS_INVITE_LEAD}\n${inviteUrl}\n${COMPLIANCE_FOOTER}`;
 }
 
 // Text Whisp guest delivery (routes/textWhisps.ts) — sent when the recipient
 // phone number didn't match a known, OTP-verified Blind Whisper account at
 // send time, so there's no in-app notification to fall back to (see
 // lib/deliver.ts's findVerifiedRecipient / deliverInApp). Same
-// hook-line/link/compliance-footer shape as whisperLinkSmsBody/inviteSmsBody
+// lead/link/compliance-footer shape as whisperLinkSmsBody/inviteSmsBody
 // above, pointed at the public Text Whisp landing page instead.
 export function textWhispGuestSmsBody(publicUrl: string): string {
-  return `${TEXT_WHISP_GUEST_HOOK_LINE}\n${publicUrl}\n— sent anonymously via Blind Whisper\n${COMPLIANCE_FOOTER}`;
+  return `${SMS_TEXT_WHISP_LEAD}\n${publicUrl}\n${COMPLIANCE_FOOTER}`;
 }
 
 // Debate Now topic whisp (routes/debateTopicWhisps.ts) — same
-// hook-line/link/compliance-footer shape as the others above, plus the
-// sender's optional note inserted between the hook line and the link when
-// present. Deliberately doesn't include the topic text itself (keeps the
-// SMS short — the topic is right there once they open the link, same
-// restraint whisperLinkSmsBody shows toward a whisp's video title).
+// lead/link/compliance-footer shape as the others above, plus the sender's
+// optional note inserted between the lead and the link when present.
+// Deliberately doesn't include the topic text itself (keeps the SMS short —
+// the topic is right there once they open the link, same restraint
+// whisperLinkSmsBody shows toward a whisp's video title).
 export function debateTopicWhispSmsBody(publicUrl: string, note?: string | null): string {
   const noteLine = note ? `\n"${note}"` : "";
-  return `${debateTopicWhispHookLine()}${noteLine}\n${publicUrl}\n— sent anonymously via Blind Whisper\n${COMPLIANCE_FOOTER}`;
+  return `${SMS_DEBATE_TOPIC_WHISP_LEAD}${noteLine}\n${publicUrl}\n${COMPLIANCE_FOOTER}`;
 }
