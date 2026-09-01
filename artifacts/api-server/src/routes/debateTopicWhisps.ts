@@ -15,6 +15,7 @@ import { sendDebateTopicWhispLimiter } from "../lib/rateLimit";
 import { findVerifiedRecipient, findVerifiedRecipientByEmail, deliverInApp } from "../lib/deliver";
 import { logger } from "../lib/logger";
 import { notRetracted, topicUrl } from "./debateTopics";
+import { debateTopicShareUrl } from "./debateTopicLink";
 
 const router = Router();
 
@@ -35,7 +36,11 @@ const CHANNELS = ["email", "sms", "whatsapp"] as const;
 // same anti-latency posture every other real Twilio/Resend round-trip in
 // this app takes.
 async function dispatchDebateTopicWhisp(whisp: DebateTopicWhisp, topicText: string, appUrl: string): Promise<void> {
-  const topicPageUrl = `${appUrl}${topicUrl(whisp.debateTopicId)}`;
+  // The crawler-aware link (real Open Graph tags for the topic, see
+  // routes/debateTopicLink.ts), not topicUrl()'s bare in-app path — this URL
+  // goes out over SMS/WhatsApp/email, where it very often gets unfurled by
+  // the recipient's own client before anyone taps it.
+  const topicPageUrl = debateTopicShareUrl(appUrl, whisp.debateTopicId);
   const logCtx = { whispId: null, purpose: "debate_topic_whisp" as const };
   const hookLine = debateTopicWhispHookLine();
   const notifyTitle = "New Debate Now topic for you 🗣️";

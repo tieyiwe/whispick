@@ -97,7 +97,11 @@
     "sendWhispDialog": {
       "title": "이 주제 Whisp하기",
       "description": "익명으로 누군가에게 보내서 토론에 참여하게 하세요.",
-      "channels": { "email": "이메일", "sms": "문자", "whatsapp": "WhatsApp" },
+      "channels": {
+        "email": "이메일",
+        "sms": "문자",
+        "whatsapp": "WhatsApp"
+      },
       "emailPlaceholder": "상대방 이메일",
       "phonePlaceholder": "상대방 전화번호",
       "pickFromContactsLabel": "연락처에서 선택",
@@ -113,6 +117,16 @@
       "toastSendFailed": "보내지 못했어요 — 다시 시도해 주세요",
       "toastNoEmailOnContact": "이 연락처에는 이메일이 없어요",
       "toastNoPhoneOnContact": "이 연락처에는 전화번호가 없어요"
+    },
+    "anonymousExplainer": {
+      "title": "익명으로 게시하고 답글 달기",
+      "body": "토론에 참여하는 데 계정이 필요하지 않아요 — 언제든 익명으로 게시하고 답글을 달 수 있어요. 원할 때 무료 계정을 만들어 나만의 Whisperer 정체성으로 팔로워를 늘려보세요."
+    },
+    "postSignupNudge": {
+      "title": "댓글이 등록됐어요!",
+      "body": "누군가 반응을 보일 때 알려드릴 수 있도록 무료 계정을 만들어 보세요.",
+      "cta": "무료 계정 만들기",
+      "dismissAria": "닫기"
     }
   },
   "debateTopics": {

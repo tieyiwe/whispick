@@ -99,7 +99,11 @@
     "sendWhispDialog": {
       "title": "Whisper ce sujet",
       "description": "Envoie-le à quelqu'un anonymement, pour qu'il rejoigne le débat.",
-      "channels": { "email": "E-mail", "sms": "SMS", "whatsapp": "WhatsApp" },
+      "channels": {
+        "email": "E-mail",
+        "sms": "SMS",
+        "whatsapp": "WhatsApp"
+      },
       "emailPlaceholder": "son@email.com",
       "phonePlaceholder": "Son numéro de téléphone",
       "pickFromContactsLabel": "Choisir dans les contacts",
@@ -115,6 +119,16 @@
       "toastSendFailed": "Impossible d'envoyer — réessaie",
       "toastNoEmailOnContact": "Ce contact n'a pas d'adresse e-mail",
       "toastNoPhoneOnContact": "Ce contact n'a pas de numéro de téléphone"
+    },
+    "anonymousExplainer": {
+      "title": "Publie et réponds anonymement",
+      "body": "Pas besoin de compte pour rejoindre le débat — publie et réponds anonymement à tout moment. Crée un compte gratuit quand tu veux pour te constituer des abonnés avec ta propre identité Whisperer."
+    },
+    "postSignupNudge": {
+      "title": "Ton commentaire est publié !",
+      "body": "Crée un compte gratuit pour qu'on puisse te prévenir dès que quelqu'un y réagit.",
+      "cta": "Créer un compte gratuit",
+      "dismissAria": "Fermer"
     }
   },
   "debateTopics": {
