@@ -45,11 +45,11 @@
     "sendButton": "إرسال",
     "revealYourselfButton": "اكشف عن نفسك",
     "revealRequestSentTitle": "تم إرسال طلب الكشف",
-    "revealAcceptedMessage": "وافق الطرف الآخر! يمكنك الآن إخباره من أنت — أرسل ردًا في الأعلى.",
+    "revealAcceptedMessage": "وافق الطرف الآخر! يمكنه الآن أن يرى أنك أنت.",
     "revealDeclinedMessage": "رفض الطرف الآخر الكشف.",
     "revealWaitingMessage": "بانتظار رد الطرف الآخر...",
     "revealAskMessage": "الشخص الذي أرسل لك هذه يريد الكشف عن هويته. أتسمح بذلك؟",
-    "revealPermissionNote": "هذا يمنح الإذن فقط — سيظل عليه أن يخبرك بنفسه من هو.",
+    "revealPermissionNote": "بمجرد الموافقة، ستتمكن من معرفة من هو.",
     "declineButton": "رفض",
     "acceptButton": "قبول",
     "toastReplyFailed": "تعذّر إرسال الرد",
@@ -66,7 +66,14 @@
       "sent": "تم الإرسال",
       "read": "تمت القراءة",
       "replied": "تم الرد"
-    }
+    },
+    "discoverPrompt": "وافق الطرف الآخر على الكشف عن نفسه. هل أنت مستعد لمعرفة من هو؟",
+    "discoverButton": "اكتشف",
+    "discovering": "جارٍ الكشف…",
+    "revealedLabel": "كان",
+    "revealedNameFallback": "شخص تعرفه",
+    "keepGoingPrompt": "قل مرحبًا واستمر في المحادثة!",
+    "replyNowButton": "الرد الآن"
   },
   "textWhispsList": {
     "heading": "Text Whisps",

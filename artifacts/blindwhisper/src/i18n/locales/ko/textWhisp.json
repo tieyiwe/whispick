@@ -45,11 +45,11 @@
     "sendButton": "보내기",
     "revealYourselfButton": "내 정체 밝히기",
     "revealRequestSentTitle": "공개 요청을 보냈어요",
-    "revealAcceptedMessage": "수락했어요! 이제 위에서 답장을 보내 자신이 누구인지 알려줄 수 있어요.",
+    "revealAcceptedMessage": "수락했어요! 이제 상대방이 당신인 걸 알 수 있어요.",
     "revealDeclinedMessage": "공개 요청을 거절했어요.",
     "revealWaitingMessage": "응답을 기다리는 중...",
     "revealAskMessage": "이걸 보낸 사람이 자신의 정체를 밝히고 싶어해요. 허용할까요?",
-    "revealPermissionNote": "이건 허락만 하는 거예요 — 상대방은 여전히 직접 정체를 알려줘야 해요.",
+    "revealPermissionNote": "수락하면 상대방이 누구인지 볼 수 있어요.",
     "declineButton": "거절",
     "acceptButton": "수락",
     "toastReplyFailed": "답장 전송에 실패했어요",
@@ -66,7 +66,14 @@
       "sent": "보냄",
       "read": "읽음",
       "replied": "답장함"
-    }
+    },
+    "discoverPrompt": "상대방이 정체를 공개하기로 동의했어요. 누구인지 알아볼 준비 되셨나요?",
+    "discoverButton": "공개하기",
+    "discovering": "공개 중…",
+    "revealedLabel": "바로",
+    "revealedNameFallback": "아는 사람",
+    "keepGoingPrompt": "인사를 건네고 대화를 이어가 보세요!",
+    "replyNowButton": "지금 답장하기"
   },
   "textWhispsList": {
     "heading": "문자 Whisps",

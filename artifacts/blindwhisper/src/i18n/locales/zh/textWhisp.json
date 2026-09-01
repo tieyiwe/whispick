@@ -45,11 +45,11 @@
     "sendButton": "发送",
     "revealYourselfButton": "揭晓身份",
     "revealRequestSentTitle": "揭晓请求已发送",
-    "revealAcceptedMessage": "对方同意了！现在你可以告诉他们你是谁了——在上方发送一条回复。",
+    "revealAcceptedMessage": "对方同意了！现在对方可以看到是你了。",
     "revealDeclinedMessage": "对方拒绝了揭晓身份。",
     "revealWaitingMessage": "等待对方回应……",
     "revealAskMessage": "给你发这条消息的人想要揭晓身份。是否允许？",
-    "revealPermissionNote": "这只是给予许可——对方仍然需要亲口告诉你他们是谁。",
+    "revealPermissionNote": "同意后，你就能看到对方是谁了。",
     "declineButton": "拒绝",
     "acceptButton": "接受",
     "toastReplyFailed": "回复发送失败",
@@ -66,7 +66,14 @@
       "sent": "已发送",
       "read": "已读",
       "replied": "已回复"
-    }
+    },
+    "discoverPrompt": "对方同意揭晓身份了。准备好知道是谁了吗？",
+    "discoverButton": "揭晓",
+    "discovering": "揭晓中…",
+    "revealedLabel": "是",
+    "revealedNameFallback": "你认识的人",
+    "keepGoingPrompt": "打个招呼，让对话继续吧！",
+    "replyNowButton": "立即回复"
   },
   "textWhispsList": {
     "heading": "文字 Whisps",

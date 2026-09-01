@@ -657,7 +657,8 @@ export const ListTextWhispsResponseItem = zod.object({
   "scheduledAt": zod.string().nullish().describe('Set only for a \"schedule for later\" send — delivery (the in-app notify or guest SMS) is held back until this time. Null for every immediately-sent Text Whisp.'),
   "readAt": zod.string().nullish(),
   "createdAt": zod.string(),
-  "otherPartyTyping": zod.boolean().describe('True only while the OTHER party (never the caller\'s own ping echoed back) sent a typing ping within the last ~8s. See POST \/text-whisps\/{id}\/typing.')
+  "otherPartyTyping": zod.boolean().describe('True only while the OTHER party (never the caller\'s own ping echoed back) sent a typing ping within the last ~8s. See POST \/text-whisps\/{id}\/typing.'),
+  "revealedSenderName": zod.string().nullable().describe('The sender\'s real account name (users.fullName) — set ONLY when the caller is this Text Whisp\'s recipient AND revealAccepted is true. This is the one deliberate, consent-gated exception to the app\'s anonymity guarantee; null in every other case (including for the sender\'s own view of their own message, and for a recipient who hasn\'t accepted yet), regardless of what fullName is actually set to.')
 })
 export const ListTextWhispsResponse = zod.array(ListTextWhispsResponseItem)
 
@@ -694,7 +695,8 @@ export const CreateTextWhispResponse = zod.object({
   "scheduledAt": zod.string().nullish().describe('Set only for a \"schedule for later\" send — delivery (the in-app notify or guest SMS) is held back until this time. Null for every immediately-sent Text Whisp.'),
   "readAt": zod.string().nullish(),
   "createdAt": zod.string(),
-  "otherPartyTyping": zod.boolean().describe('True only while the OTHER party (never the caller\'s own ping echoed back) sent a typing ping within the last ~8s. See POST \/text-whisps\/{id}\/typing.')
+  "otherPartyTyping": zod.boolean().describe('True only while the OTHER party (never the caller\'s own ping echoed back) sent a typing ping within the last ~8s. See POST \/text-whisps\/{id}\/typing.'),
+  "revealedSenderName": zod.string().nullable().describe('The sender\'s real account name (users.fullName) — set ONLY when the caller is this Text Whisp\'s recipient AND revealAccepted is true. This is the one deliberate, consent-gated exception to the app\'s anonymity guarantee; null in every other case (including for the sender\'s own view of their own message, and for a recipient who hasn\'t accepted yet), regardless of what fullName is actually set to.')
 })
 
 
@@ -726,7 +728,8 @@ export const GetTextWhispResponse = zod.object({
   "scheduledAt": zod.string().nullish().describe('Set only for a \"schedule for later\" send — delivery (the in-app notify or guest SMS) is held back until this time. Null for every immediately-sent Text Whisp.'),
   "readAt": zod.string().nullish(),
   "createdAt": zod.string(),
-  "otherPartyTyping": zod.boolean().describe('True only while the OTHER party (never the caller\'s own ping echoed back) sent a typing ping within the last ~8s. See POST \/text-whisps\/{id}\/typing.')
+  "otherPartyTyping": zod.boolean().describe('True only while the OTHER party (never the caller\'s own ping echoed back) sent a typing ping within the last ~8s. See POST \/text-whisps\/{id}\/typing.'),
+  "revealedSenderName": zod.string().nullable().describe('The sender\'s real account name (users.fullName) — set ONLY when the caller is this Text Whisp\'s recipient AND revealAccepted is true. This is the one deliberate, consent-gated exception to the app\'s anonymity guarantee; null in every other case (including for the sender\'s own view of their own message, and for a recipient who hasn\'t accepted yet), regardless of what fullName is actually set to.')
 }),
   "replies": zod.array(zod.object({
   "id": zod.string(),
@@ -839,7 +842,8 @@ export const RequestTextWhispRevealResponse = zod.object({
   "scheduledAt": zod.string().nullish().describe('Set only for a \"schedule for later\" send — delivery (the in-app notify or guest SMS) is held back until this time. Null for every immediately-sent Text Whisp.'),
   "readAt": zod.string().nullish(),
   "createdAt": zod.string(),
-  "otherPartyTyping": zod.boolean().describe('True only while the OTHER party (never the caller\'s own ping echoed back) sent a typing ping within the last ~8s. See POST \/text-whisps\/{id}\/typing.')
+  "otherPartyTyping": zod.boolean().describe('True only while the OTHER party (never the caller\'s own ping echoed back) sent a typing ping within the last ~8s. See POST \/text-whisps\/{id}\/typing.'),
+  "revealedSenderName": zod.string().nullable().describe('The sender\'s real account name (users.fullName) — set ONLY when the caller is this Text Whisp\'s recipient AND revealAccepted is true. This is the one deliberate, consent-gated exception to the app\'s anonymity guarantee; null in every other case (including for the sender\'s own view of their own message, and for a recipient who hasn\'t accepted yet), regardless of what fullName is actually set to.')
 })
 
 

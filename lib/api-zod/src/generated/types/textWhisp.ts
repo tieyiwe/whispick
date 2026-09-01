@@ -34,4 +34,9 @@ export interface TextWhisp {
   createdAt: string;
   /** True only while the OTHER party (never the caller's own ping echoed back) sent a typing ping within the last ~8s. See POST /text-whisps/{id}/typing. */
   otherPartyTyping: boolean;
+  /**
+     * The sender's real account name (users.fullName) — set ONLY when the caller is this Text Whisp's recipient AND revealAccepted is true. This is the one deliberate, consent-gated exception to the app's anonymity guarantee; null in every other case (including for the sender's own view of their own message, and for a recipient who hasn't accepted yet), regardless of what fullName is actually set to.
+     * @nullable
+     */
+  revealedSenderName: string | null;
 }

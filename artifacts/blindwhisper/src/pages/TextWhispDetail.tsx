@@ -37,7 +37,8 @@ import { ReplyThread, ThreadComposer, type ThreadReply } from "@/components/shar
 import { TimelineTrack, type TimelineStepData } from "@/components/shared/DeliveryTimelineTrack";
 import { RevealCountdownDialog } from "@/components/shared/RevealCountdownDialog";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Eye, Loader2, MessageSquare, Trash2, Check, X, ChevronDown, CalendarClock } from "lucide-react";
+import { ArrowLeft, Eye, Loader2, MessageSquare, Trash2, Check, X, ChevronDown, CalendarClock, Sparkles } from "lucide-react";
+import confetti from "canvas-confetti";
 
 // A reply that arrives while the page is open should feel instant, the way
 // WhatsApp does, not like a page you have to leave and re-enter — and the
@@ -53,6 +54,11 @@ const LIVE_POLL_MS = 4_000;
 // noticeably fresher, just noisier.
 const TYPING_PING_THROTTLE_MS = 3_000;
 const REPLY_MAX_LENGTH = 260;
+// How long the "tap to discover" button sits in its own loading state before
+// the name actually appears — the data (revealedSenderName) is already in
+// hand from the GET that landed this page, so this isn't a network wait,
+// it's a deliberately manufactured beat of suspense before the payoff.
+const DISCOVER_SUSPENSE_MS = 1400;
 
 export function TextWhispDetail() {
   const { id } = useParams<{ id: string }>();
@@ -65,6 +71,9 @@ export function TextWhispDetail() {
   const [opened, setOpened] = useState(false);
   const [timelineOpen, setTimelineOpen] = useState(true);
   const [revealCountdownOpen, setRevealCountdownOpen] = useState(false);
+  const [discovering, setDiscovering] = useState(false);
+  const [identityRevealed, setIdentityRevealed] = useState(false);
+  const discoverButtonRef = useRef<HTMLButtonElement>(null);
 
   const { data: profile } = useGetUserProfile();
   // Polled while this page is open — see LIVE_POLL_MS above — so a reply (or
@@ -241,6 +250,43 @@ export function TextWhispDetail() {
         onError: () => toast({ title: t("textWhispDetail.toastRespondFailed"), variant: "destructive" }),
       },
     );
+  }
+
+  // The recipient has already consented (revealAccepted) and the server has
+  // already sent revealedSenderName down with this page's own data — so this
+  // isn't fetching anything, it's staging the reveal as its own deliberate
+  // moment instead of just printing a name inline the instant consent is
+  // given. The button stays in a loading state for DISCOVER_SUSPENSE_MS
+  // before the name appears alongside the confetti burst.
+  function handleDiscoverSender() {
+    if (discovering || identityRevealed) return;
+    setDiscovering(true);
+    setTimeout(() => {
+      setDiscovering(false);
+      setIdentityRevealed(true);
+      const rect = discoverButtonRef.current?.getBoundingClientRect();
+      confetti({
+        particleCount: 90,
+        spread: 75,
+        startVelocity: 38,
+        origin: rect
+          ? { x: (rect.left + rect.width / 2) / window.innerWidth, y: (rect.top + rect.height / 2) / window.innerHeight }
+          : { y: 0.6 },
+        colors: ["#7C5CFC", "#FF6B6B", "#a78bfa", "#F5F0E8"],
+        disableForReducedMotion: true,
+      });
+    }, DISCOVER_SUSPENSE_MS);
+  }
+
+  // Sends focus to the reply composer already rendered further up this same
+  // page (see the "Replies" card), rather than threading a ref down through
+  // ReplyThread/ThreadComposer for what's a single opportunistic nudge — its
+  // Textarea's data-testid is already a stable, unique selector on this page.
+  function handleFocusReplyComposer() {
+    const el = document.querySelector<HTMLTextAreaElement>('[data-testid="text-whisp-composer-input"]');
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.focus();
   }
 
   function handleDelete() {
@@ -508,6 +554,58 @@ export function TextWhispDetail() {
                       <Check className="w-3.5 h-3.5 mr-1" /> {t("textWhispDetail.acceptButton")}
                     </Button>
                   </div>
+                </CardContent>
+              </Card>
+            )}
+            {/* The actual payoff — consent (revealAccepted) was already given
+                above, but the name itself only appears once tapped, so
+                accepting and discovering stay two distinct beats instead of
+                one. identityRevealed is local UI state, not server state: a
+                refresh re-arms the suspense, since the server already sends
+                revealedSenderName down every time this page loads and there's
+                no reason to force everyone through the animation exactly
+                once ever. */}
+            {isRecipient && textWhisp.revealAccepted === true && (
+              <Card className="bg-primary/10 border-primary/20 overflow-hidden">
+                <CardContent className="p-5 text-center space-y-3">
+                  {!identityRevealed ? (
+                    <>
+                      <Eye className="w-6 h-6 text-primary mx-auto" />
+                      <p className="text-sm font-medium text-foreground">{t("textWhispDetail.discoverPrompt")}</p>
+                      <Button
+                        ref={discoverButtonRef}
+                        onClick={handleDiscoverSender}
+                        disabled={discovering}
+                        className="rounded-full"
+                        data-testid="button-discover-sender"
+                      >
+                        {discovering ? (
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        ) : (
+                          <Sparkles className="w-4 h-4 mr-2" />
+                        )}
+                        {discovering ? t("textWhispDetail.discovering") : t("textWhispDetail.discoverButton")}
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                        {t("textWhispDetail.revealedLabel")}
+                      </p>
+                      <p className="text-2xl font-serif font-bold text-foreground" data-testid="text-revealed-sender-name">
+                        {textWhisp.revealedSenderName ?? t("textWhispDetail.revealedNameFallback")}
+                      </p>
+                      <p className="text-sm text-muted-foreground">{t("textWhispDetail.keepGoingPrompt")}</p>
+                      <Button
+                        variant="outline"
+                        className="rounded-full"
+                        onClick={handleFocusReplyComposer}
+                        data-testid="button-reply-after-reveal"
+                      >
+                        <MessageSquare className="w-4 h-4 mr-2" /> {t("textWhispDetail.replyNowButton")}
+                      </Button>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             )}
