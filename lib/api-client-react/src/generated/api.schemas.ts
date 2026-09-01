@@ -445,6 +445,46 @@ export interface InviteInput {
   channel: string;
 }
 
+export interface DebateTopicWhisp {
+  id: string;
+  senderId: string;
+  debateTopicId: string;
+  /**
+     * Set only when the recipient contact matched a known, verified Blind Whisper account at send time — see UserProfile-adjacent lib/deliver.ts findVerifiedRecipient(ByEmail).
+     * @nullable
+     */
+  recipientUserId?: string | null;
+  /** @nullable */
+  recipientEmail?: string | null;
+  /** @nullable */
+  recipientPhone?: string | null;
+  /** 'email' | 'sms' | 'whatsapp' */
+  channel: string;
+  /** @nullable */
+  note?: string | null;
+  /** @nullable */
+  senderAlias?: string | null;
+  /** 'sent' | 'failed' */
+  status: string;
+  createdAt: string;
+}
+
+export interface DebateTopicWhispInput {
+  /** @nullable */
+  recipientEmail?: string | null;
+  /** @nullable */
+  recipientPhone?: string | null;
+  /** 'email' | 'sms' | 'whatsapp' */
+  channel: string;
+  /**
+     * Optional personal line from the sender, shown alongside the topic teaser. Max 200 characters.
+     * @nullable
+     */
+  note?: string | null;
+  /** @nullable */
+  senderAlias?: string | null;
+}
+
 export interface ClaimInviteInput {
   token: string;
 }

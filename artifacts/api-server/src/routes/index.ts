@@ -25,6 +25,7 @@ import publicInvitesRouter from "./publicInvites";
 import publicTextWhispsRouter from "./publicTextWhisps";
 import textWhispsRouter from "./textWhisps";
 import debateTopicsRouter from "./debateTopics";
+import debateTopicWhispsRouter from "./debateTopicWhisps";
 import followsRouter from "./follows";
 import contentReportsRouter from "./contentReports";
 import usageEventsRouter from "./usageEvents";
@@ -61,6 +62,9 @@ router.use("/public", bugReportsRouter);
 // Mounted after the "/public" limiter registration so requests to its
 // public routes still pass through publicEndpointLimiter first.
 router.use(debateTopicsRouter);
+// Own distinct prefix — its route defines only "/:id/whisp", so this
+// mount is what makes it read as POST /api/debate-topics/:id/whisp.
+router.use("/debate-topics", debateTopicWhispsRouter);
 // Same reasoning as debateTopicsRouter above — defines its own full
 // "/public/whisper-box/..." AND authenticated "/whisper-box/..." paths, and
 // must stay after the "/public" limiter registration so its public routes

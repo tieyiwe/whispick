@@ -95,6 +95,8 @@ import type {
   DebateTopicFeedResponse,
   DebateTopicInput,
   DebateTopicStats,
+  DebateTopicWhisp,
+  DebateTopicWhispInput,
   DeleteMedia200,
   DisableWhisperBox200,
   EnableWhisperBox200,
@@ -1368,6 +1370,77 @@ export const useCreateInvite = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getCreateInviteMutationOptions(options));
+    }
+
+export const getSendDebateTopicWhispUrl = (id: string,) => {
+
+
+
+
+  return `/api/debate-topics/${id}/whisp`
+}
+
+/**
+ * @summary Whisper a debate topic to one contact over email/SMS/WhatsApp, anonymously
+ */
+export const sendDebateTopicWhisp = async (id: string,
+    debateTopicWhispInput: DebateTopicWhispInput, options?: RequestInit): Promise<DebateTopicWhisp> => {
+
+  return customFetch<DebateTopicWhisp>(getSendDebateTopicWhispUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(debateTopicWhispInput)
+  }
+);}
+
+
+
+
+export const getSendDebateTopicWhispMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendDebateTopicWhisp>>, TError,{id: string;data: BodyType<DebateTopicWhispInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendDebateTopicWhisp>>, TError,{id: string;data: BodyType<DebateTopicWhispInput>}, TContext> => {
+
+const mutationKey = ['sendDebateTopicWhisp'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendDebateTopicWhisp>>, {id: string;data: BodyType<DebateTopicWhispInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  sendDebateTopicWhisp(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendDebateTopicWhispMutationResult = NonNullable<Awaited<ReturnType<typeof sendDebateTopicWhisp>>>
+    export type SendDebateTopicWhispMutationBody = BodyType<DebateTopicWhispInput>
+    export type SendDebateTopicWhispMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Whisper a debate topic to one contact over email/SMS/WhatsApp, anonymously
+ */
+export const useSendDebateTopicWhisp = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendDebateTopicWhisp>>, TError,{id: string;data: BodyType<DebateTopicWhispInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sendDebateTopicWhisp>>,
+        TError,
+        {id: string;data: BodyType<DebateTopicWhispInput>},
+        TContext
+      > => {
+      return useMutation(getSendDebateTopicWhispMutationOptions(options));
     }
 
 export const getClaimInviteUrl = () => {

@@ -29,7 +29,12 @@ export type DeliveryPurpose =
   | "text_whisp"
   | "text_whisp_reply"
   | "text_whisp_reveal_request"
-  | "text_whisp_reveal_response";
+  | "text_whisp_reveal_response"
+  // Debate Now topic whisps (routes/debateTopicWhisps.ts) — a parallel
+  // content type with its own id space (debate_topic_whisps.id, not
+  // whisps.id), same reasoning as "text_whisp" above, so these also always
+  // carry whispId: null.
+  | "debate_topic_whisp";
 
 export type DeliveryLogContext = {
   // Nullable at the type level for sends that aren't about any one whisp

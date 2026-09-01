@@ -103,6 +103,26 @@
       "copyFailed": "تعذّر النسخ — يرجى النسخ يدويًا",
       "topicRetracted": "تم سحب الموضوع",
       "retractError": "تعذّر سحب هذا الموضوع"
+    },
+    "sendWhispDialog": {
+      "title": "أرسل Whisp لهذا الموضوع",
+      "description": "أرسله لشخص ما مجهول الهوية، ليدخل النقاش.",
+      "channels": { "email": "البريد الإلكتروني", "sms": "رسالة نصية", "whatsapp": "واتساب" },
+      "emailPlaceholder": "بريدهم الإلكتروني",
+      "phonePlaceholder": "رقم هاتفهم",
+      "pickFromContactsLabel": "اختر من جهات الاتصال",
+      "notePlaceholder": "أضف ملاحظة (اختياري)",
+      "aliasPlaceholder": "وقّعها باسم (اختياري)",
+      "privacyNote": "يُرسل هذا بشكل مجهول. لن يعرفوا أنك أنت إلا إذا أخبرتهم.",
+      "sendButton": "إرسال",
+      "copyLinkInsteadButton": "أو شارك الرابط فقط",
+      "sentTitle": "تم الإرسال",
+      "sentDescription": "سيحصلون على رابط لهذا الموضوع، بشكل مجهول.",
+      "sendAnotherButton": "أرسل لشخص آخر",
+      "doneButton": "تم",
+      "toastSendFailed": "تعذّر الإرسال — يرجى المحاولة مرة أخرى",
+      "toastNoEmailOnContact": "لا يملك جهة الاتصال هذه بريدًا إلكترونيًا",
+      "toastNoPhoneOnContact": "لا يملك جهة الاتصال هذه رقم هاتف"
     }
   },
   "debateTopics": {

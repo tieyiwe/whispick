@@ -95,6 +95,30 @@
       "copyFailed": "Couldn't copy — please copy it manually",
       "topicRetracted": "Topic retracted",
       "retractError": "Couldn't retract that topic"
+    },
+    "sendWhispDialog": {
+      "title": "Whisper this topic",
+      "description": "Send it to someone anonymously, so they can jump into the debate.",
+      "channels": {
+        "email": "Email",
+        "sms": "Text",
+        "whatsapp": "WhatsApp"
+      },
+      "emailPlaceholder": "their@email.com",
+      "phonePlaceholder": "Their phone number",
+      "pickFromContactsLabel": "Pick from contacts",
+      "notePlaceholder": "Add a note (optional)",
+      "aliasPlaceholder": "Sign it as (optional)",
+      "privacyNote": "This is sent anonymously. They won't know it was you unless you tell them.",
+      "sendButton": "Send",
+      "copyLinkInsteadButton": "Or just share the link",
+      "sentTitle": "Sent",
+      "sentDescription": "They'll get a link to this topic, anonymously.",
+      "sendAnotherButton": "Send to someone else",
+      "doneButton": "Done",
+      "toastSendFailed": "Couldn't send that — please try again",
+      "toastNoEmailOnContact": "That contact doesn't have an email address",
+      "toastNoPhoneOnContact": "That contact doesn't have a phone number"
     }
   },
   "debateTopics": {
