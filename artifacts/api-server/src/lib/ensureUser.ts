@@ -21,7 +21,10 @@ export function isBootstrapAdminEmail(email: string): boolean {
     .includes(email.toLowerCase());
 }
 
-function requestIp(req: any): string | undefined {
+// Exported for lib/visitorTracking.ts, which needs the exact same "what IP
+// is this request actually from" logic for its own geo lookup — one
+// definition, not two copies that could drift.
+export function requestIp(req: any): string | undefined {
   return req.ip ?? req.socket?.remoteAddress;
 }
 
