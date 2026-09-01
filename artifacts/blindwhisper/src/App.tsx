@@ -34,6 +34,7 @@ import { LandingPage } from "@/pages/LandingPage";
 import { Dashboard } from "@/pages/Dashboard";
 import { AdminRoute } from "@/components/layout/AdminRoute";
 import { ClaimPendingInvite } from "@/components/shared/ClaimPendingInvite";
+import { VisitorPing } from "@/components/shared/VisitorPing";
 
 // Everything below is off the critical first-load path (landing, sign-in/up,
 // and dashboard are the only pages most visits ever touch) — code-split so a
@@ -295,6 +296,7 @@ function ClerkProviderWithRoutes() {
         <PinToTaskbarTip />
         <ClerkQueryClientCacheInvalidator />
         <ClaimPendingInvite />
+        <VisitorPing />
         <AppErrorBoundary>
         <Suspense fallback={<RouteLoadingFallback />}>
           <Switch>

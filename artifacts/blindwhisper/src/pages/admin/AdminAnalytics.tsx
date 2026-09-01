@@ -12,6 +12,10 @@ import {
   useAdminGetUsersOnlineNow,
   getAdminGetUsersOnlineNowQueryKey,
   useAdminGetTrafficByHour,
+  useAdminGetVisitorsOnline,
+  getAdminGetVisitorsOnlineQueryKey,
+  useAdminGetVisitors,
+  getAdminGetVisitorsQueryKey,
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
@@ -22,7 +26,7 @@ import { GENDER_LABELS, AGE_RANGE_LABELS, type Gender, type AgeRange } from "@/l
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, Loader2, MousePointerClick, Radio, Clock, Send, Users } from "lucide-react";
+import { Sparkles, Loader2, MousePointerClick, Radio, Clock, Send, Users, Globe, Smartphone } from "lucide-react";
 
 // Traffic-by-hour bar color: a darkened variant of the admin theme's matte-yellow
 // --primary (hsl(46 64% 62%)). The primary at its usual lightness reads as too
@@ -291,6 +295,140 @@ function LiveActivitySection() {
   );
 }
 
+// Signed-in + anonymous, updated by the second — distinct from
+// LiveActivitySection above, which only ever covers accounts (usersTable.
+// lastSeenAt has nothing to say about a visitor who's never signed in). The
+// headcount tile polls at 1s (a single indexed COUNT, cheap enough for
+// that cadence — see routes/adminVisitors.ts's own comment on why the
+// breakdowns below don't get the same treatment); everything else polls
+// slower since it's a heavier read.
+function LiveVisitorsSection() {
+  const { data: online, isLoading: onlineLoading } = useAdminGetVisitorsOnline({
+    query: { queryKey: getAdminGetVisitorsOnlineQueryKey(), staleTime: 0, refetchInterval: 1_000, refetchOnWindowFocus: true },
+  });
+  const { data: visitors, isLoading: visitorsLoading } = useAdminGetVisitors({
+    query: { queryKey: getAdminGetVisitorsQueryKey(), staleTime: 0, refetchInterval: 8_000, refetchOnWindowFocus: true },
+  });
+
+  const byCountry = (visitors?.byCountry ?? []).slice(0, 8);
+  const byDevice = visitors?.byDevice ?? [];
+  const recent = visitors?.recent ?? [];
+
+  return (
+    <div className="space-y-4">
+      <Card className="bg-card border-border/50">
+        <CardContent className="p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground">Visitors on the platform</p>
+              {onlineLoading ? (
+                <Skeleton className="h-8 w-16 mt-1 rounded-md" />
+              ) : (
+                <h3 className="text-2xl font-bold text-foreground mt-1">{(online?.onlineCount ?? 0).toLocaleString()}</h3>
+              )}
+              <p className="text-xs text-muted-foreground mt-1">signed-in + anonymous, right now</p>
+            </div>
+            <div className="p-2.5 rounded-xl bg-primary/10 relative">
+              <Globe className="w-4 h-4 text-primary" />
+              <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+              </span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Card className="bg-card border-border/50">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-serif flex items-center gap-2">
+              <Globe className="w-4 h-4 text-primary" /> By country
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {visitorsLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-5 w-full rounded" />
+                <Skeleton className="h-5 w-full rounded" />
+                <Skeleton className="h-5 w-full rounded" />
+              </div>
+            ) : !byCountry.length ? (
+              <p className="text-sm text-muted-foreground py-3">No one's here right now.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {byCountry.map((c) => (
+                  <div key={c.country} className="flex items-center justify-between text-sm">
+                    <span className="text-foreground">{c.country}</span>
+                    <span className="text-muted-foreground">{c.count}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-border/50">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-serif flex items-center gap-2">
+              <Smartphone className="w-4 h-4 text-primary" /> By device
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {visitorsLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-5 w-full rounded" />
+                <Skeleton className="h-5 w-full rounded" />
+              </div>
+            ) : !byDevice.length ? (
+              <p className="text-sm text-muted-foreground py-3">No one's here right now.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {byDevice.map((d) => (
+                  <div key={d.deviceType} className="flex items-center justify-between text-sm">
+                    <span className="text-foreground capitalize">{d.deviceType}</span>
+                    <span className="text-muted-foreground">{d.count}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="bg-card border-border/50">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-serif flex items-center gap-2">
+            <Users className="w-4 h-4 text-primary" /> Recent sessions
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {visitorsLoading ? (
+            <Skeleton className="h-24 rounded-xl" />
+          ) : !recent.length ? (
+            <p className="text-sm text-muted-foreground py-3">No one's here right now.</p>
+          ) : (
+            <div className="space-y-1.5 max-h-64 overflow-y-auto">
+              {recent.map((v, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between gap-3 text-xs py-1.5 border-b border-border/20 last:border-0"
+                >
+                  <span className="text-foreground">{v.country ?? "Unknown"}</span>
+                  <span className="text-muted-foreground capitalize">{v.deviceType}</span>
+                  <span className={v.isSignedIn ? "text-primary shrink-0" : "text-muted-foreground shrink-0"}>
+                    {v.isSignedIn ? "Signed in" : "Anonymous"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export function AdminAnalytics() {
   const { data: categoryStats, isLoading: categoriesLoading } = useAdminGetCategoryStats();
   const { data: deliveryStats, isLoading: deliveryLoading } = useAdminGetDeliveryMethodStats();
@@ -530,6 +668,18 @@ export function AdminAnalytics() {
             <p className="text-sm text-muted-foreground mt-0.5">A live headcount and when in the day (UTC) traffic actually shows up.</p>
           </div>
           <LiveActivitySection />
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-xl font-serif font-semibold flex items-center gap-2">
+              <Globe className="w-5 h-5 text-primary" /> Live visitors
+            </h2>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Everyone on the platform right now — signed-in and anonymous — by country and device.
+            </p>
+          </div>
+          <LiveVisitorsSection />
         </div>
 
         <div className="space-y-4">
