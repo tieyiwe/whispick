@@ -9,6 +9,7 @@ import userRouter from "./user";
 import creditsRouter from "./credits";
 import billingRouter from "./billing";
 import linkRouter from "./link";
+import debateTopicLinkRouter from "./debateTopicLink";
 import adminRouter from "./admin";
 import adminMfaRouter from "./adminMfa";
 import adminAccessRouter from "./adminAccess";
@@ -80,6 +81,10 @@ router.use("/user", userRouter);
 router.use("/credits", creditsRouter);
 router.use("/billing", billingRouter);
 router.use("/l", publicEndpointLimiter, linkRouter);
+// Same crawler-preview trick as "/l" above, for a debate topic's own
+// shareable link (DebateTopicCard.tsx's Share button, and the "whisp this
+// topic" send flow in debateTopicWhisps.ts) instead of a whisp's.
+router.use("/dt", publicEndpointLimiter, debateTopicLinkRouter);
 // whisperBoxLinkRouter is NOT mounted here — it's mounted directly in
 // app.ts at the bare "/wb" prefix (not "/api/wb"), so a shared Whisper Box
 // link reads as blindwhisper.com/wb/handle. See app.ts's own comment and

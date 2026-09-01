@@ -119,6 +119,16 @@
       "toastSendFailed": "Couldn't send that — please try again",
       "toastNoEmailOnContact": "That contact doesn't have an email address",
       "toastNoPhoneOnContact": "That contact doesn't have a phone number"
+    },
+    "anonymousExplainer": {
+      "title": "Post & reply anonymously",
+      "body": "No account needed to join the debate — post and reply anonymously anytime. Create a free account whenever you want to build a following with your own Whisperer handle."
+    },
+    "postSignupNudge": {
+      "title": "Your comment is live!",
+      "body": "Create a free account so we can let you know the moment someone reacts to it.",
+      "cta": "Create free account",
+      "dismissAria": "Dismiss"
     }
   },
   "debateTopics": {

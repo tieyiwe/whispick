@@ -60,6 +60,9 @@ import {
   Share2,
   Info,
   Palette,
+  Sparkles,
+  Bell,
+  UserPlus,
 } from "lucide-react";
 
 const MAX_COMMENT_TEXT_LENGTH = 500;
@@ -395,6 +398,11 @@ export function DebateTopicDetail() {
   const [isPostingWithImage, setIsPostingWithImage] = useState(false);
   const [whispDialogOpen, setWhispDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showPostSignupNudge, setShowPostSignupNudge] = useState(false);
+  // Shown once per visit, not once per comment — a signed-out visitor who
+  // posts three replies in a row shouldn't see this pop back up after every
+  // single one, only the first.
+  const signupNudgeShownRef = useRef(false);
 
   const visitorId = useMemo(() => getVisitorId(), []);
   const { data: topic, isLoading } = useGetDebateTopic(id, { visitorId });
@@ -473,6 +481,17 @@ export function DebateTopicDetail() {
     setCommentText("");
     setReplyTo(null);
     clearImage();
+    // The comment already posted — anonymous posting stays exactly as
+    // frictionless as it's always been, no account gate before Send. This is
+    // the payoff moment to ask instead: they just did the thing, so "want to
+    // know when someone reacts to it" actually means something concrete
+    // right now, rather than a generic sign-up pitch shown before they've
+    // done anything. Once per visit (see signupNudgeShownRef), not once per
+    // comment.
+    if (!isSignedIn && !signupNudgeShownRef.current) {
+      signupNudgeShownRef.current = true;
+      setShowPostSignupNudge(true);
+    }
   }
 
   function handlePostComment() {
@@ -755,6 +774,22 @@ export function DebateTopicDetail() {
               </div>
             </div>
 
+            {/* Anonymity explainer — signed-out only, always shown (not
+                reactive to any action) since the whole point is setting
+                expectations BEFORE someone starts typing: this is the one
+                place on the page that says outright there's no account wall
+                to post OR reply, and that creating one later is additive
+                (a following, a persistent handle) rather than required. */}
+            {!isSignedIn && (
+              <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 flex items-start gap-3">
+                <Sparkles className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                <div className="space-y-0.5">
+                  <p className="text-sm font-medium text-foreground">{t("debateTopicDetail.anonymousExplainer.title")}</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{t("debateTopicDetail.anonymousExplainer.body")}</p>
+                </div>
+              </div>
+            )}
+
             {/* Comment composer */}
             <div className="rounded-2xl border border-border/50 bg-card p-5 space-y-3">
               <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -893,6 +928,40 @@ export function DebateTopicDetail() {
                 </Button>
               </div>
             </div>
+
+            {/* Fires once, right after that first successful anonymous post
+                (see applyNewComment) — not a gate before Send, a follow-up
+                after it, framed around the one thing an account concretely
+                buys them for the comment they just made. Dismissible: this
+                is a nudge, not a wall. */}
+            {showPostSignupNudge && !isSignedIn && (
+              <div
+                className="rounded-2xl border border-primary/20 bg-primary/5 p-4 flex items-start gap-3"
+                data-testid="banner-post-signup-nudge"
+              >
+                <Bell className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                <div className="space-y-1.5 flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground">{t("debateTopicDetail.postSignupNudge.title")}</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{t("debateTopicDetail.postSignupNudge.body")}</p>
+                  <a
+                    href="/sign-up"
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+                    data-testid="link-post-signup-nudge-cta"
+                  >
+                    <UserPlus className="w-3.5 h-3.5" /> {t("debateTopicDetail.postSignupNudge.cta")}
+                  </a>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowPostSignupNudge(false)}
+                  className="text-muted-foreground hover:text-foreground shrink-0"
+                  aria-label={t("debateTopicDetail.postSignupNudge.dismissAria")}
+                  data-testid="button-dismiss-post-signup-nudge"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
 
             {/* Comment thread — X/Twitter-style: each root comment, then its
                 direct replies grouped and indented beneath it. */}

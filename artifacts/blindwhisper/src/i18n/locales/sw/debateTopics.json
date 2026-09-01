@@ -99,7 +99,11 @@
     "sendWhispDialog": {
       "title": "Whisp mada hii",
       "description": "Itume kwa mtu bila kujulikana, ili ajiunge na mjadala.",
-      "channels": { "email": "Barua pepe", "sms": "Ujumbe mfupi", "whatsapp": "WhatsApp" },
+      "channels": {
+        "email": "Barua pepe",
+        "sms": "Ujumbe mfupi",
+        "whatsapp": "WhatsApp"
+      },
       "emailPlaceholder": "Barua pepe yao",
       "phonePlaceholder": "Nambari yao ya simu",
       "pickFromContactsLabel": "Chagua kutoka anwani",
@@ -115,6 +119,16 @@
       "toastSendFailed": "Imeshindikana kutuma — tafadhali jaribu tena",
       "toastNoEmailOnContact": "Anwani hiyo haina barua pepe",
       "toastNoPhoneOnContact": "Anwani hiyo haina nambari ya simu"
+    },
+    "anonymousExplainer": {
+      "title": "Chapisha na jibu bila kutambulika",
+      "body": "Hauhitaji akaunti kujiunga na mjadala — chapisha na jibu bila kutambulika wakati wowote. Fungua akaunti ya bure wakati wowote ili kujenga wafuasi ukitumia utambulisho wako wa Whisperer."
+    },
+    "postSignupNudge": {
+      "title": "Maoni yako yamechapishwa!",
+      "body": "Fungua akaunti ya bure ili tuweze kukujulisha mara tu mtu atakapoitikia.",
+      "cta": "Fungua akaunti ya bure",
+      "dismissAria": "Funga"
     }
   },
   "debateTopics": {

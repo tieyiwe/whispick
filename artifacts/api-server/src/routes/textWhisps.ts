@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { getAuth } from "@clerk/express";
-import { db, textWhispsTable, textWhispRepliesTable, type TextWhisp } from "@workspace/db";
+import { db, textWhispsTable, textWhispRepliesTable, usersTable, type TextWhisp } from "@workspace/db";
 import { eq, and, or, ne, isNull, asc, desc } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { z } from "zod";
@@ -89,7 +89,7 @@ async function loadTextWhispForUser(id: string, userId: string) {
 // doesn't leave a stale "typing…" showing indefinitely.
 const TYPING_TTL_MS = 8_000;
 
-function toResponse(textWhisp: TextWhisp, viewerId: string) {
+async function toResponse(textWhisp: TextWhisp, viewerId: string) {
   const { recipientUserId, typingUserId, typingAt, ...rest } = textWhisp;
   // Same shape as viewerIsRecipient: a raw typingUserId would tell a viewer
   // WHO is typing even when it's their own ping echoed back, so this
@@ -97,7 +97,27 @@ function toResponse(textWhisp: TextWhisp, viewerId: string) {
   // "is the OTHER side typing, right now" — server-side.
   const otherPartyTyping =
     !!typingUserId && typingUserId !== viewerId && !!typingAt && Date.now() - typingAt.getTime() < TYPING_TTL_MS;
-  return { ...rest, viewerIsRecipient: recipientUserId === viewerId, otherPartyTyping };
+  const viewerIsRecipient = recipientUserId === viewerId;
+
+  // The one deliberate, consent-gated exception to this app's anonymity
+  // guarantee: once the recipient has actually accepted a reveal, the
+  // sender's real account name becomes visible to THEM specifically — never
+  // to the sender's own view of their own message, never to a recipient who
+  // hasn't accepted yet, and never as a side effect of any other field.
+  // Looked up fresh rather than denormalized onto the row, since it's rare
+  // (most rows never reach revealAccepted === true) and the row itself has
+  // no reason to cache another table's data.
+  let revealedSenderName: string | null = null;
+  if (viewerIsRecipient && textWhisp.revealAccepted === true) {
+    const sender = await db
+      .select({ fullName: usersTable.fullName })
+      .from(usersTable)
+      .where(eq(usersTable.id, textWhisp.senderId))
+      .then((r) => r[0]);
+    revealedSenderName = sender?.fullName ?? null;
+  }
+
+  return { ...rest, viewerIsRecipient, otherPartyTyping, revealedSenderName };
 }
 
 // GET /api/text-whisps — the authenticated user's own text whisps, sent and
@@ -121,7 +141,7 @@ router.get("/", requireAuth, async (req, res): Promise<void> => {
     )
     .orderBy(desc(textWhispsTable.createdAt));
 
-  res.json(rows.map((row) => toResponse(row, user.id)));
+  res.json(await Promise.all(rows.map((row) => toResponse(row, user.id))));
 });
 
 // POST /api/text-whisps
@@ -197,7 +217,7 @@ router.post("/", requireAuth, createTextWhispLimiter, async (req, res): Promise<
   // call above this line, and do not let its result or timing change what's
   // sent back here.
   const textWhisp = await db.select().from(textWhispsTable).where(eq(textWhispsTable.id, id)).then((r) => r[0]);
-  res.status(201).json(toResponse(textWhisp, user.id));
+  res.status(201).json(await toResponse(textWhisp, user.id));
 
   // A scheduled send skips delivery entirely here — lib/textWhispScheduler.ts
   // dispatches it once scheduledAt comes due, same "created now, delivered
@@ -266,11 +286,11 @@ router.get("/:id", requireAuth, async (req, res): Promise<void> => {
       .set({ readAt: new Date(), status: textWhisp.status === "replied" ? "replied" : "read" })
       .where(eq(textWhispsTable.id, textWhisp.id));
     const refreshed = await db.select().from(textWhispsTable).where(eq(textWhispsTable.id, textWhisp.id)).then((r) => r[0]!);
-    res.json({ textWhisp: toResponse(refreshed, user.id), replies });
+    res.json({ textWhisp: await toResponse(refreshed, user.id), replies });
     return;
   }
 
-  res.json({ textWhisp: toResponse(textWhisp, user.id), replies });
+  res.json({ textWhisp: await toResponse(textWhisp, user.id), replies });
 });
 
 // DELETE /api/text-whisps/:id — soft delete, sender only. Same semantics as
@@ -461,7 +481,7 @@ router.post("/:id/reveal", requireAuth, async (req, res): Promise<void> => {
 
   await db.update(textWhispsTable).set({ revealRequested: true }).where(eq(textWhispsTable.id, textWhisp.id));
   const updated = await db.select().from(textWhispsTable).where(eq(textWhispsTable.id, textWhisp.id)).then((r) => r[0]);
-  res.json(toResponse(updated, user.id));
+  res.json(await toResponse(updated, user.id));
 
   void deliverInApp(
     textWhisp.recipientUserId,
@@ -474,10 +494,11 @@ router.post("/:id/reveal", requireAuth, async (req, res): Promise<void> => {
 });
 
 // POST /api/text-whisps/:id/reveal/respond — recipient accepts/declines.
-// Same "grants permission, doesn't itself disclose identity" semantics as
-// whisps.ts's PATCH /:id/reveal: accepting only lets the sender know they
-// may now say who they are via a follow-up reply — this never surfaces the
-// sender's real name/email/etc. anywhere on its own.
+// Accepting is what flips toResponse()'s revealedSenderName on for this
+// recipient from here on — see that function's own comment. Declining (or
+// never responding) leaves the sender's identity exactly as hidden as
+// before; this endpoint only ever records consent, the actual disclosure
+// happens lazily on the next toResponse() read.
 const respondRevealSchema = z.object({ accepted: z.boolean() });
 
 router.post("/:id/reveal/respond", requireAuth, async (req, res): Promise<void> => {

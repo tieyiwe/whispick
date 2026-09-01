@@ -107,7 +107,11 @@
     "sendWhispDialog": {
       "title": "أرسل Whisp لهذا الموضوع",
       "description": "أرسله لشخص ما مجهول الهوية، ليدخل النقاش.",
-      "channels": { "email": "البريد الإلكتروني", "sms": "رسالة نصية", "whatsapp": "واتساب" },
+      "channels": {
+        "email": "البريد الإلكتروني",
+        "sms": "رسالة نصية",
+        "whatsapp": "واتساب"
+      },
       "emailPlaceholder": "بريدهم الإلكتروني",
       "phonePlaceholder": "رقم هاتفهم",
       "pickFromContactsLabel": "اختر من جهات الاتصال",
@@ -123,6 +127,16 @@
       "toastSendFailed": "تعذّر الإرسال — يرجى المحاولة مرة أخرى",
       "toastNoEmailOnContact": "لا يملك جهة الاتصال هذه بريدًا إلكترونيًا",
       "toastNoPhoneOnContact": "لا يملك جهة الاتصال هذه رقم هاتف"
+    },
+    "anonymousExplainer": {
+      "title": "انشر وردّ بشكل مجهول",
+      "body": "لا حاجة لحساب للانضمام إلى النقاش — انشر وردّ بشكل مجهول في أي وقت. أنشئ حسابًا مجانيًا متى شئت لبناء متابعين بهويتك الخاصة كـ Whisperer."
+    },
+    "postSignupNudge": {
+      "title": "تم نشر تعليقك!",
+      "body": "أنشئ حسابًا مجانيًا حتى نتمكن من إعلامك فور تفاعل أحدهم معه.",
+      "cta": "إنشاء حساب مجاني",
+      "dismissAria": "إغلاق"
     }
   },
   "debateTopics": {

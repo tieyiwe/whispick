@@ -45,11 +45,11 @@
     "sendButton": "Enviar",
     "revealYourselfButton": "Revelarme",
     "revealRequestSentTitle": "Solicitud de revelación enviada",
-    "revealAcceptedMessage": "¡Aceptaron! Ahora puedes decirles quién eres — envía una respuesta arriba.",
+    "revealAcceptedMessage": "¡Aceptaron! Ahora pueden ver que eres tú.",
     "revealDeclinedMessage": "Rechazaron la revelación.",
     "revealWaitingMessage": "Esperando su respuesta...",
     "revealAskMessage": "La persona que te envió esto quiere revelar quién es. ¿Lo permites?",
-    "revealPermissionNote": "Esto solo otorga permiso — igual tendrán que decirte quiénes son.",
+    "revealPermissionNote": "Al aceptar, podrás ver quién es.",
     "declineButton": "Rechazar",
     "acceptButton": "Aceptar",
     "toastReplyFailed": "No se pudo enviar la respuesta",
@@ -66,7 +66,14 @@
       "sent": "Enviado",
       "read": "Leído",
       "replied": "Respondido"
-    }
+    },
+    "discoverPrompt": "Aceptaron revelarse. ¿Listo para descubrir quién es?",
+    "discoverButton": "Descubrir",
+    "discovering": "Revelando…",
+    "revealedLabel": "Era",
+    "revealedNameFallback": "Alguien que conoces",
+    "keepGoingPrompt": "¡Saluda y sigue la conversación!",
+    "replyNowButton": "Responder ahora"
   },
   "textWhispsList": {
     "heading": "Whisps de texto",

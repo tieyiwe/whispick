@@ -97,7 +97,11 @@
     "sendWhispDialog": {
       "title": "Whisp 这个话题",
       "description": "匿名发送给某人,让他们加入辩论。",
-      "channels": { "email": "邮件", "sms": "短信", "whatsapp": "WhatsApp" },
+      "channels": {
+        "email": "邮件",
+        "sms": "短信",
+        "whatsapp": "WhatsApp"
+      },
       "emailPlaceholder": "对方邮箱",
       "phonePlaceholder": "对方电话号码",
       "pickFromContactsLabel": "从通讯录选择",
@@ -113,6 +117,16 @@
       "toastSendFailed": "发送失败——请重试",
       "toastNoEmailOnContact": "该联系人没有邮箱地址",
       "toastNoPhoneOnContact": "该联系人没有电话号码"
+    },
+    "anonymousExplainer": {
+      "title": "匿名发帖与回复",
+      "body": "无需账号即可参与讨论——随时匿名发帖和回复。你也可以随时创建免费账号，用专属的 Whisperer 身份积累关注者。"
+    },
+    "postSignupNudge": {
+      "title": "你的评论已发布！",
+      "body": "创建一个免费账号，这样有人回应时我们就能通知你。",
+      "cta": "创建免费账号",
+      "dismissAria": "关闭"
     }
   },
   "debateTopics": {
