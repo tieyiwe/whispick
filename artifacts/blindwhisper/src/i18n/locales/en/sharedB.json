@@ -9,7 +9,8 @@
     "description": "Once it happens, there's no undoing it — they'll know it was you.",
     "message": "Your identity will be revealed in {{seconds}}s",
     "stopButton": "Stop Reveal Now",
-    "abortedToast": "Reveal aborted"
+    "abortedMessage": "Reveal aborted",
+    "revealedMessage": "Revealed"
   },
   "installAppPrompt": {
     "dialogAriaLabel": "Install Blind Whisper",

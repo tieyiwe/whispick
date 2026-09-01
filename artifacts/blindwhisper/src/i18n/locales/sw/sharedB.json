@@ -9,7 +9,8 @@
     "description": "Mara ikitokea, hakuna kurudi nyuma — watajua ni wewe.",
     "message": "Utambulisho wako utafichuliwa baada ya sekunde {{seconds}}",
     "stopButton": "Simamisha Ufichuzi Sasa",
-    "abortedToast": "Ufichuzi umesimamishwa"
+    "abortedMessage": "Ufichuzi umesimamishwa",
+    "revealedMessage": "Umefichuliwa"
   },
   "installAppPrompt": {
     "dialogAriaLabel": "Sakinisha Blind Whisper",
