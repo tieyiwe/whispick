@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { LegalLayout, LegalSection } from "@/components/shared/LegalLayout";
 
 const SUPPORT_EMAIL = "support@blindwhisper.com";
@@ -13,6 +14,15 @@ const SUPPORT_EMAIL = "support@blindwhisper.com";
 // textWhispGuestSmsBody) — that consistency is exactly what a rejected
 // registration is checked against on resubmission.
 export function SmsTerms() {
+  // Purely for the live demonstration below — a real Sender's checkbox
+  // lives inside the signed-in app (SendWhisp.tsx/SendTextWhisp.tsx/
+  // InvitePage.tsx), which a Twilio/carrier reviewer can't reach without an
+  // account. This is the identical wording, identical unchecked-by-default
+  // starting state, and a real onChange — reviewers can actually click it —
+  // on a page that needs no login, so "opt-in is not present on the
+  // website" has a direct, checkable answer.
+  const [demoChecked, setDemoChecked] = useState(false);
+
   return (
     <LegalLayout title="SMS Messaging Program" updatedDate="August 18, 2026">
       <p className="text-sm text-muted-foreground">A product of TIBLOGICS, a sub-entity of TILO GROUP, LLC.</p>
@@ -73,6 +83,35 @@ export function SmsTerms() {
           because a Sender's follow-up, reminder, or reveal notification can be the first message a number actually
           receives from us if an earlier send to it failed.
         </p>
+      </LegalSection>
+
+      <LegalSection heading="Opt-in checkbox — live example">
+        <p>
+          The opt-in checkbox itself lives inside the signed-in Blind Whisper app, at the exact point a Sender
+          enters a Recipient's phone number (Whisper Link, Text Whisp, and Invite all show it). Since that screen
+          requires an account to reach, this is the identical checkbox — same wording, same unchecked-by-default
+          starting state, fully interactive — reproduced here so it can be reviewed without signing in:
+        </p>
+        <div className="rounded-2xl border border-border/50 bg-card p-5 space-y-3 not-prose max-w-md">
+          <p className="text-xs text-muted-foreground" data-testid="text-sms-consent-disclosure-demo">
+            By sending to a phone number, you're texting them on your own behalf. Msg & data rates may apply. Reply
+            STOP to opt out, HELP for help. See our{" "}
+            <a href="/sms-terms" className="text-primary hover:underline">SMS Terms</a>.
+          </p>
+          <label className="flex items-start gap-2 text-sm text-foreground cursor-pointer">
+            <input
+              type="checkbox"
+              checked={demoChecked}
+              onChange={(e) => setDemoChecked(e.target.checked)}
+              className="rounded border-border/50 mt-0.5"
+              data-testid="checkbox-sms-consent-demo"
+            />
+            I confirm I have this person's permission to receive a text from me via Blind Whisper.
+          </label>
+          <p className="text-xs text-muted-foreground pt-1">
+            In the real app, the Sender's Send/Next button stays disabled until this is checked — try it above.
+          </p>
+        </div>
       </LegalSection>
 
       <LegalSection heading="Sample messages">
