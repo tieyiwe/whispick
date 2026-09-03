@@ -255,11 +255,25 @@ router.get("/w/:token", async (req, res): Promise<void> => {
   let senderHandle: string | null = null;
   const clerkUserId = getAuth(req).userId;
   if (clerkUserId && whisp.recipientUserId) {
-    const viewer = await ensureUser(clerkUserId, req);
-    if (whisp.recipientUserId === viewer.id) {
-      viewerArchived = !!whisp.recipientArchivedAt;
-      viewerPinned = !!whisp.recipientPinnedAt;
-      senderHandle = await safeAssignOrGetSenderHandle(whisp.senderId, viewer.id);
+    // Everything this block produces — viewerArchived/Pinned and
+    // senderHandle — is optional signed-in chrome; the whisp itself (video,
+    // note, replies) renders fine without any of it. So a failure resolving
+    // the viewer (ensureUser can throw: it touches users/admin_grants, which
+    // in an environment whose schema is behind the code would error) must
+    // NOT take down the whole recipient page. Wrapped so it degrades to
+    // exactly the anonymous view — the same page an SMS/email recipient of
+    // this whisp already gets — instead of 500ing, which the frontend would
+    // otherwise show the recipient as "This Whisp could not be found". Same
+    // best-effort posture as safeAssignOrGetSenderHandle's own wrapper.
+    try {
+      const viewer = await ensureUser(clerkUserId, req);
+      if (whisp.recipientUserId === viewer.id) {
+        viewerArchived = !!whisp.recipientArchivedAt;
+        viewerPinned = !!whisp.recipientPinnedAt;
+        senderHandle = await safeAssignOrGetSenderHandle(whisp.senderId, viewer.id);
+      }
+    } catch (err) {
+      req.log?.warn({ err, whispId: whisp.id }, "Failed to resolve signed-in viewer for public whisp; serving anonymous view");
     }
   }
 

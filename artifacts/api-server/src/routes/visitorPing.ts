@@ -6,6 +6,7 @@ import { z } from "zod";
 import { requestIp } from "../lib/ensureUser";
 import { classifyDevice } from "../lib/deviceType";
 import { cachedCountryForIp, sessionKeyFor } from "../lib/visitorTracking";
+import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
@@ -55,17 +56,28 @@ router.post("/visitor-ping", async (req, res): Promise<void> => {
   ]);
 
   const id = sessionKeyFor(userId, visitorId);
-  await db
-    .insert(visitorSessionsTable)
-    .values({ id, userId, visitorId, country, deviceType, lastPingAt: new Date() })
-    .onConflictDoUpdate({
-      target: visitorSessionsTable.id,
-      // country/deviceType refresh too, not just lastPingAt — a visitor's
-      // network or device can change mid-session (switching wifi/cellular,
-      // a PWA reopened on a different device under the same account) and a
-      // stale first-ping value shouldn't stick for the rest of the session.
-      set: { country, deviceType, lastPingAt: new Date() },
-    });
+  try {
+    await db
+      .insert(visitorSessionsTable)
+      .values({ id, userId, visitorId, country, deviceType, lastPingAt: new Date() })
+      .onConflictDoUpdate({
+        target: visitorSessionsTable.id,
+        // country/deviceType refresh too, not just lastPingAt — a visitor's
+        // network or device can change mid-session (switching wifi/cellular,
+        // a PWA reopened on a different device under the same account) and a
+        // stale first-ping value shouldn't stick for the rest of the session.
+        set: { country, deviceType, lastPingAt: new Date() },
+      });
+  } catch (err) {
+    // Never 500 a fire-and-forget heartbeat — but DO log it, loudly enough
+    // to see in deploy logs. The overwhelmingly common cause of this write
+    // failing in a fresh deploy is the visitor_sessions table not existing
+    // yet because `pnpm --filter @workspace/db run push` wasn't run against
+    // the production database — in which case the live-visitor roster stays
+    // empty with nothing else to explain why. Surfacing it here turns a
+    // silent "no visitors ever show up" into a one-line answer in the logs.
+    logger.warn({ err }, "visitor-ping write failed (is the visitor_sessions table migrated in this environment?)");
+  }
 
   res.status(204).send();
 });

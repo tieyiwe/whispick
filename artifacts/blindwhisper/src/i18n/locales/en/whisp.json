@@ -566,6 +566,8 @@
       "couldntStartConversation": "Couldn't start that conversation",
       "guessSentAnonymously": "Your guess is in! 🕵️"
     },
-    "notFound": "This whisp could not be found."
+    "notFound": "This whisp could not be found.",
+    "loadError": "This whisp couldn't be loaded right now. It's still here — this is a temporary hiccup.",
+    "tryAgain": "Try again"
   }
 }
