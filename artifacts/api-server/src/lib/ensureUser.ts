@@ -113,7 +113,16 @@ async function maybeApplyAdminGrant(user: User): Promise<User> {
 export async function ensureUser(clerkId: string, req: any): Promise<User> {
   let existing = await db.select().from(usersTable).where(eq(usersTable.clerkId, clerkId)).then(r => r[0]);
   if (existing) {
-    void db.update(usersTable).set({ lastSeenAt: new Date() }).where(eq(usersTable.id, existing.id));
+    // Fire-and-forget so it never delays the request, but log a failure —
+    // if this silently stops working (e.g. a schema drift where the
+    // production DB is missing a column this update's row touches, or the
+    // users table itself is behind), "last seen" and the whole
+    // online/active-now view freeze with nothing to explain why.
+    void db
+      .update(usersTable)
+      .set({ lastSeenAt: new Date() })
+      .where(eq(usersTable.id, existing.id))
+      .catch((err) => logger.warn({ err, userId: existing.id }, "lastSeenAt update failed"));
 
     // Self-heal a placeholder email left behind by a failed signup-day
     // Clerk fetch (see fetchClerkProfile). Without this, that one failure
