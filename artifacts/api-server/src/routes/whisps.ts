@@ -348,6 +348,14 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
       // sure what to send?" concierge — see the ownership check below.
       // Purely an analytics correlation, never trusted for anything else.
       conciergeRequestId: z.string().nullable().optional(),
+      // Mirrors the required, unchecked-by-default checkbox SendWhisp.tsx
+      // shows right where a Sender enters an SMS recipient's phone number
+      // (see SmsTerms.tsx's "live example"). Enforced HERE, not just as a
+      // disabled Send button client-side — without a server-side check, a
+      // direct API call could SMS anyone with no opt-in confirmation at
+      // all, which is exactly the evidence Twilio's A2P 10DLC review
+      // requires to actually exist.
+      smsConsentConfirmed: z.boolean().nullable().optional(),
     })
     .refine((data) => !!data.videoUrl || !!data.uploadedVideoId, {
       message: "A video URL or an uploaded video is required",
@@ -449,6 +457,13 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
     }
     if ((data.whisperChannel === "sms" || data.whisperChannel === "whatsapp") && !data.recipientPhone) {
       res.status(400).json({ error: "Text/WhatsApp delivery requires a recipient phone number" });
+      return;
+    }
+    // WhatsApp isn't carrier-regulated under A2P 10DLC the same way SMS is
+    // — same carve-out SendWhisp.tsx's own requiresSmsConsent uses — so only
+    // an actual SMS send requires this.
+    if (data.whisperChannel === "sms" && !data.smsConsentConfirmed) {
+      res.status(400).json({ error: "Please confirm you have this person's permission to receive a text from you." });
       return;
     }
   }

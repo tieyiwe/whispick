@@ -101,6 +101,12 @@ export function FirstWhispersOnboarding() {
 
   // --- Step 3: channel + send ---
   const [selectedChannel, setSelectedChannel] = useState<"email" | "sms" | "whatsapp" | null>(null);
+  // Same required, unchecked-by-default consent checkbox SendWhisp.tsx's
+  // single-recipient flow shows — this onboarding step is a Group Whisper
+  // send under the hood (see attemptSend below) and can just as easily go
+  // out over SMS to every picked contact, so it needs the same server-
+  // enforced opt-in confirmation.
+  const [smsConsentConfirmed, setSmsConsentConfirmed] = useState(false);
   const [groupId, setGroupId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDemographicsGate, setShowDemographicsGate] = useState(false);
@@ -286,6 +292,7 @@ export function FirstWhispersOnboarding() {
           anonymousNote: note.trim() || null,
           senderAlias: null,
           moodTag: null,
+          smsConsentConfirmed: selectedChannel === "sms" ? smsConsentConfirmed : null,
         },
       });
       setResult(res);
@@ -691,13 +698,38 @@ export function FirstWhispersOnboarding() {
                   </div>
                 )}
 
+                {/* Same A2P 10DLC-required disclosure/checkbox SendWhisp.tsx
+                    shows for a single SMS recipient — reusing its already-
+                    translated copy (cross-namespace) rather than duplicating
+                    new strings across every locale for this one screen. */}
+                {selectedChannel === "sms" && (
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground" data-testid="text-sms-consent-disclosure-onboarding">
+                      {t("whisp:sendWhisp.step5.smsDisclosure")}{" "}
+                      <a href="/sms-terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                        {t("whisp:sendWhisp.step5.smsTermsLinkText")}
+                      </a>.
+                    </p>
+                    <label className="flex items-start gap-2 text-sm text-foreground cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={smsConsentConfirmed}
+                        onChange={(e) => setSmsConsentConfirmed(e.target.checked)}
+                        className="rounded border-border/50 mt-0.5"
+                        data-testid="checkbox-sms-consent-onboarding"
+                      />
+                      {t("whisp:sendWhisp.step5.smsConsentCheckbox")}
+                    </label>
+                  </div>
+                )}
+
                 <div className="flex justify-between pt-2">
                   <Button variant="ghost" onClick={() => setStep(2)} className="rounded-xl text-muted-foreground" disabled={isSubmitting}>
                     <ArrowLeft className="w-4 h-4 mr-1" /> {t("common.back")}
                   </Button>
                   <Button
                     onClick={handleSendClick}
-                    disabled={isSubmitting || !selectedChannel || !selectedVideo}
+                    disabled={isSubmitting || !selectedChannel || !selectedVideo || (selectedChannel === "sms" && !smsConsentConfirmed)}
                     className="rounded-xl shadow-[0_0_15px_rgba(124,92,252,0.3)]"
                     data-testid="button-send-first-whispers"
                   >

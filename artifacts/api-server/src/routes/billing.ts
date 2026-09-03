@@ -144,50 +144,68 @@ export async function handleStripeWebhook(req: express.Request, res: express.Res
 
     // Stripe retries webhook deliveries (e.g. after a timeout on our end),
     // which would otherwise double-grant credits/plan access for the same
-    // checkout. The session id is unique per checkout, so use it as an
-    // idempotency key: if we've already recorded a transaction for it,
-    // this is a retry of an event we already processed.
-    const alreadyProcessed = await db
-      .select({ id: creditTransactionsTable.id })
-      .from(creditTransactionsTable)
-      .where(eq(creditTransactionsTable.stripePaymentIntentId, session.id))
-      .then((r) => r.length > 0);
-
-    if (userId && !alreadyProcessed) {
+    // checkout. The session id is unique per checkout, so it's used as an
+    // idempotency key — but the insert claiming that key has to happen
+    // BEFORE the credit/plan grant, not after: a select-then-act check here
+    // (reading whether a transaction row already exists, then granting, then
+    // inserting) leaves a window where two concurrent deliveries of the same
+    // event can both pass the "not yet processed" read before either
+    // commits its insert, both then grant credits, and only the second
+    // insert fails on the unique constraint — by which point the double
+    // grant already landed. Inserting first with onConflictDoNothing makes
+    // the claim itself atomic: only the delivery whose insert actually adds
+    // a new row (rather than being silently dropped as a duplicate) is
+    // allowed to touch the user's balance/plan at all.
+    if (userId) {
       if (metadata.kind === "credit_pack") {
         const pack = CREDIT_PACKS[metadata.packId as CreditPackId];
         if (pack) {
-          await db
-            .update(usersTable)
-            .set({ boostCredits: sql`${usersTable.boostCredits} + ${pack.boosts}` })
-            .where(eq(usersTable.id, userId));
-          await db.insert(creditTransactionsTable).values({
-            id: randomUUID(),
-            userId,
-            type: "purchase",
-            amount: pack.boosts,
-            stripePaymentIntentId: session.id,
-          });
+          const inserted = await db
+            .insert(creditTransactionsTable)
+            .values({
+              id: randomUUID(),
+              userId,
+              type: "purchase",
+              amount: pack.boosts,
+              stripePaymentIntentId: session.id,
+            })
+            .onConflictDoNothing({ target: creditTransactionsTable.stripePaymentIntentId })
+            .returning({ id: creditTransactionsTable.id });
+          if (inserted.length > 0) {
+            await db
+              .update(usersTable)
+              .set({ boostCredits: sql`${usersTable.boostCredits} + ${pack.boosts}` })
+              .where(eq(usersTable.id, userId));
+          }
         }
       } else if (metadata.kind === "plan") {
         const planId = metadata.planId;
         const grant = PLAN_LIMITS[planId]?.monthlyBoostCredits ?? 0;
-        await db
-          .update(usersTable)
-          .set({
-            plan: planId,
-            stripeSubscriptionId: typeof session.subscription === "string" ? session.subscription : null,
-            boostCredits: sql`${usersTable.boostCredits} + ${grant}`,
-          })
-          .where(eq(usersTable.id, userId));
-        if (grant > 0) {
-          await db.insert(creditTransactionsTable).values({
+        // Even a zero-credit plan still needs its own idempotency claim
+        // (amount: 0 is a real, insertable row) — otherwise a retried
+        // "checkout.session.completed" for a no-credit plan would re-set
+        // stripeSubscriptionId/plan every time it's redelivered instead of
+        // only once.
+        const inserted = await db
+          .insert(creditTransactionsTable)
+          .values({
             id: randomUUID(),
             userId,
             type: "plan_grant",
             amount: grant,
             stripePaymentIntentId: session.id,
-          });
+          })
+          .onConflictDoNothing({ target: creditTransactionsTable.stripePaymentIntentId })
+          .returning({ id: creditTransactionsTable.id });
+        if (inserted.length > 0) {
+          await db
+            .update(usersTable)
+            .set({
+              plan: planId,
+              stripeSubscriptionId: typeof session.subscription === "string" ? session.subscription : null,
+              boostCredits: sql`${usersTable.boostCredits} + ${grant}`,
+            })
+            .where(eq(usersTable.id, userId));
         }
       }
     }

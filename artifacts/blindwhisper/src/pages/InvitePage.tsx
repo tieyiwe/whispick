@@ -68,6 +68,7 @@ export function InvitePage() {
           channel,
           recipientEmail: channel === "email" ? recipientEmail.trim() || null : null,
           recipientPhone: channel !== "email" ? recipientPhone.trim() || null : null,
+          smsConsentConfirmed: channel === "sms" ? smsConsentConfirmed : null,
         },
       },
       {

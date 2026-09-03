@@ -419,6 +419,16 @@ router.patch("/users/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: "You can't ban or demote your own account" });
     return;
   }
+  // Same self-action guard, extended to plan/boostCredits: without this, any
+  // admin (or a collaborator holding just the `users` permission) could
+  // grant themselves a paid plan or unlimited boost credits directly,
+  // bypassing Stripe entirely — plan/credit changes are meant to flow only
+  // through a real checkout (routes/billing.ts's webhook) or another admin
+  // acting on someone else's account.
+  if (target.id === adminUser.id && (parsed.data.plan !== undefined || parsed.data.boostCredits !== undefined)) {
+    res.status(400).json({ error: "You can't change your own plan or boost credits from here" });
+    return;
+  }
 
   // The super admin account is managed by ADMIN_EMAILS, never from here —
   // without this, any collaborator holding the `users` permission could ban

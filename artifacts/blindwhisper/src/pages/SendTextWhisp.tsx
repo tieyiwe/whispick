@@ -69,6 +69,7 @@ export function SendTextWhisp() {
           messageText: messageText.trim(),
           senderAlias: alias,
           scheduledAt: isScheduling ? new Date(scheduledAtValue).toISOString() : null,
+          smsConsentConfirmed,
         },
       },
       {

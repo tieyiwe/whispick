@@ -247,13 +247,19 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const receivedWhispUnreadCount = receivedWhispUnread?.unreadCount ?? 0;
 
   // Home-screen presence (Badge API): reflects total actionable unread —
-  // bell notifications + Whisper Box inbox + unopened received whisps.
-  // Deliberately notificationUnreadCount, not unreadReplyCount, which is
-  // already a subset of it rather than an addition. Piggybacks on the
-  // polled queries above instead of opening its own poll; a no-op
-  // everywhere the Badge API doesn't exist. Lives here (not a page) so
-  // it's active for the whole authenticated session.
-  useAppBadge(notificationUnreadCount + whisperBoxUnreadCount + receivedWhispUnreadCount);
+  // bell notifications + Whisper Box inbox. Deliberately NOT
+  // + receivedWhispUnreadCount: a whisp delivered to a matched recipient
+  // already inserts its own row in notificationsTable (see lib/deliver.ts's
+  // deliverInApp), so it's already counted once via notificationUnreadCount
+  // — adding receivedWhispUnreadCount on top would double-count that same
+  // event, inflating the OS badge. Same reasoning as skipping
+  // unreadReplyCount, which is already a subset of notificationUnreadCount
+  // rather than an addition — receivedWhispUnreadCount isn't a subset, but
+  // it overlaps enough with it that summing both isn't safe either.
+  // Piggybacks on the polled queries above instead of opening its own poll;
+  // a no-op everywhere the Badge API doesn't exist. Lives here (not a page)
+  // so it's active for the whole authenticated session.
+  useAppBadge(notificationUnreadCount + whisperBoxUnreadCount);
 
   const navItems = isAdmin
     ? [...NAV_ITEMS, { href: "/admin_pro", labelKey: "nav.admin", icon: ShieldCheck }]

@@ -92,9 +92,17 @@ const createInviteSchema = z
     recipientEmail: z.string().email().max(320).nullable().optional(),
     recipientPhone: z.string().max(32).regex(/^[+0-9()\-.\s]+$/, "Not a valid phone number").nullable().optional(),
     channel: z.enum(CHANNELS),
+    // Same server-enforced consent gate as POST /whisps — see its own
+    // schema comment. Only required for an actual SMS invite; WhatsApp
+    // isn't carrier-regulated under A2P 10DLC the same way, matching
+    // InvitePage.tsx's own requiresSmsConsent carve-out.
+    smsConsentConfirmed: z.boolean().nullable().optional(),
   })
   .refine((data) => (data.channel === "email" ? !!data.recipientEmail : !!data.recipientPhone), {
     message: "Email invites need a recipient email; text/WhatsApp invites need a recipient phone number",
+  })
+  .refine((data) => data.channel !== "sms" || !!data.smsConsentConfirmed, {
+    message: "Please confirm you have this person's permission to receive a text from you.",
   });
 
 // POST /api/invites

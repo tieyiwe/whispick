@@ -169,6 +169,13 @@ const createTextWhispSchema = z.object({
   // ISO timestamp holds delivery back until lib/textWhispScheduler.ts finds
   // it due. A past-or-missing value just sends immediately, same as today.
   scheduledAt: z.string().nullable().optional(),
+  // Same server-enforced consent gate as POST /whisps — see its own schema
+  // comment. Required unconditionally here (not just when the recipient
+  // turns out to be unmatched): whether this send actually goes out over
+  // SMS or lands entirely in-app depends on findVerifiedRecipient below,
+  // which the client can't know in advance, so SendTextWhisp.tsx always
+  // shows the checkbox and this always requires it.
+  smsConsentConfirmed: z.boolean().nullable().optional(),
 });
 
 router.post("/", requireAuth, createTextWhispLimiter, async (req, res): Promise<void> => {
@@ -178,6 +185,11 @@ router.post("/", requireAuth, createTextWhispLimiter, async (req, res): Promise<
   const parsed = createTextWhispSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  if (!parsed.data.smsConsentConfirmed) {
+    res.status(400).json({ error: "Please confirm you have this person's permission to receive a text from you." });
     return;
   }
 
