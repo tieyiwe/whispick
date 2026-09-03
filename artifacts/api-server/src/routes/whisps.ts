@@ -33,7 +33,7 @@ import { generateNoteSuggestions } from "../lib/noteSuggestions";
 import { httpUrlString } from "../lib/safeUrl";
 import { deriveVideoFields, embedUrlFor } from "../lib/videoMeta";
 import { runConcierge, MAX_SITUATION_LENGTH } from "../lib/concierge";
-import { assignOrGetSenderHandle } from "../lib/whispSenderHandle";
+import { safeAssignOrGetSenderHandle } from "../lib/whispSenderHandle";
 
 const router = Router();
 
@@ -155,7 +155,7 @@ async function toWhispResponse(whisp: typeof whispsTable.$inferSelect, viewerId:
   const viewerRole: "sender" | "recipient" | null =
     whisp.senderId === viewerId ? "sender" : recipientUserId === viewerId ? "recipient" : null;
   const { senderId, ...safeRest } = rest;
-  const senderHandle = viewerRole === "recipient" ? await assignOrGetSenderHandle(senderId, viewerId) : null;
+  const senderHandle = viewerRole === "recipient" ? await safeAssignOrGetSenderHandle(senderId, viewerId) : null;
   return {
     ...safeRest,
     senderId: viewerRole === "sender" ? senderId : null,

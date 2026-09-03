@@ -1,6 +1,7 @@
 import { randomUUID, randomInt } from "crypto";
 import { db, whispSenderHandlesTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
+import { logger } from "./logger";
 
 // Deliberately plain, unremarkable words — same "must never double as an
 // identity clue" rule lib/anonymousHandles.ts's own list follows — drawn
@@ -63,4 +64,18 @@ export async function assignOrGetSenderHandle(senderId: string, recipientUserId:
     }
   }
   throw new Error("Failed to assign a whisp sender handle after several attempts");
+}
+
+// Same as assignOrGetSenderHandle, but never throws — a display-only
+// pseudonym must never be able to take down the whisp/Text Whisp page it's
+// decorating (e.g. a not-yet-migrated whisp_sender_handles table shouldn't
+// 500 the whole recipient view). Falls back to null, which every call site
+// already treats as "no handle to show" for a non-recipient viewer anyway.
+export async function safeAssignOrGetSenderHandle(senderId: string, recipientUserId: string): Promise<string | null> {
+  try {
+    return await assignOrGetSenderHandle(senderId, recipientUserId);
+  } catch (err) {
+    logger.error({ err, senderId, recipientUserId }, "Failed to assign/look up a whisp sender handle");
+    return null;
+  }
 }

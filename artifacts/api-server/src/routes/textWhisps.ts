@@ -20,7 +20,7 @@ import {
   textWhispRevealRequestHookLine,
   textWhispRevealRespondedHookLine,
 } from "../lib/copy";
-import { assignOrGetSenderHandle } from "../lib/whispSenderHandle";
+import { safeAssignOrGetSenderHandle } from "../lib/whispSenderHandle";
 
 const router = Router();
 
@@ -123,7 +123,7 @@ async function toResponse(textWhisp: TextWhisp, viewerId: string) {
   // separate anonymous threads tell them apart. Same anti-enumeration
   // reasoning as senderId itself being withheld below: only ever computed
   // for the recipient's own view.
-  const senderHandle = viewerIsRecipient ? await assignOrGetSenderHandle(senderId, viewerId) : null;
+  const senderHandle = viewerIsRecipient ? await safeAssignOrGetSenderHandle(senderId, viewerId) : null;
 
   return {
     ...rest,
