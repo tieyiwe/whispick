@@ -85,11 +85,27 @@ describe("POST /api/whisps", () => {
         deliveryMethod: "whisper_link",
         whisperChannel: "sms",
         recipientPhone: "+15551234567",
+        smsConsentConfirmed: true,
       });
 
     expect(res.status).toBe(201);
     expect(res.body.whisperChannel).toBe("sms");
     expect(res.body.recipientPhone).toBe("+15551234567");
+  });
+
+  it("rejects an SMS whisp without SMS consent confirmation", async () => {
+    const res = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_A))
+      .send({
+        videoUrl: "https://youtu.be/x",
+        deliveryMethod: "whisper_link",
+        whisperChannel: "sms",
+        recipientPhone: "+15551234567",
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/permission to receive a text/i);
   });
 
   it("enforces the free plan's monthly Whisper Link limit", async () => {
@@ -624,6 +640,7 @@ describe("POST /api/whisps — recipient contact validation", () => {
         deliveryMethod: "whisper_link",
         whisperChannel: "sms",
         recipientPhone: "+15551234567, +15559999999",
+        smsConsentConfirmed: true,
       });
     expect(res.status).toBe(400);
   });
@@ -648,6 +665,7 @@ describe("POST /api/whisps — recipient contact validation", () => {
         deliveryMethod: "whisper_link",
         whisperChannel: "sms",
         recipientPhone: "+1 (555) 123-4567",
+        smsConsentConfirmed: true,
       });
     expect(sms.status).toBe(201);
   });

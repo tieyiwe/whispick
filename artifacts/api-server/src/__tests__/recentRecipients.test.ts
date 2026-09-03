@@ -14,6 +14,7 @@ async function sendTo(user: string, recipient: { recipientEmail?: string; recipi
       videoUrl: "https://youtu.be/x",
       deliveryMethod: "whisper_link",
       whisperChannel: recipient.recipientEmail ? "email" : "sms",
+      ...(recipient.recipientEmail ? {} : { smsConsentConfirmed: true }),
       ...recipient,
     });
   expect(res.status).toBe(201);

@@ -156,6 +156,7 @@ describe("anti-enumeration: matched vs unmatched responses are indistinguishable
         deliveryMethod: "whisper_link",
         whisperChannel: "sms",
         recipientPhone: "+15559876543",
+        smsConsentConfirmed: true,
       });
 
     const unmatchedRes = await request(app)
@@ -166,6 +167,7 @@ describe("anti-enumeration: matched vs unmatched responses are indistinguishable
         deliveryMethod: "whisper_link",
         whisperChannel: "sms",
         recipientPhone: "+15550001111",
+        smsConsentConfirmed: true,
       });
 
     // Same status, and the same set of body keys — nothing about the

@@ -123,6 +123,18 @@ describe("Whisper Groups: sending", () => {
     expect(res.status).toBe(400);
   });
 
+  it("rejects an SMS group send without SMS consent confirmation", async () => {
+    const groupId = await createGroupWithMembers([{ name: "Phone Member", phone: "+15551230000" }]);
+
+    const res = await request(app)
+      .post(`/api/whisper-groups/${groupId}/send`)
+      .set(asUser(USER_A))
+      .send({ videoUrl: "https://youtu.be/x", whisperChannel: "sms" });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/permission to receive a text/i);
+  });
+
   it("enforces the free-plan Whisper Link limit across the whole group send", async () => {
     const groupId = await createGroupWithMembers([
       { email: "a@example.com" },
