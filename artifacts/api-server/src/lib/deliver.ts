@@ -190,7 +190,7 @@ export async function deliverWhisperLink(
       : false;
     const transportOk =
       channel === "sms"
-        ? await sendSms(whisp.recipientPhone, whisperLinkSmsBody(sharedUrl, hookLine), logCtx)
+        ? await sendSms(whisp.recipientPhone, whisperLinkSmsBody(sharedUrl), logCtx)
         : await sendWhatsApp(whisp.recipientPhone, sharedUrl, logCtx);
     // Same reasoning as the email branch above: while Twilio/WhatsApp
     // Business approval is still pending (or on any later transient
