@@ -34,6 +34,7 @@ import { httpUrlString } from "../lib/safeUrl";
 import { deriveVideoFields, embedUrlFor } from "../lib/videoMeta";
 import { runConcierge, MAX_SITUATION_LENGTH } from "../lib/concierge";
 import { safeAssignOrGetSenderHandle } from "../lib/whispSenderHandle";
+import { hasSmsConsent, recordSmsConsent } from "../lib/smsConsent";
 
 const router = Router();
 
@@ -461,10 +462,19 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
     }
     // WhatsApp isn't carrier-regulated under A2P 10DLC the same way SMS is
     // — same carve-out SendWhisp.tsx's own requiresSmsConsent uses — so only
-    // an actual SMS send requires this.
-    if (data.whisperChannel === "sms" && !data.smsConsentConfirmed) {
-      res.status(400).json({ error: "Please confirm you have this person's permission to receive a text from you." });
-      return;
+    // an actual SMS send requires this. Consent is once-per-recipient: an
+    // affirmative checkbox on THIS send, OR a stored consent from a prior
+    // send to the same number, satisfies it (see lib/smsConsent.ts).
+    if (data.whisperChannel === "sms" && data.recipientPhone) {
+      const alreadyConsented = data.smsConsentConfirmed || (await hasSmsConsent(user.id, data.recipientPhone));
+      if (!alreadyConsented) {
+        res.status(400).json({ error: "Please confirm you have this person's permission to receive a text from you.", code: "sms_consent_required" });
+        return;
+      }
+      // Persist a fresh attestation so future sends to this number skip the
+      // checkbox. Idempotent + best-effort (see recordSmsConsent) — never
+      // gates the send on the write landing.
+      if (data.smsConsentConfirmed) void recordSmsConsent(user.id, data.recipientPhone);
     }
   }
 

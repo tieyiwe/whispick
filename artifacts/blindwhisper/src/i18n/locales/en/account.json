@@ -182,7 +182,8 @@
     "toastRevealRequestFailed": "Failed to request reveal",
     "smsDisclosure": "By sending to a phone number, you're texting them on your own behalf. Msg & data rates may apply. Reply STOP to opt out, HELP for help. See our",
     "smsTermsLinkText": "SMS Terms",
-    "smsConsentCheckbox": "I confirm I have this person's permission to receive a text from me via Blind Whisper."
+    "smsConsentCheckbox": "I confirm I have this person's permission to receive a text from me via Blind Whisper.",
+    "smsConsentOneTime": "You only need to confirm this once for each new contact."
   },
   "publicInvitePage": {
     "notFound": "This invite could not be found.",

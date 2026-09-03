@@ -184,7 +184,8 @@
       "smsTermsLinkText": "SMS Terms",
       "or": "or",
       "chooseFromContacts": "Choose from Contacts",
-      "smsConsentCheckbox": "I confirm I have this person's permission to receive a text from me via Blind Whisper."
+      "smsConsentCheckbox": "I confirm I have this person's permission to receive a text from me via Blind Whisper.",
+      "smsConsentOneTime": "You only need to confirm this once for each new contact."
     },
     "step6": {
       "heading": "Ready to send?",

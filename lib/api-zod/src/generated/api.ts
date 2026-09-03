@@ -2657,6 +2657,23 @@ export const GetMyUnreadNotificationCountResponse = zod.object({
 
 
 /**
+ * Lets a send screen hide the one-time SMS opt-in checkbox for a recipient the sender has confirmed before. Returns the subset of the submitted numbers that already have a stored consent for this sender. Reports only the caller's own prior attestations — never whether a number is a registered account.
+ * @summary Which of these phone numbers this sender has already given one-time SMS consent for
+ */
+export const checkSmsConsentBodyPhonesMax = 100;
+
+
+
+export const CheckSmsConsentBody = zod.object({
+  "phones": zod.array(zod.string()).max(checkSmsConsentBodyPhonesMax)
+})
+
+export const CheckSmsConsentResponse = zod.object({
+  "consented": zod.array(zod.string()).describe('The subset of the submitted phone strings this sender has already consented to text.')
+})
+
+
+/**
  * Only ever the caller's own sending history — addresses they typed themselves. Says nothing about whether any of them has a Blind Whisper account, which is the fact the anti-enumeration rules protect.
  * @summary Contacts this user has sent to before, for autocompleting the recipient field
  */

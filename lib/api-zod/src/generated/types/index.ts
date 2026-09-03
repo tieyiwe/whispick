@@ -238,6 +238,8 @@ export * from './sendWhisperBoxMessageBody';
 export * from './setGuessReactionBody';
 export * from './setGuessReactionBodyReaction';
 export * from './skippedGroupMember';
+export * from './smsConsentCheckInput';
+export * from './smsConsentCheckResult';
 export * from './startCircleDm201';
 export * from './startPhoneVerificationInput';
 export * from './subscribeInput';

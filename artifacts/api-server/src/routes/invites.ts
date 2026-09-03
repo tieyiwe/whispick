@@ -14,6 +14,7 @@ import { inviteRevealRequestHookLine } from "../lib/copy";
 import { inviteLimiter, publicEndpointLimiter } from "../lib/rateLimit";
 import { notifyUser } from "../lib/push";
 import { logger } from "../lib/logger";
+import { hasSmsConsent, recordSmsConsent } from "../lib/smsConsent";
 
 const router = Router();
 
@@ -100,9 +101,6 @@ const createInviteSchema = z
   })
   .refine((data) => (data.channel === "email" ? !!data.recipientEmail : !!data.recipientPhone), {
     message: "Email invites need a recipient email; text/WhatsApp invites need a recipient phone number",
-  })
-  .refine((data) => data.channel !== "sms" || !!data.smsConsentConfirmed, {
-    message: "Please confirm you have this person's permission to receive a text from you.",
   });
 
 // POST /api/invites
@@ -117,6 +115,19 @@ router.post("/", requireAuth, inviteLimiter, async (req, res): Promise<void> => 
   }
 
   const { channel, recipientEmail, recipientPhone } = parsed.data;
+
+  // Once-per-recipient SMS consent (see lib/smsConsent.ts): only for an
+  // actual SMS invite (WhatsApp is carved out, same as the other send
+  // routes), satisfied by an affirmative checkbox now OR a stored consent
+  // from a prior send to this number.
+  if (channel === "sms" && recipientPhone) {
+    const alreadyConsented = parsed.data.smsConsentConfirmed || (await hasSmsConsent(user.id, recipientPhone));
+    if (!alreadyConsented) {
+      res.status(400).json({ error: "Please confirm you have this person's permission to receive a text from you.", code: "sms_consent_required" });
+      return;
+    }
+    if (parsed.data.smsConsentConfirmed) void recordSmsConsent(user.id, recipientPhone);
+  }
 
   const id = randomUUID();
   const publicToken = randomUUID().replace(/-/g, "");
