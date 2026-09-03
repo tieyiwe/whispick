@@ -5,18 +5,46 @@ import { eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { logger } from "./logger";
 
-const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
-const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
-const VAPID_SUBJECT = process.env.VAPID_SUBJECT ?? "mailto:support@blindwhisper.com";
+// Trimmed, not raw: a VAPID value pasted into a hosting secret store
+// (Replit Secrets, etc.) very easily picks up a trailing space or newline,
+// which web-push's base64url decode then rejects — so normalize before use.
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY?.trim() || undefined;
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY?.trim() || undefined;
+// setVapidDetails requires the subject to be a mailto: or https: URL and
+// throws otherwise; a bare "support@blindwhisper.com" with no mailto: prefix
+// is the most common way this is misconfigured, so repair that specific case
+// rather than letting it take push down.
+const rawSubject = process.env.VAPID_SUBJECT?.trim();
+const VAPID_SUBJECT =
+  rawSubject && (rawSubject.startsWith("mailto:") || rawSubject.startsWith("http"))
+    ? rawSubject
+    : rawSubject
+      ? `mailto:${rawSubject}`
+      : "mailto:support@blindwhisper.com";
 
-const isConfigured = !!VAPID_PUBLIC_KEY && !!VAPID_PRIVATE_KEY;
-
-if (isConfigured) {
-  webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY!, VAPID_PRIVATE_KEY!);
+// isConfigured stays false if setVapidDetails rejects the values — a
+// malformed VAPID key/subject must NEVER be able to crash the whole server.
+// This runs at module-load time (this file is imported during startup), so
+// an uncaught throw here exits the process before it can open its port,
+// which the platform reports as "failed to open a port in time" — a broken
+// notification feature masquerading as a total outage. Catch it, log it,
+// and degrade to exactly the same "push disabled" state as no keys at all.
+let isConfigured = false;
+if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
+  try {
+    webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+    isConfigured = true;
+  } catch (err) {
+    logger.error({ err }, "Invalid VAPID configuration; push notifications disabled. Check VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT for typos or stray whitespace.");
+  }
 }
 
 export function getVapidPublicKey(): string | null {
-  return VAPID_PUBLIC_KEY ?? null;
+  // Only hand the browser a key the server can actually sign pushes with —
+  // if setVapidDetails rejected the config above, isConfigured is false and
+  // this returns null (→ GET /push-public-key 503s), so the client doesn't
+  // subscribe against a key that would then never deliver anything.
+  return isConfigured ? VAPID_PUBLIC_KEY ?? null : null;
 }
 
 // Notifies every browser subscription the user has registered. Fires on
