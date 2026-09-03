@@ -91,6 +91,11 @@ export interface Whisp {
   pinned: boolean;
   /** Whether the CALLER's own copy of this whisp is archived (see POST /whisps/{id}/archive) — never the other party's archive state. */
   archived: boolean;
+  /**
+     * A stable, anonymous pseudonym for this whisp's sender (e.g. "Falcon482"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerRole is "recipient"; null otherwise.
+     * @nullable
+     */
+  senderHandle?: string | null;
 }
 
 export interface WhispInput {
@@ -306,7 +311,11 @@ export interface RevealResult {
 
 export interface TextWhisp {
   id: string;
-  senderId: string;
+  /**
+     * The sender's real account id — set only when the caller IS the sender. Null for a recipient's own view, same anti-enumeration reasoning as senderHandle existing at all.
+     * @nullable
+     */
+  senderId: string | null;
   /** True only if the authenticated caller IS this Text Whisp's recipient. Deliberately caller-relative and self-referential (safe for a sender to see, since it's always false for their own sent messages) rather than exposing the underlying recipientUserId, which would let a sender learn whether an arbitrary phone number belongs to a verified Blind Whisper account. */
   viewerIsRecipient: boolean;
   /** The E.164-normalized phone number provided at send time, regardless of whether it matched a user. */
@@ -337,6 +346,11 @@ export interface TextWhisp {
      * @nullable
      */
   revealedSenderName: string | null;
+  /**
+     * A stable, anonymous pseudonym for this Text Whisp's sender (e.g. "Falcon482"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerIsRecipient is true; null otherwise.
+     * @nullable
+     */
+  senderHandle: string | null;
 }
 
 export interface TextWhispInput {
@@ -547,6 +561,11 @@ export interface PublicWhisp {
   viewerArchived?: boolean;
   /** Same caller-relative scoping as viewerArchived, for pin instead. */
   viewerPinned?: boolean;
+  /**
+     * A stable, anonymous pseudonym for this whisp's sender (e.g. "Falcon482"), scoped to this one (sender, recipient) pair. Same caller-relative scoping as viewerArchived — set only when the caller is signed in and is this whisp's matched recipient; null otherwise.
+     * @nullable
+     */
+  senderHandle: string | null;
   videoUrl: string;
   /** @nullable */
   videoTitle?: string | null;

@@ -710,6 +710,18 @@ export function PublicWhispPage() {
                 : t("publicWhisp.lead.individual")}
             </p>
 
+            {/* Stable per-sender pseudonym (see lib/whispSenderHandle.ts) — only
+                ever set for the signed-in matched recipient, same gating as
+                viewerArchived/viewerPinned. Shown here, independent of whether
+                there's a note, so a recipient with several separate anonymous
+                whisps can tell this one's sender apart from the others even
+                before opening it. */}
+            {whisp.senderHandle && (
+              <p className="text-center text-xs text-muted-foreground" data-testid="text-sender-handle">
+                {t("whispsList.from", { sender: whisp.senderHandle })}
+              </p>
+            )}
+
             {expired ? (
               <div className="rounded-2xl bg-card border border-border/50 p-8 text-center space-y-3">
                 <div className="w-12 h-12 rounded-full bg-muted/60 flex items-center justify-center mx-auto">

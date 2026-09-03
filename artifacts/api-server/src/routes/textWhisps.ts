@@ -20,6 +20,7 @@ import {
   textWhispRevealRequestHookLine,
   textWhispRevealRespondedHookLine,
 } from "../lib/copy";
+import { assignOrGetSenderHandle } from "../lib/whispSenderHandle";
 
 const router = Router();
 
@@ -90,7 +91,7 @@ async function loadTextWhispForUser(id: string, userId: string) {
 const TYPING_TTL_MS = 8_000;
 
 async function toResponse(textWhisp: TextWhisp, viewerId: string) {
-  const { recipientUserId, typingUserId, typingAt, ...rest } = textWhisp;
+  const { recipientUserId, typingUserId, typingAt, senderId, ...rest } = textWhisp;
   // Same shape as viewerIsRecipient: a raw typingUserId would tell a viewer
   // WHO is typing even when it's their own ping echoed back, so this
   // resolves it to the one fact the other party's UI actually needs —
@@ -117,7 +118,21 @@ async function toResponse(textWhisp: TextWhisp, viewerId: string) {
     revealedSenderName = sender?.fullName ?? null;
   }
 
-  return { ...rest, viewerIsRecipient, otherPartyTyping, revealedSenderName };
+  // Stable per-(sender, recipient) pseudonym (see lib/whispSenderHandle.ts),
+  // shared with the video-Whisp side — lets a recipient with several
+  // separate anonymous threads tell them apart. Same anti-enumeration
+  // reasoning as senderId itself being withheld below: only ever computed
+  // for the recipient's own view.
+  const senderHandle = viewerIsRecipient ? await assignOrGetSenderHandle(senderId, viewerId) : null;
+
+  return {
+    ...rest,
+    senderId: viewerIsRecipient ? null : senderId,
+    viewerIsRecipient,
+    otherPartyTyping,
+    revealedSenderName,
+    senderHandle,
+  };
 }
 
 // GET /api/text-whisps — the authenticated user's own text whisps, sent and

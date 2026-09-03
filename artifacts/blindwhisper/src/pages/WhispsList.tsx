@@ -187,7 +187,8 @@ export function WhispsList() {
       w.videoTitle?.toLowerCase().includes(q) ||
       (!isReceivedItem && w.recipientEmail?.toLowerCase().includes(q)) ||
       (!isReceivedItem && w.recipientPhone?.toLowerCase().includes(q)) ||
-      (isReceivedItem && w.senderAlias?.toLowerCase().includes(q))
+      (isReceivedItem && w.senderAlias?.toLowerCase().includes(q)) ||
+      (isReceivedItem && w.senderHandle?.toLowerCase().includes(q))
     );
   });
 
@@ -423,7 +424,10 @@ export function WhispsList() {
                         {isReceivedItem ? (
                           <span className="truncate flex items-center gap-1.5">
                             <Inbox className="w-3.5 h-3.5 text-primary/70 shrink-0" />
-                            {t("whispsList.from", { sender: whisp.senderAlias || t("whispsList.someoneAnonymous") })}
+                            {t("whispsList.from", { sender: whisp.senderHandle || t("whispsList.someoneAnonymous") })}
+                            {whisp.senderAlias && whisp.senderAlias !== whisp.senderHandle && (
+                              <span className="text-muted-foreground/70">({whisp.senderAlias})</span>
+                            )}
                           </span>
                         ) : (
                           <span className="truncate">

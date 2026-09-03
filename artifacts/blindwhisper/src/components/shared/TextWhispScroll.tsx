@@ -104,6 +104,11 @@ interface TextWhispScrollProps {
   mode: "send" | "open";
   messageText: string;
   senderAlias?: string | null;
+  /** open mode, recipient view only — the stable per-(sender, recipient)
+   *  pseudonym (see lib/whispSenderHandle.ts). Takes priority over
+   *  senderAlias when set, since it's the one identity a recipient can
+   *  actually use to tell this sender apart from every other one. */
+  senderHandle?: string | null;
   createdAt?: string | Date | null;
   /** send mode only — auto-plays the roll/tie sequence on mount. Default true. */
   autoPlay?: boolean;
@@ -126,6 +131,7 @@ export function TextWhispScroll({
   mode,
   messageText,
   senderAlias,
+  senderHandle,
   createdAt,
   autoPlay = true,
   scheduled = false,
@@ -315,7 +321,10 @@ export function TextWhispScroll({
           <div className="absolute inset-x-0 bottom-0 h-2 bg-[hsl(38_30%_76%)]/60" aria-hidden="true" />
           <p className="relative font-serif text-[hsl(30_35%_20%)] text-base leading-relaxed whitespace-pre-wrap">{messageText}</p>
           <div className="relative mt-3 pt-3 border-t border-[hsl(35_25%_65%)] flex items-center justify-between text-xs text-[hsl(30_20%_38%)]">
-            <span>— {senderAlias?.trim() || t("textWhispScroll.someoneAnonymous")}</span>
+            <span>
+              — {senderHandle || senderAlias?.trim() || t("textWhispScroll.someoneAnonymous")}
+              {senderHandle && senderAlias?.trim() && senderAlias.trim() !== senderHandle && ` (${senderAlias.trim()})`}
+            </span>
             {createdAt && <span>{formatWhen(createdAt)}</span>}
           </div>
         </div>

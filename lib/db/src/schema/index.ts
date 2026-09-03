@@ -39,3 +39,4 @@ export * from "./circle_agent_settings";
 export * from "./whisper_box_messages";
 export * from "./bug_reports";
 export * from "./visitor_sessions";
+export * from "./whisp_sender_handles";
