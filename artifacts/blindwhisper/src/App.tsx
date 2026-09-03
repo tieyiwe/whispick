@@ -113,6 +113,15 @@ function RouteLoadingFallback() {
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
+// The Clerk proxy (/api/__clerk) is PRODUCTION-ONLY: the backend's
+// clerkProxyMiddleware is a no-op passthrough outside production (Clerk
+// proxying doesn't work for dev instances). So pointing Clerk at proxyUrl
+// during `vite dev` makes it fetch clerk.browser.js from a path nothing
+// serves → "failed to load Clerk JS" and a blank app. Gate on
+// import.meta.env.PROD so dev loads Clerk directly from its
+// publishable-key FAPI, and only the production build routes through the
+// proxy (which is where custom-domain cookie handling actually needs it).
+const useClerkProxy = !!clerkProxyUrl && import.meta.env.PROD;
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 function stripBase(path: string): string {
@@ -282,7 +291,7 @@ function ClerkProviderWithRoutes() {
   return (
     <ClerkProvider
       publishableKey={clerkPubKey}
-      {...(clerkProxyUrl ? { proxyUrl: clerkProxyUrl } : {})}
+      {...(useClerkProxy ? { proxyUrl: clerkProxyUrl } : {})}
       appearance={clerkAppearance}
       signInUrl={`${basePath}/sign-in`}
       signUpUrl={`${basePath}/sign-up`}
