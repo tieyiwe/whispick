@@ -20,6 +20,7 @@ import {
   useArchiveWhisp,
   getGetPublicWhispQueryKey,
   getGetReceivedWhispUnreadCountQueryKey,
+  getListWhispsQueryKey,
   type CircleComment,
 } from "@workspace/api-client-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -368,17 +369,32 @@ export function PublicWhispPage() {
   useEffect(() => {
     if (!whisp || trackedOpenRef.current) return;
     trackedOpenRef.current = true;
+
+    // Opening the whisp is exactly what clears it from the recipient's
+    // "unopened" set server-side (openedAt is set by this very event when it
+    // wasn't set before). hasOpenedBefore === false means this is that first
+    // open, so drop the "My Whisps" nav badge by one RIGHT NOW —
+    // synchronously, before the track round-trip and before navigating back
+    // to AppLayout — instead of waiting on the mutation's onSuccess (which
+    // the navigation away from this page can drop) or AppLayout's 60s poll.
+    // A no-op for an anonymous visitor, who holds no such cached count.
+    if (whisp.hasOpenedBefore === false) {
+      queryClient.setQueryData(getGetReceivedWhispUnreadCountQueryKey(), (old: any) =>
+        old ? { ...old, unreadCount: Math.max(0, (old.unreadCount ?? 0) - 1) } : old,
+      );
+    }
+
     trackEventMutate(
       { token: token!, data: { eventType: "opened" } },
       {
-        // Opening the whisp is exactly what clears it from the recipient's
-        // "unopened" count server-side (openedAt is set now), so refresh the
-        // "My Whisps" nav badge immediately instead of leaving it showing the
-        // pre-open number until AppLayout's 60s poll happens to come around.
-        // Only matters for a signed-in recipient (the query is theirs); a
-        // no-op invalidate for an anonymous visitor is harmless.
+        // Reconcile the optimistic guess above once the server confirms, and
+        // refresh the whisps list too so the same whisp stops showing as new
+        // inside the "My Whisps" Received tab (its status/openedAt just
+        // changed). Only meaningful for a signed-in recipient (these are
+        // their queries); a no-op for an anonymous visitor.
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetReceivedWhispUnreadCountQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getListWhispsQueryKey() });
         },
       },
     );
