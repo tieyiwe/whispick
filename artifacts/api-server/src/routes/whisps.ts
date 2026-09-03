@@ -33,6 +33,7 @@ import { generateNoteSuggestions } from "../lib/noteSuggestions";
 import { httpUrlString } from "../lib/safeUrl";
 import { deriveVideoFields, embedUrlFor } from "../lib/videoMeta";
 import { runConcierge, MAX_SITUATION_LENGTH } from "../lib/concierge";
+import { assignOrGetSenderHandle } from "../lib/whispSenderHandle";
 
 const router = Router();
 
@@ -135,7 +136,7 @@ router.post("/concierge", requireAuth, conciergeLimiter, async (req, res): Promi
 // accepted, and that routes/public.ts's GET /w/:token allowlists around by
 // construction. viewerRole/pinned/archived only ever reveal facts about the
 // CALLER's own side.
-function toWhispResponse(whisp: typeof whispsTable.$inferSelect, viewerId: string) {
+async function toWhispResponse(whisp: typeof whispsTable.$inferSelect, viewerId: string) {
   // videoReplyRequestNotifyAt/NotifiedAt are the anti-correlation deferral
   // machinery (the randomized delay before the sender's phone buzzes) — a
   // matched recipient reading their own box must never see the exact second
@@ -154,9 +155,11 @@ function toWhispResponse(whisp: typeof whispsTable.$inferSelect, viewerId: strin
   const viewerRole: "sender" | "recipient" | null =
     whisp.senderId === viewerId ? "sender" : recipientUserId === viewerId ? "recipient" : null;
   const { senderId, ...safeRest } = rest;
+  const senderHandle = viewerRole === "recipient" ? await assignOrGetSenderHandle(senderId, viewerId) : null;
   return {
     ...safeRest,
     senderId: viewerRole === "sender" ? senderId : null,
+    senderHandle,
     viewerIsRecipient: recipientUserId === viewerId,
     viewerRole,
     pinned: viewerRole === "sender" ? !!senderPinnedAt : viewerRole === "recipient" ? !!recipientPinnedAt : false,
@@ -218,7 +221,7 @@ router.get("/", requireAuth, async (req, res): Promise<void> => {
 
   const whisps = await db.select().from(whispsTable).where(whereClause).orderBy(orderClause);
 
-  res.json(whisps.map((w) => toWhispResponse(w, user.id)));
+  res.json(await Promise.all(whisps.map((w) => toWhispResponse(w, user.id))));
 });
 
 // POST /api/whisps/:id/pin — toggles pin for whichever role (sender or
@@ -596,7 +599,7 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
   // delivery"); a transport failure discovered moments later is visible via
   // GET, not this response, same as the scheduled-send and reminder paths.
   const whisp = await db.select().from(whispsTable).where(eq(whispsTable.id, id)).then(r => r[0]!);
-  res.status(201).json(toWhispResponse(whisp, user.id));
+  res.status(201).json(await toWhispResponse(whisp, user.id));
 
   // The shared link goes through /l/:token (server-rendered) rather than
   // straight to /w/:token (the SPA) so link-preview crawlers in

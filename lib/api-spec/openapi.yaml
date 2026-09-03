@@ -5010,6 +5010,9 @@ components:
         archived:
           type: boolean
           description: Whether the CALLER's own copy of this whisp is archived (see POST /whisps/{id}/archive) — never the other party's archive state.
+        senderHandle:
+          type: ["string", "null"]
+          description: A stable, anonymous pseudonym for this whisp's sender (e.g. "Falcon482"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerRole is "recipient"; null otherwise.
       required:
         - id
         - senderId
@@ -5327,7 +5330,8 @@ components:
         id:
           type: string
         senderId:
-          type: string
+          type: ["string", "null"]
+          description: The sender's real account id — set only when the caller IS the sender. Null for a recipient's own view, same anti-enumeration reasoning as senderHandle existing at all.
         viewerIsRecipient:
           type: boolean
           description: True only if the authenticated caller IS this Text Whisp's recipient. Deliberately caller-relative and self-referential (safe for a sender to see, since it's always false for their own sent messages) rather than exposing the underlying recipientUserId, which would let a sender learn whether an arbitrary phone number belongs to a verified Blind Whisper account.
@@ -5362,6 +5366,9 @@ components:
         revealedSenderName:
           type: ["string", "null"]
           description: The sender's real account name (users.fullName) — set ONLY when the caller is this Text Whisp's recipient AND revealAccepted is true. This is the one deliberate, consent-gated exception to the app's anonymity guarantee; null in every other case (including for the sender's own view of their own message, and for a recipient who hasn't accepted yet), regardless of what fullName is actually set to.
+        senderHandle:
+          type: ["string", "null"]
+          description: A stable, anonymous pseudonym for this Text Whisp's sender (e.g. "Falcon482"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerIsRecipient is true; null otherwise.
       required:
         - id
         - senderId
@@ -5374,6 +5381,7 @@ components:
         - createdAt
         - otherPartyTyping
         - revealedSenderName
+        - senderHandle
 
     TextWhispInput:
       type: object
@@ -5693,6 +5701,9 @@ components:
         viewerPinned:
           type: boolean
           description: Same caller-relative scoping as viewerArchived, for pin instead.
+        senderHandle:
+          type: ["string", "null"]
+          description: A stable, anonymous pseudonym for this whisp's sender (e.g. "Falcon482"), scoped to this one (sender, recipient) pair. Same caller-relative scoping as viewerArchived — set only when the caller is signed in and is this whisp's matched recipient; null otherwise.
         videoUrl:
           type: string
         videoTitle:
@@ -5791,6 +5802,7 @@ components:
         - likeCount
         - viewerHasLiked
         - comments
+        - senderHandle
 
     TrackingEvent:
       type: object

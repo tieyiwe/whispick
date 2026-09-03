@@ -8,7 +8,11 @@
 
 export interface TextWhisp {
   id: string;
-  senderId: string;
+  /**
+     * The sender's real account id — set only when the caller IS the sender. Null for a recipient's own view, same anti-enumeration reasoning as senderHandle existing at all.
+     * @nullable
+     */
+  senderId: string | null;
   /** True only if the authenticated caller IS this Text Whisp's recipient. Deliberately caller-relative and self-referential (safe for a sender to see, since it's always false for their own sent messages) rather than exposing the underlying recipientUserId, which would let a sender learn whether an arbitrary phone number belongs to a verified Blind Whisper account. */
   viewerIsRecipient: boolean;
   /** The E.164-normalized phone number provided at send time, regardless of whether it matched a user. */
@@ -39,4 +43,9 @@ export interface TextWhisp {
      * @nullable
      */
   revealedSenderName: string | null;
+  /**
+     * A stable, anonymous pseudonym for this Text Whisp's sender (e.g. "Falcon482"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerIsRecipient is true; null otherwise.
+     * @nullable
+     */
+  senderHandle: string | null;
 }

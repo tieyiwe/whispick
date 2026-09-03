@@ -27,6 +27,7 @@ import { ensureUser } from "../lib/ensureUser";
 import { assignOrGetHandle, getHandlesFor, renameHandle } from "../lib/anonymousHandles";
 import { toggleReaction, reactionCountsFor, viewerReactionsFor } from "../lib/commentReactions";
 import { commentImageUpload, storeCommentImage } from "../lib/commentImages";
+import { assignOrGetSenderHandle } from "../lib/whispSenderHandle";
 
 const router = Router();
 
@@ -246,12 +247,19 @@ router.get("/w/:token", async (req, res): Promise<void> => {
   // recipient — there's no per-viewer state to report for either.
   let viewerArchived = false;
   let viewerPinned = false;
+  // The stable per-(sender, recipient) pseudonym — see
+  // lib/whispSenderHandle.ts — so a signed-in recipient can tell this whisp
+  // apart from others in their inbox sent by someone else. Null for an
+  // anonymous visitor or a signed-in viewer who isn't the matched recipient,
+  // same gating as viewerArchived/viewerPinned above.
+  let senderHandle: string | null = null;
   const clerkUserId = getAuth(req).userId;
   if (clerkUserId && whisp.recipientUserId) {
     const viewer = await ensureUser(clerkUserId, req);
     if (whisp.recipientUserId === viewer.id) {
       viewerArchived = !!whisp.recipientArchivedAt;
       viewerPinned = !!whisp.recipientPinnedAt;
+      senderHandle = await assignOrGetSenderHandle(whisp.senderId, viewer.id);
     }
   }
 
@@ -260,6 +268,7 @@ router.get("/w/:token", async (req, res): Promise<void> => {
     id: whisp.id,
     viewerArchived,
     viewerPinned,
+    senderHandle,
     deliveryMethod: whisp.deliveryMethod,
     likeCount,
     viewerHasLiked,

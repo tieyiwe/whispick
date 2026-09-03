@@ -61,7 +61,8 @@ export const ListWhispsResponseItem = zod.object({
   "viewerIsRecipient": zod.boolean().describe('True only when the caller is themselves this whisp\'s matched recipient (see GET \/whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email\/phone belongs to a verified account.'),
   "viewerRole": zod.string().nullable().describe('\'sender\' | \'recipient\' | null — which role the caller has on this whisp. Drives pinned\/archived below, and (frontend-side) whether Delete is offered — only a sender may delete.'),
   "pinned": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is pinned (see POST \/whisps\/{id}\/pin) — never the other party\'s pin state.'),
-  "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.')
+  "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.'),
+  "senderHandle": zod.string().nullish().describe('A stable, anonymous pseudonym for this whisp\'s sender (e.g. \"Falcon482\"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerRole is \"recipient\"; null otherwise.')
 })
 export const ListWhispsResponse = zod.array(ListWhispsResponseItem)
 
@@ -127,7 +128,8 @@ export const CreateWhispResponse = zod.object({
   "viewerIsRecipient": zod.boolean().describe('True only when the caller is themselves this whisp\'s matched recipient (see GET \/whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email\/phone belongs to a verified account.'),
   "viewerRole": zod.string().nullable().describe('\'sender\' | \'recipient\' | null — which role the caller has on this whisp. Drives pinned\/archived below, and (frontend-side) whether Delete is offered — only a sender may delete.'),
   "pinned": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is pinned (see POST \/whisps\/{id}\/pin) — never the other party\'s pin state.'),
-  "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.')
+  "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.'),
+  "senderHandle": zod.string().nullish().describe('A stable, anonymous pseudonym for this whisp\'s sender (e.g. \"Falcon482\"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerRole is \"recipient\"; null otherwise.')
 })
 
 
@@ -181,7 +183,8 @@ export const GetWhispStatsResponse = zod.object({
   "viewerIsRecipient": zod.boolean().describe('True only when the caller is themselves this whisp\'s matched recipient (see GET \/whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email\/phone belongs to a verified account.'),
   "viewerRole": zod.string().nullable().describe('\'sender\' | \'recipient\' | null — which role the caller has on this whisp. Drives pinned\/archived below, and (frontend-side) whether Delete is offered — only a sender may delete.'),
   "pinned": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is pinned (see POST \/whisps\/{id}\/pin) — never the other party\'s pin state.'),
-  "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.')
+  "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.'),
+  "senderHandle": zod.string().nullish().describe('A stable, anonymous pseudonym for this whisp\'s sender (e.g. \"Falcon482\"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerRole is \"recipient\"; null otherwise.')
 }))
 })
 
@@ -231,7 +234,8 @@ export const GetWhispResponse = zod.object({
   "viewerIsRecipient": zod.boolean().describe('True only when the caller is themselves this whisp\'s matched recipient (see GET \/whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email\/phone belongs to a verified account.'),
   "viewerRole": zod.string().nullable().describe('\'sender\' | \'recipient\' | null — which role the caller has on this whisp. Drives pinned\/archived below, and (frontend-side) whether Delete is offered — only a sender may delete.'),
   "pinned": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is pinned (see POST \/whisps\/{id}\/pin) — never the other party\'s pin state.'),
-  "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.')
+  "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.'),
+  "senderHandle": zod.string().nullish().describe('A stable, anonymous pseudonym for this whisp\'s sender (e.g. \"Falcon482\"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerRole is \"recipient\"; null otherwise.')
 }),
   "trackingEvents": zod.array(zod.object({
   "id": zod.string(),
@@ -448,7 +452,8 @@ export const RequestRevealResponse = zod.object({
   "viewerIsRecipient": zod.boolean().describe('True only when the caller is themselves this whisp\'s matched recipient (see GET \/whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email\/phone belongs to a verified account.'),
   "viewerRole": zod.string().nullable().describe('\'sender\' | \'recipient\' | null — which role the caller has on this whisp. Drives pinned\/archived below, and (frontend-side) whether Delete is offered — only a sender may delete.'),
   "pinned": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is pinned (see POST \/whisps\/{id}\/pin) — never the other party\'s pin state.'),
-  "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.')
+  "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.'),
+  "senderHandle": zod.string().nullish().describe('A stable, anonymous pseudonym for this whisp\'s sender (e.g. \"Falcon482\"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerRole is \"recipient\"; null otherwise.')
 })
 
 
@@ -645,7 +650,7 @@ export const listTextWhispsResponseMessageTextMax = 260;
 
 export const ListTextWhispsResponseItem = zod.object({
   "id": zod.string(),
-  "senderId": zod.string(),
+  "senderId": zod.string().nullable().describe('The sender\'s real account id — set only when the caller IS the sender. Null for a recipient\'s own view, same anti-enumeration reasoning as senderHandle existing at all.'),
   "viewerIsRecipient": zod.boolean().describe('True only if the authenticated caller IS this Text Whisp\'s recipient. Deliberately caller-relative and self-referential (safe for a sender to see, since it\'s always false for their own sent messages) rather than exposing the underlying recipientUserId, which would let a sender learn whether an arbitrary phone number belongs to a verified Blind Whisper account.'),
   "recipientPhone": zod.string().describe('The E.164-normalized phone number provided at send time, regardless of whether it matched a user.'),
   "publicToken": zod.string().describe('Token for the public guest landing page (\/tw\/{publicToken}, see GET \/public\/text-whisps\/{token}). Always set, even for a matched in-app send.'),
@@ -658,7 +663,8 @@ export const ListTextWhispsResponseItem = zod.object({
   "readAt": zod.string().nullish(),
   "createdAt": zod.string(),
   "otherPartyTyping": zod.boolean().describe('True only while the OTHER party (never the caller\'s own ping echoed back) sent a typing ping within the last ~8s. See POST \/text-whisps\/{id}\/typing.'),
-  "revealedSenderName": zod.string().nullable().describe('The sender\'s real account name (users.fullName) — set ONLY when the caller is this Text Whisp\'s recipient AND revealAccepted is true. This is the one deliberate, consent-gated exception to the app\'s anonymity guarantee; null in every other case (including for the sender\'s own view of their own message, and for a recipient who hasn\'t accepted yet), regardless of what fullName is actually set to.')
+  "revealedSenderName": zod.string().nullable().describe('The sender\'s real account name (users.fullName) — set ONLY when the caller is this Text Whisp\'s recipient AND revealAccepted is true. This is the one deliberate, consent-gated exception to the app\'s anonymity guarantee; null in every other case (including for the sender\'s own view of their own message, and for a recipient who hasn\'t accepted yet), regardless of what fullName is actually set to.'),
+  "senderHandle": zod.string().nullable().describe('A stable, anonymous pseudonym for this Text Whisp\'s sender (e.g. \"Falcon482\"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerIsRecipient is true; null otherwise.')
 })
 export const ListTextWhispsResponse = zod.array(ListTextWhispsResponseItem)
 
@@ -683,7 +689,7 @@ export const createTextWhispResponseMessageTextMax = 260;
 
 export const CreateTextWhispResponse = zod.object({
   "id": zod.string(),
-  "senderId": zod.string(),
+  "senderId": zod.string().nullable().describe('The sender\'s real account id — set only when the caller IS the sender. Null for a recipient\'s own view, same anti-enumeration reasoning as senderHandle existing at all.'),
   "viewerIsRecipient": zod.boolean().describe('True only if the authenticated caller IS this Text Whisp\'s recipient. Deliberately caller-relative and self-referential (safe for a sender to see, since it\'s always false for their own sent messages) rather than exposing the underlying recipientUserId, which would let a sender learn whether an arbitrary phone number belongs to a verified Blind Whisper account.'),
   "recipientPhone": zod.string().describe('The E.164-normalized phone number provided at send time, regardless of whether it matched a user.'),
   "publicToken": zod.string().describe('Token for the public guest landing page (\/tw\/{publicToken}, see GET \/public\/text-whisps\/{token}). Always set, even for a matched in-app send.'),
@@ -696,7 +702,8 @@ export const CreateTextWhispResponse = zod.object({
   "readAt": zod.string().nullish(),
   "createdAt": zod.string(),
   "otherPartyTyping": zod.boolean().describe('True only while the OTHER party (never the caller\'s own ping echoed back) sent a typing ping within the last ~8s. See POST \/text-whisps\/{id}\/typing.'),
-  "revealedSenderName": zod.string().nullable().describe('The sender\'s real account name (users.fullName) — set ONLY when the caller is this Text Whisp\'s recipient AND revealAccepted is true. This is the one deliberate, consent-gated exception to the app\'s anonymity guarantee; null in every other case (including for the sender\'s own view of their own message, and for a recipient who hasn\'t accepted yet), regardless of what fullName is actually set to.')
+  "revealedSenderName": zod.string().nullable().describe('The sender\'s real account name (users.fullName) — set ONLY when the caller is this Text Whisp\'s recipient AND revealAccepted is true. This is the one deliberate, consent-gated exception to the app\'s anonymity guarantee; null in every other case (including for the sender\'s own view of their own message, and for a recipient who hasn\'t accepted yet), regardless of what fullName is actually set to.'),
+  "senderHandle": zod.string().nullable().describe('A stable, anonymous pseudonym for this Text Whisp\'s sender (e.g. \"Falcon482\"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerIsRecipient is true; null otherwise.')
 })
 
 
@@ -716,7 +723,7 @@ export const getTextWhispResponseRepliesItemReplyTextMax = 260;
 export const GetTextWhispResponse = zod.object({
   "textWhisp": zod.object({
   "id": zod.string(),
-  "senderId": zod.string(),
+  "senderId": zod.string().nullable().describe('The sender\'s real account id — set only when the caller IS the sender. Null for a recipient\'s own view, same anti-enumeration reasoning as senderHandle existing at all.'),
   "viewerIsRecipient": zod.boolean().describe('True only if the authenticated caller IS this Text Whisp\'s recipient. Deliberately caller-relative and self-referential (safe for a sender to see, since it\'s always false for their own sent messages) rather than exposing the underlying recipientUserId, which would let a sender learn whether an arbitrary phone number belongs to a verified Blind Whisper account.'),
   "recipientPhone": zod.string().describe('The E.164-normalized phone number provided at send time, regardless of whether it matched a user.'),
   "publicToken": zod.string().describe('Token for the public guest landing page (\/tw\/{publicToken}, see GET \/public\/text-whisps\/{token}). Always set, even for a matched in-app send.'),
@@ -729,7 +736,8 @@ export const GetTextWhispResponse = zod.object({
   "readAt": zod.string().nullish(),
   "createdAt": zod.string(),
   "otherPartyTyping": zod.boolean().describe('True only while the OTHER party (never the caller\'s own ping echoed back) sent a typing ping within the last ~8s. See POST \/text-whisps\/{id}\/typing.'),
-  "revealedSenderName": zod.string().nullable().describe('The sender\'s real account name (users.fullName) — set ONLY when the caller is this Text Whisp\'s recipient AND revealAccepted is true. This is the one deliberate, consent-gated exception to the app\'s anonymity guarantee; null in every other case (including for the sender\'s own view of their own message, and for a recipient who hasn\'t accepted yet), regardless of what fullName is actually set to.')
+  "revealedSenderName": zod.string().nullable().describe('The sender\'s real account name (users.fullName) — set ONLY when the caller is this Text Whisp\'s recipient AND revealAccepted is true. This is the one deliberate, consent-gated exception to the app\'s anonymity guarantee; null in every other case (including for the sender\'s own view of their own message, and for a recipient who hasn\'t accepted yet), regardless of what fullName is actually set to.'),
+  "senderHandle": zod.string().nullable().describe('A stable, anonymous pseudonym for this Text Whisp\'s sender (e.g. \"Falcon482\"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerIsRecipient is true; null otherwise.')
 }),
   "replies": zod.array(zod.object({
   "id": zod.string(),
@@ -830,7 +838,7 @@ export const requestTextWhispRevealResponseMessageTextMax = 260;
 
 export const RequestTextWhispRevealResponse = zod.object({
   "id": zod.string(),
-  "senderId": zod.string(),
+  "senderId": zod.string().nullable().describe('The sender\'s real account id — set only when the caller IS the sender. Null for a recipient\'s own view, same anti-enumeration reasoning as senderHandle existing at all.'),
   "viewerIsRecipient": zod.boolean().describe('True only if the authenticated caller IS this Text Whisp\'s recipient. Deliberately caller-relative and self-referential (safe for a sender to see, since it\'s always false for their own sent messages) rather than exposing the underlying recipientUserId, which would let a sender learn whether an arbitrary phone number belongs to a verified Blind Whisper account.'),
   "recipientPhone": zod.string().describe('The E.164-normalized phone number provided at send time, regardless of whether it matched a user.'),
   "publicToken": zod.string().describe('Token for the public guest landing page (\/tw\/{publicToken}, see GET \/public\/text-whisps\/{token}). Always set, even for a matched in-app send.'),
@@ -843,7 +851,8 @@ export const RequestTextWhispRevealResponse = zod.object({
   "readAt": zod.string().nullish(),
   "createdAt": zod.string(),
   "otherPartyTyping": zod.boolean().describe('True only while the OTHER party (never the caller\'s own ping echoed back) sent a typing ping within the last ~8s. See POST \/text-whisps\/{id}\/typing.'),
-  "revealedSenderName": zod.string().nullable().describe('The sender\'s real account name (users.fullName) — set ONLY when the caller is this Text Whisp\'s recipient AND revealAccepted is true. This is the one deliberate, consent-gated exception to the app\'s anonymity guarantee; null in every other case (including for the sender\'s own view of their own message, and for a recipient who hasn\'t accepted yet), regardless of what fullName is actually set to.')
+  "revealedSenderName": zod.string().nullable().describe('The sender\'s real account name (users.fullName) — set ONLY when the caller is this Text Whisp\'s recipient AND revealAccepted is true. This is the one deliberate, consent-gated exception to the app\'s anonymity guarantee; null in every other case (including for the sender\'s own view of their own message, and for a recipient who hasn\'t accepted yet), regardless of what fullName is actually set to.'),
+  "senderHandle": zod.string().nullable().describe('A stable, anonymous pseudonym for this Text Whisp\'s sender (e.g. \"Falcon482\"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerIsRecipient is true; null otherwise.')
 })
 
 
@@ -897,6 +906,7 @@ export const GetPublicWhispResponse = zod.object({
   "id": zod.string(),
   "viewerArchived": zod.boolean().optional().describe('True only when the caller is signed in, is this whisp\'s matched recipient, and has archived their copy (see POST \/whisps\/{id}\/archive) — always false for an anonymous visitor or a signed-in non-recipient.'),
   "viewerPinned": zod.boolean().optional().describe('Same caller-relative scoping as viewerArchived, for pin instead.'),
+  "senderHandle": zod.string().nullable().describe('A stable, anonymous pseudonym for this whisp\'s sender (e.g. \"Falcon482\"), scoped to this one (sender, recipient) pair. Same caller-relative scoping as viewerArchived — set only when the caller is signed in and is this whisp\'s matched recipient; null otherwise.'),
   "videoUrl": zod.string(),
   "videoTitle": zod.string().nullish(),
   "videoThumbnail": zod.string().nullish(),
@@ -1968,7 +1978,8 @@ export const AdminGetUserResponse = zod.object({
   "viewerIsRecipient": zod.boolean().describe('True only when the caller is themselves this whisp\'s matched recipient (see GET \/whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email\/phone belongs to a verified account.'),
   "viewerRole": zod.string().nullable().describe('\'sender\' | \'recipient\' | null — which role the caller has on this whisp. Drives pinned\/archived below, and (frontend-side) whether Delete is offered — only a sender may delete.'),
   "pinned": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is pinned (see POST \/whisps\/{id}\/pin) — never the other party\'s pin state.'),
-  "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.')
+  "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.'),
+  "senderHandle": zod.string().nullish().describe('A stable, anonymous pseudonym for this whisp\'s sender (e.g. \"Falcon482\"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerRole is \"recipient\"; null otherwise.')
 })),
   "totalWhisps": zod.number(),
   "creditTransactions": zod.array(zod.object({
@@ -2298,7 +2309,8 @@ export const AdminGetWhispResponse = zod.object({
   "viewerIsRecipient": zod.boolean().describe('True only when the caller is themselves this whisp\'s matched recipient (see GET \/whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email\/phone belongs to a verified account.'),
   "viewerRole": zod.string().nullable().describe('\'sender\' | \'recipient\' | null — which role the caller has on this whisp. Drives pinned\/archived below, and (frontend-side) whether Delete is offered — only a sender may delete.'),
   "pinned": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is pinned (see POST \/whisps\/{id}\/pin) — never the other party\'s pin state.'),
-  "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.')
+  "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.'),
+  "senderHandle": zod.string().nullish().describe('A stable, anonymous pseudonym for this whisp\'s sender (e.g. \"Falcon482\"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerRole is \"recipient\"; null otherwise.')
 }),
   "senderId": zod.string().nullish(),
   "senderEmail": zod.string().nullish(),

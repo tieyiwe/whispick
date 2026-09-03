@@ -14,6 +14,11 @@ export interface PublicWhisp {
   viewerArchived?: boolean;
   /** Same caller-relative scoping as viewerArchived, for pin instead. */
   viewerPinned?: boolean;
+  /**
+     * A stable, anonymous pseudonym for this whisp's sender (e.g. "Falcon482"), scoped to this one (sender, recipient) pair. Same caller-relative scoping as viewerArchived — set only when the caller is signed in and is this whisp's matched recipient; null otherwise.
+     * @nullable
+     */
+  senderHandle: string | null;
   videoUrl: string;
   /** @nullable */
   videoTitle?: string | null;

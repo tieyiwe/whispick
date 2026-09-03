@@ -83,4 +83,9 @@ export interface Whisp {
   pinned: boolean;
   /** Whether the CALLER's own copy of this whisp is archived (see POST /whisps/{id}/archive) — never the other party's archive state. */
   archived: boolean;
+  /**
+     * A stable, anonymous pseudonym for this whisp's sender (e.g. "Falcon482"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerRole is "recipient"; null otherwise.
+     * @nullable
+     */
+  senderHandle?: string | null;
 }

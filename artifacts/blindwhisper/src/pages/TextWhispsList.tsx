@@ -77,7 +77,10 @@ export function TextWhispsList() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
                             <p className="text-xs font-medium text-primary truncate" data-testid={`text-whisp-received-from-${w.id}`}>
-                              {t("textWhispsList.fromPrefix")} {w.senderAlias?.trim() || t("textWhispsList.anonymousSender")}
+                              {t("textWhispsList.fromPrefix")} {w.senderHandle || t("textWhispsList.anonymousSender")}
+                              {w.senderAlias?.trim() && w.senderAlias.trim() !== w.senderHandle && (
+                                <span className="text-muted-foreground font-normal"> ({w.senderAlias.trim()})</span>
+                              )}
                             </p>
                             {w.status === "sent" && (
                               <span className="text-[10px] uppercase tracking-wide font-semibold text-primary shrink-0 bg-primary/10 rounded-full px-2 py-0.5">

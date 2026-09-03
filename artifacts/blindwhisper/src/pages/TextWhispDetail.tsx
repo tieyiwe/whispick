@@ -381,6 +381,7 @@ export function TextWhispDetail() {
             mode="open"
             messageText={textWhisp.messageText}
             senderAlias={textWhisp.senderAlias}
+            senderHandle={textWhisp.senderHandle}
             createdAt={textWhisp.createdAt}
             onOpened={() => setOpened(true)}
             initiallyOpen={!startsClosed}
