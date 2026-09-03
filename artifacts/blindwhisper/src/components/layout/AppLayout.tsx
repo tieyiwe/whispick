@@ -8,8 +8,10 @@ import {
   useGetUserProfile,
   useGetMyUnreadNotificationCount,
   useGetWhisperBoxUnreadCount,
+  useGetReceivedWhispUnreadCount,
   getGetMyUnreadNotificationCountQueryKey,
   getGetWhisperBoxUnreadCountQueryKey,
+  getGetReceivedWhispUnreadCountQueryKey,
 } from "@workspace/api-client-react";
 import { isSupportedLanguage } from "@/lib/languages";
 import { useAppBadge } from "@/lib/useAppBadge";
@@ -229,13 +231,29 @@ export function AppLayout({ children }: { children: ReactNode }) {
   });
   const whisperBoxUnreadCount = whisperBoxUnread?.unreadCount ?? 0;
 
+  // Same polling treatment again, driving the "My Whisps" nav entry's own
+  // badge — count of received whisps this user hasn't opened yet (see
+  // routes/whisps.ts's GET /whisps/received-unread-count). Deliberately
+  // openedAt-based rather than tied to the separate notification-read
+  // state, so the badge clears exactly when the recipient actually opens
+  // the whisp itself.
+  const { data: receivedWhispUnread } = useGetReceivedWhispUnreadCount({
+    query: {
+      queryKey: getGetReceivedWhispUnreadCountQueryKey(),
+      refetchInterval: 60_000,
+      refetchIntervalInBackground: false,
+    },
+  });
+  const receivedWhispUnreadCount = receivedWhispUnread?.unreadCount ?? 0;
+
   // Home-screen presence (Badge API): reflects total actionable unread —
-  // bell notifications + Whisper Box inbox. Deliberately notificationUnreadCount,
-  // not unreadReplyCount, which is already a subset of it rather than an
-  // addition. Piggybacks on the two polled queries above instead of opening
-  // its own poll; a no-op everywhere the Badge API doesn't exist. Lives here
-  // (not a page) so it's active for the whole authenticated session.
-  useAppBadge(notificationUnreadCount + whisperBoxUnreadCount);
+  // bell notifications + Whisper Box inbox + unopened received whisps.
+  // Deliberately notificationUnreadCount, not unreadReplyCount, which is
+  // already a subset of it rather than an addition. Piggybacks on the
+  // polled queries above instead of opening its own poll; a no-op
+  // everywhere the Badge API doesn't exist. Lives here (not a page) so
+  // it's active for the whole authenticated session.
+  useAppBadge(notificationUnreadCount + whisperBoxUnreadCount + receivedWhispUnreadCount);
 
   const navItems = isAdmin
     ? [...NAV_ITEMS, { href: "/admin_pro", labelKey: "nav.admin", icon: ShieldCheck }]
@@ -317,6 +335,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
                     data-testid="badge-unread-replies"
                   >
                     {unreadReplyCount > 9 ? "9+" : unreadReplyCount}
+                  </span>
+                )}
+                {item.href === "/whisps" && receivedWhispUnreadCount > 0 && (
+                  <span
+                    className="min-w-[20px] h-5 px-1.5 rounded-full bg-secondary text-xs font-semibold text-secondary-foreground flex items-center justify-center"
+                    data-testid="badge-unread-whisps"
+                  >
+                    {receivedWhispUnreadCount > 9 ? "9+" : receivedWhispUnreadCount}
                   </span>
                 )}
                 {item.href === "/whisper-box" && whisperBoxUnreadCount > 0 && (
@@ -413,7 +439,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
       >
         <div className="relative flex items-center justify-around px-1 py-1.5">
           {MOBILE_TAB_ITEMS_LEFT.map((item) => (
-            <MobileTabLink key={item.href} href={item.href} icon={item.icon} label={t(item.labelKey)} isActive={location === item.href} />
+            <MobileTabLink
+              key={item.href}
+              href={item.href}
+              icon={item.icon}
+              label={t(item.labelKey)}
+              isActive={location === item.href}
+              badgeCount={item.href === "/whisps" ? receivedWhispUnreadCount : 0}
+            />
           ))}
 
           {mobileSendAction ? (

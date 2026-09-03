@@ -2351,6 +2351,10 @@ export interface UnreadNotificationCountResponse {
   unreadReplyCount: number;
 }
 
+export interface UnreadWhispCountResponse {
+  unreadCount: number;
+}
+
 export type RecentRecipientKind = typeof RecentRecipientKind[keyof typeof RecentRecipientKind];
 
 

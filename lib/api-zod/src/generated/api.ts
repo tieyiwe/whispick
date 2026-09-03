@@ -190,6 +190,15 @@ export const GetWhispStatsResponse = zod.object({
 
 
 /**
+ * Mirrors GET /whisps?box=received's own filters (matched recipient, not archived) but counts rather than fetches full rows. "Unread" means openedAt IS NULL, the same flag the public whisp page's hasOpenedBefore reads — clears the moment the recipient actually opens the whisp.
+ * @summary Lightweight unread count for the "My Whisps" nav badge, without fetching the full received list
+ */
+export const GetReceivedWhispUnreadCountResponse = zod.object({
+  "unreadCount": zod.number()
+})
+
+
+/**
  * @summary Get a single whisp with tracking timeline
  */
 export const GetWhispParams = zod.object({

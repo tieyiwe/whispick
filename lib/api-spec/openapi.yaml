@@ -116,6 +116,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/WhispStats"
 
+  /whisps/received-unread-count:
+    get:
+      operationId: getReceivedWhispUnreadCount
+      tags: [whisps]
+      summary: Lightweight unread count for the "My Whisps" nav badge, without fetching the full received list
+      description: >-
+        Mirrors GET /whisps?box=received's own filters (matched recipient,
+        not archived) but counts rather than fetches full rows. "Unread"
+        means openedAt IS NULL, the same flag the public whisp page's
+        hasOpenedBefore reads — clears the moment the recipient actually
+        opens the whisp.
+      responses:
+        "200":
+          description: Unread count
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnreadWhispCountResponse"
+
   /whisps/{id}:
     get:
       operationId: getWhisp
@@ -8505,6 +8524,14 @@ components:
       required:
         - unreadCount
         - unreadReplyCount
+
+    UnreadWhispCountResponse:
+      type: object
+      properties:
+        unreadCount:
+          type: integer
+      required:
+        - unreadCount
 
     RecentRecipient:
       type: object

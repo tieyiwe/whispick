@@ -207,6 +207,7 @@ import type {
   TrackingResult,
   TrafficByHourResponse,
   UnreadNotificationCountResponse,
+  UnreadWhispCountResponse,
   UnsubscribeFromMatching200,
   UnsubscribeFromMatchingParams,
   UpdateAdminUserInput,
@@ -567,6 +568,84 @@ export function useGetWhispStats<TData = Awaited<ReturnType<typeof getWhispStats
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetWhispStatsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetReceivedWhispUnreadCountUrl = () => {
+
+
+
+
+  return `/api/whisps/received-unread-count`
+}
+
+/**
+ * Mirrors GET /whisps?box=received's own filters (matched recipient, not archived) but counts rather than fetches full rows. "Unread" means openedAt IS NULL, the same flag the public whisp page's hasOpenedBefore reads — clears the moment the recipient actually opens the whisp.
+ * @summary Lightweight unread count for the "My Whisps" nav badge, without fetching the full received list
+ */
+export const getReceivedWhispUnreadCount = async ( options?: RequestInit): Promise<UnreadWhispCountResponse> => {
+
+  return customFetch<UnreadWhispCountResponse>(getGetReceivedWhispUnreadCountUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetReceivedWhispUnreadCountQueryKey = () => {
+    return [
+    `/api/whisps/received-unread-count`
+    ] as const;
+    }
+
+
+export const getGetReceivedWhispUnreadCountQueryOptions = <TData = Awaited<ReturnType<typeof getReceivedWhispUnreadCount>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getReceivedWhispUnreadCount>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetReceivedWhispUnreadCountQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getReceivedWhispUnreadCount>>> = ({ signal }) => getReceivedWhispUnreadCount({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getReceivedWhispUnreadCount>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetReceivedWhispUnreadCountQueryResult = NonNullable<Awaited<ReturnType<typeof getReceivedWhispUnreadCount>>>
+export type GetReceivedWhispUnreadCountQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Lightweight unread count for the "My Whisps" nav badge, without fetching the full received list
+ */
+
+export function useGetReceivedWhispUnreadCount<TData = Awaited<ReturnType<typeof getReceivedWhispUnreadCount>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getReceivedWhispUnreadCount>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetReceivedWhispUnreadCountQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

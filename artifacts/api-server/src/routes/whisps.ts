@@ -224,6 +224,32 @@ router.get("/", requireAuth, async (req, res): Promise<void> => {
   res.json(await Promise.all(whisps.map((w) => toWhispResponse(w, user.id))));
 });
 
+// GET /api/whisps/received-unread-count — a lightweight poll target for the
+// "My Whisps" nav badge, mirroring GET /?box=received's own filters
+// (recipientUserId match, not archived) but counting rather than fetching
+// full rows. "Unread" here means openedAt IS NULL — the same flag
+// routes/public.ts's hasOpenedBefore reads — so the badge clears the moment
+// the recipient actually opens the whisp, not when some separate
+// notification gets dismissed.
+router.get("/received-unread-count", requireAuth, async (req, res): Promise<void> => {
+  const { userId } = getAuth(req);
+  const user = await ensureUser(userId!, req);
+
+  const row = await db
+    .select({ count: count() })
+    .from(whispsTable)
+    .where(
+      and(
+        eq(whispsTable.recipientUserId, user.id),
+        isNull(whispsTable.recipientArchivedAt),
+        isNull(whispsTable.openedAt),
+      ),
+    )
+    .then((r) => r[0]);
+
+  res.json({ unreadCount: row?.count ?? 0 });
+});
+
 // POST /api/whisps/:id/pin — toggles pin for whichever role (sender or
 // matched recipient) the caller has on this whisp. Pinning only affects
 // sort order within whichever list it's already showing in; it never moves
