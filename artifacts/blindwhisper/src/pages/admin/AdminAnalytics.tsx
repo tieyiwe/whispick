@@ -303,7 +303,7 @@ function LiveActivitySection() {
 // breakdowns below don't get the same treatment); everything else polls
 // slower since it's a heavier read.
 function LiveVisitorsSection() {
-  const { data: online, isLoading: onlineLoading } = useAdminGetVisitorsOnline({
+  const { data: online, isLoading: onlineLoading, isError: onlineError } = useAdminGetVisitorsOnline({
     query: { queryKey: getAdminGetVisitorsOnlineQueryKey(), staleTime: 0, refetchInterval: 1_000, refetchOnWindowFocus: true },
   });
   const { data: visitors, isLoading: visitorsLoading } = useAdminGetVisitors({
@@ -316,6 +316,16 @@ function LiveVisitorsSection() {
 
   return (
     <div className="space-y-4">
+      {/* An outright request failure here is NOT the same as "no one's
+          online" — collapsing both into a "0" hides a real backend problem
+          (most often this environment's visitor_sessions table not being
+          migrated). Surface it explicitly so it's diagnosable instead of
+          looking like an empty platform. */}
+      {onlineError && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300" data-testid="live-visitors-error">
+          Couldn't load live visitor data. If this persists, the tracking table may not be migrated in this environment — run <code className="font-mono text-xs">pnpm --filter @workspace/db run push</code> against this deployment's database.
+        </div>
+      )}
       <Card className="bg-card border-border/50">
         <CardContent className="p-5">
           <div className="flex items-center justify-between">
@@ -324,7 +334,7 @@ function LiveVisitorsSection() {
               {onlineLoading ? (
                 <Skeleton className="h-8 w-16 mt-1 rounded-md" />
               ) : (
-                <h3 className="text-2xl font-bold text-foreground mt-1">{(online?.onlineCount ?? 0).toLocaleString()}</h3>
+                <h3 className="text-2xl font-bold text-foreground mt-1">{onlineError ? "—" : (online?.onlineCount ?? 0).toLocaleString()}</h3>
               )}
               <p className="text-xs text-muted-foreground mt-1">signed-in + anonymous, right now</p>
             </div>

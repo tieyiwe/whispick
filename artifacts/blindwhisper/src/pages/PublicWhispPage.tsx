@@ -191,7 +191,7 @@ export function PublicWhispPage() {
   const visitorId = useMemo(() => getVisitorId(), []);
   const visitorIdParams = { visitorId };
 
-  const { data: whisp, isLoading, refetch } = useGetPublicWhisp(token!, visitorIdParams, {
+  const { data: whisp, isLoading, isError, error, refetch } = useGetPublicWhisp(token!, visitorIdParams, {
     query: {
       enabled: !!token,
       queryKey: getGetPublicWhispQueryKey(token!, visitorIdParams),
@@ -698,6 +698,20 @@ export function PublicWhispPage() {
             <Skeleton className="h-6 w-48 mx-auto" />
             <Skeleton className="h-52 rounded-2xl" />
             <Skeleton className="h-24 rounded-2xl" />
+          </div>
+        ) : isError && (error as { status?: number } | null)?.status !== 404 ? (
+          // A real 404 means the whisp is genuinely gone (bad/expired token,
+          // admin takedown) — that's the "not found" case below. ANY OTHER
+          // failure (a 500, a network blip, a server behind on schema) must
+          // NOT be shown as "this whisp could not be found": to a legitimate
+          // recipient that reads as permanent data loss for a message that's
+          // actually fine. Offer a retry instead — the poll/refetch will
+          // recover it once the transient cause clears.
+          <div className="text-center py-20 space-y-4">
+            <p className="text-muted-foreground">{t("publicWhisp.loadError")}</p>
+            <Button variant="outline" onClick={() => refetch()} className="rounded-full">
+              {t("publicWhisp.tryAgain")}
+            </Button>
           </div>
         ) : !whisp ? (
           <div className="text-center py-20">
