@@ -19,6 +19,7 @@ import {
   useStartCircleDm,
   useArchiveWhisp,
   getGetPublicWhispQueryKey,
+  getGetReceivedWhispUnreadCountQueryKey,
   type CircleComment,
 } from "@workspace/api-client-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -367,8 +368,21 @@ export function PublicWhispPage() {
   useEffect(() => {
     if (!whisp || trackedOpenRef.current) return;
     trackedOpenRef.current = true;
-    trackEventMutate({ token: token!, data: { eventType: "opened" } });
-  }, [whisp, trackEventMutate, token]);
+    trackEventMutate(
+      { token: token!, data: { eventType: "opened" } },
+      {
+        // Opening the whisp is exactly what clears it from the recipient's
+        // "unopened" count server-side (openedAt is set now), so refresh the
+        // "My Whisps" nav badge immediately instead of leaving it showing the
+        // pre-open number until AppLayout's 60s poll happens to come around.
+        // Only matters for a signed-in recipient (the query is theirs); a
+        // no-op invalidate for an anonymous visitor is harmless.
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetReceivedWhispUnreadCountQueryKey() });
+        },
+      },
+    );
+  }, [whisp, trackEventMutate, token, queryClient]);
 
   function handleWatchEvent(eventType: "clicked" | "watched_10s" | "watched_50pct" | "watched_complete") {
     trackEvent.mutate({ token: token!, data: { eventType } });

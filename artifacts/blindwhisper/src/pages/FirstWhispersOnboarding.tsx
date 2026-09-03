@@ -118,7 +118,23 @@ export function FirstWhispersOnboarding() {
   const scrapeMeta = useScrapeVideoMeta();
   const sendGroupWhisp = useSendGroupWhisp();
 
-  const validContacts = contacts.filter((c) => c.email.trim() || c.phone.trim());
+  // Dedupe on the contact detail that actually gets sent to, so the same
+  // person can't be whisped twice — whether they were typed into two rows or
+  // picked twice from the native contact sheet (which just concatenates, see
+  // handlePickFromContacts). Keyed by lowercased email or digits-only phone;
+  // the first row wins so a manually-entered name isn't lost to a later
+  // picker duplicate.
+  const validContacts = (() => {
+    const seen = new Set<string>();
+    return contacts
+      .filter((c) => c.email.trim() || c.phone.trim())
+      .filter((c) => {
+        const key = c.email.trim().toLowerCase() || c.phone.replace(/\D/g, "");
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+  })();
   const hasEmail = validContacts.some((c) => c.email.trim());
   const hasPhone = validContacts.some((c) => c.phone.trim());
   const availableChannels = (["email", "sms", "whatsapp"] as const).filter((ch) =>

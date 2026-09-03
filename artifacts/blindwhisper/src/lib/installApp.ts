@@ -13,6 +13,19 @@
 //   is a clear set of instructions, not a button that pretends.
 
 const INSTALLED_KEY = "blindwhisper:installed";
+const DISMISSED_AT_KEY = "blindwhisper:installDismissedAt";
+
+// After an explicit "Not now", stay quiet for this long before asking again.
+// Long enough to not feel like nagging right after someone just said no,
+// short enough that it's still the same sitting for most visitors rather than
+// "maybe next week". Lives here (not in InstallAppPrompt.tsx) because the
+// dismissal has to survive a remount: AppLayout — and the prompt inside it —
+// fully unmounts and remounts on every in-app route change (each page wraps
+// its own AppLayout), so an in-memory-only dismissal was lost on the very
+// next navigation and the prompt sprang back up seconds later on nearly every
+// screen. Persisting the dismissal timestamp is what makes "Not now" actually
+// last the intended few hours instead of one page view.
+const REPROMPT_AFTER_DISMISS_MS = 4 * 60 * 60 * 1000;
 
 export type InstallPlatform = "android" | "ios" | "unsupported";
 
@@ -76,17 +89,17 @@ export function isMobileDevice(): boolean {
 }
 
 /**
- * Whether we should stay quiet: already installed, or already running
- * standalone. Deliberately does NOT check for a past dismissal — a "Not
- * now" only silences the prompt for the page view it was clicked on
- * (InstallAppPrompt's own `visible` state already handles that, in-memory,
- * for free). Refreshing, opening a new tab, or relaunching the browser/app
- * all start a fresh mount with no memory of an earlier dismiss, so any of
- * those asks again — a real "maybe later" someone can act on next time they
- * happen to be back, not a multi-week cooldown that outlives their actual
- * change of mind. `rememberInstalled` below is the one signal that IS
- * genuinely permanent, since it's a fact ("this device has the app"), not a
- * mood ("not right now").
+ * Whether we should stay quiet: already installed, already running
+ * standalone, or dismissed within the last few hours (REPROMPT_AFTER_DISMISS_MS).
+ *
+ * The dismissal check is deliberately time-boxed, NOT permanent: a "Not now"
+ * silences the prompt for a few hours — long enough not to nag, short enough
+ * that it comes back the same day if they're still not installed — rather
+ * than the old multi-week snooze OR the (broken) in-memory-only version that
+ * was lost on the very next SPA navigation and re-asked seconds later on
+ * almost every screen. `rememberInstalled` below is the one genuinely
+ * permanent signal, since it's a fact ("this device has the app"), not a mood
+ * ("not right now").
  *
  * localStorage is read defensively — private browsing and locked-down
  * profiles throw on access, and an install nudge is never worth a crash.
@@ -94,7 +107,10 @@ export function isMobileDevice(): boolean {
 export function shouldStayQuiet(): boolean {
   if (isStandalone()) return true;
   try {
-    return !!localStorage.getItem(INSTALLED_KEY);
+    if (localStorage.getItem(INSTALLED_KEY)) return true;
+    const dismissedAt = Number(localStorage.getItem(DISMISSED_AT_KEY));
+    if (dismissedAt && Date.now() - dismissedAt < REPROMPT_AFTER_DISMISS_MS) return true;
+    return false;
   } catch {
     return false;
   }
@@ -110,13 +126,24 @@ export function rememberInstalled(): void {
   }
 }
 
-// A dismissal used to persist a multi-week snooze here (localStorage) — now
-// deliberately a no-op. See shouldStayQuiet's comment: a "Not now" should
-// only last for the page view it was clicked on, and a persistent snooze
-// directly fought that by surviving refreshes and fresh launches. Kept as a
-// named function (rather than removed) so InstallAppPrompt.tsx's call sites
-// stay unchanged and this stays the one place that decision lives.
-export function rememberDismissed(): void {}
+// Records a "Not now" so the prompt stays quiet for REPROMPT_AFTER_DISMISS_MS
+// (see shouldStayQuiet). Stores a timestamp, not a permanent flag: the old
+// version persisted a multi-week snooze (too long — outlived the actual
+// change of mind), and the version after that made it an in-memory no-op
+// (too short — lost on the next SPA navigation, so the prompt re-appeared
+// seconds later on nearly every screen). A time-boxed persisted dismissal is
+// the middle ground that actually behaves like "not right now, ask me later
+// today". localStorage is written defensively — an install nudge is never
+// worth a crash in a private/locked-down profile.
+export function rememberDismissed(): void {
+  try {
+    localStorage.setItem(DISMISSED_AT_KEY, String(Date.now()));
+  } catch {
+    // Storage unavailable — the in-memory `visible` state still hides it for
+    // this mount; worst case it re-appears on the next navigation, which is
+    // the old behavior, not a regression.
+  }
+}
 
 /** The `beforeinstallprompt` event, which TypeScript's DOM lib doesn't type. */
 export interface BeforeInstallPromptEvent extends Event {
