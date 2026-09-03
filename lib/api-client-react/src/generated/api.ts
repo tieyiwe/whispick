@@ -184,6 +184,8 @@ import type {
   SendWhisperBoxMessage201,
   SendWhisperBoxMessageBody,
   SetGuessReactionBody,
+  SmsConsentCheckInput,
+  SmsConsentCheckResult,
   StartCircleDm201,
   StartPhoneVerificationInput,
   SubscribeInput,
@@ -8248,6 +8250,77 @@ export function useGetMyUnreadNotificationCount<TData = Awaited<ReturnType<typeo
 
 
 
+
+export const getCheckSmsConsentUrl = () => {
+
+
+
+
+  return `/api/user/sms-consent/check`
+}
+
+/**
+ * Lets a send screen hide the one-time SMS opt-in checkbox for a recipient the sender has confirmed before. Returns the subset of the submitted numbers that already have a stored consent for this sender. Reports only the caller's own prior attestations — never whether a number is a registered account.
+ * @summary Which of these phone numbers this sender has already given one-time SMS consent for
+ */
+export const checkSmsConsent = async (smsConsentCheckInput: SmsConsentCheckInput, options?: RequestInit): Promise<SmsConsentCheckResult> => {
+
+  return customFetch<SmsConsentCheckResult>(getCheckSmsConsentUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(smsConsentCheckInput)
+  }
+);}
+
+
+
+
+export const getCheckSmsConsentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkSmsConsent>>, TError,{data: BodyType<SmsConsentCheckInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof checkSmsConsent>>, TError,{data: BodyType<SmsConsentCheckInput>}, TContext> => {
+
+const mutationKey = ['checkSmsConsent'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof checkSmsConsent>>, {data: BodyType<SmsConsentCheckInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  checkSmsConsent(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CheckSmsConsentMutationResult = NonNullable<Awaited<ReturnType<typeof checkSmsConsent>>>
+    export type CheckSmsConsentMutationBody = BodyType<SmsConsentCheckInput>
+    export type CheckSmsConsentMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Which of these phone numbers this sender has already given one-time SMS consent for
+ */
+export const useCheckSmsConsent = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkSmsConsent>>, TError,{data: BodyType<SmsConsentCheckInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof checkSmsConsent>>,
+        TError,
+        {data: BodyType<SmsConsentCheckInput>},
+        TContext
+      > => {
+      return useMutation(getCheckSmsConsentMutationOptions(options));
+    }
 
 export const getGetMyRecentRecipientsUrl = () => {
 

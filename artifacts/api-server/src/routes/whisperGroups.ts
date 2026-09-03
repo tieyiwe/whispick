@@ -26,6 +26,7 @@ import { computeExpiresAt, MAX_SCHEDULE_DAYS } from "../lib/expiration";
 import { MAX_SCHEDULE_DAYS_WITH_UPLOAD } from "../lib/uploads";
 import { httpUrlString } from "../lib/safeUrl";
 import { deriveVideoFields } from "../lib/videoMeta";
+import { consentedPhones, recordSmsConsent } from "../lib/smsConsent";
 
 const router = Router();
 
@@ -427,14 +428,28 @@ router.post("/:id/send", requireAuth, createWhispLimiter, async (req, res): Prom
     }
   }
 
-  if (data.whisperChannel === "sms" && !data.smsConsentConfirmed) {
-    res.status(400).json({ error: "Please confirm you have this group's members' permission to receive a text from you." });
-    return;
-  }
-
   const allMembers = await db.select().from(whisperGroupMembersTable).where(eq(whisperGroupMembersTable.groupId, group.id));
   const needsEmail = data.whisperChannel === "email";
   const deliverable = allMembers.filter((m) => (needsEmail ? !!m.email : !!m.phone));
+
+  // Once-per-recipient SMS consent, per member phone (see lib/smsConsent.ts).
+  // The checkbox is required only when at least one deliverable member's
+  // number hasn't been consented before; an affirmative checkbox covers all
+  // of them at once. Consent for every deliverable number is then recorded
+  // below so a later group send (or a 1:1 send to the same person) skips it.
+  if (data.whisperChannel === "sms") {
+    const memberPhones = deliverable.map((m) => m.phone!).filter(Boolean);
+    if (!data.smsConsentConfirmed) {
+      const consented = new Set(await consentedPhones(user.id, memberPhones));
+      const anyNew = memberPhones.some((p) => !consented.has(p));
+      if (anyNew) {
+        res.status(400).json({ error: "Please confirm you have this group's members' permission to receive a text from you.", code: "sms_consent_required" });
+        return;
+      }
+    } else {
+      for (const p of memberPhones) void recordSmsConsent(user.id, p);
+    }
+  }
   const skipped = allMembers
     .filter((m) => !(needsEmail ? !!m.email : !!m.phone))
     .map((m) => ({ id: m.id, name: m.name, reason: needsEmail ? "No email on file" : "No phone number on file" }));

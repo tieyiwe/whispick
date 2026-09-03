@@ -22,6 +22,7 @@ import { z } from "zod";
 import { requireAuth } from "../lib/auth";
 import { ensureUser } from "../lib/ensureUser";
 import { getVapidPublicKey } from "../lib/push";
+import { consentedPhones } from "../lib/smsConsent";
 import { GENDER_OPTIONS, AGE_RANGE_OPTIONS } from "../lib/demographics";
 import { SUPPORTED_LANGUAGES } from "../lib/languages";
 import { updateWhispererAvatar, isWhisperBoxHandlePersonalized } from "../lib/whispererHandle";
@@ -328,6 +329,26 @@ router.get("/push-public-key", requireAuth, (_req, res): void => {
     return;
   }
   res.json({ publicKey });
+});
+
+// POST /api/user/sms-consent/check — lets a send screen decide whether to
+// show the one-time SMS opt-in checkbox at all: returns the subset of the
+// submitted phone numbers this sender has ALREADY consented to text (see
+// lib/smsConsent.ts). Only ever reports the caller's own prior consent
+// attestations for numbers they typed themselves — says nothing about
+// whether any number is a registered account, so it crosses no anonymity
+// boundary. The checkbox stays required (server-side, in the send routes)
+// for any number not in the returned set.
+router.post("/sms-consent/check", requireAuth, async (req, res): Promise<void> => {
+  const { userId } = getAuth(req);
+  const user = await ensureUser(userId!, req);
+  const parsed = z.object({ phones: z.array(z.string().min(1).max(32)).max(100) }).safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const consented = await consentedPhones(user.id, parsed.data.phones);
+  res.json({ consented });
 });
 
 const pushSubscriptionSchema = z.object({

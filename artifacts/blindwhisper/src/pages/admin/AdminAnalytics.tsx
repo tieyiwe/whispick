@@ -317,13 +317,16 @@ function LiveVisitorsSection() {
   return (
     <div className="space-y-4">
       {/* An outright request failure here is NOT the same as "no one's
-          online" — collapsing both into a "0" hides a real backend problem
-          (most often this environment's visitor_sessions table not being
-          migrated). Surface it explicitly so it's diagnosable instead of
-          looking like an empty platform. */}
-      {onlineError && (
+          online" — collapsing both into a "0" hides a real backend problem.
+          Kept calm and command-free (the actionable detail — a possibly
+          un-migrated visitor_sessions table — is in the server logs, not the
+          admin UI): a persistent-failure hint, without raw shell commands or
+          a per-poll flicker. `onlineError && !online` so a transient blip
+          between good polls doesn't flash the banner while a real number is
+          still on screen. */}
+      {onlineError && !online && (
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300" data-testid="live-visitors-error">
-          Couldn't load live visitor data. If this persists, the tracking table may not be migrated in this environment — run <code className="font-mono text-xs">pnpm --filter @workspace/db run push</code> against this deployment's database.
+          Live visitor tracking is temporarily unavailable. If this doesn't clear on its own, it usually means this environment still needs its latest database setup applied.
         </div>
       )}
       <Card className="bg-card border-border/50">
@@ -334,7 +337,7 @@ function LiveVisitorsSection() {
               {onlineLoading ? (
                 <Skeleton className="h-8 w-16 mt-1 rounded-md" />
               ) : (
-                <h3 className="text-2xl font-bold text-foreground mt-1">{onlineError ? "—" : (online?.onlineCount ?? 0).toLocaleString()}</h3>
+                <h3 className="text-2xl font-bold text-foreground mt-1">{online ? online.onlineCount.toLocaleString() : onlineError ? "—" : "0"}</h3>
               )}
               <p className="text-xs text-muted-foreground mt-1">signed-in + anonymous, right now</p>
             </div>

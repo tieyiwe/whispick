@@ -62,6 +62,7 @@ import { uploadMedia, UploadValidationError, MAX_UPLOAD_DURATION_SECONDS, type U
 import { Thumbnail } from "@/components/shared/Thumbnail";
 import { CameraCapture } from "@/components/shared/CameraCapture";
 import { takePendingForward } from "@/lib/forwardVideo";
+import { useNeedsSmsConsent } from "@/lib/useSmsConsent";
 import { DemographicsGateDialog } from "@/components/shared/DemographicsGateDialog";
 import { needsDemographics } from "@/lib/demographics";
 import { GHOST_BOOST_ENABLED } from "@/lib/featureFlags";
@@ -648,10 +649,16 @@ export function SendWhisp() {
   // WhatsApp isn't carrier-regulated under A2P 10DLC the same way SMS is —
   // same carve-out the disclosure text below already uses.
   const requiresSmsConsent = hasPhoneRecipient && !preferWhatsApp;
+  // Once-per-recipient: the checkbox is only needed when at least one of the
+  // entered phone recipients hasn't been confirmed before (see
+  // lib/useSmsConsent.ts). A batch of all-previously-confirmed numbers skips
+  // it entirely; a mix shows it (one confirmation covers the new ones).
+  const phoneRecipients = parsedRecipients.recipients.filter((r) => r.kind === "phone").map((r) => r.raw);
+  const needsSmsConsent = useNeedsSmsConsent(phoneRecipients, requiresSmsConsent);
   const canContinueFromRecipients =
     parsedRecipients.recipients.length > 0 &&
     parsedRecipients.invalid.length === 0 &&
-    (!requiresSmsConsent || smsConsentConfirmed);
+    (!needsSmsConsent || smsConsentConfirmed);
   // Group Whisper never visits step 5 (see the step-4 Next button below —
   // it jumps straight to the review step for anything but whisper_link), so
   // a group send over SMS needs its own consent gate on the review step
@@ -1527,7 +1534,7 @@ export function SendWhisp() {
                       a phone number is collected for SMS delivery — not just
                       buried in the Terms. Only for the SMS path; WhatsApp
                       delivery isn't carrier-regulated the same way. */}
-                  {requiresSmsConsent && (
+                  {needsSmsConsent && (
                     <div className="space-y-2">
                       <p className="text-xs text-muted-foreground" data-testid="text-sms-consent-disclosure">
                         {t("sendWhisp.step5.smsDisclosure")}{" "}
@@ -1550,6 +1557,7 @@ export function SendWhisp() {
                         />
                         {t("sendWhisp.step5.smsConsentCheckbox")}
                       </label>
+                      <p className="text-[11px] text-muted-foreground/80">{t("sendWhisp.step5.smsConsentOneTime")}</p>
                     </div>
                   )}
 

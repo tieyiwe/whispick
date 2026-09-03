@@ -2370,6 +2370,16 @@ export interface UnreadWhispCountResponse {
   unreadCount: number;
 }
 
+export interface SmsConsentCheckInput {
+  /** @maxItems 100 */
+  phones: string[];
+}
+
+export interface SmsConsentCheckResult {
+  /** The subset of the submitted phone strings this sender has already consented to text. */
+  consented: string[];
+}
+
 export type RecentRecipientKind = typeof RecentRecipientKind[keyof typeof RecentRecipientKind];
 
 

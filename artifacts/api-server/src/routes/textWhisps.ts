@@ -21,6 +21,7 @@ import {
   textWhispRevealRespondedHookLine,
 } from "../lib/copy";
 import { safeAssignOrGetSenderHandle } from "../lib/whispSenderHandle";
+import { hasSmsConsent, recordSmsConsent } from "../lib/smsConsent";
 
 const router = Router();
 
@@ -188,16 +189,25 @@ router.post("/", requireAuth, createTextWhispLimiter, async (req, res): Promise<
     return;
   }
 
-  if (!parsed.data.smsConsentConfirmed) {
-    res.status(400).json({ error: "Please confirm you have this person's permission to receive a text from you." });
-    return;
-  }
-
   const recipientPhone = normalizePhoneE164(parsed.data.recipientPhone);
   if (!recipientPhone) {
     res.status(400).json({ error: "That doesn't look like a valid phone number." });
     return;
   }
+
+  // Once-per-recipient consent: an affirmative checkbox now, OR a stored
+  // consent from a prior Text Whisp/whisp to the same number, satisfies it
+  // (see lib/smsConsent.ts). A Text Whisp may land entirely in-app for a
+  // matched account (no SMS at all), but whether it does isn't known until
+  // findVerifiedRecipient below — so consent is required up front for any
+  // number, same as SendTextWhisp.tsx always showing the checkbox for a
+  // number it hasn't confirmed before.
+  const alreadyConsented = parsed.data.smsConsentConfirmed || (await hasSmsConsent(user.id, recipientPhone));
+  if (!alreadyConsented) {
+    res.status(400).json({ error: "Please confirm you have this person's permission to receive a text from you.", code: "sms_consent_required" });
+    return;
+  }
+  if (parsed.data.smsConsentConfirmed) void recordSmsConsent(user.id, recipientPhone);
 
   // Every recipient is eligible now — a phone number that doesn't match a
   // known, verified Blind Whisper account just takes the guest-link path

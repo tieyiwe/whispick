@@ -12,6 +12,7 @@ import { TextWhispScroll } from "@/components/shared/TextWhispScroll";
 import { useMobileSendAction } from "@/contexts/MobileSendAction";
 import { useToast } from "@/hooks/use-toast";
 import { isContactPickerSupported, pickContact } from "@/lib/contactPicker";
+import { useNeedsSmsConsent } from "@/lib/useSmsConsent";
 import { ArrowLeft, ArrowRight, Phone, Loader2, ScrollText, CalendarClock, Contact } from "lucide-react";
 
 const MESSAGE_MAX_LENGTH = 260;
@@ -51,6 +52,10 @@ export function SendTextWhisp() {
   // mirrors SendWhisp.tsx's own smsConsentConfirmed, right down to the
   // reasoning (disclosure text alone isn't verifiable as having been read).
   const [smsConsentConfirmed, setSmsConsentConfirmed] = useState(false);
+  // Once-per-recipient: the checkbox only appears for a number this sender
+  // hasn't confirmed before (see lib/useSmsConsent.ts). A Text Whisp always
+  // goes to a phone number, so it's always "active" once one is entered.
+  const needsSmsConsent = useNeedsSmsConsent(phone.trim() ? [phone.trim()] : [], !!phone.trim());
 
   const createTextWhisp = useCreateTextWhisp();
 
@@ -107,7 +112,7 @@ export function SendTextWhisp() {
     messageText.trim().length > 0 &&
     remaining >= 0 &&
     (!scheduleEnabled || !!scheduledAtValue) &&
-    smsConsentConfirmed;
+    (!needsSmsConsent || smsConsentConfirmed);
 
   // Drives the mobile bottom nav's raised round button while this page is
   // composing — see AppLayout.tsx and contexts/MobileSendAction.tsx. Without
@@ -285,24 +290,32 @@ export function SendTextWhisp() {
                   number and, for anyone not already a verified Blind Whisper
                   user, always delivered by SMS (see textWhispGuestSmsBody in
                   lib/sms.ts). */}
-              <p className="text-xs text-muted-foreground" data-testid="text-sms-consent-disclosure">
-                {t("sendTextWhisp.smsDisclosure")}{" "}
-                <a href="/sms-terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                  {t("sendTextWhisp.smsTermsLinkText")}
-                </a>.
-              </p>
-              {/* The actual opt-in evidence: an affirmative, unchecked-by-
-                  default checkbox, not just the disclosure text above. */}
-              <label className="flex items-start gap-2 text-sm text-foreground cursor-pointer mt-2">
-                <input
-                  type="checkbox"
-                  checked={smsConsentConfirmed}
-                  onChange={(e) => setSmsConsentConfirmed(e.target.checked)}
-                  className="rounded border-border/50 mt-0.5"
-                  data-testid="checkbox-sms-consent"
-                />
-                {t("sendTextWhisp.smsConsentCheckbox")}
-              </label>
+              {/* Once-per-recipient: only shown for a number this sender
+                  hasn't confirmed before. A returning recipient skips it —
+                  consent, once given, stays valid until they reply STOP. */}
+              {needsSmsConsent && (
+                <>
+                  <p className="text-xs text-muted-foreground" data-testid="text-sms-consent-disclosure">
+                    {t("sendTextWhisp.smsDisclosure")}{" "}
+                    <a href="/sms-terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      {t("sendTextWhisp.smsTermsLinkText")}
+                    </a>.
+                  </p>
+                  {/* The actual opt-in evidence: an affirmative, unchecked-by-
+                      default checkbox, not just the disclosure text above. */}
+                  <label className="flex items-start gap-2 text-sm text-foreground cursor-pointer mt-2">
+                    <input
+                      type="checkbox"
+                      checked={smsConsentConfirmed}
+                      onChange={(e) => setSmsConsentConfirmed(e.target.checked)}
+                      className="rounded border-border/50 mt-0.5"
+                      data-testid="checkbox-sms-consent"
+                    />
+                    {t("sendTextWhisp.smsConsentCheckbox")}
+                  </label>
+                  <p className="text-[11px] text-muted-foreground/80 mt-1">{t("sendTextWhisp.smsConsentOneTime")}</p>
+                </>
+              )}
             </div>
 
             <div className="space-y-2 pt-1">

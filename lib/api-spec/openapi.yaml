@@ -2858,6 +2858,31 @@ paths:
               schema:
                 $ref: "#/components/schemas/UnreadNotificationCountResponse"
 
+  /user/sms-consent/check:
+    post:
+      operationId: checkSmsConsent
+      tags: [user]
+      summary: Which of these phone numbers this sender has already given one-time SMS consent for
+      description: >-
+        Lets a send screen hide the one-time SMS opt-in checkbox for a
+        recipient the sender has confirmed before. Returns the subset of the
+        submitted numbers that already have a stored consent for this sender.
+        Reports only the caller's own prior attestations — never whether a
+        number is a registered account.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SmsConsentCheckInput"
+      responses:
+        "200":
+          description: The already-consented subset (echoing the submitted strings)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SmsConsentCheckResult"
+
   /user/recent-recipients:
     get:
       operationId: getMyRecentRecipients
@@ -8541,6 +8566,28 @@ components:
           type: integer
       required:
         - unreadCount
+
+    SmsConsentCheckInput:
+      type: object
+      properties:
+        phones:
+          type: array
+          items:
+            type: string
+          maxItems: 100
+      required:
+        - phones
+
+    SmsConsentCheckResult:
+      type: object
+      properties:
+        consented:
+          type: array
+          items:
+            type: string
+          description: The subset of the submitted phone strings this sender has already consented to text.
+      required:
+        - consented
 
     RecentRecipient:
       type: object

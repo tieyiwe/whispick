@@ -27,7 +27,8 @@
     "viewButton": "View this Text Whisp",
     "sendAnotherButton": "Send another",
     "toastSendFailed": "Failed to send Text Whisp",
-    "smsConsentCheckbox": "I confirm I have this person's permission to receive a text from me via Blind Whisper."
+    "smsConsentCheckbox": "I confirm I have this person's permission to receive a text from me via Blind Whisper.",
+    "smsConsentOneTime": "You only need to confirm this once for each new contact."
   },
   "textWhispDetail": {
     "notFound": "Text Whisp not found.",

@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { Mail, MessageSquare, UserPlus, Eye, Loader2 } from "lucide-react";
 import { RevealCountdownDialog } from "@/components/shared/RevealCountdownDialog";
+import { useNeedsSmsConsent } from "@/lib/useSmsConsent";
 
 type Channel = "email" | "sms" | "whatsapp";
 
@@ -46,6 +47,12 @@ export function InvitePage() {
   // isn't carrier-regulated the same way, same carve-out SendWhisp.tsx and
   // SendTextWhisp.tsx already use for their own SMS-only consent checkbox.
   const [smsConsentConfirmed, setSmsConsentConfirmed] = useState(false);
+  // Once-per-recipient: the checkbox only appears for an SMS invite to a
+  // number this sender hasn't confirmed before (see lib/useSmsConsent.ts).
+  const needsSmsConsent = useNeedsSmsConsent(
+    channel === "sms" && recipientPhone.trim() ? [recipientPhone.trim()] : [],
+    channel === "sms" && !!recipientPhone.trim(),
+  );
   // Single shared countdown dialog for the whole list — which invite it's
   // for is just which id is currently non-null here, same "one shared
   // component, id picks the target" shape as a per-row menu/dialog
@@ -59,7 +66,7 @@ export function InvitePage() {
   const canSend =
     channel === "email"
       ? !!recipientEmail.trim()
-      : !!recipientPhone.trim() && (channel !== "sms" || smsConsentConfirmed);
+      : !!recipientPhone.trim() && (!needsSmsConsent || smsConsentConfirmed);
 
   function handleSend() {
     createInvite.mutate(
@@ -154,7 +161,7 @@ export function InvitePage() {
                 mirrors SendWhisp.tsx/SendTextWhisp.tsx's own version. Only
                 for the SMS channel; WhatsApp delivery isn't carrier-
                 regulated the same way. */}
-            {channel === "sms" && (
+            {channel === "sms" && needsSmsConsent && (
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground" data-testid="text-sms-consent-disclosure">
                   {t("invitePage.smsDisclosure")}{" "}
@@ -172,6 +179,7 @@ export function InvitePage() {
                   />
                   {t("invitePage.smsConsentCheckbox")}
                 </label>
+                <p className="text-[11px] text-muted-foreground/80">{t("invitePage.smsConsentOneTime")}</p>
               </div>
             )}
 
