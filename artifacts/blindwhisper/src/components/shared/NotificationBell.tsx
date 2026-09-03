@@ -62,12 +62,47 @@ export function NotificationBell() {
     // it (below), or via the explicit "Mark all as read" button.
   }
 
+  // Reflect read-state in the caches SYNCHRONOUSLY, before the click's own
+  // navigation runs. Clicking a notification with a url both marks it read
+  // AND navigates (the <Link> below), and that navigation unmounts/remounts
+  // AppLayout (and this bell) — which drops the mutation's onSuccess callback
+  // before invalidate() could ever fire, so the row stayed bold and the red
+  // dot never dropped. Updating the cache up front makes the read state (and
+  // the count) survive the navigation no matter how the request/unmount race
+  // resolves; the mutation still persists it server-side, and the 60s poll
+  // reconciles anything the optimistic guess got slightly off.
+  function markOneReadInCache(id: string, kind?: string | null) {
+    queryClient.setQueryData(getGetMyNotificationsQueryKey(), (old: any) =>
+      old ? { ...old, items: old.items.map((i: any) => (i.id === id ? { ...i, read: true } : i)) } : old,
+    );
+    queryClient.setQueryData(getGetMyUnreadNotificationCountQueryKey(), (old: any) =>
+      old
+        ? {
+            ...old,
+            unreadCount: Math.max(0, (old.unreadCount ?? 0) - 1),
+            unreadReplyCount: kind === "reply" ? Math.max(0, (old.unreadReplyCount ?? 0) - 1) : old.unreadReplyCount,
+          }
+        : old,
+    );
+  }
+
   function handleMarkAllRead() {
+    // Same optimistic approach for the bulk action: zero the counts and flip
+    // every row read immediately, then persist + reconcile.
+    queryClient.setQueryData(getGetMyNotificationsQueryKey(), (old: any) =>
+      old ? { ...old, items: old.items.map((i: any) => ({ ...i, read: true })) } : old,
+    );
+    queryClient.setQueryData(getGetMyUnreadNotificationCountQueryKey(), (old: any) =>
+      old ? { ...old, unreadCount: 0, unreadReplyCount: 0 } : old,
+    );
     markAllRead.mutate(undefined, { onSuccess: invalidate });
   }
 
-  function handleNotificationClick(n: { id: string; read?: boolean }) {
-    if (!n.read) markRead.mutate({ id: n.id }, { onSuccess: invalidate });
+  function handleNotificationClick(n: { id: string; read?: boolean; kind?: string | null }) {
+    if (!n.read) {
+      markOneReadInCache(n.id, n.kind);
+      markRead.mutate({ id: n.id }, { onSuccess: invalidate });
+    }
     setOpen(false);
   }
 
