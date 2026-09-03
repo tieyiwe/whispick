@@ -264,6 +264,7 @@ export * from './trackingResult';
 export * from './trafficByHourResponse';
 export * from './trafficByHourResponseHoursItem';
 export * from './unreadNotificationCountResponse';
+export * from './unreadWhispCountResponse';
 export * from './unsubscribeFromMatching200';
 export * from './unsubscribeFromMatchingParams';
 export * from './updateAdminUserInput';

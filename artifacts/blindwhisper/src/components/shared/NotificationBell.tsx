@@ -81,12 +81,17 @@ export function NotificationBell() {
             // app a purple dot on a purple-tinted header is close to
             // invisible, which defeats the one job it has. The ring in the
             // surrounding surface colour keeps it legible where it overlaps
-            // the bell itself.
+            // the bell itself. Shows the actual count (capped at "9+", same
+            // convention as every other nav badge in AppLayout) rather than
+            // a bare dot, so the number is visible without opening the
+            // popover.
             <span
-              className="absolute top-1 right-1 h-2.5 w-2.5 rounded-full bg-destructive ring-2 ring-background"
+              className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-destructive ring-2 ring-background text-[10px] font-semibold text-destructive-foreground flex items-center justify-center"
               aria-label={t("notificationBell.unreadAriaLabel", { count: unreadCount })}
               data-testid="badge-unread-notifications"
-            />
+            >
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
           )}
         </Button>
       </PopoverTrigger>

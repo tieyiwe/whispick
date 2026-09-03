@@ -88,7 +88,8 @@ export const CreateWhispBody = zod.object({
   "senderAlias": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
   "scheduledAt": zod.string().nullish(),
-  "conciergeRequestId": zod.string().nullish().describe('The requestId from a prior POST \/whisps\/concierge call, if this send used its video suggestion and\/or note draft')
+  "conciergeRequestId": zod.string().nullish().describe('The requestId from a prior POST \/whisps\/concierge call, if this send used its video suggestion and\/or note draft'),
+  "smsConsentConfirmed": zod.boolean().nullish().describe('Required (must be true) when whisperChannel is \"sms\" — the sender confirming they have this recipient\'s permission to receive a text. Not required for \"email\" or \"whatsapp\".')
 })
 
 export const CreateWhispResponse = zod.object({
@@ -186,6 +187,15 @@ export const GetWhispStatsResponse = zod.object({
   "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.'),
   "senderHandle": zod.string().nullish().describe('A stable, anonymous pseudonym for this whisp\'s sender (e.g. \"Falcon482\"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerRole is \"recipient\"; null otherwise.')
 }))
+})
+
+
+/**
+ * Mirrors GET /whisps?box=received's own filters (matched recipient, not archived) but counts rather than fetches full rows. "Unread" means openedAt IS NULL, the same flag the public whisp page's hasOpenedBefore reads — clears the moment the recipient actually opens the whisp.
+ * @summary Lightweight unread count for the "My Whisps" nav badge, without fetching the full received list
+ */
+export const GetReceivedWhispUnreadCountResponse = zod.object({
+  "unreadCount": zod.number()
 })
 
 
@@ -501,7 +511,8 @@ export const ListInvitesResponse = zod.array(ListInvitesResponseItem)
 export const CreateInviteBody = zod.object({
   "recipientEmail": zod.string().nullish(),
   "recipientPhone": zod.string().nullish(),
-  "channel": zod.string()
+  "channel": zod.string(),
+  "smsConsentConfirmed": zod.boolean().nullish().describe('Required (must be true) when channel is \"sms\" — the inviter confirming they have this recipient\'s permission to receive a text. Not required for \"email\" or \"whatsapp\".')
 })
 
 export const CreateInviteResponse = zod.object({
@@ -680,7 +691,8 @@ export const CreateTextWhispBody = zod.object({
   "recipientPhone": zod.string(),
   "messageText": zod.string().max(createTextWhispBodyMessageTextMax),
   "senderAlias": zod.string().nullish(),
-  "scheduledAt": zod.string().nullish().describe('A future ISO timestamp to hold delivery back until — omit or leave null to send immediately.')
+  "scheduledAt": zod.string().nullish().describe('A future ISO timestamp to hold delivery back until — omit or leave null to send immediately.'),
+  "smsConsentConfirmed": zod.boolean().nullish().describe('Required (must be true) — the sender confirming they have this recipient\'s permission to receive a text. Required unconditionally, since whether this actually goes out over SMS or lands entirely in-app depends on whether recipientPhone matches an existing account, which isn\'t known until the server looks it up.')
 })
 
 export const createTextWhispResponseMessageTextMax = 260;
@@ -4253,7 +4265,8 @@ export const SendGroupWhispBody = zod.object({
   "anonymousNote": zod.string().nullish(),
   "senderAlias": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
-  "scheduledAt": zod.string().nullish()
+  "scheduledAt": zod.string().nullish(),
+  "smsConsentConfirmed": zod.boolean().nullish().describe('Required (must be true) when whisperChannel is \"sms\" — the sender confirming they have this group\'s members\' permission to receive a text. Not required for \"email\" or \"whatsapp\".')
 })
 
 export const SendGroupWhispResponse = zod.object({

@@ -214,11 +214,12 @@ export function SettingsPage() {
       });
       if (result === "downloaded") {
         toast({ title: tWhisperBox("settingsSection.toastStoryDownloaded") });
-      } else if (result === "shared-image") {
+      } else if (result === "shared-image" || result === "shared-link") {
         toast({ title: tWhisperBox("settingsSection.toastStoryShared") });
       } else if (result === "unsupported") {
         toast({ title: tWhisperBox("settingsSection.toastStoryUnsupported"), variant: "destructive" });
       }
+      // result === "cancelled": user dismissed the share sheet — no toast.
     } catch {
       toast({ title: tWhisperBox("settingsSection.toastStoryFailed"), variant: "destructive" });
     } finally {

@@ -43,6 +43,54 @@ self.addEventListener("push", (event) => {
   );
 });
 
+// Browsers periodically invalidate and rotate a push subscription on their
+// own (a real endpoint, not something this app controls) — without handling
+// this, that device silently stops receiving pushes forever with nothing
+// anywhere telling the user why, since the old subscription just goes dead.
+// Re-subscribes with the same VAPID key and re-registers the new endpoint
+// with the backend so delivery keeps working across a rotation instead of
+// only ever being set up once, right after install.
+self.addEventListener("pushsubscriptionchange", (event) => {
+  event.waitUntil(
+    (async () => {
+      try {
+        const applicationServerKey =
+          event.oldSubscription?.options?.applicationServerKey ??
+          (await fetch("/api/user/push-public-key", { credentials: "same-origin" })
+            .then((r) => (r.ok ? r.json() : null))
+            .then((data) => data && urlBase64ToUint8Array(data.publicKey)));
+        if (!applicationServerKey) return;
+
+        const subscription = await self.registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey,
+        });
+        const json = subscription.toJSON();
+        await fetch("/api/user/push-subscription", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ endpoint: json.endpoint, keys: json.keys }),
+        });
+      } catch {
+        // Same "best-effort, never surfaced" posture as every other push
+        // failure path here — the user can always re-enable manually from
+        // Settings if this silently didn't work.
+      }
+    })()
+  );
+});
+
+// Mirrors src/lib/push.ts's urlBase64ToUint8Array — duplicated rather than
+// imported since a service worker can't reach into the app bundle's module
+// graph, and this is the only place in sw.js that needs it.
+function urlBase64ToUint8Array(base64Url) {
+  const padding = "=".repeat((4 - (base64Url.length % 4)) % 4);
+  const base64 = (base64Url + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(base64);
+  return Uint8Array.from([...raw].map((char) => char.charCodeAt(0)));
+}
+
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const url = event.notification.data?.url;

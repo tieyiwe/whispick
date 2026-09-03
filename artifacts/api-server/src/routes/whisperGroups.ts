@@ -337,6 +337,10 @@ const sendSchema = z
     senderAlias: z.string().nullable().optional(),
     moodTag: z.string().nullable().optional(),
     scheduledAt: z.string().nullable().optional(),
+    // Same server-enforced consent gate as POST /whisps — see its own
+    // schema comment. A Group Whisper fans out to every member's own phone
+    // number, so this matters just as much here.
+    smsConsentConfirmed: z.boolean().nullable().optional(),
   })
   .refine((data) => !!data.videoUrl || !!data.uploadedVideoId, {
     message: "A video URL or an uploaded video is required",
@@ -421,6 +425,11 @@ router.post("/:id/send", requireAuth, createWhispLimiter, async (req, res): Prom
       });
       return;
     }
+  }
+
+  if (data.whisperChannel === "sms" && !data.smsConsentConfirmed) {
+    res.status(400).json({ error: "Please confirm you have this group's members' permission to receive a text from you." });
+    return;
   }
 
   const allMembers = await db.select().from(whisperGroupMembersTable).where(eq(whisperGroupMembersTable.groupId, group.id));

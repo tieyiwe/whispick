@@ -27,7 +27,7 @@ import { ensureUser } from "../lib/ensureUser";
 import { assignOrGetHandle, getHandlesFor, renameHandle } from "../lib/anonymousHandles";
 import { toggleReaction, reactionCountsFor, viewerReactionsFor } from "../lib/commentReactions";
 import { commentImageUpload, storeCommentImage } from "../lib/commentImages";
-import { assignOrGetSenderHandle } from "../lib/whispSenderHandle";
+import { safeAssignOrGetSenderHandle } from "../lib/whispSenderHandle";
 
 const router = Router();
 
@@ -259,7 +259,7 @@ router.get("/w/:token", async (req, res): Promise<void> => {
     if (whisp.recipientUserId === viewer.id) {
       viewerArchived = !!whisp.recipientArchivedAt;
       viewerPinned = !!whisp.recipientPinnedAt;
-      senderHandle = await assignOrGetSenderHandle(whisp.senderId, viewer.id);
+      senderHandle = await safeAssignOrGetSenderHandle(whisp.senderId, viewer.id);
     }
   }
 

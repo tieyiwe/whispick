@@ -33,7 +33,7 @@ import { generateNoteSuggestions } from "../lib/noteSuggestions";
 import { httpUrlString } from "../lib/safeUrl";
 import { deriveVideoFields, embedUrlFor } from "../lib/videoMeta";
 import { runConcierge, MAX_SITUATION_LENGTH } from "../lib/concierge";
-import { assignOrGetSenderHandle } from "../lib/whispSenderHandle";
+import { safeAssignOrGetSenderHandle } from "../lib/whispSenderHandle";
 
 const router = Router();
 
@@ -155,7 +155,7 @@ async function toWhispResponse(whisp: typeof whispsTable.$inferSelect, viewerId:
   const viewerRole: "sender" | "recipient" | null =
     whisp.senderId === viewerId ? "sender" : recipientUserId === viewerId ? "recipient" : null;
   const { senderId, ...safeRest } = rest;
-  const senderHandle = viewerRole === "recipient" ? await assignOrGetSenderHandle(senderId, viewerId) : null;
+  const senderHandle = viewerRole === "recipient" ? await safeAssignOrGetSenderHandle(senderId, viewerId) : null;
   return {
     ...safeRest,
     senderId: viewerRole === "sender" ? senderId : null,
@@ -222,6 +222,32 @@ router.get("/", requireAuth, async (req, res): Promise<void> => {
   const whisps = await db.select().from(whispsTable).where(whereClause).orderBy(orderClause);
 
   res.json(await Promise.all(whisps.map((w) => toWhispResponse(w, user.id))));
+});
+
+// GET /api/whisps/received-unread-count — a lightweight poll target for the
+// "My Whisps" nav badge, mirroring GET /?box=received's own filters
+// (recipientUserId match, not archived) but counting rather than fetching
+// full rows. "Unread" here means openedAt IS NULL — the same flag
+// routes/public.ts's hasOpenedBefore reads — so the badge clears the moment
+// the recipient actually opens the whisp, not when some separate
+// notification gets dismissed.
+router.get("/received-unread-count", requireAuth, async (req, res): Promise<void> => {
+  const { userId } = getAuth(req);
+  const user = await ensureUser(userId!, req);
+
+  const row = await db
+    .select({ count: count() })
+    .from(whispsTable)
+    .where(
+      and(
+        eq(whispsTable.recipientUserId, user.id),
+        isNull(whispsTable.recipientArchivedAt),
+        isNull(whispsTable.openedAt),
+      ),
+    )
+    .then((r) => r[0]);
+
+  res.json({ unreadCount: row?.count ?? 0 });
 });
 
 // POST /api/whisps/:id/pin — toggles pin for whichever role (sender or
@@ -322,6 +348,14 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
       // sure what to send?" concierge — see the ownership check below.
       // Purely an analytics correlation, never trusted for anything else.
       conciergeRequestId: z.string().nullable().optional(),
+      // Mirrors the required, unchecked-by-default checkbox SendWhisp.tsx
+      // shows right where a Sender enters an SMS recipient's phone number
+      // (see SmsTerms.tsx's "live example"). Enforced HERE, not just as a
+      // disabled Send button client-side — without a server-side check, a
+      // direct API call could SMS anyone with no opt-in confirmation at
+      // all, which is exactly the evidence Twilio's A2P 10DLC review
+      // requires to actually exist.
+      smsConsentConfirmed: z.boolean().nullable().optional(),
     })
     .refine((data) => !!data.videoUrl || !!data.uploadedVideoId, {
       message: "A video URL or an uploaded video is required",
@@ -423,6 +457,13 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
     }
     if ((data.whisperChannel === "sms" || data.whisperChannel === "whatsapp") && !data.recipientPhone) {
       res.status(400).json({ error: "Text/WhatsApp delivery requires a recipient phone number" });
+      return;
+    }
+    // WhatsApp isn't carrier-regulated under A2P 10DLC the same way SMS is
+    // — same carve-out SendWhisp.tsx's own requiresSmsConsent uses — so only
+    // an actual SMS send requires this.
+    if (data.whisperChannel === "sms" && !data.smsConsentConfirmed) {
+      res.status(400).json({ error: "Please confirm you have this person's permission to receive a text from you." });
       return;
     }
   }

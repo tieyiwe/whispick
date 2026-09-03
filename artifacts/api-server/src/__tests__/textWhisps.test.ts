@@ -64,8 +64,19 @@ async function setupFreshSenderAndVerifiedRecipient() {
 
 describe("POST /api/text-whisps", () => {
   it("rejects unauthenticated requests", async () => {
-    const res = await request(app).post("/api/text-whisps").send({ recipientPhone: RECIPIENT_PHONE, messageText: "hi" });
+    const res = await request(app).post("/api/text-whisps").send({ recipientPhone: RECIPIENT_PHONE, messageText: "hi", smsConsentConfirmed: true });
     expect(res.status).toBe(401);
+  });
+
+  it("rejects a send without SMS consent confirmation", async () => {
+    await setupSenderAndVerifiedRecipient();
+    const res = await request(app)
+      .post("/api/text-whisps")
+      .set(asUser(USER_A))
+      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "no consent given" });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/permission to receive a text/i);
   });
 
   it("rejects a message over 260 characters", async () => {
@@ -73,7 +84,7 @@ describe("POST /api/text-whisps", () => {
     const res = await request(app)
       .post("/api/text-whisps")
       .set(asUser(USER_A))
-      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "x".repeat(261) });
+      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "x".repeat(261), smsConsentConfirmed: true });
 
     expect(res.status).toBe(400);
   });
@@ -83,7 +94,7 @@ describe("POST /api/text-whisps", () => {
     const res = await request(app)
       .post("/api/text-whisps")
       .set(asUser(USER_A))
-      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "x".repeat(260) });
+      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "x".repeat(260), smsConsentConfirmed: true });
 
     expect(res.status).toBe(201);
   });
@@ -93,7 +104,7 @@ describe("POST /api/text-whisps", () => {
     const res = await request(app)
       .post("/api/text-whisps")
       .set(asUser(USER_A))
-      .send({ recipientPhone: "not a phone number", messageText: "hello" });
+      .send({ recipientPhone: "not a phone number", messageText: "hello", smsConsentConfirmed: true });
 
     expect(res.status).toBe(400);
   });
@@ -103,7 +114,7 @@ describe("POST /api/text-whisps", () => {
     const res = await request(app)
       .post("/api/text-whisps")
       .set(asUser(USER_A))
-      .send({ recipientPhone: "+15552223333", messageText: "hello me" });
+      .send({ recipientPhone: "+15552223333", messageText: "hello me", smsConsentConfirmed: true });
 
     expect(res.status).toBe(400);
   });
@@ -114,7 +125,7 @@ describe("POST /api/text-whisps", () => {
     const res = await request(app)
       .post("/api/text-whisps")
       .set(asUser(USER_A))
-      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "You matter.", senderAlias: "A friend" });
+      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "You matter.", senderAlias: "A friend", smsConsentConfirmed: true });
 
     expect(res.status).toBe(201);
     expect(res.body.status).toBe("sent");
@@ -137,7 +148,7 @@ describe("POST /api/text-whisps", () => {
     const res = await request(app)
       .post("/api/text-whisps")
       .set(asUser(USER_A))
-      .send({ recipientPhone: "+15550000000", messageText: "Hey there." });
+      .send({ recipientPhone: "+15550000000", messageText: "Hey there.", smsConsentConfirmed: true });
 
     expect(res.status).toBe(201);
     expect(res.body.recipientPhone).toBe("+15550000000");
@@ -162,7 +173,7 @@ describe("POST /api/text-whisps", () => {
     const res = await request(app)
       .post("/api/text-whisps")
       .set(asUser(USER_A))
-      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "hello" });
+      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "hello", smsConsentConfirmed: true });
 
     expect(res.status).toBe(201);
     const row = await db.select().from(textWhispsTable).where(eq(textWhispsTable.id, res.body.id)).then((r) => r[0]);
@@ -184,11 +195,11 @@ describe("POST /api/text-whisps", () => {
     const matched = await request(app)
       .post("/api/text-whisps")
       .set(asUser(ENUM_SENDER))
-      .send({ recipientPhone: ENUM_RECIPIENT_PHONE, messageText: "matched" });
+      .send({ recipientPhone: ENUM_RECIPIENT_PHONE, messageText: "matched", smsConsentConfirmed: true });
     const unmatched = await request(app)
       .post("/api/text-whisps")
       .set(asUser(ENUM_SENDER))
-      .send({ recipientPhone: "+15559998888", messageText: "unmatched" });
+      .send({ recipientPhone: "+15559998888", messageText: "unmatched", smsConsentConfirmed: true });
 
     for (const res of [matched, unmatched]) {
       expect("recipientUserId" in res.body).toBe(false);
@@ -220,7 +231,7 @@ describe("GET /api/text-whisps/:id", () => {
     const res = await request(app)
       .post("/api/text-whisps")
       .set(asUser(USER_A))
-      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "hi there" });
+      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "hi there", smsConsentConfirmed: true });
     return res.body.id as string;
   }
 
@@ -261,7 +272,7 @@ describe("DELETE /api/text-whisps/:id — soft delete", () => {
     const res = await request(app)
       .post("/api/text-whisps")
       .set(asUser(USER_A))
-      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "hi there" });
+      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "hi there", smsConsentConfirmed: true });
     return res.body.id as string;
   }
 
@@ -306,7 +317,7 @@ describe("Text Whisp replies", () => {
     const res = await request(app)
       .post("/api/text-whisps")
       .set(asUser(USER_A))
-      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "hi there" });
+      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "hi there", smsConsentConfirmed: true });
     return res.body.id as string;
   }
 
@@ -368,7 +379,7 @@ describe("Text Whisp replies", () => {
     const create = await request(app)
       .post("/api/text-whisps")
       .set(asUser(senderClerkId))
-      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "hi there" });
+      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "hi there", smsConsentConfirmed: true });
     const id = create.body.id as string;
 
     const first = await request(app).post(`/api/text-whisps/${id}/replies`).set(asUser(recipientClerkId)).send({ replyText: "first" });
@@ -388,7 +399,7 @@ describe("Text Whisp replies", () => {
       const res = await request(app)
         .post("/api/text-whisps")
         .set(asUser(senderClerkId))
-        .send({ recipientPhone: RECIPIENT_PHONE, messageText: "hi there" });
+        .send({ recipientPhone: RECIPIENT_PHONE, messageText: "hi there", smsConsentConfirmed: true });
       return res.body.id as string;
     }
     const idA = await sendTextWhisp();
@@ -412,7 +423,7 @@ describe("Text Whisp replies", () => {
     const create = await request(app)
       .post("/api/text-whisps")
       .set(asUser(senderClerkId))
-      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "hi there" });
+      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "hi there", smsConsentConfirmed: true });
     const id = create.body.id as string;
 
     const reply = await request(app).post(`/api/text-whisps/${id}/replies`).set(asUser(recipientClerkId)).send({ replyText: "hi" });
@@ -431,7 +442,7 @@ describe("Text Whisp replies", () => {
     const create = await request(app)
       .post("/api/text-whisps")
       .set(asUser(senderClerkId))
-      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "hi there" });
+      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "hi there", smsConsentConfirmed: true });
     const id = create.body.id as string;
 
     const ownReply = await request(app).post(`/api/text-whisps/${id}/replies`).set(asUser(senderClerkId)).send({ replyText: "from the sender" });
@@ -449,7 +460,7 @@ describe("Text Whisp typing indicator", () => {
     const res = await request(app)
       .post("/api/text-whisps")
       .set(asUser(senderClerkId))
-      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "hi there" });
+      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "hi there", smsConsentConfirmed: true });
     return { id: res.body.id as string, senderClerkId, recipientClerkId };
   }
 
@@ -495,7 +506,7 @@ describe("Text Whisp reveal flow", () => {
     const res = await request(app)
       .post("/api/text-whisps")
       .set(asUser(USER_A))
-      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "hi there" });
+      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "hi there", smsConsentConfirmed: true });
     return res.body.id as string;
   }
 
@@ -559,7 +570,7 @@ describe("Text Whisp reveal flow", () => {
     const create = await request(app)
       .post("/api/text-whisps")
       .set(asUser(USER_A))
-      .send({ recipientPhone: "+15550001111", messageText: "hi there" });
+      .send({ recipientPhone: "+15550001111", messageText: "hi there", smsConsentConfirmed: true });
     const createdRow = await db.select().from(textWhispsTable).where(eq(textWhispsTable.id, create.body.id)).then((r) => r[0]);
     expect(createdRow.recipientUserId).toBeNull();
 
@@ -578,7 +589,7 @@ describe("Text Whisp sent to a non-user phone number", () => {
     const res = await request(app)
       .post("/api/text-whisps")
       .set(asUser(USER_A))
-      .send({ recipientPhone: "+15550002222", messageText: "hi there, stranger" });
+      .send({ recipientPhone: "+15550002222", messageText: "hi there, stranger", smsConsentConfirmed: true });
     return res.body.id as string;
   }
 
@@ -602,7 +613,7 @@ describe("GET /api/public/text-whisps/:token", () => {
     const res = await request(app)
       .post("/api/text-whisps")
       .set(asUser(USER_A))
-      .send({ recipientPhone: "+15550003333", messageText: "a message for a stranger", senderAlias: "A friend" });
+      .send({ recipientPhone: "+15550003333", messageText: "a message for a stranger", senderAlias: "A friend", smsConsentConfirmed: true });
     return res.body as { id: string; publicToken: string };
   }
 
@@ -649,7 +660,7 @@ describe("Admin takedown of a flagged Text Whisp", () => {
     const send = await request(app)
       .post("/api/text-whisps")
       .set(asUser(senderClerkId))
-      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "message pending moderation" });
+      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "message pending moderation", smsConsentConfirmed: true });
     const textWhispId = send.body.id as string;
 
     // Moderation runs async off ANTHROPIC_API_KEY in real life (mocked in
@@ -697,7 +708,7 @@ describe("Text Whisp scheduling", () => {
     const res = await request(app)
       .post("/api/text-whisps")
       .set(asUser(senderClerkId))
-      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "later", scheduledAt });
+      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "later", scheduledAt, smsConsentConfirmed: true });
 
     expect(res.status).toBe(201);
     expect(res.body.status).toBe("scheduled");
@@ -718,7 +729,7 @@ describe("Text Whisp scheduling", () => {
     const res = await request(app)
       .post("/api/text-whisps")
       .set(asUser(senderClerkId))
-      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "too far", scheduledAt: farFuture });
+      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "too far", scheduledAt: farFuture, smsConsentConfirmed: true });
 
     expect(res.status).toBe(400);
   });
@@ -729,7 +740,7 @@ describe("Text Whisp scheduling", () => {
     const res = await request(app)
       .post("/api/text-whisps")
       .set(asUser(senderClerkId))
-      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "already due", scheduledAt: past });
+      .send({ recipientPhone: RECIPIENT_PHONE, messageText: "already due", scheduledAt: past, smsConsentConfirmed: true });
 
     expect(res.status).toBe(201);
     expect(res.body.status).toBe("sent");

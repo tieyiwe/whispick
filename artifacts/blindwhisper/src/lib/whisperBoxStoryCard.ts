@@ -347,7 +347,7 @@ function downloadFile(file: File): void {
   setTimeout(() => URL.revokeObjectURL(url), 30_000);
 }
 
-export type ShareWhisperBoxStoryResult = "shared-image" | "shared-link" | "downloaded" | "unsupported";
+export type ShareWhisperBoxStoryResult = "shared-image" | "shared-link" | "downloaded" | "unsupported" | "cancelled";
 
 /**
  * Generates the card and shares it, in this order of preference:
@@ -384,19 +384,36 @@ export async function shareWhisperBoxStoryCard(
   const file = await whisperBoxStoryCardToFile(options);
   const textWithLink = `${options.shareText}\n${options.url}`;
 
+  // The share promise is now AWAITED, not fire-and-forget: cancelling the
+  // native share sheet rejects with an AbortError, and swallowing that (the
+  // old `.catch(() => {})`) meant the caller showed a "Shared to your story!"
+  // toast even when the user backed out without sharing anything. Awaiting
+  // lets us tell the three outcomes apart — shared, cancelled, or a real
+  // failure — and report each honestly. A genuine share error (not a cancel)
+  // still propagates so the caller's catch can surface it.
   if (file && typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
-    navigator.share({ files: [file], title: options.shareTitle, text: textWithLink, url: options.url }).catch(() => {});
-    // Best-effort, silent — `url` riding alongside `files` in the share call
-    // above is the documented path to a tappable Instagram Story link
-    // sticker, but it's the destination app's call whether to honor it, not
-    // something this page can verify. Also having the link sitting on the
-    // clipboard means it's one paste away regardless, rather than the QR
-    // code being the only fallback if a given target ignores `url`.
+    try {
+      await navigator.share({ files: [file], title: options.shareTitle, text: textWithLink, url: options.url });
+    } catch (err) {
+      if (isShareCancel(err)) return "cancelled";
+      throw err;
+    }
+    // `url` riding alongside `files` in the share call above is the documented
+    // path to a tappable Instagram Story link sticker, but it's the
+    // destination app's call whether to honor it, not something this page can
+    // verify. Also having the link sitting on the clipboard means it's one
+    // paste away regardless, rather than the QR code being the only fallback
+    // if a given target ignores `url`.
     navigator.clipboard?.writeText(options.url).catch(() => {});
     return "shared-image";
   }
   if (navigator.share) {
-    navigator.share({ title: options.shareTitle, text: options.shareText, url: options.url }).catch(() => {});
+    try {
+      await navigator.share({ title: options.shareTitle, text: options.shareText, url: options.url });
+    } catch (err) {
+      if (isShareCancel(err)) return "cancelled";
+      throw err;
+    }
     return "shared-link";
   }
   if (file) {
@@ -404,4 +421,12 @@ export async function shareWhisperBoxStoryCard(
     return "downloaded";
   }
   return "unsupported";
+}
+
+// A user dismissing the OS share sheet rejects navigator.share with an
+// AbortError (name "AbortError", or a NotAllowedError in a few older engines)
+// — that's a normal cancel, not a failure worth a red error toast. Any other
+// rejection is a real problem and should surface.
+function isShareCancel(err: unknown): boolean {
+  return err instanceof DOMException && (err.name === "AbortError" || err.name === "NotAllowedError");
 }

@@ -421,6 +421,7 @@ export function SendWhisp() {
             senderAlias: alias,
             moodTag: moodTag,
             scheduledAt: isScheduling ? new Date(scheduledAtValue).toISOString() : null,
+            smsConsentConfirmed: whisperChannel === "sms" ? smsConsentConfirmed : null,
           },
         },
         {
@@ -545,6 +546,7 @@ export function SendWhisp() {
             whisperChannel: recipient.kind === "email" ? "email" : preferWhatsApp ? "whatsapp" : "sms",
             recipientEmail: recipient.kind === "email" ? recipient.raw : null,
             recipientPhone: recipient.kind === "phone" ? recipient.raw : null,
+            smsConsentConfirmed: recipient.kind === "phone" && !preferWhatsApp ? smsConsentConfirmed : null,
           },
         });
         succeeded.push(whisp.id);
@@ -650,6 +652,11 @@ export function SendWhisp() {
     parsedRecipients.recipients.length > 0 &&
     parsedRecipients.invalid.length === 0 &&
     (!requiresSmsConsent || smsConsentConfirmed);
+  // Group Whisper never visits step 5 (see the step-4 Next button below —
+  // it jumps straight to the review step for anything but whisper_link), so
+  // a group send over SMS needs its own consent gate on the review step
+  // instead of reusing step 5's.
+  const requiresGroupSmsConsent = deliveryMethod === "group_whisper" && whisperChannel === "sms";
 
   const steps = [
     t("sendWhisp.steps.video"),
@@ -1686,6 +1693,31 @@ export function SendWhisp() {
                       </div>
                     )}
                   </div>
+
+                  {/* Same A2P 10DLC-required consent checkbox as step 5's —
+                      Group Whisper never visits that step, so a group send
+                      over SMS needs it shown here instead, right before Send
+                      rather than buried earlier in a step this flow skips. */}
+                  {requiresGroupSmsConsent && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground" data-testid="text-sms-consent-disclosure-group">
+                        {t("sendWhisp.step5.smsDisclosure")}{" "}
+                        <a href="/sms-terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                          {t("sendWhisp.step5.smsTermsLinkText")}
+                        </a>.
+                      </p>
+                      <label className="flex items-start gap-2 text-sm text-foreground cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={smsConsentConfirmed}
+                          onChange={(e) => setSmsConsentConfirmed(e.target.checked)}
+                          className="rounded border-border/50 mt-0.5"
+                          data-testid="checkbox-sms-consent-group"
+                        />
+                        {t("sendWhisp.step5.smsConsentCheckbox")}
+                      </label>
+                    </div>
+                  )}
                 </div>
                 <div className="flex justify-between pt-2">
                   <Button
@@ -1697,7 +1729,12 @@ export function SendWhisp() {
                   </Button>
                   <Button
                     onClick={() => handleSend()}
-                    disabled={createWhisp.isPending || sendGroupWhisp.isPending || sendingBatch}
+                    disabled={
+                      createWhisp.isPending ||
+                      sendGroupWhisp.isPending ||
+                      sendingBatch ||
+                      (requiresGroupSmsConsent && !smsConsentConfirmed)
+                    }
                     className="rounded-full shadow-[0_0_15px_rgba(124,92,252,0.3)] px-6"
                     data-testid="button-send-whisp"
                   >

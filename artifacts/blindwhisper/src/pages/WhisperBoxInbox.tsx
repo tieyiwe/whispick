@@ -114,11 +114,12 @@ export function WhisperBoxInbox() {
       });
       if (result === "downloaded") {
         toast({ title: t("settingsSection.toastStoryDownloaded") });
-      } else if (result === "shared-image") {
+      } else if (result === "shared-image" || result === "shared-link") {
         toast({ title: t("settingsSection.toastStoryShared") });
       } else if (result === "unsupported") {
         toast({ title: t("settingsSection.toastStoryUnsupported"), variant: "destructive" });
       }
+      // result === "cancelled": user dismissed the share sheet — no toast.
     } catch {
       toast({ title: t("settingsSection.toastStoryFailed"), variant: "destructive" });
     } finally {

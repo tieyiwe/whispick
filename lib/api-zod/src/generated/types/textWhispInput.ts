@@ -17,4 +17,9 @@ export interface TextWhispInput {
      * @nullable
      */
   scheduledAt?: string | null;
+  /**
+     * Required (must be true) — the sender confirming they have this recipient's permission to receive a text. Required unconditionally, since whether this actually goes out over SMS or lands entirely in-app depends on whether recipientPhone matches an existing account, which isn't known until the server looks it up.
+     * @nullable
+     */
+  smsConsentConfirmed?: boolean | null;
 }

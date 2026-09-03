@@ -48,7 +48,12 @@ function timeRemaining(dateString: string): { unit: "days" | "hours" | "lessThan
   const urgent = ms <= URGENT_THRESHOLD_MS;
   if (ms < HOUR_MS) return { unit: "lessThanHour", count: 0, urgent };
   if (ms < DAY_MS) return { unit: "hours", count: Math.ceil(ms / HOUR_MS), urgent };
-  return { unit: "days", count: Math.ceil(ms / DAY_MS), urgent };
+  // floor, not ceil: with ceil, anything in (24h, 48h) rounded up to "2 days"
+  // so the badge never once read "1 day" and overstated the time left at,
+  // say, 25h. floor makes "N days" mean "at least N full days remain" — 25h
+  // and 47h both read "1 day", 48h+ reads "2 days" — and it hands cleanly to
+  // the hours bucket exactly at the 24h mark ("24 hours" → "1 day").
+  return { unit: "days", count: Math.floor(ms / DAY_MS), urgent };
 }
 
 export function MediaLibrary() {

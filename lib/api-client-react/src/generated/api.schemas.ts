@@ -140,6 +140,11 @@ export interface WhispInput {
      * @nullable
      */
   conciergeRequestId?: string | null;
+  /**
+     * Required (must be true) when whisperChannel is "sms" — the sender confirming they have this recipient's permission to receive a text. Not required for "email" or "whatsapp".
+     * @nullable
+     */
+  smsConsentConfirmed?: boolean | null;
 }
 
 export type WhispDetailCircleConversationsItem = {
@@ -364,6 +369,11 @@ export interface TextWhispInput {
      * @nullable
      */
   scheduledAt?: string | null;
+  /**
+     * Required (must be true) — the sender confirming they have this recipient's permission to receive a text. Required unconditionally, since whether this actually goes out over SMS or lands entirely in-app depends on whether recipientPhone matches an existing account, which isn't known until the server looks it up.
+     * @nullable
+     */
+  smsConsentConfirmed?: boolean | null;
 }
 
 export interface TextWhispReply {
@@ -462,6 +472,11 @@ export interface InviteInput {
   /** @nullable */
   recipientPhone?: string | null;
   channel: string;
+  /**
+     * Required (must be true) when channel is "sms" — the inviter confirming they have this recipient's permission to receive a text. Not required for "email" or "whatsapp".
+     * @nullable
+     */
+  smsConsentConfirmed?: boolean | null;
 }
 
 export interface DebateTopicWhisp {
@@ -2351,6 +2366,10 @@ export interface UnreadNotificationCountResponse {
   unreadReplyCount: number;
 }
 
+export interface UnreadWhispCountResponse {
+  unreadCount: number;
+}
+
 export type RecentRecipientKind = typeof RecentRecipientKind[keyof typeof RecentRecipientKind];
 
 
@@ -2462,6 +2481,11 @@ export interface SendGroupWhispInput {
   moodTag?: string | null;
   /** @nullable */
   scheduledAt?: string | null;
+  /**
+     * Required (must be true) when whisperChannel is "sms" — the sender confirming they have this group's members' permission to receive a text. Not required for "email" or "whatsapp".
+     * @nullable
+     */
+  smsConsentConfirmed?: boolean | null;
 }
 
 export interface SkippedGroupMember {

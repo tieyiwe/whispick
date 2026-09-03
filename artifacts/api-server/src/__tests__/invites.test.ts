@@ -46,6 +46,15 @@ describe("POST /api/invites", () => {
     expect(res.status).toBe(400);
   });
 
+  it("rejects an SMS invite without SMS consent confirmation", async () => {
+    const res = await request(app)
+      .post("/api/invites")
+      .set(asUser(USER_A))
+      .send({ channel: "sms", recipientPhone: "+15551234567" });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/permission to receive a text/i);
+  });
+
   it("creates an invite row and returns 201", async () => {
     const res = await createInvite();
     expect(res.status).toBe(201);

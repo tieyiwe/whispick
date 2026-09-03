@@ -156,11 +156,18 @@ export function WhisperBoxLinkDialog({
       });
       if (result === "downloaded") {
         toast({ title: t("settingsSection.toastStoryDownloaded") });
-      } else if (result === "shared-image") {
+      } else if (result === "shared-image" || result === "shared-link") {
+        // shared-link is the plain-URL fallback (this device can't share the
+        // image file) — it still successfully handed the link off to the
+        // native share sheet, so it earns the same success toast rather than
+        // the silent no-feedback it used to get.
         toast({ title: t("settingsSection.toastStoryShared") });
       } else if (result === "unsupported") {
         toast({ title: t("settingsSection.toastStoryUnsupported"), variant: "destructive" });
       }
+      // result === "cancelled": the user dismissed the share sheet without
+      // sharing — deliberately no toast, since claiming success there was the
+      // bug this fixes.
     } catch {
       toast({ title: t("settingsSection.toastStoryFailed"), variant: "destructive" });
     } finally {

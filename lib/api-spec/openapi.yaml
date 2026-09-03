@@ -116,6 +116,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/WhispStats"
 
+  /whisps/received-unread-count:
+    get:
+      operationId: getReceivedWhispUnreadCount
+      tags: [whisps]
+      summary: Lightweight unread count for the "My Whisps" nav badge, without fetching the full received list
+      description: >-
+        Mirrors GET /whisps?box=received's own filters (matched recipient,
+        not archived) but counts rather than fetches full rows. "Unread"
+        means openedAt IS NULL, the same flag the public whisp page's
+        hasOpenedBefore reads — clears the moment the recipient actually
+        opens the whisp.
+      responses:
+        "200":
+          description: Unread count
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnreadWhispCountResponse"
+
   /whisps/{id}:
     get:
       operationId: getWhisp
@@ -5068,6 +5087,9 @@ components:
         conciergeRequestId:
           type: ["string", "null"]
           description: The requestId from a prior POST /whisps/concierge call, if this send used its video suggestion and/or note draft
+        smsConsentConfirmed:
+          type: ["boolean", "null"]
+          description: Required (must be true) when whisperChannel is "sms" — the sender confirming they have this recipient's permission to receive a text. Not required for "email" or "whatsapp".
       required:
         - deliveryMethod
 
@@ -5396,6 +5418,9 @@ components:
         scheduledAt:
           type: ["string", "null"]
           description: A future ISO timestamp to hold delivery back until — omit or leave null to send immediately.
+        smsConsentConfirmed:
+          type: ["boolean", "null"]
+          description: Required (must be true) — the sender confirming they have this recipient's permission to receive a text. Required unconditionally, since whether this actually goes out over SMS or lands entirely in-app depends on whether recipientPhone matches an existing account, which isn't known until the server looks it up.
       required:
         - recipientPhone
         - messageText
@@ -5545,6 +5570,9 @@ components:
           type: ["string", "null"]
         channel:
           type: string
+        smsConsentConfirmed:
+          type: ["boolean", "null"]
+          description: Required (must be true) when channel is "sms" — the inviter confirming they have this recipient's permission to receive a text. Not required for "email" or "whatsapp".
       required:
         - channel
 
@@ -8506,6 +8534,14 @@ components:
         - unreadCount
         - unreadReplyCount
 
+    UnreadWhispCountResponse:
+      type: object
+      properties:
+        unreadCount:
+          type: integer
+      required:
+        - unreadCount
+
     RecentRecipient:
       type: object
       properties:
@@ -8675,6 +8711,9 @@ components:
           type: ["string", "null"]
         scheduledAt:
           type: ["string", "null"]
+        smsConsentConfirmed:
+          type: ["boolean", "null"]
+          description: Required (must be true) when whisperChannel is "sms" — the sender confirming they have this group's members' permission to receive a text. Not required for "email" or "whatsapp".
       required:
         - whisperChannel
 
