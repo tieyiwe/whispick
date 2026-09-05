@@ -1,0 +1,150 @@
+{
+  "followButton": {
+    "following": "已关注",
+    "follow": "关注",
+    "couldntUpdateFollowStatus": "无法更新关注状态"
+  },
+  "revealCountdownDialog": {
+    "title": "要表明身份吗?",
+    "description": "一旦发生就无法撤销——他们会知道是你。",
+    "message": "你的身份将在 {{seconds}} 秒后被公开",
+    "stopButton": "立即停止公开",
+    "abortedMessage": "已停止公开",
+    "revealedMessage": "已公开"
+  },
+  "installAppPrompt": {
+    "dialogAriaLabel": "安装 Blind Whisper",
+    "titleMobile": "将 Blind Whisper 添加到你的手机",
+    "titleDesktop": "将 Blind Whisper 添加到这台电脑",
+    "descriptionIos": "全屏打开,没有浏览器边栏——就像一个 App。",
+    "descriptionMobile": "从主屏幕全屏打开,就像一个 App。",
+    "descriptionDesktop": "下次只需在桌面或任务栏点一下即可打开,不用再翻浏览器标签页。",
+    "notNow": "暂不",
+    "iosStepShare": "点按 Safari 底部的<1>分享</1>",
+    "iosStepAddHome": "选择<1>添加到主屏幕</1>",
+    "installing": "正在安装…",
+    "install": "安装"
+  },
+  "legalLayout": {
+    "home": "首页",
+    "lastUpdated": "最后更新时间:{{date}}"
+  },
+  "mfaNudgeBanner": {
+    "title": "开启双重验证,提升账户安全",
+    "description": "为登录增加第二重验证,即使密码泄露账户也能保持安全。",
+    "skipForNow": "暂时跳过",
+    "setUpNow": "立即设置"
+  },
+  "moodTag": {
+    "iSeeYou": "我看见你",
+    "healTogether": "一起疗愈",
+    "iLoveYou": "我爱你",
+    "thinkAboutThis": "想一想",
+    "forYourGrowth": "为你的成长",
+    "justBecause": "只是想说"
+  },
+  "notificationBell": {
+    "unreadAriaLabel": "{{count}} 条未读通知",
+    "notifications": "通知",
+    "unreadCount": "{{count}} 条未读",
+    "markAllRead": "全部标为已读",
+    "noNotificationsYet": "暂时还没有通知。"
+  },
+  "phoneVerificationDialog": {
+    "title": "验证你的手机号码",
+    "description": "此项为可选,但可以让 Whisp 在对方已经在这里时更快、免费送达。",
+    "maybeLater": "以后再说"
+  },
+  "pinToTaskbarTip": {
+    "ariaLabel": "固定 Blind Whisper,一键访问",
+    "title": "安装完成!还差一步",
+    "description": "把它固定住,下次一键访问:先打开 Blind Whisper,然后{{instructions}}",
+    "instructionsMac": "右键点击 Dock 中的图标 → 选项 →“保留在 Dock 中”。",
+    "instructionsWindows": "右键点击任务栏中的图标 →“固定到任务栏”。",
+    "dismiss": "关闭"
+  },
+  "pullToRefresh": {
+    "refreshing": "正在刷新…",
+    "releaseToRefresh": "松开即可刷新",
+    "pullToRefresh": "下拉即可刷新"
+  },
+  "rankedBarChart": {
+    "count": "数量",
+    "noDataYet": "暂时还没有数据。"
+  },
+  "replyThread": {
+    "seen": "已读",
+    "sentAriaLabel": "已发送",
+    "aVideo": "一段视频",
+    "aMessage": "一条消息",
+    "whispedVideoBack": "回复了一段视频",
+    "reply": "回复",
+    "you": "你",
+    "newMessages_other": "{{count}} 条新消息",
+    "jumpToLatest": "跳到最新消息",
+    "replyingTo": "正在回复 {{name}}",
+    "cancelReply": "取消回复",
+    "writeAReply": "写下你的回复…",
+    "send": "发送",
+    "guessTag": "🕵️ 猜测",
+    "guessReactionPrompt": "对这个猜测做出反应：",
+    "guessReaction": {
+      "hot": "越来越接近了",
+      "cold": "差远了",
+      "no_comment": "不予置评",
+      "confirmed": "对，就是我"
+    }
+  },
+  "statusBadge": {
+    "pending": "待处理",
+    "scheduled": "已排期",
+    "sent": "已发送",
+    "read": "已读",
+    "delivered": "已送达",
+    "opened": "已打开",
+    "watched": "已观看",
+    "replied": "已回复",
+    "failed": "发送失败"
+  },
+  "textWhispScroll": {
+    "sent": "已发送!",
+    "scheduled": "已安排!",
+    "tapToOpenAriaLabel": "点按以打开这条文字 Whisp",
+    "tapTheBowToOpen": "点按蝴蝶结即可打开",
+    "someoneAnonymous": "一位匿名用户"
+  },
+  "trendAreaChart": {
+    "count": "数量",
+    "noActivityYet": "此时间段内暂时还没有活动。"
+  },
+  "videoPlayer": {
+    "openOn": "在 {{platform}} 上打开",
+    "openOriginal": "打开原始链接",
+    "videoAlt": "视频",
+    "watchTheVideo": "观看视频"
+  },
+  "whispSentConfirmation": {
+    "srOnlySent": "你的 Whisp 已发送"
+  },
+  "appErrorBoundary": {
+    "title": "加载此页面时出了点问题。",
+    "description": "刷新页面通常就能解决——往往是因为刚发布了新版本。",
+    "reload": "重新加载"
+  },
+  "phoneVerificationFlow": {
+    "explainer": "我们会验证你的号码，这样如果你已经是 Blind Whisper 用户，发给你的 whisp 会立即送达——你发送和接收的内容始终保持 100% 匿名。",
+    "smsDisclosure": "一次性验证码可能产生短信和流量费用。请查看我们的",
+    "smsTermsLink": "短信条款",
+    "sendCode": "发送验证码",
+    "enterCode": "输入我们发送到 {{phone}} 的 6 位验证码。",
+    "changeNumber": "更改号码",
+    "verify": "验证",
+    "toastCodeSent": "验证码已发送",
+    "toastCodeSentDescription": "我们已向 {{phone}} 发送了 6 位验证码。",
+    "toastSendFailed": "验证码发送失败",
+    "toastSendFailedDescription": "请检查号码后重试。",
+    "toastVerified": "手机号码已验证",
+    "toastConfirmFailed": "验证码不正确",
+    "toastConfirmFailedDescription": "请重试。"
+  }
+}

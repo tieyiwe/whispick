@@ -15,7 +15,7 @@ import { z } from "zod";
 import { requireAuth } from "../lib/auth";
 import { ensureUser } from "../lib/ensureUser";
 import { getPublicAppUrl } from "../lib/publicUrl";
-import { deliverWhisperLink } from "../lib/deliver";
+import { deliverWhisperLink, findVerifiedRecipient, findVerifiedRecipientByEmail } from "../lib/deliver";
 import { categorizeWhispsAsync } from "../lib/categorizeWhisp";
 import { moderateWhispAsync } from "../lib/moderation";
 import { needsDemographics } from "../lib/demographics";
@@ -24,10 +24,24 @@ import { whisperLinkLimitFor } from "../lib/plans";
 import { createWhispLimiter } from "../lib/rateLimit";
 import { computeExpiresAt, MAX_SCHEDULE_DAYS } from "../lib/expiration";
 import { MAX_SCHEDULE_DAYS_WITH_UPLOAD } from "../lib/uploads";
+import { httpUrlString } from "../lib/safeUrl";
+import { deriveVideoFields } from "../lib/videoMeta";
+import { consentedPhones, recordSmsConsent } from "../lib/smsConsent";
 
 const router = Router();
 
 const WHISPER_CHANNELS = ["email", "sms", "whatsapp"] as const;
+
+// POST /:id/send fans out one real Whisper Link (a Twilio/Resend send, or an
+// in-app delivery) per deliverable member in a single request — and unlike
+// every other real-cost action in this app, that fan-out isn't bounded by
+// createWhispLimiter (which only counts requests, 30/hour, not recipients
+// per request) or by the free-plan Whisper Link cap (spark/ember are
+// unlimited — see lib/plans.ts's PLAN_LIMITS). POST /:id/members only caps
+// a single call at 200, but nothing stops calling it repeatedly to build an
+// unbounded group over time. Capping total group size here is what actually
+// bounds a single POST /:id/send's real-world cost and blast radius.
+const MAX_GROUP_MEMBERS = 500;
 
 async function requireOwnedGroup(groupId: string, ownerId: string) {
   return db
@@ -263,6 +277,19 @@ router.post("/:id/members", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
+  const existingCountRow = await db
+    .select({ count: count() })
+    .from(whisperGroupMembersTable)
+    .where(eq(whisperGroupMembersTable.groupId, group.id))
+    .then((r) => r[0]);
+  const existingCount = existingCountRow?.count ?? 0;
+  if (existingCount + parsed.data.members.length > MAX_GROUP_MEMBERS) {
+    res.status(400).json({
+      error: `A group can have at most ${MAX_GROUP_MEMBERS} members — this group has ${existingCount} and adding ${parsed.data.members.length} more would go over.`,
+    });
+    return;
+  }
+
   const rows = parsed.data.members.map((m) => ({
     id: randomUUID(),
     groupId: group.id,
@@ -293,10 +320,12 @@ router.delete("/:id/members/:memberId", requireAuth, async (req, res): Promise<v
 
 const sendSchema = z
   .object({
-    videoUrl: z.string().min(1).nullable().optional(),
-    videoTitle: z.string().nullable().optional(),
-    videoThumbnail: z.string().nullable().optional(),
-    videoEmbedUrl: z.string().nullable().optional(),
+    // httpUrlString, not plain string — same stored-XSS guard as the single
+    // whisp composer (see routes/whisps.ts).
+    videoUrl: httpUrlString.nullable().optional(),
+    videoTitle: z.string().max(300).nullable().optional(),
+    videoThumbnail: httpUrlString.nullable().optional(),
+    videoEmbedUrl: httpUrlString.nullable().optional(),
     videoStartSeconds: z.number().int().min(0).max(86400).nullable().optional(),
     // min(1), not min(0): an end trim of 0 seconds is meaningless (no clip
     // has zero length) and the falsy 0 would otherwise slip past a
@@ -309,6 +338,10 @@ const sendSchema = z
     senderAlias: z.string().nullable().optional(),
     moodTag: z.string().nullable().optional(),
     scheduledAt: z.string().nullable().optional(),
+    // Same server-enforced consent gate as POST /whisps — see its own
+    // schema comment. A Group Whisper fans out to every member's own phone
+    // number, so this matters just as much here.
+    smsConsentConfirmed: z.boolean().nullable().optional(),
   })
   .refine((data) => !!data.videoUrl || !!data.uploadedVideoId, {
     message: "A video URL or an uploaded video is required",
@@ -328,7 +361,7 @@ router.post("/:id/send", requireAuth, createWhispLimiter, async (req, res): Prom
   // Same one-time demographic confirmation gate as POST /whisps — see
   // lib/demographics.ts.
   if (needsDemographics(user)) {
-    res.status(428).json({ error: "Please confirm your gender and age range before sending your first whisp.", code: "demographics_required" });
+    res.status(428).json({ error: "Please confirm your gender, age range, and preferred language before sending your first whisp.", code: "demographics_required" });
     return;
   }
 
@@ -366,6 +399,13 @@ router.post("/:id/send", requireAuth, createWhispLimiter, async (req, res): Prom
   // Validated before any quota is spent below, so a rejected schedule never
   // costs the sender their Whisper Link allowance for this batch.
   const scheduledDateCheck = data.scheduledAt ? new Date(data.scheduledAt) : null;
+  // Unparseable dates must be rejected here too — Invalid Date skips the
+  // window check (NaN comparisons are false) and then crashes the inserts
+  // AFTER the whole batch's quota was spent.
+  if (scheduledDateCheck && Number.isNaN(scheduledDateCheck.getTime())) {
+    res.status(400).json({ error: "That schedule date isn't valid." });
+    return;
+  }
   if (scheduledDateCheck !== null && scheduledDateCheck.getTime() > Date.now()) {
     const maxDays = uploadedVideo ? MAX_SCHEDULE_DAYS_WITH_UPLOAD : MAX_SCHEDULE_DAYS;
     const maxDate = new Date(Date.now() + maxDays * 24 * 60 * 60 * 1000);
@@ -377,11 +417,39 @@ router.post("/:id/send", requireAuth, createWhispLimiter, async (req, res): Prom
       });
       return;
     }
+    // Also measure against the upload's OWN remaining life (media uploaded
+    // six days ago phases out tomorrow) — recipients need their full 48-hour
+    // window before the bytes are deleted. Same rule as routes/whisps.ts.
+    if (uploadedVideo?.expiresAt && scheduledDateCheck.getTime() > uploadedVideo.expiresAt.getTime() - 48 * 60 * 60 * 1000) {
+      res.status(400).json({
+        error: "That upload is close to phasing out — schedule it sooner, or re-upload the video for a fresh 7-day window.",
+      });
+      return;
+    }
   }
 
   const allMembers = await db.select().from(whisperGroupMembersTable).where(eq(whisperGroupMembersTable.groupId, group.id));
   const needsEmail = data.whisperChannel === "email";
   const deliverable = allMembers.filter((m) => (needsEmail ? !!m.email : !!m.phone));
+
+  // Once-per-recipient SMS consent, per member phone (see lib/smsConsent.ts).
+  // The checkbox is required only when at least one deliverable member's
+  // number hasn't been consented before; an affirmative checkbox covers all
+  // of them at once. Consent for every deliverable number is then recorded
+  // below so a later group send (or a 1:1 send to the same person) skips it.
+  if (data.whisperChannel === "sms") {
+    const memberPhones = deliverable.map((m) => m.phone!).filter(Boolean);
+    if (!data.smsConsentConfirmed) {
+      const consented = new Set(await consentedPhones(user.id, memberPhones));
+      const anyNew = memberPhones.some((p) => !consented.has(p));
+      if (anyNew) {
+        res.status(400).json({ error: "Please confirm you have this group's members' permission to receive a text from you.", code: "sms_consent_required" });
+        return;
+      }
+    } else {
+      for (const p of memberPhones) void recordSmsConsent(user.id, p);
+    }
+  }
   const skipped = allMembers
     .filter((m) => !(needsEmail ? !!m.email : !!m.phone))
     .map((m) => ({ id: m.id, name: m.name, reason: needsEmail ? "No email on file" : "No phone number on file" }));
@@ -393,24 +461,40 @@ router.post("/:id/send", requireAuth, createWhispLimiter, async (req, res): Prom
 
   // Free-plan Whisper Link monthly limit applies the same way to a group
   // send as to any other Whisper Link — each member delivered counts as one.
+  // Like the single-send path (routes/whisps.ts), the check-and-increment is
+  // one atomic UPDATE so concurrent group sends can't each pass a stale
+  // under-limit read and collectively blow past the cap.
   const limit = whisperLinkLimitFor(user.plan);
   const now = new Date();
   const resetDue = !user.whisperLinksResetAt || user.whisperLinksResetAt <= now;
   const usedThisPeriod = resetDue ? 0 : user.whisperLinksUsed;
 
-  if (limit !== null && usedThisPeriod + deliverable.length > limit) {
-    const remaining = Math.max(0, limit - usedThisPeriod);
-    res.status(402).json({
-      error: `Sending to this group would use ${deliverable.length} Whisper Links, but you only have ${remaining} left this month on the ${user.plan} plan. Upgrade to send to larger groups.`,
-    });
-    return;
-  }
-
   if (resetDue) {
+    // First send of a fresh window — the running count is 0, but the limit
+    // still applies to this send's own size.
+    if (limit !== null && deliverable.length > limit) {
+      res.status(402).json({
+        error: `Sending to this group would use ${deliverable.length} Whisper Links, but the ${user.plan} plan allows ${limit} per month. Upgrade to send to larger groups.`,
+      });
+      return;
+    }
     const nextReset = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
     await db.update(usersTable).set({ whisperLinksUsed: deliverable.length, whisperLinksResetAt: nextReset }).where(eq(usersTable.id, user.id));
-  } else {
+  } else if (limit === null) {
     await db.update(usersTable).set({ whisperLinksUsed: sql`${usersTable.whisperLinksUsed} + ${deliverable.length}` }).where(eq(usersTable.id, user.id));
+  } else {
+    const incremented = await db
+      .update(usersTable)
+      .set({ whisperLinksUsed: sql`${usersTable.whisperLinksUsed} + ${deliverable.length}` })
+      .where(and(eq(usersTable.id, user.id), sql`${usersTable.whisperLinksUsed} + ${deliverable.length} <= ${limit}`))
+      .returning({ id: usersTable.id });
+    if (incremented.length === 0) {
+      const remaining = Math.max(0, limit - usedThisPeriod);
+      res.status(402).json({
+        error: `Sending to this group would use ${deliverable.length} Whisper Links, but you only have ${remaining} left this month on the ${user.plan} plan. Upgrade to send to larger groups.`,
+      });
+      return;
+    }
   }
 
   const groupSendId = randomUUID();
@@ -421,7 +505,22 @@ router.post("/:id/send", requireAuth, createWhispLimiter, async (req, res): Prom
 
   const effectiveVideoUrl = uploadedVideo ? `upload:${uploadedVideo.id}` : data.videoUrl!;
   const effectiveVideoTitle = data.videoTitle ?? uploadedVideo?.originalFilename ?? null;
-  const effectiveVideoPlatform = uploadedVideo ? "upload" : data.videoPlatform ?? null;
+  // Derived server-side, not taken from the client — see routes/whisps.ts and
+  // lib/videoMeta.ts deriveVideoFields for why the thumbnail/embed/platform
+  // must never be attacker-controlled.
+  const derived = uploadedVideo ? null : deriveVideoFields(data.videoUrl!, data.videoThumbnail);
+  const effectiveVideoEmbedUrl = uploadedVideo ? null : derived!.embedUrl;
+  const effectiveVideoPlatform = uploadedVideo ? "upload" : derived!.platform;
+
+  // An immediate group send near the end of an upload's retention would have
+  // its bytes deleted mid-way through the recipients' 48-hour windows —
+  // extend the media's life to cover them (same rule as routes/whisps.ts).
+  if (uploadedVideo?.expiresAt && !isScheduled) {
+    const needUntil = new Date(Date.now() + 49 * 60 * 60 * 1000);
+    if (uploadedVideo.expiresAt.getTime() < needUntil.getTime()) {
+      await db.update(uploadedVideosTable).set({ expiresAt: needUntil }).where(eq(uploadedVideosTable.id, uploadedVideo.id));
+    }
+  }
 
   const whispIds: string[] = [];
   for (const member of deliverable) {
@@ -436,7 +535,17 @@ router.post("/:id/send", requireAuth, createWhispLimiter, async (req, res): Prom
       ? uploadedVideo.thumbnailObjectKey
         ? `/api/public/w/${publicToken}/media/thumbnail`
         : null
-      : data.videoThumbnail ?? null;
+      : derived!.thumbnail;
+
+    // Same insert-time match as routes/whisps.ts's single-send POST / — see
+    // whisps.recipientUserId's own comment for why this is looked up once
+    // here rather than left to deliverWhisperLink's internal (delivery-time
+    // only, never persisted) matching.
+    // Non-null assertions are safe here: `deliverable` (above) already
+    // filtered to members that have the field this channel needs.
+    const recipientUserId = needsEmail
+      ? (await findVerifiedRecipientByEmail(member.email!))?.id ?? null
+      : (await findVerifiedRecipient(member.phone!))?.id ?? null;
 
     await db.insert(whispsTable).values({
       id,
@@ -444,7 +553,7 @@ router.post("/:id/send", requireAuth, createWhispLimiter, async (req, res): Prom
       videoUrl: effectiveVideoUrl,
       videoTitle: effectiveVideoTitle,
       videoThumbnail: effectiveVideoThumbnail,
-      videoEmbedUrl: uploadedVideo ? null : data.videoEmbedUrl ?? null,
+      videoEmbedUrl: effectiveVideoEmbedUrl,
       videoStartSeconds: data.videoStartSeconds ?? null,
       videoEndSeconds: data.videoEndSeconds ?? null,
       videoPlatform: effectiveVideoPlatform,
@@ -455,6 +564,7 @@ router.post("/:id/send", requireAuth, createWhispLimiter, async (req, res): Prom
       whisperGroupId: group.id,
       recipientEmail: needsEmail ? member.email : null,
       recipientPhone: needsEmail ? null : member.phone,
+      recipientUserId,
       anonymousNote: data.anonymousNote ?? null,
       senderAlias: data.senderAlias ?? null,
       moodTag: data.moodTag ?? null,

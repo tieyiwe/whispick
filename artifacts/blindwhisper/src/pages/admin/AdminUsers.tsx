@@ -1,17 +1,22 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import {
   useAdminListUsers,
+  useAdminRepairUserProfiles,
   useAdminUpdateUser,
   useAdminDeleteUser,
+  useAdminSendComplianceReminder,
   getAdminListUsersQueryKey,
+  type ComplianceFlags,
+  type ComplianceReminderInputKind,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -25,10 +30,62 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Search, ChevronLeft, ChevronRight, ShieldCheck, Ban, CheckCircle2, Trash2, MapPin } from "lucide-react";
+import {
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  ShieldCheck,
+  Ban,
+  CheckCircle2,
+  XCircle,
+  HelpCircle,
+  Trash2,
+  MapPin,
+  Wand2,
+  Loader2,
+  BellRing,
+} from "lucide-react";
 
 const PAGE_SIZE = 20;
+
+const COMPLIANCE_FILTER_OPTIONS: { value: ComplianceReminderInputKind; label: string }[] = [
+  { value: "mfa_missing", label: "Missing 2FA" },
+  { value: "policy_pending", label: "Policy pending" },
+  { value: "email_unverified", label: "Email unverified" },
+  { value: "phone_unverified", label: "Phone unverified" },
+];
+
+// One row per compliance signal — `kind` is the exact reminder enum value to
+// send if this specific thing is what's missing.
+function complianceItems(compliance: ComplianceFlags) {
+  return [
+    { kind: "email_unverified" as ComplianceReminderInputKind, label: "Email", ok: compliance.emailVerified, unknown: false },
+    { kind: "phone_unverified" as ComplianceReminderInputKind, label: "Phone", ok: compliance.phoneVerified, unknown: false },
+    { kind: "mfa_missing" as ComplianceReminderInputKind, label: "MFA", ok: compliance.mfaEnabled === true, unknown: compliance.mfaEnabled == null },
+    { kind: "policy_pending" as ComplianceReminderInputKind, label: "Policy", ok: compliance.policyUpToDate, unknown: false },
+  ];
+}
+
+function ComplianceBadge({ label, ok, unknown }: { label: string; ok: boolean; unknown: boolean }) {
+  if (unknown) {
+    return (
+      <Badge variant="outline" className="text-muted-foreground border-dashed gap-1" title={`${label}: unknown (never synced)`}>
+        <HelpCircle className="w-3 h-3" /> {label}
+      </Badge>
+    );
+  }
+  return ok ? (
+    <Badge variant="outline" className="text-muted-foreground border-border/50 gap-1" title={`${label}: verified`}>
+      <CheckCircle2 className="w-3 h-3" /> {label}
+    </Badge>
+  ) : (
+    <Badge variant="destructive" className="gap-1" title={`${label}: missing`}>
+      <XCircle className="w-3 h-3" /> {label}
+    </Badge>
+  );
+}
 
 export function AdminUsers() {
   const { toast } = useToast();
@@ -37,23 +94,56 @@ export function AdminUsers() {
   const [plan, setPlan] = useState("all");
   const [role, setRole] = useState("all");
   const [banned, setBanned] = useState("all");
+  const [compliance, setCompliance] = useState<ComplianceReminderInputKind | "all">("all");
   const [page, setPage] = useState(1);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [reminderDialogOpen, setReminderDialogOpen] = useState(false);
+  const [reminderKind, setReminderKind] = useState<ComplianceReminderInputKind>("mfa_missing");
 
   const params = {
     ...(search ? { search } : {}),
     ...(plan !== "all" ? { plan } : {}),
     ...(role !== "all" ? { role } : {}),
     ...(banned !== "all" ? { banned } : {}),
+    ...(compliance !== "all" ? { compliance } : {}),
     page,
     pageSize: PAGE_SIZE,
   };
 
   const { data, isLoading } = useAdminListUsers(params, {
-    query: { queryKey: getAdminListUsersQueryKey(params) },
+    query: {
+      queryKey: getAdminListUsersQueryKey(params),
+      // "Last seen" goes stale fast — keep the list live instead of serving
+      // the cache default (same polling convention as NotificationBell).
+      staleTime: 0,
+      refetchInterval: 60_000,
+      refetchOnWindowFocus: true,
+    },
   });
 
   const updateUser = useAdminUpdateUser();
   const deleteUser = useAdminDeleteUser();
+  const repairProfiles = useAdminRepairUserProfiles();
+  const sendComplianceReminder = useAdminSendComplianceReminder();
+
+  function handleRepairProfiles() {
+    repairProfiles.mutate(undefined, {
+      onSuccess: (r) => {
+        invalidate();
+        toast({
+          title: `Repaired ${r.healed} of ${r.scanned} placeholder account${r.scanned === 1 ? "" : "s"}`,
+          description: [
+            r.noEmailInClerk ? `${r.noEmailInClerk} have no email on file (phone-only signups).` : null,
+            r.conflicts ? `${r.conflicts} skipped — their real email already belongs to another account.` : null,
+            r.scanned === 0 ? "No placeholder emails left — everyone's details are real." : null,
+          ]
+            .filter(Boolean)
+            .join(" "),
+        });
+      },
+      onError: (err: any) => toast({ title: err?.data?.error ?? "Repair failed", variant: "destructive" }),
+    });
+  }
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
@@ -67,7 +157,7 @@ export function AdminUsers() {
           invalidate();
           toast({ title: currentlyBanned ? "User unbanned" : "User banned" });
         },
-        onError: (err: any) => toast({ title: err?.error ?? "Action failed", variant: "destructive" }),
+        onError: (err: any) => toast({ title: err?.data?.error ?? "Action failed", variant: "destructive" }),
       }
     );
   }
@@ -80,19 +170,73 @@ export function AdminUsers() {
           invalidate();
           toast({ title: "User deleted" });
         },
-        onError: (err: any) => toast({ title: err?.error ?? "Failed to delete user", variant: "destructive" }),
+        onError: (err: any) => toast({ title: err?.data?.error ?? "Failed to delete user", variant: "destructive" }),
       }
     );
   }
 
+  function sendReminder(userIds: string[], kind: ComplianceReminderInputKind) {
+    sendComplianceReminder.mutate(
+      { data: { userIds, kind } },
+      {
+        onSuccess: (r) => {
+          toast({ title: `${r.recipientCount} reminded, ${r.emailsSent} emailed` });
+          setSelected(new Set());
+          setReminderDialogOpen(false);
+        },
+        onError: (err: any) => toast({ title: err?.data?.error ?? "Failed to send reminder", variant: "destructive" }),
+      }
+    );
+  }
+
+  function toggleSelect(id: string, checked: boolean) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }
+
   const totalPages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1;
+
+  // Deleting the last row of the last page leaves `page` pointing past the
+  // end (the shrunken total no longer covers it) — snap back to the real
+  // last page instead of stranding an empty view.
+  useEffect(() => {
+    if (data && page > totalPages) setPage(totalPages);
+  }, [data, page, totalPages]);
+
+  // Selections are page-local — clear them when the visible set changes so a
+  // stale checkbox state can't silently carry over to a different filter/page.
+  useEffect(() => {
+    setSelected(new Set());
+  }, [search, plan, role, banned, compliance, page]);
 
   return (
     <AdminLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-serif font-bold text-foreground">Users</h1>
-          <p className="text-muted-foreground mt-1">{data?.total ?? 0} total users.</p>
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <h1 className="text-3xl font-serif font-bold text-foreground">Users</h1>
+              <p className="text-muted-foreground mt-1">{data?.total ?? 0} total users.</p>
+            </div>
+            {/* Backfill for accounts stuck with a fabricated clerkId@... email
+                (signup-day Clerk fetch failure) — re-fetches their real
+                profile without waiting for them to sign in again. */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-full"
+              onClick={handleRepairProfiles}
+              disabled={repairProfiles.isPending}
+              data-testid="button-repair-profiles"
+            >
+              {repairProfiles.isPending ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5 mr-1.5" />}
+              Repair placeholder emails
+            </Button>
+          </div>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3">
@@ -131,7 +275,62 @@ export function AdminUsers() {
               <SelectItem value="true">Banned</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={compliance} onValueChange={(v) => { setCompliance(v as ComplianceReminderInputKind | "all"); setPage(1); }}>
+            <SelectTrigger className="w-full sm:w-36 bg-card border-border/50 rounded-full"><SelectValue placeholder="Compliance" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              {COMPLIANCE_FILTER_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
+
+        {selected.size > 0 && (
+          <div className="flex items-center gap-3 bg-muted/30 border border-border/50 rounded-full px-4 py-2">
+            <span className="text-sm text-muted-foreground">{selected.size} selected</span>
+            <Button
+              size="sm"
+              variant="outline"
+              className="rounded-full ml-auto"
+              onClick={() => setReminderDialogOpen(true)}
+              data-testid="button-bulk-compliance-reminder"
+            >
+              <BellRing className="w-3.5 h-3.5 mr-1.5" /> Send reminder to selected
+            </Button>
+          </div>
+        )}
+
+        <Dialog open={reminderDialogOpen} onOpenChange={setReminderDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Send compliance reminder</DialogTitle>
+              <DialogDescription>
+                Nudge {selected.size} selected user{selected.size === 1 ? "" : "s"} about one missing compliance item, via in-app notification and email.
+              </DialogDescription>
+            </DialogHeader>
+            <Select value={reminderKind} onValueChange={(v) => setReminderKind(v as ComplianceReminderInputKind)}>
+              <SelectTrigger className="bg-input/50 border-border/50 rounded-xl"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {COMPLIANCE_FILTER_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setReminderDialogOpen(false)} className="rounded-full">Cancel</Button>
+              <Button
+                onClick={() => sendReminder(Array.from(selected), reminderKind)}
+                disabled={sendComplianceReminder.isPending}
+                className="rounded-full"
+                data-testid="button-confirm-bulk-reminder"
+              >
+                {sendComplianceReminder.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                Send reminder
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {isLoading ? (
           <div className="space-y-3">
@@ -139,12 +338,21 @@ export function AdminUsers() {
           </div>
         ) : data?.items.length ? (
           <div className="space-y-2">
-            {data.items.map((user) => (
+            {data.items.map((user) => {
+              const items = complianceItems(user.compliance);
+              const firstMissing = items.find((i) => !i.ok && !i.unknown);
+              return (
               <Card key={user.id} className="bg-card border-border/50" data-testid={`admin-user-row-${user.id}`}>
                 <CardContent className="p-4 flex items-center gap-4 flex-wrap">
+                  <Checkbox
+                    checked={selected.has(user.id)}
+                    onCheckedChange={(c) => toggleSelect(user.id, c === true)}
+                    aria-label={`Select ${user.email}`}
+                    data-testid={`checkbox-select-user-${user.id}`}
+                  />
                   <div className="flex-1 min-w-[200px]">
                     <div className="flex items-center gap-2">
-                      <Link href={`/admin/users/${user.id}`} className="font-medium text-foreground hover:text-primary transition-colors truncate">
+                      <Link href={`/admin_pro/users/${user.id}`} className="font-medium text-foreground hover:text-primary transition-colors truncate">
                         {user.fullName || user.email}
                       </Link>
                       {user.role === "admin" && (
@@ -153,16 +361,36 @@ export function AdminUsers() {
                       {user.banned && <Badge variant="destructive">Banned</Badge>}
                     </div>
                     <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Last seen: {user.lastSeenAt ? new Date(user.lastSeenAt).toLocaleString() : "never"}
+                    </p>
                     {(user.city || user.country) && (
                       <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                         <MapPin className="w-3 h-3" /> {[user.city, user.country].filter(Boolean).join(", ")}
                       </p>
                     )}
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {items.map((i) => (
+                        <ComplianceBadge key={i.kind} label={i.label} ok={i.ok} unknown={i.unknown} />
+                      ))}
+                    </div>
                   </div>
                   <Badge variant="outline" className="capitalize">{user.plan}</Badge>
-                  <span className="text-xs text-muted-foreground w-24 text-center">{user.boostCredits} credits</span>
                   <span className="text-xs text-muted-foreground w-28">{new Date(user.createdAt).toLocaleDateString()}</span>
                   <div className="flex items-center gap-1">
+                    {firstMissing && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="rounded-full text-muted-foreground"
+                        onClick={() => sendReminder([user.id], firstMissing.kind)}
+                        disabled={sendComplianceReminder.isPending}
+                        title={`Send ${firstMissing.label} reminder`}
+                        data-testid={`button-quick-reminder-${user.id}`}
+                      >
+                        <BellRing className="w-4 h-4" />
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       variant="ghost"
@@ -200,7 +428,8 @@ export function AdminUsers() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <Card className="bg-card/50 border-dashed border-border py-16 text-center">

@@ -1,7 +1,10 @@
 import { describe, it, expect, afterEach } from "vitest";
 import request from "supertest";
 import app from "../app";
-import { TEST_USER_HEADER } from "./setup";
+import { TEST_USER_HEADER, clerkGetUserMock } from "./setup";
+import { db, usersTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
+import { adminHeaders } from "./adminTestUtils";
 
 const ADMIN_CLERK_ID = "clerk_admin";
 const ADMIN_EMAIL = `${ADMIN_CLERK_ID}@blindwhisper.com`;
@@ -13,10 +16,9 @@ function asUser(userId: string) {
 }
 
 async function asAdmin() {
-  process.env.ADMIN_EMAILS = ADMIN_EMAIL;
-  // Any authenticated request runs ensureUser, which promotes on match.
-  await request(app).get("/api/user/profile").set(asUser(ADMIN_CLERK_ID));
-  return asUser(ADMIN_CLERK_ID);
+  // Promotes, enrolls the app's own admin TOTP, verifies a real code, and
+  // returns headers carrying the unlock token — see adminTestUtils.ts.
+  return adminHeaders(ADMIN_CLERK_ID, ADMIN_EMAIL);
 }
 
 afterEach(() => {
@@ -117,6 +119,22 @@ describe("Admin: users", () => {
 
     const detail = await request(app).get(`/api/admin/users/${userId}`).set(adminHeaders);
     expect(detail.status).toBe(404);
+  });
+
+  it("includes this account's Debate Topics/comments in the investigation view", async () => {
+    const adminHeaders = await asAdmin();
+    const profile = await request(app).get("/api/user/profile").set(asUser(USER_A));
+
+    const topic = await request(app).post("/api/debate-topics").set(asUser(USER_A)).send({ topicText: "Is a hot dog a sandwich?" });
+    await request(app)
+      .post(`/api/public/debate-topics/${topic.body.id}/comments`)
+      .set(asUser(USER_A))
+      .send({ commentText: "Obviously not.", visitorId: "visitor-admin-check" });
+
+    const detail = await request(app).get(`/api/admin/users/${profile.body.id}`).set(adminHeaders);
+    expect(detail.status).toBe(200);
+    expect(detail.body.debateTopics.some((t: any) => t.id === topic.body.id)).toBe(true);
+    expect(detail.body.debateTopicComments.length).toBeGreaterThanOrEqual(1);
   });
 });
 
@@ -255,5 +273,113 @@ describe("Admin: stats", () => {
     const res = await request(app).get("/api/admin/stats/funnel").set(adminHeaders);
     expect(res.status).toBe(200);
     expect(res.body.phoneMatchRouting.inApp).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe("Admin: two-factor requirement", () => {
+  // The gate itself (enrollment, codes, tokens) is covered in depth by
+  // adminMfa.test.ts — this pins that /admin/* actually sits behind it.
+  it("blocks an enrolled admin whose request carries no unlock token", async () => {
+    const adminHeaders = await asAdmin();
+    const { "x-admin-mfa": _token, ...withoutToken } = adminHeaders;
+
+    const res = await request(app).get("/api/admin/users").set(withoutToken);
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe("admin_mfa_code_required");
+  });
+
+  it("allows an enrolled admin through with the unlock token", async () => {
+    const adminHeaders = await asAdmin();
+    const res = await request(app).get("/api/admin/users").set(adminHeaders);
+    expect(res.status).toBe(200);
+  });
+});
+
+describe("Admin: audit log", () => {
+  it("records who banned a user, and lists it back", async () => {
+    const adminHeaders = await asAdmin();
+    const profile = await request(app).get("/api/user/profile").set(asUser(USER_A));
+
+    await request(app).patch(`/api/admin/users/${profile.body.id}`).set(adminHeaders).send({ banned: true });
+
+    const res = await request(app).get("/api/admin/audit-log").set(adminHeaders);
+    expect(res.status).toBe(200);
+    const entry = res.body.items.find((i: any) => i.action === "user.update" && i.targetId === profile.body.id);
+    expect(entry).toBeTruthy();
+  });
+
+  it("does not log a GET/list request as an admin action", async () => {
+    const adminHeaders = await asAdmin();
+    await request(app).get("/api/admin/users").set(adminHeaders);
+
+    const res = await request(app).get("/api/admin/audit-log").set(adminHeaders);
+    expect(res.body.items.some((i: any) => i.action.startsWith("users.list"))).toBe(false);
+  });
+});
+
+
+describe("Admin: repair placeholder profiles", () => {
+  it("backfills real emails from Clerk and reports conflicts honestly", async () => {
+    const adminHeaders = await asAdmin();
+
+    // Two accounts created while Clerk had no email on file → placeholders.
+    await request(app).get("/api/user/profile").set(asUser("clerk_repair_a"));
+    await request(app).get("/api/user/profile").set(asUser("clerk_repair_b"));
+    // And one whose real email will collide with an existing account.
+    await request(app).get("/api/user/profile").set(asUser("clerk_repair_dupe"));
+
+    clerkGetUserMock.mockImplementation(async (clerkId: string) => {
+      if (clerkId === "clerk_repair_a")
+        return { twoFactorEnabled: true, emailAddresses: [{ id: "e1", emailAddress: "repaired-a@example.com" }], primaryEmailAddressId: "e1", phoneNumbers: [] } as any;
+      if (clerkId === "clerk_repair_dupe")
+        // Same real email as repair_a — the second row hits the unique
+        // constraint and must be counted as a conflict, not clobbered.
+        return { twoFactorEnabled: true, emailAddresses: [{ id: "e1", emailAddress: "repaired-a@example.com" }], primaryEmailAddressId: "e1", phoneNumbers: [] } as any;
+      // clerk_repair_b (and everyone else): no email in Clerk at all.
+      return { twoFactorEnabled: true } as any;
+    });
+
+    const res = await request(app).post("/api/admin/users/repair-profiles").set(adminHeaders);
+    expect(res.status).toBe(200);
+    expect(res.body.healed).toBe(1);
+    expect(res.body.conflicts).toBe(1);
+    expect(res.body.noEmailInClerk).toBeGreaterThanOrEqual(1);
+
+    const healed = await db.select().from(usersTable).where(eq(usersTable.clerkId, "clerk_repair_a")).then((r) => r[0]);
+    expect(healed.email).toBe("repaired-a@example.com");
+    const conflicted = await db.select().from(usersTable).where(eq(usersTable.clerkId, "clerk_repair_dupe")).then((r) => r[0]);
+    expect(conflicted.email).toBe("clerk_repair_dupe@blindwhisper.com");
+  });
+});
+
+describe("Admin: notification email channel", () => {
+  it("counts every recipient email can't appropriately reach as skipped", async () => {
+    const adminHeaders = await asAdmin();
+
+    // One placeholder-email account and one opted-out account with a real
+    // address — neither is emailable, for different reasons.
+    const p1 = await request(app).get("/api/user/profile").set(asUser("clerk_email_placeholder"));
+    const p2 = await request(app).get("/api/user/profile").set(asUser("clerk_email_optout"));
+    await db.update(usersTable).set({ email: "optout@example.com", emailNotificationsEnabled: false }).where(eq(usersTable.id, p2.body.id));
+
+    const res = await request(app)
+      .post("/api/admin/notifications")
+      .set(adminHeaders)
+      .send({ title: "Maintenance tonight", body: "We'll be offline briefly.", audience: "users", userIds: [p1.body.id, p2.body.id], sendEmail: true });
+    expect(res.status).toBe(201);
+    expect(res.body.recipientCount).toBe(2);
+    expect(res.body.emailsSent).toBe(0);
+    expect(res.body.emailsSkipped).toBe(2);
+  });
+
+  it("omitting sendEmail keeps the email counters at zero", async () => {
+    const adminHeaders = await asAdmin();
+    const res = await request(app)
+      .post("/api/admin/notifications")
+      .set(adminHeaders)
+      .send({ title: "Hello", body: "In-app only.", audience: "all" });
+    expect(res.status).toBe(201);
+    expect(res.body.emailsSent).toBe(0);
+    expect(res.body.emailsSkipped).toBe(0);
   });
 });

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Camera, CameraOff, SwitchCamera, CircleStop, RotateCcw, AlertTriangle, Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { uploadMedia, UploadValidationError, MAX_UPLOAD_DURATION_SECONDS, type UploadedVideoResult } from "@/lib/uploadMedia";
 import {
@@ -26,6 +27,7 @@ interface CameraCaptureProps {
 // (uploading -> onUploaded()) | back to reviewing on upload failure.
 // "Retake" from reviewing goes back through requesting -> live.
 export function CameraCapture({ onUploaded }: CameraCaptureProps) {
+  const { t } = useTranslation("sharedA");
   const unsupportedReason = getCameraUnsupportedReason();
   const photoClipSupported = isPhotoClipSupported();
 
@@ -100,6 +102,28 @@ export function CameraCapture({ onUploaded }: CameraCaptureProps) {
       if (unsupportedReason) return;
       setPhase("requesting");
       setErrorMessage(null);
+
+      // Release whatever camera is currently held BEFORE asking for a new
+      // one — not after, which is what this used to do. Flipping from front
+      // to back is really "stop this track, start a different one," and
+      // most mobile browsers/OSes can't hold both open at once: a still-live
+      // front-camera track makes the very next getUserMedia() call for the
+      // back camera fail with NotReadableError ("already in use by another
+      // app"), even though nothing else is actually using it — the previous
+      // request from THIS component is. A brief pause after stopping gives
+      // the OS a moment to actually release the hardware before the next
+      // request comes in; skipped on the very first request, where there's
+      // nothing to release yet.
+      const hadPreviousStream = stream !== null;
+      if (hadPreviousStream) {
+        setStream((current) => {
+          current?.getTracks().forEach((t) => t.stop());
+          return null;
+        });
+        await new Promise((resolve) => setTimeout(resolve, 250));
+        if (!isMountedRef.current) return;
+      }
+
       try {
         const nextStream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: nextFacingMode },
@@ -114,6 +138,8 @@ export function CameraCapture({ onUploaded }: CameraCaptureProps) {
           return;
         }
         setStream((current) => {
+          // Belt-and-suspenders: stop anything unexpectedly still set (e.g.
+          // a stream acquired by an overlapping call) rather than leaking it.
           current?.getTracks().forEach((t) => t.stop());
           return nextStream;
         });
@@ -125,7 +151,7 @@ export function CameraCapture({ onUploaded }: CameraCaptureProps) {
         setPhase("denied");
       }
     },
-    [unsupportedReason],
+    [unsupportedReason, stream],
   );
 
   function handleModeChange(mode: CaptureMode) {
@@ -146,7 +172,7 @@ export function CameraCapture({ onUploaded }: CameraCaptureProps) {
     const token = ++photoEncodeTokenRef.current;
     const mime = pickRecorderMimeType();
     if (!mime) {
-      setErrorMessage("This browser can't prepare a photo for sending — try Video instead.");
+      setErrorMessage(t("cameraCapture.photoPrepareUnsupported"));
       return;
     }
     setIsPreparingPhoto(true);
@@ -158,7 +184,7 @@ export function CameraCapture({ onUploaded }: CameraCaptureProps) {
       setPendingFile(new File([clipBlob], `photo-${Date.now()}.${mime.extension}`, { type: mime.uploadMimeType }));
     } catch {
       if (photoEncodeTokenRef.current !== token || !isMountedRef.current) return;
-      setErrorMessage("Couldn't prepare that photo for sending. Please retake it.");
+      setErrorMessage(t("cameraCapture.photoPrepareFailed"));
     } finally {
       if (photoEncodeTokenRef.current === token && isMountedRef.current) setIsPreparingPhoto(false);
     }
@@ -174,7 +200,7 @@ export function CameraCapture({ onUploaded }: CameraCaptureProps) {
     canvas.height = height;
     const ctx = canvas.getContext("2d");
     if (!ctx) {
-      setErrorMessage("Couldn't capture a photo from the camera.");
+      setErrorMessage(t("cameraCapture.captureFailed"));
       return;
     }
     ctx.drawImage(video, 0, 0, width, height);
@@ -182,7 +208,7 @@ export function CameraCapture({ onUploaded }: CameraCaptureProps) {
     canvas.toBlob(
       (blob) => {
         if (!blob) {
-          setErrorMessage("Couldn't capture a photo from the camera.");
+          setErrorMessage(t("cameraCapture.captureFailed"));
           return;
         }
         setReviewUrl(URL.createObjectURL(blob));
@@ -191,7 +217,7 @@ export function CameraCapture({ onUploaded }: CameraCaptureProps) {
         stopStream();
 
         if (!photoClipSupported) {
-          setErrorMessage("Photos can't be prepared for sending in this browser — try Video instead, or Retake.");
+          setErrorMessage(t("cameraCapture.photoClipUnsupported"));
           return;
         }
         void prepareEncodedPhoto(canvas);
@@ -205,7 +231,7 @@ export function CameraCapture({ onUploaded }: CameraCaptureProps) {
     if (!stream) return;
     const mime = pickRecorderMimeType();
     if (!mime) {
-      setErrorMessage("This browser can't record video — try Photo or Upload instead.");
+      setErrorMessage(t("cameraCapture.recordUnsupported"));
       return;
     }
     recordedChunksRef.current = [];
@@ -213,7 +239,7 @@ export function CameraCapture({ onUploaded }: CameraCaptureProps) {
     try {
       recorder = new MediaRecorder(stream, { mimeType: mime.recordType, videoBitsPerSecond: 2_000_000 });
     } catch {
-      setErrorMessage("Couldn't start recording. Please try again.");
+      setErrorMessage(t("cameraCapture.recordStartFailed"));
       return;
     }
     recorder.ondataavailable = (e) => {
@@ -296,7 +322,7 @@ export function CameraCapture({ onUploaded }: CameraCaptureProps) {
       >
         <CameraOff className="w-6 h-6 text-muted-foreground" />
         <p className="text-sm text-muted-foreground">{unsupportedReason}</p>
-        <p className="text-xs text-muted-foreground">Use Upload or Paste a link instead.</p>
+        <p className="text-xs text-muted-foreground">{t("cameraCapture.unsupportedFallback")}</p>
       </div>
     );
   }
@@ -304,8 +330,8 @@ export function CameraCapture({ onUploaded }: CameraCaptureProps) {
   const modeToggle = (
     <div className="flex gap-1 p-0.5 bg-muted/40 rounded-lg w-fit">
       {([
-        { key: "photo" as const, label: "Photo" },
-        { key: "video" as const, label: "Video" },
+        { key: "photo" as const, label: t("cameraCapture.modePhoto") },
+        { key: "video" as const, label: t("cameraCapture.modeVideo") },
       ]).map((m) => (
         <button
           key={m.key}
@@ -338,13 +364,13 @@ export function CameraCapture({ onUploaded }: CameraCaptureProps) {
               <>
                 <AlertTriangle className="w-6 h-6 text-destructive" />
                 <p className="text-sm text-destructive">{errorMessage}</p>
-                <p className="text-xs text-muted-foreground">Upload and Paste a link are still available if this doesn't work.</p>
+                <p className="text-xs text-muted-foreground">{t("cameraCapture.deniedFallback")}</p>
               </>
             ) : (
               <>
                 <Camera className="w-6 h-6 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">
-                  {captureMode === "photo" ? "Take a photo with your camera" : "Record a short video with your camera"}
+                  {captureMode === "photo" ? t("cameraCapture.idlePromptPhoto") : t("cameraCapture.idlePromptVideo")}
                 </p>
               </>
             )}
@@ -354,7 +380,7 @@ export function CameraCapture({ onUploaded }: CameraCaptureProps) {
               className="rounded-xl mt-1"
               data-testid={phase === "denied" ? "button-camera-retry" : "button-camera-enable"}
             >
-              <Camera className="w-4 h-4 mr-1.5" /> {phase === "denied" ? "Try again" : "Enable camera"}
+              <Camera className="w-4 h-4 mr-1.5" /> {phase === "denied" ? t("cameraCapture.tryAgain") : t("cameraCapture.enableCamera")}
             </Button>
           </div>
         </div>
@@ -363,7 +389,7 @@ export function CameraCapture({ onUploaded }: CameraCaptureProps) {
       {phase === "requesting" && (
         <div className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-border/60 rounded-xl py-10 px-4 text-center" data-testid="camera-requesting">
           <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
-          <p className="text-sm text-muted-foreground">Requesting camera access…</p>
+          <p className="text-sm text-muted-foreground">{t("cameraCapture.requestingAccess")}</p>
         </div>
       )}
 
@@ -385,7 +411,7 @@ export function CameraCapture({ onUploaded }: CameraCaptureProps) {
               disabled={isRecording}
               data-testid="button-camera-flip"
               className="absolute top-2 right-2 p-2 rounded-full bg-background/70 text-foreground hover:bg-background/90 transition-colors disabled:opacity-50"
-              aria-label="Flip camera"
+              aria-label={t("cameraCapture.flipCamera")}
             >
               <SwitchCamera className="w-4 h-4" />
             </button>
@@ -402,15 +428,15 @@ export function CameraCapture({ onUploaded }: CameraCaptureProps) {
           <div className="flex justify-center">
             {captureMode === "photo" ? (
               <Button type="button" onClick={takePhoto} className="rounded-full px-6" data-testid="button-take-photo">
-                <Camera className="w-4 h-4 mr-1.5" /> Take Photo
+                <Camera className="w-4 h-4 mr-1.5" /> {t("cameraCapture.takePhoto")}
               </Button>
             ) : isRecording ? (
               <Button type="button" variant="destructive" onClick={stopRecording} className="rounded-full px-6" data-testid="button-stop-recording">
-                <CircleStop className="w-4 h-4 mr-1.5" /> Stop
+                <CircleStop className="w-4 h-4 mr-1.5" /> {t("cameraCapture.stop")}
               </Button>
             ) : (
               <Button type="button" onClick={startRecording} className="rounded-full px-6" data-testid="button-start-recording">
-                <span className="w-3 h-3 rounded-full bg-destructive-foreground mr-1.5" /> Start Recording
+                <span className="w-3 h-3 rounded-full bg-destructive-foreground mr-1.5" /> {t("cameraCapture.startRecording")}
               </Button>
             )}
           </div>
@@ -422,14 +448,14 @@ export function CameraCapture({ onUploaded }: CameraCaptureProps) {
           <div className="relative rounded-xl overflow-hidden bg-black aspect-video flex items-center justify-center">
             {reviewKind === "photo" ? (
               // eslint-disable-next-line jsx-a11y/img-redundant-alt
-              <img src={reviewUrl ?? undefined} alt="Captured photo" className="w-full h-full object-cover" />
+              <img src={reviewUrl ?? undefined} alt={t("cameraCapture.capturedPhotoAlt")} className="w-full h-full object-cover" />
             ) : (
               <video src={reviewUrl ?? undefined} controls playsInline className="w-full h-full object-contain" />
             )}
             {isPreparingPhoto && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-background/70">
                 <Loader2 className="w-5 h-5 text-foreground animate-spin" />
-                <p className="text-xs font-medium text-foreground">Preparing your photo…</p>
+                <p className="text-xs font-medium text-foreground">{t("cameraCapture.preparingPhoto")}</p>
               </div>
             )}
           </div>
@@ -438,7 +464,7 @@ export function CameraCapture({ onUploaded }: CameraCaptureProps) {
 
           <div className="flex justify-between gap-2">
             <Button type="button" variant="outline" onClick={handleRetake} className="rounded-xl" data-testid="button-camera-retake">
-              <RotateCcw className="w-4 h-4 mr-1.5" /> Retake
+              <RotateCcw className="w-4 h-4 mr-1.5" /> {t("cameraCapture.retake")}
             </Button>
             <Button
               type="button"
@@ -452,7 +478,7 @@ export function CameraCapture({ onUploaded }: CameraCaptureProps) {
               ) : (
                 <Camera className="w-4 h-4 mr-1.5" />
               )}
-              Use this {reviewKind === "photo" ? "photo" : "video"}
+              {reviewKind === "photo" ? t("cameraCapture.useThisPhoto") : t("cameraCapture.useThisVideo")}
             </Button>
           </div>
         </div>
@@ -461,7 +487,7 @@ export function CameraCapture({ onUploaded }: CameraCaptureProps) {
       {phase === "uploading" && (
         <div className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-border/60 rounded-xl py-10 px-4 text-center" data-testid="camera-uploading">
           <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
-          <p className="text-sm text-muted-foreground">Uploading…</p>
+          <p className="text-sm text-muted-foreground">{t("cameraCapture.uploading")}</p>
         </div>
       )}
     </div>

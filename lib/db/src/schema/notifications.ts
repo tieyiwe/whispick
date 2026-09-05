@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, index } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -15,6 +15,14 @@ export const notificationsTable = pgTable("notifications", {
   title: text("title").notNull(),
   body: text("body").notNull(),
   url: text("url"), // optional in-app link the notification points at
+  // What produced this notification ("reply", "opened", "watched",
+  // "appreciation", ...). Nullable because rows predating this column (and
+  // admin-composed ones, which have no single event behind them) have no
+  // meaningful kind. Lets a specific surface count only what belongs to it —
+  // e.g. the Replies tab badge counts unread "reply" notifications rather
+  // than every unread notification, which would light it up for an
+  // open/watch event that has nothing to do with replies.
+  kind: text("kind"),
   // Null means system-generated (e.g. lib/moderation.ts's repeated-flag
   // warning) rather than composed by an admin through POST
   // /admin/notifications — kept distinct from "attribute it to some admin"
@@ -40,8 +48,11 @@ export const notificationReadsTable = pgTable("notification_reads", {
   readAt: timestamp("read_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   // Serves the "is this (notification, user) pair already read" joins in
-  // routes/user.ts (GET /notifications, POST /notifications/:id/read).
-  index("notification_reads_notification_id_user_id_idx").on(table.notificationId, table.userId),
+  // routes/user.ts (GET /notifications, POST /notifications/:id/read) — and
+  // UNIQUE so two concurrent reads (two tabs, or read-all racing a per-item
+  // read) can't insert duplicate rows, which the GET's left join would then
+  // return as a duplicated notification. Inserts use onConflictDoNothing.
+  uniqueIndex("notification_reads_notification_id_user_id_idx").on(table.notificationId, table.userId),
   // routes/user.ts's POST /notifications/read-all also looks up every read
   // row for a user with no notificationId in the filter — not served by the
   // composite index above since userId isn't its leftmost column.

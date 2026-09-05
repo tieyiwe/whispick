@@ -61,11 +61,17 @@ export const textWhispsTable = pgTable("text_whisps", {
   // routes/textWhisps.ts), not just implied by a DB constraint, so a bad
   // request fails fast with a clear error instead of a generic DB error.
   messageText: text("message_text").notNull(),
-  status: text("status").notNull().default("sent"), // 'sent' | 'read' | 'replied'
+  status: text("status").notNull().default("sent"), // 'sent' | 'read' | 'replied' | 'scheduled'
   revealRequested: boolean("reveal_requested").notNull().default(false),
   revealAccepted: boolean("reveal_accepted"),
   readAt: timestamp("read_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  // Set only when the sender chose "schedule for later" (routes/textWhisps.ts's
+  // POST /) — status is 'scheduled' and delivery (the in-app notify or guest
+  // SMS) is held back until lib/textWhispScheduler.ts's dispatcher finds this
+  // row due, mirroring whisps.scheduledAt/lib/scheduler.ts exactly. Null for
+  // every immediately-sent Text Whisp, same as whisps.scheduledAt.
+  scheduledAt: timestamp("scheduled_at", { withTimezone: true }),
   // Soft delete, sender-initiated — exact same semantics as
   // whisps.deletedBySenderAt: hides this text whisp from the sender's own
   // list/detail views without touching the row (or its replies) at all.
@@ -73,6 +79,37 @@ export const textWhispsTable = pgTable("text_whisps", {
   // routes/admin.ts, which never filters on this). Doesn't affect the
   // recipient's own view — they keep seeing it as before.
   deletedBySenderAt: timestamp("deleted_by_sender_at", { withTimezone: true }),
+  // "Is typing…" — purely ephemeral presence, not conversation history.
+  // typingUserId records WHICH of the two parties last pinged (either can);
+  // typingAt is when. routes/textWhisps.ts's toResponse() turns this into a
+  // single viewer-relative otherPartyTyping boolean (true only while it's
+  // both the OTHER party and recent — see its own TYPING_TTL_MS), the same
+  // "compute a relative fact server-side, never hand back the raw row" shape
+  // viewerIsRecipient already uses. No separate "stopped typing" event: it
+  // just ages out after the TTL, and POST /:id/replies also clears it
+  // immediately on send so the indicator doesn't linger past the message
+  // that made it moot.
+  typingUserId: text("typing_user_id"),
+  typingAt: timestamp("typing_at", { withTimezone: true }),
+  // 'user' (default, the normal person-to-person flow above) | 'admin' — an
+  // admin-composed send (routes/adminTextWhisps.ts): a platform broadcast to
+  // all/selected users, or one staff member reaching a colleague directly by
+  // account instead of by phone number. Both always have a real
+  // recipientUserId and are delivered purely in-app — never real SMS, since
+  // there's no anonymous-guest phase to this kind of send. senderAlias
+  // carries the visible "who this is from" for these (e.g. "Blind Whisper
+  // Team"), deliberately NOT anonymous — this is the platform or a named
+  // colleague speaking, not a stranger.
+  source: text("source").notNull().default("user"),
+  // Admin-initiated takedown of a flagged Text Whisp — same reasoning as
+  // whisps.removedByAdminAt/whisper_box_messages.removedByAdminAt. Distinct
+  // from deletedBySenderAt above: that one only ever hides the message from
+  // the SENDER's own list; this hides it from BOTH the recipient's inbox and
+  // the public guest landing page (routes/publicTextWhisps.ts), since a
+  // moderation takedown needs to actually stop the recipient from seeing
+  // flagged content, not just tidy the sender's view. Admins still see
+  // everything regardless (routes/admin.ts never filters on this).
+  removedByAdminAt: timestamp("removed_by_admin_at", { withTimezone: true }),
 }, (table) => [
   index("text_whisps_sender_id_idx").on(table.senderId),
   index("text_whisps_recipient_user_id_idx").on(table.recipientUserId),

@@ -52,10 +52,18 @@ router.post("/subscribe", async (req, res): Promise<void> => {
     // resubscribe it against its owner's wishes.
     const wasUnsubscribed = !!existing.unsubscribedAt;
     alreadyVerified = !!existing.verifiedAt && !wasUnsubscribed;
-    await db
-      .update(matchSubscribersTable)
-      .set({ categories, ...(wasUnsubscribed ? { verifiedAt: null } : {}) })
-      .where(eq(matchSubscribersTable.id, existing.id));
+    // Same reasoning applies to `categories`: a bare POST proves nothing
+    // about inbox access, so it must never rewrite an ACTIVE, verified
+    // subscription's topics (anyone who knows the address could redirect
+    // what the real owner receives). Unverified or unsubscribed rows are
+    // fair game — the emailed confirmation click is still required before
+    // anything matches.
+    if (!alreadyVerified) {
+      await db
+        .update(matchSubscribersTable)
+        .set({ categories, ...(wasUnsubscribed ? { verifiedAt: null } : {}) })
+        .where(eq(matchSubscribersTable.id, existing.id));
+    }
   } else {
     token = randomUUID();
     alreadyVerified = false;
@@ -70,7 +78,16 @@ router.post("/subscribe", async (req, res): Promise<void> => {
     });
   }
 
-  res.json({ ok: true, alreadyVerified });
+  // Deliberately constant, NOT the real `alreadyVerified`: this is an
+  // unauthenticated endpoint, and branching the response on whether the
+  // posted address is already a confirmed subscriber turns it into a free
+  // membership oracle — anyone could probe an arbitrary third-party email and
+  // learn from the response whether it's on the subscriber list. The generic
+  // "check your inbox" copy the frontend shows for `false` is correct for
+  // every case (a genuinely-already-verified re-subscribe simply gets no new
+  // email, which is the desired no-op). Email dispatch above is fire-and-
+  // forget, so response timing doesn't leak the branch either.
+  res.json({ ok: true, alreadyVerified: false });
 });
 
 // GET /api/public/subscribe/verify — one-click confirmation link, so a GET

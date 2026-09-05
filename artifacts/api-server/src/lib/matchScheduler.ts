@@ -2,8 +2,14 @@ import { db, whispsTable } from "@workspace/db";
 import { eq, and, isNull } from "drizzle-orm";
 import { matchGhostBoostWhisp } from "./matching";
 import { logger } from "./logger";
+import { reportSystemError } from "./bugRabbit";
 
 const POLL_INTERVAL_MS = 10 * 60 * 1000; // matching isn't time-critical
+// Same bounded-sweep reasoning as lib/scheduler.ts's BATCH_LIMIT — each
+// pending campaign here costs its own matchGhostBoostWhisp() call (several
+// queries plus up to MAX_MATCHES_PER_SEND emails), run sequentially. Leftover
+// campaigns are just as "pending" ten minutes from now on the next sweep.
+const BATCH_LIMIT = 100;
 
 // Ghost Boost campaign rows: deliveryMethod='ghost_boost', status='pending',
 // and groupSendId IS NULL (a fanned-out per-subscriber delivery has
@@ -21,7 +27,8 @@ export function startMatchScheduler(): void {
       const pending = await db
         .select()
         .from(whispsTable)
-        .where(and(eq(whispsTable.deliveryMethod, "ghost_boost"), eq(whispsTable.status, "pending"), isNull(whispsTable.groupSendId)));
+        .where(and(eq(whispsTable.deliveryMethod, "ghost_boost"), eq(whispsTable.status, "pending"), isNull(whispsTable.groupSendId)))
+        .limit(BATCH_LIMIT);
 
       if (pending.length === 0) return;
 
@@ -46,6 +53,7 @@ export function startMatchScheduler(): void {
       }
     } catch (err) {
       logger.error({ err }, "Ghost Boost matching sweep failed");
+      reportSystemError(err, "scheduler:matchScheduler");
     }
   }, POLL_INTERVAL_MS);
 }

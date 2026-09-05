@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useParams, useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
   useGetWhisperGroup,
@@ -30,6 +31,7 @@ import { isContactPickerSupported, pickContacts } from "@/lib/contactPicker";
 import { ArrowLeft, UsersRound, Contact, Plus, Trash2, Send, Loader2, Mail, Phone } from "lucide-react";
 
 export function WhisperGroupDetail() {
+  const { t } = useTranslation("whisp");
   const { id } = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -53,7 +55,7 @@ export function WhisperGroupDetail() {
 
   function handleAddManual() {
     if (!manualEmail.trim() && !manualPhone.trim()) {
-      toast({ title: "Add an email or a phone number", variant: "destructive" });
+      toast({ title: t("whisperGroupDetail.toast.addEmailOrPhone"), variant: "destructive" });
       return;
     }
     addMembers.mutate(
@@ -75,9 +77,9 @@ export function WhisperGroupDetail() {
           setManualEmail("");
           setManualPhone("");
           invalidate();
-          toast({ title: "Member added" });
+          toast({ title: t("whisperGroupDetail.toast.memberAdded") });
         },
-        onError: () => toast({ title: "Failed to add member", variant: "destructive" }),
+        onError: () => toast({ title: t("whisperGroupDetail.toast.failedToAddMember"), variant: "destructive" }),
       }
     );
   }
@@ -88,7 +90,7 @@ export function WhisperGroupDetail() {
 
     const withContactInfo = contacts.filter((c) => c.email || c.tel);
     if (!withContactInfo.length) {
-      toast({ title: "None of those contacts had an email or phone number", variant: "destructive" });
+      toast({ title: t("whisperGroupDetail.toast.noneHadContactInfo"), variant: "destructive" });
       return;
     }
 
@@ -102,9 +104,9 @@ export function WhisperGroupDetail() {
       {
         onSuccess: () => {
           invalidate();
-          toast({ title: `${withContactInfo.length} member${withContactInfo.length > 1 ? "s" : ""} added` });
+          toast({ title: t("whisperGroupDetail.toast.membersAdded", { count: withContactInfo.length }) });
         },
-        onError: () => toast({ title: "Failed to add members", variant: "destructive" }),
+        onError: () => toast({ title: t("whisperGroupDetail.toast.failedToAddMembers"), variant: "destructive" }),
       }
     );
   }
@@ -115,9 +117,9 @@ export function WhisperGroupDetail() {
       {
         onSuccess: () => {
           invalidate();
-          toast({ title: "Member removed" });
+          toast({ title: t("whisperGroupDetail.toast.memberRemoved") });
         },
-        onError: () => toast({ title: "Failed to remove member", variant: "destructive" }),
+        onError: () => toast({ title: t("whisperGroupDetail.toast.failedToRemoveMember"), variant: "destructive" }),
       }
     );
   }
@@ -129,9 +131,9 @@ export function WhisperGroupDetail() {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListWhisperGroupsQueryKey() });
           setLocation("/whisper-groups");
-          toast({ title: "Group deleted" });
+          toast({ title: t("whisperGroupDetail.toast.groupDeleted") });
         },
-        onError: () => toast({ title: "Failed to delete group", variant: "destructive" }),
+        onError: () => toast({ title: t("whisperGroupDetail.toast.failedToDeleteGroup"), variant: "destructive" }),
       }
     );
   }
@@ -151,7 +153,7 @@ export function WhisperGroupDetail() {
     return (
       <AppLayout>
         <div className="max-w-2xl mx-auto text-center py-16">
-          <p className="text-muted-foreground">Group not found.</p>
+          <p className="text-muted-foreground">{t("whisperGroupDetail.notFound")}</p>
         </div>
       </AppLayout>
     );
@@ -162,7 +164,7 @@ export function WhisperGroupDetail() {
       <div className="max-w-2xl mx-auto space-y-5">
         <div className="flex items-center justify-between">
           <Button variant="ghost" onClick={() => setLocation("/whisper-groups")} className="text-muted-foreground -ml-2">
-            <ArrowLeft className="w-4 h-4 mr-1" /> Whisper Groups
+            <ArrowLeft className="w-4 h-4 mr-1" /> {t("whisperGroupDetail.whisperGroupsLink")}
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -172,15 +174,15 @@ export function WhisperGroupDetail() {
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Delete "{group.name}"?</AlertDialogTitle>
+                <AlertDialogTitle>{t("whisperGroupDetail.deleteDialog.title", { name: group.name })}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This removes the saved group and its member list. Whisps you've already sent to this group aren't affected.
+                  {t("whisperGroupDetail.deleteDialog.description")}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogCancel>{t("shared.cancel")}</AlertDialogCancel>
                 <AlertDialogAction onClick={handleDeleteGroup} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                  Delete
+                  {t("shared.delete")}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -197,13 +199,13 @@ export function WhisperGroupDetail() {
             disabled={!group.members.length}
             data-testid="button-send-to-group"
           >
-            <Send className="w-4 h-4 mr-2" /> Send a Whisp
+            <Send className="w-4 h-4 mr-2" /> {t("whisperGroupDetail.sendAWhisp")}
           </Button>
         </div>
 
         <Card className="bg-card border-border/50">
           <CardContent className="p-5 space-y-4">
-            <p className="font-medium text-foreground">Add members</p>
+            <p className="font-medium text-foreground">{t("whisperGroupDetail.addMembers")}</p>
 
             {isContactPickerSupported() && (
               <Button
@@ -214,26 +216,26 @@ export function WhisperGroupDetail() {
                 disabled={addMembers.isPending}
                 data-testid="button-add-from-contacts"
               >
-                <Contact className="w-4 h-4 mr-2" /> Add from Contacts
+                <Contact className="w-4 h-4 mr-2" /> {t("whisperGroupDetail.addFromContacts")}
               </Button>
             )}
 
             <div className="flex items-center gap-2">
               <div className="flex-1 h-px bg-border/40" />
-              <span className="text-xs text-muted-foreground">or add manually</span>
+              <span className="text-xs text-muted-foreground">{t("whisperGroupDetail.orAddManually")}</span>
               <div className="flex-1 h-px bg-border/40" />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <Input
-                placeholder="Name (optional)"
+                placeholder={t("whisperGroupDetail.namePlaceholder")}
                 className="bg-input/50 border-border/50 rounded-xl"
                 value={manualName}
                 onChange={(e) => setManualName(e.target.value)}
                 data-testid="input-manual-member-name"
               />
               <Input
-                placeholder="Email"
+                placeholder={t("whisperGroupDetail.emailPlaceholder")}
                 type="email"
                 className="bg-input/50 border-border/50 rounded-xl"
                 value={manualEmail}
@@ -241,7 +243,7 @@ export function WhisperGroupDetail() {
                 data-testid="input-manual-member-email"
               />
               <Input
-                placeholder="Phone"
+                placeholder={t("whisperGroupDetail.phonePlaceholder")}
                 type="tel"
                 className="bg-input/50 border-border/50 rounded-xl"
                 value={manualPhone}
@@ -257,18 +259,18 @@ export function WhisperGroupDetail() {
               data-testid="button-add-manual-member"
             >
               {addMembers.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
-              Add member
+              {t("whisperGroupDetail.addMember")}
             </Button>
           </CardContent>
         </Card>
 
         <div className="space-y-2">
-          <p className="text-sm font-medium text-muted-foreground">{group.members.length} member{group.members.length === 1 ? "" : "s"}</p>
+          <p className="text-sm font-medium text-muted-foreground">{t("shared.memberCount", { count: group.members.length })}</p>
           {group.members.length ? group.members.map((m) => (
             <Card key={m.id} className="bg-card border-border/50" data-testid={`group-member-${m.id}`}>
               <CardContent className="p-3 flex items-center gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{m.name || "Unnamed contact"}</p>
+                  <p className="text-sm font-medium text-foreground truncate">{m.name || t("whisperGroupDetail.unnamedContact")}</p>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground">
                     {m.email && <span className="flex items-center gap-1 truncate"><Mail className="w-3 h-3 shrink-0" /> {m.email}</span>}
                     {m.phone && <span className="flex items-center gap-1 truncate"><Phone className="w-3 h-3 shrink-0" /> {m.phone}</span>}
@@ -288,7 +290,7 @@ export function WhisperGroupDetail() {
             </Card>
           )) : (
             <Card className="bg-card/50 border-dashed border-border py-8 text-center">
-              <p className="text-muted-foreground text-sm">No members yet — add some above.</p>
+              <p className="text-muted-foreground text-sm">{t("whisperGroupDetail.noMembersYet")}</p>
             </Card>
           )}
         </div>

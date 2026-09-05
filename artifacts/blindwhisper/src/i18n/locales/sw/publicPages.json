@@ -1,0 +1,116 @@
+{
+  "landingPage": {
+    "header": {
+      "signIn": "Ingia",
+      "getStarted": "Anza"
+    },
+    "hero": {
+      "badge": "Njia mpya ya kushiriki",
+      "headline": "Watumie kile <em>wanachohitaji</em> kusikia.<br />Bila kufanya iwe ya ajabu.",
+      "subtitle": "Jukwaa la mapendekezo ya video ya kihisia, lisilofichua utambulisho. Kama kuteremsha barua iliyoandikwa kwa mkono chini ya mlango wa mtu, lakini katika enzi ya kidijitali.",
+      "flow": {
+        "slide1Title": "Tuma Whisp — ujumbe au video",
+        "slide1Desc": "Watumie kile wanachohitaji kusikia — ujumbe mfupi, au kiungo chochote cha video.",
+        "slide2Title": "Imetumwa bila kujulikana",
+        "slide2Desc": "Hawatajua kamwe ni wewe.",
+        "slide3Title": "Isipokuwa unataka wajue",
+        "slide3Desc": "Jifichue wakati wowote — ni chaguo lako kila wakati."
+      }
+    },
+    "cta": {
+      "startSendingWhisps": "Anza Kutuma Whisps"
+    },
+    "features": {
+      "anonymous": {
+        "title": "Bila Utambulisho Kabisa",
+        "desc": "Hawatajua ni wewe isipokuwa uwataka wajue. Nafasi salama kwa mapendekezo ya kweli."
+      },
+      "resonant": {
+        "title": "Yenye Mguso wa Kihisia",
+        "desc": "Ambatanisha lebo sahihi ya hisia na ujumbe mfupi kuweka muktadha kabla hata hawajabofya play."
+      },
+      "delivery": {
+        "title": "Wewe Ndiye Unaamua Jinsi ya Kutuma",
+        "desc": "Tuma kiungo cha faragha moja kwa moja kwao, au kiweke kwenye Blind Circle ili jamii igundue kwa njia ya asili."
+      }
+    },
+    "howItWorks": {
+      "heading": "Kutoka kiungo hadi kutumwa, kwa chini ya dakika moja",
+      "subheading": "Bandika video, sema unachomaanisha, nayo iko njiani — bila utambulisho.",
+      "steps": {
+        "paste": {
+          "title": "Bandika kiungo cha video yoyote",
+          "desc": "YouTube, TikTok, Instagram, Facebook — au pakia yako mwenyewe."
+        },
+        "note": {
+          "title": "Ongeza ujumbe, endelea kutokujulikana",
+          "desc": "Sema unachomaanisha. Hawatajua kamwe kuwa umetoka kwako."
+        },
+        "sent": {
+          "title": "Imetumwa — ndivyo tu",
+          "desc": "Tutakujulisha mara tu itakapoonwa."
+        }
+      }
+    },
+    "noAwkwardness": {
+      "badge": "Bila mtazamo wa macho wa ajabu",
+      "heading": "Ujumbe unafika. <em>Wakati wa ajabu, hapana.</em>",
+      "body": "Unaposema jambo nyeti kwa sauti, pia unashughulikia jinsi watakavyoitikia <em>wewe</em> ukilisema. Blind Whisper inakutoa chumbani — ili waweze kukaa kweli na ulichomaanisha, badala ya kuchunguza uso wako wakati unalisema.",
+      "before": {
+        "label": "Kulisema kwa sauti",
+        "desc": "Wao wanajiandaa kwa jinsi utakavyolisema. Wewe unajiandaa kwa jinsi watakavyolipokea. Ujumbe unapotea katika mvutano huo."
+      },
+      "after": {
+        "label": "Kulituma kama Whisp badala yake",
+        "desc": "Wanaliona wakiwa peke yao, kwa wakati wao wenyewe, kwa kasi yao wenyewe. Ujumbe tu — bila maonyesho, bila kujiandaa, bila kimya cha ajabu baadaye."
+      }
+    },
+    "useCases": {
+      "heading": "Mazungumzo ambayo Blind Whisper hufanya rahisi zaidi",
+      "subheading": "Kila uhusiano una jambo ambalo ni rahisi zaidi kulituma kuliko kulisema. Hii ni mifano ya nyakati ambazo watu hutumia Blind Whisper.",
+      "items": {
+        "parent": {
+          "relationship": "Mzazi, kwa binti yake",
+          "quote": "Nilitaka kuzungumza naye kuhusu jambo nyeti, lakini sikutaka azingatie mwitikio wangu badala ya ujumbe wenyewe. Aliutazama kwa wakati wake mwenyewe — na nimeshamwona akijaribu mtazamo mpya. Bila hali ya ajabu."
+        },
+        "friend": {
+          "relationship": "Rafiki, anayekuuliza hali yako",
+          "quote": "Alikuwa anapitia kuvunjika kwa uhusiano na sikujua nimwambie nini bila kusikika kama mhadhara. Badala yake nilimtumia video. Baadaye aliniambia ilikuwa hasa alichohitaji — na ilihisi kama tu ilifika, si kama mimi niliyesema."
+        },
+        "partner": {
+          "relationship": "Mpenzi, akifungua mazungumzo magumu",
+          "quote": "Kuna tofauti kati ya \"tunahitaji kuongea\" na kumwonyesha tu kitu fulani. Nilituma hii badala ya kuanzisha ugomvi. Ilifungua mlango kwa upole badala ya kuufunga kwa nguvu."
+        },
+        "colleague": {
+          "relationship": "Mfanyakazi mwenzako, akitoa msukumo mdogo",
+          "quote": "Nilitaka mwenzangu wa kazi aone kitu kuhusu kutoa maoni vizuri, bila kuhisi kama tathmini ya utendaji. Kutokujulikana kulifanya ijisikie kama msukumo mdogo, si lawama ya wazi."
+        },
+        "sibling": {
+          "relationship": "Ndugu, akisema yasiyosemeka",
+          "quote": "Sisi hatuzungumzi sana kuhusu mambo hayo. Lakini niliweza kumtumia kitu kilichosema kile ambacho sikujua jinsi ya kukieleza kwa maneno."
+        }
+      },
+      "previewCaption": "Imetumwa bila utambulisho · Blind Whisper",
+      "disclaimer": "Mifano ya kielelezo ya jinsi watu wanavyotumia Blind Whisper, si maoni ya wateja yaliyothibitishwa."
+    },
+    "faq": {
+      "heading": "Maswali Yanayoulizwa Mara kwa Mara",
+      "subheading": "Kila kitu ambacho watu kwa kawaida hutaka kujua kabla ya kutuma Whisp yao ya kwanza."
+    },
+    "closingCta": {
+      "heading": "Kuna jambo ambalo umekuwa ukitaka kulisema?",
+      "body": "Huhitaji kutafuta maneno kamili. Tafuta tu video, uiache iseme ulichomaanisha.",
+      "notReadyPrefix": "Bado hujawa tayari kutuma moja?",
+      "notReadyLink": "Pata whisps zisizojulikana kuhusu mada unazochagua"
+    },
+    "footer": {
+      "privacyPolicy": "Sera ya Faragha",
+      "termsOfService": "Masharti ya Huduma",
+      "smsTerms": "Masharti ya SMS"
+    }
+  },
+  "notFound": {
+    "title": "Ukurasa 404 Haukupatikana",
+    "message": "Je, ulisahau kuongeza ukurasa kwenye router?"
+  }
+}

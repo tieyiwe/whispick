@@ -1,4 +1,5 @@
 import { Eye, HeartHandshake, Heart, BrainCircuit, Sprout, Sparkles } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 // Keyed by the stable id stored on a whisp (whisp.moodTag), not the display
 // label — labels can be reworded without breaking data already in the DB.
@@ -55,18 +56,65 @@ export const MOOD_CONFIG: Record<string, { label: string; icon: any; color: stri
 
 export const MOOD_TAGS = Object.keys(MOOD_CONFIG);
 
+// Translation keys for each mood, keyed the same way as MOOD_CONFIG. Kept
+// separate from MOOD_CONFIG.label (which other pages read directly as a
+// plain, untranslated string outside any i18n context — SendWhisp.tsx,
+// PublicWhispPage.tsx, CirclePostComposer.tsx) so this component alone can
+// render the translated label without changing that shared shape.
+const MOOD_LABEL_KEYS: Record<string, string> = {
+  "i-see-you": "moodTag.iSeeYou",
+  "heal-together": "moodTag.healTogether",
+  "i-love-you": "moodTag.iLoveYou",
+  "think-about-this": "moodTag.thinkAboutThis",
+  "for-your-growth": "moodTag.forYourGrowth",
+  "just-because": "moodTag.justBecause",
+};
+
+// The mood is the one piece of emotional framing a recipient sees before
+// they press play, so it's built from the mood's OWN colour rather than a
+// generic chip: a soft gradient in that hue, a matching rim, and a low glow
+// that lifts it off the Midnight background. Driven by inline styles because
+// each mood's colour is a value in MOOD_CONFIG — Tailwind can't generate
+// classes for colours it doesn't see at build time.
+function withAlpha(hex: string, alpha: number): string {
+  const value = hex.replace("#", "");
+  const r = parseInt(value.slice(0, 2), 16);
+  const g = parseInt(value.slice(2, 4), 16);
+  const b = parseInt(value.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 export function MoodTag({ mood, className = "" }: { mood: string | null | undefined; className?: string }) {
+  const { t } = useTranslation("sharedB");
   if (!mood) return null;
 
   const config = MOOD_CONFIG[mood];
   if (!config) return null;
 
   const Icon = config.icon;
+  const label = MOOD_LABEL_KEYS[mood] ? t(MOOD_LABEL_KEYS[mood]) : config.label;
 
   return (
-    <div className={`inline-flex items-center px-3 py-1 rounded-full border text-sm font-medium ${config.bgClass} ${config.textClass} ${config.borderClass} ${className}`}>
-      <Icon className="w-4 h-4 mr-2" />
-      {config.label}
+    <div
+      className={`inline-flex items-center gap-2 pl-1.5 pr-3.5 py-1.5 rounded-full border text-sm font-medium ${className}`}
+      style={{
+        color: config.color,
+        // Angled so the chip has a little depth instead of reading as a flat
+        // swatch — brighter at the icon end, fading across the label.
+        backgroundImage: `linear-gradient(135deg, ${withAlpha(config.color, 0.22)}, ${withAlpha(config.color, 0.07)})`,
+        borderColor: withAlpha(config.color, 0.35),
+        boxShadow: `0 2px 14px ${withAlpha(config.color, 0.18)}`,
+      }}
+    >
+      {/* The icon gets its own disc so it reads as a badge rather than a
+          glyph sitting next to text. */}
+      <span
+        className="flex items-center justify-center w-6 h-6 rounded-full shrink-0"
+        style={{ backgroundColor: withAlpha(config.color, 0.2) }}
+      >
+        <Icon className="w-3.5 h-3.5" />
+      </span>
+      <span className="tracking-wide">{label}</span>
     </div>
   );
 }

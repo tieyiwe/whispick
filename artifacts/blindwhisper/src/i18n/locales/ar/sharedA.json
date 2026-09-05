@@ -1,0 +1,118 @@
+{
+  "archivedWhispGate": {
+    "title": "هذه الـ Whisp مؤرشفة",
+    "description": "إنها محفوظة بأمان في أرشيفك. أعدها لعرضها أو الرد عليها من جديد.",
+    "descriptionWithTitle": "\"{{title}}\" محفوظة بأمان في أرشيفك. أعدها لعرضها أو الرد عليها من جديد.",
+    "back": "رجوع",
+    "unarchive": "أخرِجها من الأرشيف لعرضها"
+  },
+  "avatarPickerGrid": {
+    "chooseAvatar": "اختر صورة رمزية",
+    "noAvatar": "بدون صورة رمزية"
+  },
+  "cameraCapture": {
+    "modePhoto": "صورة",
+    "modeVideo": "فيديو",
+    "photoPrepareUnsupported": "هذا المتصفح لا يستطيع تجهيز الصورة للإرسال — جرّب الفيديو بدلًا من ذلك.",
+    "photoPrepareFailed": "تعذّر تجهيز هذه الصورة للإرسال. من فضلك التقطها من جديد.",
+    "captureFailed": "تعذّر التقاط صورة من الكاميرا.",
+    "photoClipUnsupported": "لا يمكن تجهيز الصور للإرسال في هذا المتصفح — جرّب الفيديو بدلًا من ذلك، أو أعد الالتقاط.",
+    "recordUnsupported": "هذا المتصفح لا يستطيع تسجيل الفيديو — جرّب الصورة أو الرفع بدلًا من ذلك.",
+    "recordStartFailed": "تعذّر بدء التسجيل. حاول مرة أخرى من فضلك.",
+    "unsupportedFallback": "استخدم الرفع أو لصق رابط بدلًا من ذلك.",
+    "deniedFallback": "خيارا الرفع ولصق الرابط ما زالا متاحين إن لم ينجح هذا.",
+    "idlePromptPhoto": "التقط صورة بكاميرتك",
+    "idlePromptVideo": "سجّل فيديو قصيرًا بكاميرتك",
+    "tryAgain": "حاول مرة أخرى",
+    "enableCamera": "تفعيل الكاميرا",
+    "requestingAccess": "جارٍ طلب الوصول إلى الكاميرا…",
+    "flipCamera": "تبديل الكاميرا",
+    "takePhoto": "التقاط صورة",
+    "stop": "إيقاف",
+    "startRecording": "بدء التسجيل",
+    "capturedPhotoAlt": "الصورة الملتقطة",
+    "preparingPhoto": "جارٍ تجهيز صورتك…",
+    "retake": "إعادة الالتقاط",
+    "useThisPhoto": "استخدم هذه الصورة",
+    "useThisVideo": "استخدم هذا الفيديو",
+    "uploading": "جارٍ الرفع…"
+  },
+  "circleCommentRow": {
+    "poster": "صاحب المنشور",
+    "you": "(أنت)",
+    "reply": "رد",
+    "attachedImageAlt": "مرفق بالتعليق"
+  },
+  "circlePostComposer": {
+    "trigger": "انشر في Blind Circle",
+    "dialogTitle": "انشر في Blind Circle",
+    "uploadFailedGeneric": "فشل الرفع — يجب أن تكون مدة الفيديو أقل من {{seconds}} ثانية",
+    "postedSuccess": "تم النشر في Blind Circle",
+    "postFailedGeneric": "تعذّر النشر في Blind Circle",
+    "pasteLink": "الصق رابطًا",
+    "uploadVideo": "ارفع فيديو",
+    "fetch": "جلب",
+    "videoLinkPlaceholder": "الصق رابط فيديو...",
+    "removeVideo": "إزالة الفيديو",
+    "titleLabel": "العنوان",
+    "titlePlaceholder": "ما هذا؟ أعطه عنوانًا",
+    "chooseVideo": "اختر فيديو",
+    "uploadingEllipsis": "جارٍ الرفع...",
+    "uploadHint": "حتى {{seconds}} ثانية. بصيغة MP4 أو WebM أو MOV.",
+    "notePlaceholderWithTitle": "وصف قصير (اختياري)",
+    "notePlaceholderNoTitle": "قل شيئًا عنه (اختياري)",
+    "moodLabel": "المزاج (اختياري)",
+    "aliasPlaceholder": "وقّعه باسم... (اختياري)",
+    "destinationLabel": "إلى أين يذهب؟",
+    "publicCircle": "الـ Blind Circle العامة",
+    "anonymousDisclaimer": "يُنشر بهوية مجهولة — اسمك لا يظهر أبدًا. كل من يستطيع رؤية هذه الدائرة يمكنه رؤية المنشور.",
+    "postAnonymously": "انشر بهوية مجهولة"
+  },
+  "countryPhoneInput": {
+    "searchCountry": "ابحث عن دولة...",
+    "noCountryFound": "لم يُعثر على دولة."
+  },
+  "debateTopicCard": {
+    "shareTitle": "Blind Whisper — Debate Now",
+    "linkCopied": "تم نسخ الرابط — أرسله لتدعو أحدًا إلى النقاش",
+    "copyFailed": "تعذّر النسخ — يرجى النسخ يدويًا",
+    "commentCount_zero": "لا توجد تعليقات",
+    "commentCount_one": "تعليق واحد",
+    "commentCount_two": "تعليقان",
+    "commentCount_few": "{{count}} تعليقات",
+    "commentCount_many": "{{count}} تعليقًا",
+    "commentCount_other": "{{count}} تعليق",
+    "shareTopicAria": "اهمس بهذا الموضوع",
+    "joinDebate": "انضم إلى النقاش",
+    "onlineAriaLabel": "متصل الآن"
+  },
+  "demographicsGateDialog": {
+    "title": "شيء واحد سريع فقط",
+    "description": "قبل أن تنطلق أول Whisp لك، ساعدنا في فهم من يستخدم Blind Whisper، واختر اللغة التي يعمل بها التطبيق. لن يظهر أي من هذا لمن ترسل إليهم أبدًا، ويمكنك تغييره لاحقًا من الإعدادات.",
+    "languageLabel": "اللغة",
+    "genderLabel": "الجنس",
+    "ageRangeLabel": "الفئة العمرية",
+    "selectPlaceholder": "اختر...",
+    "continue": "متابعة",
+    "saveFailed": "تعذّر حفظ إجاباتك. يرجى المحاولة مرة أخرى."
+  },
+  "enableNotificationsPrompt": {
+    "title": "فعّل الإشعارات",
+    "description": "احصل على إشعار لحظة أن يرسل لك أحدهم Whisp أو يرد عليك — مباشرة على جهازك، مثل أي تطبيق آخر.",
+    "notNow": "ليس الآن",
+    "enabling": "جارٍ التفعيل...",
+    "enable": "تفعيل الإشعارات"
+  },
+  "policyUpdate": {
+    "heading": "قمنا بتحديث سياساتنا",
+    "description": "يرجى تخصيص لحظة لمراجعة ما تغيّر وتأكيد موافقتك لمواصلة استخدام Blind Whisper.",
+    "privacyLabel": "سياسة الخصوصية",
+    "termsLabel": "شروط الخدمة",
+    "readLink": "قراءة المستند كاملاً",
+    "agreeButton": "راجعتُ — أوافق",
+    "laterButton": "المراجعة لاحقًا",
+    "reminderPill": "تحديث السياسات — راجِع ووافِق",
+    "toastThanks": "شكرًا — تم تسجيل موافقتك.",
+    "toastError": "تعذّر تسجيل موافقتك. يرجى المحاولة مرة أخرى."
+  }
+}

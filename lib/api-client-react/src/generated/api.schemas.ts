@@ -16,7 +16,11 @@ export interface ApiError {
 
 export interface Whisp {
   id: string;
-  senderId: string;
+  /**
+     * The sender's real account id — present only when the CALLER is that sender (viewerRole === "sender"). null for a matched recipient viewing a whisp sent TO them (viewerRole === "recipient"), so the anonymous-sender guarantee Whisper Link is built around can't be broken by reading this field off a box=received/archived response.
+     * @nullable
+     */
+  senderId: string | null;
   videoUrl: string;
   /** @nullable */
   videoTitle?: string | null;
@@ -76,6 +80,22 @@ export interface Whisp {
      */
   conciergeRequestId?: string | null;
   createdAt: string;
+  /** True only when the caller is themselves this whisp's matched recipient (see GET /whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email/phone belongs to a verified account. */
+  viewerIsRecipient: boolean;
+  /**
+     * 'sender' | 'recipient' | null — which role the caller has on this whisp. Drives pinned/archived below, and (frontend-side) whether Delete is offered — only a sender may delete.
+     * @nullable
+     */
+  viewerRole: string | null;
+  /** Whether the CALLER's own copy of this whisp is pinned (see POST /whisps/{id}/pin) — never the other party's pin state. */
+  pinned: boolean;
+  /** Whether the CALLER's own copy of this whisp is archived (see POST /whisps/{id}/archive) — never the other party's archive state. */
+  archived: boolean;
+  /**
+     * A stable, anonymous pseudonym for this whisp's sender (e.g. "Falcon482"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerRole is "recipient"; null otherwise.
+     * @nullable
+     */
+  senderHandle?: string | null;
 }
 
 export interface WhispInput {
@@ -120,7 +140,18 @@ export interface WhispInput {
      * @nullable
      */
   conciergeRequestId?: string | null;
+  /**
+     * Required (must be true) when whisperChannel is "sms" — the sender confirming they have this recipient's permission to receive a text. Not required for "email" or "whatsapp".
+     * @nullable
+     */
+  smsConsentConfirmed?: boolean | null;
 }
+
+export type WhispDetailCircleConversationsItem = {
+  id: string;
+  publicToken: string;
+  createdAt: string;
+};
 
 export interface TrackingEvent {
   id: string;
@@ -146,13 +177,108 @@ export interface WhispReply {
   videoPlatform?: string | null;
   /** @nullable */
   moodTag?: string | null;
+  /**
+     * The message this one answers, when it replies to a specific earlier message rather than the thread as a whole. Always a reply on the same whisp.
+     * @nullable
+     */
+  parentReplyId?: string | null;
   createdAt: string;
+  /**
+     * When the other party in the conversation (whichever one didn't author this message) is known to have viewed it — set the moment they load a view containing it. Null means unread. Drives the WhatsApp-style single/double checkmark next to a message the current viewer sent themselves; never rendered on a message you received.
+     * @nullable
+     */
+  readAt?: string | null;
+  /** True when the recipient flagged this reply as a "guess who sent it" guess. */
+  isGuess: boolean;
+  /**
+     * 'hot' | 'cold' | 'no_comment' | 'confirmed' | null. Set only by the whisp's sender, manually, via PATCH /whisps/{id}/replies/{replyId}/guess-reaction — never computed by the system, since auto-checking a guess against the real sender would be an identity-enumeration oracle. Null until the sender reacts (or on any reply that isn't a guess).
+     * @nullable
+     */
+  guessReaction?: string | null;
+}
+
+/**
+ * The caller's own reaction to this comment, if any — requires visitorId to have been passed on the read.
+ * @nullable
+ */
+export type CircleCommentViewerReaction = typeof CircleCommentViewerReaction[keyof typeof CircleCommentViewerReaction] | null;
+
+
+export const CircleCommentViewerReaction = {
+  like: 'like',
+  dislike: 'dislike',
+} as const;
+
+/**
+ * A public comment on a Blind Circle post. Never carries a visitor identifier — see circle_comments.ts's schema comment for why.
+ */
+export interface CircleComment {
+  id: string;
+  commentText: string;
+  /**
+     * The comment this one replies to, if any — same flat quote-reference model as WhispReply.parentReplyId.
+     * @nullable
+     */
+  parentCommentId?: string | null;
+  /** True when this comment came from the post's own (signed-in) sender — a role badge, never an identity. */
+  isPoster: boolean;
+  createdAt: string;
+  /** This commenter's stable anonymous handle within this post's thread (e.g. "SwiftFalcon482") — see anonymous_handles.ts. */
+  handle: string;
+  /** True when the caller's own visitorId matches this comment's author — lets the client show its own "you" state without ever exposing the raw visitorId to other viewers. */
+  isOwnComment: boolean;
+  /**
+     * Proxy-served URL for an attached image, or null if there is none or it was flagged by moderation and is pending review.
+     * @nullable
+     */
+  imageUrl: string | null;
+  likeCount: number;
+  dislikeCount: number;
+  /**
+     * The caller's own reaction to this comment, if any — requires visitorId to have been passed on the read.
+     * @nullable
+     */
+  viewerReaction: CircleCommentViewerReaction;
 }
 
 export interface WhispDetail {
   whisp: Whisp;
   trackingEvents: TrackingEvent[];
   replies: WhispReply[];
+  /**
+     * Anonymous replies the recipient has left on this whisp. Null means uncapped. 0 means they can't reply again unless the sender adds more replies or the recipient signs up.
+     * @nullable
+     */
+  recipientRepliesRemaining?: number | null;
+  /** Blind Circle posts only (0 otherwise) — how many times this post was opened, across every anonymous viewer. */
+  viewCount: number;
+  /** Blind Circle posts only (0 otherwise). */
+  likeCount: number;
+  /** Blind Circle posts only (empty otherwise). */
+  comments: CircleComment[];
+  /** Private 1:1 conversations anonymous viewers started from this Blind Circle post (see POST /w/{token}/circle-dm/start). Empty for every other delivery method, including a circle_dm thread itself — a conversation can't spawn another conversation. */
+  circleConversations: WhispDetailCircleConversationsItem[];
+}
+
+/**
+ * @nullable
+ */
+export type CommentReactionResultViewerReaction = typeof CommentReactionResultViewerReaction[keyof typeof CommentReactionResultViewerReaction] | null;
+
+
+export const CommentReactionResultViewerReaction = {
+  like: 'like',
+  dislike: 'dislike',
+} as const;
+
+/**
+ * The resulting reaction state after a like/dislike toggle — shared shape for Circle and Debate Topic comments.
+ */
+export interface CommentReactionResult {
+  likeCount: number;
+  dislikeCount: number;
+  /** @nullable */
+  viewerReaction: CommentReactionResultViewerReaction;
 }
 
 export interface WhispStats {
@@ -171,6 +297,11 @@ export interface WhispStats {
 export interface WhispReplyInput {
   replyText: string;
   fromRecipient?: boolean;
+  /**
+     * Reply to a specific earlier message on the same whisp.
+     * @nullable
+     */
+  parentReplyId?: string | null;
 }
 
 export interface RevealResponse {
@@ -185,7 +316,11 @@ export interface RevealResult {
 
 export interface TextWhisp {
   id: string;
-  senderId: string;
+  /**
+     * The sender's real account id — set only when the caller IS the sender. Null for a recipient's own view, same anti-enumeration reasoning as senderHandle existing at all.
+     * @nullable
+     */
+  senderId: string | null;
   /** True only if the authenticated caller IS this Text Whisp's recipient. Deliberately caller-relative and self-referential (safe for a sender to see, since it's always false for their own sent messages) rather than exposing the underlying recipientUserId, which would let a sender learn whether an arbitrary phone number belongs to a verified Blind Whisper account. */
   viewerIsRecipient: boolean;
   /** The E.164-normalized phone number provided at send time, regardless of whether it matched a user. */
@@ -196,14 +331,31 @@ export interface TextWhisp {
   senderAlias?: string | null;
   /** @maxLength 260 */
   messageText: string;
-  /** 'sent' | 'read' | 'replied' */
+  /** 'sent' | 'read' | 'replied' | 'scheduled' */
   status: string;
   revealRequested: boolean;
   /** @nullable */
   revealAccepted?: boolean | null;
+  /**
+     * Set only for a "schedule for later" send — delivery (the in-app notify or guest SMS) is held back until this time. Null for every immediately-sent Text Whisp.
+     * @nullable
+     */
+  scheduledAt?: string | null;
   /** @nullable */
   readAt?: string | null;
   createdAt: string;
+  /** True only while the OTHER party (never the caller's own ping echoed back) sent a typing ping within the last ~8s. See POST /text-whisps/{id}/typing. */
+  otherPartyTyping: boolean;
+  /**
+     * The sender's real account name (users.fullName) — set ONLY when the caller is this Text Whisp's recipient AND revealAccepted is true. This is the one deliberate, consent-gated exception to the app's anonymity guarantee; null in every other case (including for the sender's own view of their own message, and for a recipient who hasn't accepted yet), regardless of what fullName is actually set to.
+     * @nullable
+     */
+  revealedSenderName: string | null;
+  /**
+     * A stable, anonymous pseudonym for this Text Whisp's sender (e.g. "Falcon482"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerIsRecipient is true; null otherwise.
+     * @nullable
+     */
+  senderHandle: string | null;
 }
 
 export interface TextWhispInput {
@@ -212,6 +364,16 @@ export interface TextWhispInput {
   messageText: string;
   /** @nullable */
   senderAlias?: string | null;
+  /**
+     * A future ISO timestamp to hold delivery back until — omit or leave null to send immediately.
+     * @nullable
+     */
+  scheduledAt?: string | null;
+  /**
+     * Required (must be true) — the sender confirming they have this recipient's permission to receive a text. Required unconditionally, since whether this actually goes out over SMS or lands entirely in-app depends on whether recipientPhone matches an existing account, which isn't known until the server looks it up.
+     * @nullable
+     */
+  smsConsentConfirmed?: boolean | null;
 }
 
 export interface TextWhispReply {
@@ -220,6 +382,16 @@ export interface TextWhispReply {
   senderId: string;
   /** @maxLength 260 */
   replyText: string;
+  /**
+     * The earlier reply in this same thread this one answers, if any — feeds the quoted-message UI in the shared ReplyThread component.
+     * @nullable
+     */
+  parentReplyId?: string | null;
+  /**
+     * When the OTHER party opened the thread after this reply was sent. Null means sent but not yet seen.
+     * @nullable
+     */
+  readAt?: string | null;
   createdAt: string;
 }
 
@@ -231,6 +403,47 @@ export interface TextWhispDetail {
 export interface TextWhispReplyInput {
   /** @maxLength 260 */
   replyText: string;
+  /** @nullable */
+  parentReplyId?: string | null;
+}
+
+export type BroadcastTextWhispInputAudience = typeof BroadcastTextWhispInputAudience[keyof typeof BroadcastTextWhispInputAudience];
+
+
+export const BroadcastTextWhispInputAudience = {
+  all: 'all',
+  selected: 'selected',
+} as const;
+
+export interface BroadcastTextWhispInput {
+  /**
+     * @minLength 1
+     * @maxLength 260
+     */
+  messageText: string;
+  audience: BroadcastTextWhispInputAudience;
+  /**
+     * Recipients when audience is 'selected'; ignored for 'all'.
+     * @maxItems 5000
+     */
+  userIds?: string[];
+}
+
+export interface BroadcastTextWhispResult {
+  recipientCount: number;
+}
+
+export interface TextWhispToStaffInput {
+  recipientAdminId: string;
+  /**
+     * @minLength 1
+     * @maxLength 260
+     */
+  messageText: string;
+}
+
+export interface TextWhispToStaffResult {
+  id: string;
 }
 
 export interface Invite {
@@ -259,6 +472,51 @@ export interface InviteInput {
   /** @nullable */
   recipientPhone?: string | null;
   channel: string;
+  /**
+     * Required (must be true) when channel is "sms" — the inviter confirming they have this recipient's permission to receive a text. Not required for "email" or "whatsapp".
+     * @nullable
+     */
+  smsConsentConfirmed?: boolean | null;
+}
+
+export interface DebateTopicWhisp {
+  id: string;
+  senderId: string;
+  debateTopicId: string;
+  /**
+     * Set only when the recipient contact matched a known, verified Blind Whisper account at send time — see UserProfile-adjacent lib/deliver.ts findVerifiedRecipient(ByEmail).
+     * @nullable
+     */
+  recipientUserId?: string | null;
+  /** @nullable */
+  recipientEmail?: string | null;
+  /** @nullable */
+  recipientPhone?: string | null;
+  /** 'email' | 'sms' | 'whatsapp' */
+  channel: string;
+  /** @nullable */
+  note?: string | null;
+  /** @nullable */
+  senderAlias?: string | null;
+  /** 'sent' | 'failed' */
+  status: string;
+  createdAt: string;
+}
+
+export interface DebateTopicWhispInput {
+  /** @nullable */
+  recipientEmail?: string | null;
+  /** @nullable */
+  recipientPhone?: string | null;
+  /** 'email' | 'sms' | 'whatsapp' */
+  channel: string;
+  /**
+     * Optional personal line from the sender, shown alongside the topic teaser. Max 200 characters.
+     * @nullable
+     */
+  note?: string | null;
+  /** @nullable */
+  senderAlias?: string | null;
 }
 
 export interface ClaimInviteInput {
@@ -314,6 +572,15 @@ export interface VideoMeta {
 
 export interface PublicWhisp {
   id: string;
+  /** True only when the caller is signed in, is this whisp's matched recipient, and has archived their copy (see POST /whisps/{id}/archive) — always false for an anonymous visitor or a signed-in non-recipient. */
+  viewerArchived?: boolean;
+  /** Same caller-relative scoping as viewerArchived, for pin instead. */
+  viewerPinned?: boolean;
+  /**
+     * A stable, anonymous pseudonym for this whisp's sender (e.g. "Falcon482"), scoped to this one (sender, recipient) pair. Same caller-relative scoping as viewerArchived — set only when the caller is signed in and is this whisp's matched recipient; null otherwise.
+     * @nullable
+     */
+  senderHandle: string | null;
   videoUrl: string;
   /** @nullable */
   videoTitle?: string | null;
@@ -348,6 +615,25 @@ export interface PublicWhisp {
   /** @nullable */
   aiTakeawayStatus?: string | null;
   replies: WhispReply[];
+  /**
+     * Anonymous replies this recipient has left on this whisp. Null means uncapped. Signing up removes the cap entirely.
+     * @nullable
+     */
+  recipientRepliesRemaining?: number | null;
+  /** Whether this viewer may whisp a VIDEO back. Text replies stay open to anonymous recipients up to their allowance; a video reply needs either an account or reply credit the sender bought for this whisp. */
+  videoRepliesAllowed?: boolean;
+  /** Whether this whisp was already marked watched (whisps.watchedAt) BEFORE this request — true only on a reopen, never on the load that itself does the watching. */
+  hasWatched?: boolean;
+  /** Whether this whisp was already opened (whisps.openedAt) BEFORE this request — true only on a reopen, never on a true first visit. This, not hasWatched, drives whether the appreciation prompt starts expanded (first-ever open — visible right under the video) or collapsed (any reopen, still one tap away): watchedAt gets set the moment someone taps Play, before they've actually watched anything, so it would spring the prompt open too early; openedAt never does. */
+  hasOpenedBefore?: boolean;
+  /** 'whisper_link' | 'ghost_boost' | 'circle_drop' | 'group_whisper' | 'circle_dm' */
+  deliveryMethod: string;
+  /** Blind Circle posts only (0 otherwise). */
+  likeCount: number;
+  /** Whether the visitorId passed as a query param has already liked this post. False (not just "unknown") when no visitorId is given. */
+  viewerHasLiked: boolean;
+  /** Blind Circle posts only (empty otherwise). */
+  comments: CircleComment[];
 }
 
 export interface TrackingEventInput {
@@ -373,7 +659,20 @@ export interface PublicReplyInput {
   videoPlatform?: string | null;
   /** @nullable */
   moodTag?: string | null;
+  /**
+     * Reply to a specific earlier message on the same whisp.
+     * @nullable
+     */
+  parentReplyId?: string | null;
+  /** Flags this as a "guess who sent it" reply (requires replyText). The system never auto-checks it against the real sender — see WhispReply.guessReaction. */
+  isGuess?: boolean;
 }
+
+/**
+ * A preset id from the curated avatar library (api-server's lib/avatars.ts), e.g. "flame-violet" — rendered as an icon-on-color circle by the frontend's matching catalog. Never a file upload. null means "no avatar" (a real, explicit choice — the frontend falls back to the handle's first letter), not "not yet assigned."
+ * @nullable
+ */
+export type AvatarId = string | null;
 
 export interface UserProfile {
   id: string;
@@ -391,6 +690,11 @@ export interface UserProfile {
      */
   phoneVerifiedAt?: string | null;
   /**
+     * ISO 3166-1 alpha-2, self-reported — captured from the country picker at phone-verification time (see users.countryCode), or set directly via PATCH /user/profile. Null until either happens.
+     * @nullable
+     */
+  countryCode?: string | null;
+  /**
      * 'woman' | 'man' | 'nonbinary' | 'prefer_not_to_say' | null (not yet answered)
      * @nullable
      */
@@ -400,12 +704,66 @@ export interface UserProfile {
      * @nullable
      */
   ageRange?: string | null;
+  /**
+     * ISO 639-1 code from lib/languages.ts's SUPPORTED_LANGUAGES ('en' | 'fr' | 'ar' | 'de' | 'es' | 'pt' | 'zh' | 'ja' | 'hi' | 'ru' | 'id' | 'bn' | 'sw' | 'ko'), or null (not yet answered). What the app renders in, and what server-generated text (notifications, emails) is sent in — see users.preferredLanguage.
+     * @nullable
+     */
+  preferredLanguage?: string | null;
+  /**
+     * This account's persistent, public, followable Debate Topics handle — see users.whispererHandle. Null until first assigned (posting a topic, or commenting while signed in).
+     * @nullable
+     */
+  whispererHandle?: string | null;
+  whispererAvatarId?: AvatarId | null;
+  /** Whether this account's Whisper Box handle (see UserRecap.whisperBoxHandle) actually reflects the current fullName — i.e. whether it's the slug (or slug+3-digit-suffix) that name would produce right now, as opposed to a leftover from before a name was set or from a since-changed name. Drives whether WhisperBoxLinkDialog prompts to (re)personalize the link. */
+  whisperBoxHandlePersonalized: boolean;
+  /**
+     * When this account last dismissed the two-factor setup nudge. Whether 2FA is actually ON is never included here — read Clerk's own user.twoFactorEnabled client-side for that; this is only "did they say not now."
+     * @nullable
+     */
+  mfaNudgeDismissedAt?: string | null;
   plan: string;
   boostCredits: number;
   whisperLinksUsed: number;
   role: string;
+  /** Whether this Whisperer wants the "you have a new whisp" email in addition to the in-app notification. On by default — see PATCH /user/profile to change it. */
+  emailNotificationsEnabled: boolean;
+  /** Whether accounts that follow this Whisperer can see them as online (see GET /follows/online-status). On by default. */
+  showOnlineStatus: boolean;
+  /** Admin-only preference — whether this account (when role is 'admin') gets notified when a new user signs up. Inert for a non-admin row. On by default. See lib/adminNotify.ts. */
+  notifyOnNewSignup: boolean;
+  /** Admin-only preference — whether this account (when role is 'admin') gets notified when a new Debate Now topic is posted. Inert for a non-admin row. On by default. See lib/adminNotify.ts. */
+  notifyOnNewDebateTopic: boolean;
+  /**
+     * Best-effort, admin-facing mirror of Clerk's own user.twoFactorEnabled — never used for any access-control decision. Null means never synced yet, distinct from false ("synced, and it's off").
+     * @nullable
+     */
+  twoFactorEnabled?: boolean | null;
   createdAt: string;
 }
+
+/**
+ * Not nullable — unlike gender/ageRange there's no "prefer not to say" for the language the app actually renders in.
+ */
+export type UserProfileUpdatePreferredLanguage = typeof UserProfileUpdatePreferredLanguage[keyof typeof UserProfileUpdatePreferredLanguage];
+
+
+export const UserProfileUpdatePreferredLanguage = {
+  en: 'en',
+  fr: 'fr',
+  ar: 'ar',
+  de: 'de',
+  es: 'es',
+  pt: 'pt',
+  zh: 'zh',
+  ja: 'ja',
+  hi: 'hi',
+  ru: 'ru',
+  id: 'id',
+  bn: 'bn',
+  sw: 'sw',
+  ko: 'ko',
+} as const;
 
 export interface UserProfileUpdate {
   /** @nullable */
@@ -416,15 +774,32 @@ export interface UserProfileUpdate {
   gender?: string | null;
   /** @nullable */
   ageRange?: string | null;
+  emailNotificationsEnabled?: boolean;
+  /** Whether accounts that follow this Whisperer can see them as online (see GET /follows/online-status). */
+  showOnlineStatus?: boolean;
+  /** Admin-only preference — see UserProfile.notifyOnNewSignup. */
+  notifyOnNewSignup?: boolean;
+  /** Admin-only preference — see UserProfile.notifyOnNewDebateTopic. */
+  notifyOnNewDebateTopic?: boolean;
+  /** @nullable */
+  countryCode?: string | null;
+  /** Not nullable — unlike gender/ageRange there's no "prefer not to say" for the language the app actually renders in. */
+  preferredLanguage?: UserProfileUpdatePreferredLanguage;
+  /** Sets (or, if null, clears) this account's own Debate Topics avatar — see UserProfile.whispererAvatarId. */
+  whispererAvatarId?: AvatarId | null;
 }
 
 export interface StartPhoneVerificationInput {
   phone: string;
+  /** ISO 3166-1 alpha-2, from the country picker in CountryPhoneInput.tsx. Optional — phone is already a fully international "+"-prefixed value by the time it gets here. */
+  countryCode?: string;
 }
 
 export interface ConfirmPhoneVerificationInput {
   phone: string;
   code: string;
+  /** Same as StartPhoneVerificationInput's — persisted to the user's account on a successful confirmation (see users.countryCode). */
+  countryCode?: string;
 }
 
 export interface PhoneVerificationResult {
@@ -432,6 +807,8 @@ export interface PhoneVerificationResult {
   phone: string | null;
   /** @nullable */
   phoneVerifiedAt: string | null;
+  /** @nullable */
+  countryCode?: string | null;
 }
 
 export interface CreditTransaction {
@@ -442,6 +819,16 @@ export interface CreditTransaction {
   /** @nullable */
   whispId?: string | null;
   createdAt: string;
+}
+
+/**
+ * Keyed by whispererHandle. Only handles the viewer is allowed to see presence for are included — see GET /follows/online-status.
+ */
+export type FollowedOnlineStatusResponseOnline = {[key: string]: boolean};
+
+export interface FollowedOnlineStatusResponse {
+  /** Keyed by whispererHandle. Only handles the viewer is allowed to see presence for are included — see GET /follows/online-status. */
+  online: FollowedOnlineStatusResponseOnline;
 }
 
 export interface CircleFeedItem {
@@ -467,6 +854,183 @@ export interface CircleFeedResponse {
   items: CircleFeedItem[];
   /** @nullable */
   nextCursor: string | null;
+}
+
+export interface DebateTopicInput {
+  /** Title/subtitle length by design — a debate topic is a headline to react to, capped server-side at 200 characters. */
+  topicText: string;
+}
+
+/**
+ * The raw account id is deliberately never included — only the public, followable authorHandle byline is.
+ */
+export interface DebateTopicFeedItem {
+  id: string;
+  topicText: string;
+  /** The author's persistent, public, followable Whisperer handle (e.g. "SwiftFalcon482") — see users.whispererHandle. */
+  authorHandle: string;
+  authorAvatarId: AvatarId | null;
+  commentCount: number;
+  rewhispCount: number;
+  createdAt: string;
+}
+
+export interface DebateTopicFeedResponse {
+  items: DebateTopicFeedItem[];
+  /** @nullable */
+  nextCursor: string | null;
+}
+
+/**
+ * @nullable
+ */
+export type DebateTopicCommentViewerReaction = typeof DebateTopicCommentViewerReaction[keyof typeof DebateTopicCommentViewerReaction] | null;
+
+
+export const DebateTopicCommentViewerReaction = {
+  like: 'like',
+  dislike: 'dislike',
+} as const;
+
+/**
+ * visitorId is deliberately never included — see debate_topic_comments.ts. isPoster reveals a ROLE (the topic's own author), never an identity.
+ */
+export interface DebateTopicComment {
+  id: string;
+  commentText: string;
+  /** @nullable */
+  parentCommentId: string | null;
+  isPoster: boolean;
+  createdAt: string;
+  /** The commenter's display name. For a signed-in commenter, this is their persistent, followable Whisperer handle (users. whispererHandle) — the same one shown as their topic bylines elsewhere, so "who am I talking to" stays consistent across the whole app. For a purely anonymous (never-signed-in) commenter, it's the ordinary per-thread-only handle (anonymous_handles.ts). */
+  handle: string;
+  avatarId: AvatarId | null;
+  /** True when the caller's own visitorId matches this comment's author. */
+  isOwnComment: boolean;
+  /**
+     * Whether the signed-in caller already follows this commenter. null when there's nothing followable here — the commenter has no account (purely anonymous), or the caller isn't signed in, or it's the caller's own comment.
+     * @nullable
+     */
+  commentAuthorFollowed: boolean | null;
+  /**
+     * Proxy-served URL for an attached image, or null if there is none or it was flagged by moderation and is pending review.
+     * @nullable
+     */
+  imageUrl: string | null;
+  likeCount: number;
+  dislikeCount: number;
+  /** @nullable */
+  viewerReaction: DebateTopicCommentViewerReaction;
+}
+
+export interface DebateTopicCommentInput {
+  commentText: string;
+  /** Anonymous, client-generated id from lib/anonymousVisitor.ts — never linked to a real identity. */
+  visitorId: string;
+  /** @nullable */
+  parentCommentId?: string | null;
+}
+
+export interface DebateTopicDetail {
+  id: string;
+  topicText: string;
+  createdAt: string;
+  /** True only when the caller is signed in and is this topic's own author — lets the author see a "Retract" control without revealing anything to anyone else. */
+  isOwnTopic: boolean;
+  /** The author's persistent, public, followable Whisperer handle — see DebateTopicFeedItem.authorHandle. */
+  authorHandle: string;
+  authorAvatarId: AvatarId | null;
+  /**
+     * Whether the signed-in caller already follows the author. null when the caller isn't signed in, or is the author themselves.
+     * @nullable
+     */
+  authorFollowed: boolean | null;
+  authorFollowerCount: number;
+  commentCount: number;
+  rewhispCount: number;
+  viewerRewhisped: boolean;
+  comments: DebateTopicComment[];
+}
+
+/**
+ * The caller's own topic-engagement stats (GET /debate-topics/my-stats).
+ */
+export interface DebateTopicStats {
+  topicsPosted: number;
+  /** Total (non-removed) comments across every topic this account has posted. */
+  commentsReceived: number;
+  /** Total rewhisps across every topic this account has posted. */
+  rewhispsReceived: number;
+  /** Total comments this account has posted, across every topic. */
+  commentsPosted: number;
+  /** Total likes (not dislikes) this account's own comments have received, across every topic. */
+  commentLikesReceived: number;
+}
+
+/**
+ * A message received through the caller's own Whisper Box. No senderId anywhere on this shape — the sender is anonymous by design, with no account to attribute the message to.
+ */
+export interface WhisperBoxMessage {
+  id: string;
+  recipientUserId: string;
+  /** @maxLength 500 */
+  messageText: string;
+  /**
+     * Purely decorative flavor text the sender typed — never an identity, never validated against anything.
+     * @maxLength 60
+     * @nullable
+     */
+  senderAlias?: string | null;
+  /** 'unread' | 'read' */
+  status: string;
+  /** @nullable */
+  readAt?: string | null;
+  /**
+     * Admin takedown (moderation_flags.contentType 'whisper_box_message'), distinct from the recipient's own delete.
+     * @nullable
+     */
+  removedByAdminAt?: string | null;
+  createdAt: string;
+}
+
+/**
+ * The caller's own real stats for the requested period — no invented percentile/"top X%" claims, there's no leaderboard infra to back that up.
+ */
+export interface UserRecap {
+  /** 'all_time' | 'last_30_days' — echoes back the resolved period (invalid query values fall back to all_time) */
+  period: string;
+  /** Whisps sent, any deliveryMethod (whisper_link, group_whisper, circle_drop, circle_dm, ghost_boost). */
+  totalSent: number;
+  /** Whisps received where deliveryMethod is whisper_link or group_whisper only. */
+  totalReceived: number;
+  /** Replies received on the caller's own sent whisps. */
+  repliesReceived: number;
+  /** Sent whisps with deliveryMethod circle_drop. */
+  circlePosts: number;
+  debateTopicsPosted: number;
+  /** Never period-scoped — always the current running total, even for last_30_days. */
+  followerCount: number;
+  /**
+     * Null unless the caller has whisperBoxEnabled; otherwise the count of messages received in the period.
+     * @nullable
+     */
+  whisperBoxMessagesReceived: number | null;
+  /**
+     * The caller's most frequent rank-1 whisp_categories result across their sent whisps in the period, or null if none.
+     * @nullable
+     */
+  topCategory: string | null;
+  memberSince: string;
+  /**
+     * The Debate Now identity — always non-identifying (random word-pair), never the same value as whisperBoxHandle.
+     * @nullable
+     */
+  whispererHandle?: string | null;
+  /**
+     * The SEPARATE handle used only for the Whisper Box URL — recognizable when the account has a display name set. Null until /whisper-box/enable has run once.
+     * @nullable
+     */
+  whisperBoxHandle?: string | null;
 }
 
 export interface Circle {
@@ -521,6 +1085,20 @@ export interface CheckoutResponse {
   url: string | null;
 }
 
+/**
+ * Compliance signals for the admin Users dashboard — never used for any access-control decision, purely a "does this person need a nudge" view. See lib/compliance.ts.
+ */
+export interface ComplianceFlags {
+  emailVerified: boolean;
+  phoneVerified: boolean;
+  /**
+     * Mirrors AdminUser.compliance's users.twoFactorEnabled — null means never synced yet, distinct from false ("synced, and it's off").
+     * @nullable
+     */
+  mfaEnabled?: boolean | null;
+  policyUpToDate: boolean;
+}
+
 export interface AdminUser {
   id: string;
   clerkId: string;
@@ -555,6 +1133,9 @@ export interface AdminUser {
   /** @nullable */
   lastSeenAt?: string | null;
   createdAt: string;
+  compliance: ComplianceFlags;
+  /** Whether this account has been active in the last presence window (see lib/presence.ts) — an admin-only aggregate signal, not gated by the account's own showOnlineStatus preference. */
+  online: boolean;
 }
 
 export interface AdminUserListResponse {
@@ -569,6 +1150,25 @@ export interface AdminUserListResponse {
  */
 export type AdminUserDetailStatusCounts = {[key: string]: number};
 
+export type AdminUserDetailDebateTopicsItem = {
+  id: string;
+  topicText: string;
+  createdAt: string;
+  /** @nullable */
+  deletedByAuthorAt: string | null;
+  /** @nullable */
+  removedByAdminAt: string | null;
+};
+
+export type AdminUserDetailDebateTopicCommentsItem = {
+  id: string;
+  topicId: string;
+  commentText: string;
+  createdAt: string;
+  /** @nullable */
+  removedByAdminAt: string | null;
+};
+
 export type ModerationFlagSeverity = typeof ModerationFlagSeverity[keyof typeof ModerationFlagSeverity];
 
 
@@ -581,28 +1181,72 @@ export const ModerationFlagSeverity = {
 export interface ModerationFlag {
   id: string;
   /**
-     * Set when contentType is 'whisp'; null when it's 'text_whisp'.
+     * Set when contentType is 'whisp'; null otherwise.
      * @nullable
      */
   whispId?: string | null;
   /**
-     * Set when contentType is 'text_whisp'; null when it's 'whisp'.
+     * Set when contentType is 'text_whisp'; null otherwise.
      * @nullable
      */
   textWhispId?: string | null;
-  /** 'whisp' | 'text_whisp' */
-  contentType: string;
-  userId: string;
   /**
-     * The flagged whisp's video title, denormalized for display in flag lists without a second lookup. Null for a text_whisp flag.
+     * Set when contentType is 'circle_comment'; null otherwise.
+     * @nullable
+     */
+  circleCommentId?: string | null;
+  /**
+     * Set when contentType is 'debate_topic'; null otherwise.
+     * @nullable
+     */
+  debateTopicId?: string | null;
+  /**
+     * Set when contentType is 'debate_topic_comment'; null otherwise.
+     * @nullable
+     */
+  debateTopicCommentId?: string | null;
+  /**
+     * Set when contentType is 'whisper_box_message'; null otherwise.
+     * @nullable
+     */
+  whisperBoxMessageId?: string | null;
+  /** 'whisp' | 'text_whisp' | 'circle_comment' | 'debate_topic' | 'debate_topic_comment' | 'whisper_box_message' */
+  contentType: string;
+  /**
+     * Null only for contentType='circle_comment' or contentType='debate_topic_comment' from a fully anonymous, no-account commenter — there's no account to attribute the flag to.
+     * @nullable
+     */
+  userId?: string | null;
+  /**
+     * The flagged whisp's video title, denormalized for display in flag lists without a second lookup. Null unless contentType is 'whisp'.
      * @nullable
      */
   videoTitle?: string | null;
   /**
-     * The flagged text whisp's message text, denormalized for display the same way videoTitle is. Null for a whisp flag.
+     * The flagged text whisp's message text, denormalized for display the same way videoTitle is. Null unless contentType is 'text_whisp'.
      * @nullable
      */
   textWhispMessage?: string | null;
+  /**
+     * The flagged comment's text, denormalized the same way. Null unless contentType is 'circle_comment'.
+     * @nullable
+     */
+  circleCommentText?: string | null;
+  /**
+     * The flagged debate topic's own text, denormalized the same way. Null unless contentType is 'debate_topic'.
+     * @nullable
+     */
+  debateTopicText?: string | null;
+  /**
+     * The flagged debate topic comment's text, denormalized the same way. Null unless contentType is 'debate_topic_comment'.
+     * @nullable
+     */
+  debateTopicCommentText?: string | null;
+  /**
+     * The flagged Whisper Box message's text, denormalized the same way. Null unless contentType is 'whisper_box_message'.
+     * @nullable
+     */
+  whisperBoxMessageText?: string | null;
   /** @nullable */
   senderEmail?: string | null;
   severity: ModerationFlagSeverity;
@@ -629,6 +1273,92 @@ export interface AdminUserDetail {
   /** Non-dismissed content-safety flags across this user's whisps. */
   moderationFlagCount: number;
   moderationFlags: ModerationFlag[];
+  /** Debate Topics this account authored (never shown publicly under their real account either — see debate_topics.ts), most recent 50. */
+  debateTopics: AdminUserDetailDebateTopicsItem[];
+  /** Debate Topic comments this account posted while signed in, most recent 50. */
+  debateTopicComments: AdminUserDetailDebateTopicCommentsItem[];
+}
+
+export interface AdminOnlineNowResponse {
+  onlineCount: number;
+  /** Width of the presence window this count was computed over, in minutes. */
+  windowMinutes: number;
+}
+
+export interface AdminVisitorsOnlineResponse {
+  onlineCount: number;
+  /** Width of the live-visitor window this count was computed over, in seconds. */
+  windowSeconds: number;
+}
+
+export interface AdminVisitorCountryBreakdown {
+  /** "Unknown" when geolocation failed or was skipped (private/local IP), never null — see lib/visitorTracking.ts. */
+  country: string;
+  count: number;
+}
+
+export interface AdminVisitorDeviceBreakdown {
+  /** 'mobile' | 'tablet' | 'desktop' | 'unknown' — see lib/deviceType.ts. */
+  deviceType: string;
+  count: number;
+}
+
+export interface AdminVisitorSession {
+  /** @nullable */
+  country: string | null;
+  deviceType: string;
+  isSignedIn: boolean;
+  lastPingAt: string;
+}
+
+export interface AdminVisitorsResponse {
+  byCountry: AdminVisitorCountryBreakdown[];
+  byDevice: AdminVisitorDeviceBreakdown[];
+  /** The 50 most recently pinged sessions currently within the live window, newest first. */
+  recent: AdminVisitorSession[];
+  windowSeconds: number;
+}
+
+export type ComplianceReminderInputKind = typeof ComplianceReminderInputKind[keyof typeof ComplianceReminderInputKind];
+
+
+export const ComplianceReminderInputKind = {
+  mfa_missing: 'mfa_missing',
+  policy_pending: 'policy_pending',
+  email_unverified: 'email_unverified',
+  phone_unverified: 'phone_unverified',
+} as const;
+
+export interface ComplianceReminderInput {
+  /**
+     * @minItems 1
+     * @maxItems 200
+     */
+  userIds: string[];
+  kind: ComplianceReminderInputKind;
+}
+
+/**
+ * See lib/adminAudit.ts and admin_audit_log.ts — an append-only record of one sensitive admin action.
+ */
+export interface AdminAuditLogEntry {
+  id: string;
+  adminUserId: string;
+  /** e.g. 'user.update', 'user.delete', 'whisp.delete', 'content.remove', 'debate_agent.config_update'. */
+  action: string;
+  /** @nullable */
+  targetType: string | null;
+  /** @nullable */
+  targetId: string | null;
+  /** Action-specific detail — shape varies by action. */
+  metadata?: unknown;
+  createdAt: string;
+}
+
+export interface AdminAuditLogResponse {
+  items: AdminAuditLogEntry[];
+  page: number;
+  pageSize: number;
 }
 
 export interface ModerationFlagListResponse {
@@ -641,6 +1371,586 @@ export interface ModerationFlagListResponse {
 export interface UpdateModerationFlagInput {
   dismissed: boolean;
 }
+
+export interface RepairProfilesResult {
+  scanned: number;
+  healed: number;
+  noEmailInClerk: number;
+  conflicts: number;
+}
+
+export interface PolicyVersion {
+  id: string;
+  /** 'privacy' | 'terms' */
+  docType: string;
+  /** The short user-facing "what changed" message shown in the consent prompt. */
+  summary: string;
+  /**
+     * Null while still a draft.
+     * @nullable
+     */
+  publishedAt?: string | null;
+  createdByAdminId: string;
+  createdAt: string;
+  acceptedCount: number;
+}
+
+export interface PolicyVersionListResponse {
+  items: PolicyVersion[];
+  totalUsers: number;
+}
+
+export type CreatePolicyVersionInputDocType = typeof CreatePolicyVersionInputDocType[keyof typeof CreatePolicyVersionInputDocType];
+
+
+export const CreatePolicyVersionInputDocType = {
+  privacy: 'privacy',
+  terms: 'terms',
+} as const;
+
+export interface CreatePolicyVersionInput {
+  docType: CreatePolicyVersionInputDocType;
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  summary: string;
+}
+
+export interface UpdatePolicyVersionInput {
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  summary: string;
+}
+
+export interface PendingPolicy {
+  id: string;
+  docType: string;
+  summary: string;
+  /** @nullable */
+  publishedAt?: string | null;
+}
+
+export interface PolicyStatusResponse {
+  pending: PendingPolicy[];
+}
+
+export interface AcceptPoliciesInput {
+  /**
+     * @minItems 1
+     * @maxItems 10
+     */
+  policyVersionIds: string[];
+}
+
+export type RecordUsageInputEventsItem = {
+  feature: string;
+  /**
+     * @minimum 1
+     * @maximum 500
+     */
+  count: number;
+};
+
+export interface RecordUsageInput {
+  /**
+     * @minItems 1
+     * @maxItems 50
+     */
+  events: RecordUsageInputEventsItem[];
+}
+
+export interface VisitorPingInput {
+  /**
+     * The client-generated visitorId (lib/anonymousVisitor.ts) — only meaningful when signed out; a signed-in ping's account id wins even if this is also sent.
+     * @minLength 1
+     * @maxLength 100
+     */
+  visitorId?: string;
+}
+
+export interface FeatureUsageStat {
+  feature: string;
+  totalCount: number;
+  /** Distinct signed-in users who used it (anonymous usage counts in totalCount only). */
+  distinctUsers: number;
+  /** @nullable */
+  lastUsedAt?: string | null;
+}
+
+export interface UsageStatsResponse {
+  items: FeatureUsageStat[];
+  days: number;
+}
+
+export type TrafficByHourResponseHoursItem = {
+  hour: number;
+  count: number;
+};
+
+export interface TrafficByHourResponse {
+  /** Exactly 24 entries, one per UTC hour (0-23), in order. */
+  hours: TrafficByHourResponseHoursItem[];
+  /**
+     * The hour with the highest count, or null if every bucket is 0 across the whole window.
+     * @nullable
+     */
+  peakHour: number | null;
+  days: number;
+}
+
+export interface UsageInsightsInput {
+  days?: number;
+}
+
+export interface UsageInsight {
+  title: string;
+  detail: string;
+}
+
+export interface UsageInsightsResponse {
+  insights: UsageInsight[];
+  statsAnalyzed: number;
+  days: number;
+}
+
+export interface AdminAccessMe {
+  isOwner: boolean;
+  permissions: string[];
+}
+
+export interface AdminGrant {
+  id: string;
+  email: string;
+  /** @nullable */
+  userId?: string | null;
+  roleTitle: string;
+  permissions: string[];
+  /**
+     * Null while the invite waits for an account with this email to exist.
+     * @nullable
+     */
+  linkedAt?: string | null;
+  createdAt: string;
+  /** @nullable */
+  lastSeenAt?: string | null;
+}
+
+export interface RolePreset {
+  title: string;
+  permissions: string[];
+}
+
+export interface AdminGrantListResponse {
+  items: AdminGrant[];
+  availablePermissions: string[];
+  rolePresets: RolePreset[];
+}
+
+export interface AdminGrantInput {
+  email: string;
+  roleTitle: string;
+  /** @minItems 1 */
+  permissions: string[];
+}
+
+export interface AdminGrantUpdateInput {
+  roleTitle?: string;
+  /** @minItems 1 */
+  permissions?: string[];
+}
+
+export interface HqStaffMember {
+  id: string;
+  email: string;
+  roleTitle: string;
+}
+
+export interface HqProject {
+  id: string;
+  name: string;
+  /** @nullable */
+  description?: string | null;
+  /** 'active' | 'archived' */
+  status: string;
+  createdByAdminId: string;
+  createdAt: string;
+  openTasks?: number;
+  doneTasks?: number;
+}
+
+export interface HqProjectListResponse {
+  items: HqProject[];
+  staff: HqStaffMember[];
+}
+
+export interface HqProjectInput {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  name: string;
+  /** @nullable */
+  description?: string | null;
+}
+
+export type HqProjectUpdateInputStatus = typeof HqProjectUpdateInputStatus[keyof typeof HqProjectUpdateInputStatus];
+
+
+export const HqProjectUpdateInputStatus = {
+  active: 'active',
+  archived: 'archived',
+} as const;
+
+export interface HqProjectUpdateInput {
+  name?: string;
+  /** @nullable */
+  description?: string | null;
+  status?: HqProjectUpdateInputStatus;
+}
+
+export interface HqTask {
+  id: string;
+  projectId: string;
+  title: string;
+  /** @nullable */
+  detail?: string | null;
+  /** 'todo' | 'in_progress' | 'done' */
+  status: string;
+  /** @nullable */
+  assigneeAdminId?: string | null;
+  /** @nullable */
+  assigneeEmail?: string | null;
+  /** @nullable */
+  dueAt?: string | null;
+  /** @nullable */
+  completedAt?: string | null;
+  createdByAdminId: string;
+  createdAt: string;
+  commentCount?: number;
+}
+
+export type HqProjectDetail = HqProject & {
+  tasks: HqTask[];
+  staff: HqStaffMember[];
+};
+
+export interface HqTaskInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title: string;
+  /** @nullable */
+  detail?: string | null;
+  /** @nullable */
+  assigneeAdminId?: string | null;
+  /** @nullable */
+  dueAt?: string | null;
+}
+
+export type HqTaskUpdateInputStatus = typeof HqTaskUpdateInputStatus[keyof typeof HqTaskUpdateInputStatus];
+
+
+export const HqTaskUpdateInputStatus = {
+  todo: 'todo',
+  in_progress: 'in_progress',
+  done: 'done',
+} as const;
+
+export interface HqTaskUpdateInput {
+  title?: string;
+  /** @nullable */
+  detail?: string | null;
+  status?: HqTaskUpdateInputStatus;
+  /** @nullable */
+  assigneeAdminId?: string | null;
+  /** @nullable */
+  dueAt?: string | null;
+}
+
+export interface HqTaskComment {
+  id: string;
+  taskId: string;
+  authorAdminId: string;
+  /** @nullable */
+  authorEmail?: string | null;
+  body: string;
+  createdAt: string;
+}
+
+export interface HqTaskCommentListResponse {
+  items: HqTaskComment[];
+}
+
+export interface HqTaskCommentInput {
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  body: string;
+}
+
+export interface AdminMfaStatus {
+  enrolled: boolean;
+}
+
+export interface AdminMfaSetupResponse {
+  /** Base32 TOTP secret, for manual entry into an authenticator app. */
+  secret: string;
+  /** otpauth:// provisioning URI — render as a QR code for scanning. */
+  otpauthUrl: string;
+}
+
+export interface AdminMfaVerifyInput {
+  /** 6-digit authenticator code, or (once enrolled) a one-time backup code. */
+  code: string;
+}
+
+export interface AdminMfaVerifyResponse {
+  /** Signed unlock token — send as the X-Admin-Mfa header on /admin/* requests. Self-expires. */
+  token: string;
+  /** Present only on the first successful verification (enrollment activation) — the only time these exist in plaintext. */
+  backupCodes?: string[];
+  /** Present when a backup code was consumed — how many remain. */
+  backupCodesRemaining?: number;
+}
+
+export type CreateContentReportInputContentType = typeof CreateContentReportInputContentType[keyof typeof CreateContentReportInputContentType];
+
+
+export const CreateContentReportInputContentType = {
+  debate_topic: 'debate_topic',
+  debate_topic_comment: 'debate_topic_comment',
+} as const;
+
+export type CreateContentReportInputReason = typeof CreateContentReportInputReason[keyof typeof CreateContentReportInputReason];
+
+
+export const CreateContentReportInputReason = {
+  child_safety: 'child_safety',
+  threat_or_violence: 'threat_or_violence',
+  sexual_content: 'sexual_content',
+  hate_speech: 'hate_speech',
+  self_harm: 'self_harm',
+  harassment: 'harassment',
+  inappropriate: 'inappropriate',
+  misinformation: 'misinformation',
+  spam_or_scam: 'spam_or_scam',
+  other: 'other',
+} as const;
+
+export interface CreateContentReportInput {
+  contentType: CreateContentReportInputContentType;
+  contentId: string;
+  reason: CreateContentReportInputReason;
+  /**
+     * Optional free-text elaboration from the reporter, capped at 300 words server-side.
+     * @nullable
+     */
+  detail?: string | null;
+}
+
+export interface CreateContentReportResponse {
+  id: string;
+  status: string;
+}
+
+export interface ContentReport {
+  id: string;
+  /** 'debate_topic' | 'debate_topic_comment' */
+  contentType: string;
+  /** @nullable */
+  debateTopicId?: string | null;
+  /** @nullable */
+  debateTopicCommentId?: string | null;
+  reporterUserId: string;
+  reason: string;
+  /** @nullable */
+  detail?: string | null;
+  /** 'critical' | 'high' | 'medium' | 'low' — derived from reason at filing time, admin-overridable afterward. */
+  priority: string;
+  /** 'open' | 'in_review' | 'resolved' */
+  status: string;
+  /**
+     * Set once resolved: 'removed' | 'no_violation'.
+     * @nullable
+     */
+  resolution?: string | null;
+  /** @nullable */
+  adminNotes?: string | null;
+  /**
+     * The message actually sent back to the reporter at resolve time.
+     * @nullable
+     */
+  adminReplyMessage?: string | null;
+  /** @nullable */
+  authorWarnedAt?: string | null;
+  /** @nullable */
+  resolvedAt?: string | null;
+  createdAt: string;
+  /**
+     * Joined for admin display; null if the reporter account was since deleted.
+     * @nullable
+     */
+  reporterEmail?: string | null;
+  /**
+     * The reported topic's text, denormalized for display. Null unless contentType is 'debate_topic'.
+     * @nullable
+     */
+  debateTopicText?: string | null;
+  /** @nullable */
+  debateTopicAuthorId?: string | null;
+  /** @nullable */
+  topicRemovedByAdminAt?: string | null;
+  /** @nullable */
+  topicDeletedByAuthorAt?: string | null;
+  /**
+     * The reported comment's text. Null unless contentType is 'debate_topic_comment'.
+     * @nullable
+     */
+  debateTopicCommentText?: string | null;
+  /**
+     * Null when the comment came from an anonymous no-account visitor — such an author can't be warned.
+     * @nullable
+     */
+  commentAuthorUserId?: string | null;
+  /** @nullable */
+  commentRemovedByAdminAt?: string | null;
+}
+
+/**
+ * Unresolved (open + in_review) report counts per priority, independent of the current filter — the triage summary.
+ */
+export type ContentReportListResponseOpenByPriority = {
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
+};
+
+export interface ContentReportListResponse {
+  items: ContentReport[];
+  total: number;
+  page: number;
+  pageSize: number;
+  /** Unresolved (open + in_review) report counts per priority, independent of the current filter — the triage summary. */
+  openByPriority: ContentReportListResponseOpenByPriority;
+}
+
+export interface ReportBugInput {
+  /** Capped at 2000 chars server-side before scrubbing/truncating further to 500. */
+  message: string;
+  /** Optional — omitted when the source event carried no Error object (e.g. a bare window.onerror). */
+  stack?: string;
+  /** Page path the error happened on. Query string is stripped server-side before storage. */
+  url?: string;
+}
+
+export interface BugIssue {
+  id: string;
+  /** Stable grouping key — see lib/bugRabbit.ts's fingerprintFor(). Not meant to be read for anything but dedup. */
+  fingerprint: string;
+  /** 'frontend' | 'backend' */
+  source: string;
+  /** Scrubbed, truncated error message from the FIRST occurrence — stays stable as later occurrences increment the counters below rather than overwriting it. */
+  message: string;
+  occurrenceCount: number;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  resolved: boolean;
+  /** @nullable */
+  resolvedAt?: string | null;
+  /** @nullable */
+  resolvedByAdminId?: string | null;
+}
+
+export interface BugIssueListResponse {
+  items: BugIssue[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface BugOccurrence {
+  id: string;
+  /** @nullable */
+  stack?: string | null;
+  /** @nullable */
+  url?: string | null;
+  /** @nullable */
+  userAgent?: string | null;
+  /** @nullable */
+  userId?: string | null;
+  createdAt: string;
+  /**
+     * Joined for admin display when the occurrence had a signed-in user; null for anonymous occurrences or a since-deleted account.
+     * @nullable
+     */
+  userEmail?: string | null;
+}
+
+export interface BugIssueDetailResponse {
+  issue: BugIssue;
+  /** Most recent first, capped at MAX_STORED_OCCURRENCES — see lib/bugRabbit.ts. */
+  occurrences: BugOccurrence[];
+}
+
+export interface UpdateBugIssueInput {
+  resolved: boolean;
+}
+
+export type UpdateContentReportInputPriority = typeof UpdateContentReportInputPriority[keyof typeof UpdateContentReportInputPriority];
+
+
+export const UpdateContentReportInputPriority = {
+  critical: 'critical',
+  high: 'high',
+  medium: 'medium',
+  low: 'low',
+} as const;
+
+/**
+ * Only the working states — 'resolved' is reachable exclusively through the resolve endpoint.
+ */
+export type UpdateContentReportInputStatus = typeof UpdateContentReportInputStatus[keyof typeof UpdateContentReportInputStatus];
+
+
+export const UpdateContentReportInputStatus = {
+  open: 'open',
+  in_review: 'in_review',
+} as const;
+
+export interface UpdateContentReportInput {
+  priority?: UpdateContentReportInputPriority;
+  /** Only the working states — 'resolved' is reachable exclusively through the resolve endpoint. */
+  status?: UpdateContentReportInputStatus;
+  /** @nullable */
+  adminNotes?: string | null;
+}
+
+export type ResolveContentReportInputResolution = typeof ResolveContentReportInputResolution[keyof typeof ResolveContentReportInputResolution];
+
+
+export const ResolveContentReportInputResolution = {
+  removed: 'removed',
+  no_violation: 'no_violation',
+} as const;
+
+export interface ResolveContentReportInput {
+  resolution: ResolveContentReportInputResolution;
+  /** Optional custom message to the reporter; a default template for the resolution is sent when omitted. */
+  replyToReporter?: string;
+  /** When present, delivered to the content author's account as a Community Guidelines warning. */
+  warnAuthor?: string;
+}
+
+export type ResolveContentReportResponse = ContentReport & {
+  /** False when a warning was requested but the author has no account to deliver it to. */
+  authorWarned: boolean;
+};
 
 export type UpdateAdminUserInputRole = typeof UpdateAdminUserInputRole[keyof typeof UpdateAdminUserInputRole];
 
@@ -983,6 +2293,11 @@ export interface Notification {
   /** @nullable */
   url?: string | null;
   /**
+     * What produced this notification ("reply", "opened", "watched", "appreciation", ...). Null for admin-composed notifications and for rows predating this field.
+     * @nullable
+     */
+  kind?: string | null;
+  /**
      * Null means system-generated (e.g. a repeated content-flag warning), not composed by an admin.
      * @nullable
      */
@@ -1018,6 +2333,8 @@ export interface SendNotificationInput {
   audience: SendNotificationInputAudience;
   /** Required (non-empty) when audience is 'users'; ignored for 'all'. */
   userIds?: string[];
+  /** Also deliver as a branded email to each recipient's inbox. Respects each user's email-notifications opt-out, skips banned accounts and placeholder addresses. */
+  sendEmail?: boolean;
 }
 
 export interface SendNotificationResult {
@@ -1025,6 +2342,10 @@ export interface SendNotificationResult {
   recipientCount: number;
   /** How many active push subscriptions were actually notified live (best-effort; recipients without one still see it in-app). */
   pushDelivered: number;
+  /** Emails delivered when sendEmail was requested (0 otherwise). */
+  emailsSent: number;
+  /** Recipients skipped for email — opted out, banned, placeholder address, or provider failure. */
+  emailsSkipped: number;
 }
 
 export interface AdminNotificationListResponse {
@@ -1041,6 +2362,43 @@ export interface NotificationListResponse {
 
 export interface UnreadNotificationCountResponse {
   unreadCount: number;
+  /** Unread notifications of kind "reply" only — lets the Replies tab badge mean "someone replied" rather than lighting up for any unread notification. */
+  unreadReplyCount: number;
+}
+
+export interface UnreadWhispCountResponse {
+  unreadCount: number;
+}
+
+export interface SmsConsentCheckInput {
+  /** @maxItems 100 */
+  phones: string[];
+}
+
+export interface SmsConsentCheckResult {
+  /** The subset of the submitted phone strings this sender has already consented to text. */
+  consented: string[];
+}
+
+export type RecentRecipientKind = typeof RecentRecipientKind[keyof typeof RecentRecipientKind];
+
+
+export const RecentRecipientKind = {
+  email: 'email',
+  phone: 'phone',
+} as const;
+
+export interface RecentRecipient {
+  /** The address exactly as the sender last typed it. */
+  value: string;
+  kind: RecentRecipientKind;
+  lastUsedAt: string;
+  /** How many whisps this sender has sent to this address. */
+  useCount: number;
+}
+
+export interface RecentRecipientListResponse {
+  items: RecentRecipient[];
 }
 
 export interface WhisperGroup {
@@ -1133,6 +2491,11 @@ export interface SendGroupWhispInput {
   moodTag?: string | null;
   /** @nullable */
   scheduledAt?: string | null;
+  /**
+     * Required (must be true) when whisperChannel is "sms" — the sender confirming they have this group's members' permission to receive a text. Not required for "email" or "whatsapp".
+     * @nullable
+     */
+  smsConsentConfirmed?: boolean | null;
 }
 
 export interface SkippedGroupMember {
@@ -1385,12 +2748,331 @@ export interface RunSuggestionAgentResult {
   status?: SuggestionAgentStatus;
 }
 
+/**
+ * Singleton config + last-run-status row for the admin-controlled Debate Topic posting agent.
+ */
+export interface DebateAgentSettings {
+  id: string;
+  enabled: boolean;
+  /** How many AI-generated debate topics to post per scheduled sweep (1-10). */
+  dailyPostCount: number;
+  /** Short theme/category strings that steer what the agent generates each run. */
+  topics: string[];
+  /** @nullable */
+  lastRunAt?: string | null;
+  lastRunOk: boolean;
+  /** @nullable */
+  lastErrorMessage?: string | null;
+  lowCreditSuspected: boolean;
+  consecutiveFailures: number;
+  /** @nullable */
+  updatedByAdminId?: string | null;
+  /** @nullable */
+  updatedAt?: string | null;
+}
+
+export interface UpdateDebateAgentConfigInput {
+  enabled?: boolean;
+  /**
+     * @minimum 1
+     * @maximum 10
+     */
+  dailyPostCount?: number;
+  /**
+     * @minItems 1
+     * @maxItems 20
+     */
+  topics?: string[];
+}
+
+export interface RunDebateAgentResult {
+  posted: number;
+  skipped: number;
+}
+
+export interface PostDebateTopicInput {
+  topicText: string;
+}
+
+export interface PostDebateTopicResult {
+  id: string;
+}
+
+/**
+ * Singleton config + last-run-status row for the admin-controlled Blind Circle video-discovery posting agent ("Circle Scout").
+ */
+export interface CircleAgentSettings {
+  id: string;
+  enabled: boolean;
+  /** How many AI-discovered videos to post per scheduled sweep (1-10). */
+  dailyPostCount: number;
+  /** Short topic strings that steer what the agent searches for each run. */
+  topics: string[];
+  /** @nullable */
+  lastRunAt?: string | null;
+  lastRunOk: boolean;
+  /** @nullable */
+  lastErrorMessage?: string | null;
+  lowCreditSuspected: boolean;
+  consecutiveFailures: number;
+  /** @nullable */
+  updatedByAdminId?: string | null;
+  /** @nullable */
+  updatedAt?: string | null;
+}
+
+export interface UpdateCircleAgentConfigInput {
+  enabled?: boolean;
+  /**
+     * @minimum 1
+     * @maximum 10
+     */
+  dailyPostCount?: number;
+  /**
+     * @minItems 1
+     * @maxItems 20
+     */
+  topics?: string[];
+}
+
+export interface RunCircleAgentResult {
+  posted: number;
+  skipped: number;
+}
+
+export interface PostCircleVideoInput {
+  videoUrl: string;
+}
+
+export interface PostCircleVideoResult {
+  id: string;
+}
+
 export type ListWhispsParams = {
 status?: string;
+/**
+ * 'sent' (default): whisps this user sent. 'received': whisps another Whisperer sent TO this user (matched at send time — see whisps.recipientUserId). 'archived': whichever of those this user archived from either side, combined into one list.
+ */
+box?: ListWhispsBox;
 };
+
+export type ListWhispsBox = typeof ListWhispsBox[keyof typeof ListWhispsBox];
+
+
+export const ListWhispsBox = {
+  sent: 'sent',
+  received: 'received',
+  archived: 'archived',
+} as const;
+
+export type PinWhisp200 = {
+  pinned: boolean;
+};
+
+export type ArchiveWhisp200 = {
+  archived: boolean;
+};
+
+export type SetGuessReactionBodyReaction = typeof SetGuessReactionBodyReaction[keyof typeof SetGuessReactionBodyReaction];
+
+
+export const SetGuessReactionBodyReaction = {
+  hot: 'hot',
+  cold: 'cold',
+  no_comment: 'no_comment',
+  confirmed: 'confirmed',
+} as const;
+
+export type SetGuessReactionBody = {
+  reaction: SetGuessReactionBodyReaction;
+};
+
+export type GetPublicWhispParams = {
+/**
+ * The anonymous, client-generated, localStorage-persisted id this device uses for Circle likes/comments — affects whether the response's viewerHasLiked, and each comment's viewerReaction/ isOwnComment, reflect this visitor. Omit for a Whisper Link/ circle_dm, where it's meaningless.
+ */
+visitorId?: string;
+};
+
+export type ToggleCircleLikeBody = {
+  visitorId: string;
+};
+
+export type ToggleCircleLike200 = {
+  liked: boolean;
+  likeCount: number;
+};
+
+export type PostCircleCommentBody = {
+  commentText: string;
+  visitorId: string;
+  /** @nullable */
+  parentCommentId?: string | null;
+};
+
+export type ReactToCircleCommentBodyReaction = typeof ReactToCircleCommentBodyReaction[keyof typeof ReactToCircleCommentBodyReaction];
+
+
+export const ReactToCircleCommentBodyReaction = {
+  like: 'like',
+  dislike: 'dislike',
+} as const;
+
+export type ReactToCircleCommentBody = {
+  visitorId: string;
+  reaction: ReactToCircleCommentBodyReaction;
+};
+
+export type RenameCircleHandleBody = {
+  visitorId: string;
+  handle: string;
+};
+
+export type RenameCircleHandle200 = {
+  handle: string;
+};
+
+export type StartCircleDm201 = {
+  publicToken: string;
+};
+
+export type GetUserRecapParams = {
+/**
+ * Defaults to all_time; an unrecognized value also falls back to all_time rather than erroring.
+ */
+period?: GetUserRecapPeriod;
+};
+
+export type GetUserRecapPeriod = typeof GetUserRecapPeriod[keyof typeof GetUserRecapPeriod];
+
+
+export const GetUserRecapPeriod = {
+  all_time: 'all_time',
+  last_30_days: 'last_30_days',
+} as const;
 
 export type ListCircleFeedParams = {
 cursor?: string;
+};
+
+export type ListFollowingDebateTopicsParams = {
+cursor?: string;
+};
+
+export type ToggleFollowBody = {
+  handle: string;
+};
+
+export type ToggleFollow200 = {
+  following: boolean;
+  followerCount: number;
+};
+
+export type GetFollowStats200 = {
+  followerCount: number;
+  followingCount: number;
+};
+
+export type ListDebateTopicsParams = {
+cursor?: string;
+};
+
+export type GetDebateTopicParams = {
+/**
+ * The caller's own anonymous, client-generated, localStorage- persisted id — affects whether each comment's viewerReaction/ isOwnComment, and the topic's viewerRewhisped, reflect this visitor.
+ */
+visitorId?: string;
+};
+
+export type RenameDebateTopicHandleBody = {
+  visitorId: string;
+  handle: string;
+};
+
+export type RenameDebateTopicHandle200 = {
+  handle: string;
+};
+
+export type UpdateDebateTopicHandleAvatarBody = {
+  visitorId: string;
+  avatarId: AvatarId | null;
+};
+
+export type UpdateDebateTopicHandleAvatar200 = {
+  avatarId: AvatarId | null;
+};
+
+export type ReactToDebateTopicCommentBodyReaction = typeof ReactToDebateTopicCommentBodyReaction[keyof typeof ReactToDebateTopicCommentBodyReaction];
+
+
+export const ReactToDebateTopicCommentBodyReaction = {
+  like: 'like',
+  dislike: 'dislike',
+} as const;
+
+export type ReactToDebateTopicCommentBody = {
+  visitorId: string;
+  reaction: ReactToDebateTopicCommentBodyReaction;
+};
+
+export type RewhispDebateTopicBody = {
+  visitorId: string;
+};
+
+export type RewhispDebateTopic200 = {
+  rewhispCount: number;
+  viewerRewhisped: boolean;
+};
+
+export type GetPublicWhisperBox200 = {
+  handle: string;
+  /** @nullable */
+  avatarId: string | null;
+};
+
+export type SendWhisperBoxMessageBody = {
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  messageText: string;
+  /**
+     * @maxLength 60
+     * @nullable
+     */
+  senderAlias?: string | null;
+};
+
+export type SendWhisperBoxMessage201 = {
+  ok: boolean;
+};
+
+export type EnableWhisperBox200 = {
+  /** The Whisper Box handle (whisperBoxHandle) — NOT the same value as whispererHandle. */
+  handle: string;
+  /** @nullable */
+  avatarId: string | null;
+  enabled: boolean;
+  /** True when the account has a display name but someone else already holds the exact slug of it, so `handle` had to fall back to a suffixed or fully anonymous variant instead of the bare name. False whenever there's no display name yet, or the bare name was actually available. */
+  requestedNameTaken: boolean;
+};
+
+export type RefreshWhisperBoxHandle200 = {
+  handle: string;
+  /** True when someone else already holds the exact slug of the caller's current display name, so `handle` had to fall back to a suffixed or fully anonymous variant. */
+  requestedNameTaken: boolean;
+};
+
+export type DisableWhisperBox200 = {
+  enabled: boolean;
+};
+
+export type ListWhisperBoxMessages200 = {
+  items: WhisperBoxMessage[];
+};
+
+export type GetWhisperBoxUnreadCount200 = {
+  unreadCount: number;
 };
 
 export type AdminListUsersParams = {
@@ -1398,9 +3080,20 @@ search?: string;
 plan?: string;
 role?: string;
 banned?: string;
+compliance?: AdminListUsersCompliance;
 page?: number;
 pageSize?: number;
 };
+
+export type AdminListUsersCompliance = typeof AdminListUsersCompliance[keyof typeof AdminListUsersCompliance];
+
+
+export const AdminListUsersCompliance = {
+  mfa_missing: 'mfa_missing',
+  policy_pending: 'policy_pending',
+  email_unverified: 'email_unverified',
+  phone_unverified: 'phone_unverified',
+} as const;
 
 export type AdminListUserWhispsParams = {
 status?: string;
@@ -1437,6 +3130,47 @@ page?: number;
 pageSize?: number;
 };
 
+export type AdminListBugIssuesParams = {
+/**
+ * 'unresolved' (default), 'resolved', or 'all'.
+ */
+status?: string;
+/**
+ * 'recency' (default) or 'frequency'.
+ */
+sort?: string;
+page?: number;
+pageSize?: number;
+};
+
+export type AdminGetUsageStatsParams = {
+/**
+ * Window in days (default 30, max 365).
+ */
+days?: number;
+};
+
+export type AdminGetTrafficByHourParams = {
+/**
+ * Window in days (default 30, max 365).
+ */
+days?: number;
+};
+
+export type AdminListContentReportsParams = {
+/**
+ * 'unresolved' (default: open + in_review), 'open', 'in_review', 'resolved', or 'all'.
+ */
+status?: string;
+/**
+ * Filter to one of 'critical' | 'high' | 'medium' | 'low'.
+ */
+priority?: string;
+reason?: string;
+page?: number;
+pageSize?: number;
+};
+
 export type AdminListSuggestionsParams = {
 search?: string;
 status?: string;
@@ -1445,6 +3179,19 @@ category?: string;
 featured?: string;
 page?: number;
 pageSize?: number;
+};
+
+export type AdminListAuditLogParams = {
+page?: number;
+pageSize?: number;
+/**
+ * Filter to actions taken by one admin account.
+ */
+adminUserId?: string;
+/**
+ * Filter to one target type, e.g. 'user', 'whisp', 'debate_topic'.
+ */
+targetType?: string;
 };
 
 export type ListSuggestionsParams = {

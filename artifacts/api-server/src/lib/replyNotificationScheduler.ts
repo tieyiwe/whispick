@@ -2,16 +2,42 @@ import { db } from "@workspace/db";
 import { whispRepliesTable, whispsTable, usersTable } from "@workspace/db";
 import { eq, and, lte, isNull, isNotNull } from "drizzle-orm";
 import { sendEmail, replyNotificationEmailHtml } from "./email";
-import { notifyUser } from "./push";
+import { notifyUserPersisted } from "./push";
 import { logger } from "./logger";
+import { reportSystemError } from "./bugRabbit";
 
 const POLL_INTERVAL_MS = 60_000;
+// Same bounded-sweep reasoning as lib/scheduler.ts's BATCH_LIMIT — this loop
+// awaits a real email send per row sequentially, so an unbounded due-count
+// shouldn't be allowed to make one sweep run indefinitely. Leftover rows are
+// picked up on the next poll, still only 60s away.
+const BATCH_LIMIT = 100;
 
 // Pulled out of startReplyNotificationScheduler so the due-row selection
 // logic (the part that matters for correctness — matching the codebase's
 // other schedulers, none of which are otherwise unit-tested since they're
 // setInterval loops with no seams to fast-forward) can be exercised directly
 // in a test without waiting on a real interval or system clock.
+/**
+ * Whisps whose recipient tried to whisp a video back and couldn't, past their
+ * deferred notify time. Same deferral as a reply notification and for the same
+ * reason — the trigger is a recipient action, so an immediate push would tie
+ * the sender's buzzing phone to the recipient standing next to them.
+ */
+export async function getDueVideoReplyRequests() {
+  return db
+    .select()
+    .from(whispsTable)
+    .where(
+      and(
+        isNotNull(whispsTable.videoReplyRequestNotifyAt),
+        lte(whispsTable.videoReplyRequestNotifyAt, new Date()),
+        isNull(whispsTable.videoReplyRequestNotifiedAt),
+      ),
+    )
+    .limit(BATCH_LIMIT);
+}
+
 export async function getDueReplyNotifications() {
   return db
     .select()
@@ -22,7 +48,8 @@ export async function getDueReplyNotifications() {
         lte(whispRepliesTable.notifySenderAt, new Date()),
         isNull(whispRepliesTable.senderNotifiedAt),
       ),
-    );
+    )
+    .limit(BATCH_LIMIT);
 }
 
 // Dispatches the Sender-facing "you got a reply" email + push that
@@ -55,17 +82,21 @@ export function startReplyNotificationScheduler(): void {
       }
 
       for (const reply of due) {
+        // Claim first (conditional on still-unnotified) so a sweep that
+        // outruns the poll interval can't re-select this row and email the
+        // sender twice — zero rows updated means another sweep owns it.
+        const claimed = await db
+          .update(whispRepliesTable)
+          .set({ senderNotifiedAt: new Date() })
+          .where(and(eq(whispRepliesTable.id, reply.id), isNull(whispRepliesTable.senderNotifiedAt)))
+          .returning({ id: whispRepliesTable.id });
+        if (claimed.length === 0) continue;
+
         const whisp = await db.select().from(whispsTable).where(eq(whispsTable.id, reply.whispId)).then((r) => r[0]);
 
         // Whisp gone (soft-deleted or otherwise unresolvable) — nothing to
-        // notify about. Mark it handled so it doesn't stay queued forever.
-        if (!whisp) {
-          await db
-            .update(whispRepliesTable)
-            .set({ senderNotifiedAt: new Date() })
-            .where(eq(whispRepliesTable.id, reply.id));
-          continue;
-        }
+        // notify about; the claim above already stamped it handled.
+        if (!whisp) continue;
 
         const sender = await db.select().from(usersTable).where(eq(usersTable.id, whisp.senderId)).then((r) => r[0]);
         if (sender?.email) {
@@ -74,22 +105,51 @@ export function startReplyNotificationScheduler(): void {
             purpose: "reply_notification",
           });
         }
-        void notifyUser(
+        // Persisted, not push-only: a reply is the single most important
+        // thing a sender comes back for, and a push they never received (no
+        // permission granted, offline at the time) would otherwise leave no
+        // trace in the app at all.
+        await notifyUserPersisted(
           whisp.senderId,
           "You got a reply 💬",
           reply.videoUrl ? "Someone whisped a video back to you." : "Someone replied anonymously to your whisp.",
-          `${appUrl}/whisps/${whisp.id}`,
+          `/whisps/${whisp.id}`,
+          "reply",
         );
-
-        await db
-          .update(whispRepliesTable)
-          .set({ senderNotifiedAt: new Date() })
-          .where(eq(whispRepliesTable.id, reply.id));
       }
 
       logger.info({ count: due.length }, "Dispatched deferred reply notifications");
     } catch (err) {
       logger.error({ err }, "Deferred reply notification dispatch failed");
+      reportSystemError(err, "scheduler:replyNotificationScheduler:reply");
+    }
+
+    // Separate try block: a failure dispatching these must not stop reply
+    // notifications, which matter more, and vice versa.
+    try {
+      const blocked = await getDueVideoReplyRequests();
+      for (const whisp of blocked) {
+        // Same claim-first pattern as above — one notification, ever.
+        const claimed = await db
+          .update(whispsTable)
+          .set({ videoReplyRequestNotifiedAt: new Date() })
+          .where(and(eq(whispsTable.id, whisp.id), isNull(whispsTable.videoReplyRequestNotifiedAt)))
+          .returning({ id: whispsTable.id });
+        if (claimed.length === 0) continue;
+        await notifyUserPersisted(
+          whisp.senderId,
+          "They wanted to whisp a video back 🎬",
+          "Your recipient tried to send a video back but isn't a member yet. Add reply credit to unlock it for them.",
+          `/whisps/${whisp.id}`,
+          "video_reply_request",
+        );
+      }
+      if (blocked.length) {
+        logger.info({ count: blocked.length }, "Dispatched deferred video-reply-request notifications");
+      }
+    } catch (err) {
+      logger.error({ err }, "Deferred video-reply-request dispatch failed");
+      reportSystemError(err, "scheduler:replyNotificationScheduler:videoReplyRequest");
     }
   }, POLL_INTERVAL_MS);
 }

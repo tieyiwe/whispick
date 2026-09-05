@@ -1,0 +1,39 @@
+{
+  "circleDetail": {
+    "backToMyCircles": "Blind Circles الخاصة بي",
+    "titleFallback": "Blind Circle",
+    "description": "‏whisps شورِكت بخصوصية داخل هذه الدائرة — لا يراها سوى أعضائها.",
+    "videoAlt": "فيديو",
+    "someone": "شخص ما",
+    "emptyTitle": "لا شيء هنا بعد",
+    "emptyDescription": "اختر Blind Circle عند إرسال whisp، ثم اختر هذه الدائرة لمشاركته هنا."
+  },
+  "circleFeed": {
+    "title": "Blind Circle",
+    "description": "مقاطع فيديو تُنشر بشكل مجهول في المجتمع. لا مستلم محدد ولا خوارزمية — مجرد اكتشاف عفوي.",
+    "videoAlt": "فيديو",
+    "someone": "شخص ما",
+    "whispThis": "أرسله كـ whisp",
+    "emptyTitle": "‏Blind Circle هادئة الآن",
+    "emptyDescription": "لم يشارك أحد فيديو في خلاصة المجتمع بعد. كن أول من يفعل — استخدم «النشر في Blind Circle» في الأعلى."
+  },
+  "myCircles": {
+    "title": "Blind Circles الخاصة بي",
+    "description": "مجموعات صغيرة بالدعوة فقط، لـ whisps تريد أن يراها عدد قليل من الناس فحسب.",
+    "createCircle": "أنشئ دائرة",
+    "createPlaceholder": "مثال: نادي الكتاب",
+    "create": "إنشاء",
+    "joinWithCode": "انضم برمز دعوة",
+    "invitePlaceholder": "رمز الدعوة",
+    "join": "انضمام",
+    "toastCircleCreated": "تم إنشاء Blind Circle",
+    "toastCreateFailed": "تعذّر إنشاء الدائرة",
+    "toastJoined": "انضممت إلى الدائرة",
+    "toastInvalidCode": "رمز الدعوة غير صالح",
+    "toastCodeCopied": "تم نسخ رمز الدعوة",
+    "toastCopyFailed": "تعذّر النسخ — يرجى النسخ يدويًا",
+    "tapToView": "انقر لعرض الخلاصة",
+    "emptyTitle": "لا توجد دوائر بعد",
+    "emptyDescription": "أنشئ دائرة لمشاركة whisps بشكل مجهول مع مجموعة صغيرة، أو انضم إلى واحدة برمز دعوة."
+  }
+}

@@ -1,4 +1,5 @@
 import { useParams, useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useGetCircleWhisps, useListMyCircles, getGetCircleWhispsQueryKey } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -6,9 +7,11 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { MoodTag } from "@/components/shared/MoodTag";
-import { ArrowLeft, PlayCircle, Lock } from "lucide-react";
+import { ArrowLeft, PlayCircle, VenetianMask } from "lucide-react";
+import { AnonymousMark } from "@/components/shared/AnonymousMark";
 
 export function CircleDetail() {
+  const { t } = useTranslation("circle");
   const { id } = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
   const { data, isLoading } = useGetCircleWhisps(id!, {
@@ -23,13 +26,13 @@ export function CircleDetail() {
       <div className="space-y-6">
         <div>
           <Button variant="ghost" onClick={() => setLocation("/circles")} className="text-muted-foreground -ml-2 mb-2" data-testid="button-back-circles">
-            <ArrowLeft className="w-4 h-4 mr-1" /> My Circles
+            <ArrowLeft className="w-4 h-4 mr-1" /> {t("circleDetail.backToMyCircles")}
           </Button>
           <h1 className="text-3xl font-serif font-bold text-foreground flex items-center gap-3">
-            <Lock className="w-7 h-7 text-primary" /> {circle?.name ?? "Circle"}
+            <VenetianMask className="w-7 h-7 text-primary" /> {circle?.name ?? t("circleDetail.titleFallback")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Whisps dropped privately into this circle — visible only to its members.
+            {t("circleDetail.description")}
           </p>
         </div>
 
@@ -49,7 +52,7 @@ export function CircleDetail() {
                 >
                   {item.videoThumbnail ? (
                     <div className="relative h-36 shrink-0">
-                      <img src={item.videoThumbnail} alt={item.videoTitle ?? "Video"} className="w-full h-full object-cover" />
+                      <img src={item.videoThumbnail} alt={item.videoTitle ?? t("circleDetail.videoAlt")} className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                         <PlayCircle className="w-9 h-9 text-white opacity-80" />
                       </div>
@@ -65,9 +68,12 @@ export function CircleDetail() {
                     {item.anonymousNote && (
                       <p className="text-sm text-muted-foreground italic line-clamp-2">"{item.anonymousNote}"</p>
                     )}
-                    <p className="text-xs text-muted-foreground mt-auto">
-                      {item.senderAlias ?? "Someone"} · {new Date(item.createdAt).toLocaleDateString()}
-                    </p>
+                    <div className="flex items-center gap-1.5 mt-auto">
+                      <AnonymousMark size="sm" />
+                      <p className="text-xs text-muted-foreground">
+                        {item.senderAlias ?? t("circleDetail.someone")} · {new Date(item.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
                   </div>
                 </Card>
               </Link>
@@ -75,10 +81,10 @@ export function CircleDetail() {
           </div>
         ) : (
           <Card className="bg-card/50 border-dashed border-border py-16 text-center">
-            <Lock className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
-            <h3 className="text-xl font-medium text-foreground mb-2">Nothing here yet</h3>
+            <VenetianMask className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+            <h3 className="text-xl font-medium text-foreground mb-2">{t("circleDetail.emptyTitle")}</h3>
             <p className="text-muted-foreground max-w-md mx-auto">
-              Choose Circle Drop when sending a whisp, then pick this circle to share it here.
+              {t("circleDetail.emptyDescription")}
             </p>
           </Card>
         )}

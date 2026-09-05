@@ -1,5 +1,6 @@
 import { runSuggestionDiscoveryAgent } from "./suggestionAgent";
 import { logger } from "./logger";
+import { reportSystemError } from "./bugRabbit";
 
 // Once a day is plenty — this is a "trickle a few candidates in for admin
 // review" job, not a real-time feed, and matches the daily cadence
@@ -12,6 +13,7 @@ export function startSuggestionAgentScheduler(): void {
       await runSuggestionDiscoveryAgent();
     } catch (err) {
       logger.error({ err }, "Suggestion discovery sweep failed");
+      reportSystemError(err, "scheduler:suggestionAgentScheduler");
     }
   }, POLL_INTERVAL_MS);
 }

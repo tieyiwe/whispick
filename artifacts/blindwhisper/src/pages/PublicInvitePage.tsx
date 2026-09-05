@@ -1,19 +1,21 @@
 import { useParams, useLocation } from "wouter";
 import { useEffect, useState } from "react";
 import { useGetPublicInvite, useRespondInviteReveal, getGetPublicInviteQueryKey } from "@workspace/api-client-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, Sparkles, ShieldCheck } from "lucide-react";
-import { Logo } from "@/components/ui/logo";
+import confetti from "canvas-confetti";
+import { LogoLockup } from "@/components/ui/logo";
+import { PullToRefresh } from "@/components/shared/PullToRefresh";
 import { savePendingInvite } from "@/lib/pendingInvite";
 
 function BlindWhisperLogoMark() {
   return (
-    <div className="flex items-center gap-2">
-      <Logo className="w-6 h-6 text-primary" />
-      <span className="font-serif text-xl font-bold text-foreground tracking-tight">Blind Whisper</span>
-    </div>
+    // A recipient's first and often only sight of the brand, so the lockup
+    // gets its full form here — mark at a real size, with the strapline.
+    <LogoLockup tagline />
   );
 }
 
@@ -22,6 +24,7 @@ export function PublicInvitePage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [revealResponse, setRevealResponse] = useState<"accepted" | "declined" | null>(null);
+  const { t } = useTranslation("account");
 
   // This is a private, single-recipient page — never indexable, even if a
   // link to it ends up publicly posted somewhere. robots.txt disallows
@@ -38,18 +41,38 @@ export function PublicInvitePage() {
     };
   }, []);
 
-  const { data: invite, isLoading } = useGetPublicInvite(token!, {
+  const { refetch, data: invite, isLoading } = useGetPublicInvite(token!, {
     query: { enabled: !!token, queryKey: getGetPublicInviteQueryKey(token!) },
   });
 
   const respondReveal = useRespondInviteReveal();
 
-  function handleJoin() {
+  function handleJoin(e: React.MouseEvent<HTMLButtonElement>) {
+    // The recipient's one celebratory moment on this page — they leave for
+    // the Clerk sign-up flow immediately after, so there's no later
+    // "success" screen to put this on instead. Same brand-colored burst,
+    // fired from the button itself, as VideoPlayer.tsx's own confetti.
+    const rect = e.currentTarget.getBoundingClientRect();
+    confetti({
+      particleCount: 80,
+      spread: 70,
+      startVelocity: 35,
+      origin: {
+        x: (rect.left + rect.width / 2) / window.innerWidth,
+        y: (rect.top + rect.height / 2) / window.innerHeight,
+      },
+      colors: ["#7C5CFC", "#FF6B6B", "#a78bfa", "#F5F0E8"],
+      disableForReducedMotion: true,
+    });
+
     // Carries this invite's token through the sign-up hop so the backend
     // can attribute the resulting account back to it — see
     // lib/pendingInvite.ts and ClaimPendingInvite.tsx.
     savePendingInvite(token!);
-    setLocation("/sign-up");
+    // A brief pause so the confetti is actually visible before this page's
+    // own DOM (canvas-confetti draws into) gets torn down by the route
+    // change — an instant navigate would cut the burst off before it's seen.
+    setTimeout(() => setLocation("/sign-up"), 450);
   }
 
   function handleRevealResponse(accepted: boolean) {
@@ -58,13 +81,14 @@ export function PublicInvitePage() {
       { id: invite.id, data: { accepted } },
       {
         onSuccess: () => setRevealResponse(accepted ? "accepted" : "declined"),
-        onError: () => toast({ title: "Something went wrong", variant: "destructive" }),
+        onError: () => toast({ title: t("publicInvitePage.toastError"), variant: "destructive" }),
       }
     );
   }
 
   return (
-    <div className="min-h-[100dvh] bg-background flex flex-col relative overflow-hidden">
+    <PullToRefresh onRefresh={() => refetch()}>
+      <div className="min-h-[100dvh] bg-background flex flex-col relative overflow-hidden">
       {/* Ambient background */}
       <div className="absolute top-[-15%] left-[-15%] w-[70%] h-[45%] rounded-full blur-[110px] pointer-events-none bg-primary/16" />
       <div className="absolute bottom-[-10%] right-[-15%] w-[55%] h-[35%] rounded-full blur-[100px] pointer-events-none bg-secondary/10" />
@@ -86,7 +110,7 @@ export function PublicInvitePage() {
           </div>
         ) : !invite ? (
           <div className="text-center py-20">
-            <p className="text-muted-foreground">This invite could not be found.</p>
+            <p className="text-muted-foreground">{t("publicInvitePage.notFound")}</p>
           </div>
         ) : (
           <>
@@ -94,8 +118,7 @@ export function PublicInvitePage() {
                 api-server's lib/copy.ts INVITE_HOOK_LINE by hand. No name,
                 no hint who sent it, ever. */}
             <p className="text-center text-xl font-serif text-foreground leading-snug">
-              Someone who cares about you is inviting you to install Blind Whisper — for honest conversations without
-              the awkwardness, kept confidential and anonymous.
+              {t("publicInvitePage.leadText")}
             </p>
 
             <div className="rounded-2xl overflow-hidden bg-card border border-border/50 glow-card p-6 space-y-4 text-center">
@@ -103,14 +126,13 @@ export function PublicInvitePage() {
                 <ShieldCheck className="w-6 h-6 text-primary" />
               </div>
               <div className="space-y-1.5">
-                <p className="font-medium text-foreground">Whoever invited you stays anonymous</p>
+                <p className="font-medium text-foreground">{t("publicInvitePage.stayAnonymousHeading")}</p>
                 <p className="text-sm text-muted-foreground">
-                  Blind Whisper is for sending videos and honest notes to people who need them — without them knowing
-                  it's you, unless you choose to say so.
+                  {t("publicInvitePage.stayAnonymousDescription")}
                 </p>
               </div>
               <Button size="lg" className="rounded-full w-full" onClick={handleJoin} data-testid="button-join-blind-whisper">
-                <Sparkles className="w-4 h-4 mr-2" /> Join Blind Whisper
+                <Sparkles className="w-4 h-4 mr-2" /> {t("publicInvitePage.joinButton")}
               </Button>
             </div>
 
@@ -122,15 +144,15 @@ export function PublicInvitePage() {
                 {revealResponse || invite.revealAccepted !== null ? (
                   <p className="text-sm text-muted-foreground">
                     {(revealResponse ?? (invite.revealAccepted ? "accepted" : "declined")) === "accepted"
-                      ? "You've let them know it's okay to reveal themselves."
-                      : "You've chosen to keep this anonymous."}
+                      ? t("publicInvitePage.revealAccepted")
+                      : t("publicInvitePage.revealDeclined")}
                   </p>
                 ) : (
                   <>
                     <p className="text-sm font-medium text-foreground flex items-center justify-center gap-1.5">
-                      <Eye className="w-4 h-4 text-primary" /> Someone who invited you wants to reveal themselves.
+                      <Eye className="w-4 h-4 text-primary" /> {t("publicInvitePage.revealRequestHeading")}
                     </p>
-                    <p className="text-xs text-muted-foreground">Do you want to know who invited you?</p>
+                    <p className="text-xs text-muted-foreground">{t("publicInvitePage.revealRequestQuestion")}</p>
                     <div className="flex gap-2 justify-center pt-1">
                       <Button
                         size="sm"
@@ -139,7 +161,7 @@ export function PublicInvitePage() {
                         disabled={respondReveal.isPending}
                         data-testid="button-accept-invite-reveal"
                       >
-                        Accept
+                        {t("publicInvitePage.accept")}
                       </Button>
                       <Button
                         size="sm"
@@ -149,7 +171,7 @@ export function PublicInvitePage() {
                         disabled={respondReveal.isPending}
                         data-testid="button-decline-invite-reveal"
                       >
-                        Decline
+                        {t("publicInvitePage.decline")}
                       </Button>
                     </div>
                   </>
@@ -166,11 +188,12 @@ export function PublicInvitePage() {
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1.25rem)" }}
       >
         <p className="text-xs text-muted-foreground">
-          Powered by{" "}
+          {t("publicInvitePage.poweredByPrefix")}{" "}
           <a href="/" className="text-primary hover:underline">Blind Whisper</a>
-          {" "}— send what matters, without the awkward part.
+          {" "}{t("publicInvitePage.poweredBySuffix")}
         </p>
       </footer>
-    </div>
+      </div>
+    </PullToRefresh>
   );
 }

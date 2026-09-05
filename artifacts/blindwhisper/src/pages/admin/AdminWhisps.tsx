@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useSearch } from "wouter";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { useAdminListWhisps, useAdminDeleteWhisp, getAdminListWhispsQueryKey } from "@workspace/api-client-react";
@@ -73,6 +73,13 @@ export function AdminWhisps() {
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1;
 
+  // Deleting the last row of the last page leaves `page` pointing past the
+  // end (the shrunken total no longer covers it) — snap back to the real
+  // last page instead of stranding an empty view.
+  useEffect(() => {
+    if (data && page > totalPages) setPage(totalPages);
+  }, [data, page, totalPages]);
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -112,6 +119,7 @@ export function AdminWhisps() {
               <SelectItem value="opened">Opened</SelectItem>
               <SelectItem value="watched">Watched</SelectItem>
               <SelectItem value="replied">Replied</SelectItem>
+              <SelectItem value="failed">Failed</SelectItem>
             </SelectContent>
           </Select>
           <Select value={deliveryMethod} onValueChange={(v) => { setDeliveryMethod(v); setPage(1); }}>
@@ -119,8 +127,7 @@ export function AdminWhisps() {
             <SelectContent>
               <SelectItem value="all">All delivery methods</SelectItem>
               <SelectItem value="whisper_link">Whisper Link</SelectItem>
-              <SelectItem value="ghost_boost">Ghost Boost</SelectItem>
-              <SelectItem value="circle_drop">Circle Drop</SelectItem>
+              <SelectItem value="circle_drop">Blind Circle</SelectItem>
             </SelectContent>
           </Select>
           <Select value={category} onValueChange={(v) => { setCategory(v); setPage(1); }}>
@@ -149,7 +156,7 @@ export function AdminWhisps() {
                       {w.videoThumbnail ? <img src={w.videoThumbnail} className="w-full h-full object-cover" alt="" /> : <PlayCircle className="w-4 h-4 text-muted-foreground" />}
                     </div>
                     <div className="flex-1 min-w-[200px]">
-                      <Link href={`/admin/whisps/${w.id}`} className="font-medium text-foreground hover:text-primary transition-colors truncate block">
+                      <Link href={`/admin_pro/whisps/${w.id}`} className="font-medium text-foreground hover:text-primary transition-colors truncate block">
                         {w.videoTitle || w.videoUrl}
                       </Link>
                       <p className="text-xs text-muted-foreground truncate">

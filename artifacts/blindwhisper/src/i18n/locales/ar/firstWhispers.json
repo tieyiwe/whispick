@@ -1,0 +1,106 @@
+{
+  "groupName": "أول Whispers لي",
+  "steps": {
+    "friends": "الأصدقاء",
+    "whatToSend": "ماذا سترسل",
+    "send": "إرسال"
+  },
+  "stepIndicator": "الخطوة {{step}} من {{total}}",
+  "header": {
+    "title": "أرسل أول Whispers لك",
+    "subtitle": "اختر بعض الأصدقاء، اختر شيئًا لإرساله، وصِل إليهم جميعًا دفعة واحدة — دون كشف هويتك."
+  },
+  "common": {
+    "next": "التالي",
+    "back": "رجوع"
+  },
+  "concierge": {
+    "defaultSituation": "متحمس لمشاركة شيء مع أصدقائي"
+  },
+  "step1": {
+    "heading": "لمن تريد إرسال Whisp؟",
+    "subtitle": "أضف حتى 5 أصدقاء — تحتاج فقط إلى بريد إلكتروني أو رقم هاتف لكل واحد منهم.",
+    "friendLabel": "الصديق {{number}}",
+    "removeContact": "إزالة جهة الاتصال هذه",
+    "namePlaceholder": "الاسم (اختياري)",
+    "emailPlaceholder": "البريد الإلكتروني",
+    "phonePlaceholder": "رقم الهاتف",
+    "addAnother": "إضافة صديق آخر",
+    "pickFromContacts": "الاختيار من جهات الاتصال",
+    "upToCount": "أضف حتى {{count}} أصدقاء.",
+    "toast": {
+      "noneHadContactInfo": "لم يكن لدى أي من جهات الاتصال التي اخترتها بريد إلكتروني أو رقم هاتف",
+      "needAtLeastOne": "أضف صديقًا واحدًا على الأقل ببريد إلكتروني أو رقم هاتف"
+    }
+  },
+  "step2": {
+    "heading": "لست متأكدًا مما سترسله؟",
+    "subtitle": "اخترنا لك بعض الفيديوهات التي قد تناسبك — اضغط على أحدها لاستخدامه، دون الحاجة للكتابة.",
+    "loading": "جارٍ البحث عن شيء يناسبك...",
+    "untitledVideo": "فيديو بلا عنوان",
+    "noMatch": "لم يناسب شيء تمامًا — جرّب موقفًا مختلفًا، أو الصق رابط فيديو خاص بك أدناه.",
+    "videoFallback": "رابط الفيديو",
+    "changeVideo": "تغيير",
+    "tryDifferentSituation": "جرّب موقفًا مختلفًا",
+    "pasteOwnLink": "الصق رابط فيديو خاص بك",
+    "situationPlaceholder": "صف لمن هذا ولماذا...",
+    "getNewSuggestions": "الحصول على اقتراحات جديدة",
+    "customUrl": {
+      "placeholder": "الصق رابط فيديو (YouTube أو TikTok أو Instagram...)",
+      "invalidUrl": "يرجى إدخال رابط صالح"
+    },
+    "noteLabel": "أضف ملاحظة (اختياري)",
+    "notePlaceholder": "اكتب شيئًا مجهول الهوية..."
+  },
+  "step3": {
+    "heading": "جاهز للإرسال",
+    "subtitle": "سيُرسَل إلى {{count}} من الأصدقاء دفعة واحدة.",
+    "subtitle_zero": "لا يوجد أصدقاء لإرسال هذا إليهم بعد.",
+    "subtitle_one": "سيُرسَل إلى صديق واحد.",
+    "subtitle_two": "سيُرسَل إلى صديقين، دفعة واحدة.",
+    "subtitle_few": "سيُرسَل إلى {{count}} أصدقاء، دفعة واحدة.",
+    "subtitle_many": "سيُرسَل إلى {{count}} صديقًا، دفعة واحدة.",
+    "subtitle_other": "سيُرسَل إلى {{count}} صديق، دفعة واحدة.",
+    "channels": {
+      "email": "البريد الإلكتروني",
+      "sms": "رسالة نصية",
+      "whatsapp": "WhatsApp"
+    },
+    "sendButton": "إرسال إلى {{count}}",
+    "sendButton_one": "إرسال إلى صديق واحد",
+    "sendButton_two": "إرسال إلى صديقين",
+    "sendButton_few": "إرسال إلى {{count}} أصدقاء",
+    "sendButton_many": "إرسال إلى {{count}} صديقًا",
+    "sendButton_other": "إرسال إلى {{count}} صديق",
+    "toast": {
+      "sendFailed": "تعذّر الإرسال. يُرجى المحاولة مرة أخرى.",
+      "groupSetupFailed": "تعذّر إعداد قائمة أصدقائك. يُرجى المحاولة مرة أخرى."
+    }
+  },
+  "sent": {
+    "title": "تم الإرسال إلى {{count}}!",
+    "title_one": "تم الإرسال إلى صديق واحد!",
+    "title_two": "تم الإرسال إلى صديقين!",
+    "title_few": "تم الإرسال إلى {{count}} أصدقاء!",
+    "title_many": "تم الإرسال إلى {{count}} صديقًا!",
+    "title_other": "تم الإرسال إلى {{count}} صديق!",
+    "description": "‏Whisps الخاصة بك في طريقها — مجهولة الهوية بالكامل، كما هو الحال دائمًا.",
+    "description_one": "‏Whisp الخاص بك في طريقه — مجهول الهوية بالكامل، كما هو الحال دائمًا.",
+    "skippedHeading": "تعذّر الوصول إلى {{count}} من جهات الاتصال",
+    "skippedHeading_one": "تعذّر الوصول إلى جهة اتصال واحدة",
+    "skippedHeading_two": "تعذّر الوصول إلى جهتَي اتصال",
+    "skippedHeading_few": "تعذّر الوصول إلى {{count}} جهات اتصال",
+    "skippedHeading_many": "تعذّر الوصول إلى {{count}} جهة اتصال",
+    "skippedHeading_other": "تعذّر الوصول إلى {{count}} جهة اتصال",
+    "skippedUnnamed": "جهة اتصال بلا اسم",
+    "viewSendButton": "عرض عملية الإرسال هذه",
+    "dashboardButton": "الانتقال إلى لوحة التحكم"
+  },
+  "dashboardCard": {
+    "title": "ابدأ الآن",
+    "heading": "أرسل أول Whispers لك",
+    "description": "صِل إلى عدة أصدقاء دفعة واحدة بفيديو مجهول الهوية — أسرع طريقة لتجربة Blind Whisper.",
+    "cta": "الإرسال إلى عدة أصدقاء",
+    "dismiss": "تجاهل"
+  }
+}

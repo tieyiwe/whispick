@@ -3,16 +3,17 @@ import cors from "cors";
 import compression from "compression";
 import pinoHttp from "pino-http";
 import { clerkMiddleware } from "@clerk/express";
-import { publishableKeyFromHost } from "@clerk/shared/keys";
 import {
   CLERK_PROXY_PATH,
   clerkProxyMiddleware,
-  getClerkProxyHost,
 } from "./middlewares/clerkProxyMiddleware";
 import { getPublicAppUrl } from "./lib/publicUrl";
 import router from "./routes";
 import { handleStripeWebhook } from "./routes/billing";
+import whisperBoxLinkRouter from "./routes/whisperBoxLink";
+import { publicEndpointLimiter } from "./lib/rateLimit";
 import { logger } from "./lib/logger";
+import { recordBugReport } from "./lib/bugRabbit";
 
 const app: Express = express();
 
@@ -61,15 +62,29 @@ app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 // where it hasn't been set. Instead, allow an Origin whose host matches the
 // Host header this request actually arrived on (genuinely same-origin),
 // plus an explicit allowlist for legitimately cross-origin dev setups.
+// The localhost dev origins are only allowed outside production — in a real
+// deployment nothing should be making credentialed cross-origin requests
+// from a loopback address, and leaving them in the allowlist would let a
+// malicious app bound to that port on a victim's machine ride the victim's
+// Clerk session cookie. In production the same-origin check (isSameOrigin)
+// plus an explicit PUBLIC_APP_URL is the whole allowlist.
+const isProduction = process.env.NODE_ENV === "production";
 const explicitAllowedOrigins = new Set(
-  [process.env.PUBLIC_APP_URL, "http://localhost:22964", "http://127.0.0.1:22964"].filter(
-    (v): v is string => !!v,
-  ),
+  [
+    process.env.PUBLIC_APP_URL,
+    ...(isProduction ? [] : ["http://localhost:22964", "http://127.0.0.1:22964"]),
+  ].filter((v): v is string => !!v),
 );
 
+// Compares the FULL origin (scheme included), not just the host. Matching on
+// host alone treated http://app.example.com as same-origin for an https
+// deployment, so a network attacker able to serve plaintext on the app's own
+// hostname would pass this check and then get to make credentialed
+// cross-origin requests. Unreachable behind an https-only edge with HSTS, but
+// the check shouldn't be the thing relying on that.
 function isSameOrigin(origin: string, req: import("express").Request): boolean {
   try {
-    return new URL(origin).host === getPublicAppUrl(req).replace(/^https?:\/\//, "");
+    return new URL(origin).origin === new URL(getPublicAppUrl(req)).origin;
   } catch {
     return false;
   }
@@ -90,14 +105,46 @@ app.post("/api/billing/webhook", express.raw({ type: "application/json" }), hand
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Must be the exact same publishable key the frontend uses (App.tsx's
+// clerkPubKey) — NOT run through @clerk/shared's publishableKeyFromHost.
+// That helper only returns a literal key as-is for development-mode
+// (pk_test_) keys; for a production (pk_live_) key it unconditionally
+// derives a synthetic host-based key instead (`clerk.<hostname>`), ignoring
+// whatever real key is configured. This app's custom domain support comes
+// entirely from the frontend's proxyUrl (VITE_CLERK_PROXY_URL, routed
+// through clerkProxyMiddleware below) — the frontend already gets a
+// correctly-issued, correctly-scoped token for this exact domain via that
+// proxy, with no host-derivation needed. Wrapping the BACKEND's key in
+// publishableKeyFromHost made it verify against a synthetic identity Clerk
+// has never issued anything for, instead of the real instance the frontend
+// is actually using: every request looked unauthenticated
+// (x-clerk-auth-reason: session-token-iat-before-client-uat) no matter how
+// many times a user signed in, on every domain, since it wasn't a session
+// problem — the two sides were never even checking the same instance.
+//
+// The frontend only ever gets VITE_CLERK_PUBLISHABLE_KEY (Vite bakes VITE_*
+// vars into the client bundle; a plain, unprefixed var isn't visible there),
+// so fall back to it here if a separate backend-only CLERK_PUBLISHABLE_KEY
+// isn't set — one configured secret is then enough for both sides to agree.
+const CLERK_BACKEND_PUBLISHABLE_KEY =
+  process.env.CLERK_PUBLISHABLE_KEY ?? process.env.VITE_CLERK_PUBLISHABLE_KEY;
+
 app.use(
-  clerkMiddleware((req) => ({
-    publishableKey: publishableKeyFromHost(
-      getClerkProxyHost(req) ?? "",
-      process.env.CLERK_PUBLISHABLE_KEY,
-    ),
+  clerkMiddleware(() => ({
+    publishableKey: CLERK_BACKEND_PUBLISHABLE_KEY,
   })),
 );
+
+// Mounted at the bare "/wb" prefix (not under "/api") so a shared Whisper
+// Box link reads as blindwhisper.com/wb/handle — see this repo's
+// .replit-artifact/artifact.toml, which registers "/wb" as this service's
+// own second top-level path alongside "/api" (Replit's path router sends
+// anything under either prefix here; everything else goes to the
+// static-hosted frontend). Has to be this server, not the frontend: only a
+// running Node process can tell a link-preview crawler apart from a real
+// browser and return real per-handle Open Graph tags — see
+// routes/whisperBoxLink.ts's own comment.
+app.use("/wb", publicEndpointLimiter, whisperBoxLinkRouter);
 
 app.use("/api", router);
 
@@ -118,6 +165,20 @@ app.use("/api", (_req, res) => {
 // values, internal state) that wasn't meant to be user-facing.
 const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   req.log?.error({ err }, "Unhandled error");
+  // BugRabbit capture — fire-and-forget (recordBugReport catches its own
+  // failures, see lib/bugRabbit.ts), so this never delays or risks the
+  // response below. userId is left null rather than resolved from the
+  // Clerk session here: that would add a DB round trip to every unhandled-
+  // error path for a best-effort tracker, and the request is already fully
+  // captured in the structured log line just above via req.log.
+  void recordBugReport({
+    source: "backend",
+    message: err instanceof Error ? err.message : String(err),
+    stack: err instanceof Error ? (err.stack ?? null) : null,
+    url: req.originalUrl,
+    userAgent: req.headers["user-agent"] ?? null,
+    userId: null,
+  });
   if (res.headersSent) return;
   res.status(500).json({ error: "Internal server error" });
 };

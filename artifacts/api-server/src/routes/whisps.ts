@@ -10,25 +10,31 @@ import {
   circleMembersTable,
   uploadedVideosTable,
   conciergeRequestsTable,
+  circleCommentsTable,
+  circlePostLikesTable,
 } from "@workspace/db";
-import { eq, and, sql, isNull, or } from "drizzle-orm";
+import { eq, and, sql, isNull, isNotNull, or, lt, gte, count, desc } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { z } from "zod";
 import { requireAuth } from "../lib/auth";
 import { ensureUser } from "../lib/ensureUser";
 import { getPublicAppUrl } from "../lib/publicUrl";
-import { deliverWhisperLink } from "../lib/deliver";
+import { deliverWhisperLink, findVerifiedRecipient, findVerifiedRecipientByEmail } from "../lib/deliver";
 import { revealRequestHookLine, newReplyHookLine } from "../lib/copy";
 import { categorizeWhispAsync } from "../lib/categorizeWhisp";
 import { moderateWhispAsync } from "../lib/moderation";
 import { needsDemographics } from "../lib/demographics";
 import { computeExpiresAt, MAX_SCHEDULE_DAYS } from "../lib/expiration";
 import { MAX_SCHEDULE_DAYS_WITH_UPLOAD } from "../lib/uploads";
-import { whisperLinkLimitFor, GHOST_BOOST_COST_USD } from "../lib/plans";
+import { whisperLinkLimitFor, GHOST_BOOST_COST_USD, GHOST_BOOST_ENABLED, recipientReplyAllowance } from "../lib/plans";
 import { createWhispLimiter, noteSuggestionLimiter, conciergeLimiter, publicEndpointLimiter } from "../lib/rateLimit";
 import { getGhostBoostMatchStats } from "../lib/matching";
 import { generateNoteSuggestions } from "../lib/noteSuggestions";
+import { httpUrlString } from "../lib/safeUrl";
+import { deriveVideoFields, embedUrlFor } from "../lib/videoMeta";
 import { runConcierge, MAX_SITUATION_LENGTH } from "../lib/concierge";
+import { safeAssignOrGetSenderHandle } from "../lib/whispSenderHandle";
+import { hasSmsConsent, recordSmsConsent } from "../lib/smsConsent";
 
 const router = Router();
 
@@ -117,24 +123,174 @@ router.post("/concierge", requireAuth, conciergeLimiter, async (req, res): Promi
   });
 });
 
-// GET /api/whisps
+// ANTI-ENUMERATION: strips recipientUserId, the raw sender*/recipient*
+// pin/archive columns, AND senderId (when the caller isn't the sender) from
+// every response — same reasoning as routes/textWhisps.ts's toResponse,
+// which this mirrors. A sender reading recipientUserId straight off their
+// own sent whisps would learn whether an arbitrary email/phone belongs to a
+// verified Blind Whisper account for free; the raw pin/archive pairs would
+// leak whether the OTHER party (the one who isn't the caller) pinned or
+// archived their own copy; senderId reaching a matched RECIPIENT (box=
+// received/archived) would hand them the sender's real account id, breaking
+// the exact anonymity guarantee Whisper Link is built around — the same
+// thing PATCH /:id/reveal deliberately withholds even when a reveal is
+// accepted, and that routes/public.ts's GET /w/:token allowlists around by
+// construction. viewerRole/pinned/archived only ever reveal facts about the
+// CALLER's own side.
+async function toWhispResponse(whisp: typeof whispsTable.$inferSelect, viewerId: string) {
+  // videoReplyRequestNotifyAt/NotifiedAt are the anti-correlation deferral
+  // machinery (the randomized delay before the sender's phone buzzes) — a
+  // matched recipient reading their own box must never see the exact second
+  // that notification fires, same reasoning as whisp_replies.notifySenderAt
+  // being allowlisted out of public responses.
+  const {
+    recipientUserId,
+    senderPinnedAt,
+    senderArchivedAt,
+    recipientPinnedAt,
+    recipientArchivedAt,
+    videoReplyRequestNotifyAt,
+    videoReplyRequestNotifiedAt,
+    ...rest
+  } = whisp;
+  const viewerRole: "sender" | "recipient" | null =
+    whisp.senderId === viewerId ? "sender" : recipientUserId === viewerId ? "recipient" : null;
+  const { senderId, ...safeRest } = rest;
+  const senderHandle = viewerRole === "recipient" ? await safeAssignOrGetSenderHandle(senderId, viewerId) : null;
+  return {
+    ...safeRest,
+    senderId: viewerRole === "sender" ? senderId : null,
+    senderHandle,
+    viewerIsRecipient: recipientUserId === viewerId,
+    viewerRole,
+    pinned: viewerRole === "sender" ? !!senderPinnedAt : viewerRole === "recipient" ? !!recipientPinnedAt : false,
+    archived: viewerRole === "sender" ? !!senderArchivedAt : viewerRole === "recipient" ? !!recipientArchivedAt : false,
+  };
+}
+
+// Loads a whisp this user has SOME role on (sender or matched recipient) —
+// shared by the pin/archive toggle endpoints below, which both need to know
+// which pair of columns (sender* vs recipient*) applies to this caller.
+async function loadWhispForViewer(id: string, userId: string) {
+  const whisp = await db.select().from(whispsTable).where(eq(whispsTable.id, id)).then((r) => r[0]);
+  if (!whisp) return null;
+  if (whisp.senderId === userId) return { whisp, role: "sender" as const };
+  if (whisp.recipientUserId === userId) return { whisp, role: "recipient" as const };
+  return null;
+}
+
+// GET /api/whisps — ?box=sent (default) is what this sender sent; ?box=received
+// is what other Whisperers have sent TO this user (see whisps.recipientUserId);
+// ?box=archived is whichever of those this user archived from either side,
+// combined into one list (see whisps.senderArchivedAt/recipientArchivedAt).
+// Received items are never affected by the sender's own soft-delete
+// (excludeDeleted() only ever applies to the box this user sent), and Ghost
+// Boost's stranger-matched deliveries never appear as "received" — a
+// recipientUserId is only ever set for a whisper_link/group_whisper send.
 router.get("/", requireAuth, async (req, res): Promise<void> => {
   const { userId } = getAuth(req);
   const user = await ensureUser(userId!, req);
 
   const statusFilter = req.query.status as string | undefined;
+  const box = req.query.box === "received" ? "received" : req.query.box === "archived" ? "archived" : "sent";
 
-  const whisps = await db
-    .select()
+  let whereClause;
+  let orderClause;
+  if (box === "received") {
+    whereClause = and(
+      eq(whispsTable.recipientUserId, user.id),
+      isNull(whispsTable.recipientArchivedAt),
+      statusFilter ? eq(whispsTable.status, statusFilter) : undefined,
+    );
+    orderClause = sql`${whispsTable.recipientPinnedAt} IS NOT NULL DESC, ${whispsTable.createdAt} DESC`;
+  } else if (box === "archived") {
+    whereClause = or(
+      and(eq(whispsTable.senderId, user.id), isNotNull(whispsTable.senderArchivedAt), excludeMatchDeliveries(), excludeDeleted()),
+      and(eq(whispsTable.recipientUserId, user.id), isNotNull(whispsTable.recipientArchivedAt)),
+    );
+    orderClause = sql`GREATEST(${whispsTable.senderArchivedAt}, ${whispsTable.recipientArchivedAt}) DESC`;
+  } else {
+    whereClause = and(
+      eq(whispsTable.senderId, user.id),
+      excludeMatchDeliveries(),
+      excludeDeleted(),
+      isNull(whispsTable.senderArchivedAt),
+      statusFilter ? eq(whispsTable.status, statusFilter) : undefined,
+    );
+    orderClause = sql`${whispsTable.senderPinnedAt} IS NOT NULL DESC, ${whispsTable.createdAt} DESC`;
+  }
+
+  const whisps = await db.select().from(whispsTable).where(whereClause).orderBy(orderClause);
+
+  res.json(await Promise.all(whisps.map((w) => toWhispResponse(w, user.id))));
+});
+
+// GET /api/whisps/received-unread-count — a lightweight poll target for the
+// "My Whisps" nav badge, mirroring GET /?box=received's own filters
+// (recipientUserId match, not archived) but counting rather than fetching
+// full rows. "Unread" here means openedAt IS NULL — the same flag
+// routes/public.ts's hasOpenedBefore reads — so the badge clears the moment
+// the recipient actually opens the whisp, not when some separate
+// notification gets dismissed.
+router.get("/received-unread-count", requireAuth, async (req, res): Promise<void> => {
+  const { userId } = getAuth(req);
+  const user = await ensureUser(userId!, req);
+
+  const row = await db
+    .select({ count: count() })
     .from(whispsTable)
     .where(
-      statusFilter
-        ? and(eq(whispsTable.senderId, user.id), eq(whispsTable.status, statusFilter), excludeMatchDeliveries(), excludeDeleted())
-        : and(eq(whispsTable.senderId, user.id), excludeMatchDeliveries(), excludeDeleted()),
+      and(
+        eq(whispsTable.recipientUserId, user.id),
+        isNull(whispsTable.recipientArchivedAt),
+        isNull(whispsTable.openedAt),
+      ),
     )
-    .orderBy(sql`${whispsTable.createdAt} DESC`);
+    .then((r) => r[0]);
 
-  res.json(whisps);
+  res.json({ unreadCount: row?.count ?? 0 });
+});
+
+// POST /api/whisps/:id/pin — toggles pin for whichever role (sender or
+// matched recipient) the caller has on this whisp. Pinning only affects
+// sort order within whichever list it's already showing in; it never moves
+// a whisp between Sent/Received/Archive on its own.
+router.post("/:id/pin", requireAuth, async (req, res): Promise<void> => {
+  const { userId } = getAuth(req);
+  const user = await ensureUser(userId!, req);
+
+  const loaded = await loadWhispForViewer(req.params.id, user.id);
+  if (!loaded) {
+    res.status(404).json({ error: "Whisp not found" });
+    return;
+  }
+
+  const column = loaded.role === "sender" ? whispsTable.senderPinnedAt : whispsTable.recipientPinnedAt;
+  const currentlyPinned = loaded.role === "sender" ? !!loaded.whisp.senderPinnedAt : !!loaded.whisp.recipientPinnedAt;
+  const nextValue = currentlyPinned ? null : new Date();
+
+  await db.update(whispsTable).set({ [loaded.role === "sender" ? "senderPinnedAt" : "recipientPinnedAt"]: nextValue }).where(eq(whispsTable.id, loaded.whisp.id));
+  res.json({ pinned: !currentlyPinned });
+});
+
+// POST /api/whisps/:id/archive — toggles archive for whichever role the
+// caller has, same shape as the pin endpoint. Reversible: calling it again
+// un-archives, moving the whisp back into that role's Sent/Received list.
+router.post("/:id/archive", requireAuth, async (req, res): Promise<void> => {
+  const { userId } = getAuth(req);
+  const user = await ensureUser(userId!, req);
+
+  const loaded = await loadWhispForViewer(req.params.id, user.id);
+  if (!loaded) {
+    res.status(404).json({ error: "Whisp not found" });
+    return;
+  }
+
+  const currentlyArchived = loaded.role === "sender" ? !!loaded.whisp.senderArchivedAt : !!loaded.whisp.recipientArchivedAt;
+  const nextValue = currentlyArchived ? null : new Date();
+
+  await db.update(whispsTable).set({ [loaded.role === "sender" ? "senderArchivedAt" : "recipientArchivedAt"]: nextValue }).where(eq(whispsTable.id, loaded.whisp.id));
+  res.json({ archived: !currentlyArchived });
 });
 
 // POST /api/whisps
@@ -147,16 +303,19 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
   // intercepts this specific error to show a confirmation step, save via
   // PATCH /user/profile, then retry the same send.
   if (needsDemographics(user)) {
-    res.status(428).json({ error: "Please confirm your gender and age range before sending your first whisp.", code: "demographics_required" });
+    res.status(428).json({ error: "Please confirm your gender, age range, and preferred language before sending your first whisp.", code: "demographics_required" });
     return;
   }
 
   const schema = z
     .object({
-      videoUrl: z.string().min(1).nullable().optional(),
-      videoTitle: z.string().nullable().optional(),
-      videoThumbnail: z.string().nullable().optional(),
-      videoEmbedUrl: z.string().nullable().optional(),
+      // httpUrlString, not plain string: these end up as href/iframe-src in
+      // the recipient's public page and the admin panel — a javascript: URL
+      // here would be stored XSS in those viewers' sessions.
+      videoUrl: httpUrlString.nullable().optional(),
+      videoTitle: z.string().max(300).nullable().optional(),
+      videoThumbnail: httpUrlString.nullable().optional(),
+      videoEmbedUrl: httpUrlString.nullable().optional(),
       videoStartSeconds: z.number().int().min(0).max(86400).nullable().optional(),
       // min(1), not min(0): an end trim of 0 seconds is meaningless (no
       // clip has zero length) and the falsy 0 would otherwise slip past a
@@ -169,8 +328,19 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
       deliveryMethod: z.enum(DELIVERY_METHODS),
       whisperChannel: z.enum(WHISPER_CHANNELS).nullable().optional(),
       circleId: z.string().nullable().optional(),
-      recipientEmail: z.string().nullable().optional(),
-      recipientPhone: z.string().nullable().optional(),
+      // .email(), not a bare string: this value is handed straight to the
+      // mail transport as the `to` address (lib/deliver.ts → sendEmail).
+      // nodemailer parses `to` as an ADDRESS LIST, so an unvalidated
+      // "victim@x.com, attacker@evil.com" silently delivered the whisp to
+      // every address in it — one Whisper Link fanning out to arbitrarily
+      // many strangers, bypassing the plan's per-send accounting and turning
+      // the app into a relay for real mail from its own domain.
+      recipientEmail: z.string().email().max(320).nullable().optional(),
+      // Same reasoning for the SMS/WhatsApp side: this reaches the Twilio
+      // `To` parameter. Constrained to plausible phone characters so it
+      // can't carry a list or control characters (lib/phone.ts normalizes
+      // for matching, but the send path uses this value directly).
+      recipientPhone: z.string().max(32).regex(/^[+0-9()\-.\s]+$/, "Not a valid phone number").nullable().optional(),
       anonymousNote: z.string().nullable().optional(),
       senderAlias: z.string().nullable().optional(),
       moodTag: z.string().nullable().optional(),
@@ -179,6 +349,14 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
       // sure what to send?" concierge — see the ownership check below.
       // Purely an analytics correlation, never trusted for anything else.
       conciergeRequestId: z.string().nullable().optional(),
+      // Mirrors the required, unchecked-by-default checkbox SendWhisp.tsx
+      // shows right where a Sender enters an SMS recipient's phone number
+      // (see SmsTerms.tsx's "live example"). Enforced HERE, not just as a
+      // disabled Send button client-side — without a server-side check, a
+      // direct API call could SMS anyone with no opt-in confirmation at
+      // all, which is exactly the evidence Twilio's A2P 10DLC review
+      // requires to actually exist.
+      smsConsentConfirmed: z.boolean().nullable().optional(),
     })
     .refine((data) => !!data.videoUrl || !!data.uploadedVideoId, {
       message: "A video URL or an uploaded video is required",
@@ -195,6 +373,11 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
   }
 
   const data = parsed.data;
+
+  if (data.deliveryMethod === "ghost_boost" && !GHOST_BOOST_ENABLED) {
+    res.status(403).json({ error: "Ghost Boost is temporarily unavailable." });
+    return;
+  }
 
   let uploadedVideo: typeof uploadedVideosTable.$inferSelect | null = null;
   if (data.uploadedVideoId) {
@@ -227,6 +410,14 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
 
   const isGhostBoost = data.deliveryMethod === "ghost_boost";
   const scheduledDate = data.scheduledAt ? new Date(data.scheduledAt) : null;
+  // An unparseable date must be rejected HERE, before any quota/credit is
+  // spent: Invalid Date fails the isScheduled check below (NaN > now is
+  // false), skips the window validation, and then blows up the insert's
+  // toISOString() — after the sender was already charged a link/credit.
+  if (scheduledDate && Number.isNaN(scheduledDate.getTime())) {
+    res.status(400).json({ error: "That schedule date isn't valid." });
+    return;
+  }
   // Ghost Boost's own "pending" status already means "queued, no live ad
   // integration" — scheduling isn't layered on top of that.
   const isScheduled = !isGhostBoost && scheduledDate !== null && scheduledDate.getTime() > Date.now();
@@ -241,6 +432,16 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
         error: uploadedVideo
           ? `An uploaded video can only be scheduled up to ${maxDays} days out, so it doesn't expire before it's sent.`
           : `Please schedule within ${maxDays} days.`,
+      });
+      return;
+    }
+    // The days-out cap alone isn't enough for library re-use: media uploaded
+    // six days ago phases out tomorrow, so measure against the upload's OWN
+    // expiry too — the send must land early enough that the recipient's full
+    // 48-hour window fits before the bytes are deleted.
+    if (uploadedVideo?.expiresAt && scheduledDate!.getTime() > uploadedVideo.expiresAt.getTime() - 48 * 60 * 60 * 1000) {
+      res.status(400).json({
+        error: "That upload is close to phasing out — schedule it sooner, or re-upload the video for a fresh 7-day window.",
       });
       return;
     }
@@ -259,19 +460,33 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
       res.status(400).json({ error: "Text/WhatsApp delivery requires a recipient phone number" });
       return;
     }
+    // WhatsApp isn't carrier-regulated under A2P 10DLC the same way SMS is
+    // — same carve-out SendWhisp.tsx's own requiresSmsConsent uses — so only
+    // an actual SMS send requires this. Consent is once-per-recipient: an
+    // affirmative checkbox on THIS send, OR a stored consent from a prior
+    // send to the same number, satisfies it (see lib/smsConsent.ts).
+    if (data.whisperChannel === "sms" && data.recipientPhone) {
+      const alreadyConsented = data.smsConsentConfirmed || (await hasSmsConsent(user.id, data.recipientPhone));
+      if (!alreadyConsented) {
+        res.status(400).json({ error: "Please confirm you have this person's permission to receive a text from you.", code: "sms_consent_required" });
+        return;
+      }
+      // Persist a fresh attestation so future sends to this number skip the
+      // checkbox. Idempotent + best-effort (see recordSmsConsent) — never
+      // gates the send on the write landing.
+      if (data.smsConsentConfirmed) void recordSmsConsent(user.id, data.recipientPhone);
+    }
   }
 
-  // Free-plan Whisper Link monthly limit, reset on a rolling 30-day window
+  // Free-plan Whisper Link monthly limit, reset on a rolling 30-day window.
+  // The check-and-increment must be a single atomic UPDATE, not a read
+  // followed by a separate write: otherwise several concurrent sends all read
+  // the same under-limit value, all pass the check, and all increment — a
+  // free user fires N requests at once and blows past the cap.
   if (data.deliveryMethod === "whisper_link") {
     const limit = whisperLinkLimitFor(user.plan);
     const now = new Date();
     const resetDue = !user.whisperLinksResetAt || user.whisperLinksResetAt <= now;
-    const usedThisPeriod = resetDue ? 0 : user.whisperLinksUsed;
-
-    if (limit !== null && usedThisPeriod >= limit) {
-      res.status(402).json({ error: `Whisper Link limit reached for the ${user.plan} plan. Upgrade to send more.` });
-      return;
-    }
 
     if (resetDue) {
       const nextReset = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
@@ -279,25 +494,45 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
         .update(usersTable)
         .set({ whisperLinksUsed: 1, whisperLinksResetAt: nextReset })
         .where(eq(usersTable.id, user.id));
-    } else {
+    } else if (limit === null) {
       await db
         .update(usersTable)
         .set({ whisperLinksUsed: sql`${usersTable.whisperLinksUsed} + 1` })
         .where(eq(usersTable.id, user.id));
+    } else {
+      // Atomic guarded increment: the `whisperLinksUsed < limit` predicate is
+      // evaluated by the database as part of the same statement that does the
+      // increment, so two concurrent requests can't both pass. Zero rows
+      // affected ⇒ already at the cap.
+      const incremented = await db
+        .update(usersTable)
+        .set({ whisperLinksUsed: sql`${usersTable.whisperLinksUsed} + 1` })
+        .where(and(eq(usersTable.id, user.id), lt(usersTable.whisperLinksUsed, limit)))
+        .returning({ id: usersTable.id });
+      if (incremented.length === 0) {
+        res.status(402).json({ error: `Whisper Link limit reached for the ${user.plan} plan. Upgrade to send more.` });
+        return;
+      }
     }
   }
 
   // Ghost Boost spends a credit up front; there's no live ad-platform
-  // integration, so the whisp is queued rather than marked delivered.
+  // integration, so the whisp is queued rather than marked delivered. Same
+  // atomicity requirement as the link limit above — a plain read-then-write
+  // would let concurrent sends each see boostCredits >= 1 and both decrement,
+  // driving the balance negative (this one spends real money, so it matters
+  // more). The guarded UPDATE decrements only when the balance is still
+  // sufficient, in one statement.
   if (data.deliveryMethod === "ghost_boost") {
-    if (user.boostCredits < 1) {
+    const spent = await db
+      .update(usersTable)
+      .set({ boostCredits: sql`${usersTable.boostCredits} - 1` })
+      .where(and(eq(usersTable.id, user.id), gte(usersTable.boostCredits, 1)))
+      .returning({ id: usersTable.id });
+    if (spent.length === 0) {
       res.status(402).json({ error: "Insufficient Ghost Boost credits. Purchase more from Credits & Plan." });
       return;
     }
-    await db
-      .update(usersTable)
-      .set({ boostCredits: sql`${usersTable.boostCredits} - 1` })
-      .where(eq(usersTable.id, user.id));
   }
 
   if (data.deliveryMethod === "circle_drop" && data.circleId) {
@@ -309,6 +544,25 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
     if (!membership) {
       res.status(403).json({ error: "You're not a member of that circle" });
       return;
+    }
+  }
+
+  // Matched BEFORE insert (not just at delivery time) so recipientUserId is
+  // persisted on the row itself — that's what lets a signed-in recipient see
+  // this whisp in their own "Received" list (GET /?box=received) rather than
+  // only ever being reachable via the delivered link. Only meaningful for a
+  // whisper_link addressed to a specific person; circle_drop/ghost_boost
+  // have no single recipient identity to match. lib/deliver.ts's
+  // deliverWhisperLink does its own equivalent lookup at send time for
+  // delivery routing — this is a second, cheap indexed lookup, not a shared
+  // code path, since that function also serves scheduled/reminder callers
+  // that already have a persisted whisp row and don't need to recompute it.
+  let recipientUserId: string | null = null;
+  if (data.deliveryMethod === "whisper_link") {
+    if (data.whisperChannel === "email" && data.recipientEmail) {
+      recipientUserId = (await findVerifiedRecipientByEmail(data.recipientEmail))?.id ?? null;
+    } else if ((data.whisperChannel === "sms" || data.whisperChannel === "whatsapp") && data.recipientPhone) {
+      recipientUserId = (await findVerifiedRecipient(data.recipientPhone))?.id ?? null;
     }
   }
 
@@ -325,12 +579,18 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
   // admin — not just the sender. The Media Library's own owner-only
   // /api/media/:id/thumbnail is for browsing uploads before they're
   // attached to a whisp (no token exists yet).
+  // Never trust the client's videoThumbnail/videoEmbedUrl/videoPlatform —
+  // they render as auto-loaded <img>/<iframe> in the recipient's (and
+  // admin's) browser. Derive them server-side from the pasted URL instead
+  // (see lib/videoMeta.ts deriveVideoFields).
+  const derived = uploadedVideo ? null : deriveVideoFields(data.videoUrl!, data.videoThumbnail);
   const effectiveVideoThumbnail = uploadedVideo
     ? uploadedVideo.thumbnailObjectKey
       ? `/api/public/w/${publicToken}/media/thumbnail`
       : null
-    : data.videoThumbnail ?? null;
-  const effectiveVideoPlatform = uploadedVideo ? "upload" : data.videoPlatform ?? null;
+    : derived!.thumbnail;
+  const effectiveVideoEmbedUrl = uploadedVideo ? null : derived!.embedUrl;
+  const effectiveVideoPlatform = uploadedVideo ? "upload" : derived!.platform;
 
   await db.insert(whispsTable).values({
     id,
@@ -338,7 +598,7 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
     videoUrl: effectiveVideoUrl,
     videoTitle: effectiveVideoTitle,
     videoThumbnail: effectiveVideoThumbnail,
-    videoEmbedUrl: uploadedVideo ? null : data.videoEmbedUrl ?? null,
+    videoEmbedUrl: effectiveVideoEmbedUrl,
     videoStartSeconds: data.videoStartSeconds ?? null,
     videoEndSeconds: data.videoEndSeconds ?? null,
     videoPlatform: effectiveVideoPlatform,
@@ -348,6 +608,7 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
     circleId: data.deliveryMethod === "circle_drop" ? data.circleId ?? null : null,
     recipientEmail: data.recipientEmail ?? null,
     recipientPhone: data.recipientPhone ?? null,
+    recipientUserId,
     anonymousNote: data.anonymousNote ?? null,
     senderAlias: data.senderAlias ?? null,
     moodTag: data.moodTag ?? null,
@@ -370,6 +631,17 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
     });
   }
 
+  // An immediate send near the end of an upload's 7-day retention would
+  // otherwise have its bytes deleted mid-way through the recipient's 48-hour
+  // window (retention sweeps purely on uploadedVideos.expiresAt). Extend the
+  // media's life to cover the whisp's own expiry, plus an hour of slack.
+  if (uploadedVideo?.expiresAt && !isScheduled && !isGhostBoost) {
+    const needUntil = new Date(Date.now() + 49 * 60 * 60 * 1000);
+    if (uploadedVideo.expiresAt.getTime() < needUntil.getTime()) {
+      await db.update(uploadedVideosTable).set({ expiresAt: needUntil }).where(eq(uploadedVideosTable.id, uploadedVideo.id));
+    }
+  }
+
   // Read back and respond before kicking off the fire-and-forget delivery
   // send below — deliverWhisperLink awaits the actual Twilio/Resend call and
   // (for a failed initial send) updates this same row's status, so building
@@ -377,8 +649,8 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
   // reflects the whisp as inserted (status 'delivered' = "attempted
   // delivery"); a transport failure discovered moments later is visible via
   // GET, not this response, same as the scheduled-send and reminder paths.
-  const whisp = await db.select().from(whispsTable).where(eq(whispsTable.id, id)).then(r => r[0]);
-  res.status(201).json(whisp);
+  const whisp = await db.select().from(whispsTable).where(eq(whispsTable.id, id)).then(r => r[0]!);
+  res.status(201).json(await toWhispResponse(whisp, user.id));
 
   // The shared link goes through /l/:token (server-rendered) rather than
   // straight to /w/:token (the SPA) so link-preview crawlers in
@@ -474,13 +746,112 @@ router.get("/:id", requireAuth, async (req, res): Promise<void> => {
     .where(eq(trackingEventsTable.whispId, whisp.id))
     .orderBy(sql`${trackingEventsTable.createdAt} ASC`);
 
+  // Loading this page IS reading the recipient's side of the conversation —
+  // same "opening the chat" read receipt as the recipient gets on the public
+  // page (see routes/public.ts's GET /w/:token), mirrored for the other
+  // direction. Marked before the select below so this response already
+  // reflects it; scoped to fromRecipient=true (the recipient authored it)
+  // and still-null readAt so re-visiting an already-read thread is a no-op.
+  await db
+    .update(whispRepliesTable)
+    .set({ readAt: new Date() })
+    .where(
+      and(
+        eq(whispRepliesTable.whispId, whisp.id),
+        eq(whispRepliesTable.fromRecipient, true),
+        isNull(whispRepliesTable.readAt)
+      )
+    );
+
   const replies = await db
     .select()
     .from(whispRepliesTable)
     .where(eq(whispRepliesTable.whispId, whisp.id))
     .orderBy(sql`${whispRepliesTable.createdAt} ASC`);
 
-  res.json({ whisp, trackingEvents, replies });
+  // recipientRepliesRemaining lets the sender see their recipient is about to
+  // run out (and be offered more) BEFORE the thread goes quiet — otherwise the
+  // first sign of the cap is a reply that simply never arrives, which reads as
+  // the recipient losing interest rather than hitting a wall.
+  const recipientAllowance = recipientReplyAllowance(whisp.replyCreditsPurchased);
+
+  // Engagement data a poster can otherwise never see: how many anonymous
+  // circle viewers watched/liked/commented on their post, and every private
+  // conversation started from it (see routes/public.ts's POST
+  // /w/:token/circle-dm/start). Skipped for every other delivery method —
+  // "how many people watched" only makes sense for a post with more than
+  // one possible viewer.
+  let viewCount = 0;
+  let likeCount = 0;
+  let comments: Array<{
+    id: string;
+    commentText: string;
+    parentCommentId: string | null;
+    isPoster: boolean;
+    createdAt: Date;
+  }> = [];
+  let circleConversations: Array<{ id: string; publicToken: string; createdAt: Date }> = [];
+  if (whisp.deliveryMethod === "circle_drop") {
+    // "opened" fires once per real page load (see PublicWhispPage.tsx's
+    // hasTrackedOpen), so counting those events is the same "how many
+    // separate visits" proxy views everywhere else on the internet use —
+    // not a count of unique people (nothing here tracks visitor identity),
+    // but a real, honest engagement signal all the same.
+    viewCount = trackingEvents.filter((e) => e.eventType === "opened").length;
+
+    const [likeRow] = await db.select({ count: count() }).from(circlePostLikesTable).where(eq(circlePostLikesTable.whispId, whisp.id));
+    likeCount = likeRow?.count ?? 0;
+
+    comments = await db
+      .select({
+        id: circleCommentsTable.id,
+        commentText: circleCommentsTable.commentText,
+        parentCommentId: circleCommentsTable.parentCommentId,
+        isPoster: circleCommentsTable.isPoster,
+        createdAt: circleCommentsTable.createdAt,
+      })
+      .from(circleCommentsTable)
+      .where(eq(circleCommentsTable.whispId, whisp.id))
+      .orderBy(circleCommentsTable.createdAt);
+
+    circleConversations = await db
+      .select({ id: whispsTable.id, publicToken: whispsTable.publicToken, createdAt: whispsTable.createdAt })
+      .from(whispsTable)
+      .where(and(eq(whispsTable.originCircleWhispId, whisp.id), eq(whispsTable.senderId, user.id)))
+      .orderBy(desc(whispsTable.createdAt));
+  }
+
+  // recipientUserId (and the recipient's own pin/archive columns) are
+  // stripped for the same anti-enumeration reason toWhispResponse strips
+  // them in GET / — a sender reading recipientUserId straight off their own
+  // whisp's detail page would learn whether the email/phone they sent to
+  // belongs to a verified Blind Whisper account, and the recipient's
+  // pin/archive state isn't the sender's to see. This route is already
+  // scoped to the sender (never the recipient), so pinned/archived below
+  // always reflect the sender's own senderPinnedAt/senderArchivedAt.
+  const { recipientUserId: _recipientUserId, senderPinnedAt, senderArchivedAt, recipientPinnedAt: _recipientPinnedAt, recipientArchivedAt: _recipientArchivedAt, ...senderSafeWhisp } = whisp;
+
+  res.json({
+    // Same read-time embed fill-in as the public page (see routes/public.ts),
+    // so the sender previewing their own whisp sees exactly what the
+    // recipient will.
+    whisp: {
+      ...senderSafeWhisp,
+      videoEmbedUrl: whisp.videoEmbedUrl ?? embedUrlFor(whisp.videoUrl, whisp.videoPlatform),
+      pinned: !!senderPinnedAt,
+      archived: !!senderArchivedAt,
+    },
+    trackingEvents,
+    replies,
+    recipientRepliesRemaining:
+      recipientAllowance === null
+        ? null
+        : Math.max(0, recipientAllowance - replies.filter((r) => r.fromRecipient).length),
+    viewCount,
+    likeCount,
+    comments,
+    circleConversations,
+  });
 });
 
 // GET /api/whisps/:id/matches — aggregate-only Ghost Boost reach stats.
@@ -575,6 +946,7 @@ router.post("/:id/replies", requireAuth, async (req, res): Promise<void> => {
 
   const schema = z.object({
     replyText: z.string().min(1).max(300),
+    parentReplyId: z.string().max(64).nullable().optional(),
   });
 
   const parsed = schema.safeParse(req.body);
@@ -583,11 +955,26 @@ router.post("/:id/replies", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
+  // Same-whisp check as the public reply route: an unvalidated parent id
+  // would let a reply quote a message from a different thread, and the quoted
+  // text renders to whoever opens this one. A stale id degrades to an
+  // ordinary reply rather than failing the send.
+  let parentReplyId: string | null = null;
+  if (parsed.data.parentReplyId) {
+    const parent = await db
+      .select({ id: whispRepliesTable.id })
+      .from(whispRepliesTable)
+      .where(and(eq(whispRepliesTable.id, parsed.data.parentReplyId), eq(whispRepliesTable.whispId, whisp.id)))
+      .then((r) => r[0]);
+    parentReplyId = parent?.id ?? null;
+  }
+
   const id = randomUUID();
   await db.insert(whispRepliesTable).values({
     id,
     whispId: whisp.id,
     replyText: parsed.data.replyText,
+    parentReplyId,
     // This route is requireAuth-gated to the whisp's own sender — the
     // caller IS the sender, full stop, so fromRecipient is never
     // client-controlled here (it used to accept an optional override,
@@ -609,6 +996,59 @@ router.post("/:id/replies", requireAuth, async (req, res): Promise<void> => {
   if (whisp.whisperChannel) {
     void deliverWhisperLink(whisp, getPublicAppUrl(req), newReplyHookLine(), "reply_to_recipient");
   }
+});
+
+const GUESS_REACTIONS = ["hot", "cold", "no_comment", "confirmed"] as const;
+
+// PATCH /api/whisps/:id/replies/:replyId/guess-reaction — the sender's
+// manual response to a "guess who sent it" reply. Deliberately the ONLY way
+// a guess ever gets a reaction: there is no automated check anywhere against
+// the real sender identity, because that would be an oracle a recipient
+// could hammer with names until one came back "correct" — the exact thing
+// this app's anti-enumeration rules exist to prevent (see toWhispResponse
+// above and whisp_replies.ts's schema comment). The sender decides, the same
+// way they decide whether to accept a Reveal request.
+router.patch("/:id/replies/:replyId/guess-reaction", requireAuth, async (req, res): Promise<void> => {
+  const { userId } = getAuth(req);
+  const user = await ensureUser(userId!, req);
+
+  const parsed = z.object({ reaction: z.enum(GUESS_REACTIONS) }).safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const whisp = await db
+    .select({ id: whispsTable.id })
+    .from(whispsTable)
+    .where(and(eq(whispsTable.id, req.params.id), eq(whispsTable.senderId, user.id), excludeMatchDeliveries(), excludeDeleted()))
+    .then(r => r[0]);
+
+  if (!whisp) {
+    res.status(404).json({ error: "Whisp not found" });
+    return;
+  }
+
+  const reply = await db
+    .select({ id: whispRepliesTable.id })
+    .from(whispRepliesTable)
+    .where(and(
+      eq(whispRepliesTable.id, req.params.replyId),
+      eq(whispRepliesTable.whispId, whisp.id),
+      eq(whispRepliesTable.isGuess, true),
+      eq(whispRepliesTable.fromRecipient, true),
+    ))
+    .then(r => r[0]);
+
+  if (!reply) {
+    res.status(404).json({ error: "Guess not found" });
+    return;
+  }
+
+  await db.update(whispRepliesTable).set({ guessReaction: parsed.data.reaction }).where(eq(whispRepliesTable.id, reply.id));
+
+  const updated = await db.select().from(whispRepliesTable).where(eq(whispRepliesTable.id, reply.id)).then(r => r[0]);
+  res.json(updated);
 });
 
 // POST /api/whisps/:id/reveal

@@ -5,7 +5,16 @@ router = "application"
 deploymentTarget = "autoscale"
 
 [deployment.postBuild]
-args = ["pnpm", "store", "prune"]
+# Runs during the deploy, in the deployment's own environment — so
+# DATABASE_URL here is the PRODUCTION database the deployed app actually
+# reads. Applying the Drizzle schema here means every Republish migrates
+# prod automatically, instead of it silently drifting behind the code
+# (which is what left production missing visitor_sessions / whisp_sender_handles
+# / sms_consents and new columns, surfacing as "Whisp not found", empty live
+# visitors, and frozen last-seen). `db push` is idempotent: a no-op when the
+# schema already matches. Kept before the store prune so a migration failure
+# fails the deploy loudly rather than shipping code against an un-migrated DB.
+args = ["sh", "-c", "pnpm --filter @workspace/db run push && pnpm store prune"]
 env = { "CI" = "true" }
 
 [workflows]
@@ -22,8 +31,8 @@ artifactId = "artifacts/whispick"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "pnpm --filter @workspace/whispick run dev"
-cwd = "./artifacts/whispick"
+args = "pnpm --filter @workspace/blindwhisper run dev"
+cwd = "./artifacts/blindwhisper"
 waitForPort = 22964
 ensurePreviewReachable = "/"
 router = "path"

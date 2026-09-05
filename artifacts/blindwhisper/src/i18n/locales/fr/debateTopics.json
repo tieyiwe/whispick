@@ -1,0 +1,179 @@
+{
+  "createDebateTopic": {
+    "backButton": "Retour à Debate Now",
+    "title": "Publier sur Debate Now",
+    "description": "Une accroche courte, façon titre, pour le fil public. Publiée anonymement — personne ne saura que c'était toi, sauf si on te reconnaît ailleurs dans un Reveal Flow.",
+    "helperText": "Reste concis : une accroche qui donne envie de réagir, pas un roman.",
+    "submitButton": "Publier anonymement",
+    "inspirationLabel": "Besoin d'inspiration ?",
+    "examples": {
+      "honesty": "L'honnêteté est-elle toujours la meilleure politique ?",
+      "ageLimit": "Les réseaux sociaux devraient-ils avoir une limite d'âge ?",
+      "protectFeelings": "Est-il acceptable de mentir pour ménager les sentiments de quelqu'un ?"
+    },
+    "toast": {
+      "posted": "Sujet publié anonymement",
+      "postError": "Impossible de publier ce sujet"
+    },
+    "guidelinesNotice": "En publiant, tu acceptes nos",
+    "guidelinesLinkText": "Règles de la communauté"
+  },
+  "debateFollowing": {
+    "backButton": "Retour à Debate Now",
+    "title": "Abonnements",
+    "description": "Tes statistiques d'abonnement, ton engagement sur les sujets, et les sujets des auteurs et commentateurs que tu suis.",
+    "stats": {
+      "followers": "Abonnés",
+      "following": "Abonnements",
+      "topicsPosted": "Sujets publiés",
+      "commentsReceived": "Commentaires reçus",
+      "rewhispsReceived": "Rewhisps reçus",
+      "commentsPosted": "Commentaires publiés",
+      "commentLikesReceived": "J'aime reçus sur les commentaires"
+    },
+    "feedTitle": "Ton fil des abonnements",
+    "emptyTitle": "Rien à afficher pour l'instant",
+    "emptyDescription": "Abonne-toi à des auteurs ou des commentateurs pour voir leurs sujets ici.",
+    "browseButton": "Parcourir Debate Now",
+    "newerButton": "Plus récents",
+    "moreButton": "Plus de sujets"
+  },
+  "debateTopicDetail": {
+    "backButton": "Retour à Debate Now",
+    "becomeWhisperer": "Devenir Whisperer",
+    "notFound": "Ce sujet de débat est introuvable — il a peut-être été retiré.",
+    "topicBadge": "Debate Now",
+    "followerCount_one": "{{count}} abonné",
+    "followerCount_other": "{{count}} abonnés",
+    "whisperButton": "Partager ce sujet",
+    "retractTriggerButton": "Retirer",
+    "retractTitle": "Retirer ce sujet ?",
+    "retractDescription": "Il sera retiré du fil public et de sa propre page. Les commentaires déjà publiés restent enregistrés, mais plus personne ne pourra lire ce fil ni y ajouter quoi que ce soit.",
+    "cancelButton": "Annuler",
+    "retractConfirmButton": "Retirer le sujet",
+    "commentCount_one": "{{count}} commentaire",
+    "commentCount_other": "{{count}} commentaires",
+    "commentingAsPrefix": "Tu commentes en tant que",
+    "replyingToPrefix": "En réponse à",
+    "commentPlaceholder": "Donne ton avis — de quel côté es-tu ?",
+    "keepKindText": "Reste bienveillant : un débat sincère et constructif, pas une bagarre.",
+    "addImageButton": "Ajouter une image",
+    "changeImageButton": "Changer l'image",
+    "becomeWhispererCta": "Deviens Whisperer — commente à volonté, sans limite.",
+    "postButton": "Publier",
+    "topicAuthorBadge": "Auteur du sujet",
+    "youBadge": "Toi",
+    "onlineAriaLabel": "En ligne actuellement",
+    "timeAgo": "il y a {{time}}",
+    "altAttachedImage": "Image jointe au commentaire",
+    "replyButton": "Répondre",
+    "handleRename": {
+      "ariaLabel": "Change ton nom dans ce fil",
+      "title": "Change ton nom dans ce fil",
+      "placeholder": "ex. SwiftFalcon482",
+      "helperText": "N'utilise pas ton vrai nom ni rien qui puisse t'identifier — 3 à 24 lettres/chiffres, sans espaces ni symboles. Ce nom n'est utilisé que pour Debate Now.",
+      "saveButton": "Enregistrer"
+    },
+    "avatarPicker": {
+      "ariaLabel": "Change ton avatar dans ce fil",
+      "title": "Change ton avatar dans ce fil"
+    },
+    "altAttachmentPreview": "Aperçu de la pièce jointe",
+    "ariaRemoveImage": "Supprimer l'image",
+    "shareTitle": "Blind Whisper — Sujet de débat",
+    "toast": {
+      "handleUpdated": "Ton nom dans ce fil a été mis à jour",
+      "handleUpdateErrorDefault": "Impossible de mettre à jour ton nom",
+      "avatarUpdated": "Ton avatar dans ce fil a été mis à jour",
+      "avatarUpdateError": "Impossible de mettre à jour ton avatar",
+      "invalidImageType": "Joins une image JPEG, PNG, WebP ou GIF",
+      "imageTooLarge": "La pièce jointe doit faire moins de 5 Mo",
+      "postCommentErrorDefault": "Impossible de publier ce commentaire",
+      "reactionError": "Impossible de mettre à jour ta réaction",
+      "rewhispError": "Impossible de faire un rewhisp de ce sujet",
+      "linkCopied": "Lien copié — envoie-le pour faire entrer quelqu'un dans le débat",
+      "copyFailed": "Impossible de copier — veuillez le copier manuellement",
+      "topicRetracted": "Sujet retiré",
+      "retractError": "Impossible de retirer ce sujet"
+    },
+    "sendWhispDialog": {
+      "title": "Whisper ce sujet",
+      "description": "Envoie-le à quelqu'un anonymement, pour qu'il rejoigne le débat.",
+      "channels": {
+        "email": "E-mail",
+        "sms": "SMS",
+        "whatsapp": "WhatsApp"
+      },
+      "emailPlaceholder": "son@email.com",
+      "phonePlaceholder": "Son numéro de téléphone",
+      "pickFromContactsLabel": "Choisir dans les contacts",
+      "notePlaceholder": "Ajouter une note (facultatif)",
+      "aliasPlaceholder": "Signer comme (facultatif)",
+      "privacyNote": "Ceci est envoyé anonymement. Ils ne sauront pas que c'était toi, sauf si tu le leur dis.",
+      "sendButton": "Envoyer",
+      "copyLinkInsteadButton": "Ou partage simplement le lien",
+      "sentTitle": "Envoyé",
+      "sentDescription": "Ils recevront un lien vers ce sujet, anonymement.",
+      "sendAnotherButton": "Envoyer à quelqu'un d'autre",
+      "doneButton": "Terminé",
+      "toastSendFailed": "Impossible d'envoyer — réessaie",
+      "toastNoEmailOnContact": "Ce contact n'a pas d'adresse e-mail",
+      "toastNoPhoneOnContact": "Ce contact n'a pas de numéro de téléphone"
+    },
+    "anonymousExplainer": {
+      "title": "Publie et réponds anonymement",
+      "body": "Pas besoin de compte pour rejoindre le débat — publie et réponds anonymement à tout moment. Crée un compte gratuit quand tu veux pour te constituer des abonnés avec ta propre identité Whisperer."
+    },
+    "postSignupNudge": {
+      "title": "Ton commentaire est publié !",
+      "body": "Crée un compte gratuit pour qu'on puisse te prévenir dès que quelqu'un y réagit.",
+      "cta": "Créer un compte gratuit",
+      "dismissAria": "Fermer"
+    }
+  },
+  "debateTopics": {
+    "followingButton": "Abonnements",
+    "postTopicButton": "Publier un sujet",
+    "becomeWhisperer": "Devenir Whisperer",
+    "pillLabel": "Debate Now",
+    "heading": "De quel côté es-tu ?",
+    "description": "Des messages courts et anonymes de Whisperers. Lis, donne ton avis ou publie le tien — aucun compte requis pour rejoindre la conversation.",
+    "becomeWhispererToPost": "Deviens Whisperer pour publier un sujet",
+    "emptyTitle": "Pas encore de débats",
+    "emptyDescription": "Sois le premier à publier un sujet — une question, une opinion, un sujet qui vaut la peine d'être débattu.",
+    "newerButton": "Plus récents",
+    "moreButton": "Plus de sujets",
+    "guidelinesLink": "Règles de la communauté"
+  },
+  "reportDialog": {
+    "triggerLabel": "Signaler",
+    "title": "Signaler ce contenu",
+    "description": "Dis-nous ce qui ne va pas. Les signalements sont confidentiels — l'auteur ne voit jamais qui l'a signalé.",
+    "reasonLabel": "Pourquoi signales-tu ce contenu ?",
+    "reasons": {
+      "inappropriate": "Inapproprié",
+      "sexual_content": "Contenu sexuel",
+      "harassment": "Harcèlement ou intimidation",
+      "hate_speech": "Discours haineux",
+      "threat_or_violence": "Menace ou violence",
+      "child_safety": "Abus ou mise en danger d'enfants",
+      "self_harm": "Automutilation ou suicide",
+      "misinformation": "Désinformation",
+      "spam_or_scam": "Spam ou arnaque",
+      "other": "Autre chose"
+    },
+    "detailLabel": "Ajoute des détails (facultatif)",
+    "detailPlaceholder": "Tout ce qui peut aider notre équipe à comprendre le problème...",
+    "wordCount": "{{used}}/{{max}} mots",
+    "guidelinesPrefix": "Pas sûr que la limite soit franchie ? Lis nos",
+    "guidelinesLinkText": "Règles de la communauté",
+    "submitButton": "Envoyer le signalement",
+    "cancelButton": "Annuler",
+    "signInPrompt": "Tu dois être connecté pour signaler un contenu — c'est ainsi que notre équipe peut t'informer du résultat de ton signalement.",
+    "signInButton": "Se connecter",
+    "toastSubmittedTitle": "Signalement envoyé",
+    "toastSubmittedDescription": "Notre équipe va l'examiner et t'informer du résultat.",
+    "toastAlreadyReported": "Tu as déjà signalé ce contenu — notre équipe s'en occupe.",
+    "toastFailed": "Impossible d'envoyer le signalement"
+  }
+}

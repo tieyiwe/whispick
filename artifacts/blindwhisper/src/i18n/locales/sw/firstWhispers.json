@@ -1,0 +1,94 @@
+{
+  "groupName": "Whispers Zangu za Kwanza",
+  "steps": {
+    "friends": "Marafiki",
+    "whatToSend": "Cha kutuma",
+    "send": "Tuma"
+  },
+  "stepIndicator": "Hatua ya {{step}} kati ya {{total}}",
+  "header": {
+    "title": "Tuma Whispers zako za kwanza",
+    "subtitle": "Chagua marafiki wachache, chagua kitu cha kutuma, kisha ufikie wote kwa wakati mmoja — bila kujulikana."
+  },
+  "common": {
+    "next": "Endelea",
+    "back": "Rudi"
+  },
+  "concierge": {
+    "defaultSituation": "nina hamu ya kushiriki kitu na marafiki"
+  },
+  "step1": {
+    "heading": "Unataka kutuma Whisp kwa nani?",
+    "subtitle": "Ongeza marafiki hadi 5 — unahitaji tu barua pepe au nambari ya simu ya kila mmoja.",
+    "friendLabel": "Rafiki {{number}}",
+    "removeContact": "Ondoa mawasiliano haya",
+    "namePlaceholder": "Jina (si lazima)",
+    "emailPlaceholder": "Barua pepe",
+    "phonePlaceholder": "Nambari ya simu",
+    "addAnother": "Ongeza rafiki mwingine",
+    "pickFromContacts": "Chagua kutoka kwa anwani",
+    "upToCount": "Ongeza marafiki hadi {{count}}.",
+    "toast": {
+      "noneHadContactInfo": "Hakuna mawasiliano uliyochagua yaliyokuwa na barua pepe au nambari ya simu",
+      "needAtLeastOne": "Ongeza angalau rafiki mmoja mwenye barua pepe au nambari ya simu"
+    }
+  },
+  "step2": {
+    "heading": "Huna uhakika wa nini cha kutuma?",
+    "subtitle": "Tumechagua video chache zinazoweza kufaa — gusa moja ili uitumie, bila kuandika chochote.",
+    "loading": "Tunatafuta kitu kinachokufaa...",
+    "untitledVideo": "Video isiyo na kichwa",
+    "noMatch": "Hakuna kilichofaa kabisa — jaribu hali tofauti, au bandika kiungo cha video yako mwenyewe hapa chini.",
+    "videoFallback": "Kiungo cha video",
+    "changeVideo": "Badilisha",
+    "tryDifferentSituation": "Jaribu hali tofauti",
+    "pasteOwnLink": "Bandika kiungo chako cha video",
+    "situationPlaceholder": "Eleza hii ni ya nani na kwa nini...",
+    "getNewSuggestions": "Pata mapendekezo mapya",
+    "customUrl": {
+      "placeholder": "Bandika kiungo cha video (YouTube, TikTok, Instagram...)",
+      "invalidUrl": "Tafadhali weka URL sahihi"
+    },
+    "noteLabel": "Ongeza ujumbe (si lazima)",
+    "notePlaceholder": "Andika kitu bila kujulikana..."
+  },
+  "step3": {
+    "heading": "Tayari kutuma",
+    "subtitle": "Inatuma kwa rafiki {{count}}, wote kwa wakati mmoja.",
+    "subtitle_one": "Inatuma kwa rafiki {{count}}, wote kwa wakati mmoja.",
+    "subtitle_other": "Inatuma kwa marafiki {{count}}, wote kwa wakati mmoja.",
+    "channels": {
+      "email": "Barua pepe",
+      "sms": "Ujumbe",
+      "whatsapp": "WhatsApp"
+    },
+    "sendButton": "Tuma kwa {{count}}",
+    "sendButton_one": "Tuma kwa rafiki {{count}}",
+    "sendButton_other": "Tuma kwa marafiki {{count}}",
+    "toast": {
+      "sendFailed": "Imeshindikana kutuma. Tafadhali jaribu tena.",
+      "groupSetupFailed": "Imeshindikana kuandaa orodha yako ya marafiki. Tafadhali jaribu tena."
+    }
+  },
+  "sent": {
+    "title": "Imetumwa kwa {{count}}!",
+    "title_one": "Imetumwa kwa rafiki {{count}}!",
+    "title_other": "Imetumwa kwa marafiki {{count}}!",
+    "description": "Whisps zako ziko njiani — bila kujulikana kabisa, kama kawaida.",
+    "description_one": "Whisp yako iko njiani — bila kujulikana kabisa, kama kawaida.",
+    "description_other": "Whisps zako ziko njiani — bila kujulikana kabisa, kama kawaida.",
+    "skippedHeading": "Mtu {{count}} hakuweza kufikiwa",
+    "skippedHeading_one": "Mtu {{count}} hakuweza kufikiwa",
+    "skippedHeading_other": "Watu {{count}} hawakuweza kufikiwa",
+    "skippedUnnamed": "Mtu asiyejulikana jina",
+    "viewSendButton": "Tazama utumaji huu",
+    "dashboardButton": "Nenda kwa Dashibodi"
+  },
+  "dashboardCard": {
+    "title": "Anza hapa",
+    "heading": "Tuma Whispers zako za kwanza",
+    "description": "Fikia marafiki wachache kwa wakati mmoja kwa video moja isiyojulikana — njia ya haraka zaidi ya kuhisi Blind Whisper.",
+    "cta": "Tuma kwa marafiki wachache",
+    "dismiss": "Ondoa"
+  }
+}

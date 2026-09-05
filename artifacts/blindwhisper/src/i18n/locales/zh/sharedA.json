@@ -1,0 +1,114 @@
+{
+  "archivedWhispGate": {
+    "title": "这条 Whisp 已归档",
+    "description": "它被收进了你的归档。取消归档即可查看或再次回复。",
+    "descriptionWithTitle": "\"{{title}}\" 被收进了你的归档。取消归档即可查看或再次回复。",
+    "back": "返回",
+    "unarchive": "取消归档查看"
+  },
+  "avatarPickerGrid": {
+    "chooseAvatar": "选择头像",
+    "noAvatar": "无头像"
+  },
+  "cameraCapture": {
+    "modePhoto": "照片",
+    "modeVideo": "视频",
+    "photoPrepareUnsupported": "此浏览器无法准备要发送的照片 — 请改用视频。",
+    "photoPrepareFailed": "无法准备这张照片以供发送,请重新拍摄。",
+    "captureFailed": "无法从相机捕获照片。",
+    "photoClipUnsupported": "此浏览器无法为发送准备照片 — 请改用视频,或重新拍摄。",
+    "recordUnsupported": "此浏览器无法录制视频 — 请改用照片或上传。",
+    "recordStartFailed": "无法开始录制,请重试。",
+    "unsupportedFallback": "请改用上传或粘贴链接。",
+    "deniedFallback": "如果这个方法不行,仍可以使用上传或粘贴链接。",
+    "idlePromptPhoto": "用相机拍一张照片",
+    "idlePromptVideo": "用相机录制一段短视频",
+    "tryAgain": "重试",
+    "enableCamera": "启用相机",
+    "requestingAccess": "正在请求相机权限…",
+    "flipCamera": "切换相机",
+    "takePhoto": "拍照",
+    "stop": "停止",
+    "startRecording": "开始录制",
+    "capturedPhotoAlt": "已拍摄的照片",
+    "preparingPhoto": "正在准备你的照片…",
+    "retake": "重拍",
+    "useThisPhoto": "使用这张照片",
+    "useThisVideo": "使用这段视频",
+    "uploading": "正在上传…"
+  },
+  "circleCommentRow": {
+    "poster": "发布者",
+    "you": "(你)",
+    "reply": "回复",
+    "attachedImageAlt": "评论附图"
+  },
+  "circlePostComposer": {
+    "trigger": "发布到 Blind Circle",
+    "dialogTitle": "发布到 Blind Circle",
+    "uploadFailedGeneric": "上传失败 — 视频时长必须小于 {{seconds}} 秒",
+    "postedSuccess": "已发布到 Blind Circle",
+    "postFailedGeneric": "无法发布到 Blind Circle",
+    "pasteLink": "粘贴链接",
+    "uploadVideo": "上传视频",
+    "fetch": "获取",
+    "videoLinkPlaceholder": "粘贴视频链接...",
+    "removeVideo": "移除视频",
+    "titleLabel": "标题",
+    "titlePlaceholder": "这是什么?给它起个标题",
+    "chooseVideo": "选择视频",
+    "uploadingEllipsis": "正在上传...",
+    "uploadHint": "最长 {{seconds}} 秒。MP4、WebM 或 MOV 格式。",
+    "notePlaceholderWithTitle": "简短描述(可选)",
+    "notePlaceholderNoTitle": "说点什么(可选)",
+    "moodLabel": "心情(可选)",
+    "aliasPlaceholder": "署名为...(可选)",
+    "destinationLabel": "要发到哪里?",
+    "publicCircle": "公开 Blind Circle",
+    "anonymousDisclaimer": "匿名发布 — 你的名字不会显示。任何能看到这个圈子的人都能看到这条帖子。",
+    "postAnonymously": "匿名发布"
+  },
+  "countryPhoneInput": {
+    "searchCountry": "搜索国家...",
+    "noCountryFound": "未找到相关国家。"
+  },
+  "debateTopicCard": {
+    "shareTitle": "Blind Whisper — Debate Now",
+    "linkCopied": "链接已复制 — 发给朋友,邀请他们加入辩论",
+    "copyFailed": "复制失败 — 请手动复制",
+    "commentCount_one": "{{count}} 条评论",
+    "commentCount_other": "{{count}} 条评论",
+    "shareTopicAria": "分享这个话题",
+    "joinDebate": "加入辩论",
+    "onlineAriaLabel": "当前在线"
+  },
+  "demographicsGateDialog": {
+    "title": "还差一小步",
+    "description": "在发送你的第一条 whisp 之前,帮助我们了解 Blind Whisper 的用户,并选择应用要使用的语言。这些信息永远不会展示给你发送的对象,之后你也可以在设置里修改。",
+    "languageLabel": "语言",
+    "genderLabel": "性别",
+    "ageRangeLabel": "年龄段",
+    "selectPlaceholder": "请选择...",
+    "continue": "继续",
+    "saveFailed": "无法保存你的回答,请重试。"
+  },
+  "enableNotificationsPrompt": {
+    "title": "开启通知",
+    "description": "有人给你发 whisp 或回复时立即收到提醒 — 直接推送到你的设备,就像其他应用一样。",
+    "notNow": "暂不开启",
+    "enabling": "正在开启...",
+    "enable": "开启通知"
+  },
+  "policyUpdate": {
+    "heading": "我们更新了政策",
+    "description": "请花一点时间查看变更内容,并确认同意后继续使用 Blind Whisper。",
+    "privacyLabel": "隐私政策",
+    "termsLabel": "服务条款",
+    "readLink": "阅读完整文档",
+    "agreeButton": "已阅读 — 我同意",
+    "laterButton": "稍后查看",
+    "reminderPill": "政策更新 — 请查看并同意",
+    "toastThanks": "谢谢 — 你的同意已被记录。",
+    "toastError": "无法记录你的同意,请重试。"
+  }
+}

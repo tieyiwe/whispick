@@ -6,13 +6,13 @@ import { deliverWhisperLink } from "../lib/deliver";
 import { normalizePhoneE164 } from "../lib/phone";
 
 // Twilio isn't configured in the test environment (no TWILIO_* env vars —
-// see setup.ts), so an unmatched sms/whatsapp send here always falls
-// through sendSms/sendWhatsApp's own "not configured" no-op path rather
-// than making a real network call — same pattern every other Twilio/Resend
-// test in this codebase relies on. What's under test is purely the
-// *routing decision* deliverWhisperLink makes before it ever gets to
-// sendSms/sendWhatsApp: did it find a verified match and skip Twilio
-// entirely, or fall through to the (here, no-op) Twilio path.
+// see setup.ts), so an sms/whatsapp send here always falls through
+// sendSms/sendWhatsApp's own "not configured" no-op path rather than making
+// a real network call — same pattern every other Twilio/Resend test in this
+// codebase relies on. What's under test is purely the *routing decision*
+// deliverWhisperLink makes before it ever gets to sendSms/sendWhatsApp: a
+// verified match now gets BOTH the in-app notification and the (here,
+// no-op) Twilio send, where it used to skip Twilio entirely for a match.
 
 async function insertUser(overrides: Partial<typeof usersTable.$inferInsert> = {}) {
   const id = randomUUID();
@@ -54,32 +54,39 @@ describe("normalizePhoneE164", () => {
   });
 });
 
-describe("deliverWhisperLink — verified-recipient matching (skip Twilio)", () => {
-  it("routes to the in-app notification system when the recipient phone matches a verified user, for SMS", async () => {
+describe("deliverWhisperLink — verified-recipient matching (in-app + Twilio, both)", () => {
+  it("delivers in-app AND still sends the SMS when the recipient phone matches a verified user", async () => {
     const matchedUserId = await insertUser({ phone: "+15559876543", phoneVerifiedAt: new Date() });
     const whisp = fakeWhisp({ whisperChannel: "sms", recipientPhone: "+1 (555) 987-6543" });
 
+    // Twilio isn't configured in this test environment (same as production
+    // right now, pending SMS/WhatsApp approval) — sendSms's own "not
+    // configured" no-op returns false, so the sms delivery_attempts row is
+    // legitimately success:false. Overall `success` is still true because
+    // in-app is what actually reached this matched recipient; see
+    // deliverWhisperLink's own comment on why a bonus channel's failure
+    // never flips a matched send to "failed".
     const success = await deliverWhisperLink(whisp, "https://example.com");
     expect(success).toBe(true);
 
     const attempts = await db.select().from(deliveryAttemptsTable).where(eq(deliveryAttemptsTable.whispId, whisp.id));
-    expect(attempts).toHaveLength(1);
-    expect(attempts[0].channel).toBe("in_app");
-    expect(attempts[0].success).toBe(true);
+    expect(attempts).toHaveLength(2);
+    expect(attempts.map((a) => a.channel).sort()).toEqual(["in_app", "sms"]);
+    expect(attempts.find((a) => a.channel === "in_app")?.success).toBe(true);
 
     const notifications = await db.select().from(notificationsTable).where(eq(notificationsTable.targetUserId, matchedUserId));
     expect(notifications).toHaveLength(1);
     expect(notifications[0].url).toBe(`/w/${whisp.publicToken}`);
   });
 
-  it("routes to the in-app notification system when matched, for WhatsApp too", async () => {
+  it("delivers in-app AND still sends WhatsApp when matched, too", async () => {
     const matchedUserId = await insertUser({ phone: "+15559876543", phoneVerifiedAt: new Date() });
     const whisp = fakeWhisp({ whisperChannel: "whatsapp", recipientPhone: "+15559876543" });
 
     await deliverWhisperLink(whisp, "https://example.com");
 
     const attempts = await db.select().from(deliveryAttemptsTable).where(eq(deliveryAttemptsTable.whispId, whisp.id));
-    expect(attempts[0].channel).toBe("in_app");
+    expect(attempts.map((a) => a.channel).sort()).toEqual(["in_app", "whatsapp"]);
 
     const notifications = await db.select().from(notificationsTable).where(eq(notificationsTable.targetUserId, matchedUserId));
     expect(notifications).toHaveLength(1);
@@ -118,7 +125,7 @@ describe("deliverWhisperLink — verified-recipient matching (skip Twilio)", () 
     await deliverWhisperLink(whisp, "https://example.com");
 
     const attempts = await db.select().from(deliveryAttemptsTable).where(eq(deliveryAttemptsTable.whispId, whisp.id));
-    expect(attempts[0].channel).toBe("in_app");
+    expect(attempts.map((a) => a.channel).sort()).toEqual(["in_app", "sms"]);
   });
 
   it("never matches on email delivery, only sms/whatsapp", async () => {
@@ -149,6 +156,7 @@ describe("anti-enumeration: matched vs unmatched responses are indistinguishable
         deliveryMethod: "whisper_link",
         whisperChannel: "sms",
         recipientPhone: "+15559876543",
+        smsConsentConfirmed: true,
       });
 
     const unmatchedRes = await request(app)
@@ -159,6 +167,7 @@ describe("anti-enumeration: matched vs unmatched responses are indistinguishable
         deliveryMethod: "whisper_link",
         whisperChannel: "sms",
         recipientPhone: "+15550001111",
+        smsConsentConfirmed: true,
       });
 
     // Same status, and the same set of body keys — nothing about the

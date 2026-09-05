@@ -72,6 +72,19 @@ export const phoneVerificationLimiter = rateLimit({
   keyGenerator: authKeyGenerator,
 });
 
+// Confirming a phone-verification code (routes/user.ts). Twilio Verify
+// already enforces its own per-code attempt lockout and expiry server-side,
+// but this adds our own defense-in-depth cap so the confirm endpoint can't be
+// hammered independent of Twilio's limits. Looser than the send limiter,
+// since a legitimate user may retype a code a few times.
+export const confirmPhoneVerificationLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: authKeyGenerator,
+});
+
 // The "Not sure what to send?" concierge (lib/concierge.ts) is a Claude call
 // plus a library lookup — slightly heavier than a plain note suggestion, so
 // it gets a somewhat tighter cap, same per-user keying rationale as above.
@@ -108,6 +121,44 @@ export const createTextWhispLimiter = rateLimit({
   keyGenerator: authKeyGenerator,
 });
 
+// Posting a Debate Topic (routes/debateTopics.ts) is free — no plan cap, no
+// per-send cost like an email/SMS whisp — so this is the only thing bounding
+// burst creation by one signed-in account. Tighter than createWhispLimiter:
+// a debate topic is a public feed post meant to spark discussion, not
+// something anyone legitimately needs to fire off dozens of per hour.
+export const createDebateTopicLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: authKeyGenerator,
+});
+
+// Whisping a Debate Now topic to a contact (routes/debateTopicWhisps.ts)
+// triggers a real email/SMS/WhatsApp send, same recurring-cost reasoning
+// (and same 20/hour cap) as inviteLimiter above.
+export const sendDebateTopicWhispLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: authKeyGenerator,
+});
+
+// Filing a content report (routes/contentReports.ts) is free and writes a
+// row an admin has to personally read — the classic shape for both
+// griefing (mass-reporting someone you disagree with) and queue-flooding.
+// 20/hour is far beyond what any good-faith reporter needs while keeping
+// one account from burying the admin queue; the per-content dedup check in
+// the route itself handles repeat reports of the same post separately.
+export const reportContentLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: authKeyGenerator,
+});
+
 // POST /:id/reveal (routes/textWhisps.ts) is the one remaining place a
 // sender can learn whether a Text Whisp's recipient phone number matched a
 // verified account: it 400s with "hasn't joined yet" if not, succeeds (and
@@ -121,4 +172,75 @@ export const textWhispRevealLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: authKeyGenerator,
+});
+
+// POST /billing/checkout (routes/billing.ts) calls the real Stripe API
+// (customer.create, checkout.sessions.create) — no per-request dollar cost,
+// but each call is an outbound network round-trip against Stripe's own rate
+// limits, shared across this whole app's Stripe usage. A normal user hits
+// this a handful of times per purchase/upgrade at most (a mis-click, a
+// changed mind about which plan/pack); nothing in the legitimate flow needs
+// more than a few calls an hour, and without a limiter this was the one
+// authenticated write left that could hammer an external paid API for free.
+export const billingCheckoutLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: authKeyGenerator,
+});
+
+// POST /admin-mfa/verify (routes/adminMfa.ts) is the only thing standing
+// between a hijacked admin Clerk session and the full HQ, and TOTP accepts
+// ±1 time-step (3 of 10^6 codes valid at any instant) plus 40-bit backup
+// codes. Legitimate use is one code per unlock — a handful a day at most.
+// Tight window so a bot can't grind codes, generous enough that fat-
+// fingering a code a few times never locks a real admin out for long.
+export const adminMfaVerifyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: authKeyGenerator,
+  // The test harness re-enrolls and re-verifies real TOTP codes before every
+  // admin-gated test (see adminTestUtils.ts) — many times more often than any
+  // legitimate admin unlocks in production, where one code unlocks a 12h
+  // token. Skipping only under vitest's own NODE_ENV=test leaves production
+  // (and any other environment) fully protected.
+  skip: () => process.env.NODE_ENV === "test",
+});
+
+// POST /public/whisper-box/:handle (routes/whisperBox.ts) is the one place
+// on the platform a completely anonymous, no-account visitor can write
+// content aimed at a specific named person — IP-keyed by necessity, same as
+// publicEndpointLimiter, since there's no authenticated user to key on.
+// Deliberately its own (tighter) limiter rather than reusing
+// publicEndpointLimiter's shared 60/5min budget: a Whisper Box link is
+// meant to be shared publicly on a bio, which makes it a more attractive
+// spam/harassment target than the rest of the public surface, and a flood
+// of messages is a worse experience for the recipient than for anyone else
+// on the shared budget.
+export const whisperBoxSendLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 12,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// POST /public/bug-reports (routes/bugReports.ts) — must work fully
+// unauthenticated (a crash can happen before sign-in resolves, or on a
+// public page), so this is IP-keyed like publicEndpointLimiter, but its own
+// dedicated instance rather than sharing that 60/5min budget: a genuine
+// client-side crash loop (a broken render path re-throwing on every
+// re-render) could burn through the shared public quota in seconds and
+// start 429ing unrelated public traffic — Whisper Box sends, circle
+// comments — from anyone on the same IP. Isolating it here means a runaway
+// error loop only ever costs itself, never anything else. The frontend
+// capture hook (lib/bugRabbitCapture.ts) also self-throttles per
+// fingerprint client-side, so this is a backstop, not the primary defense.
+export const bugReportLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
 });

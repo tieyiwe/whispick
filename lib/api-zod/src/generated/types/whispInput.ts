@@ -48,4 +48,9 @@ export interface WhispInput {
      * @nullable
      */
   conciergeRequestId?: string | null;
+  /**
+     * Required (must be true) when whisperChannel is "sms" — the sender confirming they have this recipient's permission to receive a text. Not required for "email" or "whatsapp".
+     * @nullable
+     */
+  smsConsentConfirmed?: boolean | null;
 }

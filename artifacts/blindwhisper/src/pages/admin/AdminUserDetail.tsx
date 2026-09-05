@@ -6,13 +6,15 @@ import {
   useAdminUpdateUser,
   useAdminDeleteUser,
   useAdminListUserWhisps,
+  useAdminSendComplianceReminder,
   getAdminGetUserQueryKey,
   getAdminListUserWhispsQueryKey,
+  type ComplianceFlags,
+  type ComplianceReminderInputKind,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -31,7 +33,51 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { deliveryLabel } from "@/lib/deliveryMethod";
-import { ArrowLeft, Loader2, MapPin, Trash2, PlayCircle, MessageSquareHeart, ShieldAlert } from "lucide-react";
+import {
+  ArrowLeft,
+  Loader2,
+  MapPin,
+  Trash2,
+  PlayCircle,
+  MessageSquareHeart,
+  ShieldAlert,
+  Swords,
+  CheckCircle2,
+  XCircle,
+  HelpCircle,
+  BellRing,
+  ShieldCheck,
+} from "lucide-react";
+
+// Same 4-item breakdown as AdminUsers.tsx's row badges — kept local rather
+// than shared since each page's layout/spacing needs differ.
+function complianceItems(compliance: ComplianceFlags) {
+  return [
+    { kind: "email_unverified" as ComplianceReminderInputKind, label: "Email verified", ok: compliance.emailVerified, unknown: false },
+    { kind: "phone_unverified" as ComplianceReminderInputKind, label: "Phone verified", ok: compliance.phoneVerified, unknown: false },
+    { kind: "mfa_missing" as ComplianceReminderInputKind, label: "2FA enabled", ok: compliance.mfaEnabled === true, unknown: compliance.mfaEnabled == null },
+    { kind: "policy_pending" as ComplianceReminderInputKind, label: "Policy up to date", ok: compliance.policyUpToDate, unknown: false },
+  ];
+}
+
+function ComplianceBadge({ label, ok, unknown }: { label: string; ok: boolean; unknown: boolean }) {
+  if (unknown) {
+    return (
+      <Badge variant="outline" className="text-muted-foreground border-dashed gap-1" title={`${label}: unknown (never synced)`}>
+        <HelpCircle className="w-3 h-3" /> {label}
+      </Badge>
+    );
+  }
+  return ok ? (
+    <Badge variant="outline" className="text-muted-foreground border-border/50 gap-1">
+      <CheckCircle2 className="w-3 h-3" /> {label}
+    </Badge>
+  ) : (
+    <Badge variant="destructive" className="gap-1">
+      <XCircle className="w-3 h-3" /> {label}
+    </Badge>
+  );
+}
 
 const WHISP_PAGE_SIZE = 15;
 
@@ -44,6 +90,7 @@ export function AdminUserDetail() {
   const { data, isLoading } = useAdminGetUser(id!, { query: { enabled: !!id, queryKey: getAdminGetUserQueryKey(id!) } });
   const updateUser = useAdminUpdateUser();
   const deleteUser = useAdminDeleteUser();
+  const sendComplianceReminder = useAdminSendComplianceReminder();
 
   const [whispStatusFilter, setWhispStatusFilter] = useState("all");
   const [whispPage, setWhispPage] = useState(1);
@@ -58,14 +105,12 @@ export function AdminUserDetail() {
 
   const [role, setRole] = useState("user");
   const [plan, setPlan] = useState("free");
-  const [boostCredits, setBoostCredits] = useState("0");
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
     if (data && !initialized) {
       setRole(data.user.role);
       setPlan(data.user.plan);
-      setBoostCredits(String(data.user.boostCredits));
       setInitialized(true);
     }
   }, [data, initialized]);
@@ -77,10 +122,10 @@ export function AdminUserDetail() {
 
   function handleSave() {
     updateUser.mutate(
-      { id: id!, data: { role: role as "user" | "admin", plan: plan as "free" | "spark" | "ember", boostCredits: parseInt(boostCredits, 10) || 0 } },
+      { id: id!, data: { role: role as "user" | "admin", plan: plan as "free" | "spark" | "ember" } },
       {
         onSuccess: () => { invalidate(); toast({ title: "User updated" }); },
-        onError: (err: any) => toast({ title: err?.error ?? "Failed to update user", variant: "destructive" }),
+        onError: (err: any) => toast({ title: err?.data?.error ?? "Failed to update user", variant: "destructive" }),
       }
     );
   }
@@ -91,7 +136,17 @@ export function AdminUserDetail() {
       { id: id!, data: { banned: !data.user.banned } },
       {
         onSuccess: () => { invalidate(); toast({ title: data.user.banned ? "User unbanned" : "User banned" }); },
-        onError: (err: any) => toast({ title: err?.error ?? "Action failed", variant: "destructive" }),
+        onError: (err: any) => toast({ title: err?.data?.error ?? "Action failed", variant: "destructive" }),
+      }
+    );
+  }
+
+  function sendReminder(kind: ComplianceReminderInputKind) {
+    sendComplianceReminder.mutate(
+      { data: { userIds: [id!], kind } },
+      {
+        onSuccess: (r) => toast({ title: `${r.recipientCount} reminded, ${r.emailsSent} emailed` }),
+        onError: (err: any) => toast({ title: err?.data?.error ?? "Failed to send reminder", variant: "destructive" }),
       }
     );
   }
@@ -102,10 +157,10 @@ export function AdminUserDetail() {
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-          setLocation("/admin/users");
+          setLocation("/admin_pro/users");
           toast({ title: "User deleted" });
         },
-        onError: (err: any) => toast({ title: err?.error ?? "Failed to delete user", variant: "destructive" }),
+        onError: (err: any) => toast({ title: err?.data?.error ?? "Failed to delete user", variant: "destructive" }),
       }
     );
   }
@@ -131,13 +186,13 @@ export function AdminUserDetail() {
     );
   }
 
-  const { user, totalWhisps, creditTransactions, statusCounts, totalReplies, moderationFlagCount, moderationFlags } = data;
+  const { user, totalWhisps, statusCounts, totalReplies, moderationFlagCount, moderationFlags, debateTopics, debateTopicComments } = data;
 
   return (
     <AdminLayout>
       <div className="max-w-3xl mx-auto space-y-5">
         <div className="flex items-center justify-between">
-          <Button variant="ghost" onClick={() => setLocation("/admin/users")} className="text-muted-foreground -ml-2">
+          <Button variant="ghost" onClick={() => setLocation("/admin_pro/users")} className="text-muted-foreground -ml-2">
             <ArrowLeft className="w-4 h-4 mr-1" /> Users
           </Button>
           <AlertDialog>
@@ -211,7 +266,7 @@ export function AdminUserDetail() {
               </div>
               <div>
                 <p className="text-muted-foreground">Last seen</p>
-                <p className="font-medium text-foreground">{user.lastSeenAt ? new Date(user.lastSeenAt).toLocaleDateString() : "—"}</p>
+                <p className="font-medium text-foreground">{user.lastSeenAt ? new Date(user.lastSeenAt).toLocaleString() : "—"}</p>
               </div>
             </div>
 
@@ -226,7 +281,7 @@ export function AdminUserDetail() {
               </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label className="text-muted-foreground">Role</Label>
                 <Select value={role} onValueChange={setRole}>
@@ -248,16 +303,6 @@ export function AdminUserDetail() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-muted-foreground">Ghost Boost credits</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  className="bg-input/50 border-border/50 rounded-xl"
-                  value={boostCredits}
-                  onChange={(e) => setBoostCredits(e.target.value)}
-                />
-              </div>
             </div>
 
             <div className="flex items-center gap-2">
@@ -269,6 +314,33 @@ export function AdminUserDetail() {
                 {user.banned ? "Unban User" : "Ban User"}
               </Button>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-border/50">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-serif flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4" /> Compliance
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-2">
+            {complianceItems(user.compliance).map((i) => (
+              <div key={i.kind} className="flex items-center gap-1.5">
+                <ComplianceBadge label={i.label} ok={i.ok} unknown={i.unknown} />
+                {!i.ok && !i.unknown && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="rounded-full text-muted-foreground h-6 px-2"
+                    onClick={() => sendReminder(i.kind)}
+                    disabled={sendComplianceReminder.isPending}
+                    data-testid={`button-compliance-reminder-${i.kind}`}
+                  >
+                    <BellRing className="w-3.5 h-3.5 mr-1" /> Send reminder
+                  </Button>
+                )}
+              </div>
+            ))}
           </CardContent>
         </Card>
 
@@ -304,7 +376,7 @@ export function AdminUserDetail() {
                 return isTextWhisp ? (
                   <div key={f.id} className={rowClassName}>{content}</div>
                 ) : (
-                  <Link key={f.id} href={`/admin/whisps/${f.whispId}`} className={rowClassName}>
+                  <Link key={f.id} href={`/admin_pro/whisps/${f.whispId}`} className={rowClassName}>
                     {content}
                   </Link>
                 );
@@ -336,7 +408,7 @@ export function AdminUserDetail() {
             ) : whispsPage?.items.length ? (
               <>
                 {whispsPage.items.map((w) => (
-                  <Link key={w.id} href={`/admin/whisps/${w.id}`} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted/30 transition-colors">
+                  <Link key={w.id} href={`/admin_pro/whisps/${w.id}`} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted/30 transition-colors">
                     <PlayCircle className="w-4 h-4 text-muted-foreground shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="truncate text-sm text-foreground">{w.videoTitle || w.videoUrl}</p>
@@ -376,30 +448,46 @@ export function AdminUserDetail() {
           </CardContent>
         </Card>
 
-        {creditTransactions.length > 0 && (
+        {(debateTopics.length > 0 || debateTopicComments.length > 0) && (
           <Card className="bg-card border-border/50">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base font-serif">Credit Transactions</CardTitle>
-              <p className="text-xs text-muted-foreground">Running balance walked backward from the current Ghost Boost credit count ({user.boostCredits}).</p>
+              <CardTitle className="text-base font-serif flex items-center gap-1.5">
+                <Swords className="w-4 h-4 text-primary" /> Debate Now activity
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
-              {(() => {
-                let runningBalance = user.boostCredits;
-                return creditTransactions.map((tx) => {
-                  const balanceAfter = runningBalance;
-                  runningBalance -= tx.amount;
-                  return (
-                    <div key={tx.id} className="flex items-center justify-between text-sm py-1.5 border-b border-border/30 last:border-0">
-                      <span className="text-muted-foreground capitalize">{tx.type.replace("_", " ")}</span>
-                      <span className={tx.amount >= 0 ? "text-primary font-medium" : "text-destructive font-medium"}>
-                        {tx.amount >= 0 ? "+" : ""}{tx.amount}
-                      </span>
-                      <span className="text-xs text-muted-foreground font-mono">bal. {balanceAfter}</span>
-                      <span className="text-xs text-muted-foreground">{new Date(tx.createdAt).toLocaleDateString()}</span>
+            <CardContent className="space-y-5">
+              {debateTopics.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">Topics posted ({debateTopics.length})</p>
+                  {debateTopics.map((t) => (
+                    <div key={t.id} className="p-2.5 rounded-xl border border-border/30 bg-muted/10 text-sm" data-testid={`debate-topic-${t.id}`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="text-foreground flex-1 min-w-0">{t.topicText}</p>
+                        {t.removedByAdminAt ? (
+                          <Badge variant="destructive" className="shrink-0">Removed by admin</Badge>
+                        ) : t.deletedByAuthorAt ? (
+                          <Badge variant="outline" className="shrink-0 text-muted-foreground">Retracted</Badge>
+                        ) : null}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">{new Date(t.createdAt).toLocaleString()}</p>
                     </div>
-                  );
-                });
-              })()}
+                  ))}
+                </div>
+              )}
+              {debateTopicComments.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">Comments posted ({debateTopicComments.length})</p>
+                  {debateTopicComments.map((c) => (
+                    <div key={c.id} className="p-2.5 rounded-xl border border-border/30 bg-muted/10 text-sm" data-testid={`debate-topic-comment-${c.id}`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="text-foreground flex-1 min-w-0">{c.commentText}</p>
+                        {c.removedByAdminAt && <Badge variant="destructive" className="shrink-0">Removed by admin</Badge>}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">{new Date(c.createdAt).toLocaleString()}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         )}

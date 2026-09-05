@@ -1,0 +1,39 @@
+{
+  "circleDetail": {
+    "backToMyCircles": "Mes Blind Circles",
+    "titleFallback": "Blind Circle",
+    "description": "Whisps déposés en privé dans ce cercle — visibles uniquement par ses membres.",
+    "videoAlt": "Vidéo",
+    "someone": "Quelqu'un",
+    "emptyTitle": "Rien ici pour l'instant",
+    "emptyDescription": "Choisis Blind Circle en envoyant un whisp, puis sélectionne ce cercle pour le partager ici."
+  },
+  "circleFeed": {
+    "title": "Blind Circle",
+    "description": "Des vidéos déposées anonymement dans la communauté. Pas de destinataire, pas d'algorithme — juste de la découverte organique.",
+    "videoAlt": "Vidéo",
+    "someone": "Quelqu'un",
+    "whispThis": "Envoyer ce Whisp",
+    "emptyTitle": "Blind Circle est calme pour le moment",
+    "emptyDescription": "Personne n'a encore déposé de vidéo dans le fil de la communauté. Sois le premier — utilise Publier dans Blind Circle ci-dessus."
+  },
+  "myCircles": {
+    "title": "Mes Blind Circles",
+    "description": "Des petits groupes sur invitation, pour les whisps que tu veux partager avec seulement quelques personnes.",
+    "createCircle": "Créer un cercle",
+    "createPlaceholder": "ex. Club de lecture",
+    "create": "Créer",
+    "joinWithCode": "Rejoindre avec un code",
+    "invitePlaceholder": "Code d'invitation",
+    "join": "Rejoindre",
+    "toastCircleCreated": "Blind Circle créé",
+    "toastCreateFailed": "Échec de la création du cercle",
+    "toastJoined": "Cercle rejoint",
+    "toastInvalidCode": "Code d'invitation invalide",
+    "toastCodeCopied": "Code d'invitation copié",
+    "toastCopyFailed": "Impossible de copier — veuillez le copier manuellement",
+    "tapToView": "Appuie pour voir le fil",
+    "emptyTitle": "Pas encore de cercle",
+    "emptyDescription": "Crée-en un pour partager des whisps anonymement avec un petit groupe, ou rejoins-en un avec un code d'invitation."
+  }
+}

@@ -17,6 +17,11 @@ export interface Notification {
   /** @nullable */
   url?: string | null;
   /**
+     * What produced this notification ("reply", "opened", "watched", "appreciation", ...). Null for admin-composed notifications and for rows predating this field.
+     * @nullable
+     */
+  kind?: string | null;
+  /**
      * Null means system-generated (e.g. a repeated content-flag warning), not composed by an admin.
      * @nullable
      */

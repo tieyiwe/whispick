@@ -1,0 +1,31 @@
+{
+  "title": "ملخصك السنوي",
+  "subtitle": "لمحة عن نشاطك في Blind Whisper، جاهزة للمشاركة.",
+  "period": {
+    "allTime": "كل الأوقات",
+    "last30Days": "آخر 30 يومًا"
+  },
+  "stats": {
+    "totalSent": "الـ Whisps المُرسلة",
+    "totalReceived": "الـ Whisps المُستلمة",
+    "repliesReceived": "الردود المُستلمة",
+    "circlePosts": "منشورات الدوائر",
+    "debateTopicsPosted": "مواضيع النقاش التي بدأتها",
+    "followerCount": "المتابعون",
+    "whisperBoxMessagesReceived": "رسائل Whisper Box"
+  },
+  "topCategory": "الفئة الأكثر إرسالًا لديك: {{category}}",
+  "memberSince": "Whisperer منذ {{date}}",
+  "error": {
+    "description": "تعذّر تحميل ملخصك الآن.",
+    "retry": "أعد المحاولة"
+  },
+  "share": {
+    "button": "شارك ملخصك",
+    "title": "Blind Whisper — Recap",
+    "text": "أرسلت {{count}} Whisps على Blind Whisper 👀",
+    "copied": "تم نسخ الملخص — الصقه في أي مكان لمشاركته",
+    "copyFailed": "تعذّر نسخ ملخصك"
+  },
+  "screenshotTip": "نصيحة: التقط لقطة شاشة لمشاركة ملخصك."
+}

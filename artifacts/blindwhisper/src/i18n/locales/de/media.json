@@ -1,0 +1,40 @@
+{
+  "mediaLibrary": {
+    "title": "Medienbibliothek",
+    "description": "Videos, die du von deinem Gerät hochgeladen hast, bereit zur Wiederverwendung in einem Whisp.",
+    "uploadButton": "Video hochladen",
+    "uploadSuccess": "Video hochgeladen",
+    "uploadFailedDefault": "Hochladen fehlgeschlagen. Bitte versuche es erneut.",
+    "deleteSuccess": "Video entfernt",
+    "deleteError": "Video konnte nicht entfernt werden",
+    "emptyState": "Noch keine Uploads — lade ein Video hoch, um loszulegen.",
+    "unavailable": "Nicht mehr verfügbar",
+    "usageCount_one": "{{count}} Whisp",
+    "usageCount_other": "{{count}} Whisps",
+    "expiresInDays_one": "Sende es als Whisp, bevor es in {{count}} Tag aus der Medienbibliothek entfernt wird",
+    "expiresInDays_other": "Sende es als Whisp, bevor es in {{count}} Tagen aus der Medienbibliothek entfernt wird",
+    "expiresInHours_one": "Sende es als Whisp, bevor es in {{count}} Stunde aus der Medienbibliothek entfernt wird",
+    "expiresInHours_other": "Sende es als Whisp, bevor es in {{count}} Stunden aus der Medienbibliothek entfernt wird",
+    "expiresInLessThanHour": "Sende es als Whisp, bevor es in weniger als einer Stunde aus der Medienbibliothek entfernt wird",
+    "whispIt": "Als Whisp senden",
+    "postToCircle": "Blind Circle",
+    "removeDialog": {
+      "title": "Dieses Video entfernen?",
+      "description": "Jeder Whisp, der es bereits verwendet hat, zeigt statt des Videos \"nicht mehr verfügbar\" an.",
+      "cancel": "Abbrechen",
+      "confirm": "Entfernen"
+    },
+    "previewError": "Dieses Video konnte für die Vorschau nicht geladen werden."
+  },
+  "suggestionsLibrary": {
+    "title": "Vorschläge-Bibliothek",
+    "description": "Videos, die es wert sind, weitergegeben zu werden. Finde eins, das zu jemandem in deinem Kreis passt, und flüstere es ihm anonym zu.",
+    "filterAll": "Alle",
+    "filterFeatured": "Hervorgehoben",
+    "featuredBadge": "Hervorgehoben",
+    "untitledVideo": "Video ohne Titel",
+    "watch": "Ansehen",
+    "whisperThis": "Flüstern",
+    "emptyState": "Hier ist noch nichts — schau bald wieder vorbei."
+  }
+}

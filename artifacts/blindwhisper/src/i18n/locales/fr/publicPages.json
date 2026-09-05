@@ -1,0 +1,116 @@
+{
+  "landingPage": {
+    "header": {
+      "signIn": "Se connecter",
+      "getStarted": "Commencer"
+    },
+    "hero": {
+      "badge": "Une nouvelle façon de partager",
+      "headline": "Dites-leur ce qu'ils <em>ont besoin</em> d'entendre.<br />Sans que ce soit gênant.",
+      "subtitle": "Une plateforme de recommandations vidéo anonymes et chargées d'émotion. Comme glisser un mot écrit à la main sous la porte de quelqu'un, à l'ère du numérique.",
+      "flow": {
+        "slide1Title": "Envoie un Whisp — message ou vidéo",
+        "slide1Desc": "Dis-leur ce qu'ils ont besoin d'entendre — un mot, ou n'importe quel lien vidéo.",
+        "slide2Title": "Envoyé anonymement",
+        "slide2Desc": "Ils ne sauront jamais que c'était toi.",
+        "slide3Title": "À moins que tu ne le veuilles",
+        "slide3Desc": "Révèle-toi quand tu veux — c'est toujours ton choix."
+      }
+    },
+    "cta": {
+      "startSendingWhisps": "Commencer à envoyer des Whisps"
+    },
+    "features": {
+      "anonymous": {
+        "title": "Totalement anonyme",
+        "desc": "Ils ne sauront pas que c'est vous, sauf si vous le souhaitez. Un espace sûr pour des recommandations sincères."
+      },
+      "resonant": {
+        "title": "Chargé d'émotion",
+        "desc": "Ajoutez l'ambiance parfaite et une courte note pour poser le contexte avant même qu'ils n'appuient sur lecture."
+      },
+      "delivery": {
+        "title": "Vous choisissez comment l'envoyer",
+        "desc": "Envoyez un lien anonyme directement à la personne concernée, ou publiez-le dans Blind Circle pour une découverte organique par la communauté."
+      }
+    },
+    "howItWorks": {
+      "heading": "D'un lien à l'envoi, en moins d'une minute",
+      "subheading": "Collez une vidéo, dites ce que vous pensez, et c'est en route — anonymement.",
+      "steps": {
+        "paste": {
+          "title": "Collez le lien de n'importe quelle vidéo",
+          "desc": "YouTube, TikTok, Instagram, Facebook — ou importez la vôtre."
+        },
+        "note": {
+          "title": "Ajoutez une note, restez anonyme",
+          "desc": "Dites ce que vous pensez. Ils ne sauront jamais que ça vient de vous."
+        },
+        "sent": {
+          "title": "Envoyé — c'est tout",
+          "desc": "Nous vous préviendrons dès que c'est vu."
+        }
+      }
+    },
+    "noAwkwardness": {
+      "badge": "Aucun contact visuel gênant requis",
+      "heading": "Le message arrive. <em>Pas le moment gênant.</em>",
+      "body": "Quand vous dites quelque chose de sensible à voix haute, vous gérez aussi la façon dont on réagit au fait que ce soit <em>vous</em> qui le disiez. Blind Whisper vous sort de la pièce — pour qu'ils puissent vraiment prendre le temps de comprendre ce que vous vouliez dire, au lieu d'observer votre visage pendant que vous le dites.",
+      "before": {
+        "label": "Le dire à voix haute",
+        "desc": "Ils s'arment pour la façon dont vous allez le dire. Vous vous armez pour la façon dont ils vont le prendre. Le message se perd dans cette tension."
+      },
+      "after": {
+        "label": "L'envoyer en Whisp à la place",
+        "desc": "Ils le regardent seuls, à leur rythme, quand ils le souhaitent. Juste le message — sans mise en scène, sans appréhension, sans silence gênant après."
+      }
+    },
+    "useCases": {
+      "heading": "Les conversations que Blind Whisper facilite",
+      "subheading": "Chaque relation a quelque chose qu'il est plus facile d'envoyer que de dire. Voici le genre de moments pour lesquels les gens utilisent Blind Whisper.",
+      "items": {
+        "parent": {
+          "relationship": "Un parent, à sa fille",
+          "quote": "Je voulais lui parler de quelque chose de sensible, mais je ne voulais pas qu'elle se concentre sur ma réaction plutôt que sur le message. Elle l'a regardé à son rythme — et je l'ai déjà vue essayer une nouvelle approche. Aucune gêne."
+        },
+        "friend": {
+          "relationship": "Un ami, qui prend de vos nouvelles",
+          "quote": "Il traversait une rupture et je ne savais pas quoi lui dire sans que ça sonne comme un sermon. Je lui ai envoyé une vidéo à la place. Il m'a dit plus tard que c'était exactement ce dont il avait besoin — et que ça a simplement semblé arriver, pas comme si je le lui avais dit."
+        },
+        "partner": {
+          "relationship": "Un partenaire, qui ouvre une conversation difficile",
+          "quote": "Il y a une différence entre \"il faut qu'on parle\" et... juste montrer quelque chose. J'ai envoyé ceci au lieu de déclencher une dispute. Ça a ouvert la porte en douceur au lieu de la claquer."
+        },
+        "colleague": {
+          "relationship": "Un collègue, qui donne un petit coup de pouce",
+          "quote": "Je voulais qu'un coéquipier voie quelque chose sur la façon de bien donner du feedback, sans que ça ressemble à une évaluation de performance. L'anonymat a fait que ça a été reçu comme un coup de pouce, pas comme une critique publique."
+        },
+        "sibling": {
+          "relationship": "Un frère ou une sœur, qui dit ce qu'on ne dit jamais",
+          "quote": "On ne se \"parle\" pas vraiment, entre nous. Mais j'ai pu lui envoyer quelque chose qui disait ce que je n'arrivais pas à formuler à voix haute."
+        }
+      },
+      "previewCaption": "Envoyé anonymement · Blind Whisper",
+      "disclaimer": "Exemples illustratifs de la façon dont les gens utilisent Blind Whisper, et non des avis clients vérifiés."
+    },
+    "faq": {
+      "heading": "Questions fréquentes",
+      "subheading": "Tout ce que les gens veulent généralement savoir avant d'envoyer leur premier Whisp."
+    },
+    "closingCta": {
+      "heading": "Quelque chose que vous vouliez dire depuis longtemps ?",
+      "body": "Pas besoin de trouver les mots parfaits. Trouvez simplement la vidéo, et laissez-la dire ce que vous vouliez dire.",
+      "notReadyPrefix": "Pas encore prêt à en envoyer un ?",
+      "notReadyLink": "Recevez des whisps anonymes sur les sujets de votre choix"
+    },
+    "footer": {
+      "privacyPolicy": "Politique de confidentialité",
+      "termsOfService": "Conditions d'utilisation",
+      "smsTerms": "Conditions SMS"
+    }
+  },
+  "notFound": {
+    "title": "404 – Page introuvable",
+    "message": "Avez-vous oublié d'ajouter la page au routeur ?"
+  }
+}

@@ -1,4 +1,5 @@
 import { useParams, useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useGetGroupWhispSend, getGetGroupWhispSendQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +9,7 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { ArrowLeft, PlayCircle, UsersRound, Eye, MessageSquare, HeartHandshake } from "lucide-react";
 
 export function GroupSendDetail() {
+  const { t } = useTranslation("whisp");
   const { groupSendId } = useParams<{ groupSendId: string }>();
   const [, setLocation] = useLocation();
 
@@ -30,7 +32,7 @@ export function GroupSendDetail() {
     return (
       <AppLayout>
         <div className="max-w-2xl mx-auto text-center py-16">
-          <p className="text-muted-foreground">Group send not found.</p>
+          <p className="text-muted-foreground">{t("groupSendDetail.notFound")}</p>
         </div>
       </AppLayout>
     );
@@ -46,13 +48,13 @@ export function GroupSendDetail() {
     <AppLayout>
       <div className="max-w-2xl mx-auto space-y-5">
         <Button variant="ghost" onClick={() => setLocation("/whisper-groups")} className="text-muted-foreground -ml-2">
-          <ArrowLeft className="w-4 h-4 mr-1" /> Whisper Groups
+          <ArrowLeft className="w-4 h-4 mr-1" /> {t("groupSendDetail.whisperGroupsLink")}
         </Button>
 
         <Card className="bg-card border-border/50 overflow-hidden">
           {video.videoThumbnail && (
             <div className="relative h-40 overflow-hidden">
-              <img src={video.videoThumbnail} alt="Video" className="w-full h-full object-cover" />
+              <img src={video.videoThumbnail} alt={t("groupSendDetail.videoFallback")} className="w-full h-full object-cover" />
               <a
                 href={video.videoPlatform === "upload" ? `/api/media/${video.uploadedVideoId}/file` : video.videoUrl}
                 target="_blank"
@@ -64,28 +66,28 @@ export function GroupSendDetail() {
             </div>
           )}
           <CardContent className="p-5 space-y-2">
-            <h2 className="font-serif font-semibold text-lg text-foreground">{video.videoTitle || "Video"}</h2>
+            <h2 className="font-serif font-semibold text-lg text-foreground">{video.videoTitle || t("groupSendDetail.videoFallback")}</h2>
             <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-              <UsersRound className="w-4 h-4" /> {groupName ?? "Group"} · {members.length} member{members.length === 1 ? "" : "s"}
+              <UsersRound className="w-4 h-4" /> {groupName ?? t("groupSendDetail.groupFallback")} · {t("shared.memberCount", { count: members.length })}
             </p>
             <div className="flex items-center gap-4 text-sm text-muted-foreground pt-1 flex-wrap">
-              <span className="flex items-center gap-1"><Eye className="w-3.5 h-3.5" /> {opened} opened</span>
-              <span className="flex items-center gap-1"><PlayCircle className="w-3.5 h-3.5" /> {watched} watched</span>
-              <span className="flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5" /> {replied} replied</span>
-              {appreciated > 0 && <span className="flex items-center gap-1 text-primary"><HeartHandshake className="w-3.5 h-3.5" /> {appreciated} appreciated</span>}
+              <span className="flex items-center gap-1"><Eye className="w-3.5 h-3.5" /> {t("groupSendDetail.stats.opened", { count: opened })}</span>
+              <span className="flex items-center gap-1"><PlayCircle className="w-3.5 h-3.5" /> {t("groupSendDetail.stats.watched", { count: watched })}</span>
+              <span className="flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5" /> {t("groupSendDetail.stats.replied", { count: replied })}</span>
+              {appreciated > 0 && <span className="flex items-center gap-1 text-primary"><HeartHandshake className="w-3.5 h-3.5" /> {t("groupSendDetail.stats.appreciated", { count: appreciated })}</span>}
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-card border-border/50">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base font-serif">Per-member status</CardTitle>
+            <CardTitle className="text-base font-serif">{t("groupSendDetail.perMemberStatus")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {members.map((m) => (
               <div key={m.whispId} className="p-3 rounded-xl bg-muted/20 space-y-2" data-testid={`group-member-status-${m.whispId}`}>
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-medium text-foreground truncate">{m.recipientEmail || m.recipientPhone || "Unknown"}</span>
+                  <span className="text-sm font-medium text-foreground truncate">{m.recipientEmail || m.recipientPhone || t("groupSendDetail.unknownRecipient")}</span>
                   <StatusBadge status={m.status} />
                 </div>
                 {m.replies.length > 0 && (
@@ -94,7 +96,7 @@ export function GroupSendDetail() {
                       <div key={r.id} className="text-xs">
                         <span className="text-muted-foreground">{new Date(r.createdAt).toLocaleString()}: </span>
                         {r.replyText && <span className="text-foreground">{r.replyText}</span>}
-                        {r.videoUrl && <span className="text-foreground italic"> whisped a video back</span>}
+                        {r.videoUrl && <span className="text-foreground italic"> {t("groupSendDetail.whispedVideoBack")}</span>}
                       </div>
                     ))}
                   </div>

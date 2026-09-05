@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import request from "supertest";
 import app from "../app";
 import { TEST_USER_HEADER } from "./setup";
+import { adminHeaders } from "./adminTestUtils";
 
 const USER_A = "clerk_user_invite_a";
 const USER_B = "clerk_user_invite_b";
@@ -16,9 +17,9 @@ function asUser(userId: string) {
 // rather than importing/exporting it, since admin.test.ts is actively owned
 // by other work landing on this branch right now.
 async function asAdmin() {
-  process.env.ADMIN_EMAILS = ADMIN_EMAIL;
-  await request(app).get("/api/user/profile").set(asUser(ADMIN_CLERK_ID));
-  return asUser(ADMIN_CLERK_ID);
+  // Promotes, enrolls the app's own admin TOTP, verifies a real code, and
+  // returns headers carrying the unlock token — see adminTestUtils.ts.
+  return adminHeaders(ADMIN_CLERK_ID, ADMIN_EMAIL);
 }
 
 async function createInvite(overrides: Record<string, unknown> = {}) {
@@ -43,6 +44,15 @@ describe("POST /api/invites", () => {
   it("requires a recipient phone when the channel is sms or whatsapp", async () => {
     const res = await request(app).post("/api/invites").set(asUser(USER_A)).send({ channel: "sms" });
     expect(res.status).toBe(400);
+  });
+
+  it("rejects an SMS invite without SMS consent confirmation", async () => {
+    const res = await request(app)
+      .post("/api/invites")
+      .set(asUser(USER_A))
+      .send({ channel: "sms", recipientPhone: "+15551234567" });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/permission to receive a text/i);
   });
 
   it("creates an invite row and returns 201", async () => {

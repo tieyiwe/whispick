@@ -1,0 +1,37 @@
+{
+  "mediaLibrary": {
+    "title": "미디어 라이브러리",
+    "description": "기기에서 업로드한 동영상이에요. Whisp에서 다시 사용할 수 있어요.",
+    "uploadButton": "동영상 업로드",
+    "uploadSuccess": "동영상이 업로드됐어요",
+    "uploadFailedDefault": "업로드에 실패했어요. 다시 시도해 주세요.",
+    "deleteSuccess": "동영상이 삭제됐어요",
+    "deleteError": "동영상을 삭제하지 못했어요",
+    "emptyState": "아직 업로드한 동영상이 없어요 — 동영상을 추가해 보세요.",
+    "unavailable": "더 이상 볼 수 없어요",
+    "usageCount_other": "Whisp {{count}}개",
+    "expiresInDays_other": "{{count}}일 후 미디어 라이브러리에서 삭제되니 지금 Whisp로 보내세요",
+    "expiresInHours_other": "{{count}}시간 후 미디어 라이브러리에서 삭제되니 지금 Whisp로 보내세요",
+    "expiresInLessThanHour": "곧 미디어 라이브러리에서 삭제되니 지금 Whisp로 보내세요",
+    "whispIt": "Whisp로 보내기",
+    "postToCircle": "Blind Circle",
+    "removeDialog": {
+      "title": "이 동영상을 삭제할까요?",
+      "description": "이미 이 동영상을 사용한 whisp에는 동영상 대신 \"더 이상 볼 수 없음\"이라고 표시돼요.",
+      "cancel": "취소",
+      "confirm": "삭제"
+    },
+    "previewError": "이 동영상을 미리 볼 수 없어요."
+  },
+  "suggestionsLibrary": {
+    "title": "추천 라이브러리",
+    "description": "공유할 만한 동영상들이에요. 내 서클에 있는 누군가에게 어울리는 영상을 찾아 익명으로 속삭여 보세요.",
+    "filterAll": "전체",
+    "filterFeatured": "추천",
+    "featuredBadge": "추천",
+    "untitledVideo": "제목 없는 동영상",
+    "watch": "보기",
+    "whisperThis": "속삭이기",
+    "emptyState": "아직 아무것도 없어요 — 곧 다시 확인해 보세요."
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "sendWhisp": "Send Whisp",
+    "myWhisps": "My Whisps",
+    "textWhisps": "Text Whisps",
+    "suggestions": "Suggestions",
+    "blindCircle": "Blind Circle",
+    "myBlindCircles": "My Blind Circles",
+    "debateTopics": "Debate Now",
+    "following": "Following",
+    "whisperGroups": "Whisper Groups",
+    "mediaLibrary": "Media Library",
+    "replies": "Replies",
+    "whisperBox": "Whisper Box",
+    "inviteAFriend": "Invite a Friend",
+    "creditsAndPlan": "Credits & Plan",
+    "settings": "Settings",
+    "admin": "Admin",
+    "home": "Home",
+    "more": "More"
+  },
+  "account": {
+    "settings": "Settings",
+    "signOut": "Sign Out"
+  }
+}

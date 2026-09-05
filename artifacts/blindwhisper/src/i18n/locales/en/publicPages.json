@@ -1,0 +1,116 @@
+{
+  "landingPage": {
+    "header": {
+      "signIn": "Sign In",
+      "getStarted": "Get Started"
+    },
+    "hero": {
+      "badge": "A new way to share",
+      "headline": "Send what they <em>need</em> to hear.<br />Without making it weird.",
+      "subtitle": "An emotionally charged, anonymous video recommendation platform. Like slipping a handwritten note under someone's door in the digital age.",
+      "flow": {
+        "slide1Title": "Whisp a message or video",
+        "slide1Desc": "Say what they need to hear — a note, or any video link.",
+        "slide2Title": "Sent anonymously",
+        "slide2Desc": "They'll never know it was you.",
+        "slide3Title": "Unless you want them to",
+        "slide3Desc": "Reveal yourself anytime — it's always your choice."
+      }
+    },
+    "cta": {
+      "startSendingWhisps": "Start Sending Whisps"
+    },
+    "features": {
+      "anonymous": {
+        "title": "Completely Anonymous",
+        "desc": "They won't know it's you unless you want them to. A safe space for genuine recommendations."
+      },
+      "resonant": {
+        "title": "Emotionally Resonant",
+        "desc": "Attach the perfect mood tag and a brief note to set the context before they even press play."
+      },
+      "delivery": {
+        "title": "Your Choice of Delivery",
+        "desc": "Send a private anonymous link straight to them, or drop it into Blind Circle for organic community discovery."
+      }
+    },
+    "howItWorks": {
+      "heading": "From link to sent, in under a minute",
+      "subheading": "Paste a video, say what you mean, and it's on its way — anonymously.",
+      "steps": {
+        "paste": {
+          "title": "Paste any video link",
+          "desc": "YouTube, TikTok, Instagram, Facebook — or upload your own."
+        },
+        "note": {
+          "title": "Add a note, stay anonymous",
+          "desc": "Say what you mean. They'll never know it came from you."
+        },
+        "sent": {
+          "title": "Sent — that's it",
+          "desc": "We'll let you know the moment it's seen."
+        }
+      }
+    },
+    "noAwkwardness": {
+      "badge": "No awkward eye contact required",
+      "heading": "The message lands. <em>Not the moment.</em>",
+      "body": "When you say something sensitive out loud, you're also managing how they react to <em>you</em> saying it. Blind Whisper takes you out of the room — so they can actually sit with what you meant, instead of studying your face while you say it.",
+      "before": {
+        "label": "Saying it out loud",
+        "desc": "They brace for how you'll say it. You brace for how they'll take it. The message gets lost somewhere in that tension."
+      },
+      "after": {
+        "label": "Whisping it instead",
+        "desc": "They watch it alone, on their own time, at their own pace. Just the message — no performance, no bracing, no awkward pause after."
+      }
+    },
+    "useCases": {
+      "heading": "The conversations Blind Whisper makes easier",
+      "subheading": "Every relationship has something that's easier to send than to say. Here are the kinds of moments people use Blind Whisper for.",
+      "items": {
+        "parent": {
+          "relationship": "A parent, to their daughter",
+          "quote": "I wanted to talk to her about something sensitive, but I didn't want her focused on my reaction instead of the message. She watched it on her own time — and I've already seen her trying a new approach. No awkwardness."
+        },
+        "friend": {
+          "relationship": "A friend, checking in",
+          "quote": "He was going through a breakup and I didn't know what to say without it sounding like a lecture. I sent a video instead. He told me later it was exactly what he needed — and it just felt like it arrived, not like I'd said it."
+        },
+        "partner": {
+          "relationship": "A partner, opening a hard conversation",
+          "quote": "There's a difference between \"we need to talk\" and just... showing them something. I sent this instead of starting a fight. It opened the door gently instead of slamming it."
+        },
+        "colleague": {
+          "relationship": "A colleague, offering a nudge",
+          "quote": "I wanted a teammate to see something about giving feedback well, without it feeling like a performance review. Anonymous meant it landed as a nudge, not a callout."
+        },
+        "sibling": {
+          "relationship": "A sibling, saying the unsaid",
+          "quote": "We don't really \"talk\" talk. But I could send him something that said what I couldn't figure out how to say out loud."
+        }
+      },
+      "previewCaption": "Sent anonymously · Blind Whisper",
+      "disclaimer": "Illustrative examples of how people use Blind Whisper, not verified customer reviews."
+    },
+    "faq": {
+      "heading": "Frequently asked questions",
+      "subheading": "Everything people usually want to know before sending their first Whisp."
+    },
+    "closingCta": {
+      "heading": "Something you've been meaning to say?",
+      "body": "You don't have to find the perfect words. Just find the video, and let it say what you meant.",
+      "notReadyPrefix": "Not ready to send one?",
+      "notReadyLink": "Get matched with anonymous whisps on topics you pick"
+    },
+    "footer": {
+      "privacyPolicy": "Privacy Policy",
+      "termsOfService": "Terms of Service",
+      "smsTerms": "SMS Terms"
+    }
+  },
+  "notFound": {
+    "title": "404 Page Not Found",
+    "message": "Did you forget to add the page to the router?"
+  }
+}

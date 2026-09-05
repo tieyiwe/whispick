@@ -14,6 +14,7 @@ import { inviteRevealRequestHookLine } from "../lib/copy";
 import { inviteLimiter, publicEndpointLimiter } from "../lib/rateLimit";
 import { notifyUser } from "../lib/push";
 import { logger } from "../lib/logger";
+import { hasSmsConsent, recordSmsConsent } from "../lib/smsConsent";
 
 const router = Router();
 
@@ -85,9 +86,18 @@ async function notifyInviteeOfReveal(invite: Invite): Promise<void> {
 
 const createInviteSchema = z
   .object({
-    recipientEmail: z.string().nullable().optional(),
-    recipientPhone: z.string().nullable().optional(),
+    // Validated, not bare strings — these go straight to the mail/SMS
+    // transports as the destination address. See the same fields in
+    // routes/whisps.ts for why an unvalidated email was a multi-recipient
+    // injection (nodemailer treats `to` as an address list).
+    recipientEmail: z.string().email().max(320).nullable().optional(),
+    recipientPhone: z.string().max(32).regex(/^[+0-9()\-.\s]+$/, "Not a valid phone number").nullable().optional(),
     channel: z.enum(CHANNELS),
+    // Same server-enforced consent gate as POST /whisps — see its own
+    // schema comment. Only required for an actual SMS invite; WhatsApp
+    // isn't carrier-regulated under A2P 10DLC the same way, matching
+    // InvitePage.tsx's own requiresSmsConsent carve-out.
+    smsConsentConfirmed: z.boolean().nullable().optional(),
   })
   .refine((data) => (data.channel === "email" ? !!data.recipientEmail : !!data.recipientPhone), {
     message: "Email invites need a recipient email; text/WhatsApp invites need a recipient phone number",
@@ -105,6 +115,19 @@ router.post("/", requireAuth, inviteLimiter, async (req, res): Promise<void> => 
   }
 
   const { channel, recipientEmail, recipientPhone } = parsed.data;
+
+  // Once-per-recipient SMS consent (see lib/smsConsent.ts): only for an
+  // actual SMS invite (WhatsApp is carved out, same as the other send
+  // routes), satisfied by an affirmative checkbox now OR a stored consent
+  // from a prior send to this number.
+  if (channel === "sms" && recipientPhone) {
+    const alreadyConsented = parsed.data.smsConsentConfirmed || (await hasSmsConsent(user.id, recipientPhone));
+    if (!alreadyConsented) {
+      res.status(400).json({ error: "Please confirm you have this person's permission to receive a text from you.", code: "sms_consent_required" });
+      return;
+    }
+    if (parsed.data.smsConsentConfirmed) void recordSmsConsent(user.id, recipientPhone);
+  }
 
   const id = randomUUID();
   const publicToken = randomUUID().replace(/-/g, "");

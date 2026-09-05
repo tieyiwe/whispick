@@ -5,6 +5,7 @@ import app from "../app";
 import { db, suggestedVideosTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { TEST_USER_HEADER, anthropicMessagesCreateMock } from "./setup";
+import { adminHeaders } from "./adminTestUtils";
 
 const ADMIN_CLERK_ID = "clerk_suggestions_admin";
 const ADMIN_EMAIL = `${ADMIN_CLERK_ID}@blindwhisper.com`;
@@ -15,9 +16,9 @@ function asUser(userId: string) {
 }
 
 async function asAdmin() {
-  process.env.ADMIN_EMAILS = ADMIN_EMAIL;
-  await request(app).get("/api/user/profile").set(asUser(ADMIN_CLERK_ID));
-  return asUser(ADMIN_CLERK_ID);
+  // Promotes, enrolls the app's own admin TOTP, verifies a real code, and
+  // returns headers carrying the unlock token — see adminTestUtils.ts.
+  return adminHeaders(ADMIN_CLERK_ID, ADMIN_EMAIL);
 }
 
 function jsonResponse(status: number, body: unknown): Response {

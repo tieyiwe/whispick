@@ -1,0 +1,114 @@
+{
+  "archivedWhispGate": {
+    "title": "Dieser Whisp ist archiviert",
+    "description": "Er ist sicher in deinem Archiv verstaut. Hol ihn zurück, um ihn anzusehen oder erneut zu beantworten.",
+    "descriptionWithTitle": "„{{title}}“ ist sicher in deinem Archiv verstaut. Hol ihn zurück, um ihn anzusehen oder erneut zu beantworten.",
+    "back": "Zurück",
+    "unarchive": "Aus Archiv holen zum Ansehen"
+  },
+  "avatarPickerGrid": {
+    "chooseAvatar": "Avatar auswählen",
+    "noAvatar": "Kein Avatar"
+  },
+  "cameraCapture": {
+    "modePhoto": "Foto",
+    "modeVideo": "Video",
+    "photoPrepareUnsupported": "Dieser Browser kann kein Foto zum Senden vorbereiten — versuch es stattdessen mit Video.",
+    "photoPrepareFailed": "Das Foto konnte nicht zum Senden vorbereitet werden. Bitte noch einmal aufnehmen.",
+    "captureFailed": "Es konnte kein Foto von der Kamera aufgenommen werden.",
+    "photoClipUnsupported": "Fotos können in diesem Browser nicht zum Senden vorbereitet werden — versuch es mit Video, oder nimm es erneut auf.",
+    "recordUnsupported": "Dieser Browser kann kein Video aufnehmen — versuch es stattdessen mit Foto oder Hochladen.",
+    "recordStartFailed": "Die Aufnahme konnte nicht gestartet werden. Bitte versuch es erneut.",
+    "unsupportedFallback": "Nutze stattdessen Hochladen oder Link einfügen.",
+    "deniedFallback": "Hochladen und Link einfügen sind weiterhin verfügbar, falls das nicht funktioniert.",
+    "idlePromptPhoto": "Mach ein Foto mit deiner Kamera",
+    "idlePromptVideo": "Nimm ein kurzes Video mit deiner Kamera auf",
+    "tryAgain": "Erneut versuchen",
+    "enableCamera": "Kamera aktivieren",
+    "requestingAccess": "Kamerazugriff wird angefragt…",
+    "flipCamera": "Kamera wechseln",
+    "takePhoto": "Foto aufnehmen",
+    "stop": "Stopp",
+    "startRecording": "Aufnahme starten",
+    "capturedPhotoAlt": "Aufgenommenes Foto",
+    "preparingPhoto": "Dein Foto wird vorbereitet…",
+    "retake": "Erneut aufnehmen",
+    "useThisPhoto": "Dieses Foto verwenden",
+    "useThisVideo": "Dieses Video verwenden",
+    "uploading": "Wird hochgeladen…"
+  },
+  "circleCommentRow": {
+    "poster": "Beitragende(r)",
+    "you": "(du)",
+    "reply": "Antworten",
+    "attachedImageAlt": "Dem Kommentar angehängt"
+  },
+  "circlePostComposer": {
+    "trigger": "In Blind Circle posten",
+    "dialogTitle": "In Blind Circle posten",
+    "uploadFailedGeneric": "Upload fehlgeschlagen — Videos müssen kürzer als {{seconds}} Sekunden sein",
+    "postedSuccess": "In Blind Circle gepostet",
+    "postFailedGeneric": "Posten in Blind Circle nicht möglich",
+    "pasteLink": "Link einfügen",
+    "uploadVideo": "Video hochladen",
+    "fetch": "Abrufen",
+    "videoLinkPlaceholder": "Video-Link einfügen...",
+    "removeVideo": "Video entfernen",
+    "titleLabel": "Titel",
+    "titlePlaceholder": "Was ist das? Gib ihm einen Titel",
+    "chooseVideo": "Video auswählen",
+    "uploadingEllipsis": "Wird hochgeladen...",
+    "uploadHint": "Bis zu {{seconds}} Sekunden. MP4, WebM oder MOV.",
+    "notePlaceholderWithTitle": "Kurze Beschreibung (optional)",
+    "notePlaceholderNoTitle": "Erzähl etwas dazu (optional)",
+    "moodLabel": "Stimmung (optional)",
+    "aliasPlaceholder": "Unterschreiben als... (optional)",
+    "destinationLabel": "Wohin soll es gehen?",
+    "publicCircle": "Öffentlicher Blind Circle",
+    "anonymousDisclaimer": "Anonym gepostet — dein Name wird nie angezeigt. Jeder, der diesen Circle sehen kann, kann den Beitrag sehen.",
+    "postAnonymously": "Anonym posten"
+  },
+  "countryPhoneInput": {
+    "searchCountry": "Land suchen...",
+    "noCountryFound": "Kein Land gefunden."
+  },
+  "debateTopicCard": {
+    "shareTitle": "Blind Whisper — Debate Now",
+    "linkCopied": "Link kopiert — schick ihn, um jemanden zur Debatte einzuladen",
+    "copyFailed": "Kopieren fehlgeschlagen — bitte manuell kopieren",
+    "commentCount_one": "{{count}} Kommentar",
+    "commentCount_other": "{{count}} Kommentare",
+    "shareTopicAria": "Dieses Thema teilen",
+    "joinDebate": "An der Debatte teilnehmen",
+    "onlineAriaLabel": "Gerade online"
+  },
+  "demographicsGateDialog": {
+    "title": "Nur noch eine kurze Sache",
+    "description": "Bevor dein erster Whisp rausgeht, hilf uns zu verstehen, wer Blind Whisper nutzt, und wähle die Sprache, die die App verwenden soll. Nichts davon wird jemals der Person angezeigt, an die du sendest, und du kannst es später in den Einstellungen ändern.",
+    "languageLabel": "Sprache",
+    "genderLabel": "Geschlecht",
+    "ageRangeLabel": "Altersgruppe",
+    "selectPlaceholder": "Auswählen...",
+    "continue": "Weiter",
+    "saveFailed": "Deine Antworten konnten nicht gespeichert werden. Bitte versuch es noch einmal."
+  },
+  "enableNotificationsPrompt": {
+    "title": "Benachrichtigungen aktivieren",
+    "description": "Erfahre sofort, wenn dir jemand einen Whisp schickt oder antwortet — direkt auf deinem Gerät, wie bei jeder anderen App.",
+    "notNow": "Nicht jetzt",
+    "enabling": "Wird aktiviert...",
+    "enable": "Benachrichtigungen aktivieren"
+  },
+  "policyUpdate": {
+    "heading": "Wir haben unsere Richtlinien aktualisiert",
+    "description": "Bitte nimm dir einen Moment, um die Änderungen zu prüfen und zu bestätigen, dass du einverstanden bist, um Blind Whisper weiter zu nutzen.",
+    "privacyLabel": "Datenschutzerklärung",
+    "termsLabel": "Nutzungsbedingungen",
+    "readLink": "Das vollständige Dokument lesen",
+    "agreeButton": "Geprüft — Ich stimme zu",
+    "laterButton": "Später ansehen",
+    "reminderPill": "Richtlinien-Update — prüfen & zustimmen",
+    "toastThanks": "Danke — deine Zustimmung wurde gespeichert.",
+    "toastError": "Deine Zustimmung konnte nicht gespeichert werden. Bitte versuche es erneut."
+  }
+}
