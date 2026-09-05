@@ -789,6 +789,38 @@ export function PublicWhispPage() {
               </div>
             )}
 
+            {/* Conversion #2 — "keep it forever" (loss aversion). An anonymous
+                recipient never needs an account to watch or reply, but this
+                whisp is on a 48h timer: the moment they've felt its value and
+                seen it's about to vanish is the strongest, least pushy time to
+                offer saving it. Shown only to signed-OUT viewers (a signed-in
+                Whisperer already keeps their received whisps), only while a
+                real countdown remains, and never on the expired branch — this
+                whole block lives inside the `!expired` fork. One-tap Google
+                signup is the path (see App.tsx SignUpPage / Clerk). */}
+            {!isSignedIn && remainingMs !== null && remainingMs > 0 && (
+              <div
+                className="rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/10 via-card to-card p-4 text-center space-y-2"
+                data-testid="cta-keep-forever"
+              >
+                <p className="text-sm font-medium text-foreground">
+                  {t("publicWhisp.keepForever.heading", { time: formatDistanceToNowStrict(expiresAtMs!) })}
+                </p>
+                <p className="text-xs text-muted-foreground max-w-xs mx-auto leading-relaxed">
+                  {t("publicWhisp.keepForever.description")}
+                </p>
+                <Button
+                  size="sm"
+                  className="rounded-full"
+                  onClick={() => setLocation("/sign-up")}
+                  data-testid="button-keep-forever"
+                >
+                  <Sparkles className="w-3.5 h-3.5 mr-1.5" /> {t("publicWhisp.keepForever.button")}
+                </Button>
+                <p className="text-[11px] text-muted-foreground">{t("publicWhisp.keepForever.disclaimer")}</p>
+              </div>
+            )}
+
             {/* Video card */}
             <div className="rounded-2xl overflow-hidden bg-card border border-border/50 glow-card">
               <VideoPlayer
@@ -1630,6 +1662,33 @@ export function PublicWhispPage() {
               </Button>
               <p className="relative text-xs text-muted-foreground">{t("publicWhisp.signupCta.disclaimer")}</p>
             </div>
+
+            {/* Conversion #3 — reciprocity. The recipient just received an
+                anonymous whisp; the most natural next thought is "who'd whisper
+                to ME?" A Whisper Box is a personal pull-link that needs an
+                account, so this routes signed-OUT viewers through one-tap
+                signup (they land on their box right after). Signed-in
+                Whisperers already have Settings → Whisper Box, so it's hidden
+                for them to avoid a redundant card. */}
+            {!isSignedIn && (
+              <button
+                type="button"
+                onClick={() => setLocation("/sign-up")}
+                data-testid="cta-reciprocity"
+                className="w-full flex items-center justify-between gap-3 rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/10 via-card to-card hover:from-primary/15 transition-colors p-4 text-left"
+              >
+                <div>
+                  <p className="text-sm font-medium text-foreground">{t("publicWhisp.reciprocityCta.heading")}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                    {t("publicWhisp.reciprocityCta.description")}
+                  </p>
+                  <span className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary">
+                    <Link2 className="w-3.5 h-3.5" /> {t("publicWhisp.reciprocityCta.button")}
+                  </span>
+                </div>
+                <HeartHandshake className="w-5 h-5 text-primary shrink-0" />
+              </button>
+            )}
 
             {/* Ghost Boost matching CTA — a recipient who just felt what an
                 anonymous whisp can do is a natural fit for the subscriber list. */}

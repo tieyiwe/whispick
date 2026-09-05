@@ -461,6 +461,17 @@
       "description": "Whoever sent it can always send you a new one."
     },
     "expiresIn": "Expires in {{time}}",
+    "keepForever": {
+      "heading": "This whisp disappears in {{time}}",
+      "description": "Create a free account to keep it forever — save it, reply anytime, and never lose the ones that matter.",
+      "button": "Save it to a free account",
+      "disclaimer": "One tap with Google — no card required."
+    },
+    "reciprocityCta": {
+      "heading": "Someone whispered to you.",
+      "description": "Get your own link so people can whisper to you too — anonymously, whenever they've got something to say.",
+      "button": "Get my Whisper Box"
+    },
     "appreciation": {
       "yesResponse": "Glad this reached you.",
       "noResponse": "Thanks for letting them know.",
