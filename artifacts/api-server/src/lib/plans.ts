@@ -57,19 +57,21 @@ export const GHOST_BOOST_ENABLED = false;
 // never capped — the limit exists to make an unlimited anonymous back-and-
 // forth a deliberate purchase (or a reason to join), not to ration
 // conversation between members.
-// TODO(payment): flip this back to 3 once the "buy more replies" purchase
-// flow exists. The cap is OFF by default until then — deliberately, not by
-// oversight. Capping recipients before there's any way to lift the cap
-// leaves a sender staring at a dead thread with a disabled "coming soon"
-// button, and it would keep interrupting testing. All the enforcement below
-// (and the sender/recipient UI) is built and tested; it's a one-line change
-// plus a redeploy when billing lands.
+// Capped at 3 as a viewer→member CONVERSION gate (not a paywall): after three
+// anonymous replies the recipient hits the "create a free account to keep
+// replying" wall (see routes/public.ts limitReached + the frontend card).
+// The wall is always liftable for free by signing up, so this never leaves a
+// sender staring at a dead thread with a "coming soon" button — the earlier
+// reason it was parked at null/uncapped. Override per-environment with the
+// RECIPIENT_FREE_REPLIES env var ("unlimited" turns it back off).
 //
-// Note this also parks a design question worth revisiting then: because the
-// cap is skipped for signed-in callers, a sender who watches replies keep
-// arriving past the allowance can infer their recipient created an account.
-// Harmless while uncapped (no allowance is ever shown or enforced).
-const RECIPIENT_FREE_REPLIES_DEFAULT = null;
+// Chosen deliberately at 3 rather than 1 because of a privacy side-channel:
+// the cap is skipped for signed-in callers, so a sender who watches replies
+// keep arriving PAST the allowance can infer their recipient created an
+// account. At a cap of 1 that signal is sharp (reply #2 gives it away); at 3
+// it's fuzzy — senders don't reliably count, and many threads end before 3 —
+// so the small leak stays impractical while the conversion nudge remains.
+const RECIPIENT_FREE_REPLIES_DEFAULT = 3;
 
 export function recipientFreeReplies(): number | null {
   const raw = process.env.RECIPIENT_FREE_REPLIES?.trim();
