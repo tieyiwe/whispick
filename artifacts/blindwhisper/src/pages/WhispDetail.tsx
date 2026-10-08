@@ -14,6 +14,10 @@ import {
   getGetWhispQueryKey,
   getListWhispsQueryKey,
   getGetWhispStatsQueryKey,
+  useGetMyNotifications,
+  useMarkNotificationRead,
+  getGetMyNotificationsQueryKey,
+  getGetMyUnreadNotificationCountQueryKey,
   type CircleComment,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -38,7 +42,7 @@ import { MoodTag } from "@/components/shared/MoodTag";
 import { ReplyThread, ThreadComposer, type ThreadReply, type GuessReactionValue } from "@/components/shared/ReplyThread";
 import { RevealCountdownDialog } from "@/components/shared/RevealCountdownDialog";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   PlayCircle,
@@ -92,6 +96,34 @@ export function WhispDetail() {
       refetchIntervalInBackground: false,
     },
   });
+
+  // Every notification about this whisp (its replies, opened/watched,
+  // appreciated…) points at this very page, and this page shows all of it —
+  // so landing here reads them. Without this, someone who followed the
+  // reply email straight to /whisps/:id (or tapped the card in Replies after
+  // a new reply landed) read the reply in the thread while the Replies tab
+  // and the bell kept counting it, until they separately opened the bell.
+  // Same pattern as TextWhispDetail.tsx, on the thread's own 15s cadence so
+  // one that arrives while the page is open clears as it appears.
+  const { data: notifications } = useGetMyNotifications({
+    query: { queryKey: getGetMyNotificationsQueryKey(), refetchInterval: 15_000, refetchIntervalInBackground: false },
+  });
+  const markNotificationRead = useMarkNotificationRead();
+  const markNotificationReadAsync = markNotificationRead.mutateAsync;
+  // Ids already sent to the server — never re-sent, even if one fails (see
+  // RepliesInbox.tsx for the request loop a retry-on-render would cause).
+  const markedNotificationIdsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!id || !data || !notifications?.items) return;
+    const url = `/whisps/${id}`;
+    const toMark = notifications.items.filter((n) => !n.read && n.url === url && !markedNotificationIdsRef.current.has(n.id));
+    if (toMark.length === 0) return;
+    toMark.forEach((n) => markedNotificationIdsRef.current.add(n.id));
+    void Promise.allSettled(toMark.map((n) => markNotificationReadAsync({ id: n.id }))).then(() => {
+      queryClient.invalidateQueries({ queryKey: getGetMyNotificationsQueryKey() });
+      queryClient.invalidateQueries({ queryKey: getGetMyUnreadNotificationCountQueryKey() });
+    });
+  }, [id, data, notifications, markNotificationReadAsync, queryClient]);
 
   const isGhostBoost = data?.whisp.deliveryMethod === "ghost_boost";
   // A Blind Circle post has no single recipient: its 1:1 thread would be one
