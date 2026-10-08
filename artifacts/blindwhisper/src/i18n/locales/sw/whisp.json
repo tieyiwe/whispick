@@ -404,7 +404,7 @@
   },
   "groupSendDetail": {
     "notFound": "Utumaji wa kikundi haukupatikana.",
-    "whisperGroupsLink": "Whisper Groups",
+    "whisperGroupsLink": "Vikundi vya Whisper",
     "videoFallback": "Video",
     "groupFallback": "Kikundi",
     "stats": {
@@ -419,7 +419,7 @@
   },
   "whisperGroupDetail": {
     "notFound": "Kikundi hakikupatikana.",
-    "whisperGroupsLink": "Whisper Groups",
+    "whisperGroupsLink": "Vikundi vya Whisper",
     "deleteDialog": {
       "title": "Futa \"{{name}}\"?",
       "description": "Hii huondoa kikundi kilichohifadhiwa na orodha yake ya wanachama. Whisps ambazo tayari umetuma kwa kikundi hiki hazitaathiriwa."
@@ -451,7 +451,7 @@
     }
   },
   "whisperGroups": {
-    "title": "Whisper Groups",
+    "title": "Vikundi vya Whisper",
     "subtitle": "Hifadhi kikundi cha anwani mara moja, kisha tuma whisp ile ile ya siri kwa wote mara moja.",
     "tabs": {
       "groups": "Vikundi",

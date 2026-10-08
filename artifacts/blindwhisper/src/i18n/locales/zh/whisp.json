@@ -404,7 +404,7 @@
   },
   "groupSendDetail": {
     "notFound": "未找到该群组发送记录。",
-    "whisperGroupsLink": "Whisper Groups",
+    "whisperGroupsLink": "Whisper 群组",
     "videoFallback": "视频",
     "groupFallback": "群组",
     "stats": {
@@ -419,7 +419,7 @@
   },
   "whisperGroupDetail": {
     "notFound": "未找到该群组。",
-    "whisperGroupsLink": "Whisper Groups",
+    "whisperGroupsLink": "Whisper 群组",
     "deleteDialog": {
       "title": "删除“{{name}}”?",
       "description": "这会删除已保存的群组及其成员列表。你已经发送给这个群组的 whisp 不会受到影响。"
@@ -451,7 +451,7 @@
     }
   },
   "whisperGroups": {
-    "title": "Whisper Groups",
+    "title": "Whisper 群组",
     "subtitle": "保存一次联系人群组,之后就能一次性把同一条匿名 whisp 发送给所有人。",
     "tabs": {
       "groups": "群组",

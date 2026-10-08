@@ -404,7 +404,7 @@
   },
   "groupSendDetail": {
     "notFound": "Envoi de groupe introuvable.",
-    "whisperGroupsLink": "Whisper Groups",
+    "whisperGroupsLink": "Groupes Whisper",
     "videoFallback": "Vidéo",
     "groupFallback": "Groupe",
     "stats": {
@@ -419,7 +419,7 @@
   },
   "whisperGroupDetail": {
     "notFound": "Groupe introuvable.",
-    "whisperGroupsLink": "Whisper Groups",
+    "whisperGroupsLink": "Groupes Whisper",
     "deleteDialog": {
       "title": "Supprimer « {{name}} » ?",
       "description": "Cela supprime le groupe enregistré et sa liste de membres. Les whisps déjà envoyés à ce groupe ne sont pas affectés."
@@ -451,7 +451,7 @@
     }
   },
   "whisperGroups": {
-    "title": "Whisper Groups",
+    "title": "Groupes Whisper",
     "subtitle": "Enregistre un groupe de contacts une fois, puis envoie le même whisp anonyme à tout le monde en une fois.",
     "tabs": {
       "groups": "Groupes",

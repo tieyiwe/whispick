@@ -404,7 +404,7 @@
   },
   "groupSendDetail": {
     "notFound": "그룹 전송 기록을 찾을 수 없어요.",
-    "whisperGroupsLink": "Whisper Groups",
+    "whisperGroupsLink": "Whisper 그룹",
     "videoFallback": "영상",
     "groupFallback": "그룹",
     "stats": {
@@ -419,7 +419,7 @@
   },
   "whisperGroupDetail": {
     "notFound": "그룹을 찾을 수 없어요.",
-    "whisperGroupsLink": "Whisper Groups",
+    "whisperGroupsLink": "Whisper 그룹",
     "deleteDialog": {
       "title": "\"{{name}}\"을(를) 삭제할까요?",
       "description": "저장된 그룹과 멤버 목록이 삭제돼요. 이 그룹에 이미 보낸 whisp에는 영향이 없어요."
@@ -451,7 +451,7 @@
     }
   },
   "whisperGroups": {
-    "title": "Whisper Groups",
+    "title": "Whisper 그룹",
     "subtitle": "연락처 그룹을 한 번 저장해두고, 모두에게 같은 익명 whisp를 한 번에 보내보세요.",
     "tabs": {
       "groups": "그룹",
