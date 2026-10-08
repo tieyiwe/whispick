@@ -101,7 +101,7 @@ export function WhisperGroups() {
             ) : groups?.length ? (
               <div className="space-y-2">
                 {groups.map((group) => (
-                  <Link key={group.id} href={`/whisper-groups/${group.id}`}>
+                  <Link key={group.id} href={`/whisper-groups/${group.id}`} className="block rounded-2xl">
                     <Card className="bg-card hover:bg-card/80 transition-colors border-border/50 cursor-pointer" data-testid={`group-row-${group.id}`}>
                       <CardContent className="p-4 flex items-center gap-3">
                         <div className="p-2.5 rounded-xl bg-primary/10 shrink-0">
@@ -131,7 +131,7 @@ export function WhisperGroups() {
               </div>
             ) : sends?.length ? (
               sends.map((s) => (
-                <Link key={s.groupSendId} href={`/whisper-groups/sends/${s.groupSendId}`}>
+                <Link key={s.groupSendId} href={`/whisper-groups/sends/${s.groupSendId}`} className="block rounded-2xl">
                   <Card className="bg-card hover:bg-card/80 transition-colors border-border/50 cursor-pointer" data-testid={`group-send-row-${s.groupSendId}`}>
                     <CardContent className="p-4 flex items-center gap-3">
                       <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center shrink-0 overflow-hidden">

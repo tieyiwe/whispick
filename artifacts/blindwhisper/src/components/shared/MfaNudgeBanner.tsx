@@ -40,26 +40,30 @@ export function MfaNudgeBanner() {
   }
 
   return (
-    <Card className="bg-primary/5 border-primary/20" data-testid="card-mfa-nudge">
-      <CardContent className="p-4 flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex items-start gap-2.5">
-          <ShieldCheck className="w-4 h-4 mt-0.5 shrink-0 text-primary" />
-          <div>
+    <Card className="rounded-2xl bg-primary/[0.06] border-primary/20 shadow-none" data-testid="card-mfa-nudge">
+      <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+        <div className="flex items-start gap-3 min-w-0">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/12">
+            <ShieldCheck className="w-4 h-4 text-primary" />
+          </span>
+          <div className="min-w-0">
             <p className="text-sm font-medium text-foreground">{t("mfaNudgeBanner.title")}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="text-sm text-muted-foreground mt-0.5">
               {t("mfaNudgeBanner.description")}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Button variant="ghost" size="sm" className="rounded-full text-muted-foreground" onClick={handleSkip} data-testid="button-skip-mfa-nudge">
+        <div className="flex items-center justify-end gap-2 shrink-0">
+          <Button variant="ghost" size="sm" className="h-9 rounded-full px-3 text-muted-foreground" onClick={handleSkip} data-testid="button-skip-mfa-nudge">
             <X className="w-3.5 h-3.5 mr-1" /> {t("mfaNudgeBanner.skipForNow")}
           </Button>
-          <Link href="/account/security">
-            <Button size="sm" className="rounded-full" data-testid="button-setup-mfa-nudge">
+          {/* Outline, not filled — a nudge shouldn't outrank the page's own
+              primary action. */}
+          <Button asChild variant="outline" size="sm" className="h-9 rounded-full px-4 border-primary/40 text-foreground hover:bg-primary/10">
+            <Link href="/account/security" data-testid="button-setup-mfa-nudge">
               {t("mfaNudgeBanner.setUpNow")}
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </CardContent>
     </Card>

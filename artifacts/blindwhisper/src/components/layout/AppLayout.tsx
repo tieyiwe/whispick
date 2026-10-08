@@ -36,10 +36,10 @@ import {
   Menu,
   UserCheck,
   Mailbox,
+  ChevronsUpDown,
+  ChevronRight,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,6 +55,7 @@ import { InstallAppPrompt } from "@/components/shared/InstallAppPrompt";
 import { PolicyUpdateGate } from "@/components/shared/PolicyUpdateGate";
 import { useMobileSendActionValue } from "@/contexts/MobileSendAction";
 import { usePublicConfig } from "@/lib/usePublicConfig";
+import { SUGGESTIONS_ENABLED } from "@/lib/features";
 
 // labelKey resolves against the "common" namespace's nav.* keys (see
 // src/i18n/locales/*/common.json) — the label itself is looked up at
@@ -122,13 +123,13 @@ const NAV_SECTIONS: NavSection[] = [
 const MOBILE_TAB_ITEMS_LEFT: NavItem[] = [
   { href: "/dashboard", labelKey: "nav.home", icon: LayoutDashboard },
   { href: "/debate-topics", labelKey: "nav.debateShort", icon: Swords },
-  { href: "/circle", labelKey: "nav.blindCircle", icon: Users },
+  { href: "/circle", labelKey: "nav.circleShort", icon: Users },
 ];
 
 // Plus the "More" button rendered after these, so the right side also ends
 // up with 3 — balanced against the 3 on the left around the center Send button.
 const MOBILE_TAB_ITEMS_RIGHT: NavItem[] = [
-  { href: "/whisps", labelKey: "nav.myWhisps", icon: ListVideo },
+  { href: "/whisps", labelKey: "nav.myWhispsShort", icon: ListVideo },
   { href: "/replies", labelKey: "nav.replies", icon: MessageSquareHeart },
 ];
 
@@ -148,69 +149,88 @@ function MobileTabLink({
   return (
     <Link
       href={href}
-      className={`relative flex flex-col items-center justify-center gap-0.5 min-w-11 min-h-11 px-2 py-1.5 rounded-xl transition-colors ${
-        isActive ? "text-primary" : "text-muted-foreground"
+      aria-current={isActive ? "page" : undefined}
+      className={`relative flex flex-col items-center justify-center gap-1 min-h-12 w-full rounded-xl transition-colors duration-200 ${
+        isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
       }`}
     >
       <div className="relative">
-        <Icon className="w-6 h-6" />
+        <Icon className="w-[22px] h-[22px]" strokeWidth={isActive ? 2.25 : 1.75} />
         {badgeCount > 0 && (
           <span
-            className="absolute -top-1 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-secondary text-[10px] font-semibold text-secondary-foreground flex items-center justify-center"
+            className="absolute -top-1.5 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-secondary ring-2 ring-background text-[11px] font-semibold leading-none tabular-nums text-secondary-foreground flex items-center justify-center"
             data-testid={`badge-mobile-${href.replace(/\//g, "")}`}
           >
             {badgeCount > 9 ? "9+" : badgeCount}
           </span>
         )}
       </div>
-      <span className="text-[10px] font-medium leading-tight text-center">{label}</span>
+      <span className={`text-[11px] leading-none whitespace-nowrap ${isActive ? "font-semibold" : "font-medium"}`}>{label}</span>
     </Link>
   );
 }
 
-// Every sign-out goes through here: the anonymous state this device holds
-// (private Circle DM tokens, the anonymous visitor id, the push
-// subscription) belongs to the person signing out, not whoever uses the
-// device next. App.tsx's ClerkQueryClientCacheInvalidator also clears it
-// when Clerk reports the user changed, covering sign-outs that don't come
-// from these buttons (session expiry, another tab).
 function signOutAndForgetDevice(signOut: ReturnType<typeof useClerk>["signOut"]) {
   clearAnonymousDeviceState();
   return signOut({ redirectUrl: "/" });
 }
 
 // Top-right account dropdown — Settings + Sign Out, reachable from the same
-// avatar in both the mobile header and the desktop sidebar's top bar. Fixes
+// avatar in the mobile header and the desktop sidebar's account bar. Fixes
 // two real gaps: on mobile, the avatar previously just linked straight to
 // /settings with no sign-out anywhere in reach (the desktop sidebar's own
 // account block at the bottom is `hidden md:flex`, invisible on mobile); on
 // desktop, there was no account control in the top-right corner at all —
-// only at the very bottom of the sidebar. This doesn't replace that bottom
-// block (it still works and stays), it just gives both layouts a working,
-// consistently-placed account menu where people actually expect one.
+// only at the very bottom of the sidebar. On desktop it now IS that bottom
+// block (variant="row"), so the sidebar header can give the brand its room.
 function AccountMenu({
   avatarClassName = "w-8 h-8 border border-border",
   triggerClassName = "",
+  variant = "avatar",
 }: {
   avatarClassName?: string;
   triggerClassName?: string;
+  /** "row" renders the trigger as the desktop sidebar's account bar (avatar,
+   *  name and email) instead of a bare avatar — the sidebar's header is the
+   *  brand's, so the account control lives at the foot of the sidebar. */
+  variant?: "avatar" | "row";
 }) {
   const { user } = useUser();
   const { signOut } = useClerk();
   const { t } = useTranslation();
+  const isRow = variant === "row";
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className={`flex items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring ${triggerClassName}`}
+        className={
+          isRow
+            ? `group flex w-full min-w-0 items-center gap-3 rounded-xl px-2 py-2 text-left outline-none transition-colors hover:bg-card focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:bg-card ${triggerClassName}`
+            : `flex items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring ${triggerClassName}`
+        }
+        aria-label={t("account.menu")}
         data-testid="button-account-menu"
       >
         <Avatar className={avatarClassName}>
           <AvatarImage src={user?.imageUrl} />
           <AvatarFallback className="text-xs">{user?.firstName?.charAt(0) || "U"}</AvatarFallback>
         </Avatar>
+        {isRow && (
+          <>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-medium text-foreground">{user?.fullName}</span>
+              <span className="block truncate text-xs text-muted-foreground">{user?.primaryEmailAddress?.emailAddress}</span>
+            </span>
+            <ChevronsUpDown className="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
+          </>
+        )}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
+      <DropdownMenuContent
+        align={isRow ? "start" : "end"}
+        side={isRow ? "top" : "bottom"}
+        sideOffset={8}
+        className={`rounded-xl border-border/60 ${isRow ? "w-[var(--radix-dropdown-menu-trigger-width)] min-w-56" : "w-56"}`}
+      >
         <DropdownMenuLabel>
           <p className="text-sm font-medium text-foreground truncate">{user?.fullName}</p>
           <p className="text-xs font-normal text-muted-foreground truncate">{user?.primaryEmailAddress?.emailAddress}</p>
@@ -235,8 +255,6 @@ function AccountMenu({
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
-  const { user } = useUser();
-  const { signOut } = useClerk();
   const { data: profile } = useGetUserProfile();
   const isAdmin = profile?.role === "admin";
   const { t, i18n } = useTranslation();
@@ -321,8 +339,16 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const { smsEnabled } = usePublicConfig();
   const navSections: NavSection[] = NAV_SECTIONS.map((section) => ({
     ...section,
-    items: section.items.filter((item) => smsEnabled || item.href !== "/text-whisps"),
-  })).map((section) =>
+    items: section.items.filter(
+      (item) =>
+        (smsEnabled || item.href !== "/text-whisps") &&
+        // Suggestions is parked for now (lib/features.ts) — hidden from the
+        // sidebar and the More sheet alike, since both derive from here.
+        (SUGGESTIONS_ENABLED || item.href !== "/suggestions"),
+    ),
+  }))
+    .filter((section) => section.items.length > 0)
+    .map((section) =>
     section.key === "account" && isAdmin
       ? { ...section, items: [...section.items, { href: "/admin_pro", labelKey: "nav.admin", icon: ShieldCheck }] }
       : section,
@@ -342,7 +368,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
   // later, including Admin, automatically shows up here too instead of
   // silently being mobile-unreachable again.
   const [moreOpen, setMoreOpen] = useState(false);
-  const fixedMobileHrefs = new Set([...MOBILE_TAB_ITEMS_LEFT, ...MOBILE_TAB_ITEMS_RIGHT].map((item) => item.href));
+  // "/send" counts as fixed too: it's the raised center button, so listing
+  // it again in More was a duplicate.
+  const fixedMobileHrefs = new Set(["/send", ...[...MOBILE_TAB_ITEMS_LEFT, ...MOBILE_TAB_ITEMS_RIGHT].map((item) => item.href)]);
   const moreSections = navSections
     .map((section) => ({ ...section, items: section.items.filter((item) => !fixedMobileHrefs.has(item.href)) }))
     .filter((section) => section.items.length > 0);
@@ -383,26 +411,29 @@ export function AppLayout({ children }: { children: ReactNode }) {
           sidebar/nav/content stacked in front of it. */}
       <div className="absolute top-[-10%] left-[-10%] w-[55%] h-[40%] rounded-full blur-[120px] pointer-events-none bg-primary/8" />
       <div className="absolute bottom-[-15%] right-[-10%] w-[45%] h-[35%] rounded-full blur-[110px] pointer-events-none bg-secondary/5" />
-      <aside className="relative w-full md:w-64 border-r border-border bg-card/50 backdrop-blur-xl flex-col hidden md:flex md:h-full md:shrink-0">
-        <div className="p-6 flex items-center justify-between gap-2">
-          <Link href="/dashboard" className="hover:opacity-80 transition-opacity min-w-0">
-            <LogoLockup />
+      <aside className="relative w-full md:w-64 border-r border-border/50 bg-card/40 backdrop-blur-xl flex-col hidden md:flex md:h-full md:shrink-0">
+        {/* The header belongs to the brand: the full lockup at its natural
+            size, with only the notification bell beside it. The account
+            control moved to the foot of the sidebar — squeezing bell AND
+            avatar in here truncated the wordmark to "Blind …". */}
+        <div className="flex items-center justify-between gap-2 pl-5 pr-3 pt-5 pb-4">
+          <Link href="/dashboard" className="min-w-0 rounded-lg transition-opacity hover:opacity-80" aria-label="Blind Whisper">
+            <LogoLockup size="sm" />
           </Link>
-          <div className="flex items-center gap-1 shrink-0">
-            <NotificationBell />
-            <AccountMenu />
-          </div>
+          <NotificationBell side="right" align="start" />
         </div>
 
-        <nav className="flex-1 px-4 pb-2 overflow-y-auto">
+        {/* Edge fades so a nav taller than the window reads as scrollable
+            rather than simply ending at the fold. */}
+        <nav className="flex-1 min-h-0 overflow-y-auto px-3 pb-3 [mask-image:linear-gradient(to_bottom,transparent,black_12px,black_calc(100%-16px),transparent)]">
           {navSections.map((section) => (
-            <div key={section.key} className={section.titleKey ? "mt-5" : ""}>
+            <div key={section.key} className={section.titleKey ? "mt-5" : "pt-1"}>
               {section.titleKey && (
-                <p className="px-4 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/60">
+                <p className="px-3 pb-1.5 text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground/80">
                   {t(section.titleKey)}
                 </p>
               )}
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 {section.items.map((item) => {
                   // Exact match for a parent route that has its own child
                   // item (/debate-topics vs /debate-topics/following), so only
@@ -417,17 +448,18 @@ export function AppLayout({ children }: { children: ReactNode }) {
                       key={item.href}
                       href={item.href}
                       aria-current={isActive ? "page" : undefined}
-                      className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all ${
+                      className={`relative flex min-h-10 items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors duration-150 ${
                         isActive
-                          ? "bg-primary/10 text-primary font-medium glow-card"
-                          : "text-muted-foreground hover:text-foreground hover:bg-card"
+                          ? "bg-primary/12 text-foreground font-medium"
+                          : "text-muted-foreground hover:text-foreground hover:bg-card/70"
                       }`}
                     >
-                      <Icon className="w-5 h-5" />
-                      <span className="flex-1">{t(item.labelKey)}</span>
+                      {isActive && <span aria-hidden className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-primary" />}
+                      <Icon className={`w-[18px] h-[18px] shrink-0 ${isActive ? "text-primary" : ""}`} />
+                      <span className="flex-1 truncate">{t(item.labelKey)}</span>
                       {badge > 0 && (
                         <span
-                          className="min-w-[20px] h-5 px-1.5 rounded-full bg-secondary text-xs font-semibold text-secondary-foreground flex items-center justify-center"
+                          className="min-w-[22px] h-[22px] px-1.5 rounded-full bg-secondary/15 text-xs font-semibold tabular-nums text-secondary flex items-center justify-center"
                           data-testid={
                             item.href === "/replies"
                               ? "badge-unread-replies"
@@ -447,27 +479,11 @@ export function AppLayout({ children }: { children: ReactNode }) {
           ))}
         </nav>
 
-        <div className="p-4 mt-auto">
-          <Separator className="mb-4" />
-          <div className="flex items-center gap-3 px-2 mb-4">
-            <Avatar className="w-10 h-10 border border-border">
-              <AvatarImage src={user?.imageUrl} />
-              <AvatarFallback>{user?.firstName?.charAt(0) || "U"}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">{user?.fullName}</p>
-              <p className="text-xs text-muted-foreground truncate">{user?.primaryEmailAddress?.emailAddress}</p>
-            </div>
-          </div>
-          <Button
-            variant="ghost"
-            className="w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-            onClick={() => signOutAndForgetDevice(signOut)}
-          >
-            <LogOut className="w-5 h-5 mr-3" />
-            {t("account.signOut")}
-          </Button>
-          <p className="text-center text-[11px] text-muted-foreground/60 mt-3" data-testid="text-app-version">
+        {/* Account bar: one row that opens Settings / Sign out, instead of a
+            name block plus a separate full-width Sign Out button. */}
+        <div className="border-t border-border/50 px-3 pt-3 pb-3">
+          <AccountMenu variant="row" avatarClassName="w-9 h-9 border border-border/60" />
+          <p className="mt-2 text-center text-[11px] text-muted-foreground/70 tabular-nums" data-testid="text-app-version">
             v{APP_VERSION} · {APP_VERSION_NAME}
           </p>
         </div>
@@ -478,24 +494,24 @@ export function AppLayout({ children }: { children: ReactNode }) {
         // Not sticky — a flex child of a shell that doesn't scroll, so it
         // holds its place by construction rather than by a property that the
         // stylesheet's overflow rules were quietly defeating.
-        className="md:hidden shrink-0 border-b border-border bg-card/80 backdrop-blur flex items-center justify-between z-50 px-4"
-        style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.75rem)", paddingBottom: "0.75rem" }}
+        className="md:hidden shrink-0 border-b border-border/50 bg-background/80 backdrop-blur-xl flex items-center justify-between z-50 px-4"
+        style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.5rem)", paddingBottom: "0.5rem" }}
       >
         {/* Was a 24px mark beside 20px text — two-thirds the height of the
             word next to it, which reads as a bullet rather than a logo. */}
         <Link href="/dashboard" className="flex items-center min-h-11 min-w-0">
           <LogoLockup />
         </Link>
-        <div className="flex items-center gap-1">
-          <NotificationBell />
-          <AccountMenu triggerClassName="w-11 h-11 -mr-2" />
+        <div className="flex items-center gap-0.5 -mr-1.5">
+          <NotificationBell triggerClassName="h-11 w-11" />
+          <AccountMenu triggerClassName="w-11 h-11" />
         </div>
       </header>
 
       {/* min-h-0 is load-bearing: a flex item's default min-height is auto,
           which refuses to shrink below its content and would let the page grow
           past the shell instead of scrolling inside it. */}
-      <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-24 md:pb-0">
+      <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-0">
         {/* Restores a swipe-down refresh on mobile: index.css sets
             overscroll-behavior-y: contain (so the page doesn't rubber-band
             against the fixed header/bottom nav), which also disables the
@@ -510,7 +526,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
             /send included — which is the accepted cost of the gesture meaning
             what it does in every other app. */}
         <PullToRefresh onRefresh={reloadPage}>
-          <div className="max-w-5xl mx-auto p-4 md:p-8 lg:p-10">
+          <div className="max-w-5xl mx-auto px-4 pt-5 pb-6 md:p-8 lg:px-10 lg:py-10">
             {children}
           </div>
         </PullToRefresh>
@@ -521,12 +537,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
       <InstallAppPrompt />
       <PolicyUpdateGate />
 
-      {/* Mobile bottom tab bar with a raised Send action, native-app style */}
+      {/* Mobile bottom tab bar with a raised Send action, native-app style.
+          Seven equal columns so every label sits on one line under its icon
+          instead of some wrapping to two. */}
       <nav
-        className="md:hidden fixed bottom-0 inset-x-0 z-50 border-t border-border bg-background/95 backdrop-blur"
+        className="md:hidden fixed bottom-0 inset-x-0 z-50 border-t border-border/50 bg-background/90 backdrop-blur-xl"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="relative flex items-center justify-around px-1 py-1.5">
+        <div className="relative grid grid-cols-7 items-center px-1 pt-1.5 pb-1">
           {MOBILE_TAB_ITEMS_LEFT.map((item) => (
             <MobileTabLink
               key={item.href}
@@ -543,11 +561,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
               type="button"
               onClick={mobileSendAction.onClick}
               disabled={mobileSendAction.disabled}
-              className="flex flex-col items-center -mt-6"
+              aria-label={t("nav.sendWhisp")}
+              className="flex flex-col items-center justify-self-center -mt-6"
               data-testid="link-send-mobile"
             >
               <div
-                className={`w-14 h-14 rounded-full flex items-center justify-center transition-all border-4 border-background ${
+                className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 border-4 border-background ${
                   mobileSendAction.disabled
                     ? "bg-muted"
                     : "bg-primary shadow-[0_0_20px_rgba(124,92,252,0.5)] active:scale-95"
@@ -557,8 +576,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
               </div>
             </button>
           ) : (
-            <Link href="/send" className="flex flex-col items-center -mt-6" data-testid="link-send-mobile">
-              <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center shadow-[0_0_20px_rgba(124,92,252,0.5)] active:scale-95 transition-transform border-4 border-background">
+            <Link href="/send" aria-label={t("nav.sendWhisp")} className="flex flex-col items-center justify-self-center -mt-6" data-testid="link-send-mobile">
+              <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center shadow-[0_0_20px_rgba(124,92,252,0.5)] active:scale-95 transition-transform duration-200 border-4 border-background">
                 <Send className="w-6 h-6 text-primary-foreground" />
               </div>
             </Link>
@@ -579,57 +598,69 @@ export function AppLayout({ children }: { children: ReactNode }) {
             type="button"
             onClick={() => setMoreOpen(true)}
             data-testid="button-mobile-more"
-            className={`relative flex flex-col items-center justify-center gap-0.5 min-w-11 min-h-11 px-2 py-1.5 rounded-xl transition-colors ${
-              isOnMoreItem ? "text-primary" : "text-muted-foreground"
+            aria-haspopup="dialog"
+            className={`relative flex flex-col items-center justify-center gap-1 min-h-12 w-full rounded-xl transition-colors duration-200 ${
+              isOnMoreItem ? "text-primary" : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Menu className="w-6 h-6" />
-            {moreHasUnread && (
-              <span
-                className="absolute top-1 right-2 h-2.5 w-2.5 rounded-full bg-destructive ring-2 ring-background"
-                aria-hidden
-                data-testid="badge-more-unread"
-              />
-            )}
-            <span className="text-[10px] font-medium leading-tight text-center">{t("nav.more")}</span>
+            <span className="relative">
+              <Menu className="w-[22px] h-[22px]" strokeWidth={isOnMoreItem ? 2.25 : 1.75} />
+              {moreHasUnread && (
+                <span
+                  className="absolute -top-0.5 -right-1 h-2.5 w-2.5 rounded-full bg-secondary ring-2 ring-background"
+                  aria-hidden
+                  data-testid="badge-more-unread"
+                />
+              )}
+            </span>
+            <span className={`text-[11px] leading-none whitespace-nowrap ${isOnMoreItem ? "font-semibold" : "font-medium"}`}>{t("nav.more")}</span>
           </button>
         </div>
       </nav>
 
+      {/* Grouped rows rather than a tile grid: sections have 1–3 items each,
+          which in a 3-column grid always left orphan tiles on their own row.
+          Rows also give every label room to sit on one line. */}
       <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
-        <SheetContent side="bottom" className="md:hidden max-h-[80vh] overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>{t("nav.more")}</SheetTitle>
+        <SheetContent
+          side="bottom"
+          className="md:hidden max-h-[85dvh] overflow-y-auto rounded-t-3xl border-border/50 bg-background/95 backdrop-blur-xl px-4 pt-3 [&>button:first-of-type]:right-3 [&>button:first-of-type]:top-3 [&>button:first-of-type]:flex [&>button:first-of-type]:h-10 [&>button:first-of-type]:w-10 [&>button:first-of-type]:items-center [&>button:first-of-type]:justify-center [&>button:first-of-type]:rounded-full [&>button:first-of-type]:bg-card/80 [&>button:first-of-type]:opacity-100"
+          style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1.25rem)" }}
+        >
+          <div aria-hidden className="mx-auto mb-3 h-1 w-10 rounded-full bg-muted" />
+          <SheetHeader className="text-left">
+            <SheetTitle className="font-serif text-xl">{t("nav.more")}</SheetTitle>
           </SheetHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-5 pt-4">
             {moreSections.map((section) => (
               <div key={section.key}>
                 {section.titleKey && (
-                  <p className="pb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/60">
+                  <p className="px-1 pb-2 text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground/80">
                     {t(section.titleKey)}
                   </p>
                 )}
-                <div className="grid grid-cols-3 gap-2">
+                <div className="overflow-hidden rounded-2xl border border-border/50 bg-card/50 divide-y divide-border/40">
                   {section.items.map((item) => {
                     const badge = badgeFor(item.href);
+                    const isActive = location === item.href;
                     return (
                       <SheetClose asChild key={item.href}>
                         <Link
                           href={item.href}
+                          aria-current={isActive ? "page" : undefined}
                           data-testid={`link-more-${item.href.replace(/\//g, "")}`}
-                          className={`relative flex flex-col items-center justify-center gap-1.5 rounded-xl border p-3 text-center transition-colors ${
-                            location === item.href
-                              ? "border-primary bg-primary/10 text-primary"
-                              : "border-border/50 text-muted-foreground hover:border-border"
+                          className={`flex min-h-12 items-center gap-3 px-4 py-3 text-[15px] transition-colors duration-150 active:bg-card ${
+                            isActive ? "bg-primary/10 text-foreground font-medium" : "text-foreground/90 hover:bg-card"
                           }`}
                         >
+                          <item.icon className={`h-5 w-5 shrink-0 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
+                          <span className="flex-1">{t(item.labelKey)}</span>
                           {badge > 0 && (
-                            <span className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-[10px] font-semibold text-destructive-foreground flex items-center justify-center">
+                            <span className="min-w-[22px] h-[22px] px-1.5 rounded-full bg-secondary/15 text-xs font-semibold tabular-nums text-secondary flex items-center justify-center">
                               {badge > 9 ? "9+" : badge}
                             </span>
                           )}
-                          <item.icon className="w-5 h-5" />
-                          <span className="text-xs font-medium leading-tight">{t(item.labelKey)}</span>
+                          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60" />
                         </Link>
                       </SheetClose>
                     );

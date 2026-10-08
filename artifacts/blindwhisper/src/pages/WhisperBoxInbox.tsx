@@ -30,7 +30,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Mailbox, Trash2, Clock, Image, Loader2 } from "lucide-react";
+import { Mailbox, Trash2, Image, Loader2, Share2, ChevronDown } from "lucide-react";
 import { AnonymousMark } from "@/components/shared/AnonymousMark";
 import { useLongPress } from "@/lib/useLongPress";
 import { shareWhisperBoxStoryCard } from "@/lib/whisperBoxStoryCard";
@@ -173,9 +173,23 @@ export function WhisperBoxInbox() {
   if (isLoading || isLoadingRecap) {
     return (
       <AppLayout>
-        <div className="space-y-4">
-          <Skeleton className="h-8 w-48" />
-          {[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 rounded-2xl" />)}
+        <div className="max-w-3xl space-y-5 md:space-y-6" aria-busy="true">
+          <div className="space-y-2">
+            <Skeleton className="h-9 w-48 rounded-lg" />
+            <Skeleton className="h-4 w-72 max-w-full rounded" />
+          </div>
+          <div className="space-y-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="flex gap-3 rounded-2xl border border-border/40 bg-card/40 p-4">
+                <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-32 rounded" />
+                  <Skeleton className="h-3 w-full rounded" />
+                  <Skeleton className="h-3 w-16 rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </AppLayout>
     );
@@ -183,28 +197,40 @@ export function WhisperBoxInbox() {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-serif font-bold text-foreground flex items-center gap-2">
-            <Mailbox className="w-7 h-7 text-primary" /> {t("whisperBoxInbox.title")}
-          </h1>
-          <p className="text-muted-foreground mt-1">{t("whisperBoxInbox.subtitle")}</p>
-        </div>
-
-        <div className="space-y-2">
-          <h2 className="text-sm font-medium text-muted-foreground">{t("searchBar.sectionTitle")}</h2>
-          <WhisperBoxSearchBar className="max-w-md" />
+      {/* Capped at a reading width: on desktop a message used to run the
+          full 1000px content column as a single line. */}
+      <div className="max-w-3xl space-y-5 md:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="text-3xl md:text-4xl font-serif font-bold tracking-tight text-foreground flex items-center gap-2.5">
+              <Mailbox className="w-7 h-7 shrink-0 text-primary" /> {t("whisperBoxInbox.title")}
+            </h1>
+            <p className="text-muted-foreground mt-1.5">{t("whisperBoxInbox.subtitle")}</p>
+          </div>
+          {/* With messages already here, the empty state's share prompt is
+              gone — so the inbox keeps a way to pass the link around. */}
+          {messages.length > 0 && whisperBoxEnabled && recap?.whisperBoxHandle && (
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 w-full sm:w-auto shrink-0 rounded-full border-primary/35 px-5 hover:bg-primary/10 hover:text-foreground"
+              onClick={() => setLinkDialogOpen(true)}
+              data-testid="button-share-whisper-box-link"
+            >
+              <Share2 className="w-4 h-4 mr-2 text-primary" /> {t("whisperBoxInbox.shareLinkCta")}
+            </Button>
+          )}
         </div>
 
         {messages.length === 0 ? (
-          <Card className="bg-card/50 border-dashed border-border py-16 text-center px-6">
-            <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-              <Mailbox className="w-8 h-8 text-primary" />
-            </div>
-            <h3 className="text-lg font-serif font-medium text-foreground mb-2">
+          <Card className="rounded-2xl bg-card/40 border-dashed border-border/70 px-6 py-12 sm:py-14 text-center shadow-none">
+            <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/12 ring-1 ring-primary/20">
+              <Mailbox className="h-6 w-6 text-primary" />
+            </span>
+            <h3 className="text-xl font-serif font-semibold text-foreground mb-2">
               {whisperBoxEnabled ? t("whisperBoxInbox.emptyState.titleEnabled") : t("whisperBoxInbox.emptyState.titleDisabled")}
             </h3>
-            <p className="text-muted-foreground max-w-sm mx-auto mb-6">
+            <p className="text-muted-foreground max-w-sm mx-auto mb-6 leading-relaxed">
               {whisperBoxEnabled ? t("whisperBoxInbox.emptyState.descriptionEnabled") : t("whisperBoxInbox.emptyState.descriptionDisabled")}
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
@@ -213,7 +239,7 @@ export function WhisperBoxInbox() {
                   type="button"
                   onClick={handleShareWhisperBoxStory}
                   disabled={storyShareLoading}
-                  className="rounded-full text-white shadow-sm"
+                  className="h-11 w-full sm:w-auto rounded-full px-5 text-white shadow-sm"
                   style={{
                     background:
                       "linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 55%, hsl(var(--gilded)) 100%)",
@@ -232,18 +258,18 @@ export function WhisperBoxInbox() {
                 <Button
                   type="button"
                   variant="outline"
-                  className="rounded-full"
+                  className="h-11 w-full sm:w-auto rounded-full px-5"
                   onClick={() => setLinkDialogOpen(true)}
                   data-testid="button-manage-whisper-box"
                 >
                   {t("whisperBoxInbox.emptyState.manageCta")}
                 </Button>
               ) : (
-                <Link href="/settings">
-                  <Button variant="outline" className="rounded-full" data-testid="button-manage-whisper-box">
+                <Button asChild variant="outline" className="h-11 rounded-full px-5">
+                  <Link href="/settings" data-testid="button-manage-whisper-box">
                     {t("whisperBoxInbox.emptyState.enableCta")}
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               )}
             </div>
           </Card>
@@ -256,7 +282,15 @@ export function WhisperBoxInbox() {
               return (
                 <Card
                   key={message.id}
-                  className={`overflow-hidden transition-colors ${isUnread ? "bg-primary/5 border-primary/30" : "bg-card border-border/50"}`}
+                  // Unread is the prominent state: full card surface, a
+                  // primary edge and bold sender. Read messages recede to a
+                  // quieter, translucent surface — previously this was the
+                  // other way round (read sat on the brighter bg-card).
+                  className={`overflow-hidden rounded-2xl shadow-none transition-colors duration-200 ${
+                    isUnread
+                      ? "bg-card border-primary/35 border-l-[3px] border-l-primary"
+                      : "bg-card/35 border-border/40 hover:bg-card/55"
+                  }`}
                   data-testid={`whisper-box-message-${message.id}`}
                 >
                   <button
@@ -273,38 +307,55 @@ export function WhisperBoxInbox() {
                     onPointerMove={longPress.onPointerMove}
                     onPointerUp={longPress.onPointerUp}
                     onPointerCancel={longPress.onPointerUp}
-                    className="w-full text-left p-4 flex items-start gap-3 select-none"
+                    aria-expanded={isExpanded}
+                    className="w-full text-left p-4 flex items-start gap-3 select-none focus-visible:outline-none focus-visible:bg-card/60"
                     data-testid={`button-toggle-whisper-box-message-${message.id}`}
                   >
-                    <AnonymousMark size="md" className="mt-0.5" />
+                    <AnonymousMark
+                      size="md"
+                      className={`mt-0.5 h-10 w-10 ring-1 ${isUnread ? "bg-primary/20 ring-primary/35" : "bg-muted/70 text-muted-foreground ring-border/60"}`}
+                    />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-medium text-foreground truncate flex items-center gap-1.5" data-testid={`whisper-box-sender-${message.id}`}>
-                          {isUnread && <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
+                        <p
+                          className={`text-sm truncate ${isUnread ? "font-semibold text-foreground" : "font-medium text-foreground/80"}`}
+                          data-testid={`whisper-box-sender-${message.id}`}
+                        >
                           {who}
                         </p>
                         {isUnread && (
-                          <span className="text-[10px] uppercase tracking-wide font-semibold text-primary shrink-0 bg-primary/10 rounded-full px-2 py-0.5">
+                          <span className="shrink-0 text-[11px] uppercase tracking-wide font-semibold text-primary bg-primary/12 rounded-full px-2 py-0.5">
                             {t("whisperBoxInbox.newBadge")}
                           </span>
                         )}
                       </div>
-                      <p className={`text-sm text-foreground mt-1 ${isExpanded ? "whitespace-pre-wrap break-words" : "truncate"}`}>
+                      <p
+                        className={`mt-1 text-[15px] leading-relaxed break-words ${
+                          isExpanded ? "whitespace-pre-wrap" : "line-clamp-2"
+                        } ${isUnread ? "text-foreground" : "text-foreground/75"}`}
+                      >
                         {message.messageText}
                       </p>
-                      <p className="flex items-center gap-1 text-xs text-muted-foreground mt-1.5">
-                        <Clock className="w-3 h-3 flex-shrink-0" />
+                      <time
+                        dateTime={message.createdAt}
+                        title={new Date(message.createdAt).toLocaleString()}
+                        className="mt-1.5 block text-xs text-muted-foreground tabular-nums"
+                      >
                         {t("whisperBoxInbox.timeAgo", { time: formatDistanceToNowStrict(new Date(message.createdAt)) })}
-                      </p>
+                      </time>
                     </div>
+                    <ChevronDown
+                      aria-hidden
+                      className={`mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+                    />
                   </button>
 
                   {isExpanded && (
-                    <div className="px-4 pb-4 flex justify-end">
+                    <div className="px-4 pb-3 -mt-1 flex justify-end">
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full"
+                        className="h-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full px-3"
                         onClick={() => setPendingDeleteId(message.id)}
                         data-testid={`button-delete-whisper-box-message-${message.id}`}
                       >
@@ -317,6 +368,13 @@ export function WhisperBoxInbox() {
             })}
           </div>
         )}
+
+        {/* Secondary: finding someone else's box. Below the inbox, not above
+            it — this page is for reading your own messages first. */}
+        <section className="space-y-2.5 rounded-2xl border border-border/40 bg-card/30 p-4 sm:p-5">
+          <h2 className="text-base font-serif font-semibold text-foreground">{t("searchBar.sectionTitle")}</h2>
+          <WhisperBoxSearchBar className="max-w-md" />
+        </section>
 
         <AlertDialog open={!!pendingDeleteId} onOpenChange={(open) => !open && setPendingDeleteId(null)}>
           <AlertDialogContent>

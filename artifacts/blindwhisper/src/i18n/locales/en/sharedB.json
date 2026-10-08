@@ -48,7 +48,9 @@
     "notifications": "Notifications",
     "unreadCount": "{{count}} unread",
     "markAllRead": "Mark all read",
-    "noNotificationsYet": "No notifications yet."
+    "noNotificationsYet": "No notifications yet.",
+    "timeAgo": "{{time}} ago",
+    "justNow": "Just now"
   },
   "phoneVerificationDialog": {
     "title": "Verify your phone number",

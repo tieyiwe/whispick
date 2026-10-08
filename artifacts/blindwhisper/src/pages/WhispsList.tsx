@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { formatDistanceToNowStrict } from "date-fns";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
   useListWhisps,
@@ -65,6 +66,12 @@ export function WhispsList() {
   const queryClient = useQueryClient();
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+  function relativeTime(value: string): string {
+    const date = new Date(value);
+    if (Date.now() - date.getTime() < 60_000) return t("shared.justNow");
+    return t("shared.timeAgo", { time: formatDistanceToNowStrict(date) });
+  }
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
   // A press-and-hold on the card itself opens the same options menu the
@@ -194,23 +201,25 @@ export function WhispsList() {
 
   return (
     <AppLayout>
-      <div className="space-y-8">
+      <div className="space-y-5 md:space-y-6">
         <div>
-          <h1 className="text-3xl font-serif font-bold text-foreground">{t("whispsList.title")}</h1>
-          <p className="text-muted-foreground mt-1">{t("whispsList.subtitle")}</p>
+          <h1 className="text-3xl md:text-4xl font-serif font-bold tracking-tight text-foreground">{t("whispsList.title")}</h1>
+          <p className="text-muted-foreground mt-1.5">{t("whispsList.subtitle")}</p>
         </div>
 
         {/* Sent / Received / Archived — three clearly different collections,
             so this is a real tab switch rather than a filter dropdown
             value, with its own badge on Received so a new arrival is
             noticeable without having to open the tab first. */}
-        <div className="inline-flex items-center gap-1 rounded-full bg-card border border-border/50 p-1">
+        <div className="flex w-full sm:inline-flex sm:w-auto items-center gap-1 rounded-full bg-card/60 border border-border/50 p-1" role="tablist">
           <button
             type="button"
             onClick={() => setBox("sent")}
             data-testid="tab-whisps-sent"
-            className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-              box === "sent" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+            role="tab"
+            aria-selected={box === "sent"}
+            className={`flex flex-1 sm:flex-none items-center justify-center gap-1.5 rounded-full min-h-10 px-4 py-2 text-sm font-medium transition-colors duration-200 ${
+              box === "sent" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <Send className="w-3.5 h-3.5" /> {t("whispsList.tabs.sent")}
@@ -219,14 +228,16 @@ export function WhispsList() {
             type="button"
             onClick={() => setBox("received")}
             data-testid="tab-whisps-received"
-            className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors relative ${
-              box === "received" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+            role="tab"
+            aria-selected={box === "received"}
+            className={`flex flex-1 sm:flex-none items-center justify-center gap-1.5 rounded-full min-h-10 px-4 py-2 text-sm font-medium transition-colors duration-200 relative ${
+              box === "received" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <Inbox className="w-3.5 h-3.5" /> {t("whispsList.tabs.received")}
             {newReceivedCount > 0 && (
               <span
-                className={`ml-0.5 inline-flex items-center justify-center rounded-full text-[10px] font-semibold min-w-[18px] h-[18px] px-1 ${
+                className={`ml-0.5 inline-flex items-center justify-center rounded-full text-[11px] font-semibold tabular-nums min-w-[18px] h-[18px] px-1 ${
                   box === "received" ? "bg-primary-foreground/25 text-primary-foreground" : "bg-primary text-primary-foreground"
                 }`}
                 data-testid="badge-new-received-count"
@@ -239,28 +250,30 @@ export function WhispsList() {
             type="button"
             onClick={() => setBox("archived")}
             data-testid="tab-whisps-archived"
-            className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-              box === "archived" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+            role="tab"
+            aria-selected={box === "archived"}
+            className={`flex flex-1 sm:flex-none items-center justify-center gap-1.5 rounded-full min-h-10 px-4 py-2 text-sm font-medium transition-colors duration-200 ${
+              box === "archived" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <Archive className="w-3.5 h-3.5" /> {t("whispsList.tabs.archived")}
           </button>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <div className="flex gap-2 sm:gap-3">
+          <div className="relative flex-1 min-w-0">
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder={box === "sent" ? t("whispsList.searchPlaceholderSent") : t("whispsList.searchPlaceholderOther")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 bg-card border-border/50 rounded-full"
+              className="h-11 pl-10 bg-card/60 border-border/50 rounded-full text-sm"
             />
           </div>
           {box !== "archived" && (
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[180px] bg-card border-border/50 rounded-full">
-                <Filter className="w-4 h-4 mr-2 text-muted-foreground" />
+              <SelectTrigger className="h-11 w-[8.75rem] sm:w-[180px] shrink-0 gap-1 bg-card/60 border-border/50 rounded-full" aria-label={t("whispsList.filter.allStatuses")}>
+                <Filter className="hidden sm:block w-4 h-4 mr-1 shrink-0 text-muted-foreground" />
                 <SelectValue placeholder={t("whispsList.filter.allStatuses")} />
               </SelectTrigger>
               <SelectContent>
@@ -277,11 +290,24 @@ export function WhispsList() {
         </div>
 
         {isLoading ? (
-          <div className="space-y-4">
-            {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-32 rounded-2xl" />)}
+          <div className="space-y-3" aria-busy="true">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="flex gap-3 sm:gap-4 rounded-2xl border border-border/40 bg-card/40 p-3 sm:p-4">
+                <Skeleton className="w-28 sm:w-44 aspect-video rounded-[12px] shrink-0" />
+                <div className="flex-1 space-y-2 py-1">
+                  <Skeleton className="h-4 w-4/5 rounded" />
+                  <Skeleton className="h-3 w-1/2 rounded" />
+                  <Skeleton className="h-3 w-2/5 rounded" />
+                  <div className="flex gap-2 pt-2">
+                    <Skeleton className="h-6 w-20 rounded-full" />
+                    <Skeleton className="h-6 w-24 rounded-full" />
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : filteredWhisps?.length ? (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {filteredWhisps.map((whisp) => {
               // Which role this specific whisp is showing under — for the
               // Sent/Received tabs it always matches the tab itself, but the
@@ -295,60 +321,51 @@ export function WhispsList() {
                 key={whisp.id}
                 href={isReceivedItem ? `/w/${whisp.publicToken}` : `/whisps/${whisp.id}`}
                 onClick={handleCardClick}
+                className="block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 {/* Received cards get their own identity, not just the sent
                     card reused with different text: a left accent bar (gold
                     for a genuinely new/unopened one, a quieter primary tint
-                    once it's been seen) and a Received pill, so a glance at
-                    the list — not just the tab you're on — tells you which
-                    kind of card this is. Pinned cards get a subtle gilded
+                    once it's been seen). Pinned cards get a subtle gilded
                     ring regardless of box, since a pin means "important to
-                    me" independent of sent/received/archived. */}
+                    me" independent of sent/received/archived.
+
+                    Thumbnail beside the text at every width (not stacked
+                    above it on phones): a full-width video still per card
+                    meant one whisp per screen, and squeezed the title into a
+                    one-line ellipsis beside four action icons. */}
                 <Card
                   onPointerDown={(e) => longPress.onPointerDown(e, whisp.id)}
                   onPointerMove={longPress.onPointerMove}
                   onPointerUp={longPress.onPointerUp}
                   onPointerCancel={longPress.onPointerUp}
-                  className={`bg-card hover:bg-card/80 transition-colors cursor-pointer overflow-hidden group select-none ${
+                  className={`group select-none cursor-pointer rounded-2xl p-3 sm:p-4 shadow-none transition-colors duration-200 hover:bg-card ${
                     whisp.pinned ? "ring-1 ring-gilded/40" : ""
                   } ${
                     isReceivedItem
                       ? isNew
-                        ? "border-gilded/50 border-l-4 border-l-gilded shadow-[0_0_16px_rgba(212,175,55,0.12)]"
-                        : "border-primary/25 border-l-4 border-l-primary/40"
-                      : "border-border/50"
+                        ? "bg-gilded/[0.05] border-gilded/40 border-l-4 border-l-gilded"
+                        : "bg-card/60 border-primary/25 border-l-4 border-l-primary/40"
+                      : "bg-card/60 border-border/50 hover:border-border"
                   }`}
                   data-testid={`card-whisp-${whisp.id}`}
                 >
-                  <div className="flex flex-col sm:flex-row h-full">
-                    {whisp.videoThumbnail ? (
-                      <div className="w-full sm:w-48 h-36 sm:h-auto shrink-0 relative">
-                        <img src={whisp.videoThumbnail} alt={whisp.videoTitle || t("whispsList.videoAlt")} className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                          <PlayCircle className="w-10 h-10 text-white opacity-80" />
-                        </div>
+                  <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-3 sm:gap-x-4 sm:gap-y-2.5">
+                    <div className="relative w-28 sm:w-44 sm:row-span-2 aspect-video self-start overflow-hidden rounded-[12px] bg-muted">
+                      {whisp.videoThumbnail ? (
+                        <img src={whisp.videoThumbnail} alt={whisp.videoTitle || t("whispsList.videoAlt")} className="h-full w-full object-cover" />
+                      ) : null}
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/25 transition-colors duration-200 group-hover:bg-black/10">
+                        <PlayCircle className="h-7 w-7 sm:h-8 sm:w-8 text-white/90 drop-shadow" />
                       </div>
-                    ) : (
-                      <div className="w-full sm:w-48 h-36 sm:h-auto shrink-0 bg-muted flex items-center justify-center">
-                        <PlayCircle className="w-10 h-10 text-muted-foreground" />
-                      </div>
-                    )}
-                    <div className="p-5 flex-1 flex flex-col justify-center min-w-0">
-                      <div className="flex items-start justify-between gap-4 mb-2">
-                        <h3 className="font-semibold text-foreground text-lg truncate">{whisp.videoTitle || t("whispsList.videoLinkFallback")}</h3>
-                        <div className="flex items-center gap-1 shrink-0">
-                          {isNew && (
-                            <span
-                              className="inline-flex items-center gap-1 rounded-full bg-gilded/15 text-gilded text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 mr-1"
-                              data-testid={`badge-new-${whisp.id}`}
-                            >
-                              <Sparkles className="w-2.5 h-2.5" /> {t("whispsList.newBadge")}
-                            </span>
-                          )}
-                          {whisp.appreciationResponse === "yes" && (
-                            <Heart className="w-4 h-4 text-rose-400 fill-rose-400" data-testid={`icon-appreciated-${whisp.id}`} />
-                          )}
-                          <StatusBadge status={whisp.status} />
+                    </div>
+
+                    <div className="min-w-0">
+                      <div className="flex items-start gap-1">
+                        <h3 className="min-w-0 flex-1 line-clamp-3 sm:line-clamp-2 text-[15px] sm:text-base font-semibold leading-snug text-foreground">
+                          {whisp.videoTitle || t("whispsList.videoLinkFallback")}
+                        </h3>
+                        <div className="-mr-1.5 -mt-1 flex shrink-0 items-center">
                           {/* One-tap pin toggle, separate from the options
                               menu below — the single action common enough
                               to deserve its own button instead of a menu
@@ -359,7 +376,7 @@ export function WhispsList() {
                             aria-label={whisp.pinned ? t("whispsList.unpin") : t("whispsList.pinToTop")}
                             aria-pressed={whisp.pinned}
                             data-testid={`button-pin-${whisp.id}`}
-                            className={`p-1.5 rounded-full transition-colors ${
+                            className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors ${
                               whisp.pinned ? "text-gilded hover:bg-gilded/10" : "text-muted-foreground hover:bg-muted hover:text-foreground"
                             }`}
                           >
@@ -378,12 +395,12 @@ export function WhispsList() {
                                 }}
                                 aria-label={t("whispsList.moreOptions")}
                                 data-testid={`button-menu-${whisp.id}`}
-                                className="p-1.5 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                               >
                                 <MoreVertical className="w-4 h-4" />
                               </button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
+                            <DropdownMenuContent align="end" className="rounded-xl" onCloseAutoFocus={(e) => e.preventDefault()}>
                               <DropdownMenuItem
                                 onClick={(e) => handleTogglePin(e as unknown as React.MouseEvent, whisp.id, whisp.pinned)}
                                 data-testid={`menu-pin-${whisp.id}`}
@@ -420,48 +437,67 @@ export function WhispsList() {
                           </DropdownMenu>
                         </div>
                       </div>
-                      <div className="flex items-center text-sm text-muted-foreground mb-4">
+                      <p className="mt-1 truncate text-sm text-muted-foreground">
                         {isReceivedItem ? (
-                          <span className="truncate flex items-center gap-1.5">
-                            <Inbox className="w-3.5 h-3.5 text-primary/70 shrink-0" />
+                          <>
+                            <Inbox className="mr-1.5 inline h-3.5 w-3.5 -translate-y-px text-primary/70" />
                             {t("whispsList.from", { sender: whisp.senderHandle || t("whispsList.someoneAnonymous") })}
                             {whisp.senderAlias && whisp.senderAlias !== whisp.senderHandle && (
-                              <span className="text-muted-foreground/70">({whisp.senderAlias})</span>
+                              <span className="text-muted-foreground/70"> ({whisp.senderAlias})</span>
                             )}
-                          </span>
+                          </>
                         ) : (
-                          <span className="truncate">
-                            {t("whispsList.to", {
-                              recipient:
-                                whisp.recipientEmail || whisp.recipientPhone || (
-                                  whisp.deliveryMethod === "circle_drop"
-                                    ? t("shared.blindCircleFeed")
-                                    : whisp.deliveryMethod === "circle_dm"
-                                      ? t("whispsList.anonymousCircleVisitor")
-                                      : t("shared.ghostBoostAudience")
-                                ),
-                            })}
-                          </span>
+                          t("whispsList.to", {
+                            recipient:
+                              whisp.recipientEmail || whisp.recipientPhone || (
+                                whisp.deliveryMethod === "circle_drop"
+                                  ? t("shared.blindCircleFeed")
+                                  : whisp.deliveryMethod === "circle_dm"
+                                    ? t("whispsList.anonymousCircleVisitor")
+                                    : t("shared.ghostBoostAudience")
+                              ),
+                          })
                         )}
-                        <span className="mx-2">•</span>
-                        <span>{new Date(whisp.createdAt).toLocaleDateString()}</span>
-                        <span className="mx-2">•</span>
-                        <span>{t("whispsList.via", { method: deliveryLabel(whisp.deliveryMethod, whisp.whisperChannel) })}</span>
-                      </div>
-                      <div className="mt-auto flex items-center justify-between gap-3">
-                        {whisp.moodTag ? <MoodTag mood={whisp.moodTag} className="scale-90 origin-left" /> : <span />}
-                        {!isReceivedItem && whisp.videoPlatform !== "upload" && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="rounded-full shrink-0"
-                            onClick={(e) => handleWhispAgain(e, whisp)}
-                            data-testid={`button-whisp-again-${whisp.id}`}
-                          >
-                            <Repeat className="w-3.5 h-3.5 mr-1.5" /> {t("shared.whispToSomeoneElse")}
-                          </Button>
-                        )}
-                      </div>
+                      </p>
+                      <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                        <time dateTime={whisp.createdAt} title={new Date(whisp.createdAt).toLocaleString()} className="tabular-nums">
+                          {relativeTime(whisp.createdAt)}
+                        </time>
+                        <span className="mx-1.5 text-muted-foreground/50" aria-hidden>·</span>
+                        {t("whispsList.via", { method: deliveryLabel(whisp.deliveryMethod, whisp.whisperChannel) })}
+                      </p>
+                    </div>
+
+                    <div className="col-span-2 sm:col-span-1 sm:col-start-2 sm:row-start-2 flex min-w-0 items-center gap-2">
+                      {isNew && (
+                        <span
+                          className="inline-flex h-6 shrink-0 items-center gap-1 rounded-full bg-gilded/15 text-gilded text-[11px] font-semibold uppercase tracking-wide px-2"
+                          data-testid={`badge-new-${whisp.id}`}
+                        >
+                          <Sparkles className="w-3 h-3" /> {t("whispsList.newBadge")}
+                        </span>
+                      )}
+                      <StatusBadge status={whisp.status} />
+                      {whisp.appreciationResponse === "yes" && (
+                        <Heart className="w-4 h-4 shrink-0 text-rose-400 fill-rose-400" data-testid={`icon-appreciated-${whisp.id}`} />
+                      )}
+                      {whisp.moodTag && (
+                        <MoodTag mood={whisp.moodTag} className="min-w-0 shrink whitespace-nowrap py-0.5! pl-0.5! pr-2.5! gap-1.5! text-xs! shadow-none!" />
+                      )}
+                      {!isReceivedItem && whisp.videoPlatform !== "upload" && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="ml-auto h-9 shrink-0 rounded-full px-2.5 sm:px-3 text-muted-foreground hover:text-foreground"
+                          onClick={(e) => handleWhispAgain(e, whisp)}
+                          aria-label={t("shared.whispToSomeoneElse")}
+                          title={t("shared.whispToSomeoneElse")}
+                          data-testid={`button-whisp-again-${whisp.id}`}
+                        >
+                          <Repeat className="h-4 w-4 sm:mr-1.5" />
+                          <span className="hidden sm:inline">{t("shared.whispAgain")}</span>
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </Card>
@@ -470,9 +506,12 @@ export function WhispsList() {
             })}
           </div>
         ) : (
-          <Card className="bg-card/50 border-dashed border-border py-16 text-center">
-            <h3 className="text-xl font-medium text-foreground mb-2">{t("whispsList.emptyState.title")}</h3>
-            <p className="text-muted-foreground max-w-md mx-auto mb-6">
+          <Card className="rounded-2xl bg-card/40 border-dashed border-border/70 px-6 py-12 sm:py-16 text-center shadow-none">
+            <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/12 ring-1 ring-primary/20">
+              {box === "received" ? <Inbox className="h-6 w-6 text-primary" /> : box === "archived" ? <Archive className="h-6 w-6 text-primary" /> : <Send className="h-6 w-6 text-primary" />}
+            </span>
+            <h3 className="text-xl font-serif font-semibold text-foreground mb-2">{t("whispsList.emptyState.title")}</h3>
+            <p className="text-muted-foreground max-w-md mx-auto mb-6 leading-relaxed">
               {searchQuery || statusFilter !== "all"
                 ? t("whispsList.emptyState.adjustFilters")
                 : box === "received"
@@ -482,11 +521,11 @@ export function WhispsList() {
                     : t("whispsList.emptyState.noneSent")}
             </p>
             {!searchQuery && statusFilter === "all" && box === "sent" && (
-              <Link href="/send">
-                <Button className="rounded-full shadow-[0_0_15px_rgba(124,92,252,0.3)]">
-                  {t("whispsList.emptyState.cta")}
-                </Button>
-              </Link>
+              <Button asChild className="h-11 rounded-full px-6 shadow-[0_0_20px_rgba(124,92,252,0.35)]">
+                <Link href="/send">
+                  <Send className="w-4 h-4 mr-2" /> {t("whispsList.emptyState.cta")}
+                </Link>
+              </Button>
             )}
           </Card>
         )}

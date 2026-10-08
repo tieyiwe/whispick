@@ -71,7 +71,7 @@ export function TextWhispsList() {
                 <p className="text-sm text-muted-foreground">{t("textWhispsList.receivedEmpty")}</p>
               ) : (
                 received.map((w) => (
-                  <Link key={w.id} href={`/text-whisps/${w.id}`}>
+                  <Link key={w.id} href={`/text-whisps/${w.id}`} className="block rounded-2xl">
                     <Card
                       className={`p-3.5 border-l-4 hover:border-l-primary transition-colors cursor-pointer ${w.status === "sent" ? "border-l-primary bg-primary/5 border-y-primary/20 border-r-primary/20" : "border-l-primary/30 bg-card border-y-border/50 border-r-border/50"}`}
                       data-testid={`text-whisp-received-${w.id}`}
@@ -121,7 +121,7 @@ export function TextWhispsList() {
                 <p className="text-sm text-muted-foreground">{t("textWhispsList.sentEmpty")}</p>
               ) : (
                 sent.map((w) => (
-                  <Link key={w.id} href={`/text-whisps/${w.id}`}>
+                  <Link key={w.id} href={`/text-whisps/${w.id}`} className="block rounded-2xl">
                     <Card
                       className="p-3.5 border-l-4 border-l-secondary/50 bg-card border-y-border/50 border-r-border/50 hover:border-l-secondary transition-colors cursor-pointer"
                       data-testid={`text-whisp-sent-${w.id}`}

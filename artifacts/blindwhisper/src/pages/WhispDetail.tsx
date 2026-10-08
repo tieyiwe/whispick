@@ -1,5 +1,6 @@
 import { useParams, useLocation, Link } from "wouter";
 import { useTranslation } from "react-i18next";
+import { formatDistanceToNowStrict } from "date-fns";
 import {
   useGetWhisp,
   useCreateWhispReply,
@@ -111,10 +112,30 @@ export function WhispDetail() {
   if (isLoading) {
     return (
       <AppLayout>
-        <div className="max-w-2xl mx-auto space-y-4">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-48 rounded-2xl" />
-          <Skeleton className="h-64 rounded-2xl" />
+        <div className="max-w-2xl mx-auto space-y-4" aria-busy="true">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-9 w-20 rounded-full" />
+            <Skeleton className="h-9 w-20 rounded-full" />
+          </div>
+          <div className="overflow-hidden rounded-2xl border border-border/40 bg-card/40">
+            <Skeleton className="h-48 sm:h-56 rounded-none" />
+            <div className="space-y-2.5 p-5">
+              <Skeleton className="h-6 w-3/4 rounded" />
+              <Skeleton className="h-4 w-1/2 rounded" />
+              <Skeleton className="h-6 w-40 rounded-full" />
+            </div>
+          </div>
+          <div className="rounded-2xl border border-border/40 bg-card/40 p-5 space-y-4">
+            <Skeleton className="h-5 w-40 rounded" />
+            <div className="flex justify-between">
+              {[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-8 w-8 rounded-full" />)}
+            </div>
+          </div>
+          <div className="rounded-2xl border border-border/40 bg-card/40 p-5 space-y-3">
+            <Skeleton className="h-5 w-48 rounded" />
+            <Skeleton className="h-12 w-2/3 rounded-2xl" />
+            <Skeleton className="ml-auto h-12 w-1/2 rounded-2xl" />
+          </div>
         </div>
       </AppLayout>
     );
@@ -299,10 +320,10 @@ export function WhispDetail() {
 
   return (
     <AppLayout>
-      <div className="max-w-2xl mx-auto space-y-5">
+      <div className="max-w-2xl mx-auto space-y-4 sm:space-y-5">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <Button variant="ghost" onClick={() => setLocation("/whisps")} className="text-muted-foreground -ml-2" data-testid="button-back">
+        <div className="flex items-center justify-between -mt-1">
+          <Button variant="ghost" onClick={() => setLocation("/whisps")} className="h-11 rounded-full px-3 text-muted-foreground hover:text-foreground -ml-3" data-testid="button-back">
             <ArrowLeft className="w-4 h-4 mr-1" /> {t("shared.back")}
           </Button>
           <div className="flex items-center gap-1">
@@ -371,49 +392,55 @@ export function WhispDetail() {
         )}
 
         {/* Video preview */}
-        <Card className="bg-card border-border/50 overflow-hidden">
+        <Card className="rounded-2xl bg-card/70 border-border/50 overflow-hidden shadow-none">
           {whisp.videoThumbnail ? (
-            <div className="relative h-48 overflow-hidden">
+            <div className="relative h-48 sm:h-56 overflow-hidden">
               <img src={whisp.videoThumbnail} alt={t("whispDetail.videoFallback")} className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+              <div className="absolute inset-0 bg-black/35 flex items-center justify-center">
                 <a
+                  aria-label={t("whispDetail.videoFallback")}
+                  className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
                   href={whisp.videoPlatform === "upload" ? `/api/public/w/${whisp.publicToken}/media` : safeExternalHref(whisp.videoUrl)}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur flex items-center justify-center hover:bg-white/30 transition-colors">
+                  <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-md ring-1 ring-white/30 flex items-center justify-center hover:bg-white/30 transition-colors duration-200">
                     <PlayCircle className="w-8 h-8 text-white" />
                   </div>
                 </a>
               </div>
             </div>
           ) : null}
-          <CardContent className="p-5">
-            <div className="flex items-start justify-between gap-3 mb-3">
-              <div>
-                <h2 className="font-serif font-semibold text-lg text-foreground">{whisp.videoTitle || t("whispDetail.videoFallback")}</h2>
-                <p className="text-sm text-muted-foreground">
-                  {isGhostBoost
-                    ? matchStats && matchStats.matchedCount > 0
-                      ? t("whispDetail.matchedToSubscribers", { count: matchStats.matchedCount })
-                      : whisp.status === "failed"
-                      ? t("whispDetail.noMatchingSubscribers")
-                      : t("whispDetail.lookingForMatch")
-                    : t("whispDetail.sentTo", {
-                        destination:
-                          whisp.recipientEmail ||
-                          whisp.recipientPhone ||
-                          (whisp.deliveryMethod === "circle_drop" ? t("shared.blindCircleFeed") : t("whispDetail.genericRecipient")),
-                      })}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {t("whispDetail.via", { method: deliveryLabel(whisp.deliveryMethod, whisp.whisperChannel) })} · {new Date(whisp.createdAt).toLocaleDateString()}
-                </p>
-              </div>
+          <CardContent className="p-5 space-y-1">
+            {/* Title gets the full width; the status sits with the delivery
+                facts underneath instead of squeezing a two-line title. */}
+            <h1 className="font-serif font-semibold text-xl sm:text-2xl leading-snug text-foreground">{whisp.videoTitle || t("whispDetail.videoFallback")}</h1>
+            <p className="text-sm text-muted-foreground break-words">
+              {isGhostBoost
+                ? matchStats && matchStats.matchedCount > 0
+                  ? t("whispDetail.matchedToSubscribers", { count: matchStats.matchedCount })
+                  : whisp.status === "failed"
+                  ? t("whispDetail.noMatchingSubscribers")
+                  : t("whispDetail.lookingForMatch")
+                : t("whispDetail.sentTo", {
+                    destination:
+                      whisp.recipientEmail ||
+                      whisp.recipientPhone ||
+                      (whisp.deliveryMethod === "circle_drop" ? t("shared.blindCircleFeed") : t("whispDetail.genericRecipient")),
+                  })}
+            </p>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 pt-1.5 pb-2 text-xs text-muted-foreground">
               <StatusBadge status={whisp.status} />
+              <span>{t("whispDetail.via", { method: deliveryLabel(whisp.deliveryMethod, whisp.whisperChannel) })}</span>
+              <span aria-hidden className="text-muted-foreground/50">·</span>
+              <time dateTime={whisp.createdAt} title={new Date(whisp.createdAt).toLocaleString()} className="tabular-nums">
+                {Date.now() - new Date(whisp.createdAt).getTime() < 60_000
+                  ? t("shared.justNow")
+                  : t("shared.timeAgo", { time: formatDistanceToNowStrict(new Date(whisp.createdAt)) })}
+              </time>
             </div>
             {whisp.status === "scheduled" && whisp.scheduledAt && (
-              <p className="text-xs text-violet-400 mb-2">
+              <p className="text-xs text-violet-300 pb-1">
                 {t("whispDetail.scheduledToSend", {
                   date: new Date(whisp.scheduledAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }),
                 })}
@@ -437,9 +464,9 @@ export function WhispDetail() {
                 <span className="flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5" /> {t("whispDetail.stats.comments", { count: comments.length })}</span>
               </div>
             )}
-            {whisp.moodTag && <MoodTag mood={whisp.moodTag} className="mb-2" />}
+            {whisp.moodTag && <MoodTag mood={whisp.moodTag} className="mb-3" />}
             {whisp.anonymousNote && (
-              <p className="text-sm text-muted-foreground italic border-l-2 border-primary/40 pl-3 mb-2">
+              <p className="text-[15px] leading-relaxed text-foreground/80 italic border-l-2 border-primary/40 pl-3 mb-3">
                 "{whisp.anonymousNote}"
               </p>
             )}
@@ -449,7 +476,7 @@ export function WhispDetail() {
                 status line. A 'no' stays deliberately quiet. */}
             {whisp.appreciationResponse === "yes" ? (
               <div
-                className="mt-1 flex items-center gap-2.5 rounded-xl border border-gilded/30 bg-gilded/[0.07] px-3.5 py-2.5"
+                className="mt-2 flex items-center gap-2.5 rounded-xl border border-gilded/30 bg-gilded/[0.07] px-3.5 py-2.5"
                 data-testid="notice-appreciated"
               >
                 <span className="flex items-center justify-center w-7 h-7 rounded-full bg-gilded/15 shrink-0">
@@ -464,7 +491,7 @@ export function WhispDetail() {
               </p>
             ) : null}
             {whisp.aiTakeawayStatus === "ready" && whisp.aiTakeaway && (
-              <div className="mt-3 rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-1">
+              <div className="mt-3 rounded-xl border border-primary/20 bg-primary/5 p-3.5 space-y-1">
                 <p className="text-xs font-semibold tracking-wide text-primary uppercase flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5" /> {t("whispDetail.takeawayHeading")}
                 </p>
@@ -477,7 +504,7 @@ export function WhispDetail() {
         {/* Delivery timeline — a single-recipient concept, not meaningful for a
             Ghost Boost campaign that fans out to many anonymous subscribers */}
         {!isGhostBoost && (
-        <Card className="bg-card border-border/50">
+        <Card className="rounded-2xl bg-card/70 border-border/50 shadow-none">
           {/* Collapsible, because once a whisp has been watched the timeline
               is settled history and mostly costs the reader scrolling to get
               past it. Open by default — it's the answer to "did they see
@@ -488,13 +515,13 @@ export function WhispDetail() {
             aria-expanded={timelineOpen}
             aria-controls="delivery-timeline"
             data-testid="button-toggle-timeline"
-            className="flex w-full items-center gap-2 px-6 py-4 text-left"
+            className="flex w-full min-h-12 items-center gap-2 px-5 py-3.5 text-left"
           >
             <CardTitle className="text-base font-serif">{t("whispDetail.deliveryTimeline")}</CardTitle>
             {/* Collapsing shouldn't cost the headline fact, so the furthest
                 stage reached comes up into the header to replace it. */}
             {!timelineOpen && currentStage && (
-              <span className="rounded-full bg-primary/12 px-2 py-0.5 text-[11px] font-medium text-primary">
+              <span className="rounded-full bg-primary/12 px-2 py-0.5 text-xs font-medium text-primary">
                 {currentStage}
               </span>
             )}
@@ -505,7 +532,7 @@ export function WhispDetail() {
             />
           </button>
           {timelineOpen && (
-            <CardContent id="delivery-timeline" className="pt-0">
+            <CardContent id="delivery-timeline" className="px-4 sm:px-5 pt-0 pb-5">
               <TimelineTrack steps={timelineSteps} />
             </CardContent>
           )}
@@ -518,14 +545,14 @@ export function WhispDetail() {
             which is fanned out to many anonymous subscribers rather than one
             known recipient — nor to a Blind Circle post (see isCirclePost). */}
         {hasPrivateThread && (
-          <Card className="bg-card border-border/50">
-            <CardHeader className="pb-2">
+          <Card className="rounded-2xl bg-card/70 border-border/50 shadow-none">
+            <CardHeader className="px-5 pt-5 pb-3">
               <CardTitle className="text-base font-serif flex items-center gap-2">
                 <MessageSquare className="w-4 h-4 text-primary" />
                 {t("whispDetail.anonymousConversation")}
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-3 sm:px-5 pb-4 sm:pb-5">
               {/* Surfaces the cap BEFORE the thread goes quiet — without
                   this, a recipient hitting the wall is indistinguishable
                   from them losing interest. */}
@@ -591,8 +618,8 @@ export function WhispDetail() {
             other delivery method — a Whisper Link has no public comment
             section, just the private "Anonymous conversation" above. */}
         {whisp.deliveryMethod === "circle_drop" && (
-          <Card className="bg-card border-border/50">
-            <CardHeader className="pb-2">
+          <Card className="rounded-2xl bg-card/70 border-border/50 shadow-none">
+            <CardHeader className="px-5 pt-5 pb-3">
               <CardTitle className="text-base font-serif flex items-center gap-2">
                 <MessageSquare className="w-4 h-4 text-primary" />
                 {t("whispDetail.commentsHeading", { count: comments.length })}
@@ -661,8 +688,8 @@ export function WhispDetail() {
             routes/public.ts's POST /w/:token/circle-dm/start), so it gets
             its own full WhispDetail page with its own reply thread. */}
         {whisp.deliveryMethod === "circle_drop" && circleConversations.length > 0 && (
-          <Card className="bg-card border-border/50">
-            <CardHeader className="pb-2">
+          <Card className="rounded-2xl bg-card/70 border-border/50 shadow-none">
+            <CardHeader className="px-5 pt-5 pb-3">
               <CardTitle className="text-base font-serif flex items-center gap-2">
                 <MessageSquare className="w-4 h-4 text-primary" />
                 {t("whispDetail.privateConversationsHeading", { count: circleConversations.length })}
@@ -673,13 +700,13 @@ export function WhispDetail() {
                 <Link
                   key={conversation.id}
                   href={`/whisps/${conversation.id}`}
-                  className="flex items-center justify-between gap-2 rounded-lg px-2 py-2 text-sm text-foreground hover:bg-muted/40 transition-colors"
+                  className="flex min-h-11 items-center justify-between gap-2 rounded-xl px-3 py-2 text-sm text-foreground hover:bg-muted/40 transition-colors"
                   data-testid={`link-circle-conversation-${conversation.id}`}
                 >
                   <span>{t("whispDetail.anonymousVisitorWantsToTalk")}</span>
-                  <span className="text-xs text-muted-foreground shrink-0">
-                    {new Date(conversation.createdAt).toLocaleDateString()}
-                  </span>
+                  <time dateTime={conversation.createdAt} title={new Date(conversation.createdAt).toLocaleString()} className="text-xs text-muted-foreground tabular-nums shrink-0">
+                    {t("shared.timeAgo", { time: formatDistanceToNowStrict(new Date(conversation.createdAt)) })}
+                  </time>
                 </Link>
               ))}
             </CardContent>
@@ -690,7 +717,7 @@ export function WhispDetail() {
         {hasPrivateThread && !whisp.revealRequested && (
           <Button
             variant="outline"
-            className="w-full rounded-full border-primary/30 hover:bg-primary/10 hover:text-primary"
+            className="h-11 w-full rounded-full border-primary/30 hover:bg-primary/10 hover:text-primary"
             onClick={() => setRevealCountdownOpen(true)}
             disabled={requestReveal.isPending}
             data-testid="button-reveal-yourself"
@@ -700,8 +727,8 @@ export function WhispDetail() {
           </Button>
         )}
         {hasPrivateThread && whisp.revealRequested && (
-          <Card className="bg-primary/10 border-primary/20">
-            <CardContent className="p-4 text-center">
+          <Card className="rounded-2xl bg-primary/10 border-primary/20 shadow-none">
+            <CardContent className="p-5 text-center">
               <Eye className="w-6 h-6 text-primary mx-auto mb-2" />
               <p className="text-sm font-medium text-foreground">{t("whispDetail.revealRequestSent")}</p>
               <p className="text-xs text-muted-foreground mt-1">

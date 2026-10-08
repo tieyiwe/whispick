@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useGetUserProfile, useGetWhispStats } from "@workspace/api-client-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { UsersRound, X } from "lucide-react";
 import { hasDismissedFirstWhispersCta, dismissFirstWhispersCta } from "@/lib/firstWhispersOnboarding";
@@ -34,34 +34,37 @@ export function FirstWhispersOnboardingCta() {
     dismissFirstWhispersCta(profile!.id);
   }
 
+  // Same compact side-card shape as the Dashboard's Recap/Whisper Box cards
+  // (icon + title + one line, then one action). Outline, not filled: on a
+  // brand-new account the Dashboard's welcome card already carries the
+  // page's one primary action.
   return (
-    <>
-      <h2 className="text-xl font-serif font-semibold pt-2">{t("dashboardCard.title")}</h2>
-      <Card className="bg-card border-border/50 relative overflow-hidden" data-testid="card-first-whispers-nudge">
-        <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] bg-primary/10 rounded-full blur-[60px] pointer-events-none" />
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute top-2 right-2 h-7 w-7 rounded-full text-muted-foreground z-10"
-          onClick={handleDismiss}
-          aria-label={t("dashboardCard.dismiss")}
-          data-testid="button-dismiss-first-whispers-cta"
-        >
-          <X className="w-3.5 h-3.5" />
-        </Button>
-        <CardContent className="p-6 text-center">
-          <div className="w-16 h-16 rounded-full bg-primary/15 flex items-center justify-center mx-auto mb-4">
-            <UsersRound className="w-8 h-8 text-primary" />
-          </div>
-          <h3 className="text-lg font-medium text-foreground mb-2">{t("dashboardCard.heading")}</h3>
-          <p className="text-sm text-muted-foreground mb-6">{t("dashboardCard.description")}</p>
-          <Link href="/onboarding/first-whispers">
-            <Button className="w-full rounded-full" data-testid="button-start-first-whispers">
-              {t("dashboardCard.cta")}
-            </Button>
-          </Link>
-        </CardContent>
-      </Card>
-    </>
+    <Card className="relative flex h-full flex-col overflow-hidden rounded-2xl border-border/50 bg-card/60 p-5 shadow-none" data-testid="card-first-whispers-nudge">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute top-2 right-2 h-9 w-9 rounded-full text-muted-foreground hover:text-foreground z-10"
+        onClick={handleDismiss}
+        aria-label={t("dashboardCard.dismiss")}
+        data-testid="button-dismiss-first-whispers-cta"
+      >
+        <X className="w-4 h-4" />
+      </Button>
+      <p className="text-xs font-semibold uppercase tracking-[0.1em] text-primary/90">{t("dashboardCard.title")}</p>
+      <div className="mt-3 mb-4 flex items-start gap-3.5 pr-6">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary">
+          <UsersRound className="h-5 w-5" />
+        </span>
+        <div className="min-w-0">
+          <h2 className="text-lg font-serif font-semibold leading-snug text-foreground">{t("dashboardCard.heading")}</h2>
+          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{t("dashboardCard.description")}</p>
+        </div>
+      </div>
+      <Button asChild variant="outline" className="mt-auto h-10 w-full rounded-full border-primary/30 hover:bg-primary/10 hover:text-foreground">
+        <Link href="/onboarding/first-whispers" data-testid="button-start-first-whispers">
+          {t("dashboardCard.cta")}
+        </Link>
+      </Button>
+    </Card>
   );
 }

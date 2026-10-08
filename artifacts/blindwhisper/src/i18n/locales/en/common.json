@@ -25,10 +25,13 @@
       "inbox": "Inbox",
       "create": "Create",
       "account": "Account"
-    }
+    },
+    "circleShort": "Circle",
+    "myWhispsShort": "Whisps"
   },
   "account": {
     "settings": "Settings",
-    "signOut": "Sign Out"
+    "signOut": "Sign Out",
+    "menu": "Account menu"
   }
 }

@@ -35,9 +35,9 @@ export function TimelineTrack({ steps }: { steps: TimelineStepData[] }) {
     // Scrolls rather than crushes: a handful of steps fit a typical phone,
     // but a narrow screen or large text size shouldn't squeeze the labels
     // into unreadable slivers.
-    <div className="flex overflow-x-auto pb-1">
+    <div className="flex overflow-x-auto pb-1 pt-0.5">
       {steps.map((step, i) => (
-        <div key={step.label} className="relative flex min-w-[54px] flex-1 flex-col items-center">
+        <div key={step.label} className="relative flex min-w-[60px] flex-1 flex-col items-center">
           {/* Connector back to the previous step, tinted only when this step
               is reached — so the filled portion of the track reads as
               progress at a glance, before any label is read. */}
@@ -62,13 +62,13 @@ export function TimelineTrack({ steps }: { steps: TimelineStepData[] }) {
             {step.done ? <Check className="h-4 w-4" /> : <Clock className="h-4 w-4 text-muted-foreground" />}
           </div>
           <p
-            className={`mt-1.5 px-0.5 text-center text-[10px] leading-tight ${
-              step.done ? "font-medium text-foreground" : "text-muted-foreground"
+            className={`mt-2 px-0.5 text-center text-xs leading-tight ${
+              step.done ? "font-medium text-foreground" : step.active ? "font-medium text-foreground/80" : "text-muted-foreground"
             }`}
           >
             {step.label}
           </p>
-          <p className="text-center text-[10px] leading-tight text-muted-foreground/70">
+          <p className="mt-0.5 text-center text-xs leading-tight tabular-nums text-muted-foreground">
             {step.time ? compactTime(step.time) : step.done ? "" : "—"}
           </p>
         </div>

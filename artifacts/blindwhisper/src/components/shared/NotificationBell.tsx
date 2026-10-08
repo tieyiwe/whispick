@@ -12,7 +12,8 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { Bell } from "lucide-react";
+import { Bell, BellOff } from "lucide-react";
+import { formatDistanceToNowStrict } from "date-fns";
 import { isSafeAppPath } from "@/lib/safeHref";
 
 // The persistent, in-app counterpart to push notifications (see
@@ -20,7 +21,26 @@ import { isSafeAppPath } from "@/lib/safeHref";
 // desktop sidebar and mobile header of AppLayout. Polls on an interval
 // rather than websockets, matching the rest of this app's "no realtime
 // infra" posture.
-export function NotificationBell() {
+// Relative, not toLocaleString(): "7:30:14 AM" with seconds is noise in a
+// feed, and "2h ago" answers the only question a glance is asking. Under a
+// minute reads as "just now" rather than "12 seconds ago".
+function relativeTime(value: string, t: (key: string, opts?: Record<string, unknown>) => string): string {
+  const date = new Date(value);
+  if (Date.now() - date.getTime() < 60_000) return t("notificationBell.justNow");
+  return t("notificationBell.timeAgo", { time: formatDistanceToNowStrict(date) });
+}
+
+export function NotificationBell({
+  side = "bottom",
+  align = "end",
+  triggerClassName = "",
+}: {
+  /** Where the popover opens. The desktop sidebar opens it to the right so it
+   *  sits over the content instead of covering the nav it was opened from. */
+  side?: "top" | "right" | "bottom" | "left";
+  align?: "start" | "center" | "end";
+  triggerClassName?: string;
+} = {}) {
   const { t } = useTranslation("sharedB");
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -110,7 +130,13 @@ export function NotificationBell() {
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-foreground" data-testid="button-notification-bell">
+        <Button
+          variant="ghost"
+          size="icon"
+          className={`relative rounded-full text-muted-foreground hover:text-foreground data-[state=open]:bg-card data-[state=open]:text-foreground ${triggerClassName}`}
+          aria-label={t("notificationBell.notifications")}
+          data-testid="button-notification-bell"
+        >
           <Bell className="w-5 h-5" />
           {unreadCount > 0 && (
             // Red, not the primary purple it used to be: on a purple-themed
@@ -122,7 +148,7 @@ export function NotificationBell() {
             // a bare dot, so the number is visible without opening the
             // popover.
             <span
-              className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-destructive ring-2 ring-background text-[10px] font-semibold text-destructive-foreground flex items-center justify-center"
+              className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive ring-2 ring-background text-[11px] font-semibold leading-none tabular-nums text-destructive-foreground flex items-center justify-center"
               aria-label={t("notificationBell.unreadAriaLabel", { count: unreadCount })}
               data-testid="badge-unread-notifications"
             >
@@ -131,50 +157,62 @@ export function NotificationBell() {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 p-0 max-h-[70vh] overflow-y-auto">
-        <div className="p-3 border-b border-border/50 flex items-center justify-between gap-2">
-          <p className="font-medium text-sm text-foreground">{t("notificationBell.notifications")}</p>
+      <PopoverContent
+        side={side}
+        align={align}
+        sideOffset={side === "right" ? 14 : 8}
+        collisionPadding={12}
+        className="w-[min(22rem,calc(100vw-1.5rem))] p-0 max-h-[min(70vh,34rem)] overflow-y-auto rounded-2xl border-border/60 bg-popover/95 backdrop-blur-xl shadow-2xl"
+      >
+        <div className="sticky top-0 z-10 px-4 py-3 border-b border-border/50 bg-popover/95 backdrop-blur-xl flex items-center justify-between gap-2">
+          <div className="flex items-baseline gap-2 min-w-0">
+            <p className="font-serif font-semibold text-base text-foreground">{t("notificationBell.notifications")}</p>
+            {unreadCount > 0 && (
+              <span className="text-xs text-muted-foreground tabular-nums">{t("notificationBell.unreadCount", { count: unreadCount })}</span>
+            )}
+          </div>
           {unreadCount > 0 && (
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="text-xs text-muted-foreground">{t("notificationBell.unreadCount", { count: unreadCount })}</span>
-              <button
-                type="button"
-                onClick={handleMarkAllRead}
-                disabled={markAllRead.isPending}
-                className="text-xs text-primary hover:underline disabled:opacity-50"
-                data-testid="button-mark-all-read"
-              >
-                {t("notificationBell.markAllRead")}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={handleMarkAllRead}
+              disabled={markAllRead.isPending}
+              className="shrink-0 -mr-2 rounded-full px-2.5 py-1.5 text-xs font-medium text-primary hover:bg-primary/10 transition-colors disabled:opacity-50"
+              data-testid="button-mark-all-read"
+            >
+              {t("notificationBell.markAllRead")}
+            </button>
           )}
         </div>
         {data?.items.length ? (
           <div className="divide-y divide-border/30">
             {data.items.map((n) => {
-              // Unread gets a real presence, not a hint: a solid left-edge
-              // accent bar, a filled dot instead of the read state's plain
-              // spacer, a tinted background, and a bolder title — read
-              // fades back to ordinary text the instant it's opened, so the
-              // two states stay obviously different at a glance rather than
-              // both reading as "basically the same row."
+              // Unread gets a real presence, not a hint: a filled dot, a
+              // tinted background and a bolder title — read fades back to
+              // ordinary text the instant it's opened, so the two states stay
+              // obviously different at a glance.
               const content = (
                 <div
-                  className={`relative p-3 pl-4 text-sm border-l-2 ${
-                    !n.read ? "bg-primary/[0.06] border-l-primary" : "border-l-transparent"
-                  }`}
+                  className={`relative px-4 py-3 text-sm ${!n.read ? "bg-primary/[0.07]" : ""}`}
                   data-testid={`notification-row-${n.id}`}
                   data-unread={!n.read}
                 >
-                  <div className="flex items-start gap-2">
+                  <div className="flex items-start gap-3">
                     <span
-                      className={`mt-1.5 h-1.5 w-1.5 rounded-full shrink-0 ${!n.read ? "bg-primary" : "bg-transparent"}`}
+                      className={`mt-[7px] h-2 w-2 rounded-full shrink-0 ${!n.read ? "bg-primary shadow-[0_0_0_3px_hsl(var(--primary)/0.18)]" : "bg-transparent"}`}
                       aria-hidden
                     />
                     <div className="min-w-0 flex-1">
-                      <p className={`text-foreground ${!n.read ? "font-semibold" : "font-normal"}`}>{n.title}</p>
-                      <p className={!n.read ? "text-foreground/80 mt-0.5" : "text-muted-foreground mt-0.5"}>{n.body}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{new Date(n.createdAt).toLocaleString()}</p>
+                      <div className="flex items-baseline justify-between gap-3">
+                        <p className={`text-foreground leading-snug ${!n.read ? "font-semibold" : "font-medium text-foreground/85"}`}>{n.title}</p>
+                        <time
+                          dateTime={n.createdAt}
+                          title={new Date(n.createdAt).toLocaleString()}
+                          className="shrink-0 text-xs text-muted-foreground tabular-nums whitespace-nowrap"
+                        >
+                          {relativeTime(n.createdAt, t)}
+                        </time>
+                      </div>
+                      <p className={`mt-0.5 leading-snug ${!n.read ? "text-foreground/80" : "text-muted-foreground"}`}>{n.body}</p>
                     </div>
                   </div>
                 </div>
@@ -203,7 +241,12 @@ export function NotificationBell() {
             })}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground py-8 text-center">{t("notificationBell.noNotificationsYet")}</p>
+          <div className="flex flex-col items-center gap-2 px-6 py-10 text-center">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-muted/60">
+              <BellOff className="h-[18px] w-[18px] text-muted-foreground" />
+            </span>
+            <p className="text-sm text-muted-foreground">{t("notificationBell.noNotificationsYet")}</p>
+          </div>
         )}
       </PopoverContent>
     </Popover>

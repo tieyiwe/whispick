@@ -10,16 +10,22 @@ import { CheckCircle2, CheckCheck, Clock, Eye, PlayCircle, MessageSquareHeart, C
 // WhispsList.tsx already gets.
 type StatusType = "pending" | "scheduled" | "sent" | "read" | "delivered" | "opened" | "watched" | "replied" | "failed";
 
+// Colour follows meaning along the funnel, not decoration: neutral while
+// nothing has happened yet, cool tones as it travels (delivered → opened),
+// a positive green once it's been watched, and the gilded accent for a reply —
+// the best outcome a whisp can have. Red is reserved for the one state that
+// needs attention ("failed"); "watched" used to be the app's coral red, which
+// read as an alarm on what is good news.
 const STATUS_CONFIG: Record<StatusType, { labelKey: string; icon: any; className: string }> = {
   pending: {
     labelKey: "statusBadge.pending",
     icon: Clock,
-    className: "bg-muted text-muted-foreground border-border",
+    className: "bg-muted/50 text-muted-foreground border-border/70",
   },
   scheduled: {
     labelKey: "statusBadge.scheduled",
     icon: CalendarClock,
-    className: "bg-violet-500/10 text-violet-400 border-violet-500/20",
+    className: "bg-violet-400/10 text-violet-300 border-violet-400/25",
   },
   // WhatsApp-style read-receipt vocabulary — a single check for "sent, not
   // yet read" and a double check once it has been, so a Text Whisp's status
@@ -28,48 +34,52 @@ const STATUS_CONFIG: Record<StatusType, { labelKey: string; icon: any; className
   sent: {
     labelKey: "statusBadge.sent",
     icon: CheckCircle2,
-    className: "bg-muted text-muted-foreground border-border",
+    className: "bg-muted/50 text-muted-foreground border-border/70",
   },
   read: {
     labelKey: "statusBadge.read",
     icon: CheckCheck,
-    className: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+    className: "bg-primary/12 text-primary border-primary/30",
   },
   delivered: {
     labelKey: "statusBadge.delivered",
     icon: CheckCircle2,
-    className: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+    className: "bg-sky-400/10 text-sky-300 border-sky-400/25",
   },
   opened: {
     labelKey: "statusBadge.opened",
     icon: Eye,
-    className: "bg-primary/20 text-primary border-primary/30 glow-card",
+    className: "bg-primary/12 text-primary border-primary/30",
   },
   watched: {
     labelKey: "statusBadge.watched",
     icon: PlayCircle,
-    className: "bg-secondary/20 text-secondary border-secondary/30",
+    className: "bg-emerald-400/10 text-emerald-300 border-emerald-400/25",
   },
   replied: {
     labelKey: "statusBadge.replied",
     icon: MessageSquareHeart,
-    className: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+    className: "bg-gilded/12 text-gilded border-gilded/35",
   },
   failed: {
     labelKey: "statusBadge.failed",
     icon: AlertCircle,
-    className: "bg-destructive/10 text-destructive border-destructive/20",
+    className: "bg-destructive/10 text-red-300 border-destructive/30",
   },
 };
 
-export function StatusBadge({ status }: { status: string }) {
+export function StatusBadge({ status, className = "" }: { status: string; className?: string }) {
   const { t } = useTranslation("sharedB");
   const config = STATUS_CONFIG[status as StatusType] || STATUS_CONFIG.pending;
   const Icon = config.icon;
 
   return (
-    <Badge variant="outline" className={`rounded-full px-2.5 py-0.5 font-medium ${config.className}`}>
-      <Icon className="w-3 h-3 mr-1.5" />
+    <Badge
+      variant="outline"
+      className={`h-6 shrink-0 gap-1 whitespace-nowrap rounded-full px-2.5 py-0 text-xs font-medium ${config.className} ${className}`}
+      data-status={status}
+    >
+      <Icon className="w-3.5 h-3.5" aria-hidden />
       {t(config.labelKey)}
     </Badge>
   );
