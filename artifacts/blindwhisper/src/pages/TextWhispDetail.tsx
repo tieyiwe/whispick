@@ -162,11 +162,6 @@ export function TextWhispDetail() {
   const { textWhisp, replies } = data;
   const isSender = profile?.id === textWhisp.senderId;
   const isRecipient = textWhisp.viewerIsRecipient;
-  // The recipient gets the closed-scroll "moment"; the sender (viewing their
-  // own sent message) sees it already open — there's nothing to unwrap for
-  // the person who wrote it.
-  const startsClosed = isRecipient && !opened;
-
   // A Text Whisp thread only ever has two authors, and the API tells us
   // which replies are the caller's own (fromViewer) — never the author's
   // account id, which would hand the recipient the sender's real users.id.
@@ -193,6 +188,14 @@ export function TextWhispDetail() {
   // readAt); Replied reuses the same "first reply FROM the recipient"
   // lookup WhispDetail.tsx's own timeline uses.
   const recipientReplied = threadReplies.some((r) => r.fromRecipient);
+  // The recipient gets the closed-scroll "moment"; the sender (viewing their
+  // own sent message) sees it already open — there's nothing to unwrap for
+  // the person who wrote it. The moment is for the FIRST open: once the
+  // recipient has replied they've plainly unwrapped it before, and re-tying
+  // it on every visit hid a live conversation (and any reveal request
+  // waiting in it) behind the bow each time they came back from a reply
+  // email.
+  const startsClosed = isRecipient && !opened && !recipientReplied;
   const textWhispTimelineSteps: TimelineStepData[] = [
     { label: t("textWhispDetail.timeline.sent"), time: textWhisp.createdAt, done: true },
     {
@@ -437,7 +440,7 @@ export function TextWhispDetail() {
           </Card>
         )}
 
-        {(!isRecipient || opened) && (
+        {!startsClosed && (
           <>
             {/* The anonymous conversation — thread and composer in one card,
                 same shared component (and same "reply-to-a-specific-message"
