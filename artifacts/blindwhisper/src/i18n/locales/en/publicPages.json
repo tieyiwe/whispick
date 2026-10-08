@@ -106,7 +106,16 @@
     "footer": {
       "privacyPolicy": "Privacy Policy",
       "termsOfService": "Terms of Service",
-      "smsTerms": "SMS Terms"
+      "smsTerms": "SMS Terms",
+      "learnMore": "Learn more about Blind Whisper",
+      "howItWorks": "How it works",
+      "whisperBox": "Anonymous message link",
+      "debateNow": "Debate Now",
+      "liveDebates": "Live debates",
+      "ideas": "What to send",
+      "safety": "Safety",
+      "faq": "FAQ",
+      "about": "About"
     }
   },
   "notFound": {

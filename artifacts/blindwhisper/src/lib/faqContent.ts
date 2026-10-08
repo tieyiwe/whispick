@@ -5,6 +5,11 @@
 // structured data that doesn't match what's actually on the page.
 //
 // Content is verbatim per the approved copy — do not rewrite or paraphrase.
+// Exception (2026-10-08, pre-launch): answers were edited ONLY where they had
+// become inaccurate — SMS/WhatsApp delivery is switched off at launch (see
+// lib/usePublicConfig.ts) and Text Whisps are paused with it, and pricing
+// lives under Credits & Plan, not the Subscribe page. Whisper Box and Debate
+// Now entries were added. Restore the SMS wording if those channels return.
 export interface FaqItem {
   question: string;
   answer: string;
@@ -24,17 +29,12 @@ export const FAQ_ITEMS: FaqItem[] = [
   {
     question: "Does the recipient need a Blind Whisper account?",
     answer:
-      "No. A Whisper Link and an anonymous invite can be opened by anyone with the link — no signup required. Text Whisps also reach any phone number: if the recipient already has a verified account, it delivers instantly in the app; if not, they get a text with a link to read it and the option to sign up and reply the same way.",
+      "No. A Whisper Link and an anonymous invite can be opened by anyone with the link — no signup required.",
   },
   {
     question: "What is a Whisper Link?",
     answer:
-      "A Whisper Link is an anonymous, one-to-one delivery of a video with an optional note, sent by email, SMS, or WhatsApp to one specific person you choose.",
-  },
-  {
-    question: "What is a Text Whisp?",
-    answer:
-      "A Text Whisp is a short (up to 260 characters) anonymous written message, sent the same private way as a Whisper Link, but as text instead of video.",
+      "A Whisper Link is an anonymous, one-to-one delivery of a video with an optional note, sent by email to one specific person you choose — or straight to their Blind Whisper inbox if they already have an account.",
   },
   {
     question: "What is Blind Circle?",
@@ -49,7 +49,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   {
     question: "Is Blind Whisper free?",
     answer:
-      "Blind Whisper has a free tier, plus paid plans with more features for people who send often. Pricing is on the Subscribe page.",
+      "Blind Whisper has a free tier, plus paid plans with more features for people who send often. Plans and pricing are in the app under Credits & Plan.",
   },
   {
     question: "Can the recipient reply without knowing who I am?",
@@ -64,6 +64,16 @@ export const FAQ_ITEMS: FaqItem[] = [
   {
     question: "What happens after I send a Whisper Link?",
     answer:
-      "The recipient gets a link by email, SMS, or WhatsApp. It expires 48 hours after delivery, and Blind Whisper can send up to two reminders before then.",
+      "The recipient gets a link by email (or in their Blind Whisper inbox if they have an account). It expires 48 hours after delivery, and Blind Whisper can send up to two reminders before then.",
+  },
+  {
+    question: "What is a Whisper Box?",
+    answer:
+      "A Whisper Box is your own shareable link — for your Instagram story, bio or group chats — that lets anyone send you an anonymous message without an account. You read messages privately in the app, can delete any of them, and can turn your box off at any time.",
+  },
+  {
+    question: "What is Debate Now?",
+    answer:
+      "Debate Now is Blind Whisper's space for anonymous debates. Anyone can answer a debate anonymously without an account; posting a new debate topic takes a free account, and topics are published without your name.",
   },
 ];

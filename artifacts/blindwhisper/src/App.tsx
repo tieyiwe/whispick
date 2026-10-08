@@ -73,6 +73,11 @@ const SendTextWhisp = lazy(() => import("@/pages/SendTextWhisp").then((m) => ({ 
 const TextWhispDetail = lazy(() => import("@/pages/TextWhispDetail").then((m) => ({ default: m.TextWhispDetail })));
 const DebateTopics = lazy(() => import("@/pages/DebateTopics").then((m) => ({ default: m.DebateTopics })));
 const WelcomePage = lazy(() => import("@/pages/WelcomePage").then((m) => ({ default: m.WelcomePage })));
+const MarketingPage = lazy(() => import("@/pages/MarketingPage").then((m) => ({ default: m.MarketingPage })));
+// Public explainer pages — must match the `path`s in lib/marketingPages.ts
+// (listed here rather than imported so the main bundle doesn't carry their
+// copy; scripts/prerender.mjs fails the build if a page has no route here).
+export const MARKETING_ROUTE_PATHS = ["/how-it-works", "/anonymous-message-link", "/anonymous-debates", "/ideas", "/safety", "/about", "/faq"];
 const DebateTopicDetail = lazy(() => import("@/pages/DebateTopicDetail").then((m) => ({ default: m.DebateTopicDetail })));
 const CreateDebateTopic = lazy(() => import("@/pages/CreateDebateTopic").then((m) => ({ default: m.CreateDebateTopic })));
 const DebateFollowing = lazy(() => import("@/pages/DebateFollowing").then((m) => ({ default: m.DebateFollowing })));
@@ -404,6 +409,9 @@ function ClerkProviderWithRoutes() {
             <Route path="/whisper-box/:handle" component={PublicWhisperBoxPage} />
             <Route path="/invite/:token" component={PublicInvitePage} />
             <Route path="/tw/:token" component={PublicTextWhisp} />
+            {MARKETING_ROUTE_PATHS.map((path) => (
+              <Route key={path} path={path} component={MarketingPage} />
+            ))}
             <Route path="/privacy" component={PrivacyPolicy} />
             <Route path="/privacy-policy" component={PrivacyPolicy} />
             <Route path="/terms" component={TermsOfService} />

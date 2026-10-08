@@ -367,7 +367,20 @@ export function LandingPage() {
         </section>
       </main>
 
-      <footer className="relative z-10 pb-8 flex flex-col items-center gap-2 text-xs text-muted-foreground">
+      <footer className="relative z-10 pb-8 flex flex-col items-center gap-3 text-xs text-muted-foreground">
+        {/* Crawlable links into the explainer pages (lib/marketingPages.ts) —
+            the homepage is where search engines and AI crawlers discover
+            them, so they belong in the prerendered footer, not just a menu. */}
+        <nav aria-label={t("landingPage.footer.learnMore")} className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 px-4 text-[13px]">
+          <Link href="/how-it-works" className="hover:text-primary transition-colors">{t("landingPage.footer.howItWorks")}</Link>
+          <Link href="/anonymous-message-link" className="hover:text-primary transition-colors">{t("landingPage.footer.whisperBox")}</Link>
+          <Link href="/anonymous-debates" className="hover:text-primary transition-colors">{t("landingPage.footer.debateNow")}</Link>
+          <a href="/dt" className="hover:text-primary transition-colors">{t("landingPage.footer.liveDebates")}</a>
+          <Link href="/ideas" className="hover:text-primary transition-colors">{t("landingPage.footer.ideas")}</Link>
+          <Link href="/safety" className="hover:text-primary transition-colors">{t("landingPage.footer.safety")}</Link>
+          <Link href="/faq" className="hover:text-primary transition-colors">{t("landingPage.footer.faq")}</Link>
+          <Link href="/about" className="hover:text-primary transition-colors">{t("landingPage.footer.about")}</Link>
+        </nav>
         <div className="flex justify-center gap-4">
           <Link href="/privacy" className="hover:text-primary transition-colors">{t("landingPage.footer.privacyPolicy")}</Link>
           <span className="text-border">•</span>
