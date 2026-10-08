@@ -4,7 +4,19 @@
 // browser and the real API always agree on who is signed in. No cookie =
 // signed out. Clerk's hosted widgets reuse the ui-preview placeholders.
 import type { ReactNode } from "react";
-export { SignIn, SignUp, UserProfile, UserButton, SignInButton, SignUpButton, SignOutButton, ClerkProvider } from "../ui-preview/clerkMock";
+import { SignIn as PreviewSignIn } from "../ui-preview/clerkMock";
+export { SignUp, UserProfile, UserButton, SignInButton, SignUpButton, SignOutButton, ClerkProvider } from "../ui-preview/clerkMock";
+
+// The placeholder card, plus where a real sign-in would land afterwards — so
+// a scenario can assert a deep link survives the sign-in hop
+// (lib/signInRedirect.ts) without a real Clerk.
+export function SignIn(props: { forceRedirectUrl?: string } & Record<string, unknown>) {
+  return (
+    <div data-testid="e2e-sign-in" data-force-redirect-url={props.forceRedirectUrl ?? ""}>
+      <PreviewSignIn {...props} />
+    </div>
+  );
+}
 
 function readClerkId(): string | null {
   if (typeof document === "undefined") return null;
