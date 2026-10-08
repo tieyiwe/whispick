@@ -21,7 +21,10 @@
       "cancel": "取消",
       "confirm": "删除"
     },
-    "previewError": "无法加载此视频进行预览。"
+    "previewError": "无法加载此视频进行预览。",
+    "usageCount_one": "{{count}} 个 Whisp",
+    "expiresInDays_one": "{{count}} 天后将从媒体库中移除，赶快发送 Whisp 吧",
+    "expiresInHours_one": "{{count}} 小时后将从媒体库中移除，赶快发送 Whisp 吧"
   },
   "suggestionsLibrary": {
     "title": "推荐库",

@@ -26,7 +26,8 @@
     "toastValidationError": "消息发送失败——请检查后重试。",
     "toastRateLimitedTitle": "你发送的消息太多了",
     "toastRateLimitedDescription": "请稍后再发送。",
-    "toastSendFailed": "消息发送失败，请重试。"
+    "toastSendFailed": "消息发送失败，请重试。",
+    "whatIsLink": "Blind Whisper 是什么？"
   },
   "whisperBoxInbox": {
     "title": "Whisper Box",
@@ -51,7 +52,8 @@
       "titleDisabled": "Whisper Box 尚未开启",
       "descriptionDisabled": "在设置中开启后，你会获得一个公开链接，任何人都可以（无需账号）向你发送一条匿名消息。",
       "enableCta": "在设置中开启"
-    }
+    },
+    "shareLinkCta": "分享你的链接"
   },
   "settingsSection": {
     "cardTitle": "Whisper Box",
@@ -101,6 +103,7 @@
     "unreadDescription": "有人给你发了一条匿名留言。",
     "idleTitle": "Whisper Box",
     "idleDescription": "分享你的链接，获得更多匿名消息。",
-    "viewInboxCta": "查看收件箱"
+    "viewInboxCta": "查看收件箱",
+    "unreadTitle_one": "你有 {{count}} 条新消息"
   }
 }

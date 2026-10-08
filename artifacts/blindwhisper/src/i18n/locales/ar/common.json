@@ -18,10 +18,20 @@
     "settings": "الإعدادات",
     "admin": "الإدارة",
     "home": "الرئيسية",
-    "more": "المزيد"
+    "more": "المزيد",
+    "debateShort": "النقاش",
+    "sections": {
+      "community": "المجتمع",
+      "inbox": "الوارد",
+      "create": "إنشاء",
+      "account": "الحساب"
+    },
+    "circleShort": "الدائرة",
+    "myWhispsShort": "Whisps"
   },
   "account": {
     "settings": "الإعدادات",
-    "signOut": "تسجيل الخروج"
+    "signOut": "تسجيل الخروج",
+    "menu": "قائمة الحساب"
   }
 }

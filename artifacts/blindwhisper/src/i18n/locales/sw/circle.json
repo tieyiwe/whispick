@@ -6,7 +6,8 @@
     "videoAlt": "Video",
     "someone": "Mtu Fulani",
     "emptyTitle": "Hakuna kitu bado",
-    "emptyDescription": "Chagua Blind Circle unapotuma whisp, kisha chagua kikundi hiki ili kuishiriki hapa."
+    "emptyDescription": "Chagua Blind Circle unapotuma whisp, kisha chagua kikundi hiki ili kuishiriki hapa.",
+    "timeAgo": "{{time}} zilizopita"
   },
   "circleFeed": {
     "title": "Blind Circle",
@@ -15,7 +16,13 @@
     "someone": "Mtu Fulani",
     "whispThis": "Tuma Whisp hii",
     "emptyTitle": "Blind Circle iko kimya kwa sasa",
-    "emptyDescription": "Bado hakuna aliyetuma video kwenye mtiririko wa jamii. Kuwa wa kwanza — tumia Chapisha kwenye Blind Circle hapo juu."
+    "emptyDescription": "Bado hakuna aliyetuma video kwenye mtiririko wa jamii. Kuwa wa kwanza — tumia Chapisha kwenye Blind Circle hapo juu.",
+    "timeAgo": "{{time}} zilizopita",
+    "shareAria": "Shiriki chapisho hili",
+    "shareTitle": "Blind Circle",
+    "shareText": "Chapisho lisilo na jina kwenye Blind Circle — litazame:",
+    "linkCopied": "Kiungo kimenakiliwa — kishiriki na mtu yeyote",
+    "copyFailed": "Imeshindikana kunakili — tafadhali nakili mwenyewe"
   },
   "myCircles": {
     "title": "Blind Circles Zangu",

@@ -1,0 +1,31 @@
+{
+  "badge": "你已加入",
+  "title": "欢迎来到 Blind Whisper",
+  "titleNamed": "欢迎你，{{name}}",
+  "subtitle": "只需轻点两下，Blind Whisper 就能像真正的 App 一样使用——再也不会错过任何 whisp。",
+  "install": {
+    "title": "获取 App",
+    "body": "从主屏幕全屏打开 Blind Whisper，就像其他 App 一样。",
+    "button": "安装 Blind Whisper",
+    "iosStep1": "点按 Safari 工具栏中的“分享”按钮",
+    "iosStep2": "选择“添加到主屏幕”，然后点按“添加”",
+    "inAppBrowser": "你正在其他 App 的内置浏览器中，无法安装 App。请在 Safari 或 Chrome 中打开此页面进行安装。",
+    "copyLink": "复制链接",
+    "copied": "链接已复制",
+    "unavailable": "此浏览器无法安装 App——你仍可以直接在这里使用 Blind Whisper，或稍后在 Chrome、Edge 或 Safari 中打开。",
+    "doneTitle": "App 已安装",
+    "doneBody": "Blind Whisper 已添加到你的主屏幕。"
+  },
+  "notify": {
+    "title": "开启提醒",
+    "body": "有人给你发 whisp、回复你或回应你的辩论时，第一时间知道。提醒绝不会显示是谁发送的。",
+    "button": "开启提醒",
+    "afterInstall": "在 iPhone 上，需要先把 Blind Whisper 添加到主屏幕才能收到提醒——从主屏幕打开它，然后在“设置”中开启。",
+    "blocked": "此网站的通知已被屏蔽。你可以随时在浏览器设置中允许通知。",
+    "unsupported": "此浏览器不支持提醒。你仍然可以在 App 内看到所有内容。",
+    "doneTitle": "提醒已开启",
+    "doneBody": "有新内容时我们会通知你。"
+  },
+  "continue": "继续",
+  "skip": "暂时跳过"
+}

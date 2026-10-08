@@ -26,7 +26,8 @@
     "toastValidationError": "تعذّر إرسال هذه الرسالة — يُرجى التحقق منها والمحاولة مرة أخرى.",
     "toastRateLimitedTitle": "أنت ترسل عددًا كبيرًا من الرسائل",
     "toastRateLimitedDescription": "يُرجى الانتظار قليلًا قبل إرسال رسالة أخرى.",
-    "toastSendFailed": "تعذّر إرسال هذه الرسالة. يُرجى المحاولة مرة أخرى."
+    "toastSendFailed": "تعذّر إرسال هذه الرسالة. يُرجى المحاولة مرة أخرى.",
+    "whatIsLink": "ما هو Blind Whisper؟"
   },
   "whisperBoxInbox": {
     "title": "Whisper Box",
@@ -51,7 +52,8 @@
       "titleDisabled": "‏Whisper Box غير مفعّلة",
       "descriptionDisabled": "فعّلها من الإعدادات للحصول على رابط عام يستطيع من خلاله أي شخص إرسال رسالة مجهولة الهوية إليك — دون حاجته لحساب.",
       "enableCta": "التفعيل من الإعدادات"
-    }
+    },
+    "shareLinkCta": "شارك رابطك"
   },
   "settingsSection": {
     "cardTitle": "Whisper Box",

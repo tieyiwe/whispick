@@ -30,8 +30,11 @@
     "upToCount": "Ongeza marafiki hadi {{count}}.",
     "toast": {
       "noneHadContactInfo": "Hakuna mawasiliano uliyochagua yaliyokuwa na barua pepe au nambari ya simu",
-      "needAtLeastOne": "Ongeza angalau rafiki mmoja mwenye barua pepe au nambari ya simu"
-    }
+      "needAtLeastOne": "Ongeza angalau rafiki mmoja mwenye barua pepe au nambari ya simu",
+      "noneHadEmail": "Hakuna mawasiliano uliyochagua yaliyokuwa na barua pepe",
+      "needAtLeastOneEmail": "Ongeza angalau rafiki mmoja mwenye barua pepe"
+    },
+    "subtitleEmailOnly": "Ongeza marafiki hadi 5 — unahitaji tu barua pepe ya kila mmoja."
   },
   "step2": {
     "heading": "Huna uhakika wa nini cha kutuma?",

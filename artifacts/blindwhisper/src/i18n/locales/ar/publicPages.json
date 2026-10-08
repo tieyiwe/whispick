@@ -15,7 +15,8 @@
         "slide2Desc": "لن يعرفوا أبدًا أنك أنت.",
         "slide3Title": "إلا إذا أردت ذلك",
         "slide3Desc": "اكشف عن نفسك في أي وقت — القرار دائمًا لك."
-      }
+      },
+      "secondaryCta": "شاهد كيف يعمل"
     },
     "cta": {
       "startSendingWhisps": "ابدأ بإرسال Whisps"
@@ -50,7 +51,8 @@
           "title": "أُرسل — هذا كل شيء",
           "desc": "سنخبرك لحظة مشاهدته."
         }
-      }
+      },
+      "scrollHint": "اسحب لرؤية كل خطوة"
     },
     "noAwkwardness": {
       "badge": "لا حاجة إلى تواصل بصري محرج",
@@ -106,11 +108,45 @@
     "footer": {
       "privacyPolicy": "سياسة الخصوصية",
       "termsOfService": "شروط الخدمة",
-      "smsTerms": "شروط SMS"
+      "smsTerms": "شروط SMS",
+      "learnMore": "اعرف المزيد عن Blind Whisper",
+      "howItWorks": "كيف يعمل",
+      "whisperBox": "رابط الرسائل المجهولة",
+      "debateNow": "Debate Now",
+      "liveDebates": "نقاشات مباشرة",
+      "ideas": "ماذا ترسل",
+      "safety": "السلامة",
+      "faq": "الأسئلة الشائعة",
+      "about": "من نحن"
     }
   },
   "notFound": {
     "title": "404 الصفحة غير موجودة",
     "message": "هل نسيت إضافة الصفحة إلى الموجّه؟"
+  },
+  "publicHeader": {
+    "homeAria": "الصفحة الرئيسية لـ Blind Whisper",
+    "navAria": "تعرّف على Blind Whisper",
+    "nav": {
+      "howItWorks": "كيف يعمل",
+      "whisperBox": "Whisper Box",
+      "debateNow": "Debate Now",
+      "safety": "السلامة"
+    }
+  },
+  "auth": {
+    "backHome": "الرئيسية",
+    "signUpReassurance": "مجاني · بنقرة واحدة عبر Google",
+    "signInReassurance": "مرحبًا بعودتك · بنقرة واحدة عبر Google"
+  },
+  "marketingPage": {
+    "breadcrumbAria": "مسار التنقل",
+    "home": "الرئيسية",
+    "lastUpdated": "آخر تحديث",
+    "commonQuestions": "أسئلة شائعة",
+    "questionsAndAnswers": "أسئلة وأجوبة",
+    "keepReading": "تابع القراءة",
+    "communityGuidelines": "إرشادات المجتمع",
+    "serviceOf": "‏Blind Whisper · خدمة من TIBLOGICS · v{{version}}"
   }
 }

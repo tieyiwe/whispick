@@ -15,7 +15,8 @@
         "slide2Desc": "他们永远不会知道是你。",
         "slide3Title": "除非你愿意让他们知道",
         "slide3Desc": "随时可以表明身份——这始终由你决定。"
-      }
+      },
+      "secondaryCta": "看看怎么用"
     },
     "cta": {
       "startSendingWhisps": "开始发送 Whisps"
@@ -50,7 +51,8 @@
           "title": "发送完成，就这么简单",
           "desc": "一旦对方看过，我们会立刻通知你。"
         }
-      }
+      },
+      "scrollHint": "滑动查看每个步骤"
     },
     "noAwkwardness": {
       "badge": "不用尴尬地对视",
@@ -106,11 +108,45 @@
     "footer": {
       "privacyPolicy": "隐私政策",
       "termsOfService": "服务条款",
-      "smsTerms": "短信条款"
+      "smsTerms": "短信条款",
+      "learnMore": "进一步了解 Blind Whisper",
+      "howItWorks": "使用方式",
+      "whisperBox": "匿名留言链接",
+      "debateNow": "Debate Now",
+      "liveDebates": "进行中的辩论",
+      "ideas": "发什么好",
+      "safety": "安全",
+      "faq": "常见问题",
+      "about": "关于我们"
     }
   },
   "notFound": {
     "title": "404 页面未找到",
     "message": "是不是忘记把这个页面添加到路由里了？"
+  },
+  "publicHeader": {
+    "homeAria": "Blind Whisper 首页",
+    "navAria": "了解 Blind Whisper",
+    "nav": {
+      "howItWorks": "使用方式",
+      "whisperBox": "Whisper Box",
+      "debateNow": "Debate Now",
+      "safety": "安全"
+    }
+  },
+  "auth": {
+    "backHome": "首页",
+    "signUpReassurance": "免费 · 使用 Google 一键注册",
+    "signInReassurance": "欢迎回来 · 使用 Google 一键登录"
+  },
+  "marketingPage": {
+    "breadcrumbAria": "面包屑导航",
+    "home": "首页",
+    "lastUpdated": "最后更新",
+    "commonQuestions": "常见问题",
+    "questionsAndAnswers": "问与答",
+    "keepReading": "继续阅读",
+    "communityGuidelines": "社区准则",
+    "serviceOf": "Blind Whisper · TIBLOGICS 旗下服务 · v{{version}}"
   }
 }

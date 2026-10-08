@@ -26,7 +26,8 @@
     "toastValidationError": "Ce message n'a pas pu être envoyé — vérifiez-le et réessayez.",
     "toastRateLimitedTitle": "Vous envoyez beaucoup de messages",
     "toastRateLimitedDescription": "Merci de patienter un peu avant d'en envoyer un autre.",
-    "toastSendFailed": "Impossible d'envoyer ce message. Veuillez réessayer."
+    "toastSendFailed": "Impossible d'envoyer ce message. Veuillez réessayer.",
+    "whatIsLink": "Qu'est-ce que Blind Whisper ?"
   },
   "whisperBoxInbox": {
     "title": "Whisper Box",
@@ -51,7 +52,8 @@
       "titleDisabled": "Whisper Box n'est pas activée",
       "descriptionDisabled": "Activez-la dans Paramètres pour obtenir un lien public permettant à n'importe qui de vous envoyer un message anonyme, sans compte de son côté.",
       "enableCta": "Activer dans Paramètres"
-    }
+    },
+    "shareLinkCta": "Partager votre lien"
   },
   "settingsSection": {
     "cardTitle": "Whisper Box",

@@ -48,7 +48,9 @@
     "notifications": "알림",
     "unreadCount": "읽지 않음 {{count}}개",
     "markAllRead": "모두 읽음으로 표시",
-    "noNotificationsYet": "아직 알림이 없어요."
+    "noNotificationsYet": "아직 알림이 없어요.",
+    "timeAgo": "{{time}} 전",
+    "justNow": "방금 전"
   },
   "phoneVerificationDialog": {
     "title": "전화번호를 인증하세요",
@@ -93,7 +95,8 @@
       "cold": "완전히 틀렸어요",
       "no_comment": "노코멘트",
       "confirmed": "네, 저예요"
-    }
+    },
+    "newMessages_one": "새 메시지 {{count}}개"
   },
   "statusBadge": {
     "pending": "대기 중",
@@ -121,7 +124,11 @@
     "openOn": "{{platform}}에서 열기",
     "openOriginal": "원본 열기",
     "videoAlt": "동영상",
-    "watchTheVideo": "동영상 보기"
+    "watchTheVideo": "동영상 보기",
+    "externalLinkTitle": "Blind Whisper 밖으로 이동해요",
+    "externalLinkDescription": "이 동영상은 {{host}}에 올라와 있으며, Blind Whisper가 인식하는 동영상 플랫폼이 아니에요. 신뢰할 수 있는 사이트일 때만 계속하세요.",
+    "externalLinkCancel": "취소",
+    "externalLinkContinue": "계속"
   },
   "whispSentConfirmation": {
     "srOnlySent": "회원님의 whisp가 전송되었습니다"

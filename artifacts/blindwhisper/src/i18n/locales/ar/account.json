@@ -73,7 +73,12 @@
     "privacyGhostBoostText": "لا يجمع Ghost Boost معلومات التواصل الخاصة بالمستلمين — فهو إرسال مجدول بمدى وصول معزّز دون مستلم محدد، وليس إعلانًا موجّهًا.",
     "privacyDataRequestText": "يمكنك طلب تصدير كامل لبياناتك أو حذف حسابك عبر التواصل مع فريق الدعم.",
     "privacyPolicyLink": "سياسة الخصوصية",
-    "termsOfServiceLink": "شروط الخدمة"
+    "termsOfServiceLink": "شروط الخدمة",
+    "saveProfile": "حفظ الملف الشخصي",
+    "saveAvatar": "حفظ الصورة الرمزية",
+    "savedHint": "تم حفظ جميع التغييرات",
+    "unsavedHint": "تغييرات غير محفوظة",
+    "personalDetailsCardTitle": "البيانات الشخصية"
   },
   "accountSecurityPage": {
     "title": "أمان الحساب",
@@ -126,6 +131,26 @@
       "triple": "وفّر 14%",
       "ten": "وفّر 29%",
       "twentyfive": "وفّر 43%"
+    },
+    "freePlanName": "المجانية",
+    "timeAgo": "منذ {{time}}",
+    "creditsDelta_zero": "{{amount}} نقطة",
+    "creditsDelta_one": "{{amount}} نقطة",
+    "creditsDelta_two": "{{amount}} نقطة",
+    "creditsDelta_few": "{{amount}} نقاط",
+    "creditsDelta_many": "{{amount}} نقطة",
+    "creditsDelta_other": "{{amount}} نقطة",
+    "txTypes": {
+      "purchase": "شراء باقة نقاط",
+      "plan_grant": "نقاط الخطة الشهرية",
+      "spend": "Ghost Boost",
+      "boost": "Ghost Boost",
+      "bonus": "نقاط مكافأة",
+      "refund": "استرداد"
+    },
+    "freeForNow": {
+      "title": "‏Blind Whisper مجاني حاليًا",
+      "body": "أرسل ما تشاء من Whisps، واحصل على Whisper Box الخاصة بك، ورُدّ وانضم إلى النقاشات — كل ذلك مجانًا بينما ننمو. وإذا أُطلقت خطط مدفوعة لاحقًا، فستضيف ميزات إضافية فوق ذلك."
     }
   },
   "subscribePage": {
@@ -182,7 +207,8 @@
     "toastRevealRequestFailed": "تعذّر إرسال طلب الكشف",
     "smsDisclosure": "بإرسالك إلى رقم هاتف، فأنت تراسل صاحبه بالأصالة عن نفسك. قد تُطبَّق رسوم الرسائل والبيانات. أرسل STOP لإيقاف الرسائل، وHELP للمساعدة. راجع",
     "smsTermsLinkText": "شروط SMS",
-    "smsConsentCheckbox": "أؤكد أن لدي إذن هذا الشخص لتلقي رسالة نصية مني عبر Blind Whisper."
+    "smsConsentCheckbox": "أؤكد أن لدي إذن هذا الشخص لتلقي رسالة نصية مني عبر Blind Whisper.",
+    "smsConsentOneTime": "يكفي أن تؤكد هذا مرة واحدة لكل جهة اتصال جديدة."
   },
   "publicInvitePage": {
     "notFound": "تعذّر العثور على هذه الدعوة.",

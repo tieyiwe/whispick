@@ -8,7 +8,8 @@
   },
   "avatarPickerGrid": {
     "chooseAvatar": "아바타 선택",
-    "noAvatar": "아바타 없음"
+    "noAvatar": "아바타 없음",
+    "useInitial": "내 이니셜 사용"
   },
   "cameraCapture": {
     "modePhoto": "사진",
@@ -66,7 +67,9 @@
     "destinationLabel": "어디로 보낼까요?",
     "publicCircle": "공개 Blind Circle",
     "anonymousDisclaimer": "익명으로 게시돼요 — 당신의 이름은 절대 표시되지 않아요. 이 서클을 볼 수 있는 사람이라면 누구나 이 게시물을 볼 수 있어요.",
-    "postAnonymously": "익명으로 게시"
+    "postAnonymously": "익명으로 게시",
+    "titleLabelPublic": "제목 (게시물을 보는 모든 사람에게 표시돼요)",
+    "titlePlaceholderOptional": "선택 사항. 파일 이름은 절대 공유되지 않아요"
   },
   "countryPhoneInput": {
     "searchCountry": "국가 검색...",
@@ -80,7 +83,8 @@
     "commentCount_other": "댓글 {{count}}개",
     "shareTopicAria": "이 주제 공유하기",
     "joinDebate": "토론 참여하기",
-    "onlineAriaLabel": "지금 온라인"
+    "onlineAriaLabel": "지금 온라인",
+    "shareText": "이 토론에 참여해 100% 익명으로 답해 보세요:"
   },
   "demographicsGateDialog": {
     "title": "간단한 절차가 하나 더 있어요",

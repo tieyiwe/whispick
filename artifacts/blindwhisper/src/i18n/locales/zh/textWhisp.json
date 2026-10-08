@@ -27,7 +27,13 @@
     "viewButton": "查看这条文字 Whisp",
     "sendAnotherButton": "再发一条",
     "toastSendFailed": "文字 Whisp 发送失败",
-    "smsConsentCheckbox": "我确认已获得对方许可，可以通过 Blind Whisper 向其发送短信。"
+    "smsConsentCheckbox": "我确认已获得对方许可，可以通过 Blind Whisper 向其发送短信。",
+    "smsConsentOneTime": "每位新联系人只需确认一次。",
+    "comingSoon": {
+      "title": "文字 Whisps 即将推出",
+      "body": "目前请先通过邮件发送 Whisper Link。",
+      "cta": "发送 Whisper Link"
+    }
   },
   "textWhispDetail": {
     "notFound": "未找到该文字 Whisp。",

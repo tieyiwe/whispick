@@ -94,7 +94,8 @@
       "linkCopied": "Kiungo kimenakiliwa — kitume ili kumleta mtu kwenye mjadala",
       "copyFailed": "Imeshindikana kunakili — tafadhali nakili mwenyewe",
       "topicRetracted": "Mada imeondolewa",
-      "retractError": "Imeshindikana kuondoa mada hiyo"
+      "retractError": "Imeshindikana kuondoa mada hiyo",
+      "handleReserved": "Jina hilo limetengwa — chagua jina jingine."
     },
     "sendWhispDialog": {
       "title": "Whisp mada hii",
@@ -129,7 +130,10 @@
       "body": "Fungua akaunti ya bure ili tuweze kukujulisha mara tu mtu atakapoitikia.",
       "cta": "Fungua akaunti ya bure",
       "dismissAria": "Funga"
-    }
+    },
+    "cancelReplyAria": "Ghairi jibu",
+    "charactersLeftAria_one": "Herufi {{count}} imebaki",
+    "charactersLeftAria_other": "Herufi {{count}} zimebaki"
   },
   "debateTopics": {
     "followingButton": "Ninayemfuata",

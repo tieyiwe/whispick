@@ -11,7 +11,10 @@
     "whispToSomeoneElse": "Whisp kwa mtu mwingine",
     "couldntUpdateThat": "Imeshindwa kusasisha hilo",
     "movedBackToList": "Imerudishwa kwenye orodha yako",
-    "whispDeleted": "Whisp imefutwa"
+    "whispDeleted": "Whisp imefutwa",
+    "timeAgo": "{{time}} zilizopita",
+    "justNow": "Sasa hivi",
+    "whispAgain": "Tuma Whisp tena"
   },
   "dashboard": {
     "title": "Dashibodi",
@@ -53,6 +56,17 @@
       "heading": "Angalia Recap Yako",
       "description": "Muhtasari wa shughuli zako za Blind Whisper unaoweza kushirikiwa — zilizotumwa, zilizopokelewa, na zote zilizobaki.",
       "cta": "Angalia Recap Yangu"
+    },
+    "welcome": {
+      "subtitle": "Karibu — hapa ndipo whisps zako zitakapokaa.",
+      "title": "Tuma whisp yako ya kwanza",
+      "description": "Chagua video inayosema kile usichoweza kusema, ongeza ujumbe ukipenda, na uitume bila kujulikana. Utaona hapa itakapofunguliwa, kutazamwa na kujibiwa.",
+      "cta": "Tuma whisp yako ya kwanza",
+      "steps": {
+        "pick": "Chagua video",
+        "note": "Ongeza ujumbe",
+        "send": "Itume bila kujulikana"
+      }
     }
   },
   "sendWhisp": {
@@ -184,7 +198,11 @@
       "smsTermsLinkText": "Masharti ya SMS",
       "or": "au",
       "chooseFromContacts": "Chagua kutoka Anwani",
-      "smsConsentCheckbox": "Ninathibitisha nina ruhusa ya mtu huyu kupokea ujumbe wa maandishi kutoka kwangu kupitia Blind Whisper."
+      "smsConsentCheckbox": "Ninathibitisha nina ruhusa ya mtu huyu kupokea ujumbe wa maandishi kutoka kwangu kupitia Blind Whisper.",
+      "smsConsentOneTime": "Unahitaji kuthibitisha hili mara moja tu kwa kila anwani mpya.",
+      "descriptionEmailOnly": "Ingiza barua pepe. Ongeza mikato ikiwa zaidi ya moja.",
+      "placeholderEmailOnly": "sam@mfano.com, jo@mfano.com",
+      "phonesUnavailable": "Utumaji kwa SMS na WhatsApp bado haupatikani — tumia barua pepe badala ya {{list}}."
     },
     "step6": {
       "heading": "Uko tayari kutuma?",
@@ -233,7 +251,8 @@
       "partialSendTitle": "Imetumwa kwa {{succeeded}}, imeshindwa kufikia {{failed}}",
       "membersSkipped_one": "Mwanachama {{count}} amerukwa",
       "membersSkipped_other": "Wanachama {{count}} wamerukwa",
-      "membersSkippedDescription": "Hawakuwa na taarifa za mawasiliano zinazohitajika na kituo hiki."
+      "membersSkippedDescription": "Hawakuwa na taarifa za mawasiliano zinazohitajika na kituo hiki.",
+      "noEmailForContact": "Anwani hiyo haina barua pepe — utumaji kwa SMS bado haupatikani."
     }
   },
   "whispDetail": {
@@ -285,7 +304,8 @@
     "outOfReplies": {
       "title": "Wametumia majibu yao yote ya siri.",
       "description": "Hawawezi kujibu tena isipokuwa uongeze majibu zaidi, au wajiunge na akaunti bure. Bado unaweza kutuma ujumbe wa ziada.",
-      "comingSoonButton": "Ongeza majibu zaidi (yanakuja hivi karibuni)"
+      "comingSoonButton": "Ongeza majibu zaidi (yanakuja hivi karibuni)",
+      "descriptionFree": "Wanaweza kuendelea kujibu kwa kufungua akaunti ya bure — bado hawatajulikana kwako. Bado unaweza kutuma ujumbe wa ziada."
     },
     "oneReplyLeft": "Wamebaki na jibu 1 la siri.",
     "recipientLabel": "Mpokeaji",
@@ -376,7 +396,9 @@
     "videoWhispsHeading": "Majibu ya Whisp za Video",
     "textWhispsHeading": "Majibu ya Whisp za Maandishi",
     "videoWhispsEmpty": "Bado hakuna majibu kwa Whisp zako za Video.",
-    "textWhispsEmpty": "Bado hakuna majibu kwa Whisp zako za Maandishi."
+    "textWhispsEmpty": "Bado hakuna majibu kwa Whisp zako za Maandishi.",
+    "tabVideo": "Whisps za Video",
+    "tabText": "Whisps za Maandishi"
   },
   "groupSendDetail": {
     "notFound": "Utumaji wa kikundi haukupatikana.",
@@ -421,7 +443,9 @@
       "memberRemoved": "Mwanachama ameondolewa",
       "failedToRemoveMember": "Imeshindwa kuondoa mwanachama",
       "groupDeleted": "Kikundi kimefutwa",
-      "failedToDeleteGroup": "Imeshindwa kufuta kikundi"
+      "failedToDeleteGroup": "Imeshindwa kufuta kikundi",
+      "addEmail": "Ongeza barua pepe",
+      "noneHadEmail": "Hakuna hata mmoja wa anwani hizo aliyekuwa na barua pepe"
     }
   },
   "whisperGroups": {
@@ -491,7 +515,8 @@
       "attachPhoto": "Ambatanisha picha",
       "couldntAttachImage": "Imeshindwa kuambatanisha picha hiyo",
       "keepItKind": "Kuwa na wema — lengo hapa ni mazungumzo halisi na yenye tija.",
-      "unlimitedCommentsSuffix": "kwa maoni yasiyo na kikomo."
+      "unlimitedCommentsSuffix": "kwa maoni yasiyo na kikomo.",
+      "messagePosterHint": "Maoni hapa ni ya umma. Ili kuzungumza na mchapishaji ana kwa ana, mtumie ujumbe wa faragha: ni yeye tu atakayeuona."
     },
     "reply": {
       "headerConversation": "Mazungumzo ya siri",
@@ -521,7 +546,11 @@
       "sendButton": "Tuma Jibu",
       "guessToggle": "Kisia ni nani alituma hii 🕵️",
       "guessHint": "Wao ndio watachagua jinsi ya kuitikia — si jibu la kiotomatiki kamwe.",
-      "guessPlaceholder": "Nadhani ni..."
+      "guessPlaceholder": "Nadhani ni...",
+      "quickRepliesAriaLabel": "Majibu ya haraka",
+      "collapseComposerAriaLabel": "Punguza kisanduku cha jibu",
+      "removeVideoAriaLabel": "Ondoa video",
+      "videoChip": "Jibu kwa video"
     },
     "reveal": {
       "viewerAccepted": "Umewajulisha kuwa ni sawa kujitambulisha.",
@@ -566,6 +595,19 @@
       "couldntStartConversation": "Imeshindwa kuanzisha mazungumzo hayo",
       "guessSentAnonymously": "Kisia chako kimetumwa! 🕵️"
     },
-    "notFound": "Whisp hii haikupatikana."
+    "notFound": "Whisp hii haikupatikana.",
+    "keepForever": {
+      "heading": "Whisp hii itatoweka baada ya {{time}}",
+      "description": "Fungua akaunti ya bure ili uihifadhi milele — ihifadhi, jibu wakati wowote, na usipoteze kamwe zile zenye maana kwako.",
+      "button": "Ihifadhi kwenye akaunti ya bure",
+      "disclaimer": "Gusa mara moja kwa Google — hakuna kadi inayohitajika."
+    },
+    "reciprocityCta": {
+      "heading": "Mtu amekunong'oneza.",
+      "description": "Pata kiungo chako mwenyewe ili watu waweze kukunong'oneza pia — bila kujulikana, wakati wowote wakiwa na jambo la kusema.",
+      "button": "Pata Whisper Box yangu"
+    },
+    "loadError": "Whisp hii haikuweza kupakiwa kwa sasa. Bado ipo — hii ni hitilafu ya muda tu.",
+    "tryAgain": "Jaribu tena"
   }
 }

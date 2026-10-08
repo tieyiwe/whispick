@@ -15,7 +15,8 @@
         "slide2Desc": "상대방은 절대 당신인 줄 모를 거예요.",
         "slide3Title": "당신이 원하지 않는 한",
         "slide3Desc": "언제든 정체를 밝힐 수 있어요 — 항상 당신의 선택이에요."
-      }
+      },
+      "secondaryCta": "이용 방법 보기"
     },
     "cta": {
       "startSendingWhisps": "Whisp 보내기 시작하기"
@@ -50,7 +51,8 @@
           "title": "전송 완료, 그걸로 끝",
           "desc": "상대가 확인하는 순간 바로 알려드릴게요."
         }
-      }
+      },
+      "scrollHint": "옆으로 넘겨 각 단계를 확인하세요"
     },
     "noAwkwardness": {
       "badge": "어색한 눈맞춤은 필요 없어요",
@@ -106,11 +108,45 @@
     "footer": {
       "privacyPolicy": "개인정보 처리방침",
       "termsOfService": "서비스 이용약관",
-      "smsTerms": "SMS 약관"
+      "smsTerms": "SMS 약관",
+      "learnMore": "Blind Whisper 더 알아보기",
+      "howItWorks": "이용 방법",
+      "whisperBox": "익명 메시지 링크",
+      "debateNow": "Debate Now",
+      "liveDebates": "진행 중인 토론",
+      "ideas": "보낼 만한 것들",
+      "safety": "안전",
+      "faq": "자주 묻는 질문",
+      "about": "소개"
     }
   },
   "notFound": {
     "title": "404 페이지를 찾을 수 없습니다",
     "message": "라우터에 페이지를 추가하는 걸 잊으셨나요?"
+  },
+  "publicHeader": {
+    "homeAria": "Blind Whisper 홈",
+    "navAria": "Blind Whisper 알아보기",
+    "nav": {
+      "howItWorks": "이용 방법",
+      "whisperBox": "Whisper Box",
+      "debateNow": "Debate Now",
+      "safety": "안전"
+    }
+  },
+  "auth": {
+    "backHome": "홈",
+    "signUpReassurance": "무료 · Google로 한 번에 시작",
+    "signInReassurance": "다시 오신 걸 환영해요 · Google로 한 번에 로그인"
+  },
+  "marketingPage": {
+    "breadcrumbAria": "이동 경로",
+    "home": "홈",
+    "lastUpdated": "최종 업데이트",
+    "commonQuestions": "자주 묻는 질문",
+    "questionsAndAnswers": "질문과 답변",
+    "keepReading": "더 읽어보기",
+    "communityGuidelines": "커뮤니티 가이드라인",
+    "serviceOf": "Blind Whisper · TIBLOGICS 제공 서비스 · v{{version}}"
   }
 }

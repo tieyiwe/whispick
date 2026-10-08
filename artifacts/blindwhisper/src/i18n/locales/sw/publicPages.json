@@ -15,7 +15,8 @@
         "slide2Desc": "Hawatajua kamwe ni wewe.",
         "slide3Title": "Isipokuwa unataka wajue",
         "slide3Desc": "Jifichue wakati wowote — ni chaguo lako kila wakati."
-      }
+      },
+      "secondaryCta": "Angalia jinsi inavyofanya kazi"
     },
     "cta": {
       "startSendingWhisps": "Anza Kutuma Whisps"
@@ -50,7 +51,8 @@
           "title": "Imetumwa — ndivyo tu",
           "desc": "Tutakujulisha mara tu itakapoonwa."
         }
-      }
+      },
+      "scrollHint": "Telezesha kidole kuona kila hatua"
     },
     "noAwkwardness": {
       "badge": "Bila mtazamo wa macho wa ajabu",
@@ -106,11 +108,45 @@
     "footer": {
       "privacyPolicy": "Sera ya Faragha",
       "termsOfService": "Masharti ya Huduma",
-      "smsTerms": "Masharti ya SMS"
+      "smsTerms": "Masharti ya SMS",
+      "learnMore": "Jifunze zaidi kuhusu Blind Whisper",
+      "howItWorks": "Jinsi inavyofanya kazi",
+      "whisperBox": "Kiungo cha ujumbe usiojulikana",
+      "debateNow": "Debate Now",
+      "liveDebates": "Mijadala inayoendelea",
+      "ideas": "Nini cha kutuma",
+      "safety": "Usalama",
+      "faq": "Maswali Yanayoulizwa Sana",
+      "about": "Kuhusu sisi"
     }
   },
   "notFound": {
     "title": "Ukurasa 404 Haukupatikana",
     "message": "Je, ulisahau kuongeza ukurasa kwenye router?"
+  },
+  "publicHeader": {
+    "homeAria": "Ukurasa wa mwanzo wa Blind Whisper",
+    "navAria": "Jifunze kuhusu Blind Whisper",
+    "nav": {
+      "howItWorks": "Jinsi inavyofanya kazi",
+      "whisperBox": "Whisper Box",
+      "debateNow": "Debate Now",
+      "safety": "Usalama"
+    }
+  },
+  "auth": {
+    "backHome": "Mwanzo",
+    "signUpReassurance": "Bure · gusa mara moja kwa Google",
+    "signInReassurance": "Karibu tena · gusa mara moja kwa Google"
+  },
+  "marketingPage": {
+    "breadcrumbAria": "Njia ya urambazaji",
+    "home": "Mwanzo",
+    "lastUpdated": "Ilisasishwa mwisho",
+    "commonQuestions": "Maswali ya kawaida",
+    "questionsAndAnswers": "Maswali na majibu",
+    "keepReading": "Endelea kusoma",
+    "communityGuidelines": "Miongozo ya Jamii",
+    "serviceOf": "Blind Whisper · huduma ya TIBLOGICS · v{{version}}"
   }
 }

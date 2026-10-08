@@ -8,7 +8,8 @@
   },
   "avatarPickerGrid": {
     "chooseAvatar": "Choisir un avatar",
-    "noAvatar": "Aucun avatar"
+    "noAvatar": "Aucun avatar",
+    "useInitial": "Utiliser mon initiale"
   },
   "cameraCapture": {
     "modePhoto": "Photo",
@@ -66,7 +67,9 @@
     "destinationLabel": "Où cela doit-il aller ?",
     "publicCircle": "Blind Circle public",
     "anonymousDisclaimer": "Publié anonymement — votre nom n'est jamais associé. Toute personne pouvant voir ce cercle peut voir la publication.",
-    "postAnonymously": "Publier anonymement"
+    "postAnonymously": "Publier anonymement",
+    "titleLabelPublic": "Titre (visible par tous ceux qui voient la publication)",
+    "titlePlaceholderOptional": "Facultatif. Le nom de votre fichier n'est jamais partagé"
   },
   "countryPhoneInput": {
     "searchCountry": "Rechercher un pays...",
@@ -80,7 +83,8 @@
     "commentCount_other": "{{count}} commentaires",
     "shareTopicAria": "Partager ce sujet",
     "joinDebate": "Rejoindre le débat",
-    "onlineAriaLabel": "En ligne actuellement"
+    "onlineAriaLabel": "En ligne actuellement",
+    "shareText": "Rejoignez ce débat et répondez de façon 100 % anonyme :"
   },
   "demographicsGateDialog": {
     "title": "Juste une petite chose",

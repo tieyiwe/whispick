@@ -102,7 +102,8 @@
       "linkCopied": "تم نسخ الرابط — أرسله لتدعو شخصًا إلى النقاش",
       "copyFailed": "تعذّر النسخ — يرجى النسخ يدويًا",
       "topicRetracted": "تم سحب الموضوع",
-      "retractError": "تعذّر سحب هذا الموضوع"
+      "retractError": "تعذّر سحب هذا الموضوع",
+      "handleReserved": "هذا الاسم محجوز — اختر اسمًا آخر."
     },
     "sendWhispDialog": {
       "title": "أرسل Whisp لهذا الموضوع",
@@ -137,7 +138,14 @@
       "body": "أنشئ حسابًا مجانيًا حتى نتمكن من إعلامك فور تفاعل أحدهم معه.",
       "cta": "إنشاء حساب مجاني",
       "dismissAria": "إغلاق"
-    }
+    },
+    "cancelReplyAria": "إلغاء الرد",
+    "charactersLeftAria_zero": "لم يتبقَّ أي حرف",
+    "charactersLeftAria_one": "تبقّى حرف واحد",
+    "charactersLeftAria_two": "تبقّى حرفان",
+    "charactersLeftAria_few": "تبقّت {{count}} أحرف",
+    "charactersLeftAria_many": "تبقّى {{count}} حرفًا",
+    "charactersLeftAria_other": "تبقّى {{count}} حرف"
   },
   "debateTopics": {
     "followingButton": "المتابعة",

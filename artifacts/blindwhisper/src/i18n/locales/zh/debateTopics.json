@@ -92,7 +92,8 @@
       "linkCopied": "链接已复制——发给朋友，拉他们加入讨论",
       "copyFailed": "复制失败 — 请手动复制",
       "topicRetracted": "话题已撤回",
-      "retractError": "撤回话题失败"
+      "retractError": "撤回话题失败",
+      "handleReserved": "这个名字已被保留——请换一个。"
     },
     "sendWhispDialog": {
       "title": "Whisp 这个话题",
@@ -127,7 +128,12 @@
       "body": "创建一个免费账号，这样有人回应时我们就能通知你。",
       "cta": "创建免费账号",
       "dismissAria": "关闭"
-    }
+    },
+    "followerCount_one": "{{count}} 位粉丝",
+    "commentCount_one": "{{count}} 条评论",
+    "cancelReplyAria": "取消回复",
+    "charactersLeftAria_one": "还剩 {{count}} 个字符",
+    "charactersLeftAria_other": "还剩 {{count}} 个字符"
   },
   "debateTopics": {
     "followingButton": "关注中",

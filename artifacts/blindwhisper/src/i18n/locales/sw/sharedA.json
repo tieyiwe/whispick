@@ -8,7 +8,8 @@
   },
   "avatarPickerGrid": {
     "chooseAvatar": "Chagua avatar",
-    "noAvatar": "Bila avatar"
+    "noAvatar": "Bila avatar",
+    "useInitial": "Tumia herufi yangu ya kwanza"
   },
   "cameraCapture": {
     "modePhoto": "Picha",
@@ -66,7 +67,9 @@
     "destinationLabel": "Iende wapi?",
     "publicCircle": "Blind Circle ya Umma",
     "anonymousDisclaimer": "Imechapishwa bila jina — jina lako halionekani kamwe. Yeyote anayeweza kuona duara hili anaweza kuona chapisho hili.",
-    "postAnonymously": "Chapisha bila jina"
+    "postAnonymously": "Chapisha bila jina",
+    "titleLabelPublic": "Kichwa (kinaonekana kwa kila mtu anayeona chapisho)",
+    "titlePlaceholderOptional": "Si lazima. Jina la faili yako halishirikiwi kamwe"
   },
   "countryPhoneInput": {
     "searchCountry": "Tafuta nchi...",
@@ -80,7 +83,8 @@
     "commentCount_other": "Maoni {{count}}",
     "shareTopicAria": "Shiriki mada hii",
     "joinDebate": "Jiunge na mjadala",
-    "onlineAriaLabel": "Sasa yuko mtandaoni"
+    "onlineAriaLabel": "Sasa yuko mtandaoni",
+    "shareText": "Jiunge na mjadala huu na ujibu bila kujulikana kwa 100%:"
   },
   "demographicsGateDialog": {
     "title": "Jambo moja dogo tu",

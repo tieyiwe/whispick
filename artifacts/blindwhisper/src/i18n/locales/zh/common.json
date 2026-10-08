@@ -18,10 +18,20 @@
     "settings": "设置",
     "admin": "管理",
     "home": "首页",
-    "more": "更多"
+    "more": "更多",
+    "debateShort": "辩论",
+    "sections": {
+      "community": "社区",
+      "inbox": "收件箱",
+      "create": "创建",
+      "account": "账户"
+    },
+    "circleShort": "Circle",
+    "myWhispsShort": "Whisps"
   },
   "account": {
     "settings": "设置",
-    "signOut": "退出登录"
+    "signOut": "退出登录",
+    "menu": "账户菜单"
   }
 }

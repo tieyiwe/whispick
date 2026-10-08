@@ -18,10 +18,20 @@
     "settings": "Mipangilio",
     "admin": "Msimamizi",
     "home": "Nyumbani",
-    "more": "Zaidi"
+    "more": "Zaidi",
+    "debateShort": "Mjadala",
+    "sections": {
+      "community": "Jamii",
+      "inbox": "Kikasha",
+      "create": "Unda",
+      "account": "Akaunti"
+    },
+    "circleShort": "Circle",
+    "myWhispsShort": "Whisps"
   },
   "account": {
     "settings": "Mipangilio",
-    "signOut": "Toka"
+    "signOut": "Toka",
+    "menu": "Menyu ya akaunti"
   }
 }

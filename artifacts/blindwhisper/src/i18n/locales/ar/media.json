@@ -34,7 +34,9 @@
       "cancel": "إلغاء",
       "confirm": "إزالة"
     },
-    "previewError": "تعذّر تحميل هذا الفيديو للمعاينة."
+    "previewError": "تعذّر تحميل هذا الفيديو للمعاينة.",
+    "expiresInDays_zero": "أرسله كـ Whisp خلال {{count}} يوم قبل إزالته من مكتبة الوسائط",
+    "expiresInHours_zero": "أرسله كـ Whisp خلال {{count}} ساعة قبل إزالته من مكتبة الوسائط"
   },
   "suggestionsLibrary": {
     "title": "مكتبة الاقتراحات",

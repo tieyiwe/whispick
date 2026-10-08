@@ -6,7 +6,8 @@
     "videoAlt": "동영상",
     "someone": "누군가",
     "emptyTitle": "아직 아무것도 없어요",
-    "emptyDescription": "whisp를 보낼 때 Blind Circle을 선택한 다음 이 서클을 골라서 여기에 공유하세요."
+    "emptyDescription": "whisp를 보낼 때 Blind Circle을 선택한 다음 이 서클을 골라서 여기에 공유하세요.",
+    "timeAgo": "{{time}} 전"
   },
   "circleFeed": {
     "title": "Blind Circle",
@@ -15,7 +16,13 @@
     "someone": "누군가",
     "whispThis": "이 Whisp 보내기",
     "emptyTitle": "지금 Blind Circle이 조용하네요",
-    "emptyDescription": "아직 아무도 커뮤니티 피드에 동영상을 올리지 않았어요. 위의 Blind Circle에 게시를 눌러 첫 번째가 되어보세요."
+    "emptyDescription": "아직 아무도 커뮤니티 피드에 동영상을 올리지 않았어요. 위의 Blind Circle에 게시를 눌러 첫 번째가 되어보세요.",
+    "timeAgo": "{{time}} 전",
+    "shareAria": "이 게시물 공유하기",
+    "shareTitle": "Blind Circle",
+    "shareText": "Blind Circle에 올라온 익명 게시물이에요 — 한번 보세요:",
+    "linkCopied": "링크가 복사됐어요 — 누구에게나 공유해 보세요",
+    "copyFailed": "복사하지 못했어요 — 직접 복사해 주세요"
   },
   "myCircles": {
     "title": "내 Blind Circles",

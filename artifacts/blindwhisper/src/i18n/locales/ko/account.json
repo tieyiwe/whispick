@@ -73,7 +73,12 @@
     "privacyGhostBoostText": "Ghost Boost는 수신자의 연락처 정보를 수집하지 않습니다 — 특정 수신자 없이 도달 범위를 넓혀 대기열에 올려 전송하는 방식이며, 타겟 광고가 아닙니다.",
     "privacyDataRequestText": "고객 지원팀에 문의하면 전체 데이터 내보내기나 계정 삭제를 요청할 수 있습니다.",
     "privacyPolicyLink": "개인정보처리방침",
-    "termsOfServiceLink": "서비스 약관"
+    "termsOfServiceLink": "서비스 약관",
+    "saveProfile": "프로필 저장",
+    "saveAvatar": "아바타 저장",
+    "savedHint": "모든 변경 사항이 저장되었습니다",
+    "unsavedHint": "저장되지 않은 변경 사항",
+    "personalDetailsCardTitle": "개인 정보"
   },
   "accountSecurityPage": {
     "title": "계정 보안",
@@ -126,6 +131,22 @@
       "triple": "14% 절약",
       "ten": "29% 절약",
       "twentyfive": "43% 절약"
+    },
+    "freePlanName": "무료",
+    "timeAgo": "{{time}} 전",
+    "creditsDelta_one": "크레딧 {{amount}}개",
+    "creditsDelta_other": "크레딧 {{amount}}개",
+    "txTypes": {
+      "purchase": "크레딧 팩 구매",
+      "plan_grant": "월간 요금제 크레딧",
+      "spend": "Ghost Boost",
+      "boost": "Ghost Boost",
+      "bonus": "보너스 크레딧",
+      "refund": "환불"
+    },
+    "freeForNow": {
+      "title": "현재 Blind Whisper는 무료입니다",
+      "body": "whisp를 원하는 만큼 보내고, Whisper Box를 만들고, 답장하고, 토론에 참여하세요 — 서비스가 성장하는 동안에는 모두 무료입니다. 나중에 유료 요금제가 생기더라도 기존 기능에 부가 기능을 더하는 방식이 될 것입니다."
     }
   },
   "subscribePage": {
@@ -182,7 +203,8 @@
     "toastRevealRequestFailed": "신원 공개 요청에 실패했습니다",
     "smsDisclosure": "전화번호로 보내면 당신 이름으로 문자를 보내는 거예요. 메시지 및 데이터 요금이 부과될 수 있어요. 수신 거부는 STOP, 도움이 필요하면 HELP로 답장하세요. 자세한 내용은",
     "smsTermsLinkText": "SMS 약관",
-    "smsConsentCheckbox": "이 사람이 Blind Whisper를 통해 저로부터 문자를 받는 것에 동의했음을 확인합니다."
+    "smsConsentCheckbox": "이 사람이 Blind Whisper를 통해 저로부터 문자를 받는 것에 동의했음을 확인합니다.",
+    "smsConsentOneTime": "새 연락처마다 한 번만 확인하면 됩니다."
   },
   "publicInvitePage": {
     "notFound": "이 초대를 찾을 수 없습니다.",

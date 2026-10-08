@@ -30,8 +30,11 @@
     "upToCount": "최대 {{count}}명의 친구를 추가하세요.",
     "toast": {
       "noneHadContactInfo": "선택한 연락처 중 이메일이나 전화번호가 있는 항목이 없습니다",
-      "needAtLeastOne": "이메일이나 전화번호가 있는 친구를 한 명 이상 추가하세요"
-    }
+      "needAtLeastOne": "이메일이나 전화번호가 있는 친구를 한 명 이상 추가하세요",
+      "noneHadEmail": "선택한 연락처 중 이메일 주소가 있는 항목이 없습니다",
+      "needAtLeastOneEmail": "이메일 주소가 있는 친구를 한 명 이상 추가하세요"
+    },
+    "subtitleEmailOnly": "최대 5명의 친구를 추가하세요 — 각 친구의 이메일 주소만 있으면 됩니다."
   },
   "step2": {
     "heading": "무엇을 보낼지 모르시나요?",
@@ -66,7 +69,9 @@
     "toast": {
       "sendFailed": "보내지 못했습니다. 다시 시도해 주세요.",
       "groupSetupFailed": "친구 목록을 준비하지 못했습니다. 다시 시도해 주세요."
-    }
+    },
+    "subtitle_one": "친구 {{count}}명에게 한 번에 보냅니다.",
+    "sendButton_one": "{{count}}명에게 보내기"
   },
   "sent": {
     "title": "{{count}}명에게 보냈어요!",
@@ -77,7 +82,10 @@
     "skippedHeading_other": "연락처 {{count}}개에는 보낼 수 없었어요",
     "skippedUnnamed": "이름 없는 연락처",
     "viewSendButton": "이 발송 보기",
-    "dashboardButton": "대시보드로 이동"
+    "dashboardButton": "대시보드로 이동",
+    "title_one": "{{count}}명에게 보냈어요!",
+    "description_one": "Whisp가 전송되는 중이에요 — 언제나처럼 완전히 익명이에요.",
+    "skippedHeading_one": "연락처 {{count}}개에는 보낼 수 없었어요"
   },
   "dashboardCard": {
     "title": "시작하기",

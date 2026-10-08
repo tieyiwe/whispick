@@ -21,7 +21,10 @@
       "cancel": "취소",
       "confirm": "삭제"
     },
-    "previewError": "이 동영상을 미리 볼 수 없어요."
+    "previewError": "이 동영상을 미리 볼 수 없어요.",
+    "usageCount_one": "Whisp {{count}}개",
+    "expiresInDays_one": "{{count}}일 후 미디어 라이브러리에서 삭제되니 지금 Whisp로 보내세요",
+    "expiresInHours_one": "{{count}}시간 후 미디어 라이브러리에서 삭제되니 지금 Whisp로 보내세요"
   },
   "suggestionsLibrary": {
     "title": "추천 라이브러리",

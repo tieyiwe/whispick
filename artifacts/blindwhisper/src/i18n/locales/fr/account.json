@@ -73,7 +73,12 @@
     "privacyGhostBoostText": "Ghost Boost ne collecte pas les coordonnées du destinataire — c'est un envoi en file d'attente à portée élargie, sans destinataire précis, pas une publicité ciblée.",
     "privacyDataRequestText": "Vous pouvez demander un export complet de vos données ou la suppression de votre compte en contactant le support.",
     "privacyPolicyLink": "Politique de confidentialité",
-    "termsOfServiceLink": "Conditions d'utilisation"
+    "termsOfServiceLink": "Conditions d'utilisation",
+    "saveProfile": "Enregistrer le profil",
+    "saveAvatar": "Enregistrer l'avatar",
+    "savedHint": "Toutes les modifications sont enregistrées",
+    "unsavedHint": "Modifications non enregistrées",
+    "personalDetailsCardTitle": "Informations personnelles"
   },
   "accountSecurityPage": {
     "title": "Sécurité du compte",
@@ -126,6 +131,22 @@
       "triple": "Économisez 14 %",
       "ten": "Économisez 29 %",
       "twentyfive": "Économisez 43 %"
+    },
+    "freePlanName": "Gratuit",
+    "timeAgo": "il y a {{time}}",
+    "creditsDelta_one": "{{amount}} crédit",
+    "creditsDelta_other": "{{amount}} crédits",
+    "txTypes": {
+      "purchase": "Achat d'un pack de crédits",
+      "plan_grant": "Crédits mensuels du forfait",
+      "spend": "Ghost Boost",
+      "boost": "Ghost Boost",
+      "bonus": "Crédits bonus",
+      "refund": "Remboursement"
+    },
+    "freeForNow": {
+      "title": "Blind Whisper est gratuit pour le moment",
+      "body": "Envoyez autant de whisps que vous voulez, obtenez votre Whisper Box, répondez et participez aux débats — tout est gratuit pendant que nous grandissons. Si des forfaits payants arrivent plus tard, ils proposeront des extras en plus de tout ça."
     }
   },
   "subscribePage": {
@@ -182,7 +203,8 @@
     "toastRevealRequestFailed": "Échec de la demande de révélation",
     "smsDisclosure": "En envoyant à un numéro de téléphone, tu lui écris en ton nom propre. Des frais de messages et de données peuvent s'appliquer. Réponds STOP pour te désabonner, HELP pour de l'aide. Consulte nos",
     "smsTermsLinkText": "Conditions SMS",
-    "smsConsentCheckbox": "Je confirme avoir la permission de cette personne de recevoir un texto de ma part via Blind Whisper."
+    "smsConsentCheckbox": "Je confirme avoir la permission de cette personne de recevoir un texto de ma part via Blind Whisper.",
+    "smsConsentOneTime": "Vous n'avez besoin de le confirmer qu'une seule fois pour chaque nouveau contact."
   },
   "publicInvitePage": {
     "notFound": "Cette invitation est introuvable.",

@@ -48,7 +48,9 @@
     "notifications": "الإشعارات",
     "unreadCount": "{{count}} غير مقروءة",
     "markAllRead": "تحديد الكل كمقروء",
-    "noNotificationsYet": "لا إشعارات بعد."
+    "noNotificationsYet": "لا إشعارات بعد.",
+    "timeAgo": "منذ {{time}}",
+    "justNow": "الآن"
   },
   "phoneVerificationDialog": {
     "title": "وثّق رقم هاتفك",
@@ -126,7 +128,11 @@
     "openOn": "افتح على {{platform}}",
     "openOriginal": "افتح الأصل",
     "videoAlt": "فيديو",
-    "watchTheVideo": "شاهد الفيديو"
+    "watchTheVideo": "شاهد الفيديو",
+    "externalLinkTitle": "مغادرة Blind Whisper",
+    "externalLinkDescription": "هذا الفيديو مستضاف على {{host}}، وهي ليست منصة فيديو يتعرّف عليها Blind Whisper. لا تتابع إلا إذا كنت تثق بهذا الموقع.",
+    "externalLinkCancel": "إلغاء",
+    "externalLinkContinue": "متابعة"
   },
   "whispSentConfirmation": {
     "srOnlySent": "أُرسلت الـ Whisp الخاصة بك"

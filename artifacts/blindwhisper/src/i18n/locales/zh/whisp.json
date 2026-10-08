@@ -11,7 +11,10 @@
     "whispToSomeoneElse": "转发给另一个人",
     "couldntUpdateThat": "更新失败",
     "movedBackToList": "已移回你的列表",
-    "whispDeleted": "Whisp 已删除"
+    "whispDeleted": "Whisp 已删除",
+    "timeAgo": "{{time}}前",
+    "justNow": "刚刚",
+    "whispAgain": "再发一次"
   },
   "dashboard": {
     "title": "仪表盘",
@@ -53,6 +56,17 @@
       "heading": "查看你的 Recap",
       "description": "可分享的 Blind Whisper 活动概览——发送、接收,应有尽有。",
       "cta": "查看我的 Recap"
+    },
+    "welcome": {
+      "subtitle": "欢迎——你的 whisp 都会在这里。",
+      "title": "发送你的第一个 Whisp",
+      "description": "挑一段视频，替你说出说不出口的话；愿意的话再加一句留言，然后匿名发送。对方何时打开、观看和回复，你都能在这里看到。",
+      "cta": "发送你的第一个 Whisp",
+      "steps": {
+        "pick": "挑选视频",
+        "note": "添加留言",
+        "send": "匿名发送"
+      }
     }
   },
   "sendWhisp": {
@@ -184,7 +198,11 @@
       "smsTermsLinkText": "短信条款",
       "or": "或",
       "chooseFromContacts": "从通讯录中选择",
-      "smsConsentCheckbox": "我确认已获得对方许可，可以通过 Blind Whisper 向其发送短信。"
+      "smsConsentCheckbox": "我确认已获得对方许可，可以通过 Blind Whisper 向其发送短信。",
+      "smsConsentOneTime": "每位新联系人只需确认一次。",
+      "descriptionEmailOnly": "输入邮箱地址。如果不止一个，请用逗号分隔。",
+      "placeholderEmailOnly": "sam@example.com, jo@example.com",
+      "phonesUnavailable": "暂不支持短信和 WhatsApp 发送——请用邮箱地址代替 {{list}}。"
     },
     "step6": {
       "heading": "准备好发送了吗?",
@@ -233,7 +251,8 @@
       "partialSendTitle": "已发送给 {{succeeded}} 人,{{failed}} 人未能送达",
       "membersSkipped_one": "跳过了 {{count}} 位成员",
       "membersSkipped_other": "跳过了 {{count}} 位成员",
-      "membersSkippedDescription": "他们没有该渠道所需的联系方式。"
+      "membersSkippedDescription": "他们没有该渠道所需的联系方式。",
+      "noEmailForContact": "该联系人没有邮箱地址——暂不支持短信发送。"
     }
   },
   "whispDetail": {
@@ -285,7 +304,8 @@
     "outOfReplies": {
       "title": "他们的匿名回复次数已用完。",
       "description": "除非你追加回复次数,或对方创建一个免费账户,否则他们无法再回复。你仍然可以发送后续消息。",
-      "comingSoonButton": "追加回复次数(即将推出)"
+      "comingSoonButton": "追加回复次数(即将推出)",
+      "descriptionFree": "对方创建一个免费账户即可继续回复——对你来说他们仍然是匿名的。你仍然可以发送后续消息。"
     },
     "oneReplyLeft": "他们还剩 1 次匿名回复。",
     "recipientLabel": "收件人",
@@ -376,7 +396,9 @@
     "videoWhispsHeading": "视频 Whisps 回复",
     "textWhispsHeading": "文字 Whisps 回复",
     "videoWhispsEmpty": "还没有人回复你的视频 Whisps。",
-    "textWhispsEmpty": "还没有人回复你的文字 Whisps。"
+    "textWhispsEmpty": "还没有人回复你的文字 Whisps。",
+    "tabVideo": "视频 Whisps",
+    "tabText": "文字 Whisps"
   },
   "groupSendDetail": {
     "notFound": "未找到该群组发送记录。",
@@ -421,7 +443,9 @@
       "memberRemoved": "成员已移除",
       "failedToRemoveMember": "移除成员失败",
       "groupDeleted": "群组已删除",
-      "failedToDeleteGroup": "删除群组失败"
+      "failedToDeleteGroup": "删除群组失败",
+      "addEmail": "请添加邮箱地址",
+      "noneHadEmail": "这些联系人都没有邮箱地址"
     }
   },
   "whisperGroups": {
@@ -491,7 +515,8 @@
       "attachPhoto": "添加照片",
       "couldntAttachImage": "无法添加该图片",
       "keepItKind": "请友善交流——这里的目标是真诚而有建设性的对话。",
-      "unlimitedCommentsSuffix": "以获得无限评论。"
+      "unlimitedCommentsSuffix": "以获得无限评论。",
+      "messagePosterHint": "这里的评论是公开的。想和发布者一对一交流，请私信对方：只有对方能看到。"
     },
     "reply": {
       "headerConversation": "匿名对话",
@@ -521,7 +546,11 @@
       "sendButton": "发送回复",
       "guessToggle": "猜猜是谁发的 🕵️",
       "guessHint": "对方会亲自选择如何回应——绝不会有自动判定的答案。",
-      "guessPlaceholder": "我猜是..."
+      "guessPlaceholder": "我猜是...",
+      "quickRepliesAriaLabel": "快捷回复",
+      "collapseComposerAriaLabel": "收起回复框",
+      "removeVideoAriaLabel": "移除视频",
+      "videoChip": "视频回复"
     },
     "reveal": {
       "viewerAccepted": "你已告知对方可以公开身份。",
@@ -566,6 +595,19 @@
       "couldntStartConversation": "无法开始该对话",
       "guessSentAnonymously": "你的猜测已发送！🕵️"
     },
-    "notFound": "找不到这个 whisp。"
+    "notFound": "找不到这个 whisp。",
+    "keepForever": {
+      "heading": "这个 whisp 将在 {{time}} 后消失",
+      "description": "创建免费账户即可永久保留——收藏起来，随时回复，重要的 whisp 再也不会丢失。",
+      "button": "保存到免费账户",
+      "disclaimer": "使用 Google 一键完成——无需信用卡。"
+    },
+    "reciprocityCta": {
+      "heading": "有人给你发了一条 whisp。",
+      "description": "获取你自己的链接，让别人也能给你发 whisp——匿名进行，只要他们有话想说，随时都可以。",
+      "button": "获取我的 Whisper Box"
+    },
+    "loadError": "这个 whisp 暂时无法加载。它还在——只是暂时出了点小问题。",
+    "tryAgain": "重试"
   }
 }

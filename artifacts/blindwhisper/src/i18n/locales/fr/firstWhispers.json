@@ -30,8 +30,11 @@
     "upToCount": "Ajoutez jusqu'à {{count}} amis.",
     "toast": {
       "noneHadContactInfo": "Aucun des contacts choisis n'avait d'e-mail ou de téléphone",
-      "needAtLeastOne": "Ajoutez au moins un ami avec un e-mail ou un téléphone"
-    }
+      "needAtLeastOne": "Ajoutez au moins un ami avec un e-mail ou un téléphone",
+      "noneHadEmail": "Aucun des contacts choisis n'avait d'adresse e-mail",
+      "needAtLeastOneEmail": "Ajoutez au moins un ami avec une adresse e-mail"
+    },
+    "subtitleEmailOnly": "Ajoutez jusqu'à 5 amis — il vous faut juste une adresse e-mail pour chacun."
   },
   "step2": {
     "heading": "Vous ne savez pas quoi envoyer ?",

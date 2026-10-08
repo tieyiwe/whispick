@@ -48,7 +48,9 @@
     "notifications": "通知",
     "unreadCount": "{{count}} 条未读",
     "markAllRead": "全部标为已读",
-    "noNotificationsYet": "暂时还没有通知。"
+    "noNotificationsYet": "暂时还没有通知。",
+    "timeAgo": "{{time}}前",
+    "justNow": "刚刚"
   },
   "phoneVerificationDialog": {
     "title": "验证你的手机号码",
@@ -93,7 +95,8 @@
       "cold": "差远了",
       "no_comment": "不予置评",
       "confirmed": "对，就是我"
-    }
+    },
+    "newMessages_one": "{{count}} 条新消息"
   },
   "statusBadge": {
     "pending": "待处理",
@@ -121,7 +124,11 @@
     "openOn": "在 {{platform}} 上打开",
     "openOriginal": "打开原始链接",
     "videoAlt": "视频",
-    "watchTheVideo": "观看视频"
+    "watchTheVideo": "观看视频",
+    "externalLinkTitle": "即将离开 Blind Whisper",
+    "externalLinkDescription": "此视频托管在 {{host}}，该网站不是 Blind Whisper 能识别的视频平台。请仅在你信任该网站时继续。",
+    "externalLinkCancel": "取消",
+    "externalLinkContinue": "继续"
   },
   "whispSentConfirmation": {
     "srOnlySent": "你的 Whisp 已发送"

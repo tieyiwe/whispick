@@ -27,7 +27,13 @@
     "viewButton": "عرض هذه الـ Text Whisp",
     "sendAnotherButton": "إرسال أخرى",
     "toastSendFailed": "تعذّر إرسال الـ Text Whisp",
-    "smsConsentCheckbox": "أؤكد أن لدي إذن هذا الشخص لتلقي رسالة نصية مني عبر Blind Whisper."
+    "smsConsentCheckbox": "أؤكد أن لدي إذن هذا الشخص لتلقي رسالة نصية مني عبر Blind Whisper.",
+    "smsConsentOneTime": "يكفي أن تؤكد هذا مرة واحدة لكل جهة اتصال جديدة.",
+    "comingSoon": {
+      "title": "‏Text Whisps قادمة قريبًا",
+      "body": "في الوقت الحالي، أرسل Whisper Link عبر البريد الإلكتروني بدلًا من ذلك.",
+      "cta": "أرسل Whisper Link"
+    }
   },
   "textWhispDetail": {
     "notFound": "لم يُعثر على الـ Text Whisp.",

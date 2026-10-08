@@ -27,7 +27,13 @@
     "viewButton": "Angalia Whisp hii ya Maandishi",
     "sendAnotherButton": "Tuma nyingine",
     "toastSendFailed": "Imeshindwa kutuma Whisp ya Maandishi",
-    "smsConsentCheckbox": "Ninathibitisha nina ruhusa ya mtu huyu kupokea ujumbe wa maandishi kutoka kwangu kupitia Blind Whisper."
+    "smsConsentCheckbox": "Ninathibitisha nina ruhusa ya mtu huyu kupokea ujumbe wa maandishi kutoka kwangu kupitia Blind Whisper.",
+    "smsConsentOneTime": "Unahitaji kuthibitisha hili mara moja tu kwa kila anwani mpya.",
+    "comingSoon": {
+      "title": "Whisps za Maandishi zinakuja hivi karibuni",
+      "body": "Kwa sasa, tuma Whisper Link kwa barua pepe badala yake.",
+      "cta": "Tuma Whisper Link"
+    }
   },
   "textWhispDetail": {
     "notFound": "Whisp ya Maandishi haikupatikana.",

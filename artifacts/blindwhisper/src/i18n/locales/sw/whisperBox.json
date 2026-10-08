@@ -26,7 +26,8 @@
     "toastValidationError": "Ujumbe huo haukutumwa — tafadhali uangalie kisha ujaribu tena.",
     "toastRateLimitedTitle": "Unatuma ujumbe mwingi sana",
     "toastRateLimitedDescription": "Tafadhali subiri kidogo kabla ya kutuma mwingine.",
-    "toastSendFailed": "Imeshindikana kutuma ujumbe huo. Tafadhali jaribu tena."
+    "toastSendFailed": "Imeshindikana kutuma ujumbe huo. Tafadhali jaribu tena.",
+    "whatIsLink": "Blind Whisper ni nini?"
   },
   "whisperBoxInbox": {
     "title": "Whisper Box",
@@ -51,7 +52,8 @@
       "titleDisabled": "Whisper Box haijawashwa",
       "descriptionDisabled": "Iwashe kwenye Mipangilio ili upate kiungo cha umma ambapo mtu yeyote anaweza kukutumia ujumbe mmoja usiojulikana — bila kuhitaji akaunti kwa upande wao.",
       "enableCta": "Washa kwenye Mipangilio"
-    }
+    },
+    "shareLinkCta": "Shiriki kiungo chako"
   },
   "settingsSection": {
     "cardTitle": "Whisper Box",

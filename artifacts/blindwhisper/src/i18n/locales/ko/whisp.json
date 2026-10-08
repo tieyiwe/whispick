@@ -11,7 +11,10 @@
     "whispToSomeoneElse": "다른 사람에게 Whisp 보내기",
     "couldntUpdateThat": "업데이트하지 못했어요",
     "movedBackToList": "목록으로 다시 이동했어요",
-    "whispDeleted": "Whisp가 삭제됐어요"
+    "whispDeleted": "Whisp가 삭제됐어요",
+    "timeAgo": "{{time}} 전",
+    "justNow": "방금 전",
+    "whispAgain": "다시 Whisp 보내기"
   },
   "dashboard": {
     "title": "대시보드",
@@ -53,6 +56,17 @@
       "heading": "내 Recap 보기",
       "description": "보낸 것부터 받은 것까지, 공유할 수 있는 내 Blind Whisper 활동 요약이에요.",
       "cta": "내 Recap 보기"
+    },
+    "welcome": {
+      "subtitle": "환영해요 — 앞으로 보낼 whisp들이 여기에 모여요.",
+      "title": "첫 whisp 보내기",
+      "description": "말로 하기 어려운 마음을 대신 전해줄 영상을 고르고, 원하면 메모를 더해 익명으로 보내세요. 상대가 열어보고, 시청하고, 답장하면 여기서 확인할 수 있어요.",
+      "cta": "첫 whisp 보내기",
+      "steps": {
+        "pick": "영상 고르기",
+        "note": "메모 추가하기",
+        "send": "익명으로 보내기"
+      }
     }
   },
   "sendWhisp": {
@@ -184,7 +198,11 @@
       "smsTermsLinkText": "SMS 약관",
       "or": "또는",
       "chooseFromContacts": "연락처에서 선택",
-      "smsConsentCheckbox": "이 사람이 Blind Whisper를 통해 저로부터 문자를 받는 것에 동의했음을 확인합니다."
+      "smsConsentCheckbox": "이 사람이 Blind Whisper를 통해 저로부터 문자를 받는 것에 동의했음을 확인합니다.",
+      "smsConsentOneTime": "새 연락처마다 한 번만 확인하면 돼요.",
+      "descriptionEmailOnly": "이메일 주소를 입력하세요. 여러 개면 쉼표로 구분하세요.",
+      "placeholderEmailOnly": "sam@example.com, jo@example.com",
+      "phonesUnavailable": "문자 및 WhatsApp 전송은 아직 지원되지 않아요 — {{list}} 대신 이메일 주소를 사용해 주세요."
     },
     "step6": {
       "heading": "보낼 준비가 됐나요?",
@@ -233,7 +251,8 @@
       "partialSendTitle": "{{succeeded}}명에게 전송, {{failed}}명에게는 실패",
       "membersSkipped_one": "{{count}}명의 멤버를 건너뛰었어요",
       "membersSkipped_other": "{{count}}명의 멤버를 건너뛰었어요",
-      "membersSkippedDescription": "이 채널에 필요한 연락처 정보가 없었어요."
+      "membersSkippedDescription": "이 채널에 필요한 연락처 정보가 없었어요.",
+      "noEmailForContact": "해당 연락처에는 이메일 주소가 없어요 — 문자 전송은 아직 지원되지 않아요."
     }
   },
   "whispDetail": {
@@ -285,7 +304,8 @@
     "outOfReplies": {
       "title": "익명 답장을 모두 사용했어요.",
       "description": "답장 횟수를 추가하거나 상대방이 무료 계정을 만들지 않으면 더 이상 답장할 수 없어요. 후속 메시지는 계속 보낼 수 있어요.",
-      "comingSoonButton": "답장 횟수 추가하기(곧 제공 예정)"
+      "comingSoonButton": "답장 횟수 추가하기(곧 제공 예정)",
+      "descriptionFree": "상대방이 무료 계정을 만들면 계속 답장할 수 있어요 — 그래도 당신에게는 여전히 익명이에요. 후속 메시지는 계속 보낼 수 있어요."
     },
     "oneReplyLeft": "익명 답장이 1회 남았어요.",
     "recipientLabel": "받는 사람",
@@ -376,7 +396,9 @@
     "videoWhispsHeading": "비디오 Whisps 답장",
     "textWhispsHeading": "문자 Whisps 답장",
     "videoWhispsEmpty": "아직 비디오 Whisp에 대한 답장이 없어요.",
-    "textWhispsEmpty": "아직 문자 Whisp에 대한 답장이 없어요."
+    "textWhispsEmpty": "아직 문자 Whisp에 대한 답장이 없어요.",
+    "tabVideo": "비디오 Whisps",
+    "tabText": "문자 Whisps"
   },
   "groupSendDetail": {
     "notFound": "그룹 전송 기록을 찾을 수 없어요.",
@@ -421,7 +443,9 @@
       "memberRemoved": "멤버가 제거됐어요",
       "failedToRemoveMember": "멤버 제거에 실패했어요",
       "groupDeleted": "그룹이 삭제됐어요",
-      "failedToDeleteGroup": "그룹 삭제에 실패했어요"
+      "failedToDeleteGroup": "그룹 삭제에 실패했어요",
+      "addEmail": "이메일 주소를 추가하세요",
+      "noneHadEmail": "해당 연락처 중 이메일 주소가 있는 항목이 없어요"
     }
   },
   "whisperGroups": {
@@ -491,7 +515,8 @@
       "attachPhoto": "사진 첨부",
       "couldntAttachImage": "해당 이미지를 첨부하지 못했어요",
       "keepItKind": "친절하게 대해주세요 — 여기의 목표는 진솔하고 생산적인 대화예요.",
-      "unlimitedCommentsSuffix": "무제한 댓글을 이용해보세요."
+      "unlimitedCommentsSuffix": "무제한 댓글을 이용해보세요.",
+      "messagePosterHint": "여기 댓글은 공개돼요. 게시자와 일대일로 이야기하려면 비공개 메시지를 보내세요. 게시자만 볼 수 있어요."
     },
     "reply": {
       "headerConversation": "익명 대화",
@@ -521,7 +546,11 @@
       "sendButton": "답장 보내기",
       "guessToggle": "누가 보냈는지 추측하기 🕵️",
       "guessHint": "반응은 보낸 사람이 직접 골라요 — 자동으로 확인되는 답은 없어요.",
-      "guessPlaceholder": "제 생각엔..."
+      "guessPlaceholder": "제 생각엔...",
+      "quickRepliesAriaLabel": "빠른 답장",
+      "collapseComposerAriaLabel": "답장 창 최소화",
+      "removeVideoAriaLabel": "영상 제거",
+      "videoChip": "영상 답장"
     },
     "reveal": {
       "viewerAccepted": "정체를 공개해도 좋다고 알렸어요.",
@@ -566,6 +595,19 @@
       "couldntStartConversation": "해당 대화를 시작하지 못했어요",
       "guessSentAnonymously": "추측을 보냈어요! 🕵️"
     },
-    "notFound": "이 whisp를 찾을 수 없습니다."
+    "notFound": "이 whisp를 찾을 수 없습니다.",
+    "keepForever": {
+      "heading": "이 whisp는 {{time}} 후에 사라져요",
+      "description": "무료 계정을 만들어 영원히 간직하세요 — 저장하고, 언제든 답장하고, 소중한 whisp를 잃어버리지 마세요.",
+      "button": "무료 계정에 저장하기",
+      "disclaimer": "Google로 한 번에 — 카드 등록은 필요 없어요."
+    },
+    "reciprocityCta": {
+      "heading": "누군가 당신에게 whisp를 보냈어요.",
+      "description": "나만의 링크를 받아 다른 사람들도 당신에게 whisp를 보낼 수 있게 하세요 — 하고 싶은 말이 생길 때마다, 익명으로요.",
+      "button": "내 Whisper Box 만들기"
+    },
+    "loadError": "지금은 이 whisp를 불러올 수 없어요. whisp는 그대로 있어요 — 일시적인 문제예요.",
+    "tryAgain": "다시 시도"
   }
 }

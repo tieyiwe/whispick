@@ -30,8 +30,11 @@
     "upToCount": "最多添加 {{count}} 位好友。",
     "toast": {
       "noneHadContactInfo": "所选联系人都没有邮箱或手机号",
-      "needAtLeastOne": "请至少添加一位有邮箱或手机号的好友"
-    }
+      "needAtLeastOne": "请至少添加一位有邮箱或手机号的好友",
+      "noneHadEmail": "所选联系人都没有邮箱地址",
+      "needAtLeastOneEmail": "请至少添加一位有邮箱地址的好友"
+    },
+    "subtitleEmailOnly": "最多添加 5 位好友——每位只需要一个邮箱地址。"
   },
   "step2": {
     "heading": "不知道发什么？",
@@ -66,7 +69,9 @@
     "toast": {
       "sendFailed": "发送失败，请重试。",
       "groupSetupFailed": "无法创建你的好友列表，请重试。"
-    }
+    },
+    "subtitle_one": "将一次性发送给 {{count}} 位好友。",
+    "sendButton_one": "发送给 {{count}} 人"
   },
   "sent": {
     "title": "已发送给 {{count}} 人！",
@@ -77,7 +82,10 @@
     "skippedHeading_other": "有 {{count}} 位联系人未能送达",
     "skippedUnnamed": "未命名联系人",
     "viewSendButton": "查看此次发送",
-    "dashboardButton": "前往主页"
+    "dashboardButton": "前往主页",
+    "title_one": "已发送给 {{count}} 人！",
+    "description_one": "你的 Whisp 正在发送中——一如既往，完全匿名。",
+    "skippedHeading_one": "有 {{count}} 位联系人未能送达"
   },
   "dashboardCard": {
     "title": "开始使用",

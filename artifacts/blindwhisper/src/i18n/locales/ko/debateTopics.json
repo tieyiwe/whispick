@@ -92,7 +92,8 @@
       "linkCopied": "링크가 복사되었습니다 — 공유해서 토론에 초대해 보세요",
       "copyFailed": "복사하지 못했어요 — 직접 복사해 주세요",
       "topicRetracted": "주제가 삭제되었습니다",
-      "retractError": "주제를 삭제하지 못했습니다"
+      "retractError": "주제를 삭제하지 못했습니다",
+      "handleReserved": "예약된 이름이라 사용할 수 없습니다 — 다른 이름을 골라 주세요."
     },
     "sendWhispDialog": {
       "title": "이 주제 Whisp하기",
@@ -127,7 +128,12 @@
       "body": "누군가 반응을 보일 때 알려드릴 수 있도록 무료 계정을 만들어 보세요.",
       "cta": "무료 계정 만들기",
       "dismissAria": "닫기"
-    }
+    },
+    "followerCount_one": "팔로워 {{count}}명",
+    "commentCount_one": "댓글 {{count}}개",
+    "cancelReplyAria": "답글 취소",
+    "charactersLeftAria_one": "{{count}}자 남음",
+    "charactersLeftAria_other": "{{count}}자 남음"
   },
   "debateTopics": {
     "followingButton": "팔로잉",

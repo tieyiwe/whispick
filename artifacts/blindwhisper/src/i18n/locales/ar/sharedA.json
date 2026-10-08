@@ -8,7 +8,8 @@
   },
   "avatarPickerGrid": {
     "chooseAvatar": "اختر صورة رمزية",
-    "noAvatar": "بدون صورة رمزية"
+    "noAvatar": "بدون صورة رمزية",
+    "useInitial": "استخدم الحرف الأول من اسمي"
   },
   "cameraCapture": {
     "modePhoto": "صورة",
@@ -66,7 +67,9 @@
     "destinationLabel": "إلى أين يذهب؟",
     "publicCircle": "الـ Blind Circle العامة",
     "anonymousDisclaimer": "يُنشر بهوية مجهولة — اسمك لا يظهر أبدًا. كل من يستطيع رؤية هذه الدائرة يمكنه رؤية المنشور.",
-    "postAnonymously": "انشر بهوية مجهولة"
+    "postAnonymously": "انشر بهوية مجهولة",
+    "titleLabelPublic": "العنوان (يظهر لكل من يرى المنشور)",
+    "titlePlaceholderOptional": "اختياري. لا تتم مشاركة اسم ملفك أبدًا"
   },
   "countryPhoneInput": {
     "searchCountry": "ابحث عن دولة...",
@@ -84,7 +87,8 @@
     "commentCount_other": "{{count}} تعليق",
     "shareTopicAria": "اهمس بهذا الموضوع",
     "joinDebate": "انضم إلى النقاش",
-    "onlineAriaLabel": "متصل الآن"
+    "onlineAriaLabel": "متصل الآن",
+    "shareText": "انضم إلى هذا النقاش وأجب بهوية مجهولة 100%:"
   },
   "demographicsGateDialog": {
     "title": "شيء واحد سريع فقط",

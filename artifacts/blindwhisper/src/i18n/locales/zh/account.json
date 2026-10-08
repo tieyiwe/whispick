@@ -73,7 +73,12 @@
     "privacyGhostBoostText": "Ghost Boost 不会收集收件人的联系方式 — 它是一种排队发送、扩大触达范围的方式，没有特定收件人，不是定向广告。",
     "privacyDataRequestText": "你可以联系客服申请完整的数据导出或账户删除。",
     "privacyPolicyLink": "隐私政策",
-    "termsOfServiceLink": "服务条款"
+    "termsOfServiceLink": "服务条款",
+    "saveProfile": "保存资料",
+    "saveAvatar": "保存头像",
+    "savedHint": "所有更改已保存",
+    "unsavedHint": "有未保存的更改",
+    "personalDetailsCardTitle": "个人信息"
   },
   "accountSecurityPage": {
     "title": "账户安全",
@@ -126,6 +131,22 @@
       "triple": "省 14%",
       "ten": "省 29%",
       "twentyfive": "省 43%"
+    },
+    "freePlanName": "免费版",
+    "timeAgo": "{{time}}前",
+    "creditsDelta_one": "{{amount}} 积分",
+    "creditsDelta_other": "{{amount}} 积分",
+    "txTypes": {
+      "purchase": "购买积分包",
+      "plan_grant": "每月套餐积分",
+      "spend": "Ghost Boost",
+      "boost": "Ghost Boost",
+      "bonus": "奖励积分",
+      "refund": "退款"
+    },
+    "freeForNow": {
+      "title": "Blind Whisper 目前免费使用",
+      "body": "想发多少 whisp 就发多少，领取你的 Whisper Box，回复消息、参与辩论——在我们成长期间全部免费。如果以后推出付费套餐，也只会在此基础上增加额外功能。"
     }
   },
   "subscribePage": {
@@ -182,7 +203,8 @@
     "toastRevealRequestFailed": "揭示身份请求发送失败",
     "smsDisclosure": "发送到电话号码时,你是以自己的名义给对方发短信。可能会产生消息和流量费用。回复 STOP 可退订,回复 HELP 获取帮助。请查看我们的",
     "smsTermsLinkText": "短信条款",
-    "smsConsentCheckbox": "我确认已获得对方许可，可以通过 Blind Whisper 向其发送短信。"
+    "smsConsentCheckbox": "我确认已获得对方许可，可以通过 Blind Whisper 向其发送短信。",
+    "smsConsentOneTime": "每位新联系人只需确认一次。"
   },
   "publicInvitePage": {
     "notFound": "找不到这个邀请。",

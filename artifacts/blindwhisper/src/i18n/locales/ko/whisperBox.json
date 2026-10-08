@@ -26,7 +26,8 @@
     "toastValidationError": "메시지를 보낼 수 없습니다 — 내용을 확인하고 다시 시도해 주세요.",
     "toastRateLimitedTitle": "메시지를 너무 많이 보내고 있어요",
     "toastRateLimitedDescription": "잠시 후 다시 보내주세요.",
-    "toastSendFailed": "메시지를 보내지 못했습니다. 다시 시도해 주세요."
+    "toastSendFailed": "메시지를 보내지 못했습니다. 다시 시도해 주세요.",
+    "whatIsLink": "Blind Whisper란?"
   },
   "whisperBoxInbox": {
     "title": "Whisper Box",
@@ -51,7 +52,8 @@
       "titleDisabled": "Whisper Box가 꺼져 있습니다",
       "descriptionDisabled": "설정에서 켜면 누구나(계정 없이도) 당신에게 익명 메시지를 보낼 수 있는 공개 링크가 생성됩니다.",
       "enableCta": "설정에서 켜기"
-    }
+    },
+    "shareLinkCta": "내 링크 공유하기"
   },
   "settingsSection": {
     "cardTitle": "Whisper Box",
@@ -101,6 +103,7 @@
     "unreadDescription": "누군가 익명으로 메시지를 보냈습니다.",
     "idleTitle": "Whisper Box",
     "idleDescription": "링크를 공유해서 더 많은 익명 메시지를 받아보세요.",
-    "viewInboxCta": "받은 메시지함 보기"
+    "viewInboxCta": "받은 메시지함 보기",
+    "unreadTitle_one": "새 메시지가 {{count}}개 있습니다"
   }
 }

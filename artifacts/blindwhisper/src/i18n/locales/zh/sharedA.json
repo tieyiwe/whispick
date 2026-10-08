@@ -8,7 +8,8 @@
   },
   "avatarPickerGrid": {
     "chooseAvatar": "选择头像",
-    "noAvatar": "无头像"
+    "noAvatar": "无头像",
+    "useInitial": "使用我的名字首字母"
   },
   "cameraCapture": {
     "modePhoto": "照片",
@@ -66,7 +67,9 @@
     "destinationLabel": "要发到哪里?",
     "publicCircle": "公开 Blind Circle",
     "anonymousDisclaimer": "匿名发布 — 你的名字不会显示。任何能看到这个圈子的人都能看到这条帖子。",
-    "postAnonymously": "匿名发布"
+    "postAnonymously": "匿名发布",
+    "titleLabelPublic": "标题（所有看到这条帖子的人都能看到）",
+    "titlePlaceholderOptional": "可选。我们绝不会分享你的文件名"
   },
   "countryPhoneInput": {
     "searchCountry": "搜索国家...",
@@ -80,7 +83,8 @@
     "commentCount_other": "{{count}} 条评论",
     "shareTopicAria": "分享这个话题",
     "joinDebate": "加入辩论",
-    "onlineAriaLabel": "当前在线"
+    "onlineAriaLabel": "当前在线",
+    "shareText": "加入这场辩论，100% 匿名作答："
   },
   "demographicsGateDialog": {
     "title": "还差一小步",

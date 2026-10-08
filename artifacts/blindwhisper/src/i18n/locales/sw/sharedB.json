@@ -48,7 +48,9 @@
     "notifications": "Arifa",
     "unreadCount": "{{count}} hazijasomwa",
     "markAllRead": "Weka zote kama zimesomwa",
-    "noNotificationsYet": "Bado huna arifa."
+    "noNotificationsYet": "Bado huna arifa.",
+    "timeAgo": "{{time}} zilizopita",
+    "justNow": "Sasa hivi"
   },
   "phoneVerificationDialog": {
     "title": "Thibitisha nambari yako ya simu",
@@ -122,7 +124,11 @@
     "openOn": "Fungua kwenye {{platform}}",
     "openOriginal": "Fungua asili",
     "videoAlt": "Video",
-    "watchTheVideo": "Angalia video"
+    "watchTheVideo": "Angalia video",
+    "externalLinkTitle": "Unaondoka Blind Whisper",
+    "externalLinkDescription": "Video hii imehifadhiwa kwenye {{host}}, ambalo si jukwaa la video ambalo Blind Whisper inalitambua. Endelea tu ikiwa unaiamini tovuti hii.",
+    "externalLinkCancel": "Ghairi",
+    "externalLinkContinue": "Endelea"
   },
   "whispSentConfirmation": {
     "srOnlySent": "Whisp yako imetumwa"

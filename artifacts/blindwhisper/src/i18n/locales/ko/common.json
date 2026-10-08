@@ -18,10 +18,20 @@
     "settings": "설정",
     "admin": "관리자",
     "home": "홈",
-    "more": "더보기"
+    "more": "더보기",
+    "debateShort": "토론",
+    "sections": {
+      "community": "커뮤니티",
+      "inbox": "받은 메시지함",
+      "create": "만들기",
+      "account": "계정"
+    },
+    "circleShort": "Circle",
+    "myWhispsShort": "Whisps"
   },
   "account": {
     "settings": "설정",
-    "signOut": "로그아웃"
+    "signOut": "로그아웃",
+    "menu": "계정 메뉴"
   }
 }

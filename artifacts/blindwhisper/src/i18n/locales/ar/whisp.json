@@ -15,7 +15,10 @@
     "whispToSomeoneElse": "أرسل Whisp لشخص آخر",
     "couldntUpdateThat": "تعذّر تحديث ذلك",
     "movedBackToList": "أُعيد إلى قائمتك",
-    "whispDeleted": "تم حذف الـ Whisp"
+    "whispDeleted": "تم حذف الـ Whisp",
+    "timeAgo": "منذ {{time}}",
+    "justNow": "الآن",
+    "whispAgain": "أرسل Whisp مجددًا"
   },
   "dashboard": {
     "title": "لوحة التحكم",
@@ -57,6 +60,17 @@
       "heading": "شاهد ملخصك",
       "description": "لمحة قابلة للمشاركة عن نشاطك في Blind Whisper — المُرسل والمُستلم وكل ما بينهما.",
       "cta": "عرض ملخصي"
+    },
+    "welcome": {
+      "subtitle": "أهلًا بك — هنا ستجد الـ Whisps الخاصة بك.",
+      "title": "أرسل أول Whisp لك",
+      "description": "اختر فيديو يقول ما لا تستطيع قوله، وأضف ملاحظة إن شئت، ثم أرسله بهوية مجهولة. سترى هنا متى يُفتح ويُشاهد ويُرد عليه.",
+      "cta": "أرسل أول Whisp لك",
+      "steps": {
+        "pick": "اختر فيديو",
+        "note": "أضف ملاحظة",
+        "send": "أرسله بهوية مجهولة"
+      }
     }
   },
   "sendWhisp": {
@@ -196,7 +210,11 @@
       "smsTermsLinkText": "شروط SMS",
       "or": "أو",
       "chooseFromContacts": "اختر من جهات الاتصال",
-      "smsConsentCheckbox": "أؤكد أن لدي إذن هذا الشخص لتلقي رسالة نصية مني عبر Blind Whisper."
+      "smsConsentCheckbox": "أؤكد أن لدي إذن هذا الشخص لتلقي رسالة نصية مني عبر Blind Whisper.",
+      "smsConsentOneTime": "يكفي أن تؤكد هذا مرة واحدة لكل جهة اتصال جديدة.",
+      "descriptionEmailOnly": "أدخل عنوان بريد إلكتروني. أضف فواصل إذا كان هناك أكثر من واحد.",
+      "placeholderEmailOnly": "sam@example.com, jo@example.com",
+      "phonesUnavailable": "التوصيل عبر الرسائل النصية وWhatsApp غير متاح بعد — استخدم عنوان بريد إلكتروني بدلًا من {{list}}."
     },
     "step6": {
       "heading": "جاهز للإرسال؟",
@@ -261,7 +279,8 @@
       "membersSkipped_few": "تم تخطي {{count}} أعضاء",
       "membersSkipped_many": "تم تخطي {{count}} عضوًا",
       "membersSkipped_other": "تم تخطي {{count}} عضو",
-      "membersSkippedDescription": "لم تتوفر لديهم معلومات الاتصال التي تحتاجها هذه القناة."
+      "membersSkippedDescription": "لم تتوفر لديهم معلومات الاتصال التي تحتاجها هذه القناة.",
+      "noEmailForContact": "جهة الاتصال هذه ليس لها بريد إلكتروني — التوصيل عبر الرسائل النصية غير متاح بعد."
     }
   },
   "whispDetail": {
@@ -333,7 +352,8 @@
     "outOfReplies": {
       "title": "لقد استخدموا كل ردودهم المجهولة.",
       "description": "لا يمكنهم الرد مجددًا إلا إذا أضفت مزيدًا من الردود، أو أنشأوا حسابًا مجانيًا. لا يزال بإمكانك إرسال رسائل متابعة.",
-      "comingSoonButton": "أضف مزيدًا من الردود (قريبًا)"
+      "comingSoonButton": "أضف مزيدًا من الردود (قريبًا)",
+      "descriptionFree": "يمكنهم مواصلة الرد بإنشاء حساب مجاني — وسيظلون مجهولي الهوية بالنسبة لك. لا يزال بإمكانك إرسال رسائل متابعة."
     },
     "oneReplyLeft": "تبقّى لديهم رد مجهول واحد.",
     "recipientLabel": "المستلم",
@@ -424,7 +444,9 @@
     "videoWhispsHeading": "ردود Whisps الفيديو",
     "textWhispsHeading": "ردود الـ Whisps النصية",
     "videoWhispsEmpty": "لا ردود على Whisps الفيديو الخاصة بك بعد.",
-    "textWhispsEmpty": "لا ردود على الـ Whisps النصية الخاصة بك بعد."
+    "textWhispsEmpty": "لا ردود على الـ Whisps النصية الخاصة بك بعد.",
+    "tabVideo": "‏Whisps فيديو",
+    "tabText": "‏Whisps نصية"
   },
   "groupSendDetail": {
     "notFound": "لم يتم العثور على الإرسال الجماعي.",
@@ -473,7 +495,9 @@
       "memberRemoved": "تمت إزالة العضو",
       "failedToRemoveMember": "فشلت إزالة العضو",
       "groupDeleted": "تم حذف المجموعة",
-      "failedToDeleteGroup": "فشل حذف المجموعة"
+      "failedToDeleteGroup": "فشل حذف المجموعة",
+      "addEmail": "أضف بريدًا إلكترونيًا",
+      "noneHadEmail": "لا أحد من جهات الاتصال تلك لديه بريد إلكتروني"
     }
   },
   "whisperGroups": {
@@ -547,7 +571,8 @@
       "attachPhoto": "أرفق صورة",
       "couldntAttachImage": "تعذّر إرفاق تلك الصورة",
       "keepItKind": "حافظ على اللطف — الهدف هنا حوار صادق وبنّاء.",
-      "unlimitedCommentsSuffix": "لتعليقات غير محدودة."
+      "unlimitedCommentsSuffix": "لتعليقات غير محدودة.",
+      "messagePosterHint": "التعليقات هنا علنية. للتحدث مع الناشر على انفراد، راسله بشكل خاص: لن يرى رسالتك سواه."
     },
     "reply": {
       "headerConversation": "محادثة مجهولة",
@@ -581,7 +606,11 @@
       "sendButton": "أرسل الرد",
       "guessToggle": "خمّن من أرسل هذا 🕵️",
       "guessHint": "هو من سيختار طريقة التفاعل — لن يكون هناك ردّ تلقائي أبدًا.",
-      "guessPlaceholder": "أعتقد أنه..."
+      "guessPlaceholder": "أعتقد أنه...",
+      "quickRepliesAriaLabel": "ردود سريعة",
+      "collapseComposerAriaLabel": "تصغير مربع الرد",
+      "removeVideoAriaLabel": "إزالة الفيديو",
+      "videoChip": "ردّ بفيديو"
     },
     "reveal": {
       "viewerAccepted": "لقد أخبرتهم أنه لا بأس بالكشف عن هويتهم.",
@@ -626,6 +655,19 @@
       "couldntStartConversation": "تعذّر بدء تلك المحادثة",
       "guessSentAnonymously": "تم إرسال تخمينك! 🕵️"
     },
-    "notFound": "تعذّر العثور على هذا الـ Whisp."
+    "notFound": "تعذّر العثور على هذا الـ Whisp.",
+    "keepForever": {
+      "heading": "سيختفي هذا الـ Whisp خلال {{time}}",
+      "description": "أنشئ حسابًا مجانيًا لتحتفظ به إلى الأبد — احفظه، ورُدّ في أي وقت، ولا تفقد أبدًا ما يهمّك.",
+      "button": "احفظه في حساب مجاني",
+      "disclaimer": "بنقرة واحدة عبر Google — دون الحاجة إلى بطاقة."
+    },
+    "reciprocityCta": {
+      "heading": "همس لك أحدهم.",
+      "description": "احصل على رابطك الخاص ليتمكن الناس من الهمس لك أيضًا — بهوية مجهولة، كلما كان لديهم ما يقولونه.",
+      "button": "احصل على Whisper Box الخاصة بي"
+    },
+    "loadError": "تعذّر تحميل هذا الـ Whisp الآن. لا يزال موجودًا — إنه مجرد خلل مؤقت.",
+    "tryAgain": "حاول مرة أخرى"
   }
 }

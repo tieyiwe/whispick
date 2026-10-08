@@ -73,7 +73,12 @@
     "privacyGhostBoostText": "Ghost Boost haikusanyi taarifa za mawasiliano za mpokeaji — ni tuma la mtiririko wenye ufikiaji ulioongezwa, lisilo na mpokeaji maalum, si tangazo linalolengwa.",
     "privacyDataRequestText": "Unaweza kuomba nakala kamili ya data yako au ufutaji wa akaunti kwa kuwasiliana na usaidizi.",
     "privacyPolicyLink": "Sera ya Faragha",
-    "termsOfServiceLink": "Masharti ya Huduma"
+    "termsOfServiceLink": "Masharti ya Huduma",
+    "saveProfile": "Hifadhi wasifu",
+    "saveAvatar": "Hifadhi avatar",
+    "savedHint": "Mabadiliko yote yamehifadhiwa",
+    "unsavedHint": "Mabadiliko hayajahifadhiwa",
+    "personalDetailsCardTitle": "Taarifa binafsi"
   },
   "accountSecurityPage": {
     "title": "Usalama wa akaunti",
@@ -126,6 +131,22 @@
       "triple": "Okoa 14%",
       "ten": "Okoa 29%",
       "twentyfive": "Okoa 43%"
+    },
+    "freePlanName": "Bure",
+    "timeAgo": "{{time}} zilizopita",
+    "creditsDelta_one": "mkopo {{amount}}",
+    "creditsDelta_other": "mikopo {{amount}}",
+    "txTypes": {
+      "purchase": "Ununuzi wa kifurushi cha mikopo",
+      "plan_grant": "Mikopo ya mpango wa kila mwezi",
+      "spend": "Ghost Boost",
+      "boost": "Ghost Boost",
+      "bonus": "Mikopo ya bonasi",
+      "refund": "Marejesho ya pesa"
+    },
+    "freeForNow": {
+      "title": "Blind Whisper ni bure kwa sasa",
+      "body": "Tuma whisps nyingi kadiri unavyopenda, pata Whisper Box yako, jibu na ujiunge na mijadala — vyote ni bure wakati tunakua. Mipango ya kulipia ikija baadaye, itaongeza vipengele vya ziada juu ya hivi."
     }
   },
   "subscribePage": {
@@ -182,7 +203,8 @@
     "toastRevealRequestFailed": "Imeshindikana kuomba kufichua",
     "smsDisclosure": "Kwa kutuma kwa namba ya simu, unamtumia ujumbe kwa jina lako mwenyewe. Gharama za ujumbe na data zinaweza kutumika. Jibu STOP kujitoa, HELP kwa msaada. Angalia",
     "smsTermsLinkText": "Masharti ya SMS",
-    "smsConsentCheckbox": "Ninathibitisha nina ruhusa ya mtu huyu kupokea ujumbe wa maandishi kutoka kwangu kupitia Blind Whisper."
+    "smsConsentCheckbox": "Ninathibitisha nina ruhusa ya mtu huyu kupokea ujumbe wa maandishi kutoka kwangu kupitia Blind Whisper.",
+    "smsConsentOneTime": "Unahitaji kuthibitisha hili mara moja tu kwa kila anwani mpya."
   },
   "publicInvitePage": {
     "notFound": "Mwaliko huu haukuweza kupatikana.",

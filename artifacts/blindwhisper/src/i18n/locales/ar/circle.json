@@ -6,7 +6,8 @@
     "videoAlt": "فيديو",
     "someone": "شخص ما",
     "emptyTitle": "لا شيء هنا بعد",
-    "emptyDescription": "اختر Blind Circle عند إرسال whisp، ثم اختر هذه الدائرة لمشاركته هنا."
+    "emptyDescription": "اختر Blind Circle عند إرسال whisp، ثم اختر هذه الدائرة لمشاركته هنا.",
+    "timeAgo": "منذ {{time}}"
   },
   "circleFeed": {
     "title": "Blind Circle",
@@ -15,7 +16,13 @@
     "someone": "شخص ما",
     "whispThis": "أرسله كـ whisp",
     "emptyTitle": "‏Blind Circle هادئة الآن",
-    "emptyDescription": "لم يشارك أحد فيديو في خلاصة المجتمع بعد. كن أول من يفعل — استخدم «النشر في Blind Circle» في الأعلى."
+    "emptyDescription": "لم يشارك أحد فيديو في خلاصة المجتمع بعد. كن أول من يفعل — استخدم «النشر في Blind Circle» في الأعلى.",
+    "timeAgo": "منذ {{time}}",
+    "shareAria": "شارك هذا المنشور",
+    "shareTitle": "Blind Circle",
+    "shareText": "منشور مجهول الهوية على Blind Circle — ألقِ نظرة:",
+    "linkCopied": "تم نسخ الرابط — شاركه مع من تشاء",
+    "copyFailed": "تعذّر النسخ — يرجى النسخ يدويًا"
   },
   "myCircles": {
     "title": "Blind Circles الخاصة بي",
