@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useRef } from "react";
 import { ClerkProvider, SignIn, SignUp, Show, useClerk, useAuth } from '@clerk/react';
 import { registerServiceWorker, syncPushSubscription } from "@/lib/push";
 import { clearAnonymousDeviceState } from "@/lib/deviceState";
+import { signInRedirectTarget, signInUrlFor } from "@/lib/signInRedirect";
 // Imported for its module-level side effect: capturing beforeinstallprompt
 // from the moment this script evaluates, not from whenever the install UI
 // happens to mount. That UI lives inside AppLayout, which is pulled in by a
@@ -216,9 +217,13 @@ function AuthShell({ reassurance, children }: { reassurance: string; children: R
 
 function SignInPage() {
   const { t } = useTranslation("publicPages");
+  const [location] = useLocation();
+  // A deep link the visitor was bounced here from (see ProtectedRoute and
+  // lib/signInRedirect.ts) wins over the usual /dashboard landing.
+  const target = signInRedirectTarget(window.location.search, location !== "/sign-in");
   return (
     <AuthShell reassurance={t("auth.signInReassurance")}>
-      <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} forceRedirectUrl={`${basePath}/dashboard`} />
+      <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} forceRedirectUrl={`${basePath}${target}`} />
     </AuthShell>
   );
 }
@@ -349,11 +354,17 @@ function HomeRedirect() {
   );
 }
 
+// Signed out: the bare home (/dashboard) still goes to the landing page,
+// but any other page — the whisp, text thread or inbox a notification email
+// linked to — goes to sign-in carrying that path, so signing in finishes on
+// it instead of on the dashboard (lib/signInRedirect.ts).
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
+  const [location] = useLocation();
+  const signedOutTarget = location === "/dashboard" ? "/" : signInUrlFor(location + window.location.search);
   return (
     <>
       <Show when="signed-in"><Component /></Show>
-      <Show when="signed-out"><Redirect to="/" /></Show>
+      <Show when="signed-out"><Redirect to={signedOutTarget} /></Show>
     </>
   );
 }
