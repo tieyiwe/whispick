@@ -80,6 +80,9 @@
     },
     "altAttachmentPreview": "Attachment preview",
     "ariaRemoveImage": "Remove image",
+    "cancelReplyAria": "Cancel reply",
+    "charactersLeftAria_one": "{{count}} character left",
+    "charactersLeftAria_other": "{{count}} characters left",
     "shareTitle": "Blind Whisper — Debate Now",
     "toast": {
       "handleUpdated": "Your name in this thread was updated",

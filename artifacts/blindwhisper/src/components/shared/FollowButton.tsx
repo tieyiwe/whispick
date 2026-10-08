@@ -1,6 +1,5 @@
 import { useToggleFollow } from "@workspace/api-client-react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, UserPlus, UserCheck } from "lucide-react";
 
@@ -47,25 +46,41 @@ export function FollowButton({
     );
   }
 
+  const iconClass = "w-3.5 h-3.5";
+  const icon = toggleFollow.isPending ? (
+    <Loader2 className={`${iconClass} animate-spin`} />
+  ) : following ? (
+    <UserCheck className={iconClass} />
+  ) : (
+    <UserPlus className={iconClass} />
+  );
+
+  // Deliberately secondary: following someone is never the main action on a
+  // page, so neither form is a solid violet pill. `compact` (inline on
+  // comment bylines) is a quiet text button whose hit area is padded out to
+  // ~44px with an invisible pseudo-element so it stays easy to tap without
+  // taking up visual room; the regular form is a soft tinted outline pill.
+  const className = compact
+    ? `relative inline-flex items-center gap-1 text-xs font-medium whitespace-nowrap transition-colors duration-150 disabled:opacity-60 before:absolute before:-inset-x-2 before:-inset-y-3 before:content-[''] ${
+        following ? "text-muted-foreground hover:text-foreground" : "text-primary hover:text-primary/80"
+      }`
+    : `inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full border text-xs font-medium whitespace-nowrap transition-colors duration-150 disabled:opacity-60 ${
+        following
+          ? "border-border/60 text-muted-foreground hover:text-foreground hover:border-border"
+          : "border-primary/40 bg-primary/10 text-primary hover:bg-primary/20"
+      }`;
+
   return (
-    <Button
+    <button
       type="button"
-      variant={following ? "outline" : "default"}
-      size="sm"
       onClick={handleClick}
       disabled={toggleFollow.isPending}
       aria-pressed={following}
-      className={`rounded-full ${compact ? "h-6 px-2 text-[11px]" : "h-7 px-3 text-xs"}`}
+      className={className}
       data-testid={`button-follow-${handle}`}
     >
-      {toggleFollow.isPending ? (
-        <Loader2 className={compact ? "w-2.5 h-2.5 animate-spin" : "w-3 h-3 animate-spin"} />
-      ) : following ? (
-        <UserCheck className={compact ? "w-2.5 h-2.5" : "w-3 h-3"} />
-      ) : (
-        <UserPlus className={compact ? "w-2.5 h-2.5" : "w-3 h-3"} />
-      )}
+      {icon}
       {following ? t("followButton.following") : t("followButton.follow")}
-    </Button>
+    </button>
   );
 }

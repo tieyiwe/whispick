@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { useParams, useLocation, Link } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useUser } from "@clerk/react";
 import {
@@ -23,10 +23,10 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Logo } from "@/components/ui/logo";
 import { useToast } from "@/hooks/use-toast";
 import { getVisitorId } from "@/lib/anonymousVisitor";
 import { FollowButton } from "@/components/shared/FollowButton";
+import { DebatePageShell } from "@/pages/DebateTopics";
 import { AvatarCircle } from "@/components/shared/AvatarCircle";
 import { ReportContentDialog } from "@/components/shared/ReportContentDialog";
 import { SendDebateTopicWhispDialog } from "@/components/shared/SendDebateTopicWhispDialog";
@@ -63,6 +63,7 @@ import {
   Sparkles,
   Bell,
   UserPlus,
+  Reply,
 } from "lucide-react";
 
 const MAX_COMMENT_TEXT_LENGTH = 500;
@@ -71,15 +72,6 @@ const MAX_COMMENT_IMAGE_BYTES = 5 * 1024 * 1024;
 // allowed types ever change. The server re-enforces this; this is purely so
 // a bad file gets rejected before spending a round trip on it.
 const ALLOWED_COMMENT_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-
-function BlindWhisperLogoMark() {
-  return (
-    <Link href="/debate-topics" className="flex items-center gap-2">
-      <Logo className="w-6 h-6 text-primary" />
-      <span className="font-serif text-xl font-bold text-foreground tracking-tight">Blind Whisper</span>
-    </Link>
-  );
-}
 
 // Not modeled in openapi.yaml (multipart bodies don't codegen — see the spec's
 // note on POST /public/debate-topics/{id}/comments), so this is a
@@ -168,11 +160,11 @@ function HandleRenameControl({
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors"
+          className="inline-flex items-center justify-center w-8 h-8 -my-2 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
           aria-label={t("debateTopicDetail.handleRename.ariaLabel")}
           data-testid="button-edit-handle"
         >
-          <Pencil className="w-3 h-3" />
+          <Pencil className="w-3.5 h-3.5" />
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-72 space-y-3">
@@ -183,7 +175,7 @@ function HandleRenameControl({
           placeholder={t("debateTopicDetail.handleRename.placeholder")}
           data-testid="input-handle"
         />
-        <p className="text-[11px] text-muted-foreground flex items-start gap-1.5 leading-relaxed">
+        <p className="text-xs text-muted-foreground flex items-start gap-1.5 leading-relaxed">
           <Info className="w-3 h-3 mt-0.5 shrink-0" />
           {t("debateTopicDetail.handleRename.helperText")}
         </p>
@@ -242,11 +234,11 @@ function AvatarPickerControl({
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors"
+          className="inline-flex items-center justify-center w-8 h-8 -my-2 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
           aria-label={t("debateTopicDetail.avatarPicker.ariaLabel")}
           data-testid="button-edit-avatar"
         >
-          <Palette className="w-3 h-3" />
+          <Palette className="w-3.5 h-3.5" />
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-80 space-y-3">
@@ -280,6 +272,8 @@ function CommentCard({
   onFollowToggle: (patch: { following: boolean; followerCount?: number }) => void;
 }) {
   const { t } = useTranslation("debateTopics");
+  const actionClass =
+    "inline-flex items-center gap-1.5 h-11 sm:h-9 px-2.5 rounded-full text-[13px] tabular-nums transition-colors duration-150 disabled:opacity-60";
   return (
     <div
       className={`rounded-2xl border p-4 ${
@@ -287,104 +281,117 @@ function CommentCard({
       }`}
       data-testid={`comment-${comment.id}`}
     >
-      {/* X/Twitter-style: avatar in the top-left, handle/meta beside it,
-          body text spanning the full width below. */}
+      {/* X/Twitter-style: avatar + a two-line byline (handle, then time /
+          reply context), with the body spanning the full card width below
+          so long comments stay comfortable to read on a phone. */}
       <div className="flex items-start gap-3">
         <AvatarCircle
           avatarId={comment.avatarId}
           handle={comment.handle}
-          size="sm"
+          size="md"
           online={online}
           onlineLabel={t("debateTopicDetail.onlineAriaLabel")}
         />
-        <div className="min-w-0 flex-1 space-y-2">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-medium text-foreground" data-testid={`text-handle-${comment.id}`}>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-x-2 gap-y-1 flex-wrap min-h-5">
+            <span className="text-sm font-semibold text-foreground" data-testid={`text-handle-${comment.id}`}>
               {comment.handle}
             </span>
-            {/* commentAuthorFollowed is null when there's nothing followable here —
-                purely anonymous commenter, caller not signed in, or it's the
-                caller's own comment. No affordance shows in any of those cases. */}
-            {comment.commentAuthorFollowed !== null && (
-              <FollowButton
-                handle={comment.handle}
-                following={comment.commentAuthorFollowed}
-                compact
-                onToggled={onFollowToggle}
-              />
-            )}
             {comment.isPoster && (
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-primary px-2 py-0.5 rounded-full bg-primary/10">
+              <span className="text-xs font-medium text-primary px-2 py-px rounded-full bg-primary/10 whitespace-nowrap">
                 {t("debateTopicDetail.topicAuthorBadge")}
               </span>
             )}
             {comment.isOwnComment && (
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground px-2 py-0.5 rounded-full bg-muted/50">
+              <span className="text-xs font-medium text-muted-foreground px-2 py-px rounded-full bg-muted/50 whitespace-nowrap">
                 {t("debateTopicDetail.youBadge")}
               </span>
             )}
-            <span className="text-xs text-muted-foreground ml-auto">
+            {/* commentAuthorFollowed is null when there's nothing followable here —
+                purely anonymous commenter, caller not signed in, or it's the
+                caller's own comment. No affordance shows in any of those cases. */}
+            {comment.commentAuthorFollowed !== null && (
+              <span className="ml-auto">
+                <FollowButton
+                  handle={comment.handle}
+                  following={comment.commentAuthorFollowed}
+                  compact
+                  onToggled={onFollowToggle}
+                />
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            <time dateTime={comment.createdAt}>
               {t("debateTopicDetail.timeAgo", { time: formatDistanceToNowStrict(new Date(comment.createdAt)) })}
-            </span>
-          </div>
-
-          {parentHandle && (
-            <p className="text-xs text-muted-foreground">
-              {t("debateTopicDetail.replyingToPrefix")} <span className="text-primary/80">@{parentHandle}</span>
-            </p>
-          )}
-
-          <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{comment.commentText}</p>
-
-          {comment.imageUrl && (
-            <img
-              src={comment.imageUrl}
-              alt={t("debateTopicDetail.altAttachedImage")}
-              className="max-h-64 rounded-xl border border-border/50 object-cover"
-              data-testid={`img-comment-${comment.id}`}
-            />
-          )}
-
-          <div className="flex items-center gap-4 pt-0.5">
-            <button
-              type="button"
-              onClick={() => onReact("like")}
-              disabled={reactPending}
-              aria-pressed={comment.viewerReaction === "like"}
-              className={`inline-flex items-center gap-1.5 text-xs transition-colors disabled:opacity-60 ${
-                comment.viewerReaction === "like" ? "text-primary" : "text-muted-foreground hover:text-primary"
-              }`}
-              data-testid={`button-like-${comment.id}`}
-            >
-              <ThumbsUp className={`w-3.5 h-3.5 ${comment.viewerReaction === "like" ? "fill-primary/25" : ""}`} />
-              {comment.likeCount}
-            </button>
-            <button
-              type="button"
-              onClick={() => onReact("dislike")}
-              disabled={reactPending}
-              aria-pressed={comment.viewerReaction === "dislike"}
-              className={`inline-flex items-center gap-1.5 text-xs transition-colors disabled:opacity-60 ${
-                comment.viewerReaction === "dislike" ? "text-destructive" : "text-muted-foreground hover:text-destructive"
-              }`}
-              data-testid={`button-dislike-${comment.id}`}
-            >
-              <ThumbsDown className={`w-3.5 h-3.5 ${comment.viewerReaction === "dislike" ? "fill-destructive/25" : ""}`} />
-              {comment.dislikeCount}
-            </button>
-            <button
-              onClick={onReply}
-              className="text-xs text-muted-foreground hover:text-primary transition-colors ml-auto"
-              data-testid={`button-reply-${comment.id}`}
-            >
-              {t("debateTopicDetail.replyButton")}
-            </button>
-            {/* No flag on your own comment — the report queue isn't a
-                self-service delete button (the author has no retraction
-                path for comments by design; see debate_topic_comments.ts). */}
-            {!comment.isOwnComment && <ReportContentDialog contentType="debate_topic_comment" contentId={comment.id} compact />}
-          </div>
+            </time>
+            {parentHandle && (
+              <>
+                {" · "}
+                {t("debateTopicDetail.replyingToPrefix")} <span className="text-primary">@{parentHandle}</span>
+              </>
+            )}
+          </p>
         </div>
+      </div>
+
+      <p className="mt-3 text-[15px] text-foreground leading-relaxed whitespace-pre-wrap break-words">{comment.commentText}</p>
+
+      {comment.imageUrl && (
+        <img
+          src={comment.imageUrl}
+          alt={t("debateTopicDetail.altAttachedImage")}
+          className="mt-3 max-h-64 rounded-xl border border-border/50 object-cover"
+          data-testid={`img-comment-${comment.id}`}
+        />
+      )}
+
+      <div className="flex items-center gap-1 mt-1.5 -mb-2 -ml-2.5 -mr-2.5 sm:-mr-1.5">
+        <button
+          type="button"
+          onClick={() => onReact("like")}
+          disabled={reactPending}
+          aria-pressed={comment.viewerReaction === "like"}
+          className={`${actionClass} ${
+            comment.viewerReaction === "like" ? "text-primary" : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+          }`}
+          data-testid={`button-like-${comment.id}`}
+        >
+          <ThumbsUp className={`w-4 h-4 ${comment.viewerReaction === "like" ? "fill-primary/25" : ""}`} />
+          {comment.likeCount}
+        </button>
+        <button
+          type="button"
+          onClick={() => onReact("dislike")}
+          disabled={reactPending}
+          aria-pressed={comment.viewerReaction === "dislike"}
+          className={`${actionClass} ${
+            comment.viewerReaction === "dislike"
+              ? "text-destructive"
+              : "text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+          }`}
+          data-testid={`button-dislike-${comment.id}`}
+        >
+          <ThumbsDown className={`w-4 h-4 ${comment.viewerReaction === "dislike" ? "fill-destructive/25" : ""}`} />
+          {comment.dislikeCount}
+        </button>
+        <button
+          type="button"
+          onClick={onReply}
+          className={`${actionClass} text-muted-foreground hover:text-primary hover:bg-primary/10`}
+          data-testid={`button-reply-${comment.id}`}
+        >
+          <Reply className="w-4 h-4" />
+          {t("debateTopicDetail.replyButton")}
+        </button>
+        {/* No flag on your own comment — the report queue isn't a
+            self-service delete button (the author has no retraction
+            path for comments by design; see debate_topic_comments.ts). */}
+        {!comment.isOwnComment && (
+          <span className="ml-auto">
+            <ReportContentDialog contentType="debate_topic_comment" contentId={comment.id} compact />
+          </span>
+        )}
       </div>
     </div>
   );
@@ -644,40 +651,36 @@ export function DebateTopicDetail() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-background flex flex-col relative overflow-hidden">
-      <div className="absolute top-[-15%] left-[-15%] w-[60%] h-[45%] rounded-full blur-[120px] pointer-events-none bg-primary/10" />
-      <div className="absolute bottom-[-10%] right-[-15%] w-[45%] h-[35%] rounded-full blur-[100px] pointer-events-none bg-secondary/10" />
-
-      <header
-        className="px-5 pb-5 flex items-center justify-between border-b border-border/30 relative z-10"
-        style={{ paddingTop: "calc(env(safe-area-inset-top) + 1.25rem)" }}
-      >
-        <BlindWhisperLogoMark />
-        {!isSignedIn && (
-          <a href="/sign-up" className="text-xs text-muted-foreground hover:text-primary transition-colors py-2">
-            {t("debateTopicDetail.becomeWhisperer")}
-          </a>
-        )}
-      </header>
-
-      <main className="flex-1 max-w-2xl mx-auto w-full px-5 py-10 space-y-8 relative z-10">
+    <DebatePageShell logoHref="/debate-topics">
+      <div className="space-y-4 sm:space-y-5">
         <Button
           variant="ghost"
-          size="sm"
           onClick={() => setLocation("/debate-topics")}
-          className="-ml-2 text-muted-foreground hover:text-foreground"
+          className="-ml-3 h-11 px-3 rounded-full text-muted-foreground hover:text-foreground"
           data-testid="button-back"
         >
-          <ArrowLeft className="w-4 h-4 mr-1.5" /> {t("debateTopicDetail.backButton")}
+          <ArrowLeft className="w-4 h-4" /> {t("debateTopicDetail.backButton")}
         </Button>
 
         {isLoading ? (
-          <div className="space-y-4">
-            <Skeleton className="h-32 rounded-2xl" />
-            <Skeleton className="h-24 rounded-2xl" />
+          <div className="space-y-4" aria-hidden>
+            <div className="rounded-2xl border border-border/50 bg-card p-5 sm:p-8 space-y-5">
+              <Skeleton className="h-6 w-28 rounded-full" />
+              <div className="flex items-center gap-3">
+                <Skeleton className="w-9 h-9 rounded-full" />
+                <div className="space-y-1.5">
+                  <Skeleton className="h-3.5 w-32" />
+                  <Skeleton className="h-3 w-44" />
+                </div>
+              </div>
+              <Skeleton className="h-8 w-11/12" />
+              <Skeleton className="h-8 w-2/3" />
+            </div>
+            <Skeleton className="h-40 rounded-2xl" />
           </div>
         ) : !topic ? (
-          <div className="text-center py-20">
+          <div className="rounded-2xl border border-dashed border-border/60 bg-card/50 text-center py-16 px-6">
+            <Swords className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
             <p className="text-muted-foreground">{t("debateTopicDetail.notFound")}</p>
           </div>
         ) : (
@@ -685,17 +688,20 @@ export function DebateTopicDetail() {
             {/* Topic headline card — the primary/violet identity styling stays,
                 with an added gilded ring so every topic card (feed + here)
                 reads as framed the same way. */}
-            <div className="relative rounded-3xl border border-primary/30 ring-1 ring-gilded/30 bg-gradient-to-br from-primary/10 via-card to-card p-8 overflow-hidden glow-card">
-              <div className="absolute -top-8 -left-4 text-[8rem] font-serif select-none pointer-events-none opacity-[0.07] leading-none" aria-hidden>
+            <article className="relative rounded-2xl border border-primary/30 ring-1 ring-gilded/20 bg-gradient-to-br from-primary/10 via-card to-card p-5 sm:p-8 overflow-hidden">
+              <div
+                className="absolute top-3 right-5 sm:top-4 sm:right-7 text-[6rem] sm:text-[7rem] font-serif select-none pointer-events-none opacity-[0.07] leading-[0.8]"
+                aria-hidden
+              >
                 &ldquo;
               </div>
-              <div className="relative space-y-4">
+              <div className="relative space-y-5">
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-medium">
                   <Swords className="w-3.5 h-3.5" /> {t("debateTopicDetail.topicBadge")}
                 </div>
                 {/* X/Twitter-style: avatar + handle/meta above the post
                     text, which then spans the full card width. */}
-                <div className="flex items-center gap-3 flex-wrap" data-testid="text-topic-author">
+                <div className="flex items-center gap-3" data-testid="text-topic-author">
                   <AvatarCircle
                     avatarId={topic.authorAvatarId}
                     handle={topic.authorHandle}
@@ -703,59 +709,67 @@ export function DebateTopicDetail() {
                     online={!!onlineMap[topic.authorHandle]}
                     onlineLabel={t("debateTopicDetail.onlineAriaLabel")}
                   />
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{topic.authorHandle}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {t("debateTopicDetail.timeAgo", { time: formatDistanceToNowStrict(new Date(topic.createdAt)) })}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-foreground break-words">{topic.authorHandle}</p>
+                    <p className="text-xs text-muted-foreground tabular-nums">
+                      <time dateTime={topic.createdAt}>
+                        {t("debateTopicDetail.timeAgo", { time: formatDistanceToNowStrict(new Date(topic.createdAt)) })}
+                      </time>
                       {topic.authorFollowerCount > 0 &&
                         ` · ${t("debateTopicDetail.followerCount", { count: topic.authorFollowerCount })}`}
                     </p>
                   </div>
                   {topic.authorFollowed !== null && (
-                    <FollowButton
-                      handle={topic.authorHandle}
-                      following={topic.authorFollowed}
-                      followerCount={topic.authorFollowerCount}
-                      onToggled={handleAuthorFollowToggled}
-                    />
+                    <div className="shrink-0">
+                      <FollowButton
+                        handle={topic.authorHandle}
+                        following={topic.authorFollowed}
+                        followerCount={topic.authorFollowerCount}
+                        onToggled={handleAuthorFollowToggled}
+                      />
+                    </div>
                   )}
                 </div>
-                <h1 className="font-serif text-3xl md:text-4xl font-bold text-foreground leading-[1.15] tracking-tight">
+                <h1 className="font-serif text-[1.75rem] sm:text-4xl font-bold text-foreground leading-[1.15] tracking-tight break-words">
                   {topic.topicText}
                 </h1>
-                <div className="flex items-center justify-end gap-1.5 pt-1 flex-wrap">
-                    <Button
-                      variant="ghost"
-                      size="sm"
+                <div className="flex items-center justify-between gap-2 pt-3 border-t border-border/40 -mx-2 -mb-2">
+                  <div className="flex items-center gap-1 min-w-0">
+                    <button
+                      type="button"
                       onClick={handleRewhisp}
                       disabled={rewhisp.isPending}
                       aria-pressed={topic.viewerRewhisped}
-                      className={`rounded-full h-7 px-2.5 ${
+                      className={`inline-flex items-center gap-1.5 h-11 sm:h-9 px-3 rounded-full text-[13px] font-medium tabular-nums transition-colors duration-150 disabled:opacity-60 ${
                         topic.viewerRewhisped
                           ? "text-emerald-400 bg-emerald-400/10 hover:bg-emerald-400/15"
                           : "text-muted-foreground hover:text-emerald-400 hover:bg-emerald-400/10"
                       }`}
                       data-testid="button-rewhisp"
                     >
-                      <Repeat2 className="w-3.5 h-3.5 mr-1.5" />
+                      <Repeat2 className="w-4 h-4" />
                       {topic.rewhispCount}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => setWhispDialogOpen(true)}
-                      className="rounded-full h-7 px-2.5 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                      className="inline-flex items-center gap-1.5 h-11 sm:h-9 px-3 rounded-full text-[13px] font-medium text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors duration-150 whitespace-nowrap"
                       data-testid="button-whisper-topic"
                     >
-                      <Share2 className="w-3.5 h-3.5 mr-1.5" /> {t("debateTopicDetail.whisperButton")}
-                    </Button>
+                      <Share2 className="w-4 h-4" /> {t("debateTopicDetail.whisperButton")}
+                    </button>
+                  </div>
+                  <div className="shrink-0">
                     {!topic.isOwnTopic && <ReportContentDialog contentType="debate_topic" contentId={topic.id} />}
                     {topic.isOwnTopic && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="sm" className="rounded-full text-muted-foreground hover:text-destructive h-7 px-2.5">
-                            <Trash2 className="w-3.5 h-3.5 mr-1.5" /> {t("debateTopicDetail.retractTriggerButton")}
-                          </Button>
+                          <button
+                            type="button"
+                            className="inline-flex items-center gap-1.5 h-11 sm:h-9 px-3 rounded-full text-[13px] font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors duration-150"
+                          >
+                            <Trash2 className="w-4 h-4" /> {t("debateTopicDetail.retractTriggerButton")}
+                          </button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
@@ -776,37 +790,47 @@ export function DebateTopicDetail() {
                         </AlertDialogContent>
                       </AlertDialog>
                     )}
+                  </div>
                 </div>
               </div>
-            </div>
+            </article>
 
             {/* Anonymity explainer — signed-out only, always shown (not
                 reactive to any action) since the whole point is setting
                 expectations BEFORE someone starts typing: this is the one
                 place on the page that says outright there's no account wall
                 to post OR reply, and that creating one later is additive
-                (a following, a persistent handle) rather than required. */}
+                (a following, a persistent handle) rather than required. The
+                "Become a Whisperer" CTA lives here too, next to the pitch it
+                belongs to, instead of crowding the composer's action row. */}
             {!isSignedIn && (
               <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 flex items-start gap-3">
                 <Sparkles className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                <div className="space-y-0.5">
+                <div className="space-y-1">
                   <p className="text-sm font-medium text-foreground">{t("debateTopicDetail.anonymousExplainer.title")}</p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{t("debateTopicDetail.anonymousExplainer.body")}</p>
+                  <p className="text-[13px] text-muted-foreground leading-relaxed">{t("debateTopicDetail.anonymousExplainer.body")}</p>
+                  <a
+                    href="/sign-up"
+                    className="flex items-start gap-1.5 py-2 sm:py-1 text-[13px] font-medium text-primary hover:underline underline-offset-2"
+                  >
+                    <UserPlus className="w-3.5 h-3.5 shrink-0 mt-[3px]" />
+                    <span>{t("debateTopicDetail.becomeWhispererCta")}</span>
+                  </a>
                 </div>
               </div>
             )}
 
             {/* Comment composer */}
-            <div className="rounded-2xl border border-border/50 bg-card p-5 space-y-3">
-              <div className="flex items-center justify-between gap-3 flex-wrap">
-                <p className="text-sm font-medium text-foreground flex items-center gap-2">
+            <section className="rounded-2xl border border-border/50 bg-card p-4 sm:p-5 space-y-3">
+              <div className="flex items-center justify-between gap-x-3 gap-y-1 flex-wrap">
+                <h2 className="font-sans text-sm font-semibold text-foreground flex items-center gap-2 tabular-nums">
                   <MessageCircle className="w-4 h-4 text-primary" />
                   {t("debateTopicDetail.commentCount", { count: topic.commentCount })}
-                </p>
+                </h2>
                 {myHandle && (
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 min-w-0">
                     <AvatarCircle avatarId={myAvatarId} handle={myHandle} size="sm" />
-                    <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                    <p className="text-xs text-muted-foreground flex items-center gap-1 min-w-0">
                       {t("debateTopicDetail.commentingAsPrefix")} <span className="font-medium text-foreground">{myHandle}</span>
                       <HandleRenameControl
                         topicId={id!}
@@ -841,12 +865,17 @@ export function DebateTopicDetail() {
               </div>
 
               {replyTo && (
-                <div className="flex items-center justify-between gap-2 text-xs bg-muted/40 rounded-lg px-3 py-2">
+                <div className="flex items-center justify-between gap-2 text-[13px] bg-muted/40 rounded-xl pl-3 pr-1 py-1">
                   <span className="text-muted-foreground truncate">
                     {t("debateTopicDetail.replyingToPrefix")} <span className="text-foreground font-medium">@{replyTo.handle}</span>
                   </span>
-                  <button onClick={() => setReplyTo(null)} className="text-muted-foreground hover:text-foreground shrink-0">
-                    <X className="w-3.5 h-3.5" />
+                  <button
+                    type="button"
+                    onClick={() => setReplyTo(null)}
+                    className="inline-flex items-center justify-center w-9 h-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 shrink-0"
+                    aria-label={t("debateTopicDetail.cancelReplyAria")}
+                  >
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
               )}
@@ -856,9 +885,14 @@ export function DebateTopicDetail() {
                 onChange={(e) => setCommentText(e.target.value.slice(0, MAX_COMMENT_TEXT_LENGTH + 40))}
                 placeholder={t("debateTopicDetail.commentPlaceholder")}
                 rows={3}
-                className="resize-none bg-background/60 border-border/50 rounded-xl"
+                className="resize-none bg-background/60 border-border/50 rounded-xl text-[15px] leading-relaxed"
                 data-testid="input-comment-text"
               />
+
+              <p className="text-xs text-muted-foreground flex items-start gap-1.5 leading-relaxed">
+                <HeartHandshake className="w-3.5 h-3.5 shrink-0 mt-px text-primary/70" />
+                {t("debateTopicDetail.keepKindText")}
+              </p>
 
               <input
                 ref={fileInputRef}
@@ -883,7 +917,7 @@ export function DebateTopicDetail() {
                   <button
                     type="button"
                     onClick={clearImage}
-                    className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-background border border-border flex items-center justify-center text-muted-foreground hover:text-destructive"
+                    className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-background border border-border flex items-center justify-center text-muted-foreground hover:text-destructive"
                     aria-label={t("debateTopicDetail.ariaRemoveImage")}
                     data-testid="button-remove-image"
                   >
@@ -892,48 +926,37 @@ export function DebateTopicDetail() {
                 </div>
               )}
 
-              <div className="flex items-center justify-between gap-3 flex-wrap">
-                <p className="text-xs text-muted-foreground flex items-center gap-1.5 max-w-sm">
-                  <HeartHandshake className="w-3.5 h-3.5 shrink-0 text-primary/70" />
-                  {t("debateTopicDetail.keepKindText")}
-                </p>
-                <span className={`text-xs ${remaining < 0 ? "text-destructive font-medium" : "text-muted-foreground"}`}>
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="inline-flex items-center gap-1.5 h-11 sm:h-9 px-3 -ml-1 rounded-full text-[13px] font-medium text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors duration-150 whitespace-nowrap"
+                  data-testid="button-attach-image"
+                >
+                  <ImagePlus className="w-4 h-4" />{" "}
+                  {imageFile ? t("debateTopicDetail.changeImageButton") : t("debateTopicDetail.addImageButton")}
+                </button>
+                <span
+                  className={`ml-auto text-xs tabular-nums ${remaining < 0 ? "text-destructive font-medium" : "text-muted-foreground"}`}
+                  aria-label={t("debateTopicDetail.charactersLeftAria", { count: remaining })}
+                >
                   {remaining}
                 </span>
-              </div>
-
-              <div className="flex items-center justify-between gap-3 flex-wrap pt-1">
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors rounded-full border border-border/50 px-2.5 py-1.5"
-                    data-testid="button-attach-image"
-                  >
-                    <ImagePlus className="w-3.5 h-3.5" /> {imageFile ? t("debateTopicDetail.changeImageButton") : t("debateTopicDetail.addImageButton")}
-                  </button>
-                  {!isSignedIn && (
-                    <a href="/sign-up" className="text-xs text-muted-foreground hover:text-primary transition-colors">
-                      {t("debateTopicDetail.becomeWhispererCta")}
-                    </a>
-                  )}
-                </div>
                 <Button
-                  size="sm"
-                  className="rounded-full ml-auto"
+                  className={`rounded-full h-11 sm:h-9 px-5 ${canSubmit ? "shadow-[0_0_18px_rgba(124,92,252,0.35)]" : ""}`}
                   disabled={!canSubmit}
                   onClick={handlePostComment}
                   data-testid="button-post-comment"
                 >
                   {postComment.isPending || isPostingWithImage ? (
-                    <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
-                    <Send className="w-3.5 h-3.5 mr-1.5" />
+                    <Send className="w-4 h-4" />
                   )}
                   {t("debateTopicDetail.postButton")}
                 </Button>
               </div>
-            </div>
+            </section>
 
             {/* Fires once, right after that first successful anonymous post
                 (see applyNewComment) — not a gate before Send, a follow-up
@@ -948,10 +971,10 @@ export function DebateTopicDetail() {
                 <Bell className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                 <div className="space-y-1.5 flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground">{t("debateTopicDetail.postSignupNudge.title")}</p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{t("debateTopicDetail.postSignupNudge.body")}</p>
+                  <p className="text-[13px] text-muted-foreground leading-relaxed">{t("debateTopicDetail.postSignupNudge.body")}</p>
                   <a
                     href="/sign-up"
-                    className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+                    className="inline-flex items-center gap-1.5 text-[13px] font-medium text-primary hover:underline"
                     data-testid="link-post-signup-nudge-cta"
                   >
                     <UserPlus className="w-3.5 h-3.5" /> {t("debateTopicDetail.postSignupNudge.cta")}
@@ -960,11 +983,11 @@ export function DebateTopicDetail() {
                 <button
                   type="button"
                   onClick={() => setShowPostSignupNudge(false)}
-                  className="text-muted-foreground hover:text-foreground shrink-0"
+                  className="inline-flex items-center justify-center w-9 h-9 -mt-2 -mr-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 shrink-0"
                   aria-label={t("debateTopicDetail.postSignupNudge.dismissAria")}
                   data-testid="button-dismiss-post-signup-nudge"
                 >
-                  <X className="w-3.5 h-3.5" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
             )}
@@ -972,9 +995,9 @@ export function DebateTopicDetail() {
             {/* Comment thread — X/Twitter-style: each root comment, then its
                 direct replies grouped and indented beneath it. */}
             {threads.length > 0 && (
-              <div className="space-y-4">
+              <div className="flex flex-col gap-3 md:gap-4 pt-1">
                 {threads.map(({ root, replies }) => (
-                  <div key={root.id} className="space-y-2">
+                  <div key={root.id} className="flex flex-col gap-2">
                     <CommentCard
                       comment={root}
                       online={!!onlineMap[root.handle]}
@@ -984,7 +1007,7 @@ export function DebateTopicDetail() {
                       onFollowToggle={(patch) => handleCommentFollowToggled(root.id, patch)}
                     />
                     {replies.length > 0 && (
-                      <div className="ml-4 sm:ml-8 pl-3 sm:pl-4 border-l-2 border-border/40 space-y-2">
+                      <div className="ml-3 sm:ml-6 pl-3 sm:pl-4 border-l-2 border-border/40 flex flex-col gap-2">
                         {replies.map((reply) => (
                           <CommentCard
                             key={reply.id}
@@ -1007,7 +1030,7 @@ export function DebateTopicDetail() {
             )}
           </>
         )}
-      </main>
+      </div>
 
       {topic && (
         <SendDebateTopicWhispDialog
@@ -1017,6 +1040,6 @@ export function DebateTopicDetail() {
           onOpenChange={setWhispDialogOpen}
         />
       )}
-    </div>
+    </DebatePageShell>
   );
 }
