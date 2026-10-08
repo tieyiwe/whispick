@@ -72,6 +72,7 @@ const TextWhispsList = lazy(() => import("@/pages/TextWhispsList").then((m) => (
 const SendTextWhisp = lazy(() => import("@/pages/SendTextWhisp").then((m) => ({ default: m.SendTextWhisp })));
 const TextWhispDetail = lazy(() => import("@/pages/TextWhispDetail").then((m) => ({ default: m.TextWhispDetail })));
 const DebateTopics = lazy(() => import("@/pages/DebateTopics").then((m) => ({ default: m.DebateTopics })));
+const WelcomePage = lazy(() => import("@/pages/WelcomePage").then((m) => ({ default: m.WelcomePage })));
 const DebateTopicDetail = lazy(() => import("@/pages/DebateTopicDetail").then((m) => ({ default: m.DebateTopicDetail })));
 const CreateDebateTopic = lazy(() => import("@/pages/CreateDebateTopic").then((m) => ({ default: m.CreateDebateTopic })));
 const DebateFollowing = lazy(() => import("@/pages/DebateFollowing").then((m) => ({ default: m.DebateFollowing })));
@@ -173,7 +174,7 @@ function SignUpPage() {
     <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4 relative overflow-hidden">
       <div className="absolute top-[10%] left-[20%] w-[40%] h-[40%] bg-primary/8 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[10%] right-[20%] w-[30%] h-[30%] bg-secondary/8 rounded-full blur-[100px] pointer-events-none" />
-      <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} forceRedirectUrl={`${basePath}/dashboard`} />
+      <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} forceRedirectUrl={`${basePath}/welcome`} />
     </div>
   );
 }
@@ -329,6 +330,10 @@ function ClerkProviderWithRoutes() {
       appearance={clerkAppearance}
       signInUrl={`${basePath}/sign-in`}
       signUpUrl={`${basePath}/sign-up`}
+      // A brand-new account always lands on /welcome (install the app + turn
+      // on alerts, once), wherever sign-up started — including someone who
+      // taps Google on the sign-in page without an account yet.
+      signUpForceRedirectUrl={`${basePath}/welcome`}
       routerPush={(to) => setLocation(stripBase(to))}
       routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
     >
@@ -349,6 +354,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/sign-up/*?" component={SignUpPage} />
 
             <Route path="/dashboard" component={() => <ProtectedRoute component={Dashboard} />} />
+            <Route path="/welcome" component={() => <ProtectedRoute component={WelcomePage} />} />
             <Route path="/send" component={() => <ProtectedRoute component={SendWhisp} />} />
             <Route path="/onboarding/first-whispers" component={() => <ProtectedRoute component={FirstWhispersOnboarding} />} />
             <Route path="/suggestions" component={() => <ProtectedRoute component={SuggestionsLibrary} />} />
