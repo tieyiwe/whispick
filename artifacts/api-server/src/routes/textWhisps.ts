@@ -23,7 +23,7 @@ import {
 } from "../lib/copy";
 import { safeAssignOrGetSenderHandle } from "../lib/whispSenderHandle";
 import { hasSmsConsent, recordSmsConsent } from "../lib/smsConsent";
-import { isSmsDeliveryEnabled, CHANNEL_DISABLED_CODE } from "../lib/messagingChannels";
+import { isSmsDeliveryEnabled } from "../lib/messagingChannels";
 
 const router = Router();
 
@@ -224,25 +224,12 @@ const createTextWhispSchema = z.object({
   // turns out to be unmatched): whether this send actually goes out over
   // SMS or lands entirely in-app depends on findVerifiedRecipient below,
   // which the client can't know in advance, so SendTextWhisp.tsx always
-  // shows the checkbox and this always requires it.
+  // shows the checkbox and this always requires it — while SMS delivery is
+  // on. With it off nothing is ever texted, so it isn't asked for.
   smsConsentConfirmed: z.boolean().nullable().optional(),
 });
 
 router.post("/", requireAuth, createTextWhispLimiter, async (req, res): Promise<void> => {
-  // SMS launch switch (lib/messagingChannels.ts). Creation is rejected
-  // outright — not just for unmatched numbers — because the sender can't be
-  // told whether a number belongs to an app user (see ANTI-ENUMERATION
-  // below): allowing only matched sends would either leak that, or let an
-  // unmatched recipient's Text Whisp silently never arrive. Reading and
-  // replying to existing Text Whisps (the routes below) are unaffected.
-  if (!isSmsDeliveryEnabled()) {
-    res.status(400).json({
-      error: "Text Whisps aren't available yet — send a Whisper Link by email or share the link instead.",
-      code: CHANNEL_DISABLED_CODE,
-    });
-    return;
-  }
-
   const { userId } = getAuth(req);
   const user = await ensureUser(userId!, req);
 
@@ -265,12 +252,18 @@ router.post("/", requireAuth, createTextWhispLimiter, async (req, res): Promise<
   // findVerifiedRecipient below — so consent is required up front for any
   // number, same as SendTextWhisp.tsx always showing the checkbox for a
   // number it hasn't confirmed before.
-  const alreadyConsented = parsed.data.smsConsentConfirmed || (await hasSmsConsent(user.id, recipientPhone));
+  //
+  // While SMS delivery is off (lib/messagingChannels.ts) no text is ever
+  // sent: a matched account gets it in-app and everyone else is reached
+  // through the /tx link the sender shares themselves (publicToken is in
+  // the response either way) — so there's nothing to consent to.
+  const smsOn = isSmsDeliveryEnabled();
+  const alreadyConsented = !smsOn || parsed.data.smsConsentConfirmed || (await hasSmsConsent(user.id, recipientPhone));
   if (!alreadyConsented) {
     res.status(400).json({ error: "Please confirm you have this person's permission to receive a text from you.", code: "sms_consent_required" });
     return;
   }
-  if (parsed.data.smsConsentConfirmed) void recordSmsConsent(user.id, recipientPhone);
+  if (smsOn && parsed.data.smsConsentConfirmed) void recordSmsConsent(user.id, recipientPhone);
 
   // Every recipient is eligible now — a phone number that doesn't match a
   // known, verified Blind Whisper account just takes the guest-link path
@@ -328,7 +321,7 @@ router.post("/", requireAuth, createTextWhispLimiter, async (req, res): Promise<
       // Delivered entirely in-app — see lib/deliver.ts's deliverInApp, shared
       // with the matched-whisp path in lib/deliver.ts itself.
       void deliverInApp(matched.id, "You have a new Text Whisp", textWhispHookLine(), `/text-whisps/${id}`, recipientPhone, logCtx);
-    } else {
+    } else if (smsOn) {
       // Not a known account — deliver a guest link over SMS, same as a
       // whisper_link's unmatched path (lib/deliver.ts's deliverWhisperLink),
       // pointed at the public Text Whisp landing page (routes/publicTextWhisps.ts)

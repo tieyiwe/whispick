@@ -15,6 +15,7 @@
     "customAliasPlaceholder": "또는 직접 서명 입력...",
     "recipientLabel": "누구에게 보낼까요?",
     "recipientDisclosure": "이미 Blind Whisper 사용자라면 앱으로 바로 전달돼요. 아니라면 링크가 담긴 문자를 받고, 가입 후 답장할 수 있어요.",
+    "recipientDisclosureLink": "Blind Whisper 사용자라면 받은함으로 바로 전달돼요. 아직 아니라면 보낼 수 있는 비공개 링크를 드려요 — 바로 읽을 수 있고, 가입하면 답장할 수 있어요.",
     "phonePlaceholder": "+1 555 123 4567",
     "pickFromContactsLabel": "연락처에서 선택",
     "toastNoPhoneOnContact": "해당 연락처에는 전화번호가 없어요",
@@ -29,10 +30,13 @@
     "toastSendFailed": "문자 Whisp 전송에 실패했어요",
     "smsConsentCheckbox": "이 사람이 Blind Whisper를 통해 저로부터 문자를 받는 것에 동의했음을 확인합니다.",
     "smsConsentOneTime": "새 연락처마다 한 번만 확인하면 돼요.",
-    "comingSoon": {
-      "title": "문자 Whisp 기능이 곧 제공될 예정이에요",
-      "body": "지금은 대신 이메일로 Whisper Link를 보내 주세요.",
-      "cta": "Whisper Link 보내기"
+    "shareLink": {
+      "title": "꼭 전달되도록 하세요",
+      "body": "상대가 Blind Whisper 사용자라면 이미 받은함에 도착했어요. 어느 쪽이든 이 비공개 링크를 보낼 수 있어요 — 보낸 사람을 밝히지 않고 메시지를 열어 줘요.",
+      "copy": "링크 복사",
+      "copied": "링크를 복사했어요",
+      "share": "링크 공유",
+      "shareText": "누군가 익명 메시지를 보냈어요 👀"
     }
   },
   "textWhispDetail": {

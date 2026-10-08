@@ -110,14 +110,51 @@ describe("POST /api/whisps with a phone channel", () => {
   });
 });
 
-describe("POST /api/text-whisps", () => {
-  it("rejects creation entirely while SMS delivery is off", async () => {
+// Text Whisps are in-app messages between Blind Whisper users first; SMS was
+// only ever the fallback for numbers that aren't on the app yet. With SMS
+// off they still work: a verified account gets it in-app, and anyone else is
+// reached through the /tx link (publicToken) the sender shares themselves.
+describe("POST /api/text-whisps while SMS is off", () => {
+  it("delivers in-app to a registered user, with no SMS consent step", async () => {
+    const recipientClerkId = `clerk_tw_off_recipient_${randomUUID()}`;
+    const phone = "+15557650001";
+    await db.insert(usersTable).values({
+      id: randomUUID(),
+      clerkId: recipientClerkId,
+      email: `${randomUUID()}@example.com`,
+      plan: "free",
+      boostCredits: 0,
+      whisperLinksUsed: 0,
+      phone,
+      phoneVerifiedAt: new Date(),
+    });
+
     const res = await request(app)
       .post("/api/text-whisps")
       .set(asUser(SENDER))
-      .send({ recipientPhone: "+15557654321", messageText: "hi", smsConsentConfirmed: true });
-    expect(res.status).toBe(400);
-    expect(res.body.code).toBe("channel_disabled");
+      .send({ recipientPhone: phone, messageText: "hi from nobody" });
+    expect(res.status).toBe(201);
+    expect(res.body.publicToken).toBeTruthy();
+    expect(res.body).not.toHaveProperty("recipientUserId");
+
+    const inbox = await request(app).get("/api/text-whisps").set(asUser(recipientClerkId));
+    expect(inbox.status).toBe(200);
+    expect(inbox.body.some((w: { id: string; viewerIsRecipient: boolean }) => w.id === res.body.id && w.viewerIsRecipient)).toBe(true);
+  });
+
+  it("creates a shareable link for a number that isn't on the app, without texting it", async () => {
+    const phone = "+15557650002";
+    const res = await request(app)
+      .post("/api/text-whisps")
+      .set(asUser(SENDER))
+      .send({ recipientPhone: phone, messageText: "hi" });
+    expect(res.status).toBe(201);
+    expect(res.body.publicToken).toBeTruthy();
+
+    // Give the fire-and-forget delivery a beat; nothing should touch SMS.
+    await new Promise((r) => setTimeout(r, 50));
+    const attempts = await db.select().from(deliveryAttemptsTable).where(eq(deliveryAttemptsTable.toAddress, phone));
+    expect(attempts).toHaveLength(0);
   });
 });
 

@@ -15,6 +15,7 @@
     "customAliasPlaceholder": "Au andika jina lako mwenyewe...",
     "recipientLabel": "Ni ya nani?",
     "recipientDisclosure": "Yuko kwenye Blind Whisper? Itafika mara moja ndani ya programu. Ikiwa siyo, atapokea ujumbe wenye kiungo — na anaweza kujibu baada ya kujiunga.",
+    "recipientDisclosureLink": "Yuko kwenye Blind Whisper? Itafika kwenye kikasha chake papo hapo. Bado? Utapata kiungo cha faragha cha kumtumia — anaweza kuisoma mara moja na kujibu baada ya kujiunga.",
     "phonePlaceholder": "+1 555 123 4567",
     "pickFromContactsLabel": "Chagua kutoka anwani",
     "toastNoPhoneOnContact": "Anwani hiyo haina namba ya simu",
@@ -29,10 +30,13 @@
     "toastSendFailed": "Imeshindwa kutuma Whisp ya Maandishi",
     "smsConsentCheckbox": "Ninathibitisha nina ruhusa ya mtu huyu kupokea ujumbe wa maandishi kutoka kwangu kupitia Blind Whisper.",
     "smsConsentOneTime": "Unahitaji kuthibitisha hili mara moja tu kwa kila anwani mpya.",
-    "comingSoon": {
-      "title": "Whisps za Maandishi zinakuja hivi karibuni",
-      "body": "Kwa sasa, tuma Whisper Link kwa barua pepe badala yake.",
-      "cta": "Tuma Whisper Link"
+    "shareLink": {
+      "title": "Hakikisha inamfikia",
+      "body": "Ikiwa yuko kwenye Blind Whisper, tayari iko kwenye kikasha chake. Vyovyote vile, unaweza kumtumia kiungo hiki cha faragha — kinafungua ujumbe wako bila kufichua aliyeutuma.",
+      "copy": "Nakili kiungo",
+      "copied": "Kiungo kimenakiliwa",
+      "share": "Shiriki kiungo",
+      "shareText": "Mtu amekutumia ujumbe usiojulikana 👀"
     }
   },
   "textWhispDetail": {

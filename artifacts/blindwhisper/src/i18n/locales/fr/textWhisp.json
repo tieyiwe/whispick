@@ -15,6 +15,7 @@
     "customAliasPlaceholder": "Ou saisissez un alias personnalisé...",
     "recipientLabel": "C'est pour qui ?",
     "recipientDisclosure": "Déjà sur Blind Whisper ? Livraison instantanée dans l'app. Sinon, un SMS avec un lien — et une inscription pour répondre.",
+    "recipientDisclosureLink": "Sur Blind Whisper ? Il arrive instantanément dans sa boîte. Pas encore ? Tu recevras un lien privé à lui envoyer — lisible tout de suite, avec réponse possible après inscription.",
     "phonePlaceholder": "+1 555 123 4567",
     "pickFromContactsLabel": "Choisir dans les contacts",
     "toastNoPhoneOnContact": "Ce contact n'a pas de numéro de téléphone enregistré",
@@ -29,10 +30,13 @@
     "toastSendFailed": "Échec de l'envoi du Whisp texte",
     "smsConsentCheckbox": "Je confirme avoir la permission de cette personne de recevoir un texto de ma part via Blind Whisper.",
     "smsConsentOneTime": "Vous n'avez besoin de le confirmer qu'une seule fois pour chaque nouveau contact.",
-    "comingSoon": {
-      "title": "Les Whisps texte arrivent bientôt",
-      "body": "Pour l'instant, envoyez plutôt un Whisper Link par e-mail.",
-      "cta": "Envoyer un Whisper Link"
+    "shareLink": {
+      "title": "Assure-toi qu'il lui parvienne",
+      "body": "S'il ou elle est sur Blind Whisper, le message est déjà dans sa boîte. Dans tous les cas, tu peux lui envoyer ce lien privé — il ouvre ton message sans révéler qui l'a envoyé.",
+      "copy": "Copier le lien",
+      "copied": "Lien copié",
+      "share": "Partager le lien",
+      "shareText": "Quelqu'un t'a envoyé un message anonyme 👀"
     }
   },
   "textWhispDetail": {

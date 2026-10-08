@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { isContactPickerSupported, pickContact } from "@/lib/contactPicker";
 import { useNeedsSmsConsent } from "@/lib/useSmsConsent";
 import { usePublicConfig } from "@/lib/usePublicConfig";
-import { ArrowLeft, ArrowRight, Phone, Loader2, ScrollText, CalendarClock, Contact, Send } from "lucide-react";
+import { ArrowLeft, ArrowRight, Phone, Loader2, ScrollText, CalendarClock, Contact, Link2, Copy, Check, Share2 } from "lucide-react";
 
 const MESSAGE_MAX_LENGTH = 260;
 
@@ -32,52 +32,16 @@ const SENDER_ALIASES = [
 ] as const;
 type SenderAliasKey = (typeof SENDER_ALIASES)[number]["key"];
 
-// Text Whisps are phone-number based and the sender can never be told
-// whether a number belongs to an app user, so while SMS delivery is off
-// (lib/usePublicConfig.ts) there's no way to send one that reliably arrives
-// — the server rejects creation outright. Every entry point to /send-text is
-// hidden then; this covers anyone landing here directly (old bookmark,
-// shared URL). Split from the composer so its hooks never run while off.
+// Text Whisps are instant anonymous messages between Blind Whisper users,
+// addressed by phone number. A number that belongs to a verified account
+// gets it in-app right away; for anyone else the sender gets a private /tx
+// link to pass on (and, only while SMS delivery is on, we also text it).
 export function SendTextWhisp() {
-  const { smsEnabled, isLoading } = usePublicConfig();
-  if (isLoading) {
-    return (
-      <AppLayout>
-        <div className="flex justify-center py-20">
-          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-        </div>
-      </AppLayout>
-    );
-  }
-  return smsEnabled ? <SendTextWhispComposer /> : <TextWhispsComingSoon />;
-}
-
-function TextWhispsComingSoon() {
-  const [, setLocation] = useLocation();
-  const { t } = useTranslation("textWhisp");
-  return (
-    <AppLayout>
-      <div className="max-w-md mx-auto py-10">
-        <Card className="bg-card border-border/50" data-testid="text-whisps-coming-soon">
-          <CardContent className="p-8 text-center space-y-4">
-            <ScrollText className="w-10 h-10 text-primary mx-auto" />
-            <h1 className="text-2xl font-serif font-semibold text-foreground">{t("sendTextWhisp.comingSoon.title")}</h1>
-            <p className="text-sm text-muted-foreground">{t("sendTextWhisp.comingSoon.body")}</p>
-            <Button className="rounded-full" onClick={() => setLocation("/send")} data-testid="button-coming-soon-send-whisp">
-              <Send className="w-4 h-4 mr-2" /> {t("sendTextWhisp.comingSoon.cta")}
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    </AppLayout>
-  );
-}
-
-function SendTextWhispComposer() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { t } = useTranslation("textWhisp");
+  const { smsEnabled } = usePublicConfig();
 
   const [phone, setPhone] = useState("");
   const [messageText, setMessageText] = useState("");
@@ -85,6 +49,7 @@ function SendTextWhispComposer() {
   const [customAlias, setCustomAlias] = useState("");
   const [sent, setSent] = useState(false);
   const [sentId, setSentId] = useState<string | null>(null);
+  const [sentToken, setSentToken] = useState<string | null>(null);
   const [animationDone, setAnimationDone] = useState(false);
   const [scheduleEnabled, setScheduleEnabled] = useState(false);
   const [scheduledAtValue, setScheduledAtValue] = useState("");
@@ -97,7 +62,8 @@ function SendTextWhispComposer() {
   // Once-per-recipient: the checkbox only appears for a number this sender
   // hasn't confirmed before (see lib/useSmsConsent.ts). A Text Whisp always
   // goes to a phone number, so it's always "active" once one is entered.
-  const needsSmsConsent = useNeedsSmsConsent(phone.trim() ? [phone.trim()] : [], !!phone.trim());
+  // Only asked while SMS delivery is on — with it off nothing is ever texted.
+  const needsSmsConsent = useNeedsSmsConsent(phone.trim() ? [phone.trim()] : [], smsEnabled && !!phone.trim());
 
   const createTextWhisp = useCreateTextWhisp();
 
@@ -122,6 +88,7 @@ function SendTextWhispComposer() {
       {
         onSuccess: (result) => {
           setSentId(result.id);
+          setSentToken(result.publicToken);
           setWasScheduled(isScheduling);
           setSent(true);
           queryClient.invalidateQueries({ queryKey: getListTextWhispsQueryKey() });
@@ -175,6 +142,12 @@ function SendTextWhispComposer() {
             scheduled={wasScheduled}
             onSendAnimationComplete={() => setAnimationDone(true)}
           />
+          {/* Never scheduled-and-pending: the link 404s until it goes out. */}
+          {sentToken && !wasScheduled && (
+            <div style={{ opacity: animationDone ? 1 : 0, transition: "opacity 300ms ease" }}>
+              <TextWhispShareLink token={sentToken} />
+            </div>
+          )}
           <div
             className="flex flex-col sm:flex-row gap-3 justify-center"
             style={{ opacity: animationDone ? 1 : 0, transition: "opacity 300ms ease" }}
@@ -192,6 +165,7 @@ function SendTextWhispComposer() {
               onClick={() => {
                 setSent(false);
                 setSentId(null);
+                setSentToken(null);
                 setAnimationDone(false);
                 setPhone("");
                 setMessageText("");
@@ -285,7 +259,7 @@ function SendTextWhispComposer() {
                   (see api-server's anti-enumeration posture on POST
                   /text-whisps). */}
               <p className="text-xs text-muted-foreground">
-                {t("sendTextWhisp.recipientDisclosure")}
+                {t(smsEnabled ? "sendTextWhisp.recipientDisclosure" : "sendTextWhisp.recipientDisclosureLink")}
               </p>
               {/* Every other field on this page uses the app's low-emphasis
                   bg-input/50 + border-border/50 treatment, but this is the
@@ -326,11 +300,9 @@ function SendTextWhispComposer() {
               </div>
               {/* A2P 10DLC-required disclosure, shown at the exact point a
                   phone number is collected for SMS delivery — mirrors
-                  SendWhisp.tsx's own step5.smsDisclosure. Unconditional here
-                  (unlike SendWhisp, which gates on a WhatsApp/SMS channel
-                  toggle) since a Text Whisp recipient is always a phone
-                  number and, for anyone not already a verified Blind Whisper
-                  user, always delivered by SMS (see textWhispGuestSmsBody in
+                  SendWhisp.tsx's own step5.smsDisclosure. Only while SMS
+                  delivery is on: then anyone not already a verified Blind
+                  Whisper user is texted a link (see textWhispGuestSmsBody in
                   lib/sms.ts). */}
               {/* Once-per-recipient: only shown for a number this sender
                   hasn't confirmed before. A returning recipient skips it —
@@ -410,5 +382,62 @@ function SendTextWhispComposer() {
         </Button>
       </div>
     </AppLayout>
+  );
+}
+
+// The private /tx link for a just-sent Text Whisp (served by the API's
+// link-preview route, so it unfurls as a card in any messenger). Copy is
+// deliberately the same whether or not the number is on Blind Whisper —
+// the sender is never told which (anti-enumeration, see POST /text-whisps).
+function TextWhispShareLink({ token }: { token: string }) {
+  const { t } = useTranslation("textWhisp");
+  const { toast } = useToast();
+  const [copied, setCopied] = useState(false);
+  const url = `${window.location.origin}/tx/${token}`;
+  const canShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      toast({ title: t("sendTextWhisp.shareLink.copied") });
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast({ title: url });
+    }
+  }
+
+  async function share() {
+    try {
+      await navigator.share({ text: t("sendTextWhisp.shareLink.shareText"), url });
+    } catch {
+      // Dismissed share sheet — nothing to do.
+    }
+  }
+
+  return (
+    <Card className="bg-card border-primary/30" data-testid="text-whisp-share-link">
+      <CardContent className="p-5 space-y-3">
+        <div className="flex items-start gap-3">
+          <Link2 className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+          <div>
+            <p className="font-medium text-foreground text-sm">{t("sendTextWhisp.shareLink.title")}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t("sendTextWhisp.shareLink.body")}</p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Input readOnly value={url} onFocus={(e) => e.currentTarget.select()} className="bg-input/50 border-border/50 rounded-xl text-xs" data-testid="input-text-whisp-share-url" />
+          <Button variant="outline" className="rounded-xl shrink-0" onClick={copy} data-testid="button-copy-text-whisp-link">
+            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            <span className="ml-1.5">{t("sendTextWhisp.shareLink.copy")}</span>
+          </Button>
+        </div>
+        {canShare && (
+          <Button className="w-full rounded-full" onClick={share} data-testid="button-share-text-whisp-link">
+            <Share2 className="w-4 h-4 mr-2" /> {t("sendTextWhisp.shareLink.share")}
+          </Button>
+        )}
+      </CardContent>
+    </Card>
   );
 }

@@ -332,16 +332,11 @@ export function AppLayout({ children }: { children: ReactNode }) {
   // so it's active for the whole authenticated session.
   useAppBadge(notificationUnreadCount + whisperBoxUnreadCount);
 
-  // Text Whisps can only be sent while SMS delivery is on (see
-  // SendTextWhisp.tsx), so the section drops out of the nav while it's off
-  // (and while the flag is still loading, so it never flashes in and out).
-  // Existing threads stay reachable from notifications and Replies.
-  const { smsEnabled, billingEnabled } = usePublicConfig();
+  const { billingEnabled } = usePublicConfig();
   const navSections: NavSection[] = NAV_SECTIONS.map((section) => ({
     ...section,
     items: section.items.filter(
       (item) =>
-        (smsEnabled || item.href !== "/text-whisps") &&
         // Suggestions is parked for now (lib/features.ts) — hidden from the
         // sidebar and the More sheet alike, since both derive from here.
         (SUGGESTIONS_ENABLED || item.href !== "/suggestions") &&

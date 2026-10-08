@@ -15,6 +15,7 @@
     "customAliasPlaceholder": "O escribe un alias personalizado...",
     "recipientLabel": "¿Para quién es?",
     "recipientDisclosure": "¿Ya está en Blind Whisper? Llega al instante en la app. Si no, recibirá un mensaje con un enlace — y puede responder tras registrarse.",
+    "recipientDisclosureLink": "¿Está en Blind Whisper? Le llega al instante a su bandeja. ¿Todavía no? Recibirás un enlace privado para enviárselo: puede leerlo enseguida y responder cuando se una.",
     "phonePlaceholder": "+1 555 123 4567",
     "pickFromContactsLabel": "Elegir de contactos",
     "toastNoPhoneOnContact": "Ese contacto no tiene teléfono registrado",
@@ -29,10 +30,13 @@
     "toastSendFailed": "No se pudo enviar el Whisp de texto",
     "smsConsentCheckbox": "Confirmo que tengo el permiso de esta persona para recibir un mensaje de texto de mi parte a través de Blind Whisper.",
     "smsConsentOneTime": "Solo tienes que confirmarlo una vez por cada contacto nuevo.",
-    "comingSoon": {
-      "title": "Los Whisps de texto llegan pronto",
-      "body": "Por ahora, envía un Whisper Link por correo.",
-      "cta": "Enviar un Whisper Link"
+    "shareLink": {
+      "title": "Asegúrate de que le llegue",
+      "body": "Si está en Blind Whisper, ya está en su bandeja. En cualquier caso, puedes enviarle este enlace privado: abre tu mensaje sin revelar quién lo envió.",
+      "copy": "Copiar enlace",
+      "copied": "Enlace copiado",
+      "share": "Compartir enlace",
+      "shareText": "Alguien te envió un mensaje anónimo 👀"
     }
   },
   "textWhispDetail": {

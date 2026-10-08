@@ -15,6 +15,7 @@
     "customAliasPlaceholder": "أو اكتب اسمًا مستعارًا من عندك...",
     "recipientLabel": "لمن هي؟",
     "recipientDisclosure": "هل هو على Blind Whisper؟ تصل فورًا داخل التطبيق. وإن لم يكن، ستصله رسالة نصية برابط — ويمكنه الرد بعد التسجيل.",
+    "recipientDisclosureLink": "‏هل هو على Blind Whisper؟ ستصله فورًا في صندوق الوارد. ليس بعد؟ ستحصل على رابط خاص لترسله إليه — يمكنه قراءته فورًا والرد بعد الانضمام.",
     "phonePlaceholder": "+1 555 123 4567",
     "pickFromContactsLabel": "اختر من جهات الاتصال",
     "toastNoPhoneOnContact": "جهة الاتصال هذه ليس لها رقم هاتف مسجّل",
@@ -29,10 +30,13 @@
     "toastSendFailed": "تعذّر إرسال الـ Text Whisp",
     "smsConsentCheckbox": "أؤكد أن لدي إذن هذا الشخص لتلقي رسالة نصية مني عبر Blind Whisper.",
     "smsConsentOneTime": "يكفي أن تؤكد هذا مرة واحدة لكل جهة اتصال جديدة.",
-    "comingSoon": {
-      "title": "‏Text Whisps قادمة قريبًا",
-      "body": "في الوقت الحالي، أرسل Whisper Link عبر البريد الإلكتروني بدلًا من ذلك.",
-      "cta": "أرسل Whisper Link"
+    "shareLink": {
+      "title": "تأكّد من وصولها إليه",
+      "body": "‏إذا كان على Blind Whisper، فهي في صندوق الوارد لديه بالفعل. وفي كل الأحوال، يمكنك إرسال هذا الرابط الخاص إليه — يفتح رسالتك دون كشف هويتك.",
+      "copy": "نسخ الرابط",
+      "copied": "تم نسخ الرابط",
+      "share": "مشاركة الرابط",
+      "shareText": "أرسل لك أحدهم رسالة مجهولة 👀"
     }
   },
   "textWhispDetail": {

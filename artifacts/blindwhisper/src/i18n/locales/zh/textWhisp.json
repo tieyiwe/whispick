@@ -15,6 +15,7 @@
     "customAliasPlaceholder": "或输入自定义署名……",
     "recipientLabel": "这是给谁的？",
     "recipientDisclosure": "对方已在 Blind Whisper？应用内即时送达。否则会收到带链接的短信——注册后即可回复。",
+    "recipientDisclosureLink": "对方在 Blind Whisper 上？消息会立即送达收件箱。还没加入？你会得到一个私密链接发给对方——可以马上阅读，加入后即可回复。",
     "phonePlaceholder": "+1 555 123 4567",
     "pickFromContactsLabel": "从通讯录中选择",
     "toastNoPhoneOnContact": "该联系人没有电话记录",
@@ -29,10 +30,13 @@
     "toastSendFailed": "文字 Whisp 发送失败",
     "smsConsentCheckbox": "我确认已获得对方许可，可以通过 Blind Whisper 向其发送短信。",
     "smsConsentOneTime": "每位新联系人只需确认一次。",
-    "comingSoon": {
-      "title": "文字 Whisps 即将推出",
-      "body": "目前请先通过邮件发送 Whisper Link。",
-      "cta": "发送 Whisper Link"
+    "shareLink": {
+      "title": "确保对方收到",
+      "body": "如果对方在 Blind Whisper 上，消息已经在其收件箱里了。无论如何，你都可以把这个私密链接发给对方——打开后能看到你的消息，但不会透露是谁发的。",
+      "copy": "复制链接",
+      "copied": "链接已复制",
+      "share": "分享链接",
+      "shareText": "有人给你发了一条匿名消息 👀"
     }
   },
   "textWhispDetail": {
