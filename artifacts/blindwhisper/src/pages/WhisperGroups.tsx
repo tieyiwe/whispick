@@ -111,7 +111,7 @@ export function WhisperGroups() {
                           <p className="font-medium text-foreground truncate">{group.name}</p>
                           <p className="text-xs text-muted-foreground">{t("shared.memberCount", { count: group.memberCount })}</p>
                         </div>
-                        <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                        <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 rtl:-scale-x-100" />
                       </CardContent>
                     </Card>
                   </Link>
@@ -156,7 +156,7 @@ export function WhisperGroups() {
                               })}
                         </p>
                       </div>
-                      <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                      <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 rtl:-scale-x-100" />
                     </CardContent>
                   </Card>
                 </Link>

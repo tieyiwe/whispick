@@ -236,11 +236,11 @@ export function WhispsList() {
             data-testid="tab-whisps-sent"
             role="tab"
             aria-selected={box === "sent"}
-            className={`flex flex-1 sm:flex-none items-center justify-center gap-1.5 rounded-full min-h-10 px-4 py-2 text-sm font-medium transition-colors duration-200 ${
+            className={`flex flex-1 sm:flex-none min-w-0 items-center justify-center gap-1 sm:gap-1.5 rounded-full min-h-10 px-2 sm:px-4 py-2 text-[13px] sm:text-sm font-medium transition-colors duration-200 ${
               box === "sent" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Send className="w-3.5 h-3.5" /> {t("whispsList.tabs.sent")}
+            <Send className="hidden min-[400px]:block w-3.5 h-3.5 shrink-0" /> <span className="truncate">{t("whispsList.tabs.sent")}</span>
           </button>
           <button
             type="button"
@@ -248,11 +248,11 @@ export function WhispsList() {
             data-testid="tab-whisps-received"
             role="tab"
             aria-selected={box === "received"}
-            className={`flex flex-1 sm:flex-none items-center justify-center gap-1.5 rounded-full min-h-10 px-4 py-2 text-sm font-medium transition-colors duration-200 relative ${
+            className={`flex flex-1 sm:flex-none min-w-0 items-center justify-center gap-1 sm:gap-1.5 rounded-full min-h-10 px-2 sm:px-4 py-2 text-[13px] sm:text-sm font-medium transition-colors duration-200 relative ${
               box === "received" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Inbox className="w-3.5 h-3.5" /> {t("whispsList.tabs.received")}
+            <Inbox className="hidden min-[400px]:block w-3.5 h-3.5 shrink-0" /> <span className="truncate">{t("whispsList.tabs.received")}</span>
             {newReceivedCount > 0 && (
               <span
                 className={`ml-0.5 inline-flex items-center justify-center rounded-full text-[11px] font-semibold tabular-nums min-w-[18px] h-[18px] px-1 ${
@@ -270,11 +270,11 @@ export function WhispsList() {
             data-testid="tab-whisps-archived"
             role="tab"
             aria-selected={box === "archived"}
-            className={`flex flex-1 sm:flex-none items-center justify-center gap-1.5 rounded-full min-h-10 px-4 py-2 text-sm font-medium transition-colors duration-200 ${
+            className={`flex flex-1 sm:flex-none min-w-0 items-center justify-center gap-1 sm:gap-1.5 rounded-full min-h-10 px-2 sm:px-4 py-2 text-[13px] sm:text-sm font-medium transition-colors duration-200 ${
               box === "archived" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Archive className="w-3.5 h-3.5" /> {t("whispsList.tabs.archived")}
+            <Archive className="hidden min-[400px]:block w-3.5 h-3.5 shrink-0" /> <span className="truncate">{t("whispsList.tabs.archived")}</span>
           </button>
         </div>
 
@@ -290,7 +290,7 @@ export function WhispsList() {
           </div>
           {box !== "archived" && (
             <Select value={effectiveStatusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="h-11 w-[8.75rem] sm:w-[180px] shrink-0 gap-1 bg-card/60 border-border/50 rounded-full" aria-label={t("whispsList.filter.allStatuses")}>
+              <SelectTrigger className="h-11 w-[7.75rem] sm:w-[180px] shrink-0 gap-1 bg-card/60 border-border/50 rounded-full" aria-label={t("whispsList.filter.allStatuses")}>
                 <Filter className="hidden sm:block w-4 h-4 mr-1 shrink-0 text-muted-foreground" />
                 <SelectValue placeholder={t("whispsList.filter.allStatuses")} />
               </SelectTrigger>
@@ -390,7 +390,7 @@ export function WhispsList() {
 
                     <div className="min-w-0">
                       <div className="flex items-start gap-1">
-                        <h3 className="min-w-0 flex-1 line-clamp-3 sm:line-clamp-2 text-[15px] sm:text-base font-semibold leading-snug text-foreground">
+                        <h3 className="min-w-0 flex-1 line-clamp-2 text-[15px] sm:text-base font-semibold leading-snug text-foreground">
                           {whisp.videoTitle || t("whispsList.videoLinkFallback")}
                         </h3>
                         <div className="-mr-1.5 -mt-1 flex shrink-0 items-center">

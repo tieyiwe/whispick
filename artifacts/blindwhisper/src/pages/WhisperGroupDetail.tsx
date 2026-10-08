@@ -177,7 +177,7 @@ export function WhisperGroupDetail() {
       <div className="max-w-2xl mx-auto space-y-5">
         <div className="flex items-center justify-between">
           <Button variant="ghost" onClick={() => setLocation("/whisper-groups")} className="text-muted-foreground -ml-2">
-            <ArrowLeft className="w-4 h-4 mr-1" /> {t("whisperGroupDetail.whisperGroupsLink")}
+            <ArrowLeft className="w-4 h-4 mr-1 rtl:-scale-x-100" /> {t("whisperGroupDetail.whisperGroupsLink")}
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>

@@ -55,7 +55,7 @@ export function CreateDebateTopic() {
           className="-ml-2 -mt-2 text-muted-foreground hover:text-foreground"
           data-testid="button-back"
         >
-          <ArrowLeft className="w-4 h-4 mr-1.5" /> {t("createDebateTopic.backButton")}
+          <ArrowLeft className="w-4 h-4 mr-1.5 rtl:-scale-x-100" /> {t("createDebateTopic.backButton")}
         </Button>
 
         <div>

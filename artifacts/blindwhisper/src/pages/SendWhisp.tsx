@@ -896,7 +896,7 @@ export function SendWhisp() {
                         className="rounded-xl"
                         data-testid="button-fetch-video"
                       >
-                        {scrapeMeta.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
+                        {scrapeMeta.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4 rtl:-scale-x-100" />}
                       </Button>
                     </div>
                     {urlForm.formState.errors.videoUrl && (
@@ -1180,10 +1180,10 @@ export function SendWhisp() {
                 </div>
                 <div className="flex justify-between pt-2">
                   <Button variant="ghost" onClick={() => setStep(1)} className="rounded-xl text-muted-foreground">
-                    <ArrowLeft className="w-4 h-4 mr-1" /> {t("sendWhisp.common.back")}
+                    <ArrowLeft className="w-4 h-4 mr-1 rtl:-scale-x-100" /> {t("sendWhisp.common.back")}
                   </Button>
                   <Button onClick={() => setStep(3)} disabled={!!trimError} className="rounded-xl" data-testid="button-next-step2">
-                    {t("sendWhisp.common.next")} <ArrowRight className="w-4 h-4 ml-1" />
+                    {t("sendWhisp.common.next")} <ArrowRight className="w-4 h-4 ml-1 rtl:-scale-x-100" />
                   </Button>
                 </div>
               </div>
@@ -1276,10 +1276,10 @@ export function SendWhisp() {
                 </div>
                 <div className="flex justify-between pt-2">
                   <Button variant="ghost" onClick={() => setStep(2)} className="rounded-xl text-muted-foreground">
-                    <ArrowLeft className="w-4 h-4 mr-1" /> {t("sendWhisp.common.back")}
+                    <ArrowLeft className="w-4 h-4 mr-1 rtl:-scale-x-100" /> {t("sendWhisp.common.back")}
                   </Button>
                   <Button onClick={() => setStep(4)} className="rounded-xl" data-testid="button-next-step3">
-                    {t("sendWhisp.common.next")} <ArrowRight className="w-4 h-4 ml-1" />
+                    {t("sendWhisp.common.next")} <ArrowRight className="w-4 h-4 ml-1 rtl:-scale-x-100" />
                   </Button>
                 </div>
               </div>
@@ -1471,7 +1471,7 @@ export function SendWhisp() {
 
                 <div className="flex justify-between pt-2">
                   <Button variant="ghost" onClick={() => setStep(3)} className="rounded-xl text-muted-foreground">
-                    <ArrowLeft className="w-4 h-4 mr-1" /> {t("sendWhisp.common.back")}
+                    <ArrowLeft className="w-4 h-4 mr-1 rtl:-scale-x-100" /> {t("sendWhisp.common.back")}
                   </Button>
                   <Button
                     onClick={() => setStep(deliveryMethod === "whisper_link" ? 5 : 6)}
@@ -1482,7 +1482,7 @@ export function SendWhisp() {
                     className="rounded-xl"
                     data-testid="button-next-step4"
                   >
-                    {deliveryMethod === "whisper_link" ? t("sendWhisp.common.next") : t("sendWhisp.common.review")} <ArrowRight className="w-4 h-4 ml-1" />
+                    {deliveryMethod === "whisper_link" ? t("sendWhisp.common.next") : t("sendWhisp.common.review")} <ArrowRight className="w-4 h-4 ml-1 rtl:-scale-x-100" />
                   </Button>
                 </div>
               </div>
@@ -1664,7 +1664,7 @@ export function SendWhisp() {
                 </div>
                 <div className="flex justify-between pt-2">
                   <Button variant="ghost" onClick={() => setStep(4)} className="rounded-xl text-muted-foreground">
-                    <ArrowLeft className="w-4 h-4 mr-1" /> {t("sendWhisp.common.back")}
+                    <ArrowLeft className="w-4 h-4 mr-1 rtl:-scale-x-100" /> {t("sendWhisp.common.back")}
                   </Button>
                   <Button
                     onClick={() => setStep(6)}
@@ -1672,7 +1672,7 @@ export function SendWhisp() {
                     className="rounded-xl"
                     data-testid="button-next-step5"
                   >
-                    {t("sendWhisp.common.review")} <ArrowRight className="w-4 h-4 ml-1" />
+                    {t("sendWhisp.common.review")} <ArrowRight className="w-4 h-4 ml-1 rtl:-scale-x-100" />
                   </Button>
                 </div>
               </div>
@@ -1815,7 +1815,7 @@ export function SendWhisp() {
                     onClick={() => setStep(deliveryMethod === "whisper_link" ? 5 : 4)}
                     className="rounded-xl text-muted-foreground"
                   >
-                    <ArrowLeft className="w-4 h-4 mr-1" /> {t("sendWhisp.common.back")}
+                    <ArrowLeft className="w-4 h-4 mr-1 rtl:-scale-x-100" /> {t("sendWhisp.common.back")}
                   </Button>
                   <Button
                     onClick={() => handleSend()}

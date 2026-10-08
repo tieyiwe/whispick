@@ -161,6 +161,7 @@ export function SendTextWhisp() {
               {t("sendTextWhisp.viewButton")}
             </Button>
             <Button
+              variant="outline"
               className="rounded-full"
               onClick={() => {
                 setSent(false);
@@ -381,14 +382,14 @@ export function SendTextWhisp() {
               className="w-full rounded-full shadow-[0_0_15px_rgba(124,92,252,0.3)]"
               data-testid="button-send-text-whisp"
             >
-              {createTextWhisp.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ArrowRight className="w-4 h-4 mr-2" />}
+              {createTextWhisp.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ArrowRight className="w-4 h-4 mr-2 rtl:-scale-x-100" />}
               {t("sendTextWhisp.sendButton")}
             </Button>
           </CardContent>
         </Card>
 
         <Button variant="ghost" onClick={() => setLocation("/text-whisps")} className="text-muted-foreground">
-          <ArrowLeft className="w-4 h-4 mr-1" /> {t("sendTextWhisp.backButton")}
+          <ArrowLeft className="w-4 h-4 mr-1 rtl:-scale-x-100" /> {t("sendTextWhisp.backButton")}
         </Button>
       </div>
     </AppLayout>

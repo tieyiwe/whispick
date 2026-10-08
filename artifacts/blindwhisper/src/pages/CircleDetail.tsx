@@ -27,7 +27,7 @@ export function CircleDetail() {
       <div className="space-y-6">
         <div>
           <Button variant="ghost" onClick={() => setLocation("/circles")} className="text-muted-foreground hover:text-foreground -ml-3 mb-2 h-11 px-3 rounded-full" data-testid="button-back-circles">
-            <ArrowLeft className="w-4 h-4" /> {t("circleDetail.backToMyCircles")}
+            <ArrowLeft className="w-4 h-4 rtl:-scale-x-100" /> {t("circleDetail.backToMyCircles")}
           </Button>
           <h1 className="text-3xl font-serif font-bold text-foreground flex items-center gap-3">
             <VenetianMask className="w-7 h-7 text-primary shrink-0" /> {circle?.name ?? t("circleDetail.titleFallback")}

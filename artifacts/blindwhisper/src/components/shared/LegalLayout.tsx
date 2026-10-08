@@ -23,7 +23,7 @@ export function LegalLayout({ title, updatedDate, children }: { title: string; u
             href="/"
             className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
-            <ArrowLeft className="w-4 h-4" /> {t("legalLayout.home")}
+            <ArrowLeft className="w-4 h-4 rtl:-scale-x-100" /> {t("legalLayout.home")}
           </Link>
         </div>
       </header>

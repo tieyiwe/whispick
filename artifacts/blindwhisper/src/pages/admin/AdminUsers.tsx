@@ -440,11 +440,11 @@ export function AdminUsers() {
         {data && data.total > PAGE_SIZE && (
           <div className="flex items-center justify-between pt-2">
             <Button variant="outline" size="sm" className="rounded-full" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-              <ChevronLeft className="w-4 h-4 mr-1" /> Prev
+              <ChevronLeft className="w-4 h-4 mr-1 rtl:-scale-x-100" /> Prev
             </Button>
             <span className="text-sm text-muted-foreground">Page {page} of {totalPages}</span>
             <Button variant="outline" size="sm" className="rounded-full" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
-              Next <ChevronRight className="w-4 h-4 ml-1" />
+              Next <ChevronRight className="w-4 h-4 ml-1 rtl:-scale-x-100" />
             </Button>
           </div>
         )}

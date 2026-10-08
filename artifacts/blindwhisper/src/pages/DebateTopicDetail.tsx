@@ -659,7 +659,7 @@ export function DebateTopicDetail() {
           className="-ml-3 h-11 px-3 rounded-full text-muted-foreground hover:text-foreground"
           data-testid="button-back"
         >
-          <ArrowLeft className="w-4 h-4" /> {t("debateTopicDetail.backButton")}
+          <ArrowLeft className="w-4 h-4 rtl:-scale-x-100" /> {t("debateTopicDetail.backButton")}
         </Button>
 
         {isLoading ? (

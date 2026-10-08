@@ -268,7 +268,7 @@ export function RepliesInbox() {
                               <time dateTime={when} title={new Date(when).toLocaleString()}>{relativeTime(when)}</time>
                             </p>
                           </div>
-                          <ChevronRight className="w-4 h-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" />
+                          <ChevronRight className="w-4 h-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary rtl:-scale-x-100" />
                         </CardContent>
                       </Card>
                     </Link>
@@ -312,7 +312,7 @@ export function RepliesInbox() {
                               <time dateTime={when} title={new Date(when).toLocaleString()}>{relativeTime(when)}</time>
                             </p>
                           </div>
-                          <ChevronRight className="w-4 h-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" />
+                          <ChevronRight className="w-4 h-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary rtl:-scale-x-100" />
                         </CardContent>
                       </Card>
                     </Link>

@@ -152,7 +152,7 @@ export function TextWhispDetail() {
         <div className="max-w-xl mx-auto text-center py-16">
           <p className="text-muted-foreground">{t("textWhispDetail.notFound")}</p>
           <Button variant="ghost" onClick={() => setLocation("/text-whisps")} className="mt-4">
-            <ArrowLeft className="w-4 h-4 mr-2" /> {t("textWhispDetail.backButton")}
+            <ArrowLeft className="w-4 h-4 mr-2 rtl:-scale-x-100" /> {t("textWhispDetail.backButton")}
           </Button>
         </div>
       </AppLayout>
@@ -308,7 +308,7 @@ export function TextWhispDetail() {
       <div className="max-w-xl mx-auto space-y-5">
         <div className="flex items-center justify-between">
           <Button variant="ghost" onClick={() => setLocation("/text-whisps")} className="text-muted-foreground -ml-2" data-testid="button-back">
-            <ArrowLeft className="w-4 h-4 mr-1" /> {t("textWhispDetail.backButton")}
+            <ArrowLeft className="w-4 h-4 mr-1 rtl:-scale-x-100" /> {t("textWhispDetail.backButton")}
           </Button>
           <div className="flex items-center gap-1">
             {/* Duplicate of the full Reveal button further down the page —

@@ -149,7 +149,7 @@ export function WhispDetail() {
         <div className="max-w-2xl mx-auto text-center py-16">
           <p className="text-muted-foreground">{t("whispDetail.notFound")}</p>
           <Button variant="ghost" onClick={() => setLocation("/whisps")} className="mt-4">
-            <ArrowLeft className="w-4 h-4 mr-2" /> {t("whispDetail.backToWhisps")}
+            <ArrowLeft className="w-4 h-4 mr-2 rtl:-scale-x-100" /> {t("whispDetail.backToWhisps")}
           </Button>
         </div>
       </AppLayout>
@@ -331,7 +331,7 @@ export function WhispDetail() {
         {/* Header */}
         <div className="flex items-center justify-between -mt-1">
           <Button variant="ghost" onClick={() => setLocation("/whisps")} className="h-11 rounded-full px-3 text-muted-foreground hover:text-foreground -ml-3" data-testid="button-back">
-            <ArrowLeft className="w-4 h-4 mr-1" /> {t("shared.back")}
+            <ArrowLeft className="w-4 h-4 mr-1 rtl:-scale-x-100" /> {t("shared.back")}
           </Button>
           <div className="flex items-center gap-1">
             {/* Duplicate of the full Reveal button down in the reveal-flow
@@ -540,7 +540,7 @@ export function WhispDetail() {
             known recipient — nor to a Blind Circle post (see isCirclePost). */}
         {hasPrivateThread && (
           <Card className="rounded-2xl bg-card/70 border-border/50 shadow-none">
-            <CardHeader className="px-5 pt-5 pb-3">
+            <CardHeader className="px-4 sm:px-5 pt-5 pb-3">
               <CardTitle className="text-base font-serif flex items-center gap-2">
                 <MessageSquare className="w-4 h-4 text-primary" />
                 {t("whispDetail.anonymousConversation")}
@@ -616,13 +616,13 @@ export function WhispDetail() {
             section, just the private "Anonymous conversation" above. */}
         {whisp.deliveryMethod === "circle_drop" && (
           <Card className="rounded-2xl bg-card/70 border-border/50 shadow-none">
-            <CardHeader className="px-5 pt-5 pb-3">
+            <CardHeader className="px-4 sm:px-5 pt-5 pb-3">
               <CardTitle className="text-base font-serif flex items-center gap-2">
                 <MessageSquare className="w-4 h-4 text-primary" />
                 {t("whispDetail.commentsHeading", { count: comments.length })}
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="px-4 sm:px-5 pb-5 space-y-3">
               {comments.length === 0 ? (
                 <p className="text-xs text-muted-foreground text-center py-3">{t("whispDetail.noComments")}</p>
               ) : (
@@ -686,13 +686,13 @@ export function WhispDetail() {
             its own full WhispDetail page with its own reply thread. */}
         {whisp.deliveryMethod === "circle_drop" && circleConversations.length > 0 && (
           <Card className="rounded-2xl bg-card/70 border-border/50 shadow-none">
-            <CardHeader className="px-5 pt-5 pb-3">
+            <CardHeader className="px-4 sm:px-5 pt-5 pb-3">
               <CardTitle className="text-base font-serif flex items-center gap-2">
                 <MessageSquare className="w-4 h-4 text-primary" />
                 {t("whispDetail.privateConversationsHeading", { count: circleConversations.length })}
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-1">
+            <CardContent className="px-4 sm:px-5 pb-5 space-y-1">
               {circleConversations.map((conversation) => (
                 <Link
                   key={conversation.id}

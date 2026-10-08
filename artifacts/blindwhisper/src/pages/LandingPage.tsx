@@ -127,7 +127,7 @@ export function LandingPage() {
                 href="/how-it-works"
                 className="inline-flex h-11 items-center gap-1.5 rounded-full px-4 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
-                {t("landingPage.hero.secondaryCta")} <ArrowRight className="w-4 h-4" />
+                {t("landingPage.hero.secondaryCta")} <ArrowRight className="w-4 h-4 rtl:-scale-x-100" />
               </Link>
             </div>
           </div>

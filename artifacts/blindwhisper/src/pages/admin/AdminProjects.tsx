@@ -256,7 +256,7 @@ export function AdminProjects() {
           <>
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <Button variant="ghost" size="sm" className="rounded-full -ml-2" onClick={() => setSelectedId(null)}>
-                <ArrowLeft className="w-4 h-4 mr-1.5" /> All projects
+                <ArrowLeft className="w-4 h-4 mr-1.5 rtl:-scale-x-100" /> All projects
               </Button>
               {project && (
                 <Button

@@ -76,7 +76,7 @@ export function DebateFollowing() {
         <div>
           <Link href="/debate-topics">
             <Button variant="ghost" size="sm" className="-ml-2 text-muted-foreground hover:text-foreground" data-testid="button-back-debate-topics">
-              <ArrowLeft className="w-4 h-4 mr-1.5" /> {t("debateFollowing.backButton")}
+              <ArrowLeft className="w-4 h-4 mr-1.5 rtl:-scale-x-100" /> {t("debateFollowing.backButton")}
             </Button>
           </Link>
           <h1 className="text-3xl font-serif font-bold text-foreground mt-2">{t("debateFollowing.title")}</h1>

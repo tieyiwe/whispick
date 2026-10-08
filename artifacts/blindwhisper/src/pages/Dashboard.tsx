@@ -341,7 +341,7 @@ export function Dashboard() {
               <div className="flex items-center justify-between">
                 <h2 id="dashboard-recent-heading" className="text-xl font-serif font-semibold">{t("dashboard.recentWhisps")}</h2>
                 <Link href="/whisps" className="-mr-2 inline-flex min-h-10 items-center gap-1 rounded-full px-3 text-sm font-medium text-primary hover:bg-primary/10 transition-colors">
-                  {t("dashboard.viewAll")} <ChevronRight className="h-4 w-4" />
+                  {t("dashboard.viewAll")} <ChevronRight className="h-4 w-4 rtl:-scale-x-100" />
                 </Link>
               </div>
 

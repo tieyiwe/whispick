@@ -166,7 +166,7 @@ export function MyCircles() {
                       <Copy className="w-3.5 h-3.5 mr-1.5" /> {circle.inviteCode}
                     </Button>
                     <Link href={`/circles/${circle.id}`}>
-                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                      <ChevronRight className="w-4 h-4 text-muted-foreground rtl:-scale-x-100" />
                     </Link>
                   </div>
                 </CardContent>

@@ -502,7 +502,7 @@ export function FirstWhispersOnboarding() {
 
                 <div className="flex justify-end pt-2">
                   <Button onClick={goToStep2} className="rounded-xl" data-testid="button-next-step1">
-                    {t("common.next")} <ArrowRight className="w-4 h-4 ml-1" />
+                    {t("common.next")} <ArrowRight className="w-4 h-4 ml-1 rtl:-scale-x-100" />
                   </Button>
                 </div>
               </div>
@@ -638,7 +638,7 @@ export function FirstWhispersOnboarding() {
                         />
                       </div>
                       <Button onClick={handleCustomUrlSubmit} disabled={scrapeMeta.isPending} className="rounded-xl" data-testid="button-fetch-custom-video">
-                        {scrapeMeta.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
+                        {scrapeMeta.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4 rtl:-scale-x-100" />}
                       </Button>
                     </div>
                     {customUrlError && <p className="text-sm text-destructive">{customUrlError}</p>}
@@ -667,10 +667,10 @@ export function FirstWhispersOnboarding() {
 
                 <div className="flex justify-between pt-2">
                   <Button variant="ghost" onClick={() => setStep(1)} className="rounded-xl text-muted-foreground">
-                    <ArrowLeft className="w-4 h-4 mr-1" /> {t("common.back")}
+                    <ArrowLeft className="w-4 h-4 mr-1 rtl:-scale-x-100" /> {t("common.back")}
                   </Button>
                   <Button onClick={() => setStep(3)} disabled={!selectedVideo} className="rounded-xl" data-testid="button-next-step2">
-                    {t("common.next")} <ArrowRight className="w-4 h-4 ml-1" />
+                    {t("common.next")} <ArrowRight className="w-4 h-4 ml-1 rtl:-scale-x-100" />
                   </Button>
                 </div>
               </div>
@@ -756,7 +756,7 @@ export function FirstWhispersOnboarding() {
 
                 <div className="flex justify-between pt-2">
                   <Button variant="ghost" onClick={() => setStep(2)} className="rounded-xl text-muted-foreground" disabled={isSubmitting}>
-                    <ArrowLeft className="w-4 h-4 mr-1" /> {t("common.back")}
+                    <ArrowLeft className="w-4 h-4 mr-1 rtl:-scale-x-100" /> {t("common.back")}
                   </Button>
                   <Button
                     onClick={handleSendClick}

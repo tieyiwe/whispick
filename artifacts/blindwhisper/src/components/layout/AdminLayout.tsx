@@ -163,7 +163,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 py-2 shrink-0"
             data-testid="link-exit-admin"
           >
-            <ArrowLeft className="w-3.5 h-3.5" /> Exit to app
+            <ArrowLeft className="w-3.5 h-3.5 rtl:-scale-x-100" /> Exit to app
           </Link>
         </div>
 

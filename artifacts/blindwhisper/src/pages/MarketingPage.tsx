@@ -141,7 +141,7 @@ function MarketingPageView({ page }: { page: MarketingPageDef }) {
           <p className="relative mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">{page.cta.body}</p>
           <Button asChild size="lg" className="relative mt-6 h-12 rounded-full px-8 text-base shadow-[0_0_28px_rgba(124,92,252,0.4)]">
             <SmartLink href={page.cta.href}>
-              {page.cta.label} <ArrowRight className="ml-2 h-4 w-4" />
+              {page.cta.label} <ArrowRight className="ml-2 h-4 w-4 rtl:-scale-x-100" />
             </SmartLink>
           </Button>
         </section>

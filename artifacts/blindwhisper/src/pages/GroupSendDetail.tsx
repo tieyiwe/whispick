@@ -49,7 +49,7 @@ export function GroupSendDetail() {
     <AppLayout>
       <div className="max-w-2xl mx-auto space-y-5">
         <Button variant="ghost" onClick={() => setLocation("/whisper-groups")} className="text-muted-foreground -ml-2">
-          <ArrowLeft className="w-4 h-4 mr-1" /> {t("groupSendDetail.whisperGroupsLink")}
+          <ArrowLeft className="w-4 h-4 mr-1 rtl:-scale-x-100" /> {t("groupSendDetail.whisperGroupsLink")}
         </Button>
 
         <Card className="bg-card border-border/50 overflow-hidden">

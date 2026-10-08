@@ -106,7 +106,7 @@ export function DebateTopicCard({
           </div>
           <div className="flex items-center gap-1 shrink-0 -mr-2.5">
             <span className="hidden sm:inline-flex items-center gap-1 text-[13px] text-muted-foreground group-hover:text-foreground transition-colors mr-1">
-              {t("debateTopicCard.joinDebate")} <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+              {t("debateTopicCard.joinDebate")} <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform rtl:-scale-x-100" />
             </span>
             <button
               type="button"

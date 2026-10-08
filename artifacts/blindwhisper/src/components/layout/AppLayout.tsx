@@ -671,7 +671,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                               {badge > 9 ? "9+" : badge}
                             </span>
                           )}
-                          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60" />
+                          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60 rtl:-scale-x-100" />
                         </Link>
                       </SheetClose>
                     );

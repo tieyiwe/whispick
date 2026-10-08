@@ -199,7 +199,7 @@ function AuthShell({ reassurance, children }: { reassurance: string; children: R
           href="/"
           className="-ml-3 inline-flex h-11 items-center gap-1.5 rounded-full px-3 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
-          <ArrowLeft className="h-4 w-4" /> {t("auth.backHome")}
+          <ArrowLeft className="h-4 w-4 rtl:-scale-x-100" /> {t("auth.backHome")}
         </Link>
       </header>
 

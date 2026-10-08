@@ -820,7 +820,7 @@ export function PublicWhispPage() {
             data-testid="button-back-to-dashboard"
             className="inline-flex shrink-0 items-center gap-1 min-h-11 -mr-2 px-2 rounded-full text-[13px] sm:text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            <ChevronLeft className="w-4 h-4" /> {t("publicWhisp.backToDashboard")}
+            <ChevronLeft className="w-4 h-4 rtl:-scale-x-100" /> {t("publicWhisp.backToDashboard")}
           </button>
         ) : (
           <a
@@ -1887,7 +1887,7 @@ export function PublicWhispPage() {
                   {t("publicWhisp.subscribeCta.description")}
                 </span>
               </span>
-              <ChevronRight className="self-center w-5 h-5 text-muted-foreground shrink-0 group-hover:text-foreground transition-colors" />
+              <ChevronRight className="self-center w-5 h-5 text-muted-foreground shrink-0 group-hover:text-foreground transition-colors rtl:-scale-x-100" />
             </a>
             </div>
           </>
