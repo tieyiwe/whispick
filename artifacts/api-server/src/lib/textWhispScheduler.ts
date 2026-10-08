@@ -4,6 +4,7 @@ import { eq, and, lte, isNull } from "drizzle-orm";
 import { deliverInApp } from "./deliver";
 import { sendSms, textWhispGuestSmsBody } from "./sms";
 import { textWhispHookLine } from "./copy";
+import { textWhispShareUrl } from "./linkPreview";
 import { logger } from "./logger";
 import { reportSystemError } from "./bugRabbit";
 
@@ -96,7 +97,7 @@ export function startScheduledTextWhispDispatcher(): void {
             logCtx,
           );
         } else {
-          await sendSms(textWhisp.recipientPhone, textWhispGuestSmsBody(`${appUrl}/tw/${textWhisp.publicToken}`), logCtx);
+          await sendSms(textWhisp.recipientPhone, textWhispGuestSmsBody(textWhispShareUrl(appUrl, textWhisp.publicToken)), logCtx);
         }
       }
 

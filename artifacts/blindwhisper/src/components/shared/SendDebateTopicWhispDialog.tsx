@@ -112,7 +112,9 @@ export function SendDebateTopicWhispDialog({
   }
 
   function handleCopyLink() {
-    const url = `${window.location.origin}/debate-topics/${topicId}`;
+    // The server-rendered /dt link (same as DebateTopicCard's Share), not the
+    // SPA route: only /dt unfurls a real preview card in messaging apps.
+    const url = `${window.location.origin}/dt/${topicId}`;
     if (navigator.share) {
       navigator.share({ title: t("debateTopicDetail.shareTitle"), text: topicText, url }).catch(() => {});
       return;

@@ -13,6 +13,7 @@ import { createTextWhispLimiter, textWhispRevealLimiter } from "../lib/rateLimit
 import { normalizePhoneE164 } from "../lib/phone";
 import { sendSms, textWhispGuestSmsBody } from "../lib/sms";
 import { getPublicAppUrl } from "../lib/publicUrl";
+import { textWhispShareUrl } from "../lib/linkPreview";
 import { MAX_SCHEDULE_DAYS } from "../lib/expiration";
 import {
   textWhispHookLine,
@@ -330,8 +331,9 @@ router.post("/", requireAuth, createTextWhispLimiter, async (req, res): Promise<
     } else {
       // Not a known account — deliver a guest link over SMS, same as a
       // whisper_link's unmatched path (lib/deliver.ts's deliverWhisperLink),
-      // pointed at the public Text Whisp landing page (routes/publicTextWhisps.ts).
-      void sendSms(recipientPhone, textWhispGuestSmsBody(`${getPublicAppUrl(req)}/tw/${publicToken}`), logCtx);
+      // pointed at the public Text Whisp landing page (routes/publicTextWhisps.ts)
+      // via its /tx preview link, so the text unfurls a real card.
+      void sendSms(recipientPhone, textWhispGuestSmsBody(textWhispShareUrl(getPublicAppUrl(req), publicToken)), logCtx);
     }
   }
 

@@ -3,19 +3,12 @@ import { db, debateTopicsTable, debateTopicCommentsTable } from "@workspace/db";
 import { and, desc, eq, inArray, max, count } from "drizzle-orm";
 import { getPublicAppUrl } from "../lib/publicUrl";
 import { escapeHtml } from "../lib/escapeHtml";
+import { isPublicCrawler, ogImageUrl } from "../lib/linkPreview";
 import { getHandlesFor } from "../lib/anonymousHandles";
 import { getOrBackfillWhispererIdentities } from "../lib/whispererHandle";
 import { commentNotRemoved, notRetracted, topicUrl } from "./debateTopics";
 
 const router = Router();
-
-// Same crawler-sniffing pattern as routes/link.ts — kept as its own copy so
-// the two can be tuned independently. Unlike whisp links (private, never
-// indexed), debate topics are public and meant to be found, so this list
-// also covers search engines and AI assistants' crawlers/fetchers: most of
-// those don't run the SPA's JavaScript and would otherwise see an empty shell.
-const CRAWLER_UA_PATTERN =
-  /facebookexternalhit|Facebot|WhatsApp|Twitterbot|Slackbot|TelegramBot|Discordbot|LinkedInBot|SkypeUriPreview|Applebot|Googlebot|Google-InspectionTool|GoogleOther|Storebot-Google|bingbot|BingPreview|msnbot|DuckDuckBot|DuckAssistBot|YandexBot|Baiduspider|redditbot|vkShare|W3C_Validator|Iframely|Embedly|Mastodon|Bluesky|Viber|Line-Bot|SignalBot|Snapchat|Pinterest|GPTBot|OAI-SearchBot|ChatGPT-User|ClaudeBot|Claude-User|Claude-SearchBot|Claude-Web|anthropic-ai|PerplexityBot|Perplexity-User|Amazonbot|Meta-ExternalAgent|Meta-ExternalFetcher|MistralAI-User|CCBot|cohere-ai|YouBot|Bytespider|Applebot-Extended/i;
 
 const SHARE_DESCRIPTION = "Join this debate and answer 100% anonymously — no account needed.";
 // Comments rendered into the crawler page. The full thread is in the app;
@@ -37,8 +30,12 @@ export function debateTopicShareUrl(appUrl: string, topicId: string): string {
   return `${appUrl}/dt/${topicId}`;
 }
 
+// Unlike whisp links (private, never indexed), debate topics are public and
+// meant to be found, so besides link-preview bots this also answers search
+// engines and AI assistants' crawlers/fetchers (lib/linkPreview.ts): most of
+// those don't run the SPA's JavaScript and would otherwise see an empty shell.
 function isCrawler(userAgent: string | undefined): boolean {
-  return CRAWLER_UA_PATTERN.test(userAgent ?? "");
+  return isPublicCrawler(userAgent);
 }
 
 function truncate(text: string, max: number): string {
@@ -58,6 +55,7 @@ function page(opts: {
   canonical: string;
   ogTitle: string;
   image: string;
+  imageAlt: string;
   robots: string;
   structuredData?: unknown;
   body: string;
@@ -79,8 +77,10 @@ function page(opts: {
     <meta property="og:title" content="${ogT}" />
     <meta property="og:description" content="${d}" />
     <meta property="og:image" content="${img}" />
+    <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="${escapeHtml(opts.imageAlt)}" />
     <meta property="og:url" content="${c}" />
     <meta property="og:type" content="article" />
     <meta property="og:site_name" content="Blind Whisper" />
@@ -88,6 +88,7 @@ function page(opts: {
     <meta name="twitter:title" content="${ogT}" />
     <meta name="twitter:description" content="${d}" />
     <meta name="twitter:image" content="${img}" />
+    <meta name="twitter:image:alt" content="${escapeHtml(opts.imageAlt)}" />
     ${opts.structuredData ? `<script type="application/ld+json">${jsonLd(opts.structuredData)}</script>` : ""}
   </head>
   <body>
@@ -176,7 +177,8 @@ router.get("/", async (req, res): Promise<void> => {
       description,
       canonical: `${appUrl}/dt`,
       ogTitle: "Debate Now — answer 100% anonymously",
-      image: `${appUrl}/opengraph.jpg`,
+      image: ogImageUrl(appUrl, "debate"),
+      imageAlt: "Debate Now on Blind Whisper — real questions, honest answers, answered 100% anonymously.",
       robots: "index, follow",
       structuredData: {
         "@context": "https://schema.org",
@@ -226,7 +228,8 @@ router.get("/:id", async (req, res): Promise<void> => {
         description: "This debate isn't available anymore.",
         canonical: `${appUrl}/dt`,
         ogTitle: "Debate not found",
-        image: `${appUrl}/opengraph.jpg`,
+        image: ogImageUrl(appUrl, "default"),
+        imageAlt: "Blind Whisper",
         robots: "noindex",
         body: `    <main><h1>This debate isn't available anymore.</h1><p><a href="${escapeHtml(`${appUrl}/dt`)}">See other debates</a></p></main>`,
       }),
@@ -279,7 +282,10 @@ router.get("/:id", async (req, res): Promise<void> => {
       description,
       canonical,
       ogTitle: topic.topicText,
-      image: `${appUrl}/opengraph.jpg`,
+      // A card with the question itself, an "answer anonymously" call to
+      // action and the answer count (routes/og.ts).
+      image: ogImageUrl(appUrl, "debate", topic.id),
+      imageAlt: `Debate Now: ${truncate(topic.topicText, 200)} — answer 100% anonymously on Blind Whisper.`,
       // Unanswered topics are thin content: let crawlers follow links but
       // keep the page out of the index until someone answers.
       robots: n > 0 ? "index, follow, max-image-preview:large" : "noindex, follow",

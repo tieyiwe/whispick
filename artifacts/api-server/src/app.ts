@@ -13,6 +13,8 @@ import router from "./routes";
 import { handleStripeWebhook } from "./routes/billing";
 import whisperBoxLinkRouter from "./routes/whisperBoxLink";
 import debateTopicLinkRouter from "./routes/debateTopicLink";
+import inviteLinkRouter from "./routes/inviteLink";
+import textWhispLinkRouter from "./routes/textWhispLink";
 import { publicEndpointLimiter } from "./lib/rateLimit";
 import { logger } from "./lib/logger";
 import { recordBugReport } from "./lib/bugRabbit";
@@ -63,7 +65,7 @@ app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 // API responses (OAuth redirects, JS bundles) pass through exactly as Clerk
 // sent them. Deliberate relaxations:
 // - CSP off for now: the server-rendered preview/redirect pages (/l, /wb,
-//   /dt) use inline markup + redirects — a real policy is a follow-up.
+//   /dt, /iv, /tx) use inline markup + redirects — a real policy is a follow-up.
 // - COEP off and CORP cross-origin: media/thumbnails served here are loaded
 //   by email clients, link-preview crawlers and the frontend's origin.
 app.use(
@@ -176,6 +178,12 @@ app.use("/wb", publicEndpointLimiter, whisperBoxLinkRouter);
 // all, so emailed /dt links used to land on a blank app shell. The old
 // /api/dt mount in routes/index.ts stays for links already shared.
 app.use("/dt", publicEndpointLimiter, debateTopicLinkRouter);
+// Same again for invites (/iv → /invite/:token) and guest Text Whisps
+// (/tx → /tw/:token): the links those features send now point here so they
+// unfurl a real preview. The SPA routes they redirect to are unchanged, so
+// links already sent in the old form keep working.
+app.use("/iv", publicEndpointLimiter, inviteLinkRouter);
+app.use("/tx", publicEndpointLimiter, textWhispLinkRouter);
 
 app.use("/api", router);
 

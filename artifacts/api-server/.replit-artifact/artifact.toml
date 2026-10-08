@@ -14,7 +14,10 @@ name = "API Server"
 # running Node process can tell a link-preview crawler apart from a real
 # browser and return real per-handle Open Graph tags instead of the static
 # site's generic ones.
-paths = ["/api", "/wb", "/dt"]
+# "/dt" (debate topics), "/iv" (invites) and "/tx" (guest Text Whisps) are
+# the same idea — see app.ts. A new prefix must never be a string prefix of
+# a frontend route ("/t" could shadow /terms and /tw).
+paths = ["/api", "/wb", "/dt", "/iv", "/tx"]
 
 [services.development]
 run = "pnpm --filter @workspace/api-server run dev"

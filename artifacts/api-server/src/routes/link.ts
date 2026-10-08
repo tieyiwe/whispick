@@ -1,83 +1,60 @@
 import { Router } from "express";
-import { db } from "@workspace/db";
-import { whispsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
 import { getPublicAppUrl } from "../lib/publicUrl";
-import { HOOK_LINE } from "../lib/copy";
-import { escapeHtml } from "../lib/escapeHtml";
+import { LINK_PREVIEW_COPY } from "../lib/copy";
+import { isLinkPreviewBot, ogImageUrl, sendPreviewPage } from "../lib/linkPreview";
+import { MOOD_GLOW } from "../lib/ogImage";
+import { loadLiveWhisp } from "./public";
 
 const router = Router();
 
-// Known link-unfurling crawlers used by messaging/social apps. Real browsers
-// don't match these, so they fall through to the redirect below.
-const CRAWLER_UA_PATTERN =
-  /facebookexternalhit|Facebot|WhatsApp|Twitterbot|Slackbot|TelegramBot|Discordbot|LinkedInBot|SkypeUriPreview|Applebot|Googlebot|redditbot|vkShare|W3C_Validator|Iframely|Embedly|Mastodon|Bluesky|Viber|Line-Bot|SignalBot|Snapchat|Pinterest|bingbot|DuckDuckBot|Google-InspectionTool/i;
-
-// GET /l/:token — the URL actually shared via email/SMS/WhatsApp. Crawlers
-// get a small server-rendered page with real Open Graph tags for that
-// specific video (the SPA can't do this: in production the frontend is
-// served as static files with the same index.html for every route, so it
-// can never reflect per-whisp content to a crawler that doesn't run JS).
-// Everyone else gets redirected straight into the real app.
+// GET /l/:token — the URL actually shared via email/SMS/WhatsApp. Link-
+// preview bots get a small server-rendered page with Open Graph tags (the
+// SPA can't do this: in production the frontend is served as static files
+// with the same index.html for every route, so it can never reflect a
+// per-link preview to a crawler that doesn't run JS). Everyone else gets
+// redirected straight into the real app.
+//
+// The card is pure curiosity — never the video's title or thumbnail, the
+// note, or anything about the sender: a whisp link gets pasted into group
+// chats and forwarded, and a preview that spoils or hints at the content
+// leaks it to everyone who sees the link, not just the recipient.
 router.get("/:token", async (req, res): Promise<void> => {
-  const whisp = await db
-    .select()
-    .from(whispsTable)
-    .where(eq(whispsTable.publicToken, req.params.token))
-    .then((r) => r[0]);
-
   const appUrl = getPublicAppUrl(req);
-  const destination = `${appUrl}/w/${req.params.token}`;
+  const token = encodeURIComponent(req.params.token);
+  const destination = `${appUrl}/w/${token}`;
 
-  const userAgent = req.headers["user-agent"] ?? "";
-  const isCrawler = CRAWLER_UA_PATTERN.test(userAgent);
-
-  // A taken-down whisp must not keep unfurling its title/thumbnail to
-  // crawlers — treat it like any unknown token and just bounce to the SPA
-  // (which will show its own not-found state).
-  if (!whisp || whisp.removedByAdminAt || !isCrawler) {
+  if (!isLinkPreviewBot(req.headers["user-agent"])) {
     res.redirect(302, destination);
     return;
   }
 
-  const title = whisp.videoTitle ? escapeHtml(whisp.videoTitle) : "Blind Whisper";
-  const description = escapeHtml(HOOK_LINE);
-  // Crawlers require an ABSOLUTE og:image. An uploaded video's thumbnail is
-  // stored as a site-relative path (routes/whisps.ts stores
-  // /api/public/w/:token/media/thumbnail, since no absolute host is known at
-  // write time), so passing it through unchanged meant every whisp made from
-  // an upload unfurled with no image at all.
-  const rawImage = whisp.videoThumbnail
-    ? whisp.videoThumbnail.startsWith("/")
-      ? `${appUrl}${whisp.videoThumbnail}`
-      : whisp.videoThumbnail
-    : `${appUrl}/opengraph.jpg`;
-  const image = escapeHtml(rawImage);
-  const url = escapeHtml(destination);
+  // Same liveness rules as the public whisp page itself (taken down,
+  // scheduled, cancelled, or a DM cloned from a removed Circle post):
+  // anything the recipient couldn't open must not unfurl either — just
+  // bounce to the SPA, which shows its own not-found state.
+  const whisp = await loadLiveWhisp(req.params.token);
+  if (!whisp) {
+    res.redirect(302, destination);
+    return;
+  }
 
-  res.set("Content-Type", "text/html; charset=utf-8").send(`<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>${title}</title>
-    <meta property="og:title" content="${title}" />
-    <meta property="og:description" content="${description}" />
-    <meta property="og:image" content="${image}" />
-    <meta property="og:url" content="${url}" />
-    <meta property="og:type" content="video.other" />
-    <meta property="og:site_name" content="Blind Whisper" />
-    <meta property="og:image:alt" content="Video thumbnail" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="${title}" />
-    <meta name="twitter:description" content="${description}" />
-    <meta name="twitter:image" content="${image}" />
-    <meta http-equiv="refresh" content="0;url=${url}" />
-  </head>
-  <body>
-    <p>${description}</p>
-    <p><a href="${url}">Open it</a></p>
-  </body>
-</html>`);
+  const isCirclePost = whisp.deliveryMethod === "circle_drop";
+  const copy = isCirclePost ? LINK_PREVIEW_COPY.circlePost : LINK_PREVIEW_COPY.whisp;
+  // The image URL carries only the mood (it tints the card's glow), never
+  // the token: og:image URLs end up in crawler and CDN caches, and the card
+  // is the same for every whisp with that mood anyway.
+  const mood = whisp.moodTag && MOOD_GLOW[whisp.moodTag] ? whisp.moodTag : "none";
+  const image = isCirclePost ? ogImageUrl(appUrl, "circle") : ogImageUrl(appUrl, "whisp", mood);
+
+  sendPreviewPage(res, {
+    title: copy.title,
+    description: copy.description,
+    shareUrl: `${appUrl}/api/l/${token}`,
+    destination,
+    image,
+    imageAlt: copy.imageAlt,
+    private: true,
+  });
 });
 
 export default router;

@@ -41,6 +41,19 @@ export const publicEndpointLimiter = createLimiter({
   legacyHeaders: false,
 });
 
+// Link-preview images (/api/og/*.png). Fetched by link-preview crawlers
+// (Facebook, WhatsApp, Telegram, iMessage…) that send many requests from a
+// handful of shared IPs, so the general public limit above would quietly
+// drop previews at scale. Rendering is cheap after the first hit (in-memory
+// cache in lib/ogImage.ts), so a much higher ceiling is safe; it still bounds
+// a single client hammering cache-missing ids.
+export const ogImageLimiter = createLimiter({
+  windowMs: 5 * 60 * 1000,
+  limit: 600,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // For endpoints that always run after requireAuth: key by the actual Clerk
 // user, not the request IP. An IP-keyed limit is trivially bypassed by one
 // account switching networks (mobile carrier CGNAT, a VPN) and, in the other

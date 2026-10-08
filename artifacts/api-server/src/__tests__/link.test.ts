@@ -2,8 +2,6 @@ import { describe, it, expect } from "vitest";
 import request from "supertest";
 import app from "../app";
 import { TEST_USER_HEADER } from "./setup";
-import { db, whispsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
 
 const USER_A = "clerk_link_user";
 
@@ -34,7 +32,7 @@ describe("GET /api/l/:token", () => {
     expect(res.headers.location).toContain(`/w/${whisp.publicToken}`);
   });
 
-  it("serves a real Open Graph card to link-preview crawlers", async () => {
+  it("serves a curiosity-only Open Graph card to link-preview crawlers", async () => {
     const whisp = await createWhisp();
     const res = await request(app)
       .get(`/api/l/${whisp.publicToken}`)
@@ -42,24 +40,18 @@ describe("GET /api/l/:token", () => {
 
     expect(res.status).toBe(200);
     expect(res.headers["content-type"]).toContain("text/html");
-    expect(res.text).toContain("A Really Good Video");
-    // The server-derived YouTube thumbnail, not the client-supplied one.
-    expect(res.text).toContain("https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg");
+    // A whisp link gets forwarded and pasted into group chats: the preview
+    // must never spoil or leak the video — no title, no thumbnail (neither
+    // the server-derived one nor the client-supplied one).
+    expect(res.text).not.toContain("A Really Good Video");
+    expect(res.text).not.toContain("i.ytimg.com");
     expect(res.text).not.toContain("https://example.com/thumb.jpg");
     expect(res.text).toContain(`/w/${whisp.publicToken}`);
+    expect(res.text).toContain('<meta name="robots" content="noindex, nofollow" />');
   });
 
-  it("gives an uploaded video's thumbnail an absolute URL", async () => {
-    // An upload's thumbnail is stored site-relative, because no absolute host
-    // is known when the whisp is written. Passed through as-is it is not a
-    // valid og:image, and every whisp made from an upload unfurled with no
-    // picture at all.
+  it("gives the card an absolute, generated og:image", async () => {
     const whisp = await createWhisp();
-    await db
-      .update(whispsTable)
-      .set({ videoThumbnail: `/api/public/w/${whisp.publicToken}/media/thumbnail` })
-      .where(eq(whispsTable.publicToken, whisp.publicToken));
-
     const res = await request(app)
       .get(`/api/l/${whisp.publicToken}`)
       .set("User-Agent", "WhatsApp/2.23.20 A");
@@ -67,7 +59,7 @@ describe("GET /api/l/:token", () => {
     const ogImage = res.text.match(/<meta property="og:image" content="([^"]+)"/)?.[1];
     expect(ogImage).toBeDefined();
     expect(() => new URL(ogImage!)).not.toThrow();
-    expect(ogImage).toContain(`/api/public/w/${whisp.publicToken}/media/thumbnail`);
+    expect(ogImage).toContain("/api/og/");
   });
 
   it("names the site and its content type, so an unfurl isn't a bare link", async () => {

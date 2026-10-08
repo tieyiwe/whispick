@@ -10,6 +10,7 @@ import userRouter from "./user";
 import creditsRouter from "./credits";
 import billingRouter from "./billing";
 import linkRouter from "./link";
+import ogRouter from "./og";
 import debateTopicLinkRouter from "./debateTopicLink";
 import adminRouter from "./admin";
 import adminMfaRouter from "./adminMfa";
@@ -36,7 +37,7 @@ import bugReportsRouter from "./bugReports";
 import adminBugRabbitRouter from "./adminBugRabbit";
 import visitorPingRouter from "./visitorPing";
 import adminVisitorsRouter from "./adminVisitors";
-import { publicEndpointLimiter } from "../lib/rateLimit";
+import { publicEndpointLimiter, ogImageLimiter } from "../lib/rateLimit";
 
 const router: IRouter = Router();
 
@@ -92,6 +93,9 @@ router.use("/l", publicEndpointLimiter, linkRouter);
 // shareable link (DebateTopicCard.tsx's Share button, and the "whisp this
 // topic" send flow in debateTopicWhisps.ts) instead of a whisp's.
 router.use("/dt", publicEndpointLimiter, debateTopicLinkRouter);
+// Generated og:image cards for every link preview above (and /wb, /iv, /tx
+// in app.ts) — see routes/og.ts.
+router.use("/og", ogImageLimiter, ogRouter);
 // whisperBoxLinkRouter is NOT mounted here — it's mounted directly in
 // app.ts at the bare "/wb" prefix (not "/api/wb"), so a shared Whisper Box
 // link reads as blindwhisper.com/wb/handle. See app.ts's own comment and

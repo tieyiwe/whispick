@@ -7,6 +7,7 @@ import { z } from "zod";
 import { requireAuth } from "../lib/auth";
 import { ensureUser } from "../lib/ensureUser";
 import { getPublicAppUrl } from "../lib/publicUrl";
+import { inviteShareUrl } from "../lib/linkPreview";
 import { sendEmail, inviteEmailHtml } from "../lib/email";
 import { sendSms, sendWhatsApp, inviteSmsBody } from "../lib/sms";
 import { logDeliveryAttempt } from "../lib/deliveryLog";
@@ -32,7 +33,9 @@ const CHANNELS = ["email", "sms", "whatsapp"] as const;
 // same anti-latency posture every other caller in this app takes with
 // real Twilio/Resend round-trips (see deliverWhisperLink's own comment).
 async function dispatchInvite(invite: Invite, appUrl: string): Promise<void> {
-  const inviteUrl = `${appUrl}/invite/${invite.publicToken}`;
+  // The /iv preview link (lib/linkPreview.ts), not the SPA's /invite/ path
+  // directly: it unfurls a real card in the recipient's messaging app.
+  const inviteUrl = inviteShareUrl(appUrl, invite.publicToken);
   const logCtx = { whispId: null, purpose: "invite" as const };
 
   let success: boolean;

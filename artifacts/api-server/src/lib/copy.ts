@@ -119,12 +119,42 @@ export const SMS_INVITE_LEAD = "Blind Whisper: Someone you know invited you to j
 export const SMS_TEXT_WHISP_LEAD = "Blind Whisper: You have a new message on Blind Whisper.";
 export const SMS_DEBATE_TOPIC_WHISP_LEAD = "Blind Whisper: Someone you know shared a discussion topic with you.";
 
-// The Open Graph description for a shared Whisper Box link (routes/
-// whisperBoxLink.ts's GET /wb/:handle) — what shows up in the link-preview
-// card when someone pastes their link into iMessage/Instagram/WhatsApp/etc.
-// Keep in sync with PublicWhisperBoxPage.tsx's own subheading by hand, same
-// as HOOK_LINE.
-export const WHISPER_BOX_HOOK_LINE = "You can tell me anything or share a video I need to see anonymously.";
+// Link-preview card copy (the server-rendered OG pages in routes/link.ts,
+// whisperBoxLink.ts, inviteLink.ts, textWhispLink.ts). These are seen by
+// whoever the link is pasted in front of — often a whole group chat — so
+// they sell the mystery and never carry anything identifying: no sender,
+// no recipient contact, no video title/thumbnail, no note text. Image
+// headlines live with the cards themselves in lib/ogImage.ts.
+export const LINK_PREVIEW_COPY = {
+  whisp: {
+    title: "Someone sent you something 👀",
+    description: "It's anonymous. Open it to see what they wanted you to hear.",
+    imageAlt: "Someone has something to tell you — sent anonymously on Blind Whisper.",
+  },
+  circlePost: {
+    title: "An anonymous post on Blind Circle",
+    description: "See what someone shared anonymously — and join the conversation.",
+    imageAlt: "Someone shared this anonymously on Blind Circle.",
+  },
+  invite: {
+    title: "Someone invited you to Blind Whisper 👀",
+    description: "Someone thinks you should be here. Find out what it's about — anonymously.",
+    imageAlt: "Someone thinks you should be here — an anonymous invite to Blind Whisper.",
+  },
+  textWhisp: {
+    title: "Someone wrote you an anonymous note ✉️",
+    description: "Open it to read — they'll stay anonymous unless they choose otherwise.",
+    imageAlt: "Someone wrote you a note — sent anonymously on Blind Whisper.",
+  },
+  // "Anonymous" stays in the title itself: some clients (notably iMessage)
+  // only surface the title in their compact preview. The handle is what the
+  // box's owner chose to share publicly — the link is theirs to post.
+  whisperBox: {
+    title: (handle: string) => `Send @${handle} an anonymous message 🤫`,
+    description: "They'll never know it was you. 100% anonymous — no account needed.",
+    imageAlt: (handle: string) => `Send @${handle} an anonymous message on Blind Whisper.`,
+  },
+} as const;
 
 // Debate Now topic whisp (routes/debateTopicWhisps.ts) — sent when someone
 // Whispers a topic to a specific contact instead of (or alongside) plain

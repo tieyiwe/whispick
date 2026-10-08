@@ -88,7 +88,7 @@ type WhispRow = typeof whispsTable.$inferSelect;
  * clone carries its own copy of the video reference, so without the origin
  * check /w/<dmToken> and its /media kept serving removed content.
  */
-async function loadLiveWhisp(token: string): Promise<WhispRow | null> {
+export async function loadLiveWhisp(token: string): Promise<WhispRow | null> {
   const whisp = await db.select().from(whispsTable).where(eq(whispsTable.publicToken, token)).then((r) => r[0]);
   if (!whisp || whisp.removedByAdminAt) return null;
   // Not delivered yet (scheduled) or never will be (cancelled by the
