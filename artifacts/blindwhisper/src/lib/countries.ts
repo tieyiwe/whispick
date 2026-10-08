@@ -31,7 +31,20 @@ export function flagEmoji(iso2: string): string {
 // Best-effort default country from the browser's own locale, so most people
 // never have to touch the picker at all. Falls back to the US, matching
 // this app's primary market.
+//
+// Defensive: navigator.language isn't always a valid BCP 47 tag (empty in
+// some headless/in-app browsers, POSIX-style "en_US" in some WebViews), and
+// `new Intl.Locale` THROWS on those — which took down every page that
+// renders a phone field (dashboard, settings, welcome) via the error
+// boundary instead of just defaulting the picker.
 export function detectDefaultCountry(): string {
-  const region = new Intl.Locale(navigator.language).maximize().region;
-  return region && COUNTRIES.some((c) => c.iso2 === region) ? region : "US";
+  for (const tag of [navigator.language, ...(navigator.languages ?? [])]) {
+    try {
+      const region = new Intl.Locale(String(tag).replace(/_/g, "-")).maximize().region;
+      if (region && COUNTRIES.some((c) => c.iso2 === region)) return region;
+    } catch {
+      // Not a usable tag — try the next one.
+    }
+  }
+  return "US";
 }

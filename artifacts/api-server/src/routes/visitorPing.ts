@@ -7,6 +7,7 @@ import { requestIp } from "../lib/ensureUser";
 import { classifyDevice } from "../lib/deviceType";
 import { cachedCountryForIp, sessionKeyFor } from "../lib/visitorTracking";
 import { logger } from "../lib/logger";
+import { visitorPingLimiter } from "../lib/rateLimit";
 
 const router: IRouter = Router();
 
@@ -25,7 +26,7 @@ const pingSchema = z.object({
 // perspective, and every failure here is silent by design: a missed ping
 // just means this visitor drops out of the live count a little early, not
 // a broken feature.
-router.post("/visitor-ping", async (req, res): Promise<void> => {
+router.post("/visitor-ping", visitorPingLimiter, async (req, res): Promise<void> => {
   const parsed = pingSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid ping payload" });

@@ -1,4 +1,5 @@
 import rateLimit, { MemoryStore, ipKeyGenerator, type Options } from "express-rate-limit";
+import type { RequestHandler } from "express";
 import { getAuth } from "@clerk/express";
 
 // Every limiter gets an explicit in-memory store (the same MemoryStore
@@ -30,13 +31,48 @@ export function resetRateLimitsForTests(): void {
 }
 
 // The public router (track/reply/circle/w/:token) is entirely unauthenticated
-// and each of these triggers a real side effect (a DB write, and for reply
-// an email to the sender) — without a limit, anyone with (or who obtains) a
+// and its writes trigger real side effects (a DB write, and for reply an
+// email to the sender) — without a limit, anyone with (or who obtains) a
 // public token could spam it, e.g. to email-bomb the sender via /reply.
-// There's no authenticated user here, so this one is IP-keyed by necessity.
-export const publicEndpointLimiter = createLimiter({
+// There's no authenticated user here, so these are IP-keyed by necessity.
+//
+// Reads and writes get separate budgets. One shared 60-per-5-minutes budget
+// counted every page load, every poll and the 20-second visitor heartbeat
+// together, so a visitor reading a few debates, or a whole carrier-NAT /
+// campus network opening the same viral link, hit 429s on plain page
+// views. Reads are cheap and idempotent: a generous ceiling still bounds a
+// scraper. Writes keep the tight one.
+const isRead = (req: { method: string }) => req.method === "GET" || req.method === "HEAD";
+// The heartbeat (routes/visitorPing.ts) is a POST but has its own limiter —
+// it must never spend the write budget a real reply needs.
+const isVisitorPing = (req: { path: string }) => req.path.endsWith("/visitor-ping");
+
+const publicReadLimiter = createLimiter({
+  windowMs: 5 * 60 * 1000,
+  limit: 600,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => !isRead(req),
+});
+
+const publicWriteLimiter = createLimiter({
   windowMs: 5 * 60 * 1000,
   limit: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => isRead(req) || isVisitorPing(req),
+});
+
+export const publicEndpointLimiter: RequestHandler = (req, res, next) => {
+  publicReadLimiter(req, res, (err?: unknown) => (err ? next(err) : publicWriteLimiter(req, res, next)));
+};
+
+// One heartbeat per open tab every 20s is 15 per 5 minutes; this allows ~40
+// tabs per address (a carrier NAT or campus network is many people) while
+// still bounding how hard one address can flood the live-visitor count.
+export const visitorPingLimiter = createLimiter({
+  windowMs: 5 * 60 * 1000,
+  limit: 600,
   standardHeaders: true,
   legacyHeaders: false,
 });
