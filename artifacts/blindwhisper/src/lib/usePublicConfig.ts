@@ -11,13 +11,18 @@ import { useGetPublicConfig, getGetPublicConfigQueryKey } from "@workspace/api-c
 // flashes in and then disappears — the worst case is one appearing a beat
 // late once the flags are turned on. Long staleTime: these flip on a deploy
 // cadence, not mid-session.
-export function usePublicConfig(): { smsEnabled: boolean; whatsappEnabled: boolean; isLoading: boolean } {
+//
+// billingEnabled: payments (plans, credit packs, reply credits) are off at
+// launch — the app is free — until the server's BILLING_ENABLED switch is
+// on. Every purchase/upgrade surface hides while this is false.
+export function usePublicConfig(): { smsEnabled: boolean; whatsappEnabled: boolean; billingEnabled: boolean; isLoading: boolean } {
   const { data, isLoading } = useGetPublicConfig({
     query: { queryKey: getGetPublicConfigQueryKey(), staleTime: 30 * 60 * 1000, retry: 1 },
   });
   return {
     smsEnabled: data?.smsDeliveryEnabled === true,
     whatsappEnabled: data?.whatsappDeliveryEnabled === true,
+    billingEnabled: data?.billingEnabled === true,
     isLoading,
   };
 }

@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Check, Ghost, Zap, Flame, CreditCard, ArrowUpRight, ArrowDownLeft, Loader2, Gift, Sparkles, RotateCcw, type LucideIcon } from "lucide-react";
 import { formatDistanceToNowStrict } from "date-fns";
 import { GHOST_BOOST_ENABLED } from "@/lib/featureFlags";
+import { usePublicConfig } from "@/lib/usePublicConfig";
 
 // name/feature values are i18next keys, resolved via t() at render time
 // (see AppLayout's NAV_ITEMS for the same labelKey pattern) — kept as data
@@ -76,6 +77,8 @@ export function CreditsPage() {
   const { toast } = useToast();
   const checkout = useCreateCheckoutSession();
   const { t } = useTranslation("account");
+  // Free launch: no plans or packs to buy until billing is switched on.
+  const { billingEnabled } = usePublicConfig();
 
   function startCheckout(kind: "credit_pack" | "plan", id: string) {
     checkout.mutate(
@@ -147,7 +150,17 @@ export function CreditsPage() {
           </CardContent>
         </Card>
 
+        {!billingEnabled && (
+          <Card className="border-primary/25 bg-gradient-to-br from-primary/10 via-card to-card" data-testid="card-free-for-now">
+            <CardContent className="p-5 sm:p-6">
+              <h2 className="font-serif text-xl font-semibold text-foreground">{t("creditsPage.freeForNow.title")}</h2>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{t("creditsPage.freeForNow.body")}</p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Subscription plans */}
+        {billingEnabled && (
         <div>
           <h2 className="text-xl font-serif font-semibold mb-4">{t("creditsPage.upgradeYourPlan")}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -225,9 +238,10 @@ export function CreditsPage() {
             })}
           </div>
         </div>
+        )}
 
         {/* Ghost Boost credit packs */}
-        {GHOST_BOOST_ENABLED && (
+        {billingEnabled && GHOST_BOOST_ENABLED && (
           <div>
             <h2 className="text-xl font-serif font-semibold mb-4">{t("creditsPage.ghostBoostCreditPacks")}</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

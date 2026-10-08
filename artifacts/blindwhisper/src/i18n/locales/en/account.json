@@ -143,6 +143,10 @@
       "boost": "Ghost Boost",
       "bonus": "Bonus credits",
       "refund": "Refund"
+    },
+    "freeForNow": {
+      "title": "Blind Whisper is free right now",
+      "body": "Send as many whisps as you like, get your Whisper Box, reply and join debates — all free while we grow. If paid plans arrive later, they'll add extras on top."
     }
   },
   "subscribePage": {

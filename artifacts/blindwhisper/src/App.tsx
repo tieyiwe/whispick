@@ -24,6 +24,7 @@ import { watchForUpdates, isUpdateAvailable } from "@/lib/appUpdate";
 import { setAuthTokenGetter, setExtraHeadersGetter, createPushSubscription } from "@workspace/api-client-react";
 import { getAdminMfaToken } from "@/lib/adminMfaGate";
 import { initFeatureUsage } from "@/lib/featureUsage";
+import { SUGGESTIONS_ENABLED } from "@/lib/features";
 import { dark } from '@clerk/themes';
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect, Link } from 'wouter';
 import { Loader2, ArrowLeft } from "lucide-react";
@@ -409,7 +410,11 @@ function ClerkProviderWithRoutes() {
             <Route path="/welcome" component={() => <ProtectedRoute component={WelcomePage} />} />
             <Route path="/send" component={() => <ProtectedRoute component={SendWhisp} />} />
             <Route path="/onboarding/first-whispers" component={() => <ProtectedRoute component={FirstWhispersOnboarding} />} />
-            <Route path="/suggestions" component={() => <ProtectedRoute component={SuggestionsLibrary} />} />
+            {/* Hidden until there are enough users to curate for (lib/features.ts). */}
+            <Route
+              path="/suggestions"
+              component={() => (SUGGESTIONS_ENABLED ? <ProtectedRoute component={SuggestionsLibrary} /> : <Redirect to="/dashboard" />)}
+            />
             <Route path="/whisps/:id" component={() => <ProtectedRoute component={WhispDetail} />} />
             <Route path="/whisps" component={() => <ProtectedRoute component={WhispsList} />} />
             <Route path="/circle" component={() => <ProtectedRoute component={CircleFeed} />} />
