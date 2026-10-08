@@ -19,15 +19,35 @@ function parsePositiveIntOr(raw: string, fallback: number): number {
 // back to the default rather than silently becoming unlimited.
 const FREE_PLAN_WHISPER_LINKS_DEFAULT = 3;
 
+// Payments are off until the owner deliberately turns them on: Blind Whisper
+// launches free to grow its user base, with Stripe activated later. Both are
+// required — the explicit switch AND a Stripe key — so a key added for
+// testing can't start charging (or start capping free users) by accident.
+// Read per call so flipping the env var takes effect on the next request.
+export function isBillingEnabled(): boolean {
+  return process.env.BILLING_ENABLED?.trim().toLowerCase() === "true" && !!process.env.STRIPE_SECRET_KEY;
+}
+
+// While billing is off there's no way to upgrade, so a monthly cap would just
+// be a dead end for the most engaged users — free accounts are uncapped
+// (abuse is still bounded per hour by createWhispLimiter). An explicit
+// FREE_PLAN_WHISPER_LINKS always wins, either way.
 function freePlanWhisperLinks(): number | null {
   const raw = process.env.FREE_PLAN_WHISPER_LINKS?.trim();
-  if (!raw) return FREE_PLAN_WHISPER_LINKS_DEFAULT;
+  if (!raw) return isBillingEnabled() ? FREE_PLAN_WHISPER_LINKS_DEFAULT : null;
   if (raw.toLowerCase() === "unlimited") return null;
   return parsePositiveIntOr(raw, FREE_PLAN_WHISPER_LINKS_DEFAULT);
 }
 
 export const PLAN_LIMITS: Record<string, { whisperLinksPerMonth: number | null; monthlyBoostCredits: number }> = {
-  free: { whisperLinksPerMonth: freePlanWhisperLinks(), monthlyBoostCredits: 0 },
+  // A getter, not a value computed at import: the cap depends on
+  // isBillingEnabled(), which can change without a restart.
+  free: {
+    get whisperLinksPerMonth() {
+      return freePlanWhisperLinks();
+    },
+    monthlyBoostCredits: 0,
+  },
   spark: { whisperLinksPerMonth: null, monthlyBoostCredits: 2 },
   ember: { whisperLinksPerMonth: null, monthlyBoostCredits: 5 },
 };

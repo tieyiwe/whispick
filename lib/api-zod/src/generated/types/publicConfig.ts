@@ -11,4 +11,6 @@ export interface PublicConfig {
   smsDeliveryEnabled: boolean;
   /** Whether WhatsApp delivery is available */
   whatsappDeliveryEnabled: boolean;
+  /** Whether payments (plans, credit packs, reply credits) are switched on. While false the app is free and every purchase/upgrade surface should be hidden. */
+  billingEnabled: boolean;
 }

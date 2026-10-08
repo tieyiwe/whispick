@@ -22,7 +22,8 @@ export const HealthCheckResponse = zod.object({
  */
 export const GetPublicConfigResponse = zod.object({
   "smsDeliveryEnabled": zod.boolean().describe('Whether SMS delivery (Whisper Links, invites, Text Whisps, debate topic whisps) is available'),
-  "whatsappDeliveryEnabled": zod.boolean().describe('Whether WhatsApp delivery is available')
+  "whatsappDeliveryEnabled": zod.boolean().describe('Whether WhatsApp delivery is available'),
+  "billingEnabled": zod.boolean().describe('Whether payments (plans, credit packs, reply credits) are switched on. While false the app is free and every purchase\/upgrade surface should be hidden.')
 })
 
 

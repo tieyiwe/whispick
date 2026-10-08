@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { GetPublicConfigResponse } from "@workspace/api-zod";
 import { isSmsDeliveryEnabled, isWhatsAppDeliveryEnabled } from "../lib/messagingChannels";
+import { isBillingEnabled } from "../lib/plans";
 
 const router: IRouter = Router();
 
@@ -19,6 +20,7 @@ router.get("/config", (_req, res) => {
   const data = GetPublicConfigResponse.parse({
     smsDeliveryEnabled: isSmsDeliveryEnabled(),
     whatsappDeliveryEnabled: isWhatsAppDeliveryEnabled(),
+    billingEnabled: isBillingEnabled(),
   });
   res.set("Cache-Control", "public, max-age=300");
   res.json(data);

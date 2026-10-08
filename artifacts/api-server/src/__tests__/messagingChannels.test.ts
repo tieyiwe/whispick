@@ -56,14 +56,14 @@ describe("GET /api/config", () => {
   it("is public and reports both phone channels disabled by default", async () => {
     const res = await request(app).get("/api/config");
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ smsDeliveryEnabled: false, whatsappDeliveryEnabled: false });
+    expect(res.body).toEqual({ smsDeliveryEnabled: false, whatsappDeliveryEnabled: false, billingEnabled: false });
     expect(res.headers["cache-control"]).toMatch(/max-age=\d+/);
   });
 
   it("reflects the env flags when turned on", async () => {
     process.env.SMS_DELIVERY_ENABLED = "true";
     const res = await request(app).get("/api/config");
-    expect(res.body).toEqual({ smsDeliveryEnabled: true, whatsappDeliveryEnabled: false });
+    expect(res.body).toEqual({ smsDeliveryEnabled: true, whatsappDeliveryEnabled: false, billingEnabled: false });
   });
 });
 

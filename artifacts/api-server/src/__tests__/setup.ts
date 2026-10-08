@@ -4,6 +4,11 @@ process.env.DATABASE_URL ??= "postgresql://postgres:postgres@localhost:5432/whis
 process.env.PORT ??= "0";
 process.env.NODE_ENV = "test";
 process.env.ANTHROPIC_API_KEY ??= "test-anthropic-key";
+// The app launches free (billing off → no monthly Whisper Link cap, see
+// lib/plans.ts). Pin the pre-launch 3/month cap for the suite so the many
+// existing cap tests keep exercising it; billingLaunch.test.ts covers the
+// uncapped free mode explicitly.
+process.env.FREE_PLAN_WHISPER_LINKS ??= "3";
 
 // lib/adminMfa.ts signs unlock tokens with this (falls back to
 // CLERK_SECRET_KEY in production, which tests don't set).

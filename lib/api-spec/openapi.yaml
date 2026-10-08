@@ -4981,9 +4981,13 @@ components:
         whatsappDeliveryEnabled:
           type: boolean
           description: Whether WhatsApp delivery is available
+        billingEnabled:
+          type: boolean
+          description: Whether payments (plans, credit packs, reply credits) are switched on. While false the app is free and every purchase/upgrade surface should be hidden.
       required:
         - smsDeliveryEnabled
         - whatsappDeliveryEnabled
+        - billingEnabled
 
     ApiError:
       type: object
