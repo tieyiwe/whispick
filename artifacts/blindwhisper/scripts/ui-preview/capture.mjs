@@ -57,12 +57,29 @@ const VIEWPORTS = {
 //   initScript: function run in the page before any app code (addInitScript)
 // ---------------------------------------------------------------------------
 function fakeBeforeInstallPrompt() {
+  // Headless Chromium reports notifications as "denied"; a fresh real
+  // browser would be "default" (askable), which is the state worth reviewing.
+  try { Object.defineProperty(Notification, "permission", { get: () => "default" }); } catch { /* ignore */ }
   window.addEventListener("load", () => {
     const e = new Event("beforeinstallprompt", { cancelable: true });
     e.prompt = async () => {};
     e.userChoice = Promise.resolve({ outcome: "dismissed" });
     window.dispatchEvent(e);
   });
+}
+
+// Drives /send forward: step 1 (paste link) → 2 (preview/trim) → 3 (note+mood).
+// Relies on SendWhisp.tsx's data-testids; POST /api/video/meta is a fixture.
+async function sendFlowTo(page, step) {
+  await page.locator('[data-testid="input-video-url"]').fill("https://www.youtube.com/watch?v=sunrise01");
+  await page.locator('[data-testid="button-fetch-video"]').click();
+  await page.waitForTimeout(1200);
+  if (step >= 3) {
+    await page.locator('[data-testid="button-next-step2"]').click();
+    await page.waitForTimeout(500);
+    await page.locator('[data-testid="textarea-anonymous-note"]').fill("Saw this and immediately thought of you. You're braver than you know.").catch(() => {});
+    await page.waitForTimeout(400);
+  }
 }
 
 const screens = [
@@ -82,23 +99,8 @@ const screens = [
   { name: "welcome", path: "/welcome", initScript: fakeBeforeInstallPrompt },
   { name: "dashboard", path: "/dashboard", topShot: true },
   { name: "send", path: "/send" },
-  {
-    name: "send-step2",
-    path: "/send",
-    action: async (page) => {
-      // Paste a link and advance — best effort; the step UI may change.
-      const input = page.locator('input[type="url"], input[placeholder*="http" i], input[placeholder*="link" i], input[placeholder*="youtube" i]').first();
-      if (await input.count()) {
-        await input.fill("https://www.youtube.com/watch?v=sunrise01");
-        await page.waitForTimeout(1200);
-      }
-      const next = page.getByRole("button", { name: /^(next|continue)\b/i }).first();
-      if (await next.count() && await next.isEnabled().catch(() => false)) {
-        await next.click().catch(() => {});
-        await page.waitForTimeout(800);
-      }
-    },
-  },
+  { name: "send-step2", path: "/send", action: (page) => sendFlowTo(page, 2) },
+  { name: "send-step3", path: "/send", action: (page) => sendFlowTo(page, 3) },
   { name: "whisps-sent", path: "/whisps" },
   {
     name: "whisps-received",
@@ -109,7 +111,8 @@ const screens = [
     },
   },
   { name: "whisp-detail", path: "/whisps/w_sent_1" },
-  { name: "whisp-detail-received", path: "/whisps/w_recv_1" },
+  // Received whisps open on the public page (WhispsList links them to /w/:token).
+  { name: "recipient-signed-in", path: "/w/pv_tok_recv1", topShot: true },
   { name: "replies", path: "/replies" },
   { name: "whisper-box-inbox", path: "/whisper-box" },
   { name: "circle", path: "/circle" },
@@ -338,11 +341,14 @@ async function capture(browser, screen, vpName) {
     // account for the largest overflowing scrollable element.
     const measure = () => page.evaluate(() => {
       const doc = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight) - window.innerHeight;
-      let inner = 0;
+      // The page's main scroller = the tallest scrollable element (ignores
+      // nested scroll areas like a chat thread, which should stay clipped).
+      let main = null;
       for (const el of document.querySelectorAll("body *")) {
         const oy = getComputedStyle(el).overflowY;
-        if ((oy === "auto" || oy === "scroll") && el.clientHeight > 200) inner = Math.max(inner, el.scrollHeight - el.clientHeight);
+        if ((oy === "auto" || oy === "scroll") && el.scrollHeight > el.clientHeight + 1 && (!main || el.clientHeight > main.clientHeight)) main = el;
       }
+      const inner = main && main.clientHeight > window.innerHeight * 0.5 ? main.scrollHeight - main.clientHeight : 0;
       return Math.max(doc, inner, 0);
     });
     const extra = await measure();

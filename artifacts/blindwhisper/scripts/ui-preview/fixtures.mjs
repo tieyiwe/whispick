@@ -54,7 +54,7 @@ export const profile = {
   mfaNudgeDismissedAt: ago(2 * DAY),
   plan: "free",
   boostCredits: 12,
-  whisperLinksUsed: 7,
+  whisperLinksUsed: 2,
   role: "user",
   emailNotificationsEnabled: true,
   showOnlineStatus: true,
@@ -104,7 +104,7 @@ export const sentWhisps = [
     deliveredAt: ago(3 * HOUR),
     openedAt: ago(2 * HOUR),
     watchedAt: ago(2 * HOUR - 5 * MIN),
-    appreciationResponse: "grateful",
+    appreciationResponse: "yes",
     appreciationRespondedAt: ago(90 * MIN),
     aiTakeaway: "A gentle reminder that beginnings are allowed to be messy.",
     aiTakeawayStatus: "ready",
@@ -120,7 +120,7 @@ export const sentWhisps = [
     recipientEmail: "sam.lee@example.com",
     anonymousNote: "For the days that feel slow. They count too.",
     moodTag: "heal-together",
-    status: "watched",
+    status: "replied",
     publicToken: "pv_tok_ocean",
     deliveredAt: ago(1 * DAY),
     openedAt: ago(20 * HOUR),
@@ -434,7 +434,7 @@ export const notifications = [
   { id: "n1", title: "New reply on your whisp", body: "Someone replied to “The Science of Starting Over”.", url: "/whisps/w_sent_1", kind: "reply", createdAt: ago(25 * MIN), read: false },
   { id: "n2", title: "You received a whisp", body: "Someone sent you a video with a note.", url: "/whisps/w_recv_1", kind: "received", createdAt: ago(40 * MIN), read: false },
   { id: "n3", title: "Your whisp was watched", body: "“What the Ocean Teaches Us About Patience” was watched.", url: "/whisps/w_sent_2", kind: "watched", createdAt: ago(19 * HOUR), read: false },
-  { id: "n4", title: "Someone appreciated your whisp", body: "They said: grateful.", url: "/whisps/w_sent_1", kind: "appreciation", createdAt: ago(90 * MIN), read: true },
+  { id: "n4", title: "Someone appreciated your whisp", body: "They said it was exactly what they needed.", url: "/whisps/w_sent_1", kind: "appreciation", createdAt: ago(90 * MIN), read: true },
   { id: "n5", title: "New Whisper Box message", body: "You have a new anonymous message.", url: "/whisper-box", kind: "whisper_box", createdAt: ago(5 * HOUR), read: true },
 ].map((n) => ({ targetUserId: "usr_preview", targetUserEmail: null, createdByAdminId: null, createdByAdminEmail: null, ...n }));
 
@@ -548,15 +548,41 @@ export const routes = [
     const box = search.get("box") ?? "sent";
     if (box === "received") return receivedWhisps;
     if (box === "archived") return [];
-    return sentWhisps;
+    const status = search.get("status");
+    return status ? sentWhisps.filter((w) => w.status === status) : sentWhisps;
   }],
   ["GET", /^\/api\/whisps\/([^/]+)\/replies$/, ({ params }) => repliesByWhisp[params[1]] ?? []],
   ["GET", /^\/api\/whisps\/([^/]+)\/matches$/, () => ({ matchedCount: 12, openedCount: 9, watchedCount: 7, repliedCount: 2, appreciatedCount: 3 })],
   ["GET", /^\/api\/whisps\/([^/]+)$/, ({ params }) => whispDetail(params[1])],
+  ["POST", /^\/api\/video\/meta$/, () => ({ title: "The Science of Starting Over — A Short Film", thumbnail: thumb("sunrise01"), platform: "youtube", embedUrl: "https://www.youtube.com/embed/sunrise01", authorName: "Little Lantern Films", noPreview: false })],
   ["POST", /^\/api\/whisps\/note-suggestions$/, () => ({ suggestions: ["Thought of you the second I saw this.", "No reason. Just because you matter.", "For the version of you that's still figuring it out."] })],
 
   // --- public recipient page ---
-  ["GET", /^\/api\/public\/w\/([^/]+)$/, ({ params }) => ({ ...publicWhisp, id: params[1] === PUBLIC_WHISP_TOKEN ? publicWhisp.id : `pw_${params[1]}` })],
+  ["GET", /^\/api\/public\/w\/([^/]+)$/, ({ params, state }) => {
+    // A received whisp opened by the signed-in recipient (WhispsList links
+    // received items to /w/:token): sender handle + recipient-only fields.
+    const recv = receivedWhisps.find((w) => w.publicToken === params[1]);
+    if (recv && !state.signedOut) {
+      return {
+        ...publicWhisp,
+        id: recv.id,
+        ...yt(recv.videoThumbnail.split("/")[4]),
+        videoTitle: recv.videoTitle,
+        anonymousNote: recv.anonymousNote,
+        moodTag: recv.moodTag,
+        senderAlias: null,
+        senderHandle: recv.senderHandle,
+        aiTakeaway: null,
+        aiTakeawayStatus: null,
+        expiresAt: null,
+        replies: repliesByWhisp[recv.id] ?? [],
+        recipientRepliesRemaining: null,
+        videoRepliesAllowed: true,
+        hasOpenedBefore: recv.openedAt != null,
+      };
+    }
+    return { ...publicWhisp, id: params[1] === PUBLIC_WHISP_TOKEN ? publicWhisp.id : `pw_${params[1]}` };
+  }],
   ["*", /^\/api\/public\/w\/[^/]+\/.*$/, () => ok],
 
   // --- debate topics ---
