@@ -76,8 +76,9 @@ async function sendFlowTo(page, step) {
   await page.waitForTimeout(1200);
   if (step >= 3) {
     await page.locator('[data-testid="button-next-step2"]').click();
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1000); // let the step slide-in finish first
     await page.locator('[data-testid="textarea-anonymous-note"]').fill("Saw this and immediately thought of you. You're braver than you know.").catch(() => {});
+    await page.locator('[data-testid="textarea-anonymous-note"]').blur().catch(() => {});
     await page.waitForTimeout(400);
   }
 }
@@ -351,17 +352,31 @@ async function capture(browser, screen, vpName) {
       const inner = main && main.clientHeight > window.innerHeight * 0.5 ? main.scrollHeight - main.clientHeight : 0;
       return Math.max(doc, inner, 0);
     });
-    const extra = await measure();
-    if (extra >= 2) {
-      await page.setViewportSize({ width: vp.viewport.width, height: Math.min(vp.viewport.height + extra, 12000) });
+    // Interactions (fill/click) can leave scrollers scrolled — including
+    // sideways inside overflow-x:hidden ones mid-animation. Reset so the
+    // full-height shot starts at the top-left like a fresh page.
+    await page.evaluate(() => {
+      for (const el of [document.documentElement, document.body, ...document.querySelectorAll("body *")]) {
+        if (el.tagName === "TEXTAREA") continue;
+        if (el.scrollLeft) el.scrollLeft = 0;
+        if (el.scrollTop) el.scrollTop = 0;
+      }
+    });
+    let extra = await measure();
+    for (let i = 0; i < 4 && extra >= 2; i++) {
+      const cur = page.viewportSize().height;
+      await page.setViewportSize({ width: vp.viewport.width, height: Math.min(cur + extra, 12000) });
       await page.waitForTimeout(500);
-      // Content sized in vh/dvh grows with the viewport (e.g. a 100dvh hero),
-      // so it never "fits" — fall back to Playwright's stitched fullPage.
-      if ((await measure()) >= 2) {
+      const next = await measure();
+      // Content sized in vh/dvh grows with the viewport (e.g. a 100dvh hero)
+      // and never "fits" — fall back to Playwright's stitched fullPage.
+      if (next >= extra * 0.8 && next > 40) {
         await page.setViewportSize(vp.viewport);
         await page.waitForTimeout(400);
         useStitched = true;
+        break;
       }
+      extra = next;
     }
   }
   await page.screenshot({ path: f, fullPage: useStitched });
