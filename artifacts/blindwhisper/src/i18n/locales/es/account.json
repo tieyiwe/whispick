@@ -73,7 +73,12 @@
     "privacyGhostBoostText": "Ghost Boost no recopila información de contacto del destinatario — es un envío en cola con mayor alcance, sin destinatario específico, no un anuncio dirigido.",
     "privacyDataRequestText": "Puedes solicitar una exportación completa de tus datos o la eliminación de tu cuenta contactando con soporte.",
     "privacyPolicyLink": "Política de privacidad",
-    "termsOfServiceLink": "Términos del servicio"
+    "termsOfServiceLink": "Términos del servicio",
+    "saveProfile": "Guardar perfil",
+    "saveAvatar": "Guardar avatar",
+    "savedHint": "Todos los cambios guardados",
+    "unsavedHint": "Cambios sin guardar",
+    "personalDetailsCardTitle": "Datos personales"
   },
   "accountSecurityPage": {
     "title": "Seguridad de la cuenta",
@@ -126,6 +131,22 @@
       "triple": "Ahorra 14%",
       "ten": "Ahorra 29%",
       "twentyfive": "Ahorra 43%"
+    },
+    "freePlanName": "Gratis",
+    "timeAgo": "hace {{time}}",
+    "creditsDelta_one": "{{amount}} crédito",
+    "creditsDelta_other": "{{amount}} créditos",
+    "txTypes": {
+      "purchase": "Compra de paquete de créditos",
+      "plan_grant": "Créditos mensuales del plan",
+      "spend": "Ghost Boost",
+      "boost": "Ghost Boost",
+      "bonus": "Créditos de bonificación",
+      "refund": "Reembolso"
+    },
+    "freeForNow": {
+      "title": "Blind Whisper es gratis por ahora",
+      "body": "Envía todos los whisps que quieras, obtén tu Whisper Box, responde y únete a debates — todo gratis mientras crecemos. Si más adelante llegan planes de pago, sumarán extras adicionales."
     }
   },
   "subscribePage": {
@@ -182,7 +203,8 @@
     "toastRevealRequestFailed": "No se pudo solicitar la revelación",
     "smsDisclosure": "Al enviar a un número de teléfono, le estás escribiendo en tu propio nombre. Pueden aplicarse tarifas de mensajes y datos. Responde STOP para darte de baja, HELP para ayuda. Consulta nuestros",
     "smsTermsLinkText": "Términos de SMS",
-    "smsConsentCheckbox": "Confirmo que tengo el permiso de esta persona para recibir un mensaje de texto de mi parte a través de Blind Whisper."
+    "smsConsentCheckbox": "Confirmo que tengo el permiso de esta persona para recibir un mensaje de texto de mi parte a través de Blind Whisper.",
+    "smsConsentOneTime": "Solo tienes que confirmarlo una vez por cada contacto nuevo."
   },
   "publicInvitePage": {
     "notFound": "No se pudo encontrar esta invitación.",

@@ -8,7 +8,8 @@
   },
   "avatarPickerGrid": {
     "chooseAvatar": "Elige un avatar",
-    "noAvatar": "Sin avatar"
+    "noAvatar": "Sin avatar",
+    "useInitial": "Usar mi inicial"
   },
   "cameraCapture": {
     "modePhoto": "Foto",
@@ -66,7 +67,9 @@
     "destinationLabel": "¿A dónde debería ir?",
     "publicCircle": "Blind Circle público",
     "anonymousDisclaimer": "Publicado de forma anónima — tu nombre nunca se muestra. Cualquiera que pueda ver este círculo puede ver la publicación.",
-    "postAnonymously": "Publicar de forma anónima"
+    "postAnonymously": "Publicar de forma anónima",
+    "titleLabelPublic": "Título (visible para todos los que vean la publicación)",
+    "titlePlaceholderOptional": "Opcional. El nombre de tu archivo nunca se comparte"
   },
   "countryPhoneInput": {
     "searchCountry": "Buscar país...",
@@ -80,7 +83,8 @@
     "commentCount_other": "{{count}} comentarios",
     "shareTopicAria": "Compartir este tema",
     "joinDebate": "Únete al debate",
-    "onlineAriaLabel": "En línea ahora"
+    "onlineAriaLabel": "En línea ahora",
+    "shareText": "Únete a este debate y responde de forma 100% anónima:"
   },
   "demographicsGateDialog": {
     "title": "Solo una cosita rápida",

@@ -48,7 +48,9 @@
     "notifications": "Notificaciones",
     "unreadCount": "{{count}} sin leer",
     "markAllRead": "Marcar todas como leídas",
-    "noNotificationsYet": "Aún no tienes notificaciones."
+    "noNotificationsYet": "Aún no tienes notificaciones.",
+    "timeAgo": "hace {{time}}",
+    "justNow": "Justo ahora"
   },
   "phoneVerificationDialog": {
     "title": "Verifica tu número de teléfono",
@@ -122,7 +124,11 @@
     "openOn": "Abrir en {{platform}}",
     "openOriginal": "Abrir original",
     "videoAlt": "Video",
-    "watchTheVideo": "Ver el video"
+    "watchTheVideo": "Ver el video",
+    "externalLinkTitle": "Vas a salir de Blind Whisper",
+    "externalLinkDescription": "Este video está alojado en {{host}}, que no es una plataforma de video que Blind Whisper reconozca. Continúa solo si confías en este sitio.",
+    "externalLinkCancel": "Cancelar",
+    "externalLinkContinue": "Continuar"
   },
   "whispSentConfirmation": {
     "srOnlySent": "Tu whisp ha sido enviado"

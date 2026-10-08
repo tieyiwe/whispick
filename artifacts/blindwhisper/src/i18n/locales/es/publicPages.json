@@ -15,7 +15,8 @@
         "slide2Desc": "Nunca sabrán que fuiste tú.",
         "slide3Title": "A menos que quieras que lo sepan",
         "slide3Desc": "Revélate cuando quieras — siempre es tu decisión."
-      }
+      },
+      "secondaryCta": "Mira cómo funciona"
     },
     "cta": {
       "startSendingWhisps": "Empieza a enviar Whisps"
@@ -50,7 +51,8 @@
           "title": "Enviado, así de fácil",
           "desc": "Te avisaremos en el momento en que lo vean."
         }
-      }
+      },
+      "scrollHint": "Desliza para ver cada paso"
     },
     "noAwkwardness": {
       "badge": "Sin contacto visual incómodo",
@@ -106,11 +108,45 @@
     "footer": {
       "privacyPolicy": "Política de privacidad",
       "termsOfService": "Términos del servicio",
-      "smsTerms": "Términos de SMS"
+      "smsTerms": "Términos de SMS",
+      "learnMore": "Más sobre Blind Whisper",
+      "howItWorks": "Cómo funciona",
+      "whisperBox": "Enlace de mensajes anónimos",
+      "debateNow": "Debate Now",
+      "liveDebates": "Debates en vivo",
+      "ideas": "Qué enviar",
+      "safety": "Seguridad",
+      "faq": "Preguntas frecuentes",
+      "about": "Acerca de"
     }
   },
   "notFound": {
     "title": "404: página no encontrada",
     "message": "¿Olvidaste añadir la página al enrutador?"
+  },
+  "publicHeader": {
+    "homeAria": "Inicio de Blind Whisper",
+    "navAria": "Conoce Blind Whisper",
+    "nav": {
+      "howItWorks": "Cómo funciona",
+      "whisperBox": "Whisper Box",
+      "debateNow": "Debate Now",
+      "safety": "Seguridad"
+    }
+  },
+  "auth": {
+    "backHome": "Inicio",
+    "signUpReassurance": "Gratis · un toque con Google",
+    "signInReassurance": "Qué bueno verte de nuevo · un toque con Google"
+  },
+  "marketingPage": {
+    "breadcrumbAria": "Ruta de navegación",
+    "home": "Inicio",
+    "lastUpdated": "Última actualización",
+    "commonQuestions": "Preguntas comunes",
+    "questionsAndAnswers": "Preguntas y respuestas",
+    "keepReading": "Sigue leyendo",
+    "communityGuidelines": "Normas de la comunidad",
+    "serviceOf": "Blind Whisper · un servicio de TIBLOGICS · v{{version}}"
   }
 }

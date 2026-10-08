@@ -11,7 +11,10 @@
     "whispToSomeoneElse": "Whisp a otra persona",
     "couldntUpdateThat": "No se pudo actualizar eso",
     "movedBackToList": "Movido de vuelta a tu lista",
-    "whispDeleted": "Whisp eliminado"
+    "whispDeleted": "Whisp eliminado",
+    "timeAgo": "hace {{time}}",
+    "justNow": "Justo ahora",
+    "whispAgain": "Volver a enviar Whisp"
   },
   "dashboard": {
     "title": "Panel",
@@ -53,6 +56,17 @@
       "heading": "Mira tu Recap",
       "description": "Un resumen de tu actividad en Blind Whisper, listo para compartir: enviados, recibidos y todo lo demás.",
       "cta": "Ver mi Recap"
+    },
+    "welcome": {
+      "subtitle": "Te damos la bienvenida — aquí vivirán tus whisps.",
+      "title": "Envía tu primer whisp",
+      "description": "Elige un video que diga lo que tú no puedes, añade una nota si quieres y envíalo de forma anónima. Aquí verás cuándo lo abren, lo ven y lo responden.",
+      "cta": "Envía tu primer whisp",
+      "steps": {
+        "pick": "Elige un video",
+        "note": "Añade una nota",
+        "send": "Envíalo de forma anónima"
+      }
     }
   },
   "sendWhisp": {
@@ -184,7 +198,11 @@
       "smsTermsLinkText": "Términos de SMS",
       "or": "o",
       "chooseFromContacts": "Elegir de Contactos",
-      "smsConsentCheckbox": "Confirmo que tengo el permiso de esta persona para recibir un mensaje de texto de mi parte a través de Blind Whisper."
+      "smsConsentCheckbox": "Confirmo que tengo el permiso de esta persona para recibir un mensaje de texto de mi parte a través de Blind Whisper.",
+      "smsConsentOneTime": "Solo tienes que confirmarlo una vez por cada contacto nuevo.",
+      "descriptionEmailOnly": "Ingresa un correo. Agrega comas si hay más de uno.",
+      "placeholderEmailOnly": "sam@ejemplo.com, jo@ejemplo.com",
+      "phonesUnavailable": "El envío por SMS y WhatsApp aún no está disponible — usa un correo en lugar de {{list}}."
     },
     "step6": {
       "heading": "¿Listo para enviar?",
@@ -233,7 +251,8 @@
       "partialSendTitle": "Enviado a {{succeeded}}, no se pudo alcanzar a {{failed}}",
       "membersSkipped_one": "{{count}} miembro omitido",
       "membersSkipped_other": "{{count}} miembros omitidos",
-      "membersSkippedDescription": "No tenían la información de contacto que necesita este canal."
+      "membersSkippedDescription": "No tenían la información de contacto que necesita este canal.",
+      "noEmailForContact": "Ese contacto no tiene correo — el envío por SMS aún no está disponible."
     }
   },
   "whispDetail": {
@@ -285,7 +304,8 @@
     "outOfReplies": {
       "title": "Han usado todas sus respuestas anónimas.",
       "description": "No pueden responder de nuevo a menos que agregues más respuestas, o creen una cuenta gratis. Aún puedes enviar mensajes de seguimiento.",
-      "comingSoonButton": "Agregar más respuestas (próximamente)"
+      "comingSoonButton": "Agregar más respuestas (próximamente)",
+      "descriptionFree": "Pueden seguir respondiendo si crean una cuenta gratis — seguirán siendo anónimos para ti. Aún puedes enviar mensajes de seguimiento."
     },
     "oneReplyLeft": "Les queda 1 respuesta anónima.",
     "recipientLabel": "Destinatario",
@@ -376,7 +396,9 @@
     "videoWhispsHeading": "Respuestas de Whisps de video",
     "textWhispsHeading": "Respuestas de Whisps de texto",
     "videoWhispsEmpty": "Aún no hay respuestas a tus Whisps de video.",
-    "textWhispsEmpty": "Aún no hay respuestas a tus Whisps de texto."
+    "textWhispsEmpty": "Aún no hay respuestas a tus Whisps de texto.",
+    "tabVideo": "Whisps de video",
+    "tabText": "Whisps de texto"
   },
   "groupSendDetail": {
     "notFound": "Envío grupal no encontrado.",
@@ -421,7 +443,9 @@
       "memberRemoved": "Miembro eliminado",
       "failedToRemoveMember": "Error al eliminar miembro",
       "groupDeleted": "Grupo eliminado",
-      "failedToDeleteGroup": "Error al eliminar el grupo"
+      "failedToDeleteGroup": "Error al eliminar el grupo",
+      "addEmail": "Agrega un correo",
+      "noneHadEmail": "Ninguno de esos contactos tenía correo"
     }
   },
   "whisperGroups": {
@@ -491,7 +515,8 @@
       "attachPhoto": "Adjuntar una foto",
       "couldntAttachImage": "No se pudo adjuntar esa imagen",
       "keepItKind": "Sé amable — el objetivo aquí es una conversación genuina y productiva.",
-      "unlimitedCommentsSuffix": "para comentarios ilimitados."
+      "unlimitedCommentsSuffix": "para comentarios ilimitados.",
+      "messagePosterHint": "Los comentarios aquí son públicos. Para hablar a solas con el autor, envíale un mensaje privado: solo esa persona lo verá."
     },
     "reply": {
       "headerConversation": "Conversación anónima",
@@ -521,7 +546,11 @@
       "sendButton": "Enviar respuesta",
       "guessToggle": "Adivina quién lo envió 🕵️",
       "guessHint": "Ellos eligen cómo reaccionar — nunca es una respuesta automática.",
-      "guessPlaceholder": "Creo que fue..."
+      "guessPlaceholder": "Creo que fue...",
+      "quickRepliesAriaLabel": "Respuestas rápidas",
+      "collapseComposerAriaLabel": "Minimizar el cuadro de respuesta",
+      "removeVideoAriaLabel": "Quitar video",
+      "videoChip": "Responder con video"
     },
     "reveal": {
       "viewerAccepted": "Les has hecho saber que está bien revelarse.",
@@ -566,6 +595,19 @@
       "couldntStartConversation": "No se pudo iniciar esa conversación",
       "guessSentAnonymously": "¡Tu suposición fue enviada! 🕵️"
     },
-    "notFound": "No se pudo encontrar este whisp."
+    "notFound": "No se pudo encontrar este whisp.",
+    "keepForever": {
+      "heading": "Este whisp desaparece en {{time}}",
+      "description": "Crea una cuenta gratis para conservarlo para siempre — guárdalo, responde cuando quieras y no pierdas nunca los que importan.",
+      "button": "Guardarlo en una cuenta gratis",
+      "disclaimer": "Un toque con Google — no se requiere tarjeta."
+    },
+    "reciprocityCta": {
+      "heading": "Alguien te envió un whisp.",
+      "description": "Consigue tu propio enlace para que otros también puedan enviarte whisps — de forma anónima, cuando tengan algo que decir.",
+      "button": "Obtener mi Whisper Box"
+    },
+    "loadError": "No se pudo cargar este whisp en este momento. Sigue aquí — es solo un problema temporal.",
+    "tryAgain": "Intentar de nuevo"
   }
 }

@@ -1,0 +1,31 @@
+{
+  "badge": "Ya estás dentro",
+  "title": "Te damos la bienvenida a Blind Whisper",
+  "titleNamed": "Te damos la bienvenida, {{name}}",
+  "subtitle": "Dos toques rápidos y Blind Whisper funciona como una app de verdad — para que nunca te pierdas un whisp.",
+  "install": {
+    "title": "Instala la app",
+    "body": "Abre Blind Whisper desde tu pantalla de inicio, a pantalla completa, como cualquier otra app.",
+    "button": "Instalar Blind Whisper",
+    "iosStep1": "Toca el botón Compartir en la barra de herramientas de Safari",
+    "iosStep2": "Elige “Añadir a pantalla de inicio” y luego Añadir",
+    "inAppBrowser": "Estás en el navegador de otra app, que no puede instalar apps. Abre esta página en Safari o Chrome para instalarla.",
+    "copyLink": "Copiar enlace",
+    "copied": "Enlace copiado",
+    "unavailable": "Este navegador no puede instalar apps — puedes seguir usando Blind Whisper aquí mismo, o abrirlo más tarde en Chrome, Edge o Safari.",
+    "doneTitle": "App instalada",
+    "doneBody": "Blind Whisper ya está en tu pantalla de inicio."
+  },
+  "notify": {
+    "title": "Activa las alertas",
+    "body": "Entérate al instante cuando alguien te envíe un whisp, te responda o conteste tu debate. Las alertas nunca muestran quién envió nada.",
+    "button": "Activar alertas",
+    "afterInstall": "En iPhone, las alertas funcionan una vez que Blind Whisper está en tu pantalla de inicio — ábrelo desde ahí y actívalas en Configuración.",
+    "blocked": "Las notificaciones están bloqueadas para este sitio. Puedes permitirlas cuando quieras en la configuración de tu navegador.",
+    "unsupported": "Este navegador no admite alertas. Igual verás todo en la app.",
+    "doneTitle": "Alertas activadas",
+    "doneBody": "Te avisaremos cuando llegue algo."
+  },
+  "continue": "Continuar",
+  "skip": "Omitir por ahora"
+}

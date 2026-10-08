@@ -94,7 +94,8 @@
       "linkCopied": "Enlace copiado: envíalo para sumar a alguien al debate",
       "copyFailed": "No se pudo copiar — cópialo manualmente",
       "topicRetracted": "Tema retirado",
-      "retractError": "No se pudo retirar el tema"
+      "retractError": "No se pudo retirar el tema",
+      "handleReserved": "Ese nombre está reservado — elige otro."
     },
     "sendWhispDialog": {
       "title": "Whisper este tema",
@@ -129,7 +130,10 @@
       "body": "Crea una cuenta gratuita para que podamos avisarte en cuanto alguien reaccione a él.",
       "cta": "Crear cuenta gratis",
       "dismissAria": "Cerrar"
-    }
+    },
+    "cancelReplyAria": "Cancelar respuesta",
+    "charactersLeftAria_one": "Queda {{count}} carácter",
+    "charactersLeftAria_other": "Quedan {{count}} caracteres"
   },
   "debateTopics": {
     "followingButton": "Siguiendo",
