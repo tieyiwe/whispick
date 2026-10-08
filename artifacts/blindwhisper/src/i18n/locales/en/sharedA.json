@@ -8,7 +8,8 @@
   },
   "avatarPickerGrid": {
     "chooseAvatar": "Choose an avatar",
-    "noAvatar": "No avatar"
+    "noAvatar": "No avatar",
+    "useInitial": "Use my initial"
   },
   "cameraCapture": {
     "modePhoto": "Photo",

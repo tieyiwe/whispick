@@ -353,16 +353,33 @@ export function SettingsPage() {
     );
   }
 
-  function handleSave() {
+  // The Profile card (private details) and the Debate Now identity card
+  // (public avatar) each save only their own fields, so each button is
+  // scoped to what's on its card and is only enabled once that card has
+  // something to save. The update endpoint is a partial update — the
+  // toggles above already send single fields the same way.
+  const profileDirty =
+    !!profile &&
+    (fullName !== (profile.fullName ?? "") ||
+      gender !== (profile.gender ?? "") ||
+      ageRange !== (profile.ageRange ?? "") ||
+      preferredLanguage !== (profile.preferredLanguage ?? ""));
+  const avatarDirty = !!profile && whispererAvatarId !== (profile.whispererAvatarId ?? null);
+  const [savingScope, setSavingScope] = useState<"profile" | "avatar" | null>(null);
+
+  function handleSave(scope: "profile" | "avatar") {
+    setSavingScope(scope);
     updateProfile.mutate(
       {
-        data: {
-          fullName: fullName || null,
-          gender: gender || null,
-          ageRange: ageRange || null,
-          ...(preferredLanguage ? { preferredLanguage: preferredLanguage as any } : {}),
-          whispererAvatarId,
-        },
+        data:
+          scope === "profile"
+            ? {
+                fullName: fullName || null,
+                gender: gender || null,
+                ageRange: ageRange || null,
+                ...(preferredLanguage ? { preferredLanguage: preferredLanguage as any } : {}),
+              }
+            : { whispererAvatarId },
       },
       {
         onSuccess: () => {
@@ -371,10 +388,11 @@ export function SettingsPage() {
           // sync effect (which only fires once the invalidated query
           // refetches) — the whole point of picking a language here is
           // seeing it take effect right away, not on the next navigation.
-          if (preferredLanguage) void i18n.changeLanguage(preferredLanguage);
+          if (scope === "profile" && preferredLanguage) void i18n.changeLanguage(preferredLanguage);
           toast({ title: t("settingsPage.toastProfileUpdated") });
         },
         onError: () => toast({ title: t("settingsPage.toastProfileUpdateFailed"), variant: "destructive" }),
+        onSettled: () => setSavingScope(null),
       }
     );
   }
@@ -404,14 +422,14 @@ export function SettingsPage() {
             list reads as a few labeled clusters instead of 8 identical
             unlabeled boxes in a row. */}
         <div className="space-y-4">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 px-1">
+          <h2 className="font-sans text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground px-1">
             {t("settingsPage.sectionGroupProfile")}
           </h2>
 
         <Card className="bg-card border-border/50">
           <CardHeader>
             <CardTitle className="text-base font-serif flex items-center gap-2">
-              <User className="w-4 h-4 text-primary" /> {t("settingsPage.profileCardTitle")}
+              <User className="w-4 h-4 text-primary" /> {t("settingsPage.personalDetailsCardTitle")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -487,15 +505,20 @@ export function SettingsPage() {
               </div>
             </div>
 
-            <Button
-              onClick={handleSave}
-              disabled={updateProfile.isPending}
-              className="rounded-full"
-              data-testid="button-save-profile"
-            >
-              {updateProfile.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              {t("settingsPage.saveChanges")}
-            </Button>
+            <div className="flex items-center justify-between gap-3 border-t border-border/40 pt-4">
+              <p className="text-xs text-muted-foreground" aria-live="polite">
+                {profileDirty ? t("settingsPage.unsavedHint") : t("settingsPage.savedHint")}
+              </p>
+              <Button
+                onClick={() => handleSave("profile")}
+                disabled={!profileDirty || updateProfile.isPending}
+                className="h-10 rounded-full px-5 shrink-0"
+                data-testid="button-save-profile"
+              >
+                {savingScope === "profile" ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                {t("settingsPage.saveProfile")}
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -535,15 +558,20 @@ export function SettingsPage() {
                 onSelect={setWhispererAvatarId}
               />
             </div>
-            <Button
-              onClick={handleSave}
-              disabled={updateProfile.isPending}
-              className="rounded-full"
-              data-testid="button-save-avatar"
-            >
-              {updateProfile.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              {t("settingsPage.saveChanges")}
-            </Button>
+            <div className="flex items-center justify-between gap-3 border-t border-border/40 pt-4">
+              <p className="text-xs text-muted-foreground" aria-live="polite">
+                {avatarDirty ? t("settingsPage.unsavedHint") : t("settingsPage.savedHint")}
+              </p>
+              <Button
+                onClick={() => handleSave("avatar")}
+                disabled={!avatarDirty || updateProfile.isPending}
+                className="h-10 rounded-full px-5 shrink-0"
+                data-testid="button-save-avatar"
+              >
+                {savingScope === "avatar" ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                {t("settingsPage.saveAvatar")}
+              </Button>
+            </div>
           </CardContent>
         </Card>
         </div>
@@ -552,7 +580,7 @@ export function SettingsPage() {
             access surfaces, grouped separately from the profile-presentation
             cards above. */}
         <div className="space-y-4">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 px-1">
+          <h2 className="font-sans text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground px-1">
             {t("settingsPage.sectionGroupAccountSecurity")}
           </h2>
 
@@ -652,7 +680,7 @@ export function SettingsPage() {
             what it does with your data, grouped last since these are the
             "set it and forget it" preferences rather than identity/security. */}
         <div className="space-y-4">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 px-1">
+          <h2 className="font-sans text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground px-1">
             {t("settingsPage.sectionGroupPreferences")}
           </h2>
 

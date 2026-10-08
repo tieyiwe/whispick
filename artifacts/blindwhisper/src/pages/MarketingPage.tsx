@@ -1,7 +1,8 @@
 import { useLocation, Link } from "wouter";
 import { ArrowRight, Check, ChevronDown, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { LogoLockup } from "@/components/ui/logo";
+import { useTranslation } from "react-i18next";
+import { PublicHeader } from "@/components/shared/PublicHeader";
 import { MARKETING_PAGES, getMarketingPage, type MarketingPageDef } from "@/lib/marketingPages";
 import { APP_VERSION } from "@/lib/appVersion";
 
@@ -30,8 +31,6 @@ function SmartLink({ href, children, ...rest }: { href: string; children: React.
   );
 }
 
-const HEADER_LINKS = ["/how-it-works", "/anonymous-message-link", "/anonymous-debates", "/safety"];
-
 function formatUpdated(iso: string): string {
   // Fixed format, no Intl/locale lookups, so server and client render the
   // same string (and the prerendered HTML matches what React hydrates to).
@@ -48,6 +47,7 @@ export function MarketingPage() {
 }
 
 function MarketingPageView({ page }: { page: MarketingPageDef }) {
+  const { t } = useTranslation("publicPages");
   const related = page.related.map((p) => getMarketingPage(p)).filter((p): p is MarketingPageDef => !!p);
 
   return (
@@ -55,38 +55,11 @@ function MarketingPageView({ page }: { page: MarketingPageDef }) {
       <div className="pointer-events-none absolute -top-[10%] left-1/2 h-[480px] w-[900px] max-w-[140%] -translate-x-1/2 rounded-full bg-primary/15 blur-[130px]" />
       <div className="pointer-events-none absolute top-[40%] -right-[15%] h-[380px] w-[520px] rounded-full bg-secondary/10 blur-[120px]" />
 
-      <header
-        className="relative z-10 border-b border-border/40 bg-background/70 backdrop-blur"
-        style={{ paddingTop: "env(safe-area-inset-top)" }}
-      >
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <Link href="/" className="shrink-0 transition-opacity hover:opacity-80" aria-label="Blind Whisper home">
-            <LogoLockup />
-          </Link>
-          <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex" aria-label="Learn about Blind Whisper">
-            {HEADER_LINKS.map((href) => {
-              const p = getMarketingPage(href);
-              if (!p) return null;
-              return (
-                <SmartLink
-                  key={href}
-                  href={href}
-                  className={`transition-colors hover:text-foreground ${page.path === href ? "text-foreground" : ""}`}
-                >
-                  {p.navLabel}
-                </SmartLink>
-              );
-            })}
-          </nav>
-          <Button asChild size="sm" className="rounded-full px-4">
-            <Link href="/sign-up">Get started</Link>
-          </Button>
-        </div>
-      </header>
+      <PublicHeader activePath={page.path} />
 
       <main data-marketing-path={page.path} className="relative z-10 mx-auto max-w-3xl px-4 pb-20 pt-12 sm:px-6 sm:pt-16">
-        <nav aria-label="Breadcrumb" className="mb-6 text-xs text-muted-foreground">
-          <Link href="/" className="hover:text-foreground">Home</Link>
+        <nav aria-label={t("marketingPage.breadcrumbAria")} className="mb-6 text-sm text-muted-foreground">
+          <Link href="/" className="hover:text-foreground">{t("marketingPage.home")}</Link>
           <span className="mx-2 opacity-50">/</span>
           <span className="text-foreground/80">{page.navLabel}</span>
         </nav>
@@ -97,7 +70,7 @@ function MarketingPageView({ page }: { page: MarketingPageDef }) {
         <h1 className="mt-5 font-serif text-4xl font-bold leading-[1.1] text-foreground sm:text-5xl">{page.h1}</h1>
         <p className="mt-6 text-lg leading-relaxed text-foreground/85">{page.intro}</p>
         <p className="mt-4 text-xs text-muted-foreground">
-          Last updated <time dateTime={page.updated}>{formatUpdated(page.updated)}</time>
+          {t("marketingPage.lastUpdated")} <time dateTime={page.updated}>{formatUpdated(page.updated)}</time>
         </p>
 
         <div className="mt-12 space-y-14">
@@ -143,7 +116,7 @@ function MarketingPageView({ page }: { page: MarketingPageDef }) {
           {page.faqs && page.faqs.length > 0 && (
             <section>
               <h2 className="font-serif text-2xl font-semibold text-foreground sm:text-3xl">
-                {page.sections.length ? "Common questions" : "Questions & answers"}
+                {page.sections.length ? t("marketingPage.commonQuestions") : t("marketingPage.questionsAndAnswers")}
               </h2>
               <div className="mt-5 divide-y divide-border/50 overflow-hidden rounded-2xl border border-border/50 bg-card/60">
                 {page.faqs.map((faq) => (
@@ -162,7 +135,7 @@ function MarketingPageView({ page }: { page: MarketingPageDef }) {
           )}
         </div>
 
-        <section className="relative mt-16 overflow-hidden rounded-3xl border border-primary/25 bg-gradient-to-br from-primary/20 via-card to-card p-8 text-center glow-card sm:p-10">
+        <section className="relative mt-16 overflow-hidden rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/20 via-card to-card p-8 text-center glow-card sm:p-10">
           <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/30 blur-[70px]" />
           <h2 className="relative font-serif text-2xl font-semibold text-foreground sm:text-3xl">{page.cta.heading}</h2>
           <p className="relative mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">{page.cta.body}</p>
@@ -175,7 +148,7 @@ function MarketingPageView({ page }: { page: MarketingPageDef }) {
 
         {related.length > 0 && (
           <section className="mt-16">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-muted-foreground">Keep reading</h2>
+            <h2 className="font-sans text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">{t("marketingPage.keepReading")}</h2>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               {related.map((r) => (
                 <SmartLink
@@ -193,22 +166,22 @@ function MarketingPageView({ page }: { page: MarketingPageDef }) {
       </main>
 
       <footer className="relative z-10 border-t border-border/40">
-        <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
-          <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
+        <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 2.5rem)" }}>
+          <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground [&>a]:py-1.5">
             {MARKETING_PAGES.map((p) => (
               <SmartLink key={p.path} href={p.path} className="transition-colors hover:text-foreground">
                 {p.navLabel}
               </SmartLink>
             ))}
-            <a href="/dt" className="transition-colors hover:text-foreground">Live debates</a>
+            <a href="/dt" className="transition-colors hover:text-foreground">{t("landingPage.footer.liveDebates")}</a>
           </div>
-          <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted-foreground/80">
-            <Link href="/privacy" className="hover:text-foreground">Privacy Policy</Link>
-            <Link href="/terms" className="hover:text-foreground">Terms of Service</Link>
-            <Link href="/community-guidelines" className="hover:text-foreground">Community Guidelines</Link>
+          <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted-foreground [&>a]:py-1">
+            <Link href="/privacy" className="hover:text-foreground">{t("landingPage.footer.privacyPolicy")}</Link>
+            <Link href="/terms" className="hover:text-foreground">{t("landingPage.footer.termsOfService")}</Link>
+            <Link href="/community-guidelines" className="hover:text-foreground">{t("marketingPage.communityGuidelines")}</Link>
           </div>
-          <p className="mt-6 text-xs text-muted-foreground/60">
-            Blind Whisper · a service of TIBLOGICS · v{APP_VERSION}
+          <p className="mt-6 text-xs text-muted-foreground/70 tabular-nums">
+            {t("marketingPage.serviceOf", { version: APP_VERSION })}
           </p>
         </div>
       </footer>

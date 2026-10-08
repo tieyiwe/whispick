@@ -258,7 +258,7 @@ function SendTextWhispComposer() {
                     type="button"
                     onClick={() => { setSenderAliasKey(alias.key); setCustomAlias(""); }}
                     data-testid={`text-whisp-alias-${alias.testid}`}
-                    className={`p-2 rounded-xl text-xs text-left border transition-all ${
+                    className={`min-h-11 px-3 py-2 rounded-xl text-sm text-left leading-snug border transition-colors duration-150 ${
                       senderAliasKey === alias.key && !customAlias
                         ? "border-primary bg-primary/10 text-foreground"
                         : "border-border/50 text-muted-foreground hover:border-border"
@@ -355,7 +355,7 @@ function SendTextWhispComposer() {
                     />
                     {t("sendTextWhisp.smsConsentCheckbox")}
                   </label>
-                  <p className="text-[11px] text-muted-foreground/80 mt-1">{t("sendTextWhisp.smsConsentOneTime")}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t("sendTextWhisp.smsConsentOneTime")}</p>
                 </>
               )}
             </div>

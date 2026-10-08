@@ -15,7 +15,8 @@
         "slide2Desc": "They'll never know it was you.",
         "slide3Title": "Unless you want them to",
         "slide3Desc": "Reveal yourself anytime — it's always your choice."
-      }
+      },
+      "secondaryCta": "See how it works"
     },
     "cta": {
       "startSendingWhisps": "Start Sending Whisps"
@@ -50,7 +51,8 @@
           "title": "Sent — that's it",
           "desc": "We'll let you know the moment it's seen."
         }
-      }
+      },
+      "scrollHint": "Swipe to see each step"
     },
     "noAwkwardness": {
       "badge": "No awkward eye contact required",
@@ -121,5 +123,30 @@
   "notFound": {
     "title": "404 Page Not Found",
     "message": "Did you forget to add the page to the router?"
+  },
+  "publicHeader": {
+    "homeAria": "Blind Whisper home",
+    "navAria": "Learn about Blind Whisper",
+    "nav": {
+      "howItWorks": "How it works",
+      "whisperBox": "Whisper Box",
+      "debateNow": "Debate Now",
+      "safety": "Safety"
+    }
+  },
+  "auth": {
+    "backHome": "Home",
+    "signUpReassurance": "Free · one tap with Google",
+    "signInReassurance": "Welcome back · one tap with Google"
+  },
+  "marketingPage": {
+    "breadcrumbAria": "Breadcrumb",
+    "home": "Home",
+    "lastUpdated": "Last updated",
+    "commonQuestions": "Common questions",
+    "questionsAndAnswers": "Questions & answers",
+    "keepReading": "Keep reading",
+    "communityGuidelines": "Community Guidelines",
+    "serviceOf": "Blind Whisper · a service of TIBLOGICS · v{{version}}"
   }
 }

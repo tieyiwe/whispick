@@ -56,6 +56,7 @@ import {
 } from "lucide-react";
 import { SiWhatsapp } from "react-icons/si";
 import { PlatformIcon } from "@/components/shared/PlatformIcon";
+import { platformLabel } from "@/lib/platformLabel";
 import { isContactPickerSupported, pickContact } from "@/lib/contactPicker";
 import { parseRecipients, tokenAtCaret, replaceTokenAt, recipientKey } from "@/lib/recipients";
 import { uploadMedia, UploadValidationError, MAX_UPLOAD_DURATION_SECONDS, type UploadedVideoResult } from "@/lib/uploadMedia";
@@ -816,7 +817,7 @@ export function SendWhisp() {
               />
             </div>
           ))}
-          <span className="ml-2 text-xs text-muted-foreground">{t("sendWhisp.stepIndicator", { step, total: steps.length })}</span>
+          <span className="ml-2 text-xs text-muted-foreground tabular-nums">{t("sendWhisp.stepIndicator", { step, total: steps.length })}</span>
         </div>
 
         <Card className="bg-card border-border/50 overflow-hidden">
@@ -824,26 +825,47 @@ export function SendWhisp() {
             {/* Step 1: choose a video */}
             {step === 1 && (
               <div className="space-y-4">
-                <div className="flex gap-1.5 p-1 bg-muted/30 rounded-xl w-fit flex-wrap">
-                  {([
-                    { key: "concierge" as const, label: t("sendWhisp.tabs.concierge"), icon: Sparkles },
-                    { key: "url" as const, label: t("sendWhisp.tabs.url"), icon: Link2 },
-                    { key: "upload" as const, label: t("sendWhisp.tabs.upload"), icon: Upload },
-                    { key: "camera" as const, label: t("sendWhisp.tabs.camera"), icon: Camera },
-                    { key: "library" as const, label: t("sendWhisp.tabs.library"), icon: FolderOpen },
-                  ]).map((tab) => (
-                    <button
-                      key={tab.key}
-                      type="button"
-                      onClick={() => setVideoSource(tab.key)}
-                      data-testid={`tab-source-${tab.key}`}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                        videoSource === tab.key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
-                      }`}
-                    >
-                      <tab.icon className="w-3.5 h-3.5" /> {tab.label}
-                    </button>
-                  ))}
+                {/* The four concrete sources as one evenly split segmented
+                    control (icon over label on phones so all four fit
+                    without wrapping or scrolling), with the AI "describe
+                    it" helper as a quieter chip underneath — it's a
+                    different kind of choice, not a fifth source. */}
+                <div className="space-y-2.5">
+                  <div className="grid grid-cols-4 gap-1 p-1 bg-muted/30 rounded-2xl" role="tablist">
+                    {([
+                      { key: "url" as const, label: t("sendWhisp.tabs.url"), icon: Link2 },
+                      { key: "upload" as const, label: t("sendWhisp.tabs.upload"), icon: Upload },
+                      { key: "camera" as const, label: t("sendWhisp.tabs.camera"), icon: Camera },
+                      { key: "library" as const, label: t("sendWhisp.tabs.library"), icon: FolderOpen },
+                    ]).map((tab) => (
+                      <button
+                        key={tab.key}
+                        type="button"
+                        role="tab"
+                        aria-selected={videoSource === tab.key}
+                        onClick={() => setVideoSource(tab.key)}
+                        data-testid={`tab-source-${tab.key}`}
+                        className={`flex min-h-14 sm:min-h-10 flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 px-0.5 sm:px-2 rounded-xl text-xs sm:text-sm font-medium text-center leading-tight transition-colors duration-150 ${
+                          videoSource === tab.key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        <tab.icon className="w-4 h-4 shrink-0" /> {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setVideoSource("concierge")}
+                    aria-pressed={videoSource === "concierge"}
+                    data-testid="tab-source-concierge"
+                    className={`inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium transition-colors duration-150 ${
+                      videoSource === "concierge"
+                        ? "border-primary/50 bg-primary/10 text-foreground"
+                        : "border-dashed border-primary/30 text-primary hover:bg-primary/5"
+                    }`}
+                  >
+                    <Sparkles className="w-4 h-4 text-primary" /> {t("sendWhisp.tabs.concierge")}
+                  </button>
                 </div>
 
                 {videoSource === "url" && (
@@ -1013,7 +1035,7 @@ export function SendWhisp() {
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-1.5 mb-0.5">
                                       <PlatformIcon platform={video.videoPlatform} className="w-3 h-3" />
-                                      <span className="text-[11px] text-muted-foreground capitalize">{video.videoPlatform}</span>
+                                      <span className="text-xs text-muted-foreground">{platformLabel(video.videoPlatform)}</span>
                                     </div>
                                     <p className="text-sm font-medium text-foreground truncate">{video.videoTitle || t("sendWhisp.concierge.untitledVideo")}</p>
                                     {video.aiSummary && <p className="text-xs text-muted-foreground line-clamp-2">{video.aiSummary}</p>}
@@ -1074,9 +1096,9 @@ export function SendWhisp() {
                       <PlatformIcon platform={videoMeta.platform} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground capitalize">{t("sendWhisp.step2.platformLink", { platform: videoMeta.platform })}</p>
+                      <p className="text-sm font-medium text-foreground">{t("sendWhisp.step2.platformLink", { platform: platformLabel(videoMeta.platform) })}</p>
                       <p className="text-xs text-muted-foreground">
-                        {t("sendWhisp.step2.noPreviewDescription", { platform: videoMeta.platform })}
+                        {t("sendWhisp.step2.noPreviewDescription", { platform: platformLabel(videoMeta.platform) })}
                       </p>
                     </div>
                   </div>
@@ -1092,9 +1114,9 @@ export function SendWhisp() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <PlatformIcon platform={videoMeta.platform} />
-                        <span className="text-xs text-muted-foreground capitalize">{videoMeta.platform}</span>
+                        <span className="text-xs text-muted-foreground">{platformLabel(videoMeta.platform)}</span>
                       </div>
-                      <p className="text-sm font-medium text-foreground truncate">{videoMeta.title || t("sendWhisp.step2.videoFallback")}</p>
+                      <p className="text-sm font-medium text-foreground line-clamp-2">{videoMeta.title || t("sendWhisp.step2.videoFallback")}</p>
                     </div>
                   </div>
                 )}
@@ -1103,9 +1125,9 @@ export function SendWhisp() {
                   <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5 text-muted-foreground" /> {t("sendWhisp.step2.trimHeading")}
                   </p>
-                  <div className="flex items-center gap-2">
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 max-w-sm">
                     <Input
-                      className="bg-input/50 border-border/50 rounded-xl w-28"
+                      className="bg-input/50 border-border/50 rounded-xl tabular-nums"
                       placeholder={t("sendWhisp.step2.startPlaceholder")}
                       value={startTimestamp}
                       onChange={(e) => setStartTimestamp(e.target.value)}
@@ -1113,7 +1135,7 @@ export function SendWhisp() {
                     />
                     <span className="text-muted-foreground text-sm">{t("sendWhisp.step2.to")}</span>
                     <Input
-                      className="bg-input/50 border-border/50 rounded-xl w-28"
+                      className="bg-input/50 border-border/50 rounded-xl tabular-nums"
                       placeholder={t("sendWhisp.step2.endPlaceholder")}
                       value={endTimestamp}
                       onChange={(e) => setEndTimestamp(e.target.value)}
@@ -1183,7 +1205,7 @@ export function SendWhisp() {
                     onClick={handleSuggestNotes}
                     disabled={noteSuggestionsMutation.isPending}
                     data-testid="button-suggest-notes"
-                    className="flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
+                    className="-my-1.5 flex min-h-9 items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
                   >
                     {noteSuggestionsMutation.isPending ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1227,7 +1249,7 @@ export function SendWhisp() {
                         type="button"
                         onClick={() => { setSenderAlias(alias.label); setCustomAlias(""); }}
                         data-testid={`alias-${alias.key}`}
-                        className={`p-2 rounded-xl text-xs text-left border transition-all ${
+                        className={`min-h-11 px-3 py-2 rounded-xl text-sm text-left leading-snug border transition-colors duration-150 ${
                           senderAlias === alias.label && !customAlias
                             ? "border-primary bg-primary/10 text-foreground"
                             : "border-border/50 text-muted-foreground hover:border-border"
@@ -1486,7 +1508,7 @@ export function SendWhisp() {
                       spelling correctly to see is no help. */}
                   {recipientSuggestions.length > 0 && (
                     <div className="space-y-1.5" data-testid="recipient-suggestions">
-                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">
                         {recipientToken.token ? t("sendWhisp.step5.matchingContacts") : t("sendWhisp.step5.recentlySentTo")}
                       </p>
                       <div className="flex flex-wrap gap-2">
@@ -1602,7 +1624,7 @@ export function SendWhisp() {
                         />
                         {t("sendWhisp.step5.smsConsentCheckbox")}
                       </label>
-                      <p className="text-[11px] text-muted-foreground/80">{t("sendWhisp.step5.smsConsentOneTime")}</p>
+                      <p className="text-xs text-muted-foreground">{t("sendWhisp.step5.smsConsentOneTime")}</p>
                     </div>
                   )}
 
@@ -1658,7 +1680,7 @@ export function SendWhisp() {
                         <PlatformIcon platform={videoMeta.platform} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground capitalize">{t("sendWhisp.step2.platformLink", { platform: videoMeta.platform })}</p>
+                        <p className="text-sm font-medium text-foreground">{t("sendWhisp.step2.platformLink", { platform: platformLabel(videoMeta.platform) })}</p>
                         <p className="text-xs text-muted-foreground truncate">{videoUrl}</p>
                       </div>
                     </div>
@@ -1674,7 +1696,7 @@ export function SendWhisp() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <PlatformIcon platform={videoMeta.platform} />
-                          <span className="text-xs text-muted-foreground capitalize">{videoMeta.platform}</span>
+                          <span className="text-xs text-muted-foreground">{platformLabel(videoMeta.platform)}</span>
                         </div>
                         <p className="text-sm font-medium text-foreground truncate">{videoMeta.title || videoUrl || t("sendWhisp.step2.videoFallback")}</p>
                       </div>

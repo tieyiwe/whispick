@@ -52,7 +52,8 @@
       "titleDisabled": "Whisper Box isn't turned on",
       "descriptionDisabled": "Turn it on in Settings to get a public link where anyone can send you one anonymous message — no account needed on their end.",
       "enableCta": "Turn on in Settings"
-    }
+    },
+    "shareLinkCta": "Share your link"
   },
   "settingsSection": {
     "cardTitle": "Whisper Box",

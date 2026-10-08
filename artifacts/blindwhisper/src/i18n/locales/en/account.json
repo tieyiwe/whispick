@@ -73,7 +73,12 @@
     "privacyGhostBoostText": "Ghost Boost doesn't collect recipient contact info — it's a queued, boosted-reach send with no specific recipient, not a targeted ad.",
     "privacyDataRequestText": "You can request a full data export or account deletion by contacting support.",
     "privacyPolicyLink": "Privacy Policy",
-    "termsOfServiceLink": "Terms of Service"
+    "termsOfServiceLink": "Terms of Service",
+    "saveProfile": "Save profile",
+    "saveAvatar": "Save avatar",
+    "savedHint": "All changes saved",
+    "unsavedHint": "Unsaved changes",
+    "personalDetailsCardTitle": "Personal details"
   },
   "accountSecurityPage": {
     "title": "Account security",
@@ -126,6 +131,18 @@
       "triple": "Save 14%",
       "ten": "Save 29%",
       "twentyfive": "Save 43%"
+    },
+    "freePlanName": "Free",
+    "timeAgo": "{{time}} ago",
+    "creditsDelta_one": "{{amount}} credit",
+    "creditsDelta_other": "{{amount}} credits",
+    "txTypes": {
+      "purchase": "Credit pack purchase",
+      "plan_grant": "Monthly plan credits",
+      "spend": "Ghost Boost",
+      "boost": "Ghost Boost",
+      "bonus": "Bonus credits",
+      "refund": "Refund"
     }
   },
   "subscribePage": {

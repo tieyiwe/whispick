@@ -10,15 +10,22 @@ export function LegalLayout({ title, updatedDate, children }: { title: string; u
   return (
     <div className="min-h-[100dvh] bg-background">
       <header
-        className="border-b border-border/50 px-4 sm:px-6 py-4 flex items-center justify-between"
-        style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}
+        className="border-b border-border/40 bg-background/70 backdrop-blur"
+        style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
-        <Link href="/">
-          <LogoLockup />
-        </Link>
-        <Link href="/" className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1">
-          <ArrowLeft className="w-4 h-4" /> {t("legalLayout.home")}
-        </Link>
+        {/* Same container and height as PublicHeader, so moving between the
+            landing/explainer pages and these legal pages doesn't jump. */}
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:h-[72px] sm:px-6">
+          <Link href="/" className="min-w-0 transition-opacity hover:opacity-80">
+            <LogoLockup />
+          </Link>
+          <Link
+            href="/"
+            className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="w-4 h-4" /> {t("legalLayout.home")}
+          </Link>
+        </div>
       </header>
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 py-10 sm:py-14">

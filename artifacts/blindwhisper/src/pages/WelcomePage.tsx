@@ -188,17 +188,21 @@ export function WelcomePage() {
 
       <main
         className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col px-5"
-        style={{ paddingTop: "calc(env(safe-area-inset-top) + 2rem)", paddingBottom: "calc(env(safe-area-inset-bottom) + 1.5rem)" }}
+        style={{ paddingTop: "calc(env(safe-area-inset-top) + 1.5rem)", paddingBottom: "calc(env(safe-area-inset-bottom) + 1rem)" }}
       >
         <div className="flex justify-center">
           <LogoLockup />
         </div>
 
+        {/* Heading, the two steps and the way out read as one composed unit,
+            centred in the remaining height instead of the skip button being
+            pinned to the bottom of a tall, mostly empty screen. */}
+        <div className="flex flex-1 flex-col justify-center py-8">
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
+          initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-          className="mt-10 text-center"
+          transition={{ duration: 0.25, ease: "easeOut" }}
+          className="text-center"
         >
           <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
             <Sparkles className="h-3.5 w-3.5" /> {t("badge")}
@@ -206,23 +210,25 @@ export function WelcomePage() {
           <h1 className="mt-4 font-serif text-3xl font-semibold leading-tight text-foreground">
             {user?.firstName ? t("titleNamed", { name: user.firstName }) : t("title")}
           </h1>
-          <p className="mx-auto mt-3 max-w-xs text-sm leading-relaxed text-muted-foreground">{t("subtitle")}</p>
+          <p className="mx-auto mt-3 max-w-sm text-[15px] leading-relaxed text-muted-foreground text-pretty">{t("subtitle")}</p>
         </motion.div>
 
-        <div className="mt-8 space-y-3">
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25, delay: 0.08, ease: "easeOut" }}
+          className="mt-8 overflow-hidden rounded-2xl border border-border/50 bg-card/80 backdrop-blur divide-y divide-border/50"
+        >
           {/* Step 1 — install */}
-          <motion.section
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
-            className={`rounded-2xl border p-5 backdrop-blur ${installDone ? "border-primary/40 bg-primary/10" : "border-border/60 bg-card/80"}`}
+          <section
+            className={`p-5 transition-colors ${installDone ? "bg-primary/10" : ""}`}
             data-testid="welcome-step-install"
           >
             <div className="flex items-start gap-3">
               <StepIcon done={installDone} index={1} />
               <div className="min-w-0 flex-1">
                 <p className="font-medium text-foreground">{installDone ? t("install.doneTitle") : t("install.title")}</p>
-                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                   {installDone ? t("install.doneBody") : t("install.body")}
                 </p>
 
@@ -238,7 +244,7 @@ export function WelcomePage() {
                 )}
 
                 {!installDone && installMode === "ios" && (
-                  <ol className="mt-4 space-y-2 text-xs text-foreground/90" data-testid="welcome-ios-steps">
+                  <ol className="mt-4 space-y-2 text-sm text-foreground/90" data-testid="welcome-ios-steps">
                     <li className="flex items-center gap-2">
                       <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted/60"><Share className="h-4 w-4" /></span>
                       {t("install.iosStep1")}
@@ -252,7 +258,7 @@ export function WelcomePage() {
 
                 {!installDone && installMode === "in-app-browser" && (
                   <div className="mt-4 space-y-2" data-testid="welcome-in-app-browser">
-                    <p className="flex items-start gap-2 text-xs text-foreground/90">
+                    <p className="flex items-start gap-2 text-sm text-foreground/90">
                       <ExternalLink className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {t("install.inAppBrowser")}
                     </p>
                     <Button variant="outline" size="sm" className="rounded-full" onClick={handleCopyLink}>
@@ -263,25 +269,22 @@ export function WelcomePage() {
                 )}
 
                 {!installDone && installMode === "unavailable" && (
-                  <p className="mt-3 text-xs text-muted-foreground">{t("install.unavailable")}</p>
+                  <p className="mt-3 text-sm text-muted-foreground">{t("install.unavailable")}</p>
                 )}
               </div>
             </div>
-          </motion.section>
+          </section>
 
           {/* Step 2 — notifications */}
-          <motion.section
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
-            className={`rounded-2xl border p-5 backdrop-blur ${notifyDone ? "border-primary/40 bg-primary/10" : "border-border/60 bg-card/80"}`}
+          <section
+            className={`p-5 transition-colors ${notifyDone ? "bg-primary/10" : ""}`}
             data-testid="welcome-step-notifications"
           >
             <div className="flex items-start gap-3">
               <StepIcon done={notifyDone} index={2} />
               <div className="min-w-0 flex-1">
                 <p className="font-medium text-foreground">{notifyDone ? t("notify.doneTitle") : t("notify.title")}</p>
-                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                   {notifyDone
                     ? t("notify.doneBody")
                     : notify === "after-install"
@@ -305,18 +308,19 @@ export function WelcomePage() {
                 )}
               </div>
             </div>
-          </motion.section>
-        </div>
+          </section>
+        </motion.div>
 
-        <div className="mt-auto pt-8">
+        <div className="mt-4">
           <Button
             variant={installDone && notifyDone ? "default" : "ghost"}
-            className="h-12 w-full rounded-full text-sm font-medium"
+            className={`h-12 w-full rounded-full text-sm font-medium ${installDone && notifyDone ? "" : "text-muted-foreground hover:text-foreground"}`}
             onClick={handleContinue}
             data-testid="button-welcome-continue"
           >
             {installDone && notifyDone ? t("continue") : t("skip")}
           </Button>
+        </div>
         </div>
       </main>
     </div>

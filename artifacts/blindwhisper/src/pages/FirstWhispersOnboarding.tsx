@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { platformLabel } from "@/lib/platformLabel";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import {
@@ -541,7 +542,7 @@ export function FirstWhispersOnboarding() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 mb-0.5">
                             <PlatformIcon platform={video.videoPlatform} className="w-3 h-3" />
-                            <span className="text-[11px] text-muted-foreground capitalize">{video.videoPlatform}</span>
+                            <span className="text-xs text-muted-foreground">{platformLabel(video.videoPlatform)}</span>
                           </div>
                           <p className="text-sm font-medium text-foreground truncate">{video.videoTitle || t("step2.untitledVideo")}</p>
                           {video.aiSummary && <p className="text-xs text-muted-foreground line-clamp-2">{video.aiSummary}</p>}
@@ -569,7 +570,7 @@ export function FirstWhispersOnboarding() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <PlatformIcon platform={selectedVideo.videoPlatform} />
-                        <span className="text-xs text-muted-foreground capitalize">{selectedVideo.videoPlatform}</span>
+                        <span className="text-xs text-muted-foreground">{platformLabel(selectedVideo.videoPlatform)}</span>
                       </div>
                       <p className="text-sm font-medium text-foreground truncate">{selectedVideo.videoTitle || t("step2.videoFallback")}</p>
                     </div>

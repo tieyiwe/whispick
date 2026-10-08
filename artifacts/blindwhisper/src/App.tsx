@@ -25,8 +25,10 @@ import { setAuthTokenGetter, setExtraHeadersGetter, createPushSubscription } fro
 import { getAdminMfaToken } from "@/lib/adminMfaGate";
 import { initFeatureUsage } from "@/lib/featureUsage";
 import { dark } from '@clerk/themes';
-import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from 'wouter';
-import { Loader2 } from "lucide-react";
+import { Switch, Route, useLocation, Router as WouterRouter, Redirect, Link } from 'wouter';
+import { Loader2, ArrowLeft } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { LogoLockup } from "@/components/ui/logo";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -145,8 +147,13 @@ const clerkAppearance = {
   theme: dark,
   cssLayerName: "clerk",
   options: {
-    logoPlacement: "inside" as const,
+    // The brand lockup sits above the card in AuthShell, so Clerk's own
+    // in-card logo would just repeat it.
+    logoPlacement: "none" as const,
     logoLinkUrl: basePath || "/",
+    // One-tap Google is the fastest way in — full-width, labelled, and first.
+    socialButtonsPlacement: "top" as const,
+    socialButtonsVariant: "blockButton" as const,
   },
   variables: {
     colorPrimary: "#7C5CFC",
@@ -158,29 +165,69 @@ const clerkAppearance = {
   },
   elements: {
     rootBox: "w-full flex justify-center",
-    cardBox: "bg-[#2D2A45] rounded-2xl w-[440px] max-w-full overflow-hidden shadow-[0_0_24px_rgba(124,92,252,0.15)]",
+    cardBox: "bg-[#2D2A45] rounded-2xl w-[420px] max-w-full overflow-hidden border border-white/[0.06] shadow-[0_24px_60px_-24px_rgba(0,0,0,0.7)]",
     card: "!shadow-none !border-0 !bg-transparent",
     footer: "!shadow-none !border-0 !bg-transparent",
+    headerTitle: "!font-serif !text-2xl !font-semibold",
+    headerSubtitle: "!text-sm",
+    socialButtonsBlockButton: "!h-11 !rounded-full !border-0 !bg-white hover:!bg-white/90 !shadow-none",
+    socialButtonsBlockButtonText: "!text-[#14121F] !text-sm !font-semibold",
+    dividerLine: "!bg-white/10",
+    dividerText: "!text-xs",
+    formFieldInput: "!h-11 !rounded-xl",
+    formButtonPrimary: "!h-11 !rounded-full !text-sm !font-semibold !normal-case !shadow-none",
+    footerActionLink: "!font-medium",
   },
 };
 
-function SignInPage() {
+// Shared frame for the sign-in / sign-up pages: a quiet way back home, the
+// brand lockup over the auth card, and one line of reassurance — so the card
+// doesn't float alone on an empty screen.
+function AuthShell({ reassurance, children }: { reassurance: string; children: React.ReactNode }) {
+  const { t } = useTranslation("publicPages");
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4 relative overflow-hidden">
-      <div className="absolute top-[10%] left-[20%] w-[40%] h-[40%] bg-primary/8 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[10%] right-[20%] w-[30%] h-[30%] bg-secondary/8 rounded-full blur-[100px] pointer-events-none" />
-      <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} forceRedirectUrl={`${basePath}/dashboard`} />
+    <div
+      className="relative flex min-h-[100dvh] flex-col overflow-hidden bg-background"
+      style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}
+    >
+      <div className="absolute top-[5%] left-[15%] w-[45%] h-[40%] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[10%] right-[15%] w-[30%] h-[30%] bg-secondary/8 rounded-full blur-[100px] pointer-events-none" />
+
+      <header className="relative z-10 mx-auto flex h-16 w-full max-w-6xl items-center px-4 sm:h-[72px] sm:px-6">
+        <Link
+          href="/"
+          className="-ml-3 inline-flex h-11 items-center gap-1.5 rounded-full px-3 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" /> {t("auth.backHome")}
+        </Link>
+      </header>
+
+      <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 pb-12 pt-2">
+        <Link href="/" aria-label={t("publicHeader.homeAria")} className="transition-opacity hover:opacity-80">
+          <LogoLockup />
+        </Link>
+        <p className="mt-3 mb-6 text-sm text-muted-foreground">{reassurance}</p>
+        {children}
+      </main>
     </div>
   );
 }
 
-function SignUpPage() {
+function SignInPage() {
+  const { t } = useTranslation("publicPages");
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4 relative overflow-hidden">
-      <div className="absolute top-[10%] left-[20%] w-[40%] h-[40%] bg-primary/8 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[10%] right-[20%] w-[30%] h-[30%] bg-secondary/8 rounded-full blur-[100px] pointer-events-none" />
+    <AuthShell reassurance={t("auth.signInReassurance")}>
+      <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} forceRedirectUrl={`${basePath}/dashboard`} />
+    </AuthShell>
+  );
+}
+
+function SignUpPage() {
+  const { t } = useTranslation("publicPages");
+  return (
+    <AuthShell reassurance={t("auth.signUpReassurance")}>
       <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} forceRedirectUrl={`${basePath}/welcome`} />
-    </div>
+    </AuthShell>
   );
 }
 

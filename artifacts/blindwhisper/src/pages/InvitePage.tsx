@@ -192,7 +192,7 @@ export function InvitePage() {
                   />
                   {t("invitePage.smsConsentCheckbox")}
                 </label>
-                <p className="text-[11px] text-muted-foreground/80">{t("invitePage.smsConsentOneTime")}</p>
+                <p className="text-xs text-muted-foreground">{t("invitePage.smsConsentOneTime")}</p>
               </div>
             )}
 
