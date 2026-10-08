@@ -9,8 +9,19 @@
 export interface TextWhispReply {
   id: string;
   textWhispId: string;
-  senderId: string;
+  /** True when the authenticated caller wrote this reply. Caller-relative by design — the author's real account id is never returned, since on every reply the sender writes it would be the sender's stable users.id, letting two recipients link a common anonymous sender. */
+  fromViewer: boolean;
   /** @maxLength 260 */
   replyText: string;
+  /**
+     * The earlier reply in this same thread this one answers, if any — feeds the quoted-message UI in the shared ReplyThread component.
+     * @nullable
+     */
+  parentReplyId?: string | null;
+  /**
+     * When the OTHER party opened the thread after this reply was sent. Null means sent but not yet seen.
+     * @nullable
+     */
+  readAt?: string | null;
   createdAt: string;
 }

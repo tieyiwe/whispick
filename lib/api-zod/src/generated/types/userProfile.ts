@@ -5,6 +5,7 @@
  * Blind Whisper API — anonymous video recommendation platform
  * OpenAPI spec version: 0.1.0
  */
+import type { AvatarId } from './avatarId';
 
 export interface UserProfile {
   id: string;
@@ -22,6 +23,11 @@ export interface UserProfile {
      */
   phoneVerifiedAt?: string | null;
   /**
+     * ISO 3166-1 alpha-2, self-reported — captured from the country picker at phone-verification time (see users.countryCode), or set directly via PATCH /user/profile. Null until either happens.
+     * @nullable
+     */
+  countryCode?: string | null;
+  /**
      * 'woman' | 'man' | 'nonbinary' | 'prefer_not_to_say' | null (not yet answered)
      * @nullable
      */
@@ -31,9 +37,40 @@ export interface UserProfile {
      * @nullable
      */
   ageRange?: string | null;
+  /**
+     * ISO 639-1 code from lib/languages.ts's SUPPORTED_LANGUAGES ('en' | 'fr' | 'ar' | 'de' | 'es' | 'pt' | 'zh' | 'ja' | 'hi' | 'ru' | 'id' | 'bn' | 'sw' | 'ko'), or null (not yet answered). What the app renders in, and what server-generated text (notifications, emails) is sent in — see users.preferredLanguage.
+     * @nullable
+     */
+  preferredLanguage?: string | null;
+  /**
+     * This account's persistent, public, followable Debate Topics handle — see users.whispererHandle. Null until first assigned (posting a topic, or commenting while signed in).
+     * @nullable
+     */
+  whispererHandle?: string | null;
+  whispererAvatarId?: AvatarId | null;
+  /** Whether this account's Whisper Box handle (see UserRecap.whisperBoxHandle) actually reflects the current fullName — i.e. whether it's the slug (or slug+3-digit-suffix) that name would produce right now, as opposed to a leftover from before a name was set or from a since-changed name. Drives whether WhisperBoxLinkDialog prompts to (re)personalize the link. */
+  whisperBoxHandlePersonalized: boolean;
+  /**
+     * When this account last dismissed the two-factor setup nudge. Whether 2FA is actually ON is never included here — read Clerk's own user.twoFactorEnabled client-side for that; this is only "did they say not now."
+     * @nullable
+     */
+  mfaNudgeDismissedAt?: string | null;
   plan: string;
   boostCredits: number;
   whisperLinksUsed: number;
   role: string;
+  /** Whether this Whisperer wants the "you have a new whisp" email in addition to the in-app notification. On by default — see PATCH /user/profile to change it. */
+  emailNotificationsEnabled: boolean;
+  /** Whether accounts that follow this Whisperer can see them as online (see GET /follows/online-status). On by default. */
+  showOnlineStatus: boolean;
+  /** Admin-only preference — whether this account (when role is 'admin') gets notified when a new user signs up. Inert for a non-admin row. On by default. See lib/adminNotify.ts. */
+  notifyOnNewSignup: boolean;
+  /** Admin-only preference — whether this account (when role is 'admin') gets notified when a new Debate Now topic is posted. Inert for a non-admin row. On by default. See lib/adminNotify.ts. */
+  notifyOnNewDebateTopic: boolean;
+  /**
+     * Best-effort, admin-facing mirror of Clerk's own user.twoFactorEnabled — never used for any access-control decision. Null means never synced yet, distinct from false ("synced, and it's off").
+     * @nullable
+     */
+  twoFactorEnabled?: boolean | null;
   createdAt: string;
 }

@@ -6,7 +6,12 @@
 const STORAGE_KEY = "blindwhisper:forwardVideo";
 
 export interface ForwardVideo {
+  // Exactly one of videoUrl or uploadedVideoId identifies the video —
+  // videoUrl empty means "this is an upload, look at uploadedVideoId
+  // instead," same convention SendWhisp.tsx's own upload/library handlers
+  // already use (setVideoUrl("") alongside setUploadedVideoId(id)).
   videoUrl: string;
+  uploadedVideoId?: string | null;
   videoTitle?: string | null;
   videoThumbnail?: string | null;
   videoEmbedUrl?: string | null;

@@ -1,19 +1,22 @@
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
+import { useTranslation } from "react-i18next";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 
 type TrendPoint = { day: string; count: number };
 
-const chartConfig = {
-  count: { label: "Count", color: "hsl(var(--chart-1))" },
-} satisfies ChartConfig;
+export function TrendAreaChart({ data, valueLabel }: { data: TrendPoint[]; valueLabel?: string }) {
+  const { t } = useTranslation("sharedB");
+  const resolvedValueLabel = valueLabel ?? t("trendAreaChart.count");
+  const chartConfig = {
+    count: { label: resolvedValueLabel, color: "hsl(var(--chart-1))" },
+  } satisfies ChartConfig;
 
-export function TrendAreaChart({ data, valueLabel = "Count" }: { data: TrendPoint[]; valueLabel?: string }) {
   if (!data.length) {
-    return <p className="text-sm text-muted-foreground py-8 text-center">No activity in this period yet.</p>;
+    return <p className="text-sm text-muted-foreground py-8 text-center">{t("trendAreaChart.noActivityYet")}</p>;
   }
 
   return (
-    <ChartContainer config={{ count: { ...chartConfig.count, label: valueLabel } }} className="w-full aspect-auto h-40">
+    <ChartContainer config={{ count: { ...chartConfig.count, label: resolvedValueLabel } }} className="w-full aspect-auto h-40">
       <AreaChart data={data} margin={{ left: 0, right: 0, top: 8 }}>
         <defs>
           <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">

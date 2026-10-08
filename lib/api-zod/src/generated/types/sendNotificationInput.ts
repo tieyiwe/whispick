@@ -23,4 +23,6 @@ export interface SendNotificationInput {
   audience: SendNotificationInputAudience;
   /** Required (non-empty) when audience is 'users'; ignored for 'all'. */
   userIds?: string[];
+  /** Also deliver as a branded email to each recipient's inbox. Respects each user's email-notifications opt-out, skips banned accounts and placeholder addresses. */
+  sendEmail?: boolean;
 }

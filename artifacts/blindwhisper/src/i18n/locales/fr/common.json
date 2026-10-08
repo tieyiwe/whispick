@@ -1,0 +1,37 @@
+{
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "sendWhisp": "Envoyer un Whisp",
+    "myWhisps": "Mes Whisps",
+    "textWhisps": "Whisps texte",
+    "suggestions": "Suggestions",
+    "blindCircle": "Blind Circle",
+    "myBlindCircles": "Mes Blind Circles",
+    "debateTopics": "Debate Now",
+    "following": "Abonnements",
+    "whisperGroups": "Groupes Whisper",
+    "mediaLibrary": "Bibliothèque multimédia",
+    "replies": "Réponses",
+    "whisperBox": "Whisper Box",
+    "inviteAFriend": "Inviter un ami",
+    "creditsAndPlan": "Crédits et forfait",
+    "settings": "Paramètres",
+    "admin": "Administration",
+    "home": "Accueil",
+    "more": "Plus",
+    "debateShort": "Débat",
+    "sections": {
+      "community": "Communauté",
+      "inbox": "Boîte de réception",
+      "create": "Créer",
+      "account": "Compte"
+    },
+    "circleShort": "Circle",
+    "myWhispsShort": "Whisps"
+  },
+  "account": {
+    "settings": "Paramètres",
+    "signOut": "Déconnexion",
+    "menu": "Menu du compte"
+  }
+}

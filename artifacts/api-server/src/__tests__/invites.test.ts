@@ -2,6 +2,11 @@ import { describe, it, expect } from "vitest";
 import request from "supertest";
 import app from "../app";
 import { TEST_USER_HEADER } from "./setup";
+import { adminHeaders } from "./adminTestUtils";
+import { enablePhoneChannelsForFile } from "./phoneChannelTestUtils";
+
+// Exercises SMS/WhatsApp paths, which ship disabled by default.
+enablePhoneChannelsForFile();
 
 const USER_A = "clerk_user_invite_a";
 const USER_B = "clerk_user_invite_b";
@@ -16,9 +21,9 @@ function asUser(userId: string) {
 // rather than importing/exporting it, since admin.test.ts is actively owned
 // by other work landing on this branch right now.
 async function asAdmin() {
-  process.env.ADMIN_EMAILS = ADMIN_EMAIL;
-  await request(app).get("/api/user/profile").set(asUser(ADMIN_CLERK_ID));
-  return asUser(ADMIN_CLERK_ID);
+  // Promotes, enrolls the app's own admin TOTP, verifies a real code, and
+  // returns headers carrying the unlock token — see adminTestUtils.ts.
+  return adminHeaders(ADMIN_CLERK_ID, ADMIN_EMAIL);
 }
 
 async function createInvite(overrides: Record<string, unknown> = {}) {
@@ -45,6 +50,15 @@ describe("POST /api/invites", () => {
     expect(res.status).toBe(400);
   });
 
+  it("rejects an SMS invite without SMS consent confirmation", async () => {
+    const res = await request(app)
+      .post("/api/invites")
+      .set(asUser(USER_A))
+      .send({ channel: "sms", recipientPhone: "+15551234567" });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/permission to receive a text/i);
+  });
+
   it("creates an invite row and returns 201", async () => {
     const res = await createInvite();
     expect(res.status).toBe(201);
@@ -53,7 +67,8 @@ describe("POST /api/invites", () => {
     expect(res.body.status).toBe("sent");
     expect(res.body.publicToken).toBeTruthy();
     expect(res.body.revealRequested).toBe(false);
-    expect(res.body.signedUpUserId).toBeNull();
+    expect(res.body.joined).toBe(false);
+    expect(res.body).not.toHaveProperty("signedUpUserId");
   });
 });
 
@@ -105,7 +120,9 @@ describe("POST /api/invites/claim", () => {
 
     const listed = await request(app).get("/api/invites").set(asUser(USER_A));
     expect(listed.body[0].status).toBe("joined");
-    expect(listed.body[0].signedUpUserId).toBeTruthy();
+    expect(listed.body[0].joined).toBe(true);
+    // The inviter learns THAT it was joined, never the joiner's account id.
+    expect(listed.body[0]).not.toHaveProperty("signedUpUserId");
     expect(listed.body[0].signedUpAt).toBeTruthy();
   });
 
@@ -121,7 +138,7 @@ describe("POST /api/invites/claim", () => {
     // may otherwise read "sent" or "failed" depending on whether the
     // fire-and-forget, no-RESEND_API_KEY-in-tests dispatch has resolved yet.)
     expect(listed.body[0].status).not.toBe("joined");
-    expect(listed.body[0].signedUpUserId).toBeNull();
+    expect(listed.body[0].joined).toBe(false);
   });
 
   it("returns 404 for an unknown token", async () => {

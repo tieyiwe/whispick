@@ -103,3 +103,66 @@ export function textWhispRevealRespondedHookLine(accepted: boolean): string {
 // hand, same as HOOK_LINE.
 export const TEXT_WHISP_GUEST_HOOK_LINE =
   "You've received an anonymous Text Whisp on Blind Whisper — a short note just for you.";
+
+// SMS-only compliant leads for A2P 10DLC — deliberately separate from the
+// HOOK_LINE family above, which also drives in-app notification bodies and
+// public-page copy and varies per trigger (reminder/group/reply/reveal —
+// see reminderHookLine/groupHookLine/newReplyHookLine/revealRequestHookLine).
+// A carrier-reviewed SMS body needs ONE fixed, brand-led, third-person
+// template per delivery type used for every send of that type — variant
+// wording that was never registered as its own sample message is exactly
+// what got this app's last A2P submission rejected. Email and in-app still
+// get the fuller, varying hookLine copy; only the SMS channel — the one a
+// carrier actually reviews — is pinned to these.
+export const SMS_WHISPER_LINK_LEAD = "Blind Whisper: Someone you know shared a video with you.";
+export const SMS_INVITE_LEAD = "Blind Whisper: Someone you know invited you to join Blind Whisper.";
+export const SMS_TEXT_WHISP_LEAD = "Blind Whisper: You have a new message on Blind Whisper.";
+export const SMS_DEBATE_TOPIC_WHISP_LEAD = "Blind Whisper: Someone you know shared a discussion topic with you.";
+
+// Link-preview card copy (the server-rendered OG pages in routes/link.ts,
+// whisperBoxLink.ts, inviteLink.ts, textWhispLink.ts). These are seen by
+// whoever the link is pasted in front of — often a whole group chat — so
+// they sell the mystery and never carry anything identifying: no sender,
+// no recipient contact, no video title/thumbnail, no note text. Image
+// headlines live with the cards themselves in lib/ogImage.ts.
+export const LINK_PREVIEW_COPY = {
+  whisp: {
+    title: "Someone sent you something 👀",
+    description: "It's anonymous. Open it to see what they wanted you to hear.",
+    imageAlt: "Someone has something to tell you — sent anonymously on Blind Whisper.",
+  },
+  circlePost: {
+    title: "An anonymous post on Blind Circle",
+    description: "See what someone shared anonymously — and join the conversation.",
+    imageAlt: "Someone shared this anonymously on Blind Circle.",
+  },
+  invite: {
+    title: "Someone invited you to Blind Whisper 👀",
+    description: "Someone thinks you should be here. Find out what it's about — anonymously.",
+    imageAlt: "Someone thinks you should be here — an anonymous invite to Blind Whisper.",
+  },
+  textWhisp: {
+    title: "Someone wrote you an anonymous note ✉️",
+    description: "Open it to read — they'll stay anonymous unless they choose otherwise.",
+    imageAlt: "Someone wrote you a note — sent anonymously on Blind Whisper.",
+  },
+  // "Anonymous" stays in the title itself: some clients (notably iMessage)
+  // only surface the title in their compact preview. The handle is what the
+  // box's owner chose to share publicly — the link is theirs to post.
+  whisperBox: {
+    title: (handle: string) => `Send @${handle} an anonymous message 🤫`,
+    description: "They'll never know it was you. 100% anonymous — no account needed.",
+    imageAlt: (handle: string) => `Send @${handle} an anonymous message on Blind Whisper.`,
+  },
+} as const;
+
+// Debate Now topic whisp (routes/debateTopicWhisps.ts) — sent when someone
+// Whispers a topic to a specific contact instead of (or alongside) plain
+// link-sharing. Deliberately doesn't name the sender or hint at a
+// relationship the way HOOK_LINE does ("someone who cares about you") —
+// this is "someone thought you'd want to weigh in", not necessarily
+// personal, since any signed-in viewer of a topic can send it, not just
+// people who know the recipient well.
+export function debateTopicWhispHookLine(): string {
+  return "Someone thinks you'd have something to say about this 🗣️";
+}

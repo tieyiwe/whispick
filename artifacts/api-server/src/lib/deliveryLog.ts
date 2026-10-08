@@ -14,18 +14,30 @@ export type DeliveryPurpose =
   | "appreciation_notification"
   | "subscription_verification"
   | "media_expiring"
+  | "media_expired"
   | "reveal_request"
   | "reply_to_recipient"
   // Anonymous invite-a-friend's initial send (routes/invites.ts) — not tied
   // to any whisp, so whispId is always null on these rows.
   | "invite"
+  // Admin-composed announcement email from the admin panel's communication
+  // tool (routes/admin.ts POST /notifications) — always whispId: null.
+  | "admin_announcement"
   // Text Whisps (routes/textWhisps.ts) — a parallel content type with its
   // own id space (text_whisps.id, not whisps.id), so these also always
   // carry whispId: null, same reasoning as "invite" above.
   | "text_whisp"
   | "text_whisp_reply"
   | "text_whisp_reveal_request"
-  | "text_whisp_reveal_response";
+  | "text_whisp_reveal_response"
+  // Debate Now topic whisps (routes/debateTopicWhisps.ts) — a parallel
+  // content type with its own id space (debate_topic_whisps.id, not
+  // whisps.id), same reasoning as "text_whisp" above, so these also always
+  // carry whispId: null.
+  | "debate_topic_whisp"
+  // "Someone replied to your comment / answered your debate" emails
+  // (lib/replyEmail.ts) — whispId: null, the thread lives elsewhere.
+  | "comment_reply_notification";
 
 export type DeliveryLogContext = {
   // Nullable at the type level for sends that aren't about any one whisp

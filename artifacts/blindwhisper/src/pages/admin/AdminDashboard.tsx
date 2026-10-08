@@ -1,10 +1,18 @@
 import { Link } from "wouter";
 import { AdminLayout } from "@/components/layout/AdminLayout";
-import { useAdminGetOverviewStats, useAdminGetOpportunities, useAdminGetFunnelStats } from "@workspace/api-client-react";
+import {
+  useAdminGetOverviewStats,
+  useAdminGetOpportunities,
+  useAdminGetFunnelStats,
+  useAdminGetVisitorsOnline,
+  useAdminGetUsersOnlineNow,
+  getAdminGetVisitorsOnlineQueryKey,
+  getAdminGetUsersOnlineNowQueryKey,
+} from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TrendAreaChart } from "@/components/shared/TrendAreaChart";
-import { Users, Send, UserX, TrendingUp, Lightbulb, TriangleAlert, Info, AlertOctagon } from "lucide-react";
+import { Users, Send, UserX, TrendingUp, Lightbulb, TriangleAlert, Info, AlertOctagon, Globe, Radio } from "lucide-react";
 
 const SEVERITY_CONFIG = {
   opportunity: { icon: Lightbulb, className: "bg-primary/10 border-primary/20 text-primary" },
@@ -17,11 +25,24 @@ export function AdminDashboard() {
   const { data: opportunities, isLoading: opportunitiesLoading } = useAdminGetOpportunities();
   const { data: funnelStats } = useAdminGetFunnelStats();
 
+  // Live "right now" counts, polled on a fast cadence so the Overview shows
+  // real-time presence at a glance without opening the full Analytics page.
+  // visitorsOnline counts every open tab (signed-in OR anonymous, see
+  // visitor_sessions); usersOnline counts signed-in accounts active in the
+  // last few minutes (users.lastSeenAt). Both refetch in the background so
+  // the number keeps ticking even while this tab isn't focused.
+  const { data: visitorsOnline } = useAdminGetVisitorsOnline({
+    query: { queryKey: getAdminGetVisitorsOnlineQueryKey(), refetchInterval: 5_000, refetchIntervalInBackground: true },
+  });
+  const { data: usersOnline } = useAdminGetUsersOnlineNow({
+    query: { queryKey: getAdminGetUsersOnlineNowQueryKey(), refetchInterval: 5_000, refetchIntervalInBackground: true },
+  });
+
   const statCards = [
     { label: "Total Users", value: stats?.totalUsers ?? 0, icon: Users, color: "text-primary", bg: "bg-primary/10" },
     { label: "Total Whisps", value: stats?.totalWhisps ?? 0, icon: Send, color: "text-blue-400", bg: "bg-blue-500/10" },
     { label: "Active (7d)", value: stats?.activeUsersLast7Days ?? 0, icon: TrendingUp, color: "text-secondary", bg: "bg-secondary/10" },
-    { label: "Failed Deliveries", value: funnelStats?.funnel.failed ?? 0, icon: AlertOctagon, color: "text-destructive", bg: "bg-destructive/10", href: "/admin/whisps?status=failed" },
+    { label: "Failed Deliveries", value: funnelStats?.funnel.failed ?? 0, icon: AlertOctagon, color: "text-destructive", bg: "bg-destructive/10", href: "/admin_pro/whisps?status=failed" },
     { label: "Banned", value: stats?.bannedUsers ?? 0, icon: UserX, color: "text-destructive", bg: "bg-destructive/10" },
   ];
 
@@ -31,6 +52,41 @@ export function AdminDashboard() {
         <div>
           <h1 className="text-3xl font-serif font-bold text-foreground">Overview</h1>
           <p className="text-muted-foreground mt-1">App-wide health, growth, and smart analytics.</p>
+        </div>
+
+        {/* Live "right now" strip — refreshes every few seconds. Mirrors the
+            fuller live roster on the Analytics page, surfaced on the Overview
+            so real-time presence is the first thing visible. */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Card className="bg-card border-border/50 relative overflow-hidden">
+            <span className="absolute top-4 right-4 flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+            </span>
+            <CardContent className="p-5">
+              <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                <Globe className="w-4 h-4 text-emerald-400" /> Visitors online now
+              </div>
+              <h3 className="text-3xl font-bold text-foreground mt-2" data-testid="overview-visitors-online">
+                {(visitorsOnline?.onlineCount ?? 0).toLocaleString()}
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1">Every open tab — signed in or anonymous.</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-card border-border/50">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                <Radio className="w-4 h-4 text-primary" /> Signed-in users active now
+              </div>
+              <h3 className="text-3xl font-bold text-foreground mt-2" data-testid="overview-users-online">
+                {(usersOnline?.onlineCount ?? 0).toLocaleString()}
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                Accounts active in the last {usersOnline?.windowMinutes ?? 5} min.{" "}
+                <Link href="/admin_pro/analytics" className="text-primary hover:underline">Full live view →</Link>
+              </p>
+            </CardContent>
+          </Card>
         </div>
 
         {statsLoading ? (
@@ -83,17 +139,11 @@ export function AdminDashboard() {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Card className="bg-card border-border/50">
             <CardContent className="p-5">
               <p className="text-xs text-muted-foreground">New users (30d)</p>
               <p className="text-xl font-bold text-foreground mt-1">{stats?.newUsersLast30Days ?? 0}</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-card border-border/50">
-            <CardContent className="p-5">
-              <p className="text-xs text-muted-foreground">Credit pack purchases</p>
-              <p className="text-xl font-bold text-foreground mt-1">{stats?.creditPackPurchases ?? 0}</p>
             </CardContent>
           </Card>
           <Card className="bg-card border-border/50">

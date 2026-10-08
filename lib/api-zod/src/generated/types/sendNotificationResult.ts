@@ -11,4 +11,8 @@ export interface SendNotificationResult {
   recipientCount: number;
   /** How many active push subscriptions were actually notified live (best-effort; recipients without one still see it in-app). */
   pushDelivered: number;
+  /** Emails delivered when sendEmail was requested (0 otherwise). */
+  emailsSent: number;
+  /** Recipients skipped for email — opted out, banned, placeholder address, or provider failure. */
+  emailsSkipped: number;
 }

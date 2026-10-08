@@ -1,3 +1,5 @@
+import { isSupportedLanguage } from "./languages";
+
 // Mirrors artifacts/api-server/src/lib/demographics.ts — kept in sync by
 // hand, same pattern as VIDEO_CATEGORIES/HOOK_LINE elsewhere in this app.
 export const GENDER_OPTIONS = ["woman", "man", "nonbinary", "prefer_not_to_say"] as const;
@@ -24,11 +26,14 @@ export const AGE_RANGE_LABELS: Record<AgeRange, string> = {
   prefer_not_to_say: "Prefer not to say",
 };
 
-// True until both fields have been answered once — matches the backend
-// gate in POST /whisps and POST /whisper-groups/:id/send exactly, so the
-// frontend can decide to show the confirmation step before even attempting
-// a send instead of only reacting to the 428 it'd otherwise get back.
-export function needsDemographics(profile: { gender?: string | null; ageRange?: string | null } | undefined | null): boolean {
+// True until gender, ageRange, AND preferredLanguage have all been answered
+// once — matches the backend gate in POST /whisps and POST /whisper-groups/
+// :id/send exactly, so the frontend can decide to show the confirmation
+// step before even attempting a send instead of only reacting to the 428
+// it'd otherwise get back.
+export function needsDemographics(
+  profile: { gender?: string | null; ageRange?: string | null; preferredLanguage?: string | null } | undefined | null,
+): boolean {
   if (!profile) return false; // profile not loaded yet — let the real send attempt surface it
-  return !profile.gender || !profile.ageRange;
+  return !profile.gender || !profile.ageRange || !isSupportedLanguage(profile.preferredLanguage);
 }

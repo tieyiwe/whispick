@@ -8,6 +8,8 @@ export const logger = pino({
     "req.headers.authorization",
     "req.headers.cookie",
     "res.headers['set-cookie']",
+    // body-parser errors carry the raw request body — never log it.
+    "err.body",
   ],
   ...(isProduction
     ? {}

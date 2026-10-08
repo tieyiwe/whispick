@@ -1,6 +1,30 @@
 import { useEffect, useRef, useState } from "react";
-import { PlayCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { PlayCircle, ExternalLink } from "lucide-react";
 import confetti from "canvas-confetti";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { externalHostname, isHttpUrl, safeExternalHref } from "@/lib/safeHref";
+import { isAllowedEmbedUrl, isKnownVideoUrl } from "@/lib/videoHosts";
+
+// Proper capitalisation for the "open on ..." link — the stored platform slug
+// is lowercase, and "Open on tiktok" looks like a bug.
+const PLATFORM_LABELS: Record<string, string> = {
+  youtube: "YouTube",
+  vimeo: "Vimeo",
+  tiktok: "TikTok",
+  instagram: "Instagram",
+  facebook: "Facebook",
+  twitter: "X",
+};
 
 type Props = {
   platform?: string | null;
@@ -58,6 +82,7 @@ function loadYouTubeApi(): Promise<void> {
  * and can only ever know it was clicked, not watched.
  */
 export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, startSeconds, endSeconds, uploadSrc, onWatchEvent }: Props) {
+  const { t } = useTranslation("sharedB");
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const firedRef = useRef({ tenSec: false, halfway: false, complete: false });
@@ -67,6 +92,49 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
   // back to the plain "no thumbnail" state rather than showing a broken
   // image behind the play button.
   const [thumbnailFailed, setThumbnailFailed] = useState(false);
+  // A link off to a host we don't recognize waits here for the viewer to
+  // confirm after seeing its domain — see openExternal below.
+  const [pendingExternal, setPendingExternal] = useState<{ url: string; host: string; countsAsClick: boolean } | null>(null);
+
+  // Opens a sender-supplied URL in a new tab. Known video platforms open
+  // straight away; anything else (platform "other") first shows the viewer
+  // the destination hostname, since an arbitrary link is exactly how a
+  // sender would point a recipient at a tracking/phishing page.
+  function openExternal(url: string, countsAsClick: boolean) {
+    if (!isHttpUrl(url)) return;
+    if (isKnownVideoUrl(url)) {
+      if (countsAsClick) onWatchEvent("clicked");
+      window.open(url, "_blank", "noopener,noreferrer");
+      return;
+    }
+    setPendingExternal({ url, host: externalHostname(url) ?? url, countsAsClick });
+  }
+
+  function confirmExternal() {
+    if (!pendingExternal) return;
+    if (pendingExternal.countsAsClick) onWatchEvent("clicked");
+    window.open(pendingExternal.url, "_blank", "noopener,noreferrer");
+    setPendingExternal(null);
+  }
+
+  const externalConfirmDialog = (
+    <AlertDialog open={!!pendingExternal} onOpenChange={(open) => !open && setPendingExternal(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t("videoPlayer.externalLinkTitle")}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {t("videoPlayer.externalLinkDescription", { host: pendingExternal?.host ?? "" })}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel data-testid="button-external-link-cancel">{t("videoPlayer.externalLinkCancel")}</AlertDialogCancel>
+          <AlertDialogAction onClick={confirmExternal} data-testid="button-external-link-continue">
+            {t("videoPlayer.externalLinkContinue")}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
 
   function checkProgress(currentTime: number, duration: number) {
     const fired = firedRef.current;
@@ -154,8 +222,17 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playing, platform]);
 
-  const isEmbeddable = !!embedUrl && (platform === "youtube" || platform === "vimeo");
+  // Anything the server could build an embed for plays here. That's the whole
+  // point of a whisp arriving on its own page — being thrown out to the
+  // Facebook app mid-moment breaks it, and the recipient may not even be
+  // logged in over there.
+  // Only ever iframed from the platform hosts the server itself builds embeds
+  // for — anything else falls back to the thumbnail/link behaviour below.
+  const isEmbeddable = isAllowedEmbedUrl(embedUrl);
   const isNativeVideo = platform === "upload" && !!uploadSrc;
+  // ...but only YouTube and Vimeo report progress back, so only those can be
+  // *measured* as watched. The rest are embedded blind.
+  const hasProgressApi = platform === "youtube" || platform === "vimeo";
 
   if (isNativeVideo && playing) {
     return (
@@ -166,7 +243,7 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
         controls
         autoPlay
         playsInline
-        className="w-full max-h-64 bg-black"
+        className="w-full aspect-video bg-black"
         onLoadedMetadata={(e) => {
           if (startSeconds) e.currentTarget.currentTime = startSeconds;
         }}
@@ -191,16 +268,55 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
     // reliably fire watched_complete) since not every platform supports a
     // native trim param the same way.
     const endParam = endSeconds != null && platform === "youtube" ? `&end=${endSeconds}` : "";
+    // Only appended where it's actually honoured. TikTok and Instagram ignore
+    // it, and Facebook's plugin spells it differently — passing it anyway
+    // would just be noise in the URL.
+    const autoplayParam = hasProgressApi ? "autoplay=1" : "";
+    const src = `${embedUrl}${autoplayParam || startParam || endParam ? (embedUrl!.includes("?") ? "&" : "?") : ""}${autoplayParam}${startParam}${endParam}`;
+
+    // TikTok and Instagram are portrait-first; forcing them into 16:9 would
+    // letterbox the video into a thin strip with black either side.
+    const frameClass =
+      platform === "tiktok"
+        ? "relative mx-auto w-full max-w-[325px] aspect-[9/16] max-h-[70vh] bg-black"
+        : platform === "instagram"
+        ? "relative mx-auto w-full max-w-[400px] h-[540px] max-h-[75vh] bg-black"
+        : "relative aspect-video w-full bg-black";
+
+    const openHref = safeExternalHref(videoUrl);
     return (
-      <div className="relative aspect-video w-full bg-black">
+      <div className={frameClass}>
         <iframe
           ref={iframeRef}
-          src={`${embedUrl}${embedUrl!.includes("?") ? "&" : "?"}autoplay=1${startParam}${endParam}`}
-          title={title ?? "Video"}
+          src={src}
+          title={title ?? t("videoPlayer.videoAlt")}
           className="absolute inset-0 w-full h-full"
           allow="autoplay; encrypted-media; picture-in-picture"
           allowFullScreen
         />
+        {/* Always reachable, never a fallback that only appears on failure:
+            these embeds render public content only, so a restricted or
+            login-walled video loads to an empty frame with nothing to click.
+            This is also the answer for anyone who'd simply rather watch in
+            the app they already use. */}
+        {openHref && (
+          <a
+            href={openHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => {
+              if (isKnownVideoUrl(openHref)) return;
+              e.preventDefault();
+              openExternal(openHref, false);
+            }}
+            data-testid="link-open-on-platform"
+            className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/60 px-3 py-1.5 text-xs text-white/90 backdrop-blur transition-colors hover:bg-black/80 hover:text-white"
+          >
+            <ExternalLink className="w-3 h-3" />
+            {platform ? t("videoPlayer.openOn", { platform: PLATFORM_LABELS[platform] ?? platform }) : t("videoPlayer.openOriginal")}
+          </a>
+        )}
+        {externalConfirmDialog}
       </div>
     );
   }
@@ -219,26 +335,48 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
       disableForReducedMotion: true,
     });
 
-    onWatchEvent("clicked");
+    // "clicked" is what marks the whisp watched now, on every path — pressing
+    // play in an embed, and following a link out to the platform (see
+    // routes/public.ts's track handler). That's why neither branch below fakes
+    // a completion any more.
+    //
+    // They used to. When a platform we can't observe was treated as "watched
+    // all the way through" on the tap, it was the only way those whisps ever
+    // registered at all. Now that a click is enough, claiming completion would
+    // be asserting something we never saw — and it would make the sender's
+    // timeline read "Watched all" for a TikTok that was opened and closed a
+    // second later. watched_complete is left to the players that actually
+    // report it: YouTube, Vimeo, and native uploads, via the progress checks
+    // above.
+    //
+    // Following a link out fires "clicked" only once it's actually opened —
+    // for an unrecognized host that's after the viewer confirms the domain.
     if (isEmbeddable || isNativeVideo) {
+      onWatchEvent("clicked");
       setPlaying(true);
     } else {
-      window.open(videoUrl, "_blank", "noopener,noreferrer");
+      openExternal(videoUrl, true);
     }
   }
 
+  // Both poster states hold the same 16:9 frame the embedded player uses, so
+  // pressing play swaps the poster for the player without the card jumping.
   return thumbnail && !thumbnailFailed ? (
-    <div className="relative">
+    <div className="relative aspect-video w-full overflow-hidden bg-black">
+      {externalConfirmDialog}
       <img
         src={thumbnail}
-        alt={title ?? "Video"}
-        className="w-full object-cover max-h-64"
+        alt={title ?? t("videoPlayer.videoAlt")}
+        className="absolute inset-0 h-full w-full object-cover"
         onError={() => setThumbnailFailed(true)}
       />
-      <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+      {/* A soft vignette rather than a flat grey wash, so the poster still
+          reads as the video while the play control stays legible on it. */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.15),rgba(0,0,0,0.45))] flex items-center justify-center">
         <button
           onClick={handlePlayClick}
-          className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 active:scale-95 transition-all"
+          aria-label={title ? `${t("videoPlayer.watchTheVideo")}: ${title}` : t("videoPlayer.watchTheVideo")}
+          className="w-16 h-16 rounded-full bg-white/20 ring-1 ring-white/30 backdrop-blur-md flex items-center justify-center shadow-[0_8px_24px_rgba(0,0,0,0.35)] hover:bg-white/30 active:scale-95 transition-[background-color,transform] duration-150 ease-out"
           data-testid="button-watch-video"
         >
           <PlayCircle className="w-9 h-9 text-white" />
@@ -246,13 +384,16 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
       </div>
     </div>
   ) : (
-    <button
-      onClick={handlePlayClick}
-      className="w-full h-36 bg-muted flex flex-col items-center justify-center gap-2 hover:bg-muted/80 transition-colors"
-      data-testid="button-watch-video-no-thumb"
-    >
-      <PlayCircle className="w-10 h-10 text-primary" />
-      <span className="text-sm text-muted-foreground">Watch the video</span>
-    </button>
+    <>
+      {externalConfirmDialog}
+      <button
+        onClick={handlePlayClick}
+        className="w-full aspect-video bg-muted/60 flex flex-col items-center justify-center gap-2 hover:bg-muted/80 transition-colors"
+        data-testid="button-watch-video-no-thumb"
+      >
+        <PlayCircle className="w-12 h-12 text-primary" />
+        <span className="text-sm text-muted-foreground">{t("videoPlayer.watchTheVideo")}</span>
+      </button>
+    </>
   );
 }

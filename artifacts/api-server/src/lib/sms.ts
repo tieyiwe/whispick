@@ -1,12 +1,22 @@
 import { logger } from "./logger";
-import { HOOK_LINE, INVITE_HOOK_LINE, TEXT_WHISP_GUEST_HOOK_LINE } from "./copy";
+import { SMS_WHISPER_LINK_LEAD, SMS_INVITE_LEAD, SMS_TEXT_WHISP_LEAD, SMS_DEBATE_TOPIC_WHISP_LEAD } from "./copy";
 import { logDeliveryAttempt, type DeliveryLogContext } from "./deliveryLog";
+import { isSmsDeliveryEnabled, isWhatsAppDeliveryEnabled } from "./messagingChannels";
 
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
 const TWILIO_FROM_NUMBER = process.env.TWILIO_FROM_NUMBER;
 const TWILIO_WHATSAPP_FROM = process.env.TWILIO_WHATSAPP_FROM;
 const TWILIO_WHATSAPP_CONTENT_SID = process.env.TWILIO_WHATSAPP_CONTENT_SID;
+
+// Log lines only ever carry the last 4 digits — full recipient numbers in
+// application logs would be PII sprayed into every log sink/retention
+// window. The full number is still recorded in delivery_attempts (admin-only,
+// see lib/deliveryLog.ts), which is where support actually looks.
+export function maskPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  return digits.length > 4 ? `***${digits.slice(-4)}` : "***";
+}
 
 function twilioAuthHeader(): string {
   return `Basic ${Buffer.from(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`).toString("base64")}`;
@@ -18,7 +28,7 @@ async function postToTwilio(
   params: Record<string, string>,
   logCtx: DeliveryLogContext,
 ): Promise<boolean> {
-  const context = { to, channel };
+  const context = { to: maskPhone(to), channel };
   try {
     const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`, {
       method: "POST",
@@ -67,9 +77,30 @@ async function postToTwilio(
   }
 }
 
+// Delivery-time half of the SMS/WhatsApp launch switch (lib/messagingChannels.ts).
+// Intake routes already reject NEW phone-channel sends while a flag is off,
+// but anything queued before the flag flipped — a scheduled whisp, a
+// reminder, a reveal/reply notification on an older SMS whisp, a scheduled
+// Text Whisp — still funnels through sendSms/sendWhatsApp. Gating here, the
+// one choke point every Twilio message passes through, means none of those
+// can fire either, and each leaves a failed delivery_attempts row explaining
+// why instead of silently vanishing.
+async function rejectDisabledChannel(channel: "sms" | "whatsapp", to: string, logCtx: DeliveryLogContext): Promise<boolean> {
+  const enabled = channel === "sms" ? isSmsDeliveryEnabled() : isWhatsAppDeliveryEnabled();
+  if (enabled) return false;
+  logger.info({ to: maskPhone(to), channel, purpose: logCtx.purpose }, "Phone delivery channel disabled; skipping Twilio send");
+  await logDeliveryAttempt(channel, to, logCtx, {
+    success: false,
+    providerStatus: "channel_disabled",
+    errorMessage: `${channel === "sms" ? "SMS" : "WhatsApp"} delivery is disabled (${channel === "sms" ? "SMS_DELIVERY_ENABLED" : "WHATSAPP_DELIVERY_ENABLED"} is off)`,
+  });
+  return true;
+}
+
 export async function sendSms(to: string, body: string, logCtx: DeliveryLogContext): Promise<boolean> {
+  if (await rejectDisabledChannel("sms", to, logCtx)) return false;
   if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_FROM_NUMBER) {
-    logger.warn({ to }, "Twilio SMS not configured (TWILIO_ACCOUNT_SID/TWILIO_AUTH_TOKEN/TWILIO_FROM_NUMBER); skipping SMS send");
+    logger.warn({ to: maskPhone(to) }, "Twilio SMS not configured (TWILIO_ACCOUNT_SID/TWILIO_AUTH_TOKEN/TWILIO_FROM_NUMBER); skipping SMS send");
     await logDeliveryAttempt("sms", to, logCtx, { success: false, errorMessage: "Twilio SMS is not configured" });
     return false;
   }
@@ -87,9 +118,10 @@ export async function sendSms(to: string, body: string, logCtx: DeliveryLogConte
  * TWILIO_WHATSAPP_CONTENT_SID.
  */
 export async function sendWhatsApp(to: string, linkUrl: string, logCtx: DeliveryLogContext): Promise<boolean> {
+  if (await rejectDisabledChannel("whatsapp", to, logCtx)) return false;
   if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_WHATSAPP_FROM || !TWILIO_WHATSAPP_CONTENT_SID) {
     logger.warn(
-      { to },
+      { to: maskPhone(to) },
       "Twilio WhatsApp not configured (TWILIO_WHATSAPP_FROM/TWILIO_WHATSAPP_CONTENT_SID); skipping WhatsApp send",
     );
     await logDeliveryAttempt("whatsapp", to, logCtx, { success: false, errorMessage: "Twilio WhatsApp is not configured" });
@@ -118,23 +150,39 @@ export async function sendWhatsApp(to: string, linkUrl: string, logCtx: Delivery
 // carrier compliance regardless.
 const COMPLIANCE_FOOTER = "Reply STOP to opt out, HELP for help. Msg & data rates may apply.";
 
-export function whisperLinkSmsBody(publicUrl: string, hookLine: string = HOOK_LINE): string {
-  return `${hookLine}\n${publicUrl}\n— sent anonymously via Blind Whisper\n${COMPLIANCE_FOOTER}`;
+// Deliberately ignores whatever hookLine a caller (deliver.ts's
+// deliverWhisperLink) is using for the email/in-app copy of this same
+// notification — see SMS_WHISPER_LINK_LEAD's own comment for why the SMS
+// channel specifically is pinned to one fixed, compliant template instead
+// of varying by trigger (initial send / reminder / group / reply / reveal).
+export function whisperLinkSmsBody(publicUrl: string): string {
+  return `${SMS_WHISPER_LINK_LEAD}\n${publicUrl}\n${COMPLIANCE_FOOTER}`;
 }
 
-// Anonymous invite-a-friend (routes/invites.ts) — same structure as
-// whisperLinkSmsBody above (product's required hook line, link, compliance
-// footer), just pointed at the invite landing page instead of a whisp.
+// Invite-a-friend (routes/invites.ts) — same structure as
+// whisperLinkSmsBody above (fixed compliant lead, link, compliance footer),
+// just pointed at the invite landing page instead of a whisp.
 export function inviteSmsBody(inviteUrl: string): string {
-  return `${INVITE_HOOK_LINE}\n${inviteUrl}\n— sent anonymously via Blind Whisper\n${COMPLIANCE_FOOTER}`;
+  return `${SMS_INVITE_LEAD}\n${inviteUrl}\n${COMPLIANCE_FOOTER}`;
 }
 
 // Text Whisp guest delivery (routes/textWhisps.ts) — sent when the recipient
 // phone number didn't match a known, OTP-verified Blind Whisper account at
 // send time, so there's no in-app notification to fall back to (see
 // lib/deliver.ts's findVerifiedRecipient / deliverInApp). Same
-// hook-line/link/compliance-footer shape as whisperLinkSmsBody/inviteSmsBody
+// lead/link/compliance-footer shape as whisperLinkSmsBody/inviteSmsBody
 // above, pointed at the public Text Whisp landing page instead.
 export function textWhispGuestSmsBody(publicUrl: string): string {
-  return `${TEXT_WHISP_GUEST_HOOK_LINE}\n${publicUrl}\n— sent anonymously via Blind Whisper\n${COMPLIANCE_FOOTER}`;
+  return `${SMS_TEXT_WHISP_LEAD}\n${publicUrl}\n${COMPLIANCE_FOOTER}`;
+}
+
+// Debate Now topic whisp (routes/debateTopicWhisps.ts) — same fixed
+// lead/link/compliance-footer shape as the others above. Deliberately carries
+// NO sender-written text: the sender's optional note used to be inlined
+// here, which let anyone relay arbitrary free text (a phishing lure, a fake
+// "verify your account" link) to any number from the platform's own
+// registered sender ID. The note still shows in the email and in-app, behind
+// the link. Doesn't include the topic text either (keeps the SMS short).
+export function debateTopicWhispSmsBody(publicUrl: string): string {
+  return `${SMS_DEBATE_TOPIC_WHISP_LEAD}\n${publicUrl}\n${COMPLIANCE_FOOTER}`;
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import {
   useAdminListSuggestions,
@@ -230,9 +230,9 @@ function AgentStatusBanner() {
       onSuccess: (result) => {
         queryClient.invalidateQueries({ queryKey: getAdminGetSuggestionAgentStatusQueryKey() });
         queryClient.invalidateQueries({ queryKey: ["/api/admin/suggestions"] });
-        toast({ title: `Discovery run complete — ${result.inserted} added, ${result.skipped} skipped` });
+        toast({ title: `Intelo run complete — ${result.inserted} added, ${result.skipped} skipped` });
       },
-      onError: () => toast({ title: "Discovery run failed to complete", variant: "destructive" }),
+      onError: () => toast({ title: "Intelo run failed to complete", variant: "destructive" }),
     });
   }
 
@@ -248,7 +248,7 @@ function AgentStatusBanner() {
       <Card className="bg-card border-border/50" data-testid="agent-status-banner-never-run">
         <CardContent className="p-4 flex items-center justify-between gap-4 flex-wrap">
           <p className="text-sm text-muted-foreground">
-            The AI discovery agent hasn't run yet — it checks automatically once a day, or you can trigger it now.
+            Intelo hasn't run yet — it checks automatically once a day, or you can trigger it now.
           </p>
           {runNowButton}
         </CardContent>
@@ -268,8 +268,8 @@ function AgentStatusBanner() {
             <div>
               <p className={`text-sm font-medium ${status.lowCreditSuspected ? "text-destructive" : "text-amber-400"}`}>
                 {status.lowCreditSuspected
-                  ? "AI discovery agent stopped — your Anthropic credit balance looks too low"
-                  : "The last AI discovery run failed"}
+                  ? "Intelo stopped — your Anthropic credit balance looks too low"
+                  : "Intelo's last run failed"}
               </p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {status.lowCreditSuspected
@@ -289,7 +289,7 @@ function AgentStatusBanner() {
     <Card className="bg-card border-border/50" data-testid="agent-status-banner-ok">
       <CardContent className="p-4 flex items-center justify-between gap-4 flex-wrap">
         <p className="text-sm text-muted-foreground">
-          AI discovery last ran {new Date(status.lastRunAt).toLocaleString()} — looking healthy.
+          Intelo last ran {new Date(status.lastRunAt).toLocaleString()} — looking healthy.
         </p>
         {runNowButton}
       </CardContent>
@@ -355,6 +355,13 @@ export function AdminSuggestions() {
   }
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1;
+
+  // Removing the last row of the last page leaves `page` pointing past the
+  // end (the shrunken total no longer covers it) — snap back to the real
+  // last page instead of stranding an empty view.
+  useEffect(() => {
+    if (data && page > totalPages) setPage(totalPages);
+  }, [data, page, totalPages]);
 
   return (
     <AdminLayout>
@@ -485,11 +492,11 @@ export function AdminSuggestions() {
         {data && data.total > PAGE_SIZE && (
           <div className="flex items-center justify-between pt-2">
             <Button variant="outline" size="sm" className="rounded-full" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-              <ChevronLeft className="w-4 h-4 mr-1" /> Prev
+              <ChevronLeft className="w-4 h-4 mr-1 rtl:-scale-x-100" /> Prev
             </Button>
             <span className="text-sm text-muted-foreground">Page {page} of {totalPages}</span>
             <Button variant="outline" size="sm" className="rounded-full" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
-              Next <ChevronRight className="w-4 h-4 ml-1" />
+              Next <ChevronRight className="w-4 h-4 ml-1 rtl:-scale-x-100" />
             </Button>
           </div>
         )}

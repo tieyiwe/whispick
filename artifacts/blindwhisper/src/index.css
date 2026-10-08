@@ -27,6 +27,9 @@
   --color-secondary: hsl(var(--secondary));
   --color-secondary-foreground: hsl(var(--secondary-foreground));
 
+  --color-gilded: hsl(var(--gilded));
+  --color-gilded-foreground: hsl(var(--gilded-foreground));
+
   --color-muted: hsl(var(--muted));
   --color-muted-foreground: hsl(var(--muted-foreground));
 
@@ -71,6 +74,24 @@
   --secondary: 360 100% 71%;
   --secondary-foreground: 0 0% 100%;
 
+  /* Gilded: #E8C86E — a warm gold used sparingly as the app's accent.
+     Deliberately a third hue rather than more violet: on a Midnight
+     background, violet-on-violet flattens (everything "important" ends up
+     the same colour as everything else), while gold is the classic
+     complement to deep violet — it reads as considered rather than loud,
+     and it's warm where the rest of the palette is cool, so a single gold
+     element draws the eye without shouting. Reserved for moments worth
+     marking (a sender's signature, a delivered milestone), never for
+     ordinary UI chrome — an accent used everywhere stops being an accent. */
+  --gilded: 43 73% 67%;
+  --gilded-foreground: 240 33% 8%;
+
+  /* Aqua sits opposite the violet the other way round from gilded — gilded is
+     the warm complement, this is the cool one. Between them the logo's pulse
+     travels violet → aqua → gold as it moves outward. Not general-purpose UI
+     colour: like gilded, it earns its place by being rare. */
+  --aqua: 180 72% 62%;
+
   --muted: 247 24% 30%;
   --muted-foreground: 252 20% 75%;
 
@@ -79,6 +100,14 @@
 
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
+
+  /* A cool jade green, deliberately not the generic Tailwind green(142) —
+     pulled a little toward aqua(180) so it sits in the same cool family as
+     primary/aqua instead of clashing warm-green against violet. Used only
+     for progress states that read as "plenty of time/room left" (e.g. the
+     reveal countdown ring's first half); --gilded and --destructive cover
+     the "getting close" and "urgent" states that follow it. */
+  --success: 152 55% 48%;
 
   --border: 247 24% 30%;
   --input: 247 24% 22%;
@@ -147,8 +176,306 @@
   50% { box-shadow: 0 0 40px rgba(124,92,252,0.3); }
 }
 
+/* Reply-thread message entrance. The overshoot easing (a soft
+   ease-out-back) is what makes a new bubble feel like it "settles" into
+   place rather than snapping in — the difference between a chat that feels
+   mechanical and one that feels alive. Staggered per-message via
+   --message-index so a thread renders as a cascade instead of all at once. */
+@keyframes message-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.message-in {
+  animation: message-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--message-index, 0) * 50ms);
+}
+
+/* Anyone who's asked their OS to reduce motion gets the end state
+   immediately — no travel, no stagger. */
+@media (prefers-reduced-motion: reduce) {
+  .message-in {
+    animation: none;
+  }
+}
+
+/* A guided flow's step content arriving like a page turning, not a form
+   field snapping into place — used by FirstWhispersOnboarding so each of
+   its three steps reads as a small moment rather than an instant DOM swap.
+   Each step's wrapper is a distinct conditional branch, so React already
+   unmounts/remounts it on step change — this class just gives that mount
+   something to animate in with. */
+@keyframes step-in {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.step-in {
+  animation: step-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .step-in {
+    animation: none;
+  }
+}
+
+/* A brief overshoot pop for a flow's payoff moment (e.g. the checkmark on
+   FirstWhispersOnboarding's "sent" screen) — the same settle-in feel as
+   message-in, just bigger, since this fires once per flow rather than once
+   per message. */
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.pop-in {
+  animation: pop-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pop-in {
+    animation: none;
+  }
+}
+
+/* A small "message in flight" cue between the two steps of a compact
+   how-it-works block (PublicWhisperBoxPage's marketing CTA) — a dot
+   traveling left to right on a loop, standing in for "here's the thing
+   this app actually does" instead of a static arrow between two icons. */
+@keyframes whisper-flow {
+  0%, 8% {
+    left: 0%;
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  92%, 100% {
+    left: 100%;
+    opacity: 0;
+  }
+}
+
+.whisper-flow-dot {
+  left: 0%;
+  animation: whisper-flow 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .whisper-flow-dot {
+    animation: none;
+    left: 50%;
+    opacity: 1;
+  }
+}
+
+/* LandingPage hero's small looping "what this app does" visual — three
+   panels stacked absolutely in the same box, cross-fading in a shared
+   10.2s loop via staggered animation-delay (0s / 3.4s / 6.8s — a third of
+   the cycle apart) rather than a JS timer, same trick as an auto-rotating
+   testimonial strip. */
+@keyframes hero-flow-panel {
+  0%, 5% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  11%, 27% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  33%, 100% {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+.hero-flow-panel {
+  opacity: 0;
+  animation: hero-flow-panel 10.2s ease-in-out infinite;
+}
+
+/* Freeze on the first panel instead of cycling — a static "what it does"
+   card still gets the message across without the motion. */
+@media (prefers-reduced-motion: reduce) {
+  .hero-flow-panel {
+    animation: none;
+    opacity: 0;
+    transform: none;
+  }
+  .hero-flow-panel:first-child {
+    opacity: 1;
+  }
+}
+
+/* The reply thread's own scroll area. The scrollbar is deliberately always
+   visible rather than the overlay kind that fades out: it doubles as the
+   signal that there is more conversation above, which is the whole reason
+   the thread scrolls separately from the page. Sized narrow and tinted to
+   the brand so it reads as part of the design, not a browser artifact. */
+.thread-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--primary) / 0.45) transparent;
+  scroll-behavior: smooth;
+}
+
+.thread-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.thread-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.thread-scroll::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--primary) / 0.45);
+  border-radius: 999px;
+}
+
+.thread-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--primary) / 0.7);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thread-scroll {
+    scroll-behavior: auto;
+  }
+}
+
+/* The three arcs in the logo mark are sound leaving the ear, so they brighten
+   in sequence — nearest first — rather than all at once, which would read as
+   a blink instead of a wave travelling outward.
+
+   Each arc carries its own --wave-base/--wave-peak because they rest at
+   different opacities (0.8, 0.5, 0.28) and have to return to those exact
+   values; one shared keyframe with hardcoded numbers would flatten the
+   depth the fade creates. The base is also still on each path as an SVG
+   opacity attribute, which is what takes over when the animation is off. */
+@keyframes logo-wave {
+  0%,
+  62%,
+  100% {
+    opacity: var(--wave-base);
+    stroke: currentColor;
+    stroke-width: var(--wave-weight);
+  }
+  20% {
+    opacity: var(--wave-peak);
+    /* Each arc peaks in its own colour, so the ripple shifts hue as it travels
+       outward instead of just brightening. Resting state stays currentColor,
+       which is what keeps the mark tintable per context. */
+    stroke: var(--wave-color);
+    stroke-width: var(--wave-weight-peak);
+  }
+}
+
+.logo-wave {
+  /* 1.7s with 0.15s between arcs. The previous 2.6s cycle rested from 55% to
+     100% — more than half of it was dead air, which read as a wait rather
+     than a rhythm. Now the three arcs fire within the first 0.6s and the
+     remainder is a single short breath before the next ripple. */
+  animation: logo-wave 1.7s ease-in-out infinite;
+  animation-delay: var(--wave-delay, 0s);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-wave {
+    animation: none;
+  }
+}
+
+/* Same ripple, played through exactly once instead of looping — the send-
+   confirmation moment (WhispSentConfirmation.tsx) needs "it pulsed, then
+   it's done," not a background ambient loop. Kept as its own class rather
+   than adding an animation-iteration-count prop to .logo-wave itself, since
+   every other use of the mark (headers, install prompts) genuinely wants
+   the infinite loop and shouldn't have to opt back into it. */
+.logo-wave-once {
+  animation: logo-wave 1.7s ease-in-out 1;
+  animation-delay: var(--wave-delay, 0s);
+  animation-fill-mode: forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-wave-once {
+    animation: none;
+  }
+}
+
+/* Same ripple again, played through twice — the Text Whisp send confirmation
+   (TextWhispScroll.tsx) wants two visible pulses before the mark fades away,
+   rather than the single pulse-and-hold .logo-wave-once gives the video-whisp
+   confirmation. */
+.logo-wave-twice {
+  animation: logo-wave 1.7s ease-in-out 2;
+  animation-delay: var(--wave-delay, 0s);
+  animation-fill-mode: forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-wave-twice {
+    animation: none;
+  }
+}
+
 .particle {
   animation: float-up 3s ease-out forwards;
+}
+
+/* The three-dot "typing…" indicator on a Text Whisp thread (TextWhispDetail.tsx)
+   — each dot bounces in turn, nearest-first, same "ripple outward" idea as the
+   logo mark's own wave animation rather than all three moving in lockstep. */
+@keyframes typing-dot-bounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-2px);
+    opacity: 1;
+  }
+}
+
+.typing-dot {
+  animation: typing-dot-bounce 1.2s ease-in-out infinite;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.typing-dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .typing-dot {
+    animation: none;
+  }
 }
 
 .glow-card {
@@ -157,4 +484,65 @@
 
 .glow-pulse {
   animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Ambient attention pulse for the policy re-consent prompt — a breathing
+   red glow that reads as "needs you" without strobing. Motion collapses to
+   a static glow for prefers-reduced-motion. */
+@keyframes policy-pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.45); }
+  50% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+}
+.policy-pulse {
+  animation: policy-pulse-glow 1.8s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .policy-pulse {
+    animation: none;
+    box-shadow: 0 0 12px 2px rgba(239, 68, 68, 0.35);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Admin theme — the business HQ wears its own palette, scoped by this
+   class on AdminLayout's root so every token-driven component inside
+   (cards, buttons, badges, inputs) recolors without per-page changes.
+   Charcoal black ground, violet-leaning greys for surfaces (grey "close
+   to violet" per the design ask), and a matte, unshouty yellow as the
+   single accent — the complement that makes actions and active nav read
+   instantly against all that grey. Destructive red is deliberately kept:
+   in an admin surface red must keep meaning "careful", not "brand". */
+.admin-theme {
+  color-scheme: dark;
+  /* Greys sit on the logo's own purple hue (252, same as the member app's
+     --primary) with enough saturation to read as purple-grey rather than
+     neutral — per the owner's ask to pull the HQ grey toward the brand. */
+  --background: 252 18% 8%;
+  --foreground: 250 14% 92%;
+
+  --card: 252 16% 14%;
+  --card-foreground: 250 14% 92%;
+  --card-border: 252 14% 22%;
+
+  --popover: 252 16% 14%;
+  --popover-foreground: 250 14% 92%;
+  --popover-border: 252 14% 22%;
+
+  /* Matte yellow — desaturated enough to feel soft ("cute"), dark text on
+     top for contrast. */
+  --primary: 46 64% 62%;
+  --primary-foreground: 252 18% 10%;
+
+  --secondary: 252 13% 30%;
+  --secondary-foreground: 250 14% 92%;
+
+  --muted: 252 14% 20%;
+  --muted-foreground: 250 9% 63%;
+
+  --accent: 252 14% 20%;
+  --accent-foreground: 250 14% 92%;
+
+  --border: 252 14% 22%;
+  --input: 252 14% 17%;
+  --ring: 46 64% 62%;
 }

@@ -8,4 +8,6 @@
 
 export interface UnreadNotificationCountResponse {
   unreadCount: number;
+  /** Unread notifications of kind "reply" only — lets the Replies tab badge mean "someone replied" rather than lighting up for any unread notification. */
+  unreadReplyCount: number;
 }

@@ -12,4 +12,9 @@ export interface InviteInput {
   /** @nullable */
   recipientPhone?: string | null;
   channel: string;
+  /**
+     * Required (must be true) when channel is "sms" — the inviter confirming they have this recipient's permission to receive a text. Not required for "email" or "whatsapp".
+     * @nullable
+     */
+  smsConsentConfirmed?: boolean | null;
 }

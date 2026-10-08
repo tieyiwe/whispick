@@ -6,9 +6,16 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * For the sender's own view, the full whisp minus recipient-side bookkeeping. For a matched recipient's view (viewerRole "recipient"), an explicit allowlist — sender-only fields such as conciergeRequestId and uploadedVideoId are omitted.
+ */
 export interface Whisp {
   id: string;
-  senderId: string;
+  /**
+     * The sender's real account id — present only when the CALLER is that sender (viewerRole === "sender"). null for a matched recipient viewing a whisp sent TO them (viewerRole === "recipient"), so the anonymous-sender guarantee Whisper Link is built around can't be broken by reading this field off a box=received/archived response.
+     * @nullable
+     */
+  senderId: string | null;
   videoUrl: string;
   /** @nullable */
   videoTitle?: string | null;
@@ -41,6 +48,7 @@ export interface Whisp {
   senderAlias?: string | null;
   /** @nullable */
   moodTag?: string | null;
+  /** ... | 'scheduled' | 'cancelled' (deleted by the sender while still scheduled — never delivered). A matched recipient never sees a 'scheduled' or 'cancelled' whisp. */
   status: string;
   publicToken: string;
   /** @nullable */
@@ -68,4 +76,24 @@ export interface Whisp {
      */
   conciergeRequestId?: string | null;
   createdAt: string;
+  /** True only when the caller is themselves this whisp's matched recipient (see GET /whisps?box=received) — never the underlying recipientUserId, which would let a sender learn whether an arbitrary email/phone belongs to a verified account. */
+  viewerIsRecipient: boolean;
+  /**
+     * 'sender' | 'recipient' | null — which role the caller has on this whisp. Drives pinned/archived below, and (frontend-side) whether Delete is offered — only a sender may delete.
+     * @nullable
+     */
+  viewerRole: string | null;
+  /** Whether the CALLER's own copy of this whisp is pinned (see POST /whisps/{id}/pin) — never the other party's pin state. */
+  pinned: boolean;
+  /** Whether the CALLER's own copy of this whisp is archived (see POST /whisps/{id}/archive) — never the other party's archive state. */
+  archived: boolean;
+  /**
+     * A stable, anonymous pseudonym for this whisp's sender (e.g. "Falcon482"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerRole is "recipient"; null otherwise.
+     * @nullable
+     */
+  senderHandle?: string | null;
+  /** True only when the caller is this whisp's matched recipient and it is still unread — never opened and not yet expired. The same rule GET /whisps/received-unread-count counts by, so the Received tab's "New" markers and badge always agree with the nav badge. Always false for a sender. */
+  unread?: boolean;
+  /** Sender's view only — true when a moderator took this whisp (or the Circle post a circle_dm was cloned from) down. The whisp stays in the sender's lists, but its video is no longer offered. */
+  contentRemoved?: boolean;
 }

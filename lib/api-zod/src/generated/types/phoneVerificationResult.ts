@@ -11,4 +11,6 @@ export interface PhoneVerificationResult {
   phone: string | null;
   /** @nullable */
   phoneVerifiedAt: string | null;
+  /** @nullable */
+  countryCode?: string | null;
 }

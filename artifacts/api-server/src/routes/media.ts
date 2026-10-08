@@ -10,6 +10,8 @@ import { ensureUser } from "../lib/ensureUser";
 import { uploadObject, downloadObject, deleteObject } from "../lib/objectStorage";
 import { uploadLimiter } from "../lib/rateLimit";
 import { fieldLimitedMemoryStorage } from "../lib/fieldLimitedStorage";
+import { stripVideoMetadata, VideoMetadataError } from "../lib/stripVideoMetadata";
+import { reencodeImage } from "../lib/commentImages";
 import {
   ALLOWED_UPLOAD_VIDEO_MIME_TYPES,
   MAX_UPLOAD_DURATION_SECONDS,
@@ -114,27 +116,52 @@ router.post(
       return;
     }
     if (durationSeconds > MAX_UPLOAD_DURATION_SECONDS) {
+      const minutes = Math.floor(MAX_UPLOAD_DURATION_SECONDS / 60);
       res.status(400).json({
-        error: `Please keep uploads under ${Math.floor(MAX_UPLOAD_DURATION_SECONDS / 60)} minutes so they load fast for the recipient.`,
+        error: `Please keep uploads under ${minutes} minute${minutes === 1 ? "" : "s"} so they load fast for the recipient.`,
         code: "video_too_long",
       });
       return;
     }
 
+    // Phone recordings carry GPS, device model and capture time in their
+    // container metadata, and these bytes are served verbatim to an
+    // anonymous recipient (or a public Circle feed) — strip it before
+    // storage. Fails closed: a file we can't parse is rejected rather than
+    // stored with its metadata intact. See lib/stripVideoMetadata.ts.
+    let videoBytes: Buffer;
+    try {
+      videoBytes = stripVideoMetadata(video.buffer, video.mimetype);
+    } catch (err) {
+      if (!(err instanceof VideoMetadataError)) throw err;
+      req.log?.warn({ err: err.message }, "Rejected upload whose container couldn't be parsed for metadata stripping");
+      res.status(400).json({
+        error: "We couldn't process this video file. Try re-exporting it as MP4 or recording it in the app.",
+        code: "video_unprocessable",
+      });
+      return;
+    }
+
+    // The thumbnail is a client-side canvas frame grab (no EXIF of its own),
+    // but it's still client-supplied bytes served to the recipient as a JPEG
+    // — re-encode so nothing else rides along. Best-effort like the upload
+    // itself: an unreadable thumbnail is dropped, never stored as-is.
+    const thumbnailBytes = thumbnail ? await reencodeImage(thumbnail.buffer, "image/jpeg") : null;
+
     const id = randomUUID();
     const ext = EXTENSION_BY_MIME[video.mimetype] ?? "mp4";
     const objectKey = `uploads/${user.id}/${id}/video.${ext}`;
-    const thumbnailObjectKey = thumbnail ? `uploads/${user.id}/${id}/thumb.jpg` : null;
+    const thumbnailObjectKey = thumbnailBytes ? `uploads/${user.id}/${id}/thumb.jpg` : null;
 
-    const videoUploaded = await uploadObject(objectKey, video.buffer);
+    const videoUploaded = await uploadObject(objectKey, videoBytes);
     if (!videoUploaded) {
       res.status(503).json({ error: "Video storage is temporarily unavailable. Try again shortly." });
       return;
     }
 
-    if (thumbnailObjectKey && thumbnail) {
+    if (thumbnailObjectKey && thumbnailBytes) {
       // Best-effort — a missing thumbnail just means no poster image later.
-      await uploadObject(thumbnailObjectKey, thumbnail.buffer);
+      await uploadObject(thumbnailObjectKey, thumbnailBytes);
     }
 
     await db.insert(uploadedVideosTable).values({
@@ -144,7 +171,7 @@ router.post(
       objectKey,
       thumbnailObjectKey,
       mimeType: video.mimetype,
-      sizeBytes: video.size,
+      sizeBytes: videoBytes.length,
       durationSeconds: Math.round(durationSeconds),
       status: "ready",
       expiresAt: computeUploadExpiresAt(),

@@ -1,4 +1,5 @@
 import { logger } from "./logger";
+import { maskPhone } from "./piiScrub";
 
 // Twilio Verify — a separate product from the raw SMS sending in lib/sms.ts,
 // purpose-built for "prove this caller actually controls this phone number"
@@ -34,7 +35,7 @@ export type StartVerificationResult =
 // app.
 export async function startPhoneVerification(phone: string): Promise<StartVerificationResult> {
   if (!isConfigured()) {
-    logger.warn({ phone }, "Twilio Verify not configured (TWILIO_VERIFY_SERVICE_SID); skipping phone verification start");
+    logger.warn({ phone: maskPhone(phone) }, "Twilio Verify not configured (TWILIO_VERIFY_SERVICE_SID); skipping phone verification start");
     return { ok: false, error: "Phone verification is not configured" };
   }
 
@@ -53,13 +54,13 @@ export async function startPhoneVerification(phone: string): Promise<StartVerifi
 
     if (!res.ok) {
       const body = await res.text();
-      logger.error({ phone, status: res.status, body }, "Failed to start Twilio Verify verification");
+      logger.error({ phone: maskPhone(phone), status: res.status, body }, "Failed to start Twilio Verify verification");
       return { ok: false, error: "Couldn't send a verification code to that number" };
     }
 
     return { ok: true };
   } catch (err) {
-    logger.error({ phone, err }, "Error starting Twilio Verify verification");
+    logger.error({ phone: maskPhone(phone), err }, "Error starting Twilio Verify verification");
     return { ok: false, error: "Couldn't send a verification code to that number" };
   }
 }
@@ -77,7 +78,7 @@ export type CheckVerificationResult =
 // to the frontend.
 export async function checkPhoneVerification(phone: string, code: string): Promise<CheckVerificationResult> {
   if (!isConfigured()) {
-    logger.warn({ phone }, "Twilio Verify not configured (TWILIO_VERIFY_SERVICE_SID); skipping phone verification check");
+    logger.warn({ phone: maskPhone(phone) }, "Twilio Verify not configured (TWILIO_VERIFY_SERVICE_SID); skipping phone verification check");
     return { ok: false, error: "Phone verification is not configured" };
   }
 
@@ -100,7 +101,7 @@ export async function checkPhoneVerification(phone: string, code: string): Promi
       // Twilio returns 404 once the verification has already been approved
       // or has fully expired (not just "wrong code") — either way, from the
       // user's perspective this reads the same: "start over."
-      logger.warn({ phone, status: res.status, body }, "Twilio Verify check failed");
+      logger.warn({ phone: maskPhone(phone), status: res.status, body }, "Twilio Verify check failed");
       return { ok: false, error: "That code is incorrect or has expired. Request a new one." };
     }
 
@@ -110,7 +111,7 @@ export async function checkPhoneVerification(phone: string, code: string): Promi
 
     return { ok: true };
   } catch (err) {
-    logger.error({ phone, err }, "Error checking Twilio Verify verification");
+    logger.error({ phone: maskPhone(phone), err }, "Error checking Twilio Verify verification");
     return { ok: false, error: "Couldn't verify that code — please try again" };
   }
 }

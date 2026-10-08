@@ -52,6 +52,30 @@ export function getClerkProxyHost(req: {
   return firstHop || req.headers.host?.trim() || undefined;
 }
 
+const HOST_PATTERN = /^[a-zA-Z0-9.-]+(?::\d+)?$/;
+
+/**
+ * The public URL of this proxy, sent to Clerk as Clerk-Proxy-Url. Prefers
+ * configuration over request headers — X-Forwarded-Host/-Proto are client-
+ * influenced, and this value shapes the URLs/cookies Clerk issues. Order:
+ * the same proxy URL the frontend is built with (VITE_CLERK_PROXY_URL, or a
+ * backend-only CLERK_PROXY_URL), then PUBLIC_APP_URL + the proxy path, and
+ * only then the request's own (validated) host.
+ */
+function clerkProxyUrlFor(req: { headers: IncomingHttpHeaders }): string {
+  const configured = process.env.CLERK_PROXY_URL || process.env.VITE_CLERK_PROXY_URL;
+  // Absolute only — Clerk needs a full URL here, and a relative frontend
+  // value ("/api/__clerk") can't say which host.
+  if (configured && /^https?:\/\//i.test(configured)) return configured.replace(/\/$/, "");
+  const publicAppUrl = process.env.PUBLIC_APP_URL;
+  if (publicAppUrl) return `${publicAppUrl.replace(/\/$/, "")}${CLERK_PROXY_PATH}`;
+  const rawProto = req.headers["x-forwarded-proto"];
+  const proto = (Array.isArray(rawProto) ? rawProto[0] : rawProto)?.split(",")[0]?.trim();
+  const protocol = proto === "http" || proto === "https" ? proto : "https";
+  const host = getClerkProxyHost(req) ?? "";
+  return `${protocol}://${HOST_PATTERN.test(host) ? host : ""}${CLERK_PROXY_PATH}`;
+}
+
 export function clerkProxyMiddleware(): RequestHandler {
   // Only run proxy in production — Clerk proxying doesn't work for dev instances
   if (process.env.NODE_ENV !== "production") {
@@ -73,20 +97,19 @@ export function clerkProxyMiddleware(): RequestHandler {
       path.replace(new RegExp(`^${CLERK_PROXY_PATH}`), ""),
     on: {
       proxyReq: (proxyReq, req) => {
-        const protocol = req.headers["x-forwarded-proto"] || "https";
-        const host = getClerkProxyHost(req) || "";
-        const proxyUrl = `${protocol}://${host}${CLERK_PROXY_PATH}`;
-
-        proxyReq.setHeader("Clerk-Proxy-Url", proxyUrl);
+        proxyReq.setHeader("Clerk-Proxy-Url", clerkProxyUrlFor(req));
         proxyReq.setHeader("Clerk-Secret-Key", secretKey);
 
-        const xff = req.headers["x-forwarded-for"];
-        const clientIp =
-          (Array.isArray(xff) ? xff[0] : xff)?.split(",")[0]?.trim() ||
-          req.socket?.remoteAddress ||
-          "";
+        // The client IP Clerk rate-limits / bot-scores on. NOT the leftmost
+        // X-Forwarded-For entry — the client writes that one itself, so it
+        // would let a credential-stuffer present a fresh IP per attempt.
+        // req.ip is Express's resolution under `trust proxy` (app.ts): the
+        // address our own edge proxy actually saw.
+        const clientIp = (req as { ip?: string }).ip || req.socket?.remoteAddress || "";
         if (clientIp) {
           proxyReq.setHeader("X-Forwarded-For", clientIp);
+        } else {
+          proxyReq.removeHeader("X-Forwarded-For");
         }
       },
       // Clerk's dynamic Frontend API responses (/v1/environment, /v1/client,
@@ -102,6 +125,25 @@ export function clerkProxyMiddleware(): RequestHandler {
         delete headers["transfer-encoding"];
         delete headers["connection"];
         delete headers["keep-alive"];
+
+        // Every response through this proxy is per-session/per-request
+        // dynamic state (client, session tokens, Set-Cookie for
+        // __client_uat/__session) — never safe to cache at any intermediary
+        // (the deployment's edge/CDN, a browser disk cache, etc). Force this
+        // regardless of whatever Clerk's own response set, overriding rather
+        // than merely adding: a cached stale response here doesn't just show
+        // outdated content, it makes auth fail outright, since the backend
+        // compares a live-decoded session token against whatever
+        // __client_uat value the client is holding. A previously-cached
+        // /v1/client response replayed indefinitely was traced as the actual
+        // cause of a persistent "session-token-iat-before-client-uat" 401 on
+        // every request, no matter how many times a user signed in — the
+        // browser's __client_uat cookie was correct, but frozen at whatever
+        // value was live the moment a cache first captured this response.
+        headers["cache-control"] = "no-store, private";
+        delete headers["etag"];
+        delete headers["age"];
+        delete headers["expires"];
 
         const status = proxyRes.statusCode ?? 502;
         // Content-Length is forbidden on 1xx/204; HEAD/304 may keep theirs.

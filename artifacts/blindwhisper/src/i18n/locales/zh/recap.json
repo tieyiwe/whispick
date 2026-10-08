@@ -1,0 +1,31 @@
+{
+  "title": "你的 Recap",
+  "subtitle": "你在 Blind Whisper 上的活动一览,随时可以分享。",
+  "period": {
+    "allTime": "全部时间",
+    "last30Days": "最近 30 天"
+  },
+  "stats": {
+    "totalSent": "已发送 Whisp",
+    "totalReceived": "已收到 Whisp",
+    "repliesReceived": "收到的回复",
+    "circlePosts": "Circle 帖子",
+    "debateTopicsPosted": "发起的辩论话题",
+    "followerCount": "粉丝",
+    "whisperBoxMessagesReceived": "Whisper Box 消息"
+  },
+  "topCategory": "你最常发送的分类:{{category}}",
+  "memberSince": "自 {{date}} 起成为 Whisperer",
+  "error": {
+    "description": "暂时无法加载你的 recap。",
+    "retry": "重试"
+  },
+  "share": {
+    "button": "分享你的 Recap",
+    "title": "Blind Whisper — Recap",
+    "text": "我已经在 Blind Whisper 上发送了 {{count}} 个 Whisp 👀",
+    "copied": "Recap 已复制 — 粘贴到任意地方即可分享",
+    "copyFailed": "无法复制你的 recap"
+  },
+  "screenshotTip": "小提示:截图即可分享你的 recap。"
+}

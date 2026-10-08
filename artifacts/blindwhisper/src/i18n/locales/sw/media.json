@@ -1,0 +1,40 @@
+{
+  "mediaLibrary": {
+    "title": "Maktaba ya Media",
+    "description": "Video ulizopakia kutoka kwenye kifaa chako, ziko tayari kutumika tena kwenye whisp.",
+    "uploadButton": "Pakia video",
+    "uploadSuccess": "Video imepakiwa",
+    "uploadFailedDefault": "Upakiaji umeshindwa. Tafadhali jaribu tena.",
+    "deleteSuccess": "Video imeondolewa",
+    "deleteError": "Imeshindwa kuondoa video",
+    "emptyState": "Hakuna video bado — ongeza moja ili kuanza.",
+    "unavailable": "Haipatikani tena",
+    "usageCount_one": "{{count}} whisp",
+    "usageCount_other": "{{count}} whisps",
+    "expiresInDays_one": "Itume kama Whisp ndani ya siku {{count}} kabla haijaondolewa kwenye Maktaba ya Media",
+    "expiresInDays_other": "Itume kama Whisp ndani ya siku {{count}} kabla haijaondolewa kwenye Maktaba ya Media",
+    "expiresInHours_one": "Itume kama Whisp ndani ya saa {{count}} kabla haijaondolewa kwenye Maktaba ya Media",
+    "expiresInHours_other": "Itume kama Whisp ndani ya saa {{count}} kabla haijaondolewa kwenye Maktaba ya Media",
+    "expiresInLessThanHour": "Itume kama Whisp ndani ya chini ya saa moja kabla haijaondolewa kwenye Maktaba ya Media",
+    "whispIt": "Tuma Whisp",
+    "postToCircle": "Blind Circle",
+    "removeDialog": {
+      "title": "Ondoa video hii?",
+      "description": "Whisp yoyote iliyoshatumia video hii itaonyesha \"haipatikani tena\" badala ya video.",
+      "cancel": "Ghairi",
+      "confirm": "Ondoa"
+    },
+    "previewError": "Imeshindwa kupakia video hii kwa hakiki."
+  },
+  "suggestionsLibrary": {
+    "title": "Maktaba ya Mapendekezo",
+    "description": "Video zinazofaa kushirikisha. Pata moja inayomfaa mtu katika duara lako kisha umnong'onezee bila kutambulika.",
+    "filterAll": "Zote",
+    "filterFeatured": "Zilizoangaziwa",
+    "featuredBadge": "Imeangaziwa",
+    "untitledVideo": "Video isiyo na jina",
+    "watch": "Tazama",
+    "whisperThis": "Nong'oneza hii",
+    "emptyState": "Hakuna kitu hapa bado — rudi tena baadaye."
+  }
+}

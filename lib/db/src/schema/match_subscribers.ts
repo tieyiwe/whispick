@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -37,6 +37,15 @@ export const matchSubscribersTable = pgTable("match_subscribers", {
   // far enough in the past (see MATCH_COOLDOWN_HOURS in lib/matching.ts) —
   // simpler and just as effective as counting sends in a rolling window.
   lastMatchedAt: timestamp("last_matched_at", { withTimezone: true }),
+  // Verification-email throttle (see routes/subscribe.ts). POST /subscribe is
+  // unauthenticated and re-sends the confirmation for any unverified address,
+  // so without these anyone could email-bomb a third party's inbox from our
+  // domain. lastVerificationSentAt enforces a minimum gap between sends;
+  // verificationSendCount counts sends within the rolling 24h window that
+  // started at verificationWindowStartedAt, for a daily cap per address.
+  lastVerificationSentAt: timestamp("last_verification_sent_at", { withTimezone: true }),
+  verificationSendCount: integer("verification_send_count"),
+  verificationWindowStartedAt: timestamp("verification_window_started_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

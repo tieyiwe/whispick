@@ -16,8 +16,8 @@ export interface Invite {
   channel: string;
   publicToken: string;
   status: string;
-  /** @nullable */
-  signedUpUserId?: string | null;
+  /** Whether someone signed up through this invite. The joiner's account id is never returned to the inviter. */
+  joined: boolean;
   /** @nullable */
   signedUpAt?: string | null;
   revealRequested: boolean;

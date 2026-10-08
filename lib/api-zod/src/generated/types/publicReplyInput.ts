@@ -21,4 +21,11 @@ export interface PublicReplyInput {
   videoPlatform?: string | null;
   /** @nullable */
   moodTag?: string | null;
+  /**
+     * Reply to a specific earlier message on the same whisp.
+     * @nullable
+     */
+  parentReplyId?: string | null;
+  /** Flags this as a "guess who sent it" reply (requires replyText). The system never auto-checks it against the real sender — see WhispReply.guessReaction. */
+  isGuess?: boolean;
 }

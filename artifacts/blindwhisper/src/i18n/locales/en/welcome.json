@@ -1,0 +1,31 @@
+{
+  "badge": "You're in",
+  "title": "Welcome to Blind Whisper",
+  "titleNamed": "Welcome, {{name}}",
+  "subtitle": "Two quick taps and Blind Whisper works like a real app — so you never miss a whisp.",
+  "install": {
+    "title": "Get the app",
+    "body": "Open Blind Whisper from your home screen, full screen, like any other app.",
+    "button": "Install Blind Whisper",
+    "iosStep1": "Tap the Share button in Safari's toolbar",
+    "iosStep2": "Choose “Add to Home Screen”, then Add",
+    "inAppBrowser": "You're in another app's browser, which can't install apps. Open this page in Safari or Chrome to install.",
+    "copyLink": "Copy link",
+    "copied": "Link copied",
+    "unavailable": "This browser can't install apps — you can still use Blind Whisper right here, or open it in Chrome, Edge or Safari later.",
+    "doneTitle": "App installed",
+    "doneBody": "Blind Whisper is on your home screen."
+  },
+  "notify": {
+    "title": "Turn on alerts",
+    "body": "Know the moment someone whispers to you, replies, or answers your debate. Alerts never show who sent anything.",
+    "button": "Turn on alerts",
+    "afterInstall": "On iPhone, alerts work once Blind Whisper is on your Home Screen — open it from there and turn them on in Settings.",
+    "blocked": "Notifications are blocked for this site. You can allow them in your browser settings anytime.",
+    "unsupported": "This browser doesn't support alerts. You'll still see everything in the app.",
+    "doneTitle": "Alerts are on",
+    "doneBody": "We'll let you know when something arrives."
+  },
+  "continue": "Continue",
+  "skip": "Skip for now"
+}

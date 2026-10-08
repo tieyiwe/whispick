@@ -9,4 +9,6 @@
 export interface ConfirmPhoneVerificationInput {
   phone: string;
   code: string;
+  /** Same as StartPhoneVerificationInput's — persisted to the user's account on a successful confirmation (see users.countryCode). */
+  countryCode?: string;
 }

@@ -30,6 +30,10 @@ async function buildAll() {
     external: [
       "*.node",
       "sharp",
+      // Native .node binding resolved per-platform at runtime (OG card PNGs,
+      // src/lib/ogImage.ts). satori isn't listed: ogImage.ts loads its CJS
+      // build through createRequire, which esbuild leaves to runtime anyway.
+      "@resvg/resvg-js",
       "better-sqlite3",
       "sqlite3",
       "canvas",

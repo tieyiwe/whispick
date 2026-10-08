@@ -6,7 +6,11 @@
 // this app already trusts client-supplied video metadata for pasted-URL
 // whisps (see routes/video.ts's oEmbed scrape, never re-verified at send
 // time either).
-export const MAX_UPLOAD_DURATION_SECONDS = 120;
+// 60s for now, for every plan — a plan-differentiated cap (e.g. a longer
+// limit for paid plans) is a deliberate future change, not done yet. Keep
+// in sync with the frontend mirror, artifacts/blindwhisper/src/lib/
+// uploadMedia.ts.
+export const MAX_UPLOAD_DURATION_SECONDS = 60;
 export const MAX_UPLOAD_VIDEO_BYTES = 30 * 1024 * 1024;
 export const MAX_UPLOAD_THUMBNAIL_BYTES = 2 * 1024 * 1024;
 export const ALLOWED_UPLOAD_VIDEO_MIME_TYPES = ["video/mp4", "video/webm", "video/quicktime"] as const;

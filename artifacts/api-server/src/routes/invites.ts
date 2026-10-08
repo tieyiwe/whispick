@@ -7,6 +7,7 @@ import { z } from "zod";
 import { requireAuth } from "../lib/auth";
 import { ensureUser } from "../lib/ensureUser";
 import { getPublicAppUrl } from "../lib/publicUrl";
+import { inviteShareUrl } from "../lib/linkPreview";
 import { sendEmail, inviteEmailHtml } from "../lib/email";
 import { sendSms, sendWhatsApp, inviteSmsBody } from "../lib/sms";
 import { logDeliveryAttempt } from "../lib/deliveryLog";
@@ -14,6 +15,8 @@ import { inviteRevealRequestHookLine } from "../lib/copy";
 import { inviteLimiter, publicEndpointLimiter } from "../lib/rateLimit";
 import { notifyUser } from "../lib/push";
 import { logger } from "../lib/logger";
+import { hasSmsConsent, recordSmsConsent } from "../lib/smsConsent";
+import { disabledChannelError } from "../lib/messagingChannels";
 
 const router = Router();
 
@@ -30,7 +33,9 @@ const CHANNELS = ["email", "sms", "whatsapp"] as const;
 // same anti-latency posture every other caller in this app takes with
 // real Twilio/Resend round-trips (see deliverWhisperLink's own comment).
 async function dispatchInvite(invite: Invite, appUrl: string): Promise<void> {
-  const inviteUrl = `${appUrl}/invite/${invite.publicToken}`;
+  // The /iv preview link (lib/linkPreview.ts), not the SPA's /invite/ path
+  // directly: it unfurls a real card in the recipient's messaging app.
+  const inviteUrl = inviteShareUrl(appUrl, invite.publicToken);
   const logCtx = { whispId: null, purpose: "invite" as const };
 
   let success: boolean;
@@ -83,11 +88,30 @@ async function notifyInviteeOfReveal(invite: Invite): Promise<void> {
   }
 }
 
+// Every inviter-facing invite response goes through here: signedUpUserId is
+// the invitee's real users.id, and the inviter only ever needs to know
+// WHETHER their invite was joined — the raw id would hand them a stable
+// account identifier to correlate with that person's otherwise-anonymous
+// activity elsewhere in the app.
+function toInviteResponse(invite: Invite) {
+  const { signedUpUserId, ...rest } = invite;
+  return { ...rest, joined: signedUpUserId !== null };
+}
+
 const createInviteSchema = z
   .object({
-    recipientEmail: z.string().nullable().optional(),
-    recipientPhone: z.string().nullable().optional(),
+    // Validated, not bare strings — these go straight to the mail/SMS
+    // transports as the destination address. See the same fields in
+    // routes/whisps.ts for why an unvalidated email was a multi-recipient
+    // injection (nodemailer treats `to` as an address list).
+    recipientEmail: z.string().email().max(320).nullable().optional(),
+    recipientPhone: z.string().max(32).regex(/^[+0-9()\-.\s]+$/, "Not a valid phone number").nullable().optional(),
     channel: z.enum(CHANNELS),
+    // Same server-enforced consent gate as POST /whisps — see its own
+    // schema comment. Only required for an actual SMS invite; WhatsApp
+    // isn't carrier-regulated under A2P 10DLC the same way, matching
+    // InvitePage.tsx's own requiresSmsConsent carve-out.
+    smsConsentConfirmed: z.boolean().nullable().optional(),
   })
   .refine((data) => (data.channel === "email" ? !!data.recipientEmail : !!data.recipientPhone), {
     message: "Email invites need a recipient email; text/WhatsApp invites need a recipient phone number",
@@ -106,6 +130,27 @@ router.post("/", requireAuth, inviteLimiter, async (req, res): Promise<void> => 
 
   const { channel, recipientEmail, recipientPhone } = parsed.data;
 
+  // SMS/WhatsApp launch switch (lib/messagingChannels.ts) — checked before
+  // consent so a sender isn't asked to attest for a channel that won't send.
+  const channelOff = disabledChannelError(channel);
+  if (channelOff) {
+    res.status(400).json(channelOff);
+    return;
+  }
+
+  // Once-per-recipient SMS consent (see lib/smsConsent.ts): only for an
+  // actual SMS invite (WhatsApp is carved out, same as the other send
+  // routes), satisfied by an affirmative checkbox now OR a stored consent
+  // from a prior send to this number.
+  if (channel === "sms" && recipientPhone) {
+    const alreadyConsented = parsed.data.smsConsentConfirmed || (await hasSmsConsent(user.id, recipientPhone));
+    if (!alreadyConsented) {
+      res.status(400).json({ error: "Please confirm you have this person's permission to receive a text from you.", code: "sms_consent_required" });
+      return;
+    }
+    if (parsed.data.smsConsentConfirmed) void recordSmsConsent(user.id, recipientPhone);
+  }
+
   const id = randomUUID();
   const publicToken = randomUUID().replace(/-/g, "");
 
@@ -122,7 +167,7 @@ router.post("/", requireAuth, inviteLimiter, async (req, res): Promise<void> => 
   // Read back and respond before kicking off the fire-and-forget send below
   // — same race-avoidance reasoning as POST /whisps.
   const invite = await db.select().from(invitesTable).where(eq(invitesTable.id, id)).then((r) => r[0]!);
-  res.status(201).json(invite);
+  res.status(201).json(toInviteResponse(invite));
 
   void dispatchInvite(invite, getPublicAppUrl(req));
 });
@@ -138,7 +183,7 @@ router.get("/", requireAuth, async (req, res): Promise<void> => {
     .where(eq(invitesTable.inviterUserId, user.id))
     .orderBy(sql`${invitesTable.createdAt} DESC`);
 
-  res.json(invites);
+  res.json(invites.map(toInviteResponse));
 });
 
 const claimInviteSchema = z.object({ token: z.string().min(1) });
@@ -219,8 +264,8 @@ router.post("/:id/reveal", requireAuth, async (req, res): Promise<void> => {
 
   await db.update(invitesTable).set({ revealRequested: true }).where(eq(invitesTable.id, invite.id));
 
-  const updated = await db.select().from(invitesTable).where(eq(invitesTable.id, invite.id)).then((r) => r[0]);
-  res.json(updated);
+  const updated = await db.select().from(invitesTable).where(eq(invitesTable.id, invite.id)).then((r) => r[0]!);
+  res.json(toInviteResponse(updated));
 
   // Fire and forget, same posture as whisps' own reveal-request notify:
   // whether this notification goes out shouldn't affect the reveal request

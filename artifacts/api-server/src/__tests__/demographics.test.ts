@@ -19,20 +19,26 @@ function asUser(userId: string) {
 }
 
 describe("needsDemographics", () => {
-  it("is true until both gender and ageRange are answered", () => {
-    expect(needsDemographics({ gender: null, ageRange: null })).toBe(true);
-    expect(needsDemographics({ gender: "woman", ageRange: null })).toBe(true);
-    expect(needsDemographics({ gender: null, ageRange: "25-34" })).toBe(true);
-    expect(needsDemographics({ gender: "woman", ageRange: "25-34" })).toBe(false);
+  it("is true until gender, ageRange, and preferredLanguage are all answered", () => {
+    expect(needsDemographics({ gender: null, ageRange: null, preferredLanguage: null })).toBe(true);
+    expect(needsDemographics({ gender: "woman", ageRange: null, preferredLanguage: null })).toBe(true);
+    expect(needsDemographics({ gender: null, ageRange: "25-34", preferredLanguage: null })).toBe(true);
+    expect(needsDemographics({ gender: "woman", ageRange: "25-34", preferredLanguage: null })).toBe(true);
+    expect(needsDemographics({ gender: "woman", ageRange: "25-34", preferredLanguage: "en" })).toBe(false);
   });
 
-  it("treats 'prefer_not_to_say' as a real, satisfying answer", () => {
-    expect(needsDemographics({ gender: "prefer_not_to_say", ageRange: "prefer_not_to_say" })).toBe(false);
+  it("treats 'prefer_not_to_say' as a real, satisfying answer for gender/ageRange", () => {
+    expect(needsDemographics({ gender: "prefer_not_to_say", ageRange: "prefer_not_to_say", preferredLanguage: "en" })).toBe(false);
+  });
+
+  it("has no 'prefer not to say' escape hatch for preferredLanguage — it must be a real supported code", () => {
+    expect(needsDemographics({ gender: "woman", ageRange: "25-34", preferredLanguage: "prefer_not_to_say" })).toBe(true);
+    expect(needsDemographics({ gender: "woman", ageRange: "25-34", preferredLanguage: "xx" })).toBe(true);
   });
 });
 
 describe("first-whisp demographic gate", () => {
-  it("blocks sending until gender and ageRange are confirmed, then lets the same send through", async () => {
+  it("blocks sending until gender, ageRange, and preferredLanguage are confirmed, then lets the same send through", async () => {
     const blocked = await request(app)
       .post("/api/whisps")
       .set(asUser(USER_A))
@@ -41,13 +47,27 @@ describe("first-whisp demographic gate", () => {
     expect(blocked.status).toBe(428);
     expect(blocked.body.code).toBe("demographics_required");
 
-    const confirm = await request(app)
+    // Confirming gender/ageRange alone still isn't enough — preferredLanguage
+    // has no "prefer not to say" escape hatch.
+    const partial = await request(app)
       .patch("/api/user/profile")
       .set(asUser(USER_A))
       .send({ gender: "nonbinary", ageRange: "25-34" });
+    expect(partial.status).toBe(200);
+    const stillBlocked = await request(app)
+      .post("/api/whisps")
+      .set(asUser(USER_A))
+      .send({ videoUrl: "https://youtu.be/x", deliveryMethod: "circle_drop" });
+    expect(stillBlocked.status).toBe(428);
+
+    const confirm = await request(app)
+      .patch("/api/user/profile")
+      .set(asUser(USER_A))
+      .send({ preferredLanguage: "en" });
     expect(confirm.status).toBe(200);
     expect(confirm.body.gender).toBe("nonbinary");
     expect(confirm.body.ageRange).toBe("25-34");
+    expect(confirm.body.preferredLanguage).toBe("en");
 
     const retried = await request(app)
       .post("/api/whisps")
@@ -56,11 +76,11 @@ describe("first-whisp demographic gate", () => {
     expect(retried.status).toBe(201);
   });
 
-  it("never re-blocks after both fields are answered once", async () => {
+  it("never re-blocks after all three fields are answered once", async () => {
     await request(app)
       .patch("/api/user/profile")
       .set(asUser(USER_A))
-      .send({ gender: "prefer_not_to_say", ageRange: "prefer_not_to_say" });
+      .send({ gender: "prefer_not_to_say", ageRange: "prefer_not_to_say", preferredLanguage: "sw" });
 
     for (let i = 0; i < 3; i++) {
       const res = await request(app)
@@ -81,6 +101,15 @@ describe("first-whisp demographic gate", () => {
 
     const user = await db.select().from(usersTable).where(eq(usersTable.clerkId, USER_A)).then((r) => r[0]);
     expect(user?.gender).toBeNull();
+  });
+
+  it("rejects a preferredLanguage outside the supported set", async () => {
+    await request(app).get("/api/user/profile").set(asUser(USER_A));
+    const res = await request(app)
+      .patch("/api/user/profile")
+      .set(asUser(USER_A))
+      .send({ preferredLanguage: "xx" });
+    expect(res.status).toBe(400);
   });
 
   it("keeps the fixed option sets small and exact", () => {

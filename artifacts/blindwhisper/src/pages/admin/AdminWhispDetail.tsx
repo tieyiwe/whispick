@@ -23,6 +23,7 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { MoodTag } from "@/components/shared/MoodTag";
 import { deliveryLabel } from "@/lib/deliveryMethod";
 import { categoryLabel } from "@/lib/videoCategories";
+import { safeExternalHref } from "@/lib/safeHref";
 import { ArrowLeft, PlayCircle, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 
 export function AdminWhispDetail() {
@@ -41,7 +42,7 @@ export function AdminWhispDetail() {
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ["/api/admin/whisps"] });
-          setLocation("/admin/whisps");
+          setLocation("/admin_pro/whisps");
           toast({ title: "Whisp removed" });
         },
         onError: () => toast({ title: "Failed to remove whisp", variant: "destructive" }),
@@ -76,8 +77,8 @@ export function AdminWhispDetail() {
     <AdminLayout>
       <div className="max-w-2xl mx-auto space-y-5">
         <div className="flex items-center justify-between">
-          <Button variant="ghost" onClick={() => setLocation("/admin/whisps")} className="text-muted-foreground -ml-2">
-            <ArrowLeft className="w-4 h-4 mr-1" /> Content
+          <Button variant="ghost" onClick={() => setLocation("/admin_pro/whisps")} className="text-muted-foreground -ml-2">
+            <ArrowLeft className="w-4 h-4 mr-1 rtl:-scale-x-100" /> Content
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -102,7 +103,7 @@ export function AdminWhispDetail() {
           {whisp.videoThumbnail && (
             <div className="relative h-48 overflow-hidden">
               <img src={whisp.videoThumbnail} alt="Video" className="w-full h-full object-cover" />
-              <a href={whisp.videoUrl} target="_blank" rel="noopener noreferrer" className="absolute inset-0 bg-black/50 flex items-center justify-center hover:bg-black/40 transition-colors">
+              <a href={safeExternalHref(whisp.videoUrl)} target="_blank" rel="noopener noreferrer" className="absolute inset-0 bg-black/50 flex items-center justify-center hover:bg-black/40 transition-colors">
                 <PlayCircle className="w-10 h-10 text-white" />
               </a>
             </div>
@@ -200,7 +201,7 @@ export function AdminWhispDetail() {
                   </div>
                   <p className="text-foreground">{f.reasoning}</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {f.dismissed ? "Dismissed as a false positive" : "Awaiting review"} · <Link href="/admin/moderation" className="hover:text-primary transition-colors">Review queue</Link>
+                    {f.dismissed ? "Dismissed as a false positive" : "Awaiting review"} · <Link href="/admin_pro/moderation" className="hover:text-primary transition-colors">Review queue</Link>
                   </p>
                 </div>
               ))}

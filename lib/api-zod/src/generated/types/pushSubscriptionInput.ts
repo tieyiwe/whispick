@@ -8,6 +8,10 @@
 import type { PushSubscriptionKeys } from './pushSubscriptionKeys';
 
 export interface PushSubscriptionInput {
+  /**
+     * A browser PushManager endpoint. Must be https on a recognized browser push service (FCM, Mozilla autopush, Windows WNS, Apple web push) with no custom port; anything else is rejected. At most 10 subscriptions are kept per account (oldest dropped).
+     * @maxLength 2048
+     */
   endpoint: string;
   keys: PushSubscriptionKeys;
 }

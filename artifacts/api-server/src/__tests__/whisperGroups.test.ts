@@ -2,6 +2,10 @@ import { describe, it, expect } from "vitest";
 import request from "supertest";
 import app from "../app";
 import { TEST_USER_HEADER } from "./setup";
+import { enablePhoneChannelsForFile } from "./phoneChannelTestUtils";
+
+// Exercises SMS/WhatsApp paths, which ship disabled by default.
+enablePhoneChannelsForFile();
 
 const USER_A = "clerk_group_a";
 const USER_B = "clerk_group_b";
@@ -121,6 +125,18 @@ describe("Whisper Groups: sending", () => {
       .send({ videoUrl: "https://youtu.be/x", whisperChannel: "email" });
 
     expect(res.status).toBe(400);
+  });
+
+  it("rejects an SMS group send without SMS consent confirmation", async () => {
+    const groupId = await createGroupWithMembers([{ name: "Phone Member", phone: "+15551230000" }]);
+
+    const res = await request(app)
+      .post(`/api/whisper-groups/${groupId}/send`)
+      .set(asUser(USER_A))
+      .send({ videoUrl: "https://youtu.be/x", whisperChannel: "sms" });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/permission to receive a text/i);
   });
 
   it("enforces the free-plan Whisper Link limit across the whole group send", async () => {

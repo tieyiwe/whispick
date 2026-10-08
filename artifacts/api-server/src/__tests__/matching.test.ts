@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import request from "supertest";
 import { randomUUID } from "crypto";
 import app from "../app";
-import { db, usersTable, whispsTable, whispCategoriesTable, matchSubscribersTable } from "@workspace/db";
+import { db, usersTable, whispsTable, whispCategoriesTable, matchSubscribersTable, notificationsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { TEST_USER_HEADER } from "./setup";
 import { matchGhostBoostWhisp, getGhostBoostMatchStats, MAX_MATCHES_PER_SEND } from "../lib/matching";
@@ -17,11 +17,30 @@ vi.mock("../lib/categorizeWhisp", () => ({
   categorizeWhispsAsync: async () => {},
 }));
 
-// notifyUser is a no-op without VAPID keys (unset in tests) either way, so
-// mocking it here is the only way to distinguish "the ghost_boost fan-out
-// guard skipped the call" from "it was called and silently no-opped."
+// Ghost Boost is paused in production (GHOST_BOOST_ENABLED = false in
+// lib/plans.ts), but the matching/fan-out logic this file exercises is
+// still real, still tested code kept ready for when the feature comes
+// back — so this file overrides just that one flag to keep exercising it,
+// without touching anything else lib/plans.ts exports.
+vi.mock("../lib/plans", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../lib/plans")>();
+  return { ...actual, GHOST_BOOST_ENABLED: true };
+});
+
+// Sender-facing notifications go through notifyUserPersisted (persists an
+// in-app notification, then fires a best-effort push). Mocking it is the only
+// way to distinguish "the ghost_boost fan-out guard skipped the call" from
+// "it was called and silently no-opped" — the underlying push is a no-op
+// without VAPID keys (unset in tests) either way. notifyUser is stubbed too
+// since the real module exports both.
 const notifyUserMock = vi.hoisted(() => vi.fn(async () => {}));
-vi.mock("../lib/push", () => ({ notifyUser: notifyUserMock }));
+vi.mock("../lib/push", async (importOriginal) => ({
+  // Keep the module's other exports (e.g. isAllowedPushEndpoint, used by
+  // routes/user.ts) — only the notify functions are stubbed here.
+  ...(await importOriginal<typeof import("../lib/push")>()),
+  notifyUser: vi.fn(async () => {}),
+  notifyUserPersisted: notifyUserMock,
+}));
 
 function asUser(userId: string) {
   return { [TEST_USER_HEADER]: userId };
@@ -255,7 +274,7 @@ describe("POST /api/public/subscribe", () => {
     expect(row.categories).toEqual(["music", "comedy"]);
   });
 
-  it("updates categories when a still-subscribed existing subscriber signs up again", async () => {
+  it("does NOT rewrite categories for an already-verified, still-subscribed row on a bare re-POST", async () => {
     await request(app).post("/api/public/subscribe").send({ email: "repeat@example.com", categories: ["music"] });
     const first = await db
       .select()
@@ -268,14 +287,37 @@ describe("POST /api/public/subscribe", () => {
       .post("/api/public/subscribe")
       .send({ email: "repeat@example.com", categories: ["travel"] });
 
-    expect(res.body).toEqual({ ok: true, alreadyVerified: true });
+    // alreadyVerified is deliberately always false in the response to avoid
+    // an email-membership enumeration oracle. But a bare POST with no proof
+    // of inbox access must not be able to redirect what an ACTIVE, verified
+    // subscriber receives — categories stay exactly as they were confirmed.
+    expect(res.body).toEqual({ ok: true, alreadyVerified: false });
     const updated = await db
       .select()
       .from(matchSubscribersTable)
       .where(eq(matchSubscribersTable.id, first.id))
       .then((r) => r[0]);
-    expect(updated.categories).toEqual(["travel"]);
+    expect(updated.categories).toEqual(["music"]);
     expect(updated.token).toBe(first.token);
+    expect(updated.verifiedAt).not.toBeNull();
+  });
+
+  it("still updates categories for an unverified subscriber who re-POSTs before confirming", async () => {
+    await request(app).post("/api/public/subscribe").send({ email: "unverified-repeat@example.com", categories: ["music"] });
+    const res = await request(app)
+      .post("/api/public/subscribe")
+      .send({ email: "unverified-repeat@example.com", categories: ["travel"] });
+
+    expect(res.body).toEqual({ ok: true, alreadyVerified: false });
+    const updated = await db
+      .select()
+      .from(matchSubscribersTable)
+      .where(eq(matchSubscribersTable.email, "unverified-repeat@example.com"))
+      .then((r) => r[0]);
+    // Not verified yet, so a re-POST is just the same person changing their
+    // mind before confirming — no inbox-access proof needed for that.
+    expect(updated.categories).toEqual(["travel"]);
+    expect(updated.verifiedAt).toBeNull();
   });
 
   it("normalizes email case so the same inbox can't create two rows", async () => {
@@ -487,6 +529,16 @@ describe("Ghost Boost matched-delivery privacy", () => {
   });
 });
 
+// Recipient actions (open, watch, appreciate…) no longer push to the sender
+// instantly: they're written as notification rows with a randomized
+// deliverAfter (lib/replyNotificationScheduler.ts) so a nearby buzz can't
+// identify the sender. So "was the sender notified" is asserted on those rows,
+// not only on the immediate-push mock.
+async function notificationRowsFor(clerkId: string) {
+  const user = await getUser(clerkId);
+  return db.select().from(notificationsTable).where(eq(notificationsTable.targetUserId, user.id));
+}
+
 describe("Ghost Boost matched-delivery notification suppression", () => {
   it("does not push/email the sender for individual open/watch/reply/appreciation events on a matched fan-out row", async () => {
     notifyUserMock.mockClear();
@@ -511,6 +563,7 @@ describe("Ghost Boost matched-delivery notification suppression", () => {
     await request(app).post(`/api/public/w/${publicToken}/appreciation`).send({ appreciated: true });
 
     expect(notifyUserMock).not.toHaveBeenCalled();
+    expect(await notificationRowsFor(clerkId)).toHaveLength(0);
   });
 
   it("still notifies the sender for a normal whisper_link whisp (control — suppression isn't global)", async () => {
@@ -528,6 +581,10 @@ describe("Ghost Boost matched-delivery notification suppression", () => {
 
     await request(app).post(`/api/public/w/${res.body.publicToken}/track`).send({ eventType: "opened" });
 
-    expect(notifyUserMock).toHaveBeenCalled();
+    const rows = await notificationRowsFor(clerkId);
+    expect(rows.length).toBeGreaterThan(0);
+    // Deferred, not instant — see notificationRowsFor's comment.
+    expect(rows.every((r) => r.deliverAfter !== null)).toBe(true);
+    expect(notifyUserMock).not.toHaveBeenCalled();
   });
 });

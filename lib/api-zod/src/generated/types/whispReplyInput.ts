@@ -9,4 +9,9 @@
 export interface WhispReplyInput {
   replyText: string;
   fromRecipient?: boolean;
+  /**
+     * Reply to a specific earlier message on the same whisp.
+     * @nullable
+     */
+  parentReplyId?: string | null;
 }

@@ -1,0 +1,31 @@
+{
+  "title": "Recap Yako",
+  "subtitle": "Muhtasari wa shughuli zako za Blind Whisper, tayari kushirikiwa.",
+  "period": {
+    "allTime": "Wakati Wote",
+    "last30Days": "Siku 30 Zilizopita"
+  },
+  "stats": {
+    "totalSent": "Whisps Zilizotumwa",
+    "totalReceived": "Whisps Zilizopokelewa",
+    "repliesReceived": "Majibu Yaliyopokelewa",
+    "circlePosts": "Machapisho ya Circle",
+    "debateTopicsPosted": "Mada za Mjadala Zilizoanzishwa",
+    "followerCount": "Wafuasi",
+    "whisperBoxMessagesReceived": "Ujumbe wa Whisper Box"
+  },
+  "topCategory": "Kategoria unayotuma zaidi: {{category}}",
+  "memberSince": "Whisperer tangu {{date}}",
+  "error": {
+    "description": "Imeshindikana kupakia recap yako kwa sasa.",
+    "retry": "Jaribu Tena"
+  },
+  "share": {
+    "button": "Shiriki Recap Yako",
+    "title": "Blind Whisper — Recap",
+    "text": "Nimetuma Whisps {{count}} kwenye Blind Whisper 👀",
+    "copied": "Recap imenakiliwa — ibandike popote kuishiriki",
+    "copyFailed": "Imeshindikana kunakili recap yako"
+  },
+  "screenshotTip": "Kidokezo: piga picha ya skrini kushiriki recap yako."
+}

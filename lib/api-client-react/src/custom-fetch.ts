@@ -17,6 +17,7 @@ const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 
 let _baseUrl: string | null = null;
 let _authTokenGetter: AuthTokenGetter | null = null;
+let _extraHeadersGetter: (() => Record<string, string> | null) | null = null;
 
 /**
  * Set a base URL that is prepended to every relative request URL
@@ -42,6 +43,30 @@ export function setBaseUrl(url: string | null): void {
  */
 export function setAuthTokenGetter(getter: AuthTokenGetter | null): void {
   _authTokenGetter = getter;
+}
+
+/**
+ * Resolves the currently-registered auth token, or null when none is set.
+ *
+ * For the handful of requests that can't go through `customFetch` — a
+ * multipart upload built by hand, for instance — so they can still send the
+ * same `Authorization` header every generated call does. Without this, any
+ * such request falls back to cookie-only auth and 401s wherever cookies
+ * aren't the working credential.
+ */
+/**
+ * Register a getter for additional headers attached to every request —
+ * e.g. the X-Admin-Mfa unlock token the admin panel's second factor uses.
+ * Returned headers never override ones a call sets explicitly. Pass `null`
+ * to clear.
+ */
+export function setExtraHeadersGetter(getter: (() => Record<string, string> | null) | null): void {
+  _extraHeadersGetter = getter;
+}
+
+export async function getAuthToken(): Promise<string | null> {
+  if (!_authTokenGetter) return null;
+  return (await _authTokenGetter()) ?? null;
 }
 
 function isRequest(input: RequestInfo | URL): input is Request {
@@ -347,6 +372,15 @@ export async function customFetch<T = unknown>(
 
   if (responseType === "json" && !headers.has("accept")) {
     headers.set("accept", DEFAULT_JSON_ACCEPT);
+  }
+
+  if (_extraHeadersGetter) {
+    const extra = _extraHeadersGetter();
+    if (extra) {
+      for (const [key, value] of Object.entries(extra)) {
+        if (!headers.has(key)) headers.set(key, value);
+      }
+    }
   }
 
   // Attach bearer token when an auth getter is configured and no

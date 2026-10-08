@@ -1,0 +1,31 @@
+{
+  "badge": "Umeingia",
+  "title": "Karibu Blind Whisper",
+  "titleNamed": "Karibu, {{name}}",
+  "subtitle": "Miguso miwili tu ya haraka na Blind Whisper itafanya kazi kama programu halisi — ili usikose whisp yoyote.",
+  "install": {
+    "title": "Pata programu",
+    "body": "Fungua Blind Whisper kutoka skrini yako ya nyumbani, kwa skrini nzima, kama programu nyingine yoyote.",
+    "button": "Sakinisha Blind Whisper",
+    "iosStep1": "Gusa kitufe cha Shiriki kwenye upau wa zana wa Safari",
+    "iosStep2": "Chagua “Ongeza kwenye Skrini ya Nyumbani”, kisha Ongeza",
+    "inAppBrowser": "Uko kwenye kivinjari cha programu nyingine, ambacho hakiwezi kusakinisha programu. Fungua ukurasa huu kwenye Safari au Chrome ili kusakinisha.",
+    "copyLink": "Nakili kiungo",
+    "copied": "Kiungo kimenakiliwa",
+    "unavailable": "Kivinjari hiki hakiwezi kusakinisha programu — bado unaweza kutumia Blind Whisper hapa hapa, au uifungue kwenye Chrome, Edge au Safari baadaye.",
+    "doneTitle": "Programu imesakinishwa",
+    "doneBody": "Blind Whisper iko kwenye skrini yako ya nyumbani."
+  },
+  "notify": {
+    "title": "Washa arifa",
+    "body": "Jua papo hapo mtu anapokunong'oneza, anapojibu, au anapotoa maoni kwenye mjadala wako. Arifa hazionyeshi kamwe ni nani aliyetuma chochote.",
+    "button": "Washa arifa",
+    "afterInstall": "Kwenye iPhone, arifa hufanya kazi pale Blind Whisper inapokuwa kwenye Skrini yako ya Nyumbani — ifungue kutoka hapo na uziwashe kwenye Mipangilio.",
+    "blocked": "Arifa zimezuiwa kwa tovuti hii. Unaweza kuziruhusu kwenye mipangilio ya kivinjari chako wakati wowote.",
+    "unsupported": "Kivinjari hiki hakitumii arifa. Bado utaona kila kitu ndani ya programu.",
+    "doneTitle": "Arifa zimewashwa",
+    "doneBody": "Tutakujulisha kitu kinapofika."
+  },
+  "continue": "Endelea",
+  "skip": "Ruka kwa sasa"
+}

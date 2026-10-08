@@ -1,0 +1,31 @@
+{
+  "title": "내 Recap",
+  "subtitle": "공유할 준비가 된, 내 Blind Whisper 활동 요약이에요.",
+  "period": {
+    "allTime": "전체 기간",
+    "last30Days": "최근 30일"
+  },
+  "stats": {
+    "totalSent": "보낸 Whisp",
+    "totalReceived": "받은 Whisp",
+    "repliesReceived": "받은 답장",
+    "circlePosts": "Circle 게시물",
+    "debateTopicsPosted": "시작한 토론 주제",
+    "followerCount": "팔로워",
+    "whisperBoxMessagesReceived": "Whisper Box 메시지"
+  },
+  "topCategory": "가장 많이 보낸 카테고리: {{category}}",
+  "memberSince": "{{date}}부터 함께한 Whisperer",
+  "error": {
+    "description": "지금은 recap을 불러올 수 없어요.",
+    "retry": "다시 시도"
+  },
+  "share": {
+    "button": "내 Recap 공유하기",
+    "title": "Blind Whisper — Recap",
+    "text": "Blind Whisper에서 Whisp를 {{count}}개 보냈어요 👀",
+    "copied": "Recap이 복사됐어요 — 원하는 곳에 붙여넣어 공유하세요",
+    "copyFailed": "recap을 복사하지 못했어요"
+  },
+  "screenshotTip": "팁: 스크린샷을 찍어 recap을 공유해보세요."
+}

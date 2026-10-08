@@ -8,4 +8,6 @@
 
 export interface StartPhoneVerificationInput {
   phone: string;
+  /** ISO 3166-1 alpha-2, from the country picker in CountryPhoneInput.tsx. Optional — phone is already a fully international "+"-prefixed value by the time it gets here. */
+  countryCode?: string;
 }

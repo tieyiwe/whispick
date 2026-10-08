@@ -1,14 +1,91 @@
-import rateLimit from "express-rate-limit";
+import rateLimit, { MemoryStore, ipKeyGenerator, type Options } from "express-rate-limit";
+import type { RequestHandler } from "express";
 import { getAuth } from "@clerk/express";
 
+// Every limiter gets an explicit in-memory store (the same MemoryStore
+// express-rate-limit uses by default, so production behavior is unchanged)
+// registered here, so tests can wipe all counters between cases. Without this
+// the counts outlive the per-test DB truncate in __tests__/setup.ts, and a
+// test file that sends more than a limiter's budget as one user starts
+// getting silent 429s in unrelated later tests.
+const stores: MemoryStore[] = [];
+
+// IPv6 clients are grouped by /56 (a typical single-customer allocation) —
+// keying on the full address would let one household rotate through
+// billions of addresses to dodge any IP-keyed limit. v8's built-in IP
+// keyGenerator already does this; set explicitly so it's visible here.
+const IPV6_SUBNET = 56;
+
+function createLimiter(options: Partial<Options>) {
+  const store = new MemoryStore();
+  stores.push(store);
+  return rateLimit({
+    ...(options.keyGenerator ? {} : { ipv6Subnet: IPV6_SUBNET }),
+    ...options,
+    store,
+  });
+}
+
+export function resetRateLimitsForTests(): void {
+  for (const store of stores) store.resetAll();
+}
+
 // The public router (track/reply/circle/w/:token) is entirely unauthenticated
-// and each of these triggers a real side effect (a DB write, and for reply
-// an email to the sender) — without a limit, anyone with (or who obtains) a
+// and its writes trigger real side effects (a DB write, and for reply an
+// email to the sender) — without a limit, anyone with (or who obtains) a
 // public token could spam it, e.g. to email-bomb the sender via /reply.
-// There's no authenticated user here, so this one is IP-keyed by necessity.
-export const publicEndpointLimiter = rateLimit({
+// There's no authenticated user here, so these are IP-keyed by necessity.
+//
+// Reads and writes get separate budgets. One shared 60-per-5-minutes budget
+// counted every page load, every poll and the 20-second visitor heartbeat
+// together, so a visitor reading a few debates, or a whole carrier-NAT /
+// campus network opening the same viral link, hit 429s on plain page
+// views. Reads are cheap and idempotent: a generous ceiling still bounds a
+// scraper. Writes keep the tight one.
+const isRead = (req: { method: string }) => req.method === "GET" || req.method === "HEAD";
+// The heartbeat (routes/visitorPing.ts) is a POST but has its own limiter —
+// it must never spend the write budget a real reply needs.
+const isVisitorPing = (req: { path: string }) => req.path.endsWith("/visitor-ping");
+
+const publicReadLimiter = createLimiter({
+  windowMs: 5 * 60 * 1000,
+  limit: 600,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => !isRead(req),
+});
+
+const publicWriteLimiter = createLimiter({
   windowMs: 5 * 60 * 1000,
   limit: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => isRead(req) || isVisitorPing(req),
+});
+
+export const publicEndpointLimiter: RequestHandler = (req, res, next) => {
+  publicReadLimiter(req, res, (err?: unknown) => (err ? next(err) : publicWriteLimiter(req, res, next)));
+};
+
+// One heartbeat per open tab every 20s is 15 per 5 minutes; this allows ~40
+// tabs per address (a carrier NAT or campus network is many people) while
+// still bounding how hard one address can flood the live-visitor count.
+export const visitorPingLimiter = createLimiter({
+  windowMs: 5 * 60 * 1000,
+  limit: 600,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Link-preview images (/api/og/*.png). Fetched by link-preview crawlers
+// (Facebook, WhatsApp, Telegram, iMessage…) that send many requests from a
+// handful of shared IPs, so the general public limit above would quietly
+// drop previews at scale. Rendering is cheap after the first hit (in-memory
+// cache in lib/ogImage.ts), so a much higher ceiling is safe; it still bounds
+// a single client hammering cache-missing ids.
+export const ogImageLimiter = createLimiter({
+  windowMs: 5 * 60 * 1000,
+  limit: 600,
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -21,14 +98,16 @@ export const publicEndpointLimiter = rateLimit({
 // (shouldn't-happen-here, since requireAuth already ran) case auth didn't
 // resolve.
 function authKeyGenerator(req: any): string {
-  return getAuth(req).userId ?? req.ip ?? "unknown";
+  const userId = getAuth(req).userId;
+  if (userId) return `user:${userId}`;
+  return req.ip ? ipKeyGenerator(req.ip, IPV6_SUBNET) : "unknown";
 }
 
 // Whisp creation triggers a real email/SMS/WhatsApp send and, for
 // whisper_link, is already capped by the monthly plan limit — but
 // ghost_boost/circle_drop have no such cap, so this bounds burst creation
 // regardless of delivery method.
-export const createWhispLimiter = rateLimit({
+export const createWhispLimiter = createLimiter({
   windowMs: 60 * 60 * 1000,
   limit: 30,
   standardHeaders: true,
@@ -39,7 +118,7 @@ export const createWhispLimiter = rateLimit({
 // Uploads write real bytes to object storage and count against a sender's
 // own storage footprint — bound how many a single account can push through
 // per hour regardless of the per-request size cap.
-export const uploadLimiter = rateLimit({
+export const uploadLimiter = createLimiter({
   windowMs: 60 * 60 * 1000,
   limit: 20,
   standardHeaders: true,
@@ -50,7 +129,7 @@ export const uploadLimiter = rateLimit({
 // Each call spends a real (small) Claude API request — bound how many times
 // one account can hit "help me find the words" regardless of how many drafts
 // they're composing, so a single user can't run up token spend unbounded.
-export const noteSuggestionLimiter = rateLimit({
+export const noteSuggestionLimiter = createLimiter({
   windowMs: 60 * 60 * 1000,
   limit: 20,
   standardHeaders: true,
@@ -64,9 +143,22 @@ export const noteSuggestionLimiter = rateLimit({
 // number, repeatedly, or by probing numbers they don't own) for free. A
 // user only ever needs this a handful of times (initial verification, a
 // number change, an expired-code retry), so the cap is tight.
-export const phoneVerificationLimiter = rateLimit({
+export const phoneVerificationLimiter = createLimiter({
   windowMs: 60 * 60 * 1000,
   limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: authKeyGenerator,
+});
+
+// Confirming a phone-verification code (routes/user.ts). Twilio Verify
+// already enforces its own per-code attempt lockout and expiry server-side,
+// but this adds our own defense-in-depth cap so the confirm endpoint can't be
+// hammered independent of Twilio's limits. Looser than the send limiter,
+// since a legitimate user may retype a code a few times.
+export const confirmPhoneVerificationLimiter = createLimiter({
+  windowMs: 60 * 60 * 1000,
+  limit: 15,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: authKeyGenerator,
@@ -75,7 +167,7 @@ export const phoneVerificationLimiter = rateLimit({
 // The "Not sure what to send?" concierge (lib/concierge.ts) is a Claude call
 // plus a library lookup — slightly heavier than a plain note suggestion, so
 // it gets a somewhat tighter cap, same per-user keying rationale as above.
-export const conciergeLimiter = rateLimit({
+export const conciergeLimiter = createLimiter({
   windowMs: 60 * 60 * 1000,
   limit: 15,
   standardHeaders: true,
@@ -85,7 +177,7 @@ export const conciergeLimiter = rateLimit({
 
 // Sending an invite (routes/invites.ts) triggers a real email/SMS/WhatsApp
 // send, same recurring-cost reasoning as createWhispLimiter above.
-export const inviteLimiter = rateLimit({
+export const inviteLimiter = createLimiter({
   windowMs: 60 * 60 * 1000,
   limit: 20,
   standardHeaders: true,
@@ -100,9 +192,47 @@ export const inviteLimiter = rateLimit({
 // spamming arbitrary phone numbers now that POST /check-recipient (the old,
 // separate eligibility check) is gone, so this cap matters more than it used
 // to even though the number itself is unchanged.
-export const createTextWhispLimiter = rateLimit({
+export const createTextWhispLimiter = createLimiter({
   windowMs: 60 * 60 * 1000,
   limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: authKeyGenerator,
+});
+
+// Posting a Debate Topic (routes/debateTopics.ts) is free — no plan cap, no
+// per-send cost like an email/SMS whisp — so this is the only thing bounding
+// burst creation by one signed-in account. Tighter than createWhispLimiter:
+// a debate topic is a public feed post meant to spark discussion, not
+// something anyone legitimately needs to fire off dozens of per hour.
+export const createDebateTopicLimiter = createLimiter({
+  windowMs: 60 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: authKeyGenerator,
+});
+
+// Whisping a Debate Now topic to a contact (routes/debateTopicWhisps.ts)
+// triggers a real email/SMS/WhatsApp send, same recurring-cost reasoning
+// (and same 20/hour cap) as inviteLimiter above.
+export const sendDebateTopicWhispLimiter = createLimiter({
+  windowMs: 60 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: authKeyGenerator,
+});
+
+// Filing a content report (routes/contentReports.ts) is free and writes a
+// row an admin has to personally read — the classic shape for both
+// griefing (mass-reporting someone you disagree with) and queue-flooding.
+// 20/hour is far beyond what any good-faith reporter needs while keeping
+// one account from burying the admin queue; the per-content dedup check in
+// the route itself handles repeat reports of the same post separately.
+export const reportContentLimiter = createLimiter({
+  windowMs: 60 * 60 * 1000,
+  limit: 20,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: authKeyGenerator,
@@ -115,10 +245,81 @@ export const createTextWhispLimiter = rateLimit({
 // deliberately omits recipientUserId to avoid exposing this cheaply and
 // silently — this limiter makes the one remaining, unavoidable signal
 // expensive and noisy to probe at scale instead of free.
-export const textWhispRevealLimiter = rateLimit({
+export const textWhispRevealLimiter = createLimiter({
   windowMs: 60 * 60 * 1000,
   limit: 20,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: authKeyGenerator,
+});
+
+// POST /billing/checkout (routes/billing.ts) calls the real Stripe API
+// (customer.create, checkout.sessions.create) — no per-request dollar cost,
+// but each call is an outbound network round-trip against Stripe's own rate
+// limits, shared across this whole app's Stripe usage. A normal user hits
+// this a handful of times per purchase/upgrade at most (a mis-click, a
+// changed mind about which plan/pack); nothing in the legitimate flow needs
+// more than a few calls an hour, and without a limiter this was the one
+// authenticated write left that could hammer an external paid API for free.
+export const billingCheckoutLimiter = createLimiter({
+  windowMs: 60 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: authKeyGenerator,
+});
+
+// POST /admin-mfa/verify (routes/adminMfa.ts) is the only thing standing
+// between a hijacked admin Clerk session and the full HQ, and TOTP accepts
+// ±1 time-step (3 of 10^6 codes valid at any instant) plus 40-bit backup
+// codes. Legitimate use is one code per unlock — a handful a day at most.
+// Tight window so a bot can't grind codes, generous enough that fat-
+// fingering a code a few times never locks a real admin out for long.
+export const adminMfaVerifyLimiter = createLimiter({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: authKeyGenerator,
+  // The test harness re-enrolls and re-verifies real TOTP codes before every
+  // admin-gated test (see adminTestUtils.ts) — many times more often than any
+  // legitimate admin unlocks in production, where one code unlocks a 12h
+  // token. Skipping only under vitest's own NODE_ENV=test leaves production
+  // (and any other environment) fully protected.
+  skip: () => process.env.NODE_ENV === "test",
+});
+
+// POST /public/whisper-box/:handle (routes/whisperBox.ts) is the one place
+// on the platform a completely anonymous, no-account visitor can write
+// content aimed at a specific named person — IP-keyed by necessity, same as
+// publicEndpointLimiter, since there's no authenticated user to key on.
+// Deliberately its own (tighter) limiter rather than reusing
+// publicEndpointLimiter's shared 60/5min budget: a Whisper Box link is
+// meant to be shared publicly on a bio, which makes it a more attractive
+// spam/harassment target than the rest of the public surface, and a flood
+// of messages is a worse experience for the recipient than for anyone else
+// on the shared budget.
+export const whisperBoxSendLimiter = createLimiter({
+  windowMs: 60 * 60 * 1000,
+  limit: 12,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// POST /public/bug-reports (routes/bugReports.ts) — must work fully
+// unauthenticated (a crash can happen before sign-in resolves, or on a
+// public page), so this is IP-keyed like publicEndpointLimiter, but its own
+// dedicated instance rather than sharing that 60/5min budget: a genuine
+// client-side crash loop (a broken render path re-throwing on every
+// re-render) could burn through the shared public quota in seconds and
+// start 429ing unrelated public traffic — Whisper Box sends, circle
+// comments — from anyone on the same IP. Isolating it here means a runaway
+// error loop only ever costs itself, never anything else. The frontend
+// capture hook (lib/bugRabbitCapture.ts) also self-throttles per
+// fingerprint client-side, so this is a backstop, not the primary defense.
+export const bugReportLimiter = createLimiter({
+  windowMs: 5 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
 });

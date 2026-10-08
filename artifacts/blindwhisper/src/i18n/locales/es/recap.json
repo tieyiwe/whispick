@@ -1,0 +1,31 @@
+{
+  "title": "Tu Recap",
+  "subtitle": "Un resumen de tu actividad en Blind Whisper, listo para compartir.",
+  "period": {
+    "allTime": "Todo el tiempo",
+    "last30Days": "Últimos 30 días"
+  },
+  "stats": {
+    "totalSent": "Whisps enviados",
+    "totalReceived": "Whisps recibidos",
+    "repliesReceived": "Respuestas recibidas",
+    "circlePosts": "Publicaciones en Círculos",
+    "debateTopicsPosted": "Temas de debate iniciados",
+    "followerCount": "Seguidores",
+    "whisperBoxMessagesReceived": "Mensajes de Whisper Box"
+  },
+  "topCategory": "Tu categoría más enviada: {{category}}",
+  "memberSince": "Whisperer desde {{date}}",
+  "error": {
+    "description": "No se pudo cargar tu recap en este momento.",
+    "retry": "Intentar de nuevo"
+  },
+  "share": {
+    "button": "Comparte tu Recap",
+    "title": "Blind Whisper — Recap",
+    "text": "He enviado {{count}} Whisps en Blind Whisper 👀",
+    "copied": "Recap copiado — pégalo donde quieras para compartirlo",
+    "copyFailed": "No se pudo copiar tu recap"
+  },
+  "screenshotTip": "Consejo: toma una captura de pantalla para compartir tu recap."
+}

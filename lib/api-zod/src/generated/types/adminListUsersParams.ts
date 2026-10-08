@@ -5,12 +5,14 @@
  * Blind Whisper API — anonymous video recommendation platform
  * OpenAPI spec version: 0.1.0
  */
+import type { AdminListUsersCompliance } from './adminListUsersCompliance';
 
 export type AdminListUsersParams = {
 search?: string;
 plan?: string;
 role?: string;
 banned?: string;
+compliance?: AdminListUsersCompliance;
 page?: number;
 pageSize?: number;
 };

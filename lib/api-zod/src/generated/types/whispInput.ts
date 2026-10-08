@@ -7,7 +7,10 @@
  */
 
 export interface WhispInput {
-  /** @nullable */
+  /**
+     * For circle_drop and ghost_boost (whose viewers are anonymous to the sender) this must be a link on a recognized video platform (YouTube, TikTok, Instagram, Facebook, Vimeo, X) — use uploadedVideoId otherwise. whisper_link accepts any http(s) URL.
+     * @nullable
+     */
   videoUrl?: string | null;
   /** @nullable */
   videoTitle?: string | null;
@@ -19,7 +22,10 @@ export interface WhispInput {
   videoStartSeconds?: number | null;
   /** @nullable */
   videoEndSeconds?: number | null;
-  /** @nullable */
+  /**
+     * @maxLength 50
+     * @nullable
+     */
   videoPlatform?: string | null;
   /**
      * An id from the sender's Media Library — an alternative to videoUrl. One of the two is required.
@@ -35,11 +41,20 @@ export interface WhispInput {
   recipientEmail?: string | null;
   /** @nullable */
   recipientPhone?: string | null;
-  /** @nullable */
+  /**
+     * @maxLength 1000
+     * @nullable
+     */
   anonymousNote?: string | null;
-  /** @nullable */
+  /**
+     * @maxLength 200
+     * @nullable
+     */
   senderAlias?: string | null;
-  /** @nullable */
+  /**
+     * @maxLength 50
+     * @nullable
+     */
   moodTag?: string | null;
   /** @nullable */
   scheduledAt?: string | null;
@@ -48,4 +63,9 @@ export interface WhispInput {
      * @nullable
      */
   conciergeRequestId?: string | null;
+  /**
+     * Required (must be true) when whisperChannel is "sms" — the sender confirming they have this recipient's permission to receive a text. Not required for "email" or "whatsapp".
+     * @nullable
+     */
+  smsConsentConfirmed?: boolean | null;
 }

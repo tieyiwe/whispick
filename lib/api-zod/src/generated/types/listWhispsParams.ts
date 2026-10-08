@@ -5,7 +5,12 @@
  * Blind Whisper API — anonymous video recommendation platform
  * OpenAPI spec version: 0.1.0
  */
+import type { ListWhispsBox } from './listWhispsBox';
 
 export type ListWhispsParams = {
 status?: string;
+/**
+ * 'sent' (default): whisps this user sent. 'received': whisps another Whisperer sent TO this user (matched at send time — see whisps.recipientUserId). 'archived': whichever of those this user archived from either side, combined into one list.
+ */
+box?: ListWhispsBox;
 };

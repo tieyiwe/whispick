@@ -1,0 +1,31 @@
+{
+  "title": "Your Recap",
+  "subtitle": "A snapshot of your Blind Whisper activity, ready to share.",
+  "period": {
+    "allTime": "All Time",
+    "last30Days": "Last 30 Days"
+  },
+  "stats": {
+    "totalSent": "Whisps Sent",
+    "totalReceived": "Whisps Received",
+    "repliesReceived": "Replies Received",
+    "circlePosts": "Circle Posts",
+    "debateTopicsPosted": "Debate Topics Started",
+    "followerCount": "Followers",
+    "whisperBoxMessagesReceived": "Whisper Box Messages"
+  },
+  "topCategory": "Your most-sent category: {{category}}",
+  "memberSince": "Whisperer since {{date}}",
+  "error": {
+    "description": "Couldn't load your recap right now.",
+    "retry": "Try Again"
+  },
+  "share": {
+    "button": "Share Your Recap",
+    "title": "Blind Whisper — Recap",
+    "text": "I've sent {{count}} Whisps on Blind Whisper 👀",
+    "copied": "Recap copied — paste it anywhere to share",
+    "copyFailed": "Couldn't copy your recap"
+  },
+  "screenshotTip": "Tip: take a screenshot to share your recap."
+}

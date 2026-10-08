@@ -1,17 +1,189 @@
+import { randomUUID } from "crypto";
 import { db } from "@workspace/db";
-import { whispRepliesTable, whispsTable, usersTable } from "@workspace/db";
+import { whispRepliesTable, whispsTable, usersTable, notificationsTable } from "@workspace/db";
 import { eq, and, lte, isNull, isNotNull } from "drizzle-orm";
-import { sendEmail, replyNotificationEmailHtml } from "./email";
-import { notifyUser } from "./push";
+import { sendEmail, appreciationNotificationEmailHtml } from "./email";
+import { escapeHtml } from "./escapeHtml";
+import { emailReplyNotification } from "./replyEmail";
+import { notifyUser, notifyUserPersisted } from "./push";
 import { logger } from "./logger";
+import { reportSystemError } from "./bugRabbit";
 
 const POLL_INTERVAL_MS = 60_000;
+// Same bounded-sweep reasoning as lib/scheduler.ts's BATCH_LIMIT — this loop
+// awaits a real email send per row sequentially, so an unbounded due-count
+// shouldn't be allowed to make one sweep run indefinitely. Leftover rows are
+// picked up on the next poll, still only 60s away.
+const BATCH_LIMIT = 100;
+
+// One of 3, 5, or 9 minutes out, chosen at random each time — a discrete
+// choice (not a continuous range) per the anti-correlation design: enough
+// spread that a Sender's phone buzzing can't be tied to a Recipient who just
+// hit send while physically next to them. See notifySenderAt's schema
+// comment. Shared by every deferred notification below.
+const NOTIFY_DELAY_MINUTES_OPTIONS = [3, 5, 9] as const;
+export function randomNotifyDelay(): Date {
+  const minutes = NOTIFY_DELAY_MINUTES_OPTIONS[Math.floor(Math.random() * NOTIFY_DELAY_MINUTES_OPTIONS.length)];
+  return new Date(Date.now() + minutes * 60_000);
+}
+
+/**
+ * The deferred counterpart of notifyUserPersisted, for every notification an
+ * anonymous party's action triggers (opened/watched/appreciated, a Circle
+ * comment or comment reaction, a Whisper Box message, ...). An instant push
+ * there is a side channel: whoever is sitting next to the target sees their
+ * phone buzz the moment they act, and learns who the anonymous poster/sender
+ * is. Same 3/5/9-minute randomized delay replies already get, and durable
+ * (a DB row, not a setTimeout) because Autoscale instances scale to zero.
+ *
+ * Coalesced: while one is still pending for the same (user, kind, url), a
+ * second is dropped — a burst of comments on one post (or someone rotating
+ * visitorIds to spam it) lands as one buzz, not one per action. The check
+ * and insert aren't atomic; a rare duplicate under a race is harmless.
+ */
+export async function scheduleDeferredNotification(userId: string, title: string, body: string, url: string, kind: string): Promise<void> {
+  try {
+    const pending = await db
+      .select({ id: notificationsTable.id })
+      .from(notificationsTable)
+      .where(
+        and(
+          eq(notificationsTable.targetUserId, userId),
+          eq(notificationsTable.kind, kind),
+          eq(notificationsTable.url, url),
+          isNotNull(notificationsTable.deliverAfter),
+        ),
+      )
+      .limit(1);
+    if (pending.length) return;
+    await db.insert(notificationsTable).values({
+      id: randomUUID(),
+      targetUserId: userId,
+      title,
+      body,
+      url: url || null,
+      kind,
+      createdByAdminId: null,
+      deliverAfter: randomNotifyDelay(),
+    });
+  } catch (err) {
+    logger.error({ userId, kind, err }, "Failed to schedule deferred notification");
+  }
+}
+
+export async function getDueDeferredNotifications() {
+  return db
+    .select()
+    .from(notificationsTable)
+    .where(and(isNotNull(notificationsTable.deliverAfter), lte(notificationsTable.deliverAfter, new Date())))
+    .limit(BATCH_LIMIT);
+}
+
+// Deferred kinds that are someone answering YOU — these also get an email
+// (lib/replyEmail.ts: on by default, off in Settings, throttled per thread).
+// Released here, after the randomized delay, so the email can't be timed
+// back to the replier any more than the push can.
+const COMMENT_REPLY_EMAILS: Record<string, { subject: string; heading: string; text: string }> = {
+  debate_comment_reply: {
+    subject: "Someone replied to your comment",
+    heading: "New reply on Debate Now 💬",
+    text: "Someone replied anonymously to your comment in a debate.",
+  },
+  debate_topic_comment: {
+    subject: "Someone answered your debate",
+    heading: "Your debate got a new answer 🔥",
+    text: "Someone just weighed in anonymously on the debate you started.",
+  },
+  circle_comment_reply: {
+    subject: "Someone replied to your comment",
+    heading: "New reply in Blind Circle 💬",
+    text: "Someone replied anonymously to your comment on a Blind Circle post.",
+  },
+};
+
+const TEXT_WHISP_REPLY_EMAIL = {
+  subject: "New anonymous reply 💬",
+  heading: "You got a reply 💬",
+  text: "Someone replied to your Text Whisp.",
+};
+
+/**
+ * Releases every due deferred notification: makes it visible (deliverAfter
+ * back to null, createdAt reset to now so the bell's "x minutes ago" doesn't
+ * reveal when the action really happened), then sends the live push — and,
+ * for an appreciation, the email that used to go out immediately with it.
+ * Exported so tests can drive one sweep without waiting on the interval.
+ */
+export async function dispatchDueDeferredNotifications(): Promise<number> {
+  const due = await getDueDeferredNotifications();
+  let dispatched = 0;
+  for (const n of due) {
+    // Claim-first, same as the reply sweep: zero rows means another sweep
+    // (or another instance) already released it.
+    const claimed = await db
+      .update(notificationsTable)
+      .set({ deliverAfter: null, createdAt: new Date() })
+      .where(and(eq(notificationsTable.id, n.id), isNotNull(notificationsTable.deliverAfter)))
+      .returning({ id: notificationsTable.id });
+    if (claimed.length === 0 || !n.targetUserId) continue;
+    dispatched++;
+
+    if (n.kind === "appreciation") {
+      const whispId = n.url?.match(/^\/whisps\/([^/?#]+)$/)?.[1];
+      const whisp = whispId ? await db.select().from(whispsTable).where(eq(whispsTable.id, whispId)).then((r) => r[0]) : undefined;
+      const sender = whisp ? await db.select().from(usersTable).where(eq(usersTable.id, whisp.senderId)).then((r) => r[0]) : undefined;
+      if (whisp && sender?.email) {
+        void sendEmail(sender.email, "They needed to hear that 💜", appreciationNotificationEmailHtml(whisp.videoTitle), {
+          whispId: whisp.id,
+          purpose: "appreciation_notification",
+        });
+      }
+    }
+    // A Text Whisp recipient's reply (routes/textWhisps.ts) — kind "reply"
+    // so it counts toward the Replies badge, deferred so the anonymous
+    // sender's phone doesn't buzz the second the recipient hits send. Its
+    // email goes out here, on release, for the same reason.
+    const isTextWhispReply = n.kind === "reply" && !!n.url?.startsWith("/text-whisps/");
+    const replyEmail = isTextWhispReply ? TEXT_WHISP_REPLY_EMAIL : n.url ? COMMENT_REPLY_EMAILS[n.kind ?? ""] : undefined;
+    if (replyEmail) {
+      void emailReplyNotification(n.targetUserId, {
+        ...replyEmail,
+        path: n.url!,
+        kind: n.kind!,
+        notificationId: n.id,
+        purpose: isTextWhispReply ? "text_whisp_reply" : "comment_reply_notification",
+      });
+    }
+    void notifyUser(n.targetUserId, n.title, n.body, n.url ?? "");
+  }
+  return dispatched;
+}
 
 // Pulled out of startReplyNotificationScheduler so the due-row selection
 // logic (the part that matters for correctness — matching the codebase's
 // other schedulers, none of which are otherwise unit-tested since they're
 // setInterval loops with no seams to fast-forward) can be exercised directly
 // in a test without waiting on a real interval or system clock.
+/**
+ * Whisps whose recipient tried to whisp a video back and couldn't, past their
+ * deferred notify time. Same deferral as a reply notification and for the same
+ * reason — the trigger is a recipient action, so an immediate push would tie
+ * the sender's buzzing phone to the recipient standing next to them.
+ */
+export async function getDueVideoReplyRequests() {
+  return db
+    .select()
+    .from(whispsTable)
+    .where(
+      and(
+        isNotNull(whispsTable.videoReplyRequestNotifyAt),
+        lte(whispsTable.videoReplyRequestNotifyAt, new Date()),
+        isNull(whispsTable.videoReplyRequestNotifiedAt),
+      ),
+    )
+    .limit(BATCH_LIMIT);
+}
+
 export async function getDueReplyNotifications() {
   return db
     .select()
@@ -22,7 +194,8 @@ export async function getDueReplyNotifications() {
         lte(whispRepliesTable.notifySenderAt, new Date()),
         isNull(whispRepliesTable.senderNotifiedAt),
       ),
-    );
+    )
+    .limit(BATCH_LIMIT);
 }
 
 // Dispatches the Sender-facing "you got a reply" email + push that
@@ -55,41 +228,89 @@ export function startReplyNotificationScheduler(): void {
       }
 
       for (const reply of due) {
+        // Claim first (conditional on still-unnotified) so a sweep that
+        // outruns the poll interval can't re-select this row and email the
+        // sender twice — zero rows updated means another sweep owns it.
+        const claimed = await db
+          .update(whispRepliesTable)
+          .set({ senderNotifiedAt: new Date() })
+          .where(and(eq(whispRepliesTable.id, reply.id), isNull(whispRepliesTable.senderNotifiedAt)))
+          .returning({ id: whispRepliesTable.id });
+        if (claimed.length === 0) continue;
+
         const whisp = await db.select().from(whispsTable).where(eq(whispsTable.id, reply.whispId)).then((r) => r[0]);
 
         // Whisp gone (soft-deleted or otherwise unresolvable) — nothing to
-        // notify about. Mark it handled so it doesn't stay queued forever.
-        if (!whisp) {
-          await db
-            .update(whispRepliesTable)
-            .set({ senderNotifiedAt: new Date() })
-            .where(eq(whispRepliesTable.id, reply.id));
-          continue;
-        }
+        // notify about; the claim above already stamped it handled.
+        if (!whisp) continue;
 
-        const sender = await db.select().from(usersTable).where(eq(usersTable.id, whisp.senderId)).then((r) => r[0]);
-        if (sender?.email) {
-          void sendEmail(sender.email, "Someone replied to your whisp", replyNotificationEmailHtml(whisp.videoTitle), {
-            whispId: whisp.id,
-            purpose: "reply_notification",
-          });
-        }
-        void notifyUser(
+        // Persisted, not push-only: a reply is the single most important
+        // thing a sender comes back for, and a push they never received (no
+        // permission granted, offline at the time) would otherwise leave no
+        // trace in the app at all.
+        await notifyUserPersisted(
           whisp.senderId,
           "You got a reply 💬",
           reply.videoUrl ? "Someone whisped a video back to you." : "Someone replied anonymously to your whisp.",
-          `${appUrl}/whisps/${whisp.id}`,
+          `/whisps/${whisp.id}`,
+          "reply",
         );
-
-        await db
-          .update(whispRepliesTable)
-          .set({ senderNotifiedAt: new Date() })
-          .where(eq(whispRepliesTable.id, reply.id));
+        // After the in-app row exists — lib/replyEmail.ts throttles on it,
+        // and skips anyone who turned reply emails off in Settings.
+        // videoTitle can be a scraped third-party og:title: escaped.
+        const about = whisp.videoTitle ? `your whisp "${escapeHtml(whisp.videoTitle)}"` : "your whisp";
+        void emailReplyNotification(whisp.senderId, {
+          subject: "Someone replied to your whisp",
+          heading: "You got a reply 💬",
+          text: reply.videoUrl ? `Someone whisped a video back to ${about}.` : `Someone replied anonymously to ${about}.`,
+          path: `/whisps/${whisp.id}`,
+          kind: "reply",
+          purpose: "reply_notification",
+          whispId: whisp.id,
+        });
       }
 
       logger.info({ count: due.length }, "Dispatched deferred reply notifications");
     } catch (err) {
       logger.error({ err }, "Deferred reply notification dispatch failed");
+      reportSystemError(err, "scheduler:replyNotificationScheduler:reply");
+    }
+
+    // Separate try block: a failure dispatching these must not stop reply
+    // notifications, which matter more, and vice versa.
+    try {
+      const blocked = await getDueVideoReplyRequests();
+      for (const whisp of blocked) {
+        // Same claim-first pattern as above — one notification, ever.
+        const claimed = await db
+          .update(whispsTable)
+          .set({ videoReplyRequestNotifiedAt: new Date() })
+          .where(and(eq(whispsTable.id, whisp.id), isNull(whispsTable.videoReplyRequestNotifiedAt)))
+          .returning({ id: whispsTable.id });
+        if (claimed.length === 0) continue;
+        await notifyUserPersisted(
+          whisp.senderId,
+          "They wanted to whisp a video back 🎬",
+          "Your recipient tried to send a video back but isn't a member yet. Add reply credit to unlock it for them.",
+          `/whisps/${whisp.id}`,
+          "video_reply_request",
+        );
+      }
+      if (blocked.length) {
+        logger.info({ count: blocked.length }, "Dispatched deferred video-reply-request notifications");
+      }
+    } catch (err) {
+      logger.error({ err }, "Deferred video-reply-request dispatch failed");
+      reportSystemError(err, "scheduler:replyNotificationScheduler:videoReplyRequest");
+    }
+
+    // Own try block for the same reason as the one above.
+    try {
+      const count = await dispatchDueDeferredNotifications();
+      if (count) logger.info({ count }, "Dispatched deferred notifications");
+    } catch (err) {
+      logger.error({ err }, "Deferred notification dispatch failed");
+      reportSystemError(err, "scheduler:replyNotificationScheduler:deferred");
     }
   }, POLL_INTERVAL_MS);
 }

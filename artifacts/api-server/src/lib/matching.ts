@@ -143,7 +143,9 @@ export async function matchGhostBoostWhisp(
     void sendEmail(
       subscriber.email,
       hookLine,
-      whisperLinkEmailHtml(sharedUrl, hookLine) + subscriptionMatchedEmailFooter(unsubscribeUrl),
+      // Passed into the template rather than concatenated onto it: appending
+      // landed the unsubscribe line outside the email's layout entirely.
+      whisperLinkEmailHtml(sharedUrl, hookLine, subscriptionMatchedEmailFooter(unsubscribeUrl)),
       { whispId: id, purpose: "ghost_boost_match" },
     );
 
