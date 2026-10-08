@@ -73,7 +73,12 @@
     "privacyGhostBoostText": "Ghost Boost sammelt keine Kontaktdaten des Empfängers — es ist ein eingereihter Versand mit erhöhter Reichweite ohne bestimmten Empfänger, keine gezielte Werbung.",
     "privacyDataRequestText": "Du kannst über den Support einen vollständigen Datenexport oder die Löschung deines Kontos anfordern.",
     "privacyPolicyLink": "Datenschutzerklärung",
-    "termsOfServiceLink": "Nutzungsbedingungen"
+    "termsOfServiceLink": "Nutzungsbedingungen",
+    "saveProfile": "Profil speichern",
+    "saveAvatar": "Avatar speichern",
+    "savedHint": "Alle Änderungen gespeichert",
+    "unsavedHint": "Ungespeicherte Änderungen",
+    "personalDetailsCardTitle": "Persönliche Angaben"
   },
   "accountSecurityPage": {
     "title": "Kontosicherheit",
@@ -126,6 +131,22 @@
       "triple": "14 % sparen",
       "ten": "29 % sparen",
       "twentyfive": "43 % sparen"
+    },
+    "freePlanName": "Kostenlos",
+    "timeAgo": "vor {{time}}",
+    "creditsDelta_one": "{{amount}} Guthaben",
+    "creditsDelta_other": "{{amount}} Guthaben",
+    "txTypes": {
+      "purchase": "Kauf eines Guthabenpakets",
+      "plan_grant": "Monatliches Tarifguthaben",
+      "spend": "Ghost Boost",
+      "boost": "Ghost Boost",
+      "bonus": "Bonusguthaben",
+      "refund": "Erstattung"
+    },
+    "freeForNow": {
+      "title": "Blind Whisper ist gerade kostenlos",
+      "body": "Sende so viele whisps, wie du möchtest, hol dir deine Whisper Box, antworte und mach bei Debatten mit — alles kostenlos, solange wir wachsen. Falls später kostenpflichtige Tarife kommen, bringen sie Extras obendrauf."
     }
   },
   "subscribePage": {
@@ -182,7 +203,8 @@
     "toastRevealRequestFailed": "Offenbarung konnte nicht angefragt werden",
     "smsDisclosure": "Wenn du an eine Telefonnummer sendest, schreibst du ihr in deinem eigenen Namen. Es können Nachrichten- und Datenkosten anfallen. Antworte mit STOP zum Abbestellen, HELP für Hilfe. Siehe unsere",
     "smsTermsLinkText": "SMS-Bedingungen",
-    "smsConsentCheckbox": "Ich bestätige, dass ich die Erlaubnis dieser Person habe, eine SMS von mir über Blind Whisper zu erhalten."
+    "smsConsentCheckbox": "Ich bestätige, dass ich die Erlaubnis dieser Person habe, eine SMS von mir über Blind Whisper zu erhalten.",
+    "smsConsentOneTime": "Das musst du für jeden neuen Kontakt nur einmal bestätigen."
   },
   "publicInvitePage": {
     "notFound": "Diese Einladung konnte nicht gefunden werden.",

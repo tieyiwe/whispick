@@ -15,7 +15,8 @@
         "slide2Desc": "Sie erfahren nie, dass du es warst.",
         "slide3Title": "Es sei denn, du willst es",
         "slide3Desc": "Gib dich jederzeit zu erkennen — es ist immer deine Entscheidung."
-      }
+      },
+      "secondaryCta": "So funktioniert's"
     },
     "cta": {
       "startSendingWhisps": "Jetzt Whisps versenden"
@@ -50,7 +51,8 @@
           "title": "Gesendet — das war's",
           "desc": "Wir sagen dir Bescheid, sobald es angesehen wurde."
         }
-      }
+      },
+      "scrollHint": "Wische, um alle Schritte zu sehen"
     },
     "noAwkwardness": {
       "badge": "Kein unangenehmer Augenkontakt nötig",
@@ -106,11 +108,45 @@
     "footer": {
       "privacyPolicy": "Datenschutzerklärung",
       "termsOfService": "Nutzungsbedingungen",
-      "smsTerms": "SMS-Bedingungen"
+      "smsTerms": "SMS-Bedingungen",
+      "learnMore": "Mehr über Blind Whisper",
+      "howItWorks": "So funktioniert's",
+      "whisperBox": "Anonymer Nachrichten-Link",
+      "debateNow": "Debate Now",
+      "liveDebates": "Live-Debatten",
+      "ideas": "Was du senden kannst",
+      "safety": "Sicherheit",
+      "faq": "FAQ",
+      "about": "Über uns"
     }
   },
   "notFound": {
     "title": "404 – Seite nicht gefunden",
     "message": "Hast du vergessen, die Seite zum Router hinzuzufügen?"
+  },
+  "publicHeader": {
+    "homeAria": "Blind-Whisper-Startseite",
+    "navAria": "Mehr über Blind Whisper erfahren",
+    "nav": {
+      "howItWorks": "So funktioniert's",
+      "whisperBox": "Whisper Box",
+      "debateNow": "Debate Now",
+      "safety": "Sicherheit"
+    }
+  },
+  "auth": {
+    "backHome": "Start",
+    "signUpReassurance": "Kostenlos · mit einem Tipp über Google",
+    "signInReassurance": "Willkommen zurück · mit einem Tipp über Google"
+  },
+  "marketingPage": {
+    "breadcrumbAria": "Brotkrümelnavigation",
+    "home": "Start",
+    "lastUpdated": "Zuletzt aktualisiert",
+    "commonQuestions": "Häufige Fragen",
+    "questionsAndAnswers": "Fragen & Antworten",
+    "keepReading": "Weiterlesen",
+    "communityGuidelines": "Community-Richtlinien",
+    "serviceOf": "Blind Whisper · ein Service von TIBLOGICS · v{{version}}"
   }
 }

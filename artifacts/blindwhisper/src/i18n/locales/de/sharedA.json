@@ -8,7 +8,8 @@
   },
   "avatarPickerGrid": {
     "chooseAvatar": "Avatar auswählen",
-    "noAvatar": "Kein Avatar"
+    "noAvatar": "Kein Avatar",
+    "useInitial": "Meine Initiale verwenden"
   },
   "cameraCapture": {
     "modePhoto": "Foto",
@@ -66,7 +67,9 @@
     "destinationLabel": "Wohin soll es gehen?",
     "publicCircle": "Öffentlicher Blind Circle",
     "anonymousDisclaimer": "Anonym gepostet — dein Name wird nie angezeigt. Jeder, der diesen Circle sehen kann, kann den Beitrag sehen.",
-    "postAnonymously": "Anonym posten"
+    "postAnonymously": "Anonym posten",
+    "titleLabelPublic": "Titel (für alle sichtbar, die den Beitrag sehen)",
+    "titlePlaceholderOptional": "Optional. Der Name deiner Datei wird nie geteilt"
   },
   "countryPhoneInput": {
     "searchCountry": "Land suchen...",
@@ -80,7 +83,8 @@
     "commentCount_other": "{{count}} Kommentare",
     "shareTopicAria": "Dieses Thema teilen",
     "joinDebate": "An der Debatte teilnehmen",
-    "onlineAriaLabel": "Gerade online"
+    "onlineAriaLabel": "Gerade online",
+    "shareText": "Mach bei dieser Debatte mit und antworte 100% anonym:"
   },
   "demographicsGateDialog": {
     "title": "Nur noch eine kurze Sache",

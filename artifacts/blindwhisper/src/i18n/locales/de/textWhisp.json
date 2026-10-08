@@ -27,7 +27,13 @@
     "viewButton": "Diesen Text-Whisp ansehen",
     "sendAnotherButton": "Noch einen senden",
     "toastSendFailed": "Text-Whisp konnte nicht gesendet werden",
-    "smsConsentCheckbox": "Ich bestätige, dass ich die Erlaubnis dieser Person habe, eine SMS von mir über Blind Whisper zu erhalten."
+    "smsConsentCheckbox": "Ich bestätige, dass ich die Erlaubnis dieser Person habe, eine SMS von mir über Blind Whisper zu erhalten.",
+    "smsConsentOneTime": "Das musst du für jeden neuen Kontakt nur einmal bestätigen.",
+    "comingSoon": {
+      "title": "Text-Whisps kommen bald",
+      "body": "Sende vorerst stattdessen einen Whisper Link per E-Mail.",
+      "cta": "Whisper Link senden"
+    }
   },
   "textWhispDetail": {
     "notFound": "Text-Whisp nicht gefunden.",

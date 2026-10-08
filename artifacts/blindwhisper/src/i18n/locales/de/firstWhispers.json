@@ -30,8 +30,11 @@
     "upToCount": "Füge bis zu {{count}} Freunde hinzu.",
     "toast": {
       "noneHadContactInfo": "Keiner der ausgewählten Kontakte hatte eine E-Mail-Adresse oder Telefonnummer",
-      "needAtLeastOne": "Füge mindestens einen Freund mit E-Mail-Adresse oder Telefonnummer hinzu"
-    }
+      "needAtLeastOne": "Füge mindestens einen Freund mit E-Mail-Adresse oder Telefonnummer hinzu",
+      "noneHadEmail": "Keiner der ausgewählten Kontakte hatte eine E-Mail-Adresse",
+      "needAtLeastOneEmail": "Füge mindestens einen Freund mit E-Mail-Adresse hinzu"
+    },
+    "subtitleEmailOnly": "Füge bis zu 5 Freunde hinzu — du brauchst nur eine E-Mail-Adresse für jeden."
   },
   "step2": {
     "heading": "Nicht sicher, was du senden sollst?",

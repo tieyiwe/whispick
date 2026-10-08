@@ -18,10 +18,20 @@
     "settings": "Einstellungen",
     "admin": "Administration",
     "home": "Start",
-    "more": "Mehr"
+    "more": "Mehr",
+    "debateShort": "Debatte",
+    "sections": {
+      "community": "Community",
+      "inbox": "Posteingang",
+      "create": "Erstellen",
+      "account": "Konto"
+    },
+    "circleShort": "Circle",
+    "myWhispsShort": "Whisps"
   },
   "account": {
     "settings": "Einstellungen",
-    "signOut": "Abmelden"
+    "signOut": "Abmelden",
+    "menu": "Kontomenü"
   }
 }

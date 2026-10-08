@@ -94,7 +94,8 @@
       "linkCopied": "Link kopiert — schick ihn los und hol jemanden in die Debatte",
       "copyFailed": "Kopieren fehlgeschlagen — bitte manuell kopieren",
       "topicRetracted": "Thema zurückgezogen",
-      "retractError": "Thema konnte nicht zurückgezogen werden"
+      "retractError": "Thema konnte nicht zurückgezogen werden",
+      "handleReserved": "Dieser Name ist reserviert — wähl einen anderen."
     },
     "sendWhispDialog": {
       "title": "Whispe dieses Thema",
@@ -129,7 +130,10 @@
       "body": "Erstelle ein kostenloses Konto, damit wir dir Bescheid geben können, sobald jemand darauf reagiert.",
       "cta": "Kostenloses Konto erstellen",
       "dismissAria": "Schließen"
-    }
+    },
+    "cancelReplyAria": "Antwort abbrechen",
+    "charactersLeftAria_one": "Noch {{count}} Zeichen übrig",
+    "charactersLeftAria_other": "Noch {{count}} Zeichen übrig"
   },
   "debateTopics": {
     "followingButton": "Folge ich",
