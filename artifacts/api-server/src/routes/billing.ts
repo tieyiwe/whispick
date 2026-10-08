@@ -56,7 +56,9 @@ router.post("/checkout", requireAuth, billingCheckoutLimiter, async (req, res): 
       return;
     }
 
-    const pack = CREDIT_PACKS[id as CreditPackId];
+    // Own-property only: an id like "toString" or "constructor" would
+    // otherwise resolve to an Object.prototype member and 500 below.
+    const pack = Object.hasOwn(CREDIT_PACKS, id) ? CREDIT_PACKS[id as CreditPackId] : undefined;
     if (!pack) {
       res.status(400).json({ error: "Unknown credit pack" });
       return;
@@ -150,7 +152,7 @@ async function grantCheckoutSession(session: CheckoutSessionLike): Promise<void>
   if (!userId) return;
 
   if (metadata.kind === "credit_pack") {
-    const pack = CREDIT_PACKS[metadata.packId as CreditPackId];
+    const pack = metadata.packId && Object.hasOwn(CREDIT_PACKS, metadata.packId) ? CREDIT_PACKS[metadata.packId as CreditPackId] : undefined;
     if (!pack) return;
     const inserted = await db
       .insert(creditTransactionsTable)

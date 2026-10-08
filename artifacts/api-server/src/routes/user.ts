@@ -650,7 +650,9 @@ router.get("/notifications", requireAuth, async (req, res): Promise<void> => {
   const unreadCount = rows.filter((r) => !r.readAt).length;
 
   res.json({
-    items: rows.map(({ readAt, ...n }) => ({ ...n, read: !!readAt })),
+    // createdByAdminId is an admin's internal users.id — users only need to
+    // know an announcement came from the team, never which staff account.
+    items: rows.map(({ readAt, createdByAdminId, ...n }) => ({ ...n, createdByAdminId: createdByAdminId ? "admin" : null, read: !!readAt })),
     unreadCount,
   });
 });
