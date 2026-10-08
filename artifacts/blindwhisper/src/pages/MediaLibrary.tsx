@@ -99,7 +99,9 @@ export function MediaLibrary() {
     savePendingForward({
       videoUrl: "",
       uploadedVideoId: item.id,
-      videoTitle: item.originalFilename,
+      // Not the filename: the title is shown to the recipient, and a
+      // filename routinely carries a real name or a precise timestamp.
+      videoTitle: null,
       videoThumbnail: `/api/media/${item.id}/thumbnail`,
       videoPlatform: "upload",
     });
@@ -223,7 +225,7 @@ export function MediaLibrary() {
                         the same ones already here. */}
                     {item.status === "ready" && (
                       <CirclePostComposer
-                        presetUpload={{ id: item.id, title: item.originalFilename }}
+                        presetUpload={{ id: item.id, fileName: item.originalFilename }}
                         trigger={
                           <Button
                             size="sm"

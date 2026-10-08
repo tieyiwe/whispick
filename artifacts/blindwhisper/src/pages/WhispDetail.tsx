@@ -55,6 +55,7 @@ import {
   X,
 } from "lucide-react";
 import { deliveryLabel } from "@/lib/deliveryMethod";
+import { safeExternalHref } from "@/lib/safeHref";
 import { getVisitorId } from "@/lib/anonymousVisitor";
 import { CircleCommentRow } from "@/components/shared/CircleCommentRow";
 import { ArchivedWhispGate } from "@/components/shared/ArchivedWhispGate";
@@ -90,6 +91,13 @@ export function WhispDetail() {
   });
 
   const isGhostBoost = data?.whisp.deliveryMethod === "ghost_boost";
+  // A Blind Circle post has no single recipient: its 1:1 thread would be one
+  // shared, PUBLIC thread, so a reply, a guess, or a reveal there would be
+  // aimed at everyone (and the server rejects them). Viewers reach the
+  // poster through "Message the poster privately" (circle_dm) instead —
+  // listed below under the post's private conversations.
+  const isCirclePost = data?.whisp.deliveryMethod === "circle_drop";
+  const hasPrivateThread = !isGhostBoost && !isCirclePost;
   const { data: matchStats } = useGetGhostBoostMatches(id!, {
     query: { enabled: !!id && isGhostBoost, queryKey: getGetGhostBoostMatchesQueryKey(id!) },
   });
@@ -303,7 +311,7 @@ export function WhispDetail() {
                 whatever reply thread has piled up, so it's easy to never
                 scroll to. Same handler, same gating, just reachable without
                 scrolling at all. */}
-            {!isGhostBoost && !whisp.revealRequested && (
+            {hasPrivateThread && !whisp.revealRequested && (
               <Button
                 variant="ghost"
                 size="icon"
@@ -358,7 +366,7 @@ export function WhispDetail() {
             succeeded (which flips that flag via the query invalidation in
             handleReveal) doesn't unmount this mid-way through its own 2s
             aborted/revealed result display. */}
-        {!isGhostBoost && (
+        {hasPrivateThread && (
           <RevealCountdownDialog open={revealCountdownOpen} onOpenChange={setRevealCountdownOpen} onConfirm={handleReveal} />
         )}
 
@@ -369,7 +377,7 @@ export function WhispDetail() {
               <img src={whisp.videoThumbnail} alt={t("whispDetail.videoFallback")} className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                 <a
-                  href={whisp.videoPlatform === "upload" ? `/api/public/w/${whisp.publicToken}/media` : whisp.videoUrl}
+                  href={whisp.videoPlatform === "upload" ? `/api/public/w/${whisp.publicToken}/media` : safeExternalHref(whisp.videoUrl)}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -508,8 +516,8 @@ export function WhispDetail() {
             replying happens inside the conversation instead of in a separate
             box further down the page. Doesn't apply to a Ghost Boost campaign,
             which is fanned out to many anonymous subscribers rather than one
-            known recipient. */}
-        {!isGhostBoost && (
+            known recipient — nor to a Blind Circle post (see isCirclePost). */}
+        {hasPrivateThread && (
           <Card className="bg-card border-border/50">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-serif flex items-center gap-2">
@@ -679,7 +687,7 @@ export function WhispDetail() {
         )}
 
         {/* Reveal flow */}
-        {!isGhostBoost && !whisp.revealRequested && (
+        {hasPrivateThread && !whisp.revealRequested && (
           <Button
             variant="outline"
             className="w-full rounded-full border-primary/30 hover:bg-primary/10 hover:text-primary"
@@ -691,7 +699,7 @@ export function WhispDetail() {
             {t("whispDetail.revealYourself")}
           </Button>
         )}
-        {!isGhostBoost && whisp.revealRequested && (
+        {hasPrivateThread && whisp.revealRequested && (
           <Card className="bg-primary/10 border-primary/20">
             <CardContent className="p-4 text-center">
               <Eye className="w-6 h-6 text-primary mx-auto mb-2" />

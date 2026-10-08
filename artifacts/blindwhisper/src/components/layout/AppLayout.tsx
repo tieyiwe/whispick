@@ -15,6 +15,7 @@ import {
 } from "@workspace/api-client-react";
 import { isSupportedLanguage } from "@/lib/languages";
 import { useAppBadge } from "@/lib/useAppBadge";
+import { clearAnonymousDeviceState } from "@/lib/deviceState";
 import {
   LayoutDashboard,
   Send,
@@ -126,6 +127,17 @@ function MobileTabLink({
   );
 }
 
+// Every sign-out goes through here: the anonymous state this device holds
+// (private Circle DM tokens, the anonymous visitor id, the push
+// subscription) belongs to the person signing out, not whoever uses the
+// device next. App.tsx's ClerkQueryClientCacheInvalidator also clears it
+// when Clerk reports the user changed, covering sign-outs that don't come
+// from these buttons (session expiry, another tab).
+function signOutAndForgetDevice(signOut: ReturnType<typeof useClerk>["signOut"]) {
+  clearAnonymousDeviceState();
+  return signOut({ redirectUrl: "/" });
+}
+
 // Top-right account dropdown — Settings + Sign Out, reachable from the same
 // avatar in both the mobile header and the desktop sidebar's top bar. Fixes
 // two real gaps: on mobile, the avatar previously just linked straight to
@@ -169,7 +181,7 @@ function AccountMenu({
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem
-          onClick={() => signOut({ redirectUrl: "/" })}
+          onClick={() => signOutAndForgetDevice(signOut)}
           className="cursor-pointer text-destructive focus:text-destructive"
           data-testid="button-account-menu-signout"
         >
@@ -379,7 +391,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           <Button
             variant="ghost"
             className="w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-            onClick={() => signOut({ redirectUrl: "/" })}
+            onClick={() => signOutAndForgetDevice(signOut)}
           >
             <LogOut className="w-5 h-5 mr-3" />
             {t("account.signOut")}

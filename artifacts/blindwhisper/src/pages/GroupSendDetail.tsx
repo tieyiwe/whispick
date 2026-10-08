@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { safeExternalHref } from "@/lib/safeHref";
 import { ArrowLeft, PlayCircle, UsersRound, Eye, MessageSquare, HeartHandshake } from "lucide-react";
 
 export function GroupSendDetail() {
@@ -56,7 +57,7 @@ export function GroupSendDetail() {
             <div className="relative h-40 overflow-hidden">
               <img src={video.videoThumbnail} alt={t("groupSendDetail.videoFallback")} className="w-full h-full object-cover" />
               <a
-                href={video.videoPlatform === "upload" ? `/api/media/${video.uploadedVideoId}/file` : video.videoUrl}
+                href={video.videoPlatform === "upload" ? `/api/media/${video.uploadedVideoId}/file` : safeExternalHref(video.videoUrl)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="absolute inset-0 bg-black/50 flex items-center justify-center hover:bg-black/40 transition-colors"

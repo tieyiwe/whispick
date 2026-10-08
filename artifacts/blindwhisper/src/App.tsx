@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef } from "react";
 import { ClerkProvider, SignIn, SignUp, Show, useClerk, useAuth } from '@clerk/react';
-import { registerServiceWorker } from "@/lib/push";
+import { registerServiceWorker, syncPushSubscription } from "@/lib/push";
+import { clearAnonymousDeviceState } from "@/lib/deviceState";
 // Imported for its module-level side effect: capturing beforeinstallprompt
 // from the moment this script evaluates, not from whenever the install UI
 // happens to mount. That UI lives inside AppLayout, which is pulled in by a
@@ -20,7 +21,7 @@ import { EnableNotificationsPrompt } from "@/components/shared/EnableNotificatio
 import { AppErrorBoundary } from "@/components/shared/AppErrorBoundary";
 import { MobileSendActionProvider } from "@/contexts/MobileSendAction";
 import { watchForUpdates, isUpdateAvailable } from "@/lib/appUpdate";
-import { setAuthTokenGetter, setExtraHeadersGetter } from "@workspace/api-client-react";
+import { setAuthTokenGetter, setExtraHeadersGetter, createPushSubscription } from "@workspace/api-client-react";
 import { getAdminMfaToken } from "@/lib/adminMfaGate";
 import { initFeatureUsage } from "@/lib/featureUsage";
 import { dark } from '@clerk/themes';
@@ -187,6 +188,10 @@ function ClerkQueryClientCacheInvalidator() {
       const userId = user?.id ?? null;
       if (prevUserIdRef.current !== undefined && prevUserIdRef.current !== userId) {
         qc.clear();
+        // A signed-in person just left (signed out, session expired, account
+        // deleted, switched accounts) — their anonymous device state goes
+        // with them. Covers every sign-out path, not just AppLayout's buttons.
+        if (prevUserIdRef.current) clearAnonymousDeviceState();
       }
       prevUserIdRef.current = userId;
     });
@@ -252,6 +257,35 @@ function ServiceWorkerRegistration() {
   return null;
 }
 
+// Keeps the backend's copy of this browser's push subscription current. The
+// browser can rotate the subscription on its own, and sw.js can't register
+// the new one (no Clerk token there), so the signed-in app does it: once per
+// load per user, plus whenever sw.js reports a rotation while a window is
+// open. Idempotent server-side (upsert by endpoint).
+function PushSubscriptionSync() {
+  const { isSignedIn, userId } = useAuth();
+  const syncedForRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!isSignedIn || !userId) return;
+    const sync = () => {
+      void syncPushSubscription((input) => createPushSubscription(input)).catch(() => {});
+    };
+    if (syncedForRef.current !== userId) {
+      syncedForRef.current = userId;
+      sync();
+    }
+    if (!("serviceWorker" in navigator)) return;
+    const onMessage = (event: MessageEvent) => {
+      if (event.data?.type === "push-subscription-changed") sync();
+    };
+    navigator.serviceWorker.addEventListener("message", onMessage);
+    return () => navigator.serviceWorker.removeEventListener("message", onMessage);
+  }, [isSignedIn, userId]);
+
+  return null;
+}
+
 function HomeRedirect() {
   return (
     <>
@@ -301,6 +335,7 @@ function ClerkProviderWithRoutes() {
       <QueryClientProvider client={queryClient}>
         <ClerkAuthTokenBridge />
         <ServiceWorkerRegistration />
+        <PushSubscriptionSync />
         <EnableNotificationsPrompt />
         <PinToTaskbarTip />
         <ClerkQueryClientCacheInvalidator />

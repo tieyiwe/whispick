@@ -47,54 +47,44 @@ self.addEventListener("push", (event) => {
 // own (a real endpoint, not something this app controls) — without handling
 // this, that device silently stops receiving pushes forever with nothing
 // anywhere telling the user why, since the old subscription just goes dead.
-// Re-subscribes with the same VAPID key and re-registers the new endpoint
-// with the backend so delivery keeps working across a rotation instead of
-// only ever being set up once, right after install.
+//
+// The worker can re-subscribe with the same VAPID key, but it can't register
+// the new endpoint with the backend itself: the API authenticates with a
+// Clerk Bearer token that only the page can obtain (a cookie-credentialed
+// fetch from here always 401'd). So it re-subscribes and tells any open
+// window, which re-syncs through the normal authenticated call; with no
+// window open, the app re-syncs on its next load (see lib/push.ts's
+// syncPushSubscription).
 self.addEventListener("pushsubscriptionchange", (event) => {
   event.waitUntil(
     (async () => {
       try {
-        const applicationServerKey =
-          event.oldSubscription?.options?.applicationServerKey ??
-          (await fetch("/api/user/push-public-key", { credentials: "same-origin" })
-            .then((r) => (r.ok ? r.json() : null))
-            .then((data) => data && urlBase64ToUint8Array(data.publicKey)));
-        if (!applicationServerKey) return;
-
-        const subscription = await self.registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey,
-        });
-        const json = subscription.toJSON();
-        await fetch("/api/user/push-subscription", {
-          method: "POST",
-          credentials: "same-origin",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ endpoint: json.endpoint, keys: json.keys }),
-        });
+        // Only the old subscription's key is usable here — the public-key
+        // endpoint also needs auth. Without it, the next app load notices
+        // there's no subscription and the user can re-enable from Settings.
+        const applicationServerKey = event.oldSubscription?.options?.applicationServerKey;
+        if (applicationServerKey) {
+          await self.registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey,
+          });
+        }
+        const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+        for (const client of clients) client.postMessage({ type: "push-subscription-changed" });
       } catch {
         // Same "best-effort, never surfaced" posture as every other push
-        // failure path here — the user can always re-enable manually from
-        // Settings if this silently didn't work.
+        // failure path here — the next app load re-syncs whatever exists.
       }
     })()
   );
 });
 
-// Mirrors src/lib/push.ts's urlBase64ToUint8Array — duplicated rather than
-// imported since a service worker can't reach into the app bundle's module
-// graph, and this is the only place in sw.js that needs it.
-function urlBase64ToUint8Array(base64Url) {
-  const padding = "=".repeat((4 - (base64Url.length % 4)) % 4);
-  const base64 = (base64Url + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const raw = atob(base64);
-  return Uint8Array.from([...raw].map((char) => char.charCodeAt(0)));
-}
-
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = event.notification.data?.url;
-  if (!url) return;
+  // The payload URL is only ever followed within this app's own origin —
+  // resolved against it so "/\evil.com"-style tricks that normalize to
+  // another host fall back to the app root instead of leaving the app.
+  const url = resolveSameOriginUrl(event.notification.data?.url);
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
       // Reuse ANY already-open Blind Whisper window, not just one sitting on
@@ -127,3 +117,14 @@ self.addEventListener("notificationclick", (event) => {
     })
   );
 });
+
+function resolveSameOriginUrl(raw) {
+  const root = new URL("/", self.location.origin).href;
+  if (typeof raw !== "string" || !raw) return root;
+  try {
+    const resolved = new URL(raw, self.location.origin);
+    return resolved.origin === self.location.origin ? resolved.href : root;
+  } catch {
+    return root;
+  }
+}

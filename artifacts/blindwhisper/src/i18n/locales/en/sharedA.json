@@ -56,6 +56,8 @@
     "removeVideo": "Remove video",
     "titleLabel": "Title",
     "titlePlaceholder": "What is it? Give it a title",
+    "titleLabelPublic": "Title (visible to everyone who sees the post)",
+    "titlePlaceholderOptional": "Optional. Your file's name is never shared",
     "chooseVideo": "Choose a video",
     "uploadingEllipsis": "Uploading...",
     "uploadHint": "Up to {{seconds}} seconds. MP4, WebM or MOV.",

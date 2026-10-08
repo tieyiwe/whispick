@@ -13,6 +13,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Bell } from "lucide-react";
+import { isSafeAppPath } from "@/lib/safeHref";
 
 // The persistent, in-app counterpart to push notifications (see
 // lib/push.ts server-side) — a bell with an unread badge, shown in both the
@@ -178,7 +179,9 @@ export function NotificationBell() {
                   </div>
                 </div>
               );
-              return n.url ? (
+              // Only same-origin app paths become links — a "//evil.com" or
+              // "/\evil.com" url would otherwise navigate off-site.
+              return isSafeAppPath(n.url) ? (
                 <Link
                   key={n.id}
                   href={n.url}

@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Thumbnail } from "@/components/shared/Thumbnail";
 import { PlatformIcon } from "@/components/shared/PlatformIcon";
 import { savePendingForward } from "@/lib/forwardVideo";
+import { safeExternalHref } from "@/lib/safeHref";
 import { Sparkles, Star, PlayCircle, Send } from "lucide-react";
 
 function SuggestionCard({ suggestion, onWhisper }: { suggestion: SuggestedVideo; onWhisper: (s: SuggestedVideo) => void }) {
@@ -45,7 +46,7 @@ function SuggestionCard({ suggestion, onWhisper }: { suggestion: SuggestedVideo;
         </div>
         <div className="flex gap-2 pt-1">
           <Button asChild variant="outline" size="sm" className="flex-1 rounded-full">
-            <a href={suggestion.videoUrl} target="_blank" rel="noopener noreferrer">{t("suggestionsLibrary.watch")}</a>
+            <a href={safeExternalHref(suggestion.videoUrl)} target="_blank" rel="noopener noreferrer">{t("suggestionsLibrary.watch")}</a>
           </Button>
           <Button size="sm" className="flex-1 rounded-full" onClick={() => onWhisper(suggestion)} data-testid={`button-whisper-suggestion-${suggestion.id}`}>
             <Send className="w-3.5 h-3.5 mr-1.5" /> {t("suggestionsLibrary.whisperThis")}

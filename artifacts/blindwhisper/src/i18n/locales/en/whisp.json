@@ -484,6 +484,7 @@
     "circle": {
       "like": "Like",
       "messagePosterPrivately": "Message the poster privately",
+      "messagePosterHint": "Comments here are public. To talk to the poster one-on-one, message them privately: only they will see it.",
       "commentCount_one": "{{count}} comment",
       "commentCount_other": "{{count}} comments",
       "beFirstToComment": "Be the first to comment",

@@ -122,7 +122,11 @@
     "openOn": "Open on {{platform}}",
     "openOriginal": "Open original",
     "videoAlt": "Video",
-    "watchTheVideo": "Watch the video"
+    "watchTheVideo": "Watch the video",
+    "externalLinkTitle": "Leaving Blind Whisper",
+    "externalLinkDescription": "This video is hosted on {{host}}, which isn't a video platform Blind Whisper recognizes. Only continue if you trust this site.",
+    "externalLinkCancel": "Cancel",
+    "externalLinkContinue": "Continue"
   },
   "whispSentConfirmation": {
     "srOnlySent": "Your whisp has been sent"

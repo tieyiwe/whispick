@@ -23,6 +23,10 @@ import { Globe, Users, Link2, Upload, Loader2, X, PlayCircle, Plus } from "lucid
 
 type VideoMeta = {
   title?: string | null;
+  // An upload's original filename — shown to the poster in the preview only.
+  // Never sent as the title: it's public on the post, and filenames
+  // routinely carry a real name or a precise timestamp.
+  fileName?: string | null;
   thumbnail?: string | null;
   embedUrl?: string | null;
   platform?: string;
@@ -43,7 +47,7 @@ export function CirclePostComposer({
 }: {
   /** An already-uploaded video, so the Media Library can post one straight to
    *  the circle without re-uploading it. Skips the link/upload chooser. */
-  presetUpload?: { id: string; title: string };
+  presetUpload?: { id: string; fileName: string };
   trigger?: React.ReactNode;
 } = {}) {
   const { t } = useTranslation("sharedA");
@@ -52,7 +56,7 @@ export function CirclePostComposer({
   const [videoUrl, setVideoUrl] = useState("");
   const [videoMeta, setVideoMeta] = useState<VideoMeta | null>(
     presetUpload
-      ? { title: presetUpload.title, thumbnail: `/api/media/${presetUpload.id}/thumbnail`, platform: "upload" }
+      ? { fileName: presetUpload.fileName, thumbnail: `/api/media/${presetUpload.id}/thumbnail`, platform: "upload" }
       : null,
   );
   const [uploadedVideoId, setUploadedVideoId] = useState<string | null>(presetUpload?.id ?? null);
@@ -60,7 +64,8 @@ export function CirclePostComposer({
   // Required for a pasted link. A scrape gives a title only when the platform
   // exposes one, and even then it's the uploader's SEO headline rather than
   // anything about why this is worth watching — so the community feed would
-  // fill up with untitled cards. An upload already has its filename.
+  // fill up with untitled cards. Optional for an upload (its filename is
+  // never used — see VideoMeta.fileName).
   const [title, setTitle] = useState("");
   const [note, setNote] = useState("");
   const [alias, setAlias] = useState("");
@@ -77,8 +82,10 @@ export function CirclePostComposer({
   });
 
   const hasVideo = !!uploadedVideoId || (!!videoUrl.trim() && !!videoMeta);
-  // Title is mandatory for a link, and supplied by the filename for an upload.
+  // Title is mandatory for a link, and optional (typed by the poster, or
+  // none) for an upload.
   const needsTitle = source === "link" && !uploadedVideoId;
+  const showTitleInput = needsTitle || !!uploadedVideoId;
   const canPost = hasVideo && (!needsTitle || !!title.trim());
 
   function reset() {
@@ -86,7 +93,7 @@ export function CirclePostComposer({
     setVideoUrl("");
     setVideoMeta(
       presetUpload
-        ? { title: presetUpload.title, thumbnail: `/api/media/${presetUpload.id}/thumbnail`, platform: "upload" }
+        ? { fileName: presetUpload.fileName, thumbnail: `/api/media/${presetUpload.id}/thumbnail`, platform: "upload" }
         : null,
     );
     setUploadedVideoId(presetUpload?.id ?? null);
@@ -122,7 +129,7 @@ export function CirclePostComposer({
       setUploadedVideoId(result.id);
       setVideoUrl("");
       setVideoMeta({
-        title: result.originalFilename,
+        fileName: result.originalFilename,
         thumbnail: `/api/media/${result.id}/thumbnail`,
         platform: "upload",
       });
@@ -147,7 +154,10 @@ export function CirclePostComposer({
       {
         data: {
           videoUrl: uploadedVideoId ? null : videoUrl.trim(),
-          videoTitle: needsTitle ? title.trim() : videoMeta?.title ?? null,
+          // Only ever what the poster typed. "" rather than null for an
+          // untitled upload: the API falls back to the file's original name
+          // when an upload's title is null (routes/whisps.ts).
+          videoTitle: title.trim(),
           // A relative /api/media/:id/thumbnail path when uploadedVideoId is
           // set — real for the local preview, but not a valid http(s) URL
           // for the API, which derives the real thumbnail server-side from
@@ -290,7 +300,7 @@ export function CirclePostComposer({
                   <PlayCircle className="h-5 w-5 text-muted-foreground" />
                 </div>
               )}
-              <p className="min-w-0 flex-1 truncate text-sm text-foreground">{videoMeta.title || videoUrl}</p>
+              <p className="min-w-0 flex-1 truncate text-sm text-foreground">{videoMeta.title || videoMeta.fileName || videoUrl}</p>
               <button
                 type="button"
                 onClick={() => {
@@ -309,18 +319,19 @@ export function CirclePostComposer({
 
           {/* Required for a link. A scraped title is only ever a suggestion —
               it's prefilled and editable, and plenty of links return none at
-              all, which would leave untitled cards in the feed. */}
-          {needsTitle && (
+              all, which would leave untitled cards in the feed. Optional for
+              an upload, which is never titled from its filename. */}
+          {showTitleInput && (
             <div className="space-y-1">
               <div className="flex items-baseline justify-between">
                 <label htmlFor="circle-title" className="text-xs font-medium text-muted-foreground">
-                  {t("circlePostComposer.titleLabel")} <span className="text-destructive">*</span>
+                  {t("circlePostComposer.titleLabelPublic")} {needsTitle && <span className="text-destructive">*</span>}
                 </label>
                 <span className="text-[11px] text-muted-foreground">{title.length}/120</span>
               </div>
               <Input
                 id="circle-title"
-                placeholder={t("circlePostComposer.titlePlaceholder")}
+                placeholder={needsTitle ? t("circlePostComposer.titlePlaceholder") : t("circlePostComposer.titlePlaceholderOptional")}
                 maxLength={120}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -331,7 +342,7 @@ export function CirclePostComposer({
 
           <Textarea
             className="min-h-[70px] resize-none rounded-xl"
-            placeholder={needsTitle ? t("circlePostComposer.notePlaceholderWithTitle") : t("circlePostComposer.notePlaceholderNoTitle")}
+            placeholder={showTitleInput ? t("circlePostComposer.notePlaceholderWithTitle") : t("circlePostComposer.notePlaceholderNoTitle")}
             maxLength={500}
             value={note}
             onChange={(e) => setNote(e.target.value)}

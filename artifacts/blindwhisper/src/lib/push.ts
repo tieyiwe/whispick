@@ -30,6 +30,22 @@ export async function subscribeToPush(vapidPublicKey: string): Promise<PushSubsc
   });
 }
 
+// Re-registers this browser's CURRENT push subscription (if any) with the
+// backend through the normal Bearer-authenticated API call. Needed because a
+// browser can rotate the subscription on its own (sw.js's
+// pushsubscriptionchange), and the service worker can't register the new
+// endpoint itself — it has no Clerk token. Idempotent: the server upserts by
+// endpoint. Never creates a subscription: no subscription means push is off
+// (or was turned off in Settings), and that's left alone.
+export async function syncPushSubscription(
+  register: (input: { endpoint: string; keys: { p256dh: string; auth: string } }) => Promise<unknown>,
+): Promise<void> {
+  if (!isPushSupported() || typeof Notification === "undefined" || Notification.permission !== "granted") return;
+  const subscription = await getExistingPushSubscription();
+  if (!subscription) return;
+  await register(pushSubscriptionToJson(subscription));
+}
+
 export function pushSubscriptionToJson(subscription: PushSubscription): { endpoint: string; keys: { p256dh: string; auth: string } } {
   const json = subscription.toJSON();
   return {

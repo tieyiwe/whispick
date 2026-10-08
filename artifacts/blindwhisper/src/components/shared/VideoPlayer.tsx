@@ -2,6 +2,18 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PlayCircle, ExternalLink } from "lucide-react";
 import confetti from "canvas-confetti";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { externalHostname, isHttpUrl, safeExternalHref } from "@/lib/safeHref";
+import { isAllowedEmbedUrl, isKnownVideoUrl } from "@/lib/videoHosts";
 
 // Proper capitalisation for the "open on ..." link — the stored platform slug
 // is lowercase, and "Open on tiktok" looks like a bug.
@@ -80,6 +92,49 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
   // back to the plain "no thumbnail" state rather than showing a broken
   // image behind the play button.
   const [thumbnailFailed, setThumbnailFailed] = useState(false);
+  // A link off to a host we don't recognize waits here for the viewer to
+  // confirm after seeing its domain — see openExternal below.
+  const [pendingExternal, setPendingExternal] = useState<{ url: string; host: string; countsAsClick: boolean } | null>(null);
+
+  // Opens a sender-supplied URL in a new tab. Known video platforms open
+  // straight away; anything else (platform "other") first shows the viewer
+  // the destination hostname, since an arbitrary link is exactly how a
+  // sender would point a recipient at a tracking/phishing page.
+  function openExternal(url: string, countsAsClick: boolean) {
+    if (!isHttpUrl(url)) return;
+    if (isKnownVideoUrl(url)) {
+      if (countsAsClick) onWatchEvent("clicked");
+      window.open(url, "_blank", "noopener,noreferrer");
+      return;
+    }
+    setPendingExternal({ url, host: externalHostname(url) ?? url, countsAsClick });
+  }
+
+  function confirmExternal() {
+    if (!pendingExternal) return;
+    if (pendingExternal.countsAsClick) onWatchEvent("clicked");
+    window.open(pendingExternal.url, "_blank", "noopener,noreferrer");
+    setPendingExternal(null);
+  }
+
+  const externalConfirmDialog = (
+    <AlertDialog open={!!pendingExternal} onOpenChange={(open) => !open && setPendingExternal(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t("videoPlayer.externalLinkTitle")}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {t("videoPlayer.externalLinkDescription", { host: pendingExternal?.host ?? "" })}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel data-testid="button-external-link-cancel">{t("videoPlayer.externalLinkCancel")}</AlertDialogCancel>
+          <AlertDialogAction onClick={confirmExternal} data-testid="button-external-link-continue">
+            {t("videoPlayer.externalLinkContinue")}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
 
   function checkProgress(currentTime: number, duration: number) {
     const fired = firedRef.current;
@@ -171,7 +226,9 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
   // point of a whisp arriving on its own page — being thrown out to the
   // Facebook app mid-moment breaks it, and the recipient may not even be
   // logged in over there.
-  const isEmbeddable = !!embedUrl;
+  // Only ever iframed from the platform hosts the server itself builds embeds
+  // for — anything else falls back to the thumbnail/link behaviour below.
+  const isEmbeddable = isAllowedEmbedUrl(embedUrl);
   const isNativeVideo = platform === "upload" && !!uploadSrc;
   // ...but only YouTube and Vimeo report progress back, so only those can be
   // *measured* as watched. The rest are embedded blind.
@@ -226,6 +283,7 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
         ? "relative mx-auto w-full max-w-[400px] h-[540px] max-h-[75vh] bg-black"
         : "relative aspect-video w-full bg-black";
 
+    const openHref = safeExternalHref(videoUrl);
     return (
       <div className={frameClass}>
         <iframe
@@ -241,16 +299,24 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
             login-walled video loads to an empty frame with nothing to click.
             This is also the answer for anyone who'd simply rather watch in
             the app they already use. */}
-        <a
-          href={videoUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          data-testid="link-open-on-platform"
-          className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/60 px-2.5 py-1 text-[11px] text-white/90 backdrop-blur transition-colors hover:bg-black/80 hover:text-white"
-        >
-          <ExternalLink className="w-3 h-3" />
-          {platform ? t("videoPlayer.openOn", { platform: PLATFORM_LABELS[platform] ?? platform }) : t("videoPlayer.openOriginal")}
-        </a>
+        {openHref && (
+          <a
+            href={openHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => {
+              if (isKnownVideoUrl(openHref)) return;
+              e.preventDefault();
+              openExternal(openHref, false);
+            }}
+            data-testid="link-open-on-platform"
+            className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/60 px-2.5 py-1 text-[11px] text-white/90 backdrop-blur transition-colors hover:bg-black/80 hover:text-white"
+          >
+            <ExternalLink className="w-3 h-3" />
+            {platform ? t("videoPlayer.openOn", { platform: PLATFORM_LABELS[platform] ?? platform }) : t("videoPlayer.openOriginal")}
+          </a>
+        )}
+        {externalConfirmDialog}
       </div>
     );
   }
@@ -282,16 +348,20 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
     // second later. watched_complete is left to the players that actually
     // report it: YouTube, Vimeo, and native uploads, via the progress checks
     // above.
-    onWatchEvent("clicked");
+    //
+    // Following a link out fires "clicked" only once it's actually opened —
+    // for an unrecognized host that's after the viewer confirms the domain.
     if (isEmbeddable || isNativeVideo) {
+      onWatchEvent("clicked");
       setPlaying(true);
     } else {
-      window.open(videoUrl, "_blank", "noopener,noreferrer");
+      openExternal(videoUrl, true);
     }
   }
 
   return thumbnail && !thumbnailFailed ? (
     <div className="relative">
+      {externalConfirmDialog}
       <img
         src={thumbnail}
         alt={title ?? t("videoPlayer.videoAlt")}
@@ -309,13 +379,16 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
       </div>
     </div>
   ) : (
-    <button
-      onClick={handlePlayClick}
-      className="w-full h-36 bg-muted flex flex-col items-center justify-center gap-2 hover:bg-muted/80 transition-colors"
-      data-testid="button-watch-video-no-thumb"
-    >
-      <PlayCircle className="w-10 h-10 text-primary" />
-      <span className="text-sm text-muted-foreground">{t("videoPlayer.watchTheVideo")}</span>
-    </button>
+    <>
+      {externalConfirmDialog}
+      <button
+        onClick={handlePlayClick}
+        className="w-full h-36 bg-muted flex flex-col items-center justify-center gap-2 hover:bg-muted/80 transition-colors"
+        data-testid="button-watch-video-no-thumb"
+      >
+        <PlayCircle className="w-10 h-10 text-primary" />
+        <span className="text-sm text-muted-foreground">{t("videoPlayer.watchTheVideo")}</span>
+      </button>
+    </>
   );
 }

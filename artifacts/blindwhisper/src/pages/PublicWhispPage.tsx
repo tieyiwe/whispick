@@ -229,7 +229,7 @@ export function PublicWhispPage() {
     // form and the "N replies remaining" line change the bar's real height,
     // and the ref itself only exists in some render branches (not the
     // expired/limit-reached ones, which are shorter).
-  }, [showVideoReply, replyVideoMeta, whisp?.recipientRepliesRemaining, whisp?.expired]);
+  }, [showVideoReply, replyVideoMeta, whisp?.recipientRepliesRemaining, whisp?.expired, whisp?.deliveryMethod]);
 
   useEffect(() => {
     if (justWatched) setReactionExpanded(true);
@@ -635,6 +635,13 @@ export function PublicWhispPage() {
   // that: renameHandle assigns one on the fly if none exists yet.
   const ownHandle = whisp?.comments.find((c) => c.isOwnComment)?.handle ?? null;
 
+  // A Blind Circle post's 1:1 reply thread would be one thread shared by
+  // EVERY viewer — public, not the private conversation it looks like — so
+  // replies, guesses and reveal responses are hidden for it (the server
+  // rejects them too). Talking to the poster goes through "Message the
+  // poster privately" (a separate circle_dm thread) instead.
+  const isCirclePost = whisp?.deliveryMethod === "circle_drop";
+
   const expired = whisp?.expired ?? false;
   const expiresAtMs = whisp?.expiresAt ? new Date(whisp.expiresAt).getTime() : null;
   const remainingMs = expiresAtMs ? expiresAtMs - now : null;
@@ -986,6 +993,9 @@ export function PublicWhispPage() {
                     {t("publicWhisp.circle.messagePosterPrivately")}
                   </Button>
                 </div>
+                <p className="text-[11px] text-muted-foreground" data-testid="text-message-poster-hint">
+                  {t("publicWhisp.circle.messagePosterHint")}
+                </p>
 
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
@@ -1211,7 +1221,8 @@ export function PublicWhispPage() {
               </div>
             )}
 
-            {/* Reply section */}
+            {/* Reply section — not for a Circle post (see isCirclePost). */}
+            {!isCirclePost && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <div className="flex-1 h-px bg-border/40" />
@@ -1547,9 +1558,10 @@ export function PublicWhispPage() {
               })()}
               </div>
             </div>
+            )}
 
             {/* Reveal section */}
-            {whisp.revealRequested && (
+            {whisp.revealRequested && !isCirclePost && (
               <div className="bg-card border border-primary/20 rounded-2xl p-4 text-center space-y-2">
                 {revealResponse ? (
                   <p className="text-sm text-muted-foreground">

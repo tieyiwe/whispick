@@ -39,3 +39,16 @@ export function getVisitorId(): string {
     return inMemoryFallbackId;
   }
 }
+
+// Forgets this device's visitor id, so the next getVisitorId() mints a fresh
+// one. Called on sign-out (see deviceState.ts): the id is what marks comments
+// as "yours" and is the credential for renaming your anonymous handle, so the
+// next person on a shared device must not inherit it.
+export function clearVisitorId(): void {
+  inMemoryFallbackId = null;
+  try {
+    localStorage.removeItem(VISITOR_ID_KEY);
+  } catch {
+    // Storage unavailable — the in-memory fallback above was all there was.
+  }
+}

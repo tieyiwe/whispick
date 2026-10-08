@@ -23,6 +23,7 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { MoodTag } from "@/components/shared/MoodTag";
 import { deliveryLabel } from "@/lib/deliveryMethod";
 import { categoryLabel } from "@/lib/videoCategories";
+import { safeExternalHref } from "@/lib/safeHref";
 import { ArrowLeft, PlayCircle, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 
 export function AdminWhispDetail() {
@@ -102,7 +103,7 @@ export function AdminWhispDetail() {
           {whisp.videoThumbnail && (
             <div className="relative h-48 overflow-hidden">
               <img src={whisp.videoThumbnail} alt="Video" className="w-full h-full object-cover" />
-              <a href={whisp.videoUrl} target="_blank" rel="noopener noreferrer" className="absolute inset-0 bg-black/50 flex items-center justify-center hover:bg-black/40 transition-colors">
+              <a href={safeExternalHref(whisp.videoUrl)} target="_blank" rel="noopener noreferrer" className="absolute inset-0 bg-black/50 flex items-center justify-center hover:bg-black/40 transition-colors">
                 <PlayCircle className="w-10 h-10 text-white" />
               </a>
             </div>

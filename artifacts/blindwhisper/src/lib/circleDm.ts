@@ -24,3 +24,21 @@ export function saveCircleDmToken(originWhispId: string, publicToken: string): v
     // privately" mints a second conversation instead of resuming this one.
   }
 }
+
+// Drops every saved private-conversation token on this device. Called on
+// sign-out (see deviceState.ts): each token is the bearer credential for a
+// private thread, so leaving them behind would let the next person on a
+// shared device open the previous person's conversations.
+export function clearSavedCircleDmTokens(): void {
+  try {
+    const prefix = storageKey("");
+    const keys: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith(prefix)) keys.push(key);
+    }
+    for (const key of keys) localStorage.removeItem(key);
+  } catch {
+    // Storage unavailable — then nothing was persisted to clear either.
+  }
+}

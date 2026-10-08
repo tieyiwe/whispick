@@ -235,7 +235,9 @@ export function SendWhisp() {
       setUploadedVideoId(null);
     }
     setVideoMeta({
-      title: forward.videoTitle,
+      // An upload's stored title may be its original filename (older whisps
+      // got one by default) — never carried to a new recipient.
+      title: forward.uploadedVideoId ? null : forward.videoTitle,
       thumbnail: forward.videoThumbnail,
       embedUrl: forward.videoEmbedUrl,
       platform: forward.videoPlatform ?? undefined,
@@ -286,7 +288,10 @@ export function SendWhisp() {
       const result = await uploadMedia(file);
       setUploadedVideoId(result.id);
       setVideoUrl("");
-      setVideoMeta({ title: result.originalFilename, thumbnail: `/api/media/${result.id}/thumbnail`, platform: "upload" });
+      // Never the file's name as the title: it's shown to the recipient, and
+      // filenames routinely carry a real name ("Jane – birthday msg.mp4") or
+      // a precise timestamp (screen recordings, in-app camera captures).
+      setVideoMeta({ title: null, thumbnail: `/api/media/${result.id}/thumbnail`, platform: "upload" });
       setStep(2);
     } catch (err) {
       setUploadError(err instanceof UploadValidationError ? err.message : t("sendWhisp.upload.genericError"));
@@ -302,7 +307,7 @@ export function SendWhisp() {
   function handleCameraUploaded(result: UploadedVideoResult) {
     setUploadedVideoId(result.id);
     setVideoUrl("");
-    setVideoMeta({ title: result.originalFilename, thumbnail: `/api/media/${result.id}/thumbnail`, platform: "upload" });
+    setVideoMeta({ title: null, thumbnail: `/api/media/${result.id}/thumbnail`, platform: "upload" });
     setStep(2);
   }
 
@@ -310,7 +315,7 @@ export function SendWhisp() {
     if (item.status !== "ready") return;
     setUploadedVideoId(item.id);
     setVideoUrl("");
-    setVideoMeta({ title: item.originalFilename, thumbnail: `/api/media/${item.id}/thumbnail`, platform: "upload" });
+    setVideoMeta({ title: null, thumbnail: `/api/media/${item.id}/thumbnail`, platform: "upload" });
     setStep(2);
   }
 
@@ -397,6 +402,11 @@ export function SendWhisp() {
     }
 
     const alias = customAlias.trim() || senderAlias;
+    // "" rather than null for an upload: the API falls back to the file's
+    // original name when an upload's title is null (routes/whisps.ts,
+    // routes/whisperGroups.ts), and that name is exactly what must not reach
+    // the recipient. There's no title input for an upload, so it stays blank.
+    const videoTitle = uploadedVideoId ? "" : videoMeta?.title ?? null;
     const isScheduling = scheduleEnabled && deliveryMethod !== "ghost_boost" && !!scheduledAtValue;
 
     if (deliveryMethod === "group_whisper") {
@@ -406,7 +416,7 @@ export function SendWhisp() {
           id: whisperGroupId,
           data: {
             videoUrl: uploadedVideoId ? null : videoUrl,
-            videoTitle: videoMeta?.title ?? null,
+            videoTitle,
             // A relative /api/media/:id/thumbnail path when uploadedVideoId
             // is set — real for the frontend's own preview, but not a valid
             // http(s) URL for the API, which derives the real thumbnail
@@ -452,7 +462,7 @@ export function SendWhisp() {
 
     const sharedPayload = {
       videoUrl: uploadedVideoId ? null : videoUrl,
-      videoTitle: videoMeta?.title ?? null,
+      videoTitle,
       // See the group_whisper branch above for why this is nulled for an
       // upload — a relative preview path, not a valid http(s) URL.
       videoThumbnail: uploadedVideoId ? null : videoMeta?.thumbnail ?? null,
@@ -1631,7 +1641,7 @@ export function SendWhisp() {
                           <PlatformIcon platform={videoMeta.platform} />
                           <span className="text-xs text-muted-foreground capitalize">{videoMeta.platform}</span>
                         </div>
-                        <p className="text-sm font-medium text-foreground truncate">{videoMeta.title || videoUrl}</p>
+                        <p className="text-sm font-medium text-foreground truncate">{videoMeta.title || videoUrl || t("sendWhisp.step2.videoFallback")}</p>
                       </div>
                     </div>
                   )}
