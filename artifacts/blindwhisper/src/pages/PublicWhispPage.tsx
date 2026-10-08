@@ -44,6 +44,7 @@ import { REMINDER_PRESETS, MAX_REMINDERS } from "@/lib/reminderPresets";
 import { savePendingForward } from "@/lib/forwardVideo";
 import { getVisitorId } from "@/lib/anonymousVisitor";
 import { getSavedCircleDmToken, saveCircleDmToken } from "@/lib/circleDm";
+import { usePublicConfig } from "@/lib/usePublicConfig";
 import { postCircleCommentWithImage, validateCommentImage, CommentImageValidationError } from "@/lib/postCircleComment";
 
 function BlindWhisperLogoMark({ href }: { href: string }) {
@@ -169,6 +170,7 @@ export function PublicWhispPage() {
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const { isSignedIn } = useUser();
+  const { billingEnabled } = usePublicConfig();
   const [replyText, setReplyText] = useState("");
   const [replyingTo, setReplyingTo] = useState<ThreadReply | null>(null);
   // "Guess who sent it" — an optional flag on the reply being composed, not
@@ -556,7 +558,10 @@ export function PublicWhispPage() {
     requestVideoReply.mutate({ token: token! });
     toast({
       title: t("publicWhisp.toast.createAccountToWhispVideo"),
-      description: t("publicWhisp.toast.senderNotified"),
+      // "They can unlock video replies for you" means the sender buying
+      // reply credit — not possible while the app is free (billing off), so
+      // don't promise it; the free account is the real path then.
+      ...(billingEnabled ? { description: t("publicWhisp.toast.senderNotified") } : {}),
     });
     setLocation("/sign-up");
   }
