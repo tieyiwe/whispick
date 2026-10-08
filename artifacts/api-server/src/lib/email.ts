@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+import nodemailer, { type Transporter } from "nodemailer";
 import { logger } from "./logger";
 import { HOOK_LINE, INVITE_HOOK_LINE, debateTopicWhispHookLine } from "./copy";
 import { logDeliveryAttempt, type DeliveryLogContext } from "./deliveryLog";
@@ -26,8 +26,8 @@ const EMAIL_FROM =
 
 // Lazily created so simply importing this module (tests, workers that never
 // email) doesn't open an SMTP pool.
-let smtpTransport: nodemailer.Transporter | null = null;
-function getSmtpTransport(): nodemailer.Transporter {
+let smtpTransport: Transporter | null = null;
+function getSmtpTransport(): Transporter {
   if (!smtpTransport) {
     smtpTransport = nodemailer.createTransport({
       host: SMTP_HOST,

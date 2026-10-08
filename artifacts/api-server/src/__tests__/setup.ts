@@ -56,6 +56,11 @@ afterEach(async () => {
   // over and silently affect the next, unrelated test's admin requests.
   clerkGetUserMock.mockReset();
   clerkGetUserMock.mockResolvedValue({ twoFactorEnabled: true });
+  // Rate-limit counters live in memory, not the DB, so the truncate below
+  // doesn't touch them — reset them too, or a file that sends more than a
+  // limiter's budget as one user gets silent 429s in later, unrelated tests.
+  const { resetRateLimitsForTests } = await import("../lib/rateLimit");
+  resetRateLimitsForTests();
   const { pool } = await import("@workspace/db");
   await pool.query(
     "TRUNCATE TABLE tracking_events, whisp_replies, credit_transactions, push_subscriptions, whisp_categories, whisps, circle_members, circles, circle_comments, circle_post_likes, whisper_group_members, whisper_groups, uploaded_videos, match_subscribers, suggested_videos, suggestion_agent_status, delivery_attempts, notification_reads, notifications, moderation_flags, content_reports, admin_mfa, policy_versions, policy_acceptances, feature_events, admin_grants, hq_task_comments, hq_tasks, hq_projects, concierge_requests, invites, text_whisp_replies, text_whisps, debate_topic_comments, debate_topics, debate_agent_settings, circle_agent_settings, anonymous_handles, comment_reactions, debate_topic_rewhisps, follows, admin_audit_log, whisper_box_messages, users RESTART IDENTITY CASCADE",

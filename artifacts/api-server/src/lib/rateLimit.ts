@@ -1,12 +1,30 @@
-import rateLimit from "express-rate-limit";
+import rateLimit, { MemoryStore, type Options } from "express-rate-limit";
 import { getAuth } from "@clerk/express";
+
+// Every limiter gets an explicit in-memory store (the same MemoryStore
+// express-rate-limit uses by default, so production behavior is unchanged)
+// registered here, so tests can wipe all counters between cases. Without this
+// the counts outlive the per-test DB truncate in __tests__/setup.ts, and a
+// test file that sends more than a limiter's budget as one user starts
+// getting silent 429s in unrelated later tests.
+const stores: MemoryStore[] = [];
+
+function createLimiter(options: Partial<Options>) {
+  const store = new MemoryStore();
+  stores.push(store);
+  return rateLimit({ ...options, store });
+}
+
+export function resetRateLimitsForTests(): void {
+  for (const store of stores) store.resetAll();
+}
 
 // The public router (track/reply/circle/w/:token) is entirely unauthenticated
 // and each of these triggers a real side effect (a DB write, and for reply
 // an email to the sender) — without a limit, anyone with (or who obtains) a
 // public token could spam it, e.g. to email-bomb the sender via /reply.
 // There's no authenticated user here, so this one is IP-keyed by necessity.
-export const publicEndpointLimiter = rateLimit({
+export const publicEndpointLimiter = createLimiter({
   windowMs: 5 * 60 * 1000,
   limit: 60,
   standardHeaders: true,
@@ -28,7 +46,7 @@ function authKeyGenerator(req: any): string {
 // whisper_link, is already capped by the monthly plan limit — but
 // ghost_boost/circle_drop have no such cap, so this bounds burst creation
 // regardless of delivery method.
-export const createWhispLimiter = rateLimit({
+export const createWhispLimiter = createLimiter({
   windowMs: 60 * 60 * 1000,
   limit: 30,
   standardHeaders: true,
@@ -39,7 +57,7 @@ export const createWhispLimiter = rateLimit({
 // Uploads write real bytes to object storage and count against a sender's
 // own storage footprint — bound how many a single account can push through
 // per hour regardless of the per-request size cap.
-export const uploadLimiter = rateLimit({
+export const uploadLimiter = createLimiter({
   windowMs: 60 * 60 * 1000,
   limit: 20,
   standardHeaders: true,
@@ -50,7 +68,7 @@ export const uploadLimiter = rateLimit({
 // Each call spends a real (small) Claude API request — bound how many times
 // one account can hit "help me find the words" regardless of how many drafts
 // they're composing, so a single user can't run up token spend unbounded.
-export const noteSuggestionLimiter = rateLimit({
+export const noteSuggestionLimiter = createLimiter({
   windowMs: 60 * 60 * 1000,
   limit: 20,
   standardHeaders: true,
@@ -64,7 +82,7 @@ export const noteSuggestionLimiter = rateLimit({
 // number, repeatedly, or by probing numbers they don't own) for free. A
 // user only ever needs this a handful of times (initial verification, a
 // number change, an expired-code retry), so the cap is tight.
-export const phoneVerificationLimiter = rateLimit({
+export const phoneVerificationLimiter = createLimiter({
   windowMs: 60 * 60 * 1000,
   limit: 5,
   standardHeaders: true,
@@ -77,7 +95,7 @@ export const phoneVerificationLimiter = rateLimit({
 // but this adds our own defense-in-depth cap so the confirm endpoint can't be
 // hammered independent of Twilio's limits. Looser than the send limiter,
 // since a legitimate user may retype a code a few times.
-export const confirmPhoneVerificationLimiter = rateLimit({
+export const confirmPhoneVerificationLimiter = createLimiter({
   windowMs: 60 * 60 * 1000,
   limit: 15,
   standardHeaders: true,
@@ -88,7 +106,7 @@ export const confirmPhoneVerificationLimiter = rateLimit({
 // The "Not sure what to send?" concierge (lib/concierge.ts) is a Claude call
 // plus a library lookup — slightly heavier than a plain note suggestion, so
 // it gets a somewhat tighter cap, same per-user keying rationale as above.
-export const conciergeLimiter = rateLimit({
+export const conciergeLimiter = createLimiter({
   windowMs: 60 * 60 * 1000,
   limit: 15,
   standardHeaders: true,
@@ -98,7 +116,7 @@ export const conciergeLimiter = rateLimit({
 
 // Sending an invite (routes/invites.ts) triggers a real email/SMS/WhatsApp
 // send, same recurring-cost reasoning as createWhispLimiter above.
-export const inviteLimiter = rateLimit({
+export const inviteLimiter = createLimiter({
   windowMs: 60 * 60 * 1000,
   limit: 20,
   standardHeaders: true,
@@ -113,7 +131,7 @@ export const inviteLimiter = rateLimit({
 // spamming arbitrary phone numbers now that POST /check-recipient (the old,
 // separate eligibility check) is gone, so this cap matters more than it used
 // to even though the number itself is unchanged.
-export const createTextWhispLimiter = rateLimit({
+export const createTextWhispLimiter = createLimiter({
   windowMs: 60 * 60 * 1000,
   limit: 30,
   standardHeaders: true,
@@ -126,7 +144,7 @@ export const createTextWhispLimiter = rateLimit({
 // burst creation by one signed-in account. Tighter than createWhispLimiter:
 // a debate topic is a public feed post meant to spark discussion, not
 // something anyone legitimately needs to fire off dozens of per hour.
-export const createDebateTopicLimiter = rateLimit({
+export const createDebateTopicLimiter = createLimiter({
   windowMs: 60 * 60 * 1000,
   limit: 10,
   standardHeaders: true,
@@ -137,7 +155,7 @@ export const createDebateTopicLimiter = rateLimit({
 // Whisping a Debate Now topic to a contact (routes/debateTopicWhisps.ts)
 // triggers a real email/SMS/WhatsApp send, same recurring-cost reasoning
 // (and same 20/hour cap) as inviteLimiter above.
-export const sendDebateTopicWhispLimiter = rateLimit({
+export const sendDebateTopicWhispLimiter = createLimiter({
   windowMs: 60 * 60 * 1000,
   limit: 20,
   standardHeaders: true,
@@ -151,7 +169,7 @@ export const sendDebateTopicWhispLimiter = rateLimit({
 // 20/hour is far beyond what any good-faith reporter needs while keeping
 // one account from burying the admin queue; the per-content dedup check in
 // the route itself handles repeat reports of the same post separately.
-export const reportContentLimiter = rateLimit({
+export const reportContentLimiter = createLimiter({
   windowMs: 60 * 60 * 1000,
   limit: 20,
   standardHeaders: true,
@@ -166,7 +184,7 @@ export const reportContentLimiter = rateLimit({
 // deliberately omits recipientUserId to avoid exposing this cheaply and
 // silently — this limiter makes the one remaining, unavoidable signal
 // expensive and noisy to probe at scale instead of free.
-export const textWhispRevealLimiter = rateLimit({
+export const textWhispRevealLimiter = createLimiter({
   windowMs: 60 * 60 * 1000,
   limit: 20,
   standardHeaders: true,
@@ -182,7 +200,7 @@ export const textWhispRevealLimiter = rateLimit({
 // changed mind about which plan/pack); nothing in the legitimate flow needs
 // more than a few calls an hour, and without a limiter this was the one
 // authenticated write left that could hammer an external paid API for free.
-export const billingCheckoutLimiter = rateLimit({
+export const billingCheckoutLimiter = createLimiter({
   windowMs: 60 * 60 * 1000,
   limit: 20,
   standardHeaders: true,
@@ -196,7 +214,7 @@ export const billingCheckoutLimiter = rateLimit({
 // codes. Legitimate use is one code per unlock — a handful a day at most.
 // Tight window so a bot can't grind codes, generous enough that fat-
 // fingering a code a few times never locks a real admin out for long.
-export const adminMfaVerifyLimiter = rateLimit({
+export const adminMfaVerifyLimiter = createLimiter({
   windowMs: 15 * 60 * 1000,
   limit: 10,
   standardHeaders: true,
@@ -220,7 +238,7 @@ export const adminMfaVerifyLimiter = rateLimit({
 // spam/harassment target than the rest of the public surface, and a flood
 // of messages is a worse experience for the recipient than for anyone else
 // on the shared budget.
-export const whisperBoxSendLimiter = rateLimit({
+export const whisperBoxSendLimiter = createLimiter({
   windowMs: 60 * 60 * 1000,
   limit: 12,
   standardHeaders: true,
@@ -238,7 +256,7 @@ export const whisperBoxSendLimiter = rateLimit({
 // error loop only ever costs itself, never anything else. The frontend
 // capture hook (lib/bugRabbitCapture.ts) also self-throttles per
 // fingerprint client-side, so this is a backstop, not the primary defense.
-export const bugReportLimiter = rateLimit({
+export const bugReportLimiter = createLimiter({
   windowMs: 5 * 60 * 1000,
   limit: 20,
   standardHeaders: true,
