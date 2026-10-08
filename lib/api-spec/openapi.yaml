@@ -52,6 +52,23 @@ paths:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
 
+  /config:
+    get:
+      operationId: getPublicConfig
+      tags: [health]
+      summary: Public runtime feature flags (which delivery channels are enabled)
+      description: >-
+        Unauthenticated. Lets the client hide delivery options the server
+        would reject (SMS/WhatsApp are off at launch — see
+        artifacts/api-server/src/lib/messagingChannels.ts).
+      responses:
+        "200":
+          description: Current public config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicConfig"
+
   /whisps:
     get:
       operationId: listWhisps
@@ -4954,6 +4971,19 @@ components:
           type: string
       required:
         - status
+
+    PublicConfig:
+      type: object
+      properties:
+        smsDeliveryEnabled:
+          type: boolean
+          description: Whether SMS delivery (Whisper Links, invites, Text Whisps, debate topic whisps) is available
+        whatsappDeliveryEnabled:
+          type: boolean
+          description: Whether WhatsApp delivery is available
+      required:
+        - smsDeliveryEnabled
+        - whatsappDeliveryEnabled
 
     ApiError:
       type: object

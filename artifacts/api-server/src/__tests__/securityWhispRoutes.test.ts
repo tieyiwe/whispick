@@ -7,6 +7,10 @@ import { eq } from "drizzle-orm";
 import { TEST_USER_HEADER } from "./setup";
 import { isAllowedPushEndpoint } from "../lib/push";
 import { maskPhone, debateTopicWhispSmsBody } from "../lib/sms";
+import { enablePhoneChannelsForFile } from "./phoneChannelTestUtils";
+
+// Exercises SMS/WhatsApp paths, which ship disabled by default.
+enablePhoneChannelsForFile();
 
 // Ghost Boost is paused by default; the tracking-URL check below covers it
 // too, so this file flips just that flag (same override whisps.test.ts uses).

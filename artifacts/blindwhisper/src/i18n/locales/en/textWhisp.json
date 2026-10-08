@@ -28,7 +28,12 @@
     "sendAnotherButton": "Send another",
     "toastSendFailed": "Failed to send Text Whisp",
     "smsConsentCheckbox": "I confirm I have this person's permission to receive a text from me via Blind Whisper.",
-    "smsConsentOneTime": "You only need to confirm this once for each new contact."
+    "smsConsentOneTime": "You only need to confirm this once for each new contact.",
+    "comingSoon": {
+      "title": "Text Whisps are coming soon",
+      "body": "For now, send a Whisper Link by email instead.",
+      "cta": "Send a Whisper Link"
+    }
   },
   "textWhispDetail": {
     "notFound": "Text Whisp not found.",

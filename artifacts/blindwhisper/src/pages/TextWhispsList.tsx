@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { usePublicConfig } from "@/lib/usePublicConfig";
 import { Link } from "wouter";
 import { ScrollText, Send, Inbox, PlusCircle, Phone, Clock } from "lucide-react";
 
@@ -23,6 +24,9 @@ export function TextWhispsList() {
   const { t } = useTranslation("textWhisp");
   const { data: profile } = useGetUserProfile();
   const { data: textWhisps, isLoading } = useListTextWhisps();
+  // New Text Whisps need SMS delivery (see SendTextWhisp.tsx); existing ones
+  // below stay readable/replyable either way.
+  const { smsEnabled } = usePublicConfig();
 
   const sent = (textWhisps ?? []).filter((w) => w.senderId === profile?.id);
   const received = (textWhisps ?? []).filter((w) => w.viewerIsRecipient);
@@ -39,11 +43,13 @@ export function TextWhispsList() {
               {t("textWhispsList.description")}
             </p>
           </div>
-          <Link href="/send-text">
-            <Button className="rounded-full" data-testid="button-new-text-whisp">
-              <PlusCircle className="w-4 h-4 mr-2" /> {t("textWhispsList.newButton")}
-            </Button>
-          </Link>
+          {smsEnabled && (
+            <Link href="/send-text">
+              <Button className="rounded-full" data-testid="button-new-text-whisp">
+                <PlusCircle className="w-4 h-4 mr-2" /> {t("textWhispsList.newButton")}
+              </Button>
+            </Link>
+          )}
         </div>
 
         {isLoading ? (

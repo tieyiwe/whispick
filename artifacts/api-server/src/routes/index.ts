@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import healthRouter from "./health";
+import configRouter from "./config";
 import whispsRouter from "./whisps";
 import videoRouter from "./video";
 import publicRouter from "./public";
@@ -40,6 +41,9 @@ import { publicEndpointLimiter } from "../lib/rateLimit";
 const router: IRouter = Router();
 
 router.use(healthRouter);
+// No prefix, same as healthRouter — defines its own "/config" path. Public
+// and unauthenticated (see routes/config.ts for why it isn't rate-limited).
+router.use(configRouter);
 router.use("/whisps", whispsRouter);
 router.use("/video", videoRouter);
 // One limiter application per request, not one per sub-router: mounting

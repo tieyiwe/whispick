@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useCreateInvite, useListInvites, useRequestInviteReveal, getListInvitesQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Mail, MessageSquare, UserPlus, Eye, Loader2 } from "lucide-react";
 import { RevealCountdownDialog } from "@/components/shared/RevealCountdownDialog";
 import { useNeedsSmsConsent } from "@/lib/useSmsConsent";
+import { usePublicConfig } from "@/lib/usePublicConfig";
 
 type Channel = "email" | "sms" | "whatsapp";
 
@@ -41,6 +42,15 @@ export function InvitePage() {
   const queryClient = useQueryClient();
   const { t } = useTranslation("account");
   const [channel, setChannel] = useState<Channel>("email");
+  // SMS/WhatsApp are off at launch (see lib/usePublicConfig.ts) — only offer
+  // the channels the server will actually accept.
+  const { smsEnabled, whatsappEnabled } = usePublicConfig();
+  const availableChannels = CHANNELS.filter(
+    (ch) => ch.key === "email" || (ch.key === "sms" ? smsEnabled : whatsappEnabled),
+  );
+  useEffect(() => {
+    if (channel === "sms" ? !smsEnabled : channel === "whatsapp" ? !whatsappEnabled : false) setChannel("email");
+  }, [channel, smsEnabled, whatsappEnabled]);
   const [recipientEmail, setRecipientEmail] = useState("");
   const [recipientPhone, setRecipientPhone] = useState("");
   // A2P 10DLC opt-in evidence for the SMS channel specifically — WhatsApp
@@ -118,27 +128,30 @@ export function InvitePage() {
             <CardTitle className="text-base font-serif">{t("invitePage.sendInviteCardTitle")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-3 gap-2">
-              {CHANNELS.map((ch) => {
-                const Icon = ch.icon;
-                return (
-                  <button
-                    key={ch.key}
-                    type="button"
-                    onClick={() => setChannel(ch.key)}
-                    data-testid={`invite-channel-${ch.key}`}
-                    className={`flex flex-col items-center gap-1 py-2.5 rounded-xl border text-xs font-medium transition-all ${
-                      channel === ch.key
-                        ? "border-primary bg-primary/10 text-foreground"
-                        : "border-border/50 text-muted-foreground hover:border-border"
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    {t(ch.labelKey)}
-                  </button>
-                );
-              })}
-            </div>
+            {/* No picker at all while email is the only channel on. */}
+            {availableChannels.length > 1 && (
+              <div className={`grid gap-2 ${availableChannels.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
+                {availableChannels.map((ch) => {
+                  const Icon = ch.icon;
+                  return (
+                    <button
+                      key={ch.key}
+                      type="button"
+                      onClick={() => setChannel(ch.key)}
+                      data-testid={`invite-channel-${ch.key}`}
+                      className={`flex flex-col items-center gap-1 py-2.5 rounded-xl border text-xs font-medium transition-all ${
+                        channel === ch.key
+                          ? "border-primary bg-primary/10 text-foreground"
+                          : "border-border/50 text-muted-foreground hover:border-border"
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      {t(ch.labelKey)}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             {channel === "email" ? (
               <Input

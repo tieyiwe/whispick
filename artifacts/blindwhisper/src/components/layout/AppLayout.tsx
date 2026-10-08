@@ -54,6 +54,7 @@ import { PullToRefresh, reloadPage } from "@/components/shared/PullToRefresh";
 import { InstallAppPrompt } from "@/components/shared/InstallAppPrompt";
 import { PolicyUpdateGate } from "@/components/shared/PolicyUpdateGate";
 import { useMobileSendActionValue } from "@/contexts/MobileSendAction";
+import { usePublicConfig } from "@/lib/usePublicConfig";
 
 // labelKey resolves against the "common" namespace's nav.* keys (see
 // src/i18n/locales/*/common.json) — the label itself is looked up at
@@ -273,9 +274,15 @@ export function AppLayout({ children }: { children: ReactNode }) {
   // so it's active for the whole authenticated session.
   useAppBadge(notificationUnreadCount + whisperBoxUnreadCount);
 
+  // Text Whisps can only be sent while SMS delivery is on (see
+  // SendTextWhisp.tsx), so the section drops out of the nav while it's off
+  // (and while the flag is still loading, so it never flashes in and out).
+  // Existing threads stay reachable from notifications and Replies.
+  const { smsEnabled } = usePublicConfig();
+  const baseNavItems = smsEnabled ? NAV_ITEMS : NAV_ITEMS.filter((item) => item.href !== "/text-whisps");
   const navItems = isAdmin
-    ? [...NAV_ITEMS, { href: "/admin_pro", labelKey: "nav.admin", icon: ShieldCheck }]
-    : NAV_ITEMS;
+    ? [...baseNavItems, { href: "/admin_pro", labelKey: "nav.admin", icon: ShieldCheck }]
+    : baseNavItems;
 
   // Everything not already reachable from one of the 4 fixed mobile tabs —
   // derived from navItems (not the raw NAV_ITEMS constant) so a page added

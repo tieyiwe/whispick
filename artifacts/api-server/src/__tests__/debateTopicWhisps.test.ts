@@ -5,6 +5,10 @@ import app from "../app";
 import { db, notificationsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { TEST_USER_HEADER, clerkGetUserMock } from "./setup";
+import { enablePhoneChannelsForFile } from "./phoneChannelTestUtils";
+
+// Exercises SMS/WhatsApp paths, which ship disabled by default.
+enablePhoneChannelsForFile();
 
 function asUser(clerkId: string) {
   return { [TEST_USER_HEADER]: clerkId };

@@ -15,6 +15,7 @@ import { inviteLimiter, publicEndpointLimiter } from "../lib/rateLimit";
 import { notifyUser } from "../lib/push";
 import { logger } from "../lib/logger";
 import { hasSmsConsent, recordSmsConsent } from "../lib/smsConsent";
+import { disabledChannelError } from "../lib/messagingChannels";
 
 const router = Router();
 
@@ -125,6 +126,14 @@ router.post("/", requireAuth, inviteLimiter, async (req, res): Promise<void> => 
   }
 
   const { channel, recipientEmail, recipientPhone } = parsed.data;
+
+  // SMS/WhatsApp launch switch (lib/messagingChannels.ts) — checked before
+  // consent so a sender isn't asked to attest for a channel that won't send.
+  const channelOff = disabledChannelError(channel);
+  if (channelOff) {
+    res.status(400).json(channelOff);
+    return;
+  }
 
   // Once-per-recipient SMS consent (see lib/smsConsent.ts): only for an
   // actual SMS invite (WhatsApp is carved out, same as the other send

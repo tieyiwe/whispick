@@ -185,7 +185,10 @@
       "or": "or",
       "chooseFromContacts": "Choose from Contacts",
       "smsConsentCheckbox": "I confirm I have this person's permission to receive a text from me via Blind Whisper.",
-      "smsConsentOneTime": "You only need to confirm this once for each new contact."
+      "smsConsentOneTime": "You only need to confirm this once for each new contact.",
+      "descriptionEmailOnly": "Enter an email address. Add commas if more than one.",
+      "placeholderEmailOnly": "sam@example.com, jo@example.com",
+      "phonesUnavailable": "Text and WhatsApp delivery aren't available yet — use an email address instead of {{list}}."
     },
     "step6": {
       "heading": "Ready to send?",
@@ -234,7 +237,8 @@
       "partialSendTitle": "Sent to {{succeeded}}, couldn't reach {{failed}}",
       "membersSkipped_one": "{{count}} member skipped",
       "membersSkipped_other": "{{count}} members skipped",
-      "membersSkippedDescription": "They didn't have the contact info this channel needs."
+      "membersSkippedDescription": "They didn't have the contact info this channel needs.",
+      "noEmailForContact": "That contact has no email address — text delivery isn't available yet."
     }
   },
   "whispDetail": {
@@ -422,7 +426,9 @@
       "memberRemoved": "Member removed",
       "failedToRemoveMember": "Failed to remove member",
       "groupDeleted": "Group deleted",
-      "failedToDeleteGroup": "Failed to delete group"
+      "failedToDeleteGroup": "Failed to delete group",
+      "addEmail": "Add an email address",
+      "noneHadEmail": "None of those contacts had an email address"
     }
   },
   "whisperGroups": {

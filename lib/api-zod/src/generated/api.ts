@@ -17,6 +17,16 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
+ * Unauthenticated. Lets the client hide delivery options the server would reject (SMS/WhatsApp are off at launch — see artifacts/api-server/src/lib/messagingChannels.ts).
+ * @summary Public runtime feature flags (which delivery channels are enabled)
+ */
+export const GetPublicConfigResponse = zod.object({
+  "smsDeliveryEnabled": zod.boolean().describe('Whether SMS delivery (Whisper Links, invites, Text Whisps, debate topic whisps) is available'),
+  "whatsappDeliveryEnabled": zod.boolean().describe('Whether WhatsApp delivery is available')
+})
+
+
+/**
  * @summary List whisps sent by the current user (default), or received by them
  */
 export const ListWhispsQueryParams = zod.object({

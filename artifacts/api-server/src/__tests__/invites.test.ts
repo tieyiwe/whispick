@@ -3,6 +3,10 @@ import request from "supertest";
 import app from "../app";
 import { TEST_USER_HEADER } from "./setup";
 import { adminHeaders } from "./adminTestUtils";
+import { enablePhoneChannelsForFile } from "./phoneChannelTestUtils";
+
+// Exercises SMS/WhatsApp paths, which ship disabled by default.
+enablePhoneChannelsForFile();
 
 const USER_A = "clerk_user_invite_a";
 const USER_B = "clerk_user_invite_b";

@@ -27,6 +27,7 @@ import { MAX_SCHEDULE_DAYS_WITH_UPLOAD } from "../lib/uploads";
 import { httpUrlString } from "../lib/safeUrl";
 import { deriveVideoFields } from "../lib/videoMeta";
 import { consentedPhones, recordSmsConsent } from "../lib/smsConsent";
+import { disabledChannelError } from "../lib/messagingChannels";
 
 const router = Router();
 
@@ -383,6 +384,15 @@ router.post("/:id/send", requireAuth, createWhispLimiter, async (req, res): Prom
     return;
   }
   const data = parsed.data;
+
+  // SMS/WhatsApp launch switch (lib/messagingChannels.ts) — rejected before
+  // any media lookup or quota spend. Phone-only members simply aren't
+  // deliverable over email and get reported in `skipped` as usual.
+  const channelOff = disabledChannelError(data.whisperChannel);
+  if (channelOff) {
+    res.status(400).json(channelOff);
+    return;
+  }
 
   let uploadedVideo: typeof uploadedVideosTable.$inferSelect | null = null;
   if (data.uploadedVideoId) {

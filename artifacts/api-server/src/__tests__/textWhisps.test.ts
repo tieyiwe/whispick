@@ -8,6 +8,10 @@ import { TEST_USER_HEADER } from "./setup";
 import { textWhispGuestSmsBody } from "../lib/sms";
 import { getDueTextWhisps } from "../lib/textWhispScheduler";
 import { adminHeaders } from "./adminTestUtils";
+import { enablePhoneChannelsForFile } from "./phoneChannelTestUtils";
+
+// Exercises SMS/WhatsApp paths, which ship disabled by default.
+enablePhoneChannelsForFile();
 
 const USER_A = "clerk_text_whisp_a"; // sender
 const USER_B = "clerk_text_whisp_b"; // recipient — verified

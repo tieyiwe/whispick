@@ -22,6 +22,18 @@ export interface RecipientParseResult {
   recipients: ParsedRecipient[];
   /** Entries that look like neither an email nor a phone number. */
   invalid: string[];
+  /**
+   * Well-formed phone numbers that can't be delivered to right now because
+   * SMS/WhatsApp delivery is switched off (see usePublicConfig.ts). Kept
+   * apart from `invalid` so the field can say "use an email instead" rather
+   * than "that's not a phone number", which would be wrong and confusing.
+   */
+  unavailablePhones: string[];
+}
+
+export interface ParseRecipientsOptions {
+  /** False while no phone channel is enabled — phones land in `unavailablePhones`. */
+  allowPhones?: boolean;
 }
 
 // Mirrors the server's own single-address rule (api-server lib/email.ts):
@@ -59,9 +71,10 @@ export function classifyRecipient(value: string): RecipientKind | null {
  * recipient, which is exactly why the separator is a comma rather than
  * whitespace.
  */
-export function parseRecipients(input: string): RecipientParseResult {
+export function parseRecipients(input: string, { allowPhones = true }: ParseRecipientsOptions = {}): RecipientParseResult {
   const recipients: ParsedRecipient[] = [];
   const invalid: string[] = [];
+  const unavailablePhones: string[] = [];
   const seen = new Set<string>();
 
   for (const part of input.split(/[,\n]/)) {
@@ -71,6 +84,10 @@ export function parseRecipients(input: string): RecipientParseResult {
     const kind = classifyRecipient(raw);
     if (!kind) {
       invalid.push(raw);
+      continue;
+    }
+    if (kind === "phone" && !allowPhones) {
+      unavailablePhones.push(raw);
       continue;
     }
 
@@ -83,7 +100,7 @@ export function parseRecipients(input: string): RecipientParseResult {
     recipients.push({ raw, kind });
   }
 
-  return { recipients, invalid };
+  return { recipients, invalid, unavailablePhones };
 }
 
 /**

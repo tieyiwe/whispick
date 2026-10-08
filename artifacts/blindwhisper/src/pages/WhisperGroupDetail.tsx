@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { isContactPickerSupported, pickContacts } from "@/lib/contactPicker";
+import { usePublicConfig } from "@/lib/usePublicConfig";
 import { ArrowLeft, UsersRound, Contact, Plus, Trash2, Send, Loader2, Mail, Phone } from "lucide-react";
 
 export function WhisperGroupDetail() {
@@ -40,6 +41,11 @@ export function WhisperGroupDetail() {
   const [manualName, setManualName] = useState("");
   const [manualEmail, setManualEmail] = useState("");
   const [manualPhone, setManualPhone] = useState("");
+  // While SMS/WhatsApp are off (see lib/usePublicConfig.ts) a phone-only
+  // member could never be sent to, so new members need an email and phone
+  // numbers aren't collected. Existing members' phones still display below.
+  const { smsEnabled, whatsappEnabled } = usePublicConfig();
+  const phoneDeliveryEnabled = smsEnabled || whatsappEnabled;
 
   const { data: group, isLoading } = useGetWhisperGroup(id!, {
     query: { enabled: !!id, queryKey: getGetWhisperGroupQueryKey(id!) },
@@ -54,8 +60,12 @@ export function WhisperGroupDetail() {
   }
 
   function handleAddManual() {
-    if (!manualEmail.trim() && !manualPhone.trim()) {
-      toast({ title: t("whisperGroupDetail.toast.addEmailOrPhone"), variant: "destructive" });
+    const phone = phoneDeliveryEnabled ? manualPhone.trim() : "";
+    if (!manualEmail.trim() && !phone) {
+      toast({
+        title: t(phoneDeliveryEnabled ? "whisperGroupDetail.toast.addEmailOrPhone" : "whisperGroupDetail.toast.addEmail"),
+        variant: "destructive",
+      });
       return;
     }
     addMembers.mutate(
@@ -66,7 +76,7 @@ export function WhisperGroupDetail() {
             {
               name: manualName.trim() || null,
               email: manualEmail.trim() || null,
-              phone: manualPhone.trim() || null,
+              phone: phone || null,
             },
           ],
         },
@@ -88,9 +98,12 @@ export function WhisperGroupDetail() {
     const contacts = await pickContacts();
     if (!contacts.length) return;
 
-    const withContactInfo = contacts.filter((c) => c.email || c.tel);
+    const withContactInfo = contacts.filter((c) => c.email || (phoneDeliveryEnabled && c.tel));
     if (!withContactInfo.length) {
-      toast({ title: t("whisperGroupDetail.toast.noneHadContactInfo"), variant: "destructive" });
+      toast({
+        title: t(phoneDeliveryEnabled ? "whisperGroupDetail.toast.noneHadContactInfo" : "whisperGroupDetail.toast.noneHadEmail"),
+        variant: "destructive",
+      });
       return;
     }
 
@@ -98,7 +111,7 @@ export function WhisperGroupDetail() {
       {
         id: id!,
         data: {
-          members: withContactInfo.map((c) => ({ name: c.name, email: c.email, phone: c.tel })),
+          members: withContactInfo.map((c) => ({ name: c.name, email: c.email, phone: phoneDeliveryEnabled ? c.tel : null })),
         },
       },
       {
@@ -226,7 +239,7 @@ export function WhisperGroupDetail() {
               <div className="flex-1 h-px bg-border/40" />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div className={`grid grid-cols-1 gap-2 ${phoneDeliveryEnabled ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
               <Input
                 placeholder={t("whisperGroupDetail.namePlaceholder")}
                 className="bg-input/50 border-border/50 rounded-xl"
@@ -242,14 +255,16 @@ export function WhisperGroupDetail() {
                 onChange={(e) => setManualEmail(e.target.value)}
                 data-testid="input-manual-member-email"
               />
-              <Input
-                placeholder={t("whisperGroupDetail.phonePlaceholder")}
-                type="tel"
-                className="bg-input/50 border-border/50 rounded-xl"
-                value={manualPhone}
-                onChange={(e) => setManualPhone(e.target.value)}
-                data-testid="input-manual-member-phone"
-              />
+              {phoneDeliveryEnabled && (
+                <Input
+                  placeholder={t("whisperGroupDetail.phonePlaceholder")}
+                  type="tel"
+                  className="bg-input/50 border-border/50 rounded-xl"
+                  value={manualPhone}
+                  onChange={(e) => setManualPhone(e.target.value)}
+                  data-testid="input-manual-member-phone"
+                />
+              )}
             </div>
             <Button
               variant="outline"

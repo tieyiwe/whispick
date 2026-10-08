@@ -9,6 +9,13 @@ export interface HealthStatus {
   status: string;
 }
 
+export interface PublicConfig {
+  /** Whether SMS delivery (Whisper Links, invites, Text Whisps, debate topic whisps) is available */
+  smsDeliveryEnabled: boolean;
+  /** Whether WhatsApp delivery is available */
+  whatsappDeliveryEnabled: boolean;
+}
+
 export interface ApiError {
   error: string;
   code?: string;

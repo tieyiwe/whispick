@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { isContactPickerSupported, pickContact } from "@/lib/contactPicker";
 import { useNeedsSmsConsent } from "@/lib/useSmsConsent";
+import { usePublicConfig } from "@/lib/usePublicConfig";
 import { Mail, Phone, Contact, Loader2, Send, CheckCircle2, Share2 } from "lucide-react";
 import { SiWhatsapp } from "react-icons/si";
 
@@ -44,6 +45,11 @@ export function SendDebateTopicWhispDialog({
   const sendWhisp = useSendDebateTopicWhisp();
 
   const [channel, setChannel] = useState<Channel>("email");
+  // SMS/WhatsApp are off at launch (see lib/usePublicConfig.ts) — only offer
+  // what the server will accept. The dialog always (re)opens on email via
+  // reset(), so a disabled channel can't be left selected.
+  const { smsEnabled, whatsappEnabled } = usePublicConfig();
+  const availableChannels = CHANNELS.filter((ch) => ch === "email" || (ch === "sms" ? smsEnabled : whatsappEnabled));
   const [recipient, setRecipient] = useState("");
   const [note, setNote] = useState("");
   const [senderAlias, setSenderAlias] = useState("");
@@ -154,30 +160,33 @@ export function SendDebateTopicWhispDialog({
             </DialogHeader>
 
             <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-2">
-                {CHANNELS.map((ch) => {
-                  const Icon = CHANNEL_ICONS[ch];
-                  return (
-                    <button
-                      key={ch}
-                      type="button"
-                      onClick={() => {
-                        setChannel(ch);
-                        setRecipient("");
-                      }}
-                      data-testid={`topic-whisp-channel-${ch}`}
-                      className={`flex flex-col items-center gap-1 py-2.5 rounded-xl border text-xs font-medium transition-all ${
-                        channel === ch
-                          ? "border-primary bg-primary/10 text-foreground"
-                          : "border-border/50 text-muted-foreground hover:border-border"
-                      }`}
-                    >
-                      <Icon className="w-4 h-4" />
-                      {t(`debateTopicDetail.sendWhispDialog.channels.${ch}`)}
-                    </button>
-                  );
-                })}
-              </div>
+              {/* No picker at all while email is the only channel on. */}
+              {availableChannels.length > 1 && (
+                <div className={`grid gap-2 ${availableChannels.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
+                  {availableChannels.map((ch) => {
+                    const Icon = CHANNEL_ICONS[ch];
+                    return (
+                      <button
+                        key={ch}
+                        type="button"
+                        onClick={() => {
+                          setChannel(ch);
+                          setRecipient("");
+                        }}
+                        data-testid={`topic-whisp-channel-${ch}`}
+                        className={`flex flex-col items-center gap-1 py-2.5 rounded-xl border text-xs font-medium transition-all ${
+                          channel === ch
+                            ? "border-primary bg-primary/10 text-foreground"
+                            : "border-border/50 text-muted-foreground hover:border-border"
+                        }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                        {t(`debateTopicDetail.sendWhispDialog.channels.${ch}`)}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
 
               <div className="space-y-1.5">
                 <div className="relative">

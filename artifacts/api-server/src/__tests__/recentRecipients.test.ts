@@ -2,6 +2,10 @@ import { describe, it, expect } from "vitest";
 import request from "supertest";
 import app from "../app";
 import { TEST_USER_HEADER } from "./setup";
+import { enablePhoneChannelsForFile } from "./phoneChannelTestUtils";
+
+// Exercises SMS/WhatsApp paths, which ship disabled by default.
+enablePhoneChannelsForFile();
 
 const SENDER = "clerk_user_recent_recipients";
 const OTHER = "clerk_user_recent_recipients_other";

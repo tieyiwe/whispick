@@ -22,6 +22,7 @@ import {
 } from "../lib/copy";
 import { safeAssignOrGetSenderHandle } from "../lib/whispSenderHandle";
 import { hasSmsConsent, recordSmsConsent } from "../lib/smsConsent";
+import { isSmsDeliveryEnabled, CHANNEL_DISABLED_CODE } from "../lib/messagingChannels";
 
 const router = Router();
 
@@ -227,6 +228,20 @@ const createTextWhispSchema = z.object({
 });
 
 router.post("/", requireAuth, createTextWhispLimiter, async (req, res): Promise<void> => {
+  // SMS launch switch (lib/messagingChannels.ts). Creation is rejected
+  // outright — not just for unmatched numbers — because the sender can't be
+  // told whether a number belongs to an app user (see ANTI-ENUMERATION
+  // below): allowing only matched sends would either leak that, or let an
+  // unmatched recipient's Text Whisp silently never arrive. Reading and
+  // replying to existing Text Whisps (the routes below) are unaffected.
+  if (!isSmsDeliveryEnabled()) {
+    res.status(400).json({
+      error: "Text Whisps aren't available yet — send a Whisper Link by email or share the link instead.",
+      code: CHANNEL_DISABLED_CODE,
+    });
+    return;
+  }
+
   const { userId } = getAuth(req);
   const user = await ensureUser(userId!, req);
 

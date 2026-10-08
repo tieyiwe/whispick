@@ -190,6 +190,7 @@ export * from './postCircleVideoInput';
 export * from './postCircleVideoResult';
 export * from './postDebateTopicInput';
 export * from './postDebateTopicResult';
+export * from './publicConfig';
 export * from './publicInvite';
 export * from './publicReplyInput';
 export * from './publicTextWhisp';

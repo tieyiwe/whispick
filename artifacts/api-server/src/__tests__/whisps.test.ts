@@ -4,6 +4,10 @@ import app from "../app";
 import { db, usersTable, whispsTable, whispRepliesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { TEST_USER_HEADER } from "./setup";
+import { enablePhoneChannelsForFile } from "./phoneChannelTestUtils";
+
+// Exercises SMS/WhatsApp paths, which ship disabled by default.
+enablePhoneChannelsForFile();
 
 // Ghost Boost is paused in production (GHOST_BOOST_ENABLED = false in
 // lib/plans.ts — see ghostBoostDisabled.test.ts for coverage of that

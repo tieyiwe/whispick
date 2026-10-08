@@ -4,6 +4,10 @@ import { db, usersTable, deliveryAttemptsTable, notificationsTable } from "@work
 import { eq } from "drizzle-orm";
 import { deliverWhisperLink } from "../lib/deliver";
 import { normalizePhoneE164 } from "../lib/phone";
+import { enablePhoneChannelsForFile } from "./phoneChannelTestUtils";
+
+// Exercises SMS/WhatsApp paths, which ship disabled by default.
+enablePhoneChannelsForFile();
 
 // Twilio isn't configured in the test environment (no TWILIO_* env vars —
 // see setup.ts), so an sms/whatsapp send here always falls through

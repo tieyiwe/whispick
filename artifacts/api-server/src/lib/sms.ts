@@ -1,6 +1,7 @@
 import { logger } from "./logger";
 import { SMS_WHISPER_LINK_LEAD, SMS_INVITE_LEAD, SMS_TEXT_WHISP_LEAD, SMS_DEBATE_TOPIC_WHISP_LEAD } from "./copy";
 import { logDeliveryAttempt, type DeliveryLogContext } from "./deliveryLog";
+import { isSmsDeliveryEnabled, isWhatsAppDeliveryEnabled } from "./messagingChannels";
 
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
@@ -76,7 +77,28 @@ async function postToTwilio(
   }
 }
 
+// Delivery-time half of the SMS/WhatsApp launch switch (lib/messagingChannels.ts).
+// Intake routes already reject NEW phone-channel sends while a flag is off,
+// but anything queued before the flag flipped — a scheduled whisp, a
+// reminder, a reveal/reply notification on an older SMS whisp, a scheduled
+// Text Whisp — still funnels through sendSms/sendWhatsApp. Gating here, the
+// one choke point every Twilio message passes through, means none of those
+// can fire either, and each leaves a failed delivery_attempts row explaining
+// why instead of silently vanishing.
+async function rejectDisabledChannel(channel: "sms" | "whatsapp", to: string, logCtx: DeliveryLogContext): Promise<boolean> {
+  const enabled = channel === "sms" ? isSmsDeliveryEnabled() : isWhatsAppDeliveryEnabled();
+  if (enabled) return false;
+  logger.info({ to: maskPhone(to), channel, purpose: logCtx.purpose }, "Phone delivery channel disabled; skipping Twilio send");
+  await logDeliveryAttempt(channel, to, logCtx, {
+    success: false,
+    providerStatus: "channel_disabled",
+    errorMessage: `${channel === "sms" ? "SMS" : "WhatsApp"} delivery is disabled (${channel === "sms" ? "SMS_DELIVERY_ENABLED" : "WHATSAPP_DELIVERY_ENABLED"} is off)`,
+  });
+  return true;
+}
+
 export async function sendSms(to: string, body: string, logCtx: DeliveryLogContext): Promise<boolean> {
+  if (await rejectDisabledChannel("sms", to, logCtx)) return false;
   if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_FROM_NUMBER) {
     logger.warn({ to: maskPhone(to) }, "Twilio SMS not configured (TWILIO_ACCOUNT_SID/TWILIO_AUTH_TOKEN/TWILIO_FROM_NUMBER); skipping SMS send");
     await logDeliveryAttempt("sms", to, logCtx, { success: false, errorMessage: "Twilio SMS is not configured" });
@@ -96,6 +118,7 @@ export async function sendSms(to: string, body: string, logCtx: DeliveryLogConte
  * TWILIO_WHATSAPP_CONTENT_SID.
  */
 export async function sendWhatsApp(to: string, linkUrl: string, logCtx: DeliveryLogContext): Promise<boolean> {
+  if (await rejectDisabledChannel("whatsapp", to, logCtx)) return false;
   if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_WHATSAPP_FROM || !TWILIO_WHATSAPP_CONTENT_SID) {
     logger.warn(
       { to: maskPhone(to) },

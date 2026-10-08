@@ -36,6 +36,7 @@ import { deriveVideoFields, embedUrlFor, detectPlatform } from "../lib/videoMeta
 import { runConcierge, MAX_SITUATION_LENGTH } from "../lib/concierge";
 import { safeAssignOrGetSenderHandle } from "../lib/whispSenderHandle";
 import { hasSmsConsent, recordSmsConsent } from "../lib/smsConsent";
+import { disabledChannelError } from "../lib/messagingChannels";
 import { logger } from "../lib/logger";
 
 const router = Router();
@@ -585,6 +586,14 @@ router.post("/", requireAuth, createWhispLimiter, async (req, res): Promise<void
     }
     if ((data.whisperChannel === "sms" || data.whisperChannel === "whatsapp") && !data.recipientPhone) {
       res.status(400).json({ error: "Text/WhatsApp delivery requires a recipient phone number" });
+      return;
+    }
+    // SMS/WhatsApp launch switch (lib/messagingChannels.ts). Covers scheduled
+    // sends too — they're created through this same route — so nothing new
+    // can be queued for a channel that's off.
+    const channelOff = disabledChannelError(data.whisperChannel);
+    if (channelOff) {
+      res.status(400).json(channelOff);
       return;
     }
     // WhatsApp isn't carrier-regulated under A2P 10DLC the same way SMS is

@@ -26,6 +26,7 @@ import { PlatformIcon } from "@/components/shared/PlatformIcon";
 import { DemographicsGateDialog } from "@/components/shared/DemographicsGateDialog";
 import { needsDemographics } from "@/lib/demographics";
 import { isContactPickerSupported, pickContacts } from "@/lib/contactPicker";
+import { usePublicConfig } from "@/lib/usePublicConfig";
 import {
   ArrowLeft,
   ArrowRight,
@@ -84,6 +85,12 @@ export function FirstWhispersOnboarding() {
 
   // --- Step 1: contacts ---
   const [contacts, setContacts] = useState<OnboardingContact[]>([emptyContact()]);
+  // SMS/WhatsApp are off at launch (see lib/usePublicConfig.ts). While no
+  // phone channel is on, a phone-only friend can't be reached, so the phone
+  // field isn't offered and phone numbers are never counted or stored —
+  // email contacts work exactly as before.
+  const { smsEnabled, whatsappEnabled } = usePublicConfig();
+  const phoneDeliveryEnabled = smsEnabled || whatsappEnabled;
 
   // --- Step 2: what to send ---
   const [situation, setSituation] = useState(() => t("concierge.defaultSituation"));
@@ -127,7 +134,7 @@ export function FirstWhispersOnboarding() {
   const validContacts = (() => {
     const seen = new Set<string>();
     return contacts
-      .filter((c) => c.email.trim() || c.phone.trim())
+      .filter((c) => c.email.trim() || (phoneDeliveryEnabled && c.phone.trim()))
       .filter((c) => {
         const key = c.email.trim().toLowerCase() || c.phone.replace(/\D/g, "");
         if (!key || seen.has(key)) return false;
@@ -136,9 +143,9 @@ export function FirstWhispersOnboarding() {
       });
   })();
   const hasEmail = validContacts.some((c) => c.email.trim());
-  const hasPhone = validContacts.some((c) => c.phone.trim());
+  const hasPhone = phoneDeliveryEnabled && validContacts.some((c) => c.phone.trim());
   const availableChannels = (["email", "sms", "whatsapp"] as const).filter((ch) =>
-    ch === "email" ? hasEmail : hasPhone,
+    ch === "email" ? hasEmail : hasPhone && (ch === "sms" ? smsEnabled : whatsappEnabled),
   );
 
   // Default to the first channel the entered contacts actually support, and
@@ -167,9 +174,9 @@ export function FirstWhispersOnboarding() {
     const picked = await pickContacts();
     if (!picked.length) return;
 
-    const withInfo = picked.filter((c) => c.email || c.tel);
+    const withInfo = picked.filter((c) => c.email || (phoneDeliveryEnabled && c.tel));
     if (!withInfo.length) {
-      toast({ title: t("step1.toast.noneHadContactInfo"), variant: "destructive" });
+      toast({ title: t(phoneDeliveryEnabled ? "step1.toast.noneHadContactInfo" : "step1.toast.noneHadEmail"), variant: "destructive" });
       return;
     }
 
@@ -177,7 +184,12 @@ export function FirstWhispersOnboarding() {
       const nonEmpty = cs.filter((c) => c.name.trim() || c.email.trim() || c.phone.trim());
       const merged = [
         ...nonEmpty,
-        ...withInfo.map((c) => ({ id: crypto.randomUUID(), name: c.name ?? "", email: c.email ?? "", phone: c.tel ?? "" })),
+        ...withInfo.map((c) => ({
+          id: crypto.randomUUID(),
+          name: c.name ?? "",
+          email: c.email ?? "",
+          phone: phoneDeliveryEnabled ? c.tel ?? "" : "",
+        })),
       ];
       return merged.slice(0, MAX_CONTACTS);
     });
@@ -185,7 +197,7 @@ export function FirstWhispersOnboarding() {
 
   function goToStep2() {
     if (validContacts.length === 0) {
-      toast({ title: t("step1.toast.needAtLeastOne"), variant: "destructive" });
+      toast({ title: t(phoneDeliveryEnabled ? "step1.toast.needAtLeastOne" : "step1.toast.needAtLeastOneEmail"), variant: "destructive" });
       return;
     }
     setContacts(validContacts.length ? validContacts : contacts);
@@ -276,7 +288,7 @@ export function FirstWhispersOnboarding() {
         members: validContacts.map((c) => ({
           name: c.name.trim() || null,
           email: c.email.trim() || null,
-          phone: c.phone.trim() || null,
+          phone: phoneDeliveryEnabled ? c.phone.trim() || null : null,
         })),
       },
     });
@@ -418,7 +430,7 @@ export function FirstWhispersOnboarding() {
             {step === 1 && (
               <div className="space-y-4 step-in">
                 <h2 className="text-xl font-serif font-semibold">{t("step1.heading")}</h2>
-                <p className="text-sm text-muted-foreground">{t("step1.subtitle")}</p>
+                <p className="text-sm text-muted-foreground">{t(phoneDeliveryEnabled ? "step1.subtitle" : "step1.subtitleEmailOnly")}</p>
 
                 <div className="space-y-3">
                   {contacts.map((c, i) => (
@@ -449,7 +461,7 @@ export function FirstWhispersOnboarding() {
                         onChange={(e) => updateContact(c.id, { name: e.target.value })}
                         data-testid={`input-contact-name-${i}`}
                       />
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div className={`grid grid-cols-1 gap-2 ${phoneDeliveryEnabled ? "sm:grid-cols-2" : ""}`}>
                         <Input
                           type="email"
                           className="bg-input/50 border-border/50 rounded-xl"
@@ -458,14 +470,16 @@ export function FirstWhispersOnboarding() {
                           onChange={(e) => updateContact(c.id, { email: e.target.value })}
                           data-testid={`input-contact-email-${i}`}
                         />
-                        <Input
-                          type="tel"
-                          className="bg-input/50 border-border/50 rounded-xl"
-                          placeholder={t("step1.phonePlaceholder")}
-                          value={c.phone}
-                          onChange={(e) => updateContact(c.id, { phone: e.target.value })}
-                          data-testid={`input-contact-phone-${i}`}
-                        />
+                        {phoneDeliveryEnabled && (
+                          <Input
+                            type="tel"
+                            className="bg-input/50 border-border/50 rounded-xl"
+                            placeholder={t("step1.phonePlaceholder")}
+                            value={c.phone}
+                            onChange={(e) => updateContact(c.id, { phone: e.target.value })}
+                            data-testid={`input-contact-phone-${i}`}
+                          />
+                        )}
                       </div>
                     </div>
                   ))}

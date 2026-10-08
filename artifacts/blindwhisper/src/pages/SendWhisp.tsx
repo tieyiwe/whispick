@@ -63,6 +63,7 @@ import { Thumbnail } from "@/components/shared/Thumbnail";
 import { CameraCapture } from "@/components/shared/CameraCapture";
 import { takePendingForward } from "@/lib/forwardVideo";
 import { useNeedsSmsConsent } from "@/lib/useSmsConsent";
+import { usePublicConfig } from "@/lib/usePublicConfig";
 import { DemographicsGateDialog } from "@/components/shared/DemographicsGateDialog";
 import { needsDemographics } from "@/lib/demographics";
 import { GHOST_BOOST_ENABLED } from "@/lib/featureFlags";
@@ -174,6 +175,23 @@ export function SendWhisp() {
   // Twilio reviewer can't verify was ever actually read or acted on. See
   // canContinueFromRecipients below for where this gates the Next button.
   const [smsConsentConfirmed, setSmsConsentConfirmed] = useState(false);
+  // SMS/WhatsApp are switched off at launch (server-side flags, see
+  // lib/usePublicConfig.ts) — everything phone-related below keys off these
+  // so the options simply don't exist while off, rather than failing at send.
+  const { smsEnabled, whatsappEnabled } = usePublicConfig();
+  const phoneDeliveryEnabled = smsEnabled || whatsappEnabled;
+  const availableChannels = WHISPER_CHANNELS.filter(
+    (ch) => ch.key === "email" || (ch.key === "sms" ? smsEnabled : whatsappEnabled),
+  );
+  // A phone recipient goes over WhatsApp when the sender asked for it — or
+  // automatically when WhatsApp is the only phone channel that's on.
+  const sendPhonesViaWhatsApp = whatsappEnabled && (preferWhatsApp || !smsEnabled);
+  // Never leave the group picker parked on a channel that's (now) off.
+  useEffect(() => {
+    if (!availableChannels.some((ch) => ch.key === whisperChannel)) setWhisperChannel("email");
+    // availableChannels is derived from the two flags — those are the real deps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [smsEnabled, whatsappEnabled, whisperChannel]);
   const [sendingBatch, setSendingBatch] = useState(false);
   const [sentCount, setSentCount] = useState(1);
   const [startTimestamp, setStartTimestamp] = useState("");
@@ -553,11 +571,12 @@ export function SendWhisp() {
           data: {
             ...sharedPayload,
             // Auto-derived from what they typed — a phone number goes over
-            // WhatsApp only if they explicitly asked for it, otherwise SMS.
-            whisperChannel: recipient.kind === "email" ? "email" : preferWhatsApp ? "whatsapp" : "sms",
+            // WhatsApp if they asked for it (or it's the only phone channel
+            // on), otherwise SMS.
+            whisperChannel: recipient.kind === "email" ? "email" : sendPhonesViaWhatsApp ? "whatsapp" : "sms",
             recipientEmail: recipient.kind === "email" ? recipient.raw : null,
             recipientPhone: recipient.kind === "phone" ? recipient.raw : null,
-            smsConsentConfirmed: recipient.kind === "phone" && !preferWhatsApp ? smsConsentConfirmed : null,
+            smsConsentConfirmed: recipient.kind === "phone" && !sendPhonesViaWhatsApp ? smsConsentConfirmed : null,
           },
         });
         succeeded.push(whisp.id);
@@ -609,16 +628,20 @@ export function SendWhisp() {
 
     // Whichever detail the contact actually has — email first, since it's the
     // channel that always works. Appends rather than replaces, so picking
-    // several contacts in a row builds up the list.
-    const picked = contact.email || contact.tel;
+    // several contacts in a row builds up the list. A phone-only contact is
+    // no use while no phone channel is on, so say so instead of adding it.
+    const picked = contact.email || (phoneDeliveryEnabled ? contact.tel : null);
     if (!picked) {
-      toast({ title: t("sendWhisp.toast.noContactInfo"), variant: "destructive" });
+      toast({
+        title: t(contact.tel ? "sendWhisp.toast.noEmailForContact" : "sendWhisp.toast.noContactInfo"),
+        variant: "destructive",
+      });
       return;
     }
     setRecipientsInput((current) => (current.trim() ? `${current.replace(/,\s*$/, "")}, ${picked}` : picked));
   }
 
-  const parsedRecipients = parseRecipients(recipientsInput);
+  const parsedRecipients = parseRecipients(recipientsInput, { allowPhones: phoneDeliveryEnabled });
 
   // Contacts this sender has used before, so a returning user doesn't retype
   // an address. Server-derived from their own sending history rather than
@@ -630,6 +653,8 @@ export function SendWhisp() {
     // Never suggest someone already in the field — the whole point is to save
     // typing, and offering a duplicate wastes the one slot it has.
     .filter((c) => !alreadyEntered.has(recipientKey(c.value, c.kind as "email" | "phone")))
+    // Past phone recipients can't be sent to while phone delivery is off.
+    .filter((c) => phoneDeliveryEnabled || c.kind !== "phone")
     .filter((c) => {
       if (!recipientToken.token) return true;
       const typed = recipientToken.token.toLowerCase();
@@ -658,7 +683,7 @@ export function SendWhisp() {
   const hasPhoneRecipient = parsedRecipients.recipients.some((r) => r.kind === "phone");
   // WhatsApp isn't carrier-regulated under A2P 10DLC the same way SMS is —
   // same carve-out the disclosure text below already uses.
-  const requiresSmsConsent = hasPhoneRecipient && !preferWhatsApp;
+  const requiresSmsConsent = hasPhoneRecipient && !sendPhonesViaWhatsApp;
   // Once-per-recipient: the checkbox is only needed when at least one of the
   // entered phone recipients hasn't been confirmed before (see
   // lib/useSmsConsent.ts). A batch of all-previously-confirmed numbers skips
@@ -668,6 +693,7 @@ export function SendWhisp() {
   const canContinueFromRecipients =
     parsedRecipients.recipients.length > 0 &&
     parsedRecipients.invalid.length === 0 &&
+    parsedRecipients.unavailablePhones.length === 0 &&
     (!needsSmsConsent || smsConsentConfirmed);
   // Group Whisper never visits step 5 (see the step-4 Next button below —
   // it jumps straight to the review step for anything but whisper_link), so
@@ -1263,9 +1289,11 @@ export function SendWhisp() {
                       answer — and one they could get wrong, picking "Email"
                       then typing a phone number. A group send picks a single
                       channel for everyone, so the choice still belongs there. */}
-                  {deliveryMethod === "group_whisper" && (
-                    <div className="pl-2 pr-1 -mt-1 grid grid-cols-3 gap-2">
-                      {WHISPER_CHANNELS.map((ch) => {
+                  {/* Hidden outright while email is the only channel on —
+                      a one-option picker is just noise. */}
+                  {deliveryMethod === "group_whisper" && availableChannels.length > 1 && (
+                    <div className={`pl-2 pr-1 -mt-1 grid gap-2 ${availableChannels.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
+                      {availableChannels.map((ch) => {
                         const Icon = ch.icon;
                         return (
                           <button
@@ -1433,13 +1461,13 @@ export function SendWhisp() {
               <div className="space-y-4">
                 <h2 className="text-xl font-serif font-semibold">{t("sendWhisp.step5.heading")}</h2>
                 <p className="text-sm text-muted-foreground">
-                  {t("sendWhisp.step5.description")}
+                  {t(phoneDeliveryEnabled ? "sendWhisp.step5.description" : "sendWhisp.step5.descriptionEmailOnly")}
                 </p>
                 <div className="space-y-3">
                   <Textarea
                     ref={recipientsRef}
                     className="bg-input/50 border-border/50 rounded-xl resize-none min-h-[80px]"
-                    placeholder={t("sendWhisp.step5.placeholder")}
+                    placeholder={t(phoneDeliveryEnabled ? "sendWhisp.step5.placeholder" : "sendWhisp.step5.placeholderEmailOnly")}
                     value={recipientsInput}
                     onChange={(e) => {
                       setRecipientsInput(e.target.value);
@@ -1505,6 +1533,12 @@ export function SendWhisp() {
                     </p>
                   )}
 
+                  {parsedRecipients.unavailablePhones.length > 0 && (
+                    <p className="text-xs text-destructive" data-testid="text-phone-recipients-unavailable">
+                      {t("sendWhisp.step5.phonesUnavailable", { list: parsedRecipients.unavailablePhones.join(", ") })}
+                    </p>
+                  )}
+
                   {/* Says plainly what more than one recipient causes, before
                       they commit to it — a group appearing in their account
                       unannounced, or each person quietly costing a separate
@@ -1526,8 +1560,9 @@ export function SendWhisp() {
 
                   {/* Only meaningful once a phone number is actually in the
                       list — a phone number could be reached either way, and
-                      that's the one thing detection genuinely can't infer. */}
-                  {hasPhoneRecipient && (
+                      that's the one thing detection genuinely can't infer.
+                      Only a real choice while BOTH phone channels are on. */}
+                  {hasPhoneRecipient && smsEnabled && whatsappEnabled && (
                     <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
                       <input
                         type="checkbox"
@@ -1662,7 +1697,7 @@ export function SendWhisp() {
                         {deliveryMethod === "group_whisper"
                           ? t("sendWhisp.step6.groupWhisperChannel", { channel: t(`sendWhisp.channels.${whisperChannel}`) })
                           : deliveryMethod === "whisper_link"
-                          ? `Whisper Link${hasPhoneRecipient && preferWhatsApp ? " (WhatsApp)" : ""}`
+                          ? `Whisper Link${hasPhoneRecipient && sendPhonesViaWhatsApp ? " (WhatsApp)" : ""}`
                           : deliveryMethod.replace("_", " ")}
                       </span>
                     </div>

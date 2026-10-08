@@ -15,6 +15,7 @@ import { sendDebateTopicWhispLimiter } from "../lib/rateLimit";
 import { findVerifiedRecipient, findVerifiedRecipientByEmail, deliverInApp } from "../lib/deliver";
 import { logger } from "../lib/logger";
 import { hasSmsConsent, recordSmsConsent } from "../lib/smsConsent";
+import { disabledChannelError } from "../lib/messagingChannels";
 import { notRetracted, topicUrl } from "./debateTopics";
 import { debateTopicShareUrl } from "./debateTopicLink";
 
@@ -133,6 +134,13 @@ router.post("/:id/whisp", requireAuth, sendDebateTopicWhispLimiter, async (req, 
     return;
   }
   const { channel, recipientEmail, recipientPhone, note, senderAlias } = parsed.data;
+
+  // SMS/WhatsApp launch switch (lib/messagingChannels.ts).
+  const channelOff = disabledChannelError(channel);
+  if (channelOff) {
+    res.status(400).json(channelOff);
+    return;
+  }
 
   // Once-per-recipient consent (see lib/smsConsent.ts): an affirmative
   // checkbox now, or a stored consent from a prior send to this number.

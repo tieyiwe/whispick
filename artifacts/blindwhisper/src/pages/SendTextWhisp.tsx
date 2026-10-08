@@ -13,7 +13,8 @@ import { useMobileSendAction } from "@/contexts/MobileSendAction";
 import { useToast } from "@/hooks/use-toast";
 import { isContactPickerSupported, pickContact } from "@/lib/contactPicker";
 import { useNeedsSmsConsent } from "@/lib/useSmsConsent";
-import { ArrowLeft, ArrowRight, Phone, Loader2, ScrollText, CalendarClock, Contact } from "lucide-react";
+import { usePublicConfig } from "@/lib/usePublicConfig";
+import { ArrowLeft, ArrowRight, Phone, Loader2, ScrollText, CalendarClock, Contact, Send } from "lucide-react";
 
 const MESSAGE_MAX_LENGTH = 260;
 
@@ -31,7 +32,48 @@ const SENDER_ALIASES = [
 ] as const;
 type SenderAliasKey = (typeof SENDER_ALIASES)[number]["key"];
 
+// Text Whisps are phone-number based and the sender can never be told
+// whether a number belongs to an app user, so while SMS delivery is off
+// (lib/usePublicConfig.ts) there's no way to send one that reliably arrives
+// — the server rejects creation outright. Every entry point to /send-text is
+// hidden then; this covers anyone landing here directly (old bookmark,
+// shared URL). Split from the composer so its hooks never run while off.
 export function SendTextWhisp() {
+  const { smsEnabled, isLoading } = usePublicConfig();
+  if (isLoading) {
+    return (
+      <AppLayout>
+        <div className="flex justify-center py-20">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        </div>
+      </AppLayout>
+    );
+  }
+  return smsEnabled ? <SendTextWhispComposer /> : <TextWhispsComingSoon />;
+}
+
+function TextWhispsComingSoon() {
+  const [, setLocation] = useLocation();
+  const { t } = useTranslation("textWhisp");
+  return (
+    <AppLayout>
+      <div className="max-w-md mx-auto py-10">
+        <Card className="bg-card border-border/50" data-testid="text-whisps-coming-soon">
+          <CardContent className="p-8 text-center space-y-4">
+            <ScrollText className="w-10 h-10 text-primary mx-auto" />
+            <h1 className="text-2xl font-serif font-semibold text-foreground">{t("sendTextWhisp.comingSoon.title")}</h1>
+            <p className="text-sm text-muted-foreground">{t("sendTextWhisp.comingSoon.body")}</p>
+            <Button className="rounded-full" onClick={() => setLocation("/send")} data-testid="button-coming-soon-send-whisp">
+              <Send className="w-4 h-4 mr-2" /> {t("sendTextWhisp.comingSoon.cta")}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    </AppLayout>
+  );
+}
+
+function SendTextWhispComposer() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
