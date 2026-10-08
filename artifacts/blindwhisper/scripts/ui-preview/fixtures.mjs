@@ -342,7 +342,8 @@ export const publicWhisp = {
   revealRequested: false,
   groupSize: null,
   appreciationResponse: null,
-  expiresAt: fromNow(6 * DAY),
+  // Real whisps expire 48h after delivery (lib/expiration.ts on the server).
+  expiresAt: fromNow(40 * 60 * 60 * 1000),
   reminderCount: 0,
   expired: false,
   hasUpload: false,

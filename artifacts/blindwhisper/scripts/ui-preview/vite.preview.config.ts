@@ -44,6 +44,7 @@ export default mergeConfig(baseConfig, {
     hmr: false,
   },
   // Keep the preview's dep-optimizer cache separate from the real dev server's
-  // so the two never invalidate each other.
-  cacheDir: path.resolve(here, "../../node_modules/.vite-ui-preview"),
+  // so the two never invalidate each other — and per port, so several preview
+  // servers (e.g. parallel agents on different UI_PREVIEW_PORTs) can run at once.
+  cacheDir: path.resolve(here, `../../node_modules/.vite-ui-preview-${port}`),
 } satisfies UserConfig);
