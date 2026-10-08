@@ -758,7 +758,18 @@ router.get("/recent-recipients", requireAuth, async (req, res): Promise<void> =>
         createdAt: whispsTable.createdAt,
       })
       .from(whispsTable)
-      .where(eq(whispsTable.senderId, user.id))
+      // Not every row with this senderId was addressed by the sender: a
+      // Ghost Boost campaign's per-subscriber fan-out rows (lib/matching.ts:
+      // deliveryMethod ghost_boost + groupSendId set) carry a matched
+      // STRANGER's email, which "anonymous both ways" forbids the sender
+      // from ever seeing — same exclusion as routes/whisps.ts's
+      // excludeMatchDeliveries().
+      .where(
+        and(
+          eq(whispsTable.senderId, user.id),
+          or(ne(whispsTable.deliveryMethod, "ghost_boost"), isNull(whispsTable.groupSendId)),
+        ),
+      )
       .orderBy(desc(whispsTable.createdAt))
       .limit(RECENT_RECIPIENT_SCAN),
     db

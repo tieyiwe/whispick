@@ -101,6 +101,12 @@ const COMMENT_REPLY_EMAILS: Record<string, { subject: string; heading: string; t
   },
 };
 
+const TEXT_WHISP_REPLY_EMAIL = {
+  subject: "New anonymous reply 💬",
+  heading: "You got a reply 💬",
+  text: "Someone replied to your Text Whisp.",
+};
+
 /**
  * Releases every due deferred notification: makes it visible (deliverAfter
  * back to null, createdAt reset to now so the bell's "x minutes ago" doesn't
@@ -133,14 +139,19 @@ export async function dispatchDueDeferredNotifications(): Promise<number> {
         });
       }
     }
-    const replyEmail = n.url ? COMMENT_REPLY_EMAILS[n.kind ?? ""] : undefined;
+    // A Text Whisp recipient's reply (routes/textWhisps.ts) — kind "reply"
+    // so it counts toward the Replies badge, deferred so the anonymous
+    // sender's phone doesn't buzz the second the recipient hits send. Its
+    // email goes out here, on release, for the same reason.
+    const isTextWhispReply = n.kind === "reply" && !!n.url?.startsWith("/text-whisps/");
+    const replyEmail = isTextWhispReply ? TEXT_WHISP_REPLY_EMAIL : n.url ? COMMENT_REPLY_EMAILS[n.kind ?? ""] : undefined;
     if (replyEmail) {
       void emailReplyNotification(n.targetUserId, {
         ...replyEmail,
         path: n.url!,
         kind: n.kind!,
         notificationId: n.id,
-        purpose: "comment_reply_notification",
+        purpose: isTextWhispReply ? "text_whisp_reply" : "comment_reply_notification",
       });
     }
     void notifyUser(n.targetUserId, n.title, n.body, n.url ?? "");

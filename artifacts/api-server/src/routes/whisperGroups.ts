@@ -140,10 +140,24 @@ router.get("/sends/:groupSendId", requireAuth, async (req, res): Promise<void> =
   const { userId } = getAuth(req);
   const user = await ensureUser(userId!, req);
 
+  // deliveryMethod is load-bearing, not a nicety: a Ghost Boost campaign's
+  // per-subscriber fan-out rows (lib/matching.ts) ALSO carry this sender's
+  // senderId and a groupSendId — set to the campaign whisp's own id, which
+  // the sender already knows. Without this filter, GET /sends/<campaign id>
+  // returned every matched stranger's email address, reply thread and
+  // appreciation answer: the exact per-subscriber breakdown GET
+  // /whisps/:id/matches exists to withhold (see routes/whisps.ts's
+  // excludeMatchDeliveries). The list route above already filters the same way.
   const members = await db
     .select()
     .from(whispsTable)
-    .where(and(eq(whispsTable.groupSendId, req.params.groupSendId), eq(whispsTable.senderId, user.id)))
+    .where(
+      and(
+        eq(whispsTable.groupSendId, req.params.groupSendId),
+        eq(whispsTable.senderId, user.id),
+        eq(whispsTable.deliveryMethod, "group_whisper"),
+      ),
+    )
     .orderBy(desc(whispsTable.createdAt));
 
   if (!members.length) {

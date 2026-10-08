@@ -1,12 +1,12 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { debateTopicsTable, debateTopicCommentsTable, debateTopicRewhispsTable, followsTable } from "@workspace/db";
-import { eq, and, desc, lt, gt, count, inArray, isNull } from "drizzle-orm";
+import { debateTopicsTable, debateTopicCommentsTable, debateTopicRewhispsTable, followsTable, usersTable } from "@workspace/db";
+import { eq, and, desc, lt, gt, count, inArray, isNull, sql } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
 import { randomUUID } from "crypto";
 import { z } from "zod";
 import { ipKeyGenerator } from "express-rate-limit";
-import { requireAuth } from "../lib/auth";
+import { requireAuth, activeClerkUserId } from "../lib/auth";
 import { ensureUser, requestIp } from "../lib/ensureUser";
 import { canPostAnonymousComment, anonymousCommentLimit, COMMENT_LIMIT_WINDOW_HOURS } from "../lib/plans";
 import { createDebateTopicLimiter } from "../lib/rateLimit";
@@ -44,6 +44,25 @@ export const PAGE_SIZE = 20;
 // contact — one definition, not two copies that could drift.
 export function notRetracted() {
   return and(isNull(debateTopicsTable.deletedByAuthorAt), isNull(debateTopicsTable.removedByAdminAt));
+}
+
+async function liveTopicExists(topicId: string): Promise<boolean> {
+  const topic = await db
+    .select({ id: debateTopicsTable.id })
+    .from(debateTopicsTable)
+    .where(and(eq(debateTopicsTable.id, topicId), notRetracted()))
+    .then((r) => r[0]);
+  return !!topic;
+}
+
+async function isWhispererHandleInUse(handle: string): Promise<boolean> {
+  const row = await db
+    .select({ id: usersTable.id })
+    .from(usersTable)
+    .where(sql`lower(${usersTable.whispererHandle}) = ${handle.trim().toLowerCase()}`)
+    .limit(1)
+    .then((r) => r[0]);
+  return !!row;
 }
 
 // Same exclusion for a single comment — an admin-removed comment (no
@@ -327,7 +346,7 @@ router.get("/public/debate-topics/:id", async (req, res): Promise<void> => {
   // server-side, same trick isPoster uses on each comment below. Works even
   // on this "unauthenticated" router because clerkMiddleware runs globally
   // (app.ts).
-  const { userId: clerkId } = getAuth(req);
+  const clerkId = await activeClerkUserId(req);
   let isOwnTopic = false;
   let viewer: { id: string } | null = null;
   if (clerkId) {
@@ -459,7 +478,9 @@ router.post("/public/debate-topics/:id/comments", commentImageUpload, async (req
     return;
   }
 
-  const { userId: clerkId } = getAuth(req);
+  // A suspended account comments as an anonymous visitor would: capped,
+  // per-thread handle, no isPoster (see lib/auth.ts's activeClerkUserId).
+  const clerkId = await activeClerkUserId(req);
   let isPoster = false;
   let authorUserId: string | null = null;
   if (clerkId) {
@@ -587,10 +608,15 @@ router.post("/public/debate-topics/:id/comments", commentImageUpload, async (req
 // URL" posture as routes/media.ts's own serving routes. Hidden (404) once
 // flagged by moderation or once the comment itself is admin-removed.
 router.get("/public/debate-topics/comments/:commentId/image", async (req, res): Promise<void> => {
+  // Joined to its topic and gated on notRetracted(): looked up by comment id
+  // alone, an image kept streaming after its whole topic was retracted or
+  // taken down by a moderator — the same gap routes/public.ts closed for
+  // Circle comment images by binding them to a live post.
   const comment = await db
     .select({ imageObjectKey: debateTopicCommentsTable.imageObjectKey, imageModerationStatus: debateTopicCommentsTable.imageModerationStatus, removedByAdminAt: debateTopicCommentsTable.removedByAdminAt })
     .from(debateTopicCommentsTable)
-    .where(eq(debateTopicCommentsTable.id, req.params.commentId))
+    .innerJoin(debateTopicsTable, eq(debateTopicsTable.id, debateTopicCommentsTable.topicId))
+    .where(and(eq(debateTopicCommentsTable.id, req.params.commentId), notRetracted()))
     .then((r) => r[0]);
 
   if (!comment?.imageObjectKey || comment.imageModerationStatus === "flagged" || comment.removedByAdminAt) {
@@ -625,9 +651,24 @@ router.patch("/public/debate-topics/:id/handle", async (req, res): Promise<void>
   // thread badges its author "Topic Author", so a commenter named
   // "TopicAuthor" would read as the author speaking — the debate-specific
   // twin of "OriginalPoster" in a Circle thread.
+  if (!(await liveTopicExists(req.params.id))) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+
+  // Debate threads are the one place per-thread handles share a screen with
+  // PERSISTENT Whisperer handles (the topic's byline, every signed-in
+  // commenter — see users.whispererHandle), drawn from the same word lists.
+  // renameHandle only checks uniqueness among this thread's per-thread
+  // handles, so an anonymous visitor could rename themselves to the topic
+  // author's (or any followed account's) Whisperer handle, pick the same
+  // avatar, and post as them. A name any account holds as its Whisperer
+  // handle is therefore "taken" here, case-insensitively.
   const result = parsed.data.handle.trim().toLowerCase().includes("topicauthor")
     ? ({ ok: false, error: "reserved" } as const)
-    : await renameHandle("debate_topic", req.params.id, parsed.data.visitorId, parsed.data.handle);
+    : (await isWhispererHandleInUse(parsed.data.handle))
+      ? ({ ok: false, error: "taken" } as const)
+      : await renameHandle("debate_topic", req.params.id, parsed.data.visitorId, parsed.data.handle);
   // `code` lets the client show its own (translated) message per reason —
   // a reserved name otherwise read as the misleading letters-and-numbers one.
   if (!result.ok) {
@@ -654,6 +695,12 @@ router.patch("/public/debate-topics/:id/avatar", async (req, res): Promise<void>
     return;
   }
 
+  // Otherwise any string became a rootId and minted an anonymous_handles row.
+  if (!(await liveTopicExists(req.params.id))) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+
   const result = await updateHandleAvatar("debate_topic", req.params.id, parsed.data.visitorId, parsed.data.avatarId);
   if (!result.ok) {
     res.status(400).json({ error: "Not a valid avatar." });
@@ -672,6 +719,13 @@ router.post("/public/debate-topics/:id/comments/:commentId/reactions", async (re
     return;
   }
 
+  // A retracted/taken-down topic stops accepting engagement too (and its
+  // comments' authors stop getting "someone liked your comment" pushes),
+  // same as the Circle equivalent's loadLiveWhisp gate.
+  if (!(await liveTopicExists(req.params.id))) {
+    res.status(404).json({ error: "Comment not found" });
+    return;
+  }
   const comment = await db
     .select({ id: debateTopicCommentsTable.id, authorUserId: debateTopicCommentsTable.authorUserId })
     .from(debateTopicCommentsTable)

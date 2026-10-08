@@ -4,11 +4,13 @@ import { db, textWhispsTable, textWhispRepliesTable, usersTable, type TextWhisp,
 import { eq, and, or, ne, isNull, asc, desc, notInArray, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { z } from "zod";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import { requireAuth } from "../lib/auth";
 import { ensureUser } from "../lib/ensureUser";
 import { findVerifiedRecipient, deliverInApp } from "../lib/deliver";
 import { notifyUserPersisted } from "../lib/push";
 import { emailReplyNotification } from "../lib/replyEmail";
+import { scheduleDeferredNotification } from "../lib/replyNotificationScheduler";
 import { moderateTextWhispAsync } from "../lib/moderation";
 import { createTextWhispLimiter, textWhispRevealLimiter } from "../lib/rateLimit";
 import { normalizePhoneE164 } from "../lib/phone";
@@ -454,6 +456,21 @@ const replyTextWhispSchema = z.object({
   parentReplyId: z.string().max(64).nullable().optional(),
 });
 
+// Every reply writes a notification row and fires a live push at the other
+// party (plus a throttled email), so an unlimited POST loop was a way to
+// flood the counterpart's phone/inbox — video whisp follow-ups have had
+// senderFollowUpLimiter (routes/whisps.ts) for exactly this. Per account,
+// generous for a real back-and-forth chat. Registered via router.use (GET
+// skipped) for the same :id param-typing reason as the reveal limiter below.
+const textWhispReplyLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => getAuth(req).userId ?? ipKeyGenerator(req.ip ?? ""),
+  skip: (req) => req.method !== "POST",
+});
+router.use("/:id/replies", textWhispReplyLimiter);
 router.post("/:id/replies", requireAuth, async (req, res): Promise<void> => {
   const { userId } = getAuth(req);
   const user = await ensureUser(userId!, req);
@@ -511,15 +528,30 @@ router.post("/:id/replies", requireAuth, async (req, res): Promise<void> => {
     await db.update(textWhispsTable).set({ status: "replied" }).where(eq(textWhispsTable.id, textWhisp.id));
   }
 
+  // A RECIPIENT's reply notifies the anonymous SENDER, and that one is
+  // deferred (a random 3/5/9 minutes, see lib/replyNotificationScheduler.ts)
+  // like every other notification an action by the non-anonymous party
+  // triggers on the anonymous one's phone: if the two are sitting together,
+  // the sender's phone buzzing the instant the recipient hits send tells the
+  // recipient exactly who sent the Text Whisp — the same side channel video
+  // whisp replies (whisp_replies.notifySenderAt) already close. The
+  // reply email is released with it (see dispatchDueDeferredNotifications).
+  // The sender's own follow-ups to the recipient stay immediate: the
+  // recipient's identity isn't the secret here. Awaited before responding
+  // (it never throws) so the pending row exists once this request returns.
+  if (isFromRecipient) {
+    await scheduleDeferredNotification(textWhisp.senderId, "New reply on your Text Whisp", textWhispReplyHookLine(), `/text-whisps/${textWhisp.id}`, "reply");
+  }
+
   const reply = await db.select().from(textWhispRepliesTable).where(eq(textWhispRepliesTable.id, id)).then((r) => r[0]!);
   res.status(201).json(toReplyResponse(reply, user.id));
 
-  // Notify whichever party didn't just send this reply. Only ever null when
-  // the sender follows up on their own Text Whisp before a guest recipient
-  // has signed up — there's no in-app account to notify yet in that case
-  // (and no other channel: guests can't reply at all, so there's nothing to
-  // "notify them of" until they've joined and have a real recipientUserId).
-  const notifyUserId = isFromRecipient ? textWhisp.senderId : textWhisp.recipientUserId;
+  // Notify the recipient of a sender follow-up. Null when the sender follows
+  // up on their own Text Whisp before a guest recipient has signed up —
+  // there's no in-app account to notify yet in that case (and no other
+  // channel: guests can't reply at all, so there's nothing to "notify them
+  // of" until they've joined and have a real recipientUserId).
+  const notifyUserId = isFromRecipient ? null : textWhisp.recipientUserId;
   if (notifyUserId) {
     // kind: "reply" — same kind video-whisp replies use (see
     // lib/replyNotificationScheduler.ts), not the deliverInApp path the rest
@@ -535,9 +567,7 @@ router.post("/:id/replies", requireAuth, async (req, res): Promise<void> => {
       emailReplyNotification(notifyUserId, {
         subject: "New anonymous reply 💬",
         heading: "You got a reply 💬",
-        text: isFromRecipient
-          ? "Someone replied to your Text Whisp."
-          : "There's a new message in one of your anonymous Text Whisp chats.",
+        text: "There's a new message in one of your anonymous Text Whisp chats.",
         path,
         kind: "reply",
         purpose: "text_whisp_reply",
@@ -662,16 +692,18 @@ router.post("/:id/reveal/respond", requireAuth, async (req, res): Promise<void> 
   }
 
   await db.update(textWhispsTable).set({ revealAccepted: parsed.data.accepted }).where(eq(textWhispsTable.id, textWhisp.id));
-  res.json({ id: textWhisp.id, revealRequested: true, revealAccepted: parsed.data.accepted });
 
-  void deliverInApp(
+  // Deferred for the same reason as a recipient's reply (see POST
+  // /:id/replies): the recipient tapping Accept/Decline must not make the
+  // anonymous sender's phone buzz in that same second.
+  await scheduleDeferredNotification(
     textWhisp.senderId,
     "Reveal response",
     textWhispRevealRespondedHookLine(parsed.data.accepted),
     `/text-whisps/${textWhisp.id}`,
-    textWhisp.senderId,
-    { whispId: null, purpose: "text_whisp_reveal_response" },
+    "text_whisp_reveal_response",
   );
+  res.json({ id: textWhisp.id, revealRequested: true, revealAccepted: parsed.data.accepted });
 });
 
 export default router;

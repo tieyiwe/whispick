@@ -23,6 +23,7 @@ import { deriveVideoFields, detectPlatform, embedUrlFor } from "../lib/videoMeta
 import { recipientReplyAllowance, canRecipientWhispVideoBack, canPostAnonymousComment, anonymousCommentLimit, COMMENT_LIMIT_WINDOW_HOURS } from "../lib/plans";
 import { moderateCircleCommentAsync, moderateCommentImageAsync } from "../lib/moderation";
 import { ensureUser } from "../lib/ensureUser";
+import { activeClerkUserId } from "../lib/auth";
 import { assignOrGetHandle, getHandlesFor, renameHandle } from "../lib/anonymousHandles";
 import { toggleReactionWithNotifyHint, reactionCountsFor, viewerReactionsFor } from "../lib/commentReactions";
 import { commentImageUpload, storeCommentImage } from "../lib/commentImages";
@@ -361,7 +362,9 @@ router.get("/w/:token", async (req, res): Promise<void> => {
   // anonymous visitor or a signed-in viewer who isn't the matched recipient,
   // same gating as viewerArchived/viewerPinned above.
   let senderHandle: string | null = null;
-  const clerkUserId = getAuth(req).userId;
+  // activeClerkUserId, not getAuth: a suspended account gets the anonymous
+  // view here like on every other public route (see lib/auth.ts).
+  const clerkUserId = await activeClerkUserId(req);
   if (clerkUserId && whisp.recipientUserId) {
     // Everything this block produces — viewerArchived/Pinned and
     // senderHandle — is optional signed-in chrome; the whisp itself (video,
@@ -408,7 +411,7 @@ router.get("/w/:token", async (req, res): Promise<void> => {
     // affordance instead of letting someone compose one and then be refused.
     // Says nothing about the sender beyond "they have or haven't unlocked
     // this" — nothing identifying, and nothing about who holds an account.
-    videoRepliesAllowed: canRecipientWhispVideoBack(!!getAuth(req).userId, whisp.replyCreditsPurchased),
+    videoRepliesAllowed: canRecipientWhispVideoBack(!!clerkUserId, whisp.replyCreditsPurchased),
     videoStartSeconds: whisp.videoStartSeconds,
     videoEndSeconds: whisp.videoEndSeconds,
     videoPlatform: whisp.videoPlatform,
@@ -535,7 +538,9 @@ router.post("/w/:token/comments", commentImageUpload, async (req, res): Promise<
     return;
   }
 
-  const { userId: clerkId } = getAuth(req);
+  // Banned accounts post as anonymous visitors (capped, no isPoster) — see
+  // lib/auth.ts's activeClerkUserId.
+  const clerkId = await activeClerkUserId(req);
   let isPoster = false;
   let authorUserId: string | null = null;
   if (clerkId) {
@@ -919,7 +924,7 @@ router.post("/w/:token/video-reply-request", async (req, res): Promise<void> => 
   // Only record a genuine block. If the sender has already unlocked it (or
   // the caller is signed in), there is nothing to ask them for. Never on a
   // public Circle post — there's no reply thread to whisp a video back into.
-  if (whisp && !isPublicCirclePost(whisp) && !canRecipientWhispVideoBack(!!getAuth(req).userId, whisp.replyCreditsPurchased)) {
+  if (whisp && !isPublicCirclePost(whisp) && !canRecipientWhispVideoBack(!!(await activeClerkUserId(req)), whisp.replyCreditsPurchased)) {
     await recordVideoReplyRequest(whisp.id);
   }
 
@@ -1130,7 +1135,9 @@ router.post("/w/:token/reply", async (req, res): Promise<void> => {
   // entirely. getAuth works here even though this route is unauthenticated —
   // clerkMiddleware runs globally (app.ts) — so a recipient who's created an
   // account and is signed in simply isn't subject to this at all.
-  const { userId: replierClerkId } = getAuth(req);
+  // ...unless that account is suspended: it gets the anonymous caps (see
+  // lib/auth.ts's activeClerkUserId).
+  const replierClerkId = await activeClerkUserId(req);
 
   // Video replies are gated even when text replies are still allowed. Checked
   // server-side and not only in the UI: this route is unauthenticated, so the
