@@ -24,8 +24,32 @@ export const httpUrlString = z.string().max(2048).refine(isHttpUrl, { message: "
 // For URLs that may legitimately be in-app relative paths (admin-authored
 // notification links like "/whisps/abc"): allow those, plus absolute
 // http(s), and nothing else. "//host" is excluded because it's a
-// protocol-relative *external* URL, not an app path.
+// protocol-relative *external* URL, not an app path — and so is "/\host":
+// browsers treat a backslash like a slash, so "/\evil.com" resolves to
+// https://evil.com. Backslashes and control characters are rejected
+// outright, and an app path must still resolve to the SAME origin.
+// Returns the normalized href (what should be stored/used), or null.
+const PLACEHOLDER_BASE = "https://app.invalid";
+// eslint-disable-next-line no-control-regex
+const UNSAFE_URL_CHARS = /[\\\u0000-\u001f\u007f\s]/;
+
+export function normalizeHttpUrlOrAppPath(raw: string): string | null {
+  const value = raw.trim();
+  if (UNSAFE_URL_CHARS.test(value)) return null;
+  if (value.startsWith("/")) {
+    if (value.startsWith("//")) return null;
+    try {
+      const parsed = new URL(value, PLACEHOLDER_BASE);
+      if (parsed.origin !== PLACEHOLDER_BASE) return null;
+      return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+    } catch {
+      return null;
+    }
+  }
+  if (!isHttpUrl(value)) return null;
+  return new URL(value).href;
+}
+
 export function isHttpUrlOrAppPath(value: string): boolean {
-  if (value.startsWith("/") && !value.startsWith("//")) return true;
-  return isHttpUrl(value);
+  return normalizeHttpUrlOrAppPath(value) !== null;
 }

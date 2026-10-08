@@ -16,6 +16,10 @@ import { totpCodeAt } from "../lib/adminMfa";
 // admin_mfa rows, so across tests setup succeeds fresh and refreshes the
 // cache — stale entries can't leak between tests.
 const secretCache = new Map<string, string>();
+// Verify now rejects a replayed TOTP code (same 30s step twice), so a second
+// asAdmin() inside one test reuses the token from the first verify instead
+// of re-submitting the identical code. Refreshed whenever setup succeeds.
+const tokenCache = new Map<string, string>();
 
 export async function adminHeaders(clerkId: string, adminEmail: string): Promise<Record<string, string>> {
   process.env.ADMIN_EMAILS = adminEmail;
@@ -28,7 +32,10 @@ export async function adminHeaders(clerkId: string, adminEmail: string): Promise
   if (setup.status === 200) {
     secret = setup.body.secret;
     secretCache.set(clerkId, secret);
+    tokenCache.delete(clerkId);
   } else {
+    const cachedToken = tokenCache.get(clerkId);
+    if (cachedToken) return { ...base, "x-admin-mfa": cachedToken };
     const cached = secretCache.get(clerkId);
     if (!cached) throw new Error(`admin-mfa setup returned ${setup.status} with no cached secret for ${clerkId}`);
     secret = cached;
@@ -42,6 +49,7 @@ export async function adminHeaders(clerkId: string, adminEmail: string): Promise
     throw new Error(`admin-mfa verify failed in test helper: ${verify.status} ${JSON.stringify(verify.body)}`);
   }
 
+  tokenCache.set(clerkId, verify.body.token);
   return { ...base, "x-admin-mfa": verify.body.token };
 }
 
@@ -56,7 +64,10 @@ export async function collaboratorHeaders(clerkId: string): Promise<Record<strin
   if (setup.status === 200) {
     secret = setup.body.secret;
     secretCache.set(clerkId, secret);
+    tokenCache.delete(clerkId);
   } else {
+    const cachedToken = tokenCache.get(clerkId);
+    if (cachedToken) return { ...base, "x-admin-mfa": cachedToken };
     const cached = secretCache.get(clerkId);
     if (!cached) throw new Error(`collaborator admin-mfa setup returned ${setup.status} with no cached secret for ${clerkId}`);
     secret = cached;
@@ -68,5 +79,6 @@ export async function collaboratorHeaders(clerkId: string): Promise<Record<strin
   if (verify.status !== 200) {
     throw new Error(`collaborator admin-mfa verify failed: ${verify.status} ${JSON.stringify(verify.body)}`);
   }
+  tokenCache.set(clerkId, verify.body.token);
   return { ...base, "x-admin-mfa": verify.body.token };
 }

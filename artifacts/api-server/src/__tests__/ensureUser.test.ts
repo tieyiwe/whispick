@@ -28,7 +28,7 @@ describe("ensureUser placeholder-email self-heal", () => {
     // stored email in place, same account (id unchanged).
     clerkGetUserMock.mockResolvedValue({
       twoFactorEnabled: true,
-      emailAddresses: [{ id: "em_1", emailAddress: "healed@example.com" }],
+      emailAddresses: [{ id: "em_1", emailAddress: "healed@example.com", verification: { status: "verified" } }],
       primaryEmailAddressId: "em_1",
       phoneNumbers: [],
       firstName: "Healed",
@@ -51,7 +51,7 @@ describe("ensureUser placeholder-email self-heal", () => {
     try {
       clerkGetUserMock.mockResolvedValue({
         twoFactorEnabled: true,
-        emailAddresses: [{ id: "em_1", emailAddress: "owner-heal@example.com" }],
+        emailAddresses: [{ id: "em_1", emailAddress: "owner-heal@example.com", verification: { status: "verified" } }],
         primaryEmailAddressId: "em_1",
         phoneNumbers: [],
         firstName: null,
@@ -69,7 +69,7 @@ describe("ensureUser placeholder-email self-heal", () => {
     const clerkId = `clerk_heal_real_${randomUUID()}`;
     clerkGetUserMock.mockResolvedValue({
       twoFactorEnabled: true,
-      emailAddresses: [{ id: "em_1", emailAddress: "original@example.com" }],
+      emailAddresses: [{ id: "em_1", emailAddress: "original@example.com", verification: { status: "verified" } }],
       primaryEmailAddressId: "em_1",
       phoneNumbers: [],
       firstName: null,
@@ -83,7 +83,7 @@ describe("ensureUser placeholder-email self-heal", () => {
     // whose email is known-fabricated.
     clerkGetUserMock.mockResolvedValue({
       twoFactorEnabled: true,
-      emailAddresses: [{ id: "em_2", emailAddress: "different@example.com" }],
+      emailAddresses: [{ id: "em_2", emailAddress: "different@example.com", verification: { status: "verified" } }],
       primaryEmailAddressId: "em_2",
       phoneNumbers: [],
       firstName: null,

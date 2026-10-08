@@ -29,7 +29,7 @@ async function signIn(clerkId: string) {
 async function signInWithEmail(clerkId: string, email: string) {
   clerkGetUserMock.mockImplementation(async (id: string) =>
     id === clerkId
-      ? ({ twoFactorEnabled: true, emailAddresses: [{ id: "e1", emailAddress: email }], primaryEmailAddressId: "e1", phoneNumbers: [] } as any)
+      ? ({ twoFactorEnabled: true, emailAddresses: [{ id: "e1", emailAddress: email, verification: { status: "verified" } }], primaryEmailAddressId: "e1", phoneNumbers: [] } as any)
       : ({ twoFactorEnabled: true } as any),
   );
   const res = await request(app).get("/api/user/profile").set(asUser(clerkId));
@@ -222,12 +222,13 @@ describe("POST /api/admin/text-whisps/to-staff", () => {
     const rows = await textWhispsTo(collabProfile.id);
     expect(rows).toHaveLength(1);
     expect(rows[0]!.source).toBe("admin");
-    // Sent from the ACTING admin, not the system account — and their alias
-    // falls back to email since this admin has no fullName set.
+    // Sent from the ACTING admin, not the system account — but under the
+    // fixed team alias, since senderAlias is visible on the public /tw/:token
+    // page and must never carry a staffer's name/email.
     expect(rows[0]!.senderId).not.toBe((await ensureSystemAgentUser()).id);
     const ownerRow = await db.select().from(usersTable).where(eq(usersTable.clerkId, OWNER_CLERK_ID)).then((r) => r[0]!);
     expect(rows[0]!.senderId).toBe(ownerRow.id);
-    expect(rows[0]!.senderAlias).toBe(ownerRow.fullName || ownerRow.email);
+    expect(rows[0]!.senderAlias).toBe("Blind Whisper Team");
   });
 
   it("400s when the target isn't a current staff member", async () => {

@@ -91,15 +91,21 @@ export function totpCodeAt(secretBase32: string, atMs: number): string {
   return hotp(secretBase32, Math.floor(atMs / 1000 / TOTP_STEP_SECONDS));
 }
 
-export function verifyTotpCode(secretBase32: string, code: string, atMs = Date.now()): boolean {
+// The time-step the code matched (within the skew window), or null. The
+// step is what replay protection records — see routes/adminMfa.ts.
+export function matchTotpStep(secretBase32: string, code: string, atMs = Date.now()): number | null {
   const normalized = code.replace(/\s+/g, "");
-  if (!/^\d{6}$/.test(normalized)) return false;
+  if (!/^\d{6}$/.test(normalized)) return null;
   const step = Math.floor(atMs / 1000 / TOTP_STEP_SECONDS);
   for (let offset = -TOTP_WINDOW; offset <= TOTP_WINDOW; offset++) {
     const expected = hotp(secretBase32, step + offset);
-    if (timingSafeEqual(Buffer.from(expected), Buffer.from(normalized))) return true;
+    if (timingSafeEqual(Buffer.from(expected), Buffer.from(normalized))) return step + offset;
   }
-  return false;
+  return null;
+}
+
+export function verifyTotpCode(secretBase32: string, code: string, atMs = Date.now()): boolean {
+  return matchTotpStep(secretBase32, code, atMs) !== null;
 }
 
 // The otpauth:// URI authenticator apps import (via QR or paste). Issuer +
@@ -135,24 +141,29 @@ export function consumeBackupCode(storedHashesJson: string, code: string): strin
   return [...hashes.slice(0, idx), ...hashes.slice(idx + 1)];
 }
 
-// --- Unlock tokens: HMAC-signed `userId.expiryMs.signature`, checked on
-// every admin request. Stateless on purpose (no session row to manage), and
-// bound to the user id so one admin's token can't unlock another's session.
-export function issueMfaToken(userId: string, nowMs = Date.now()): string {
+// --- Unlock tokens: HMAC-signed `userId.expiryMs.sessionId.signature`,
+// checked on every admin request. Stateless on purpose (no session row to
+// manage), bound to the user id so one admin's token can't unlock another's
+// session, and to the Clerk session id (when there is one) so a token lifted
+// from one sign-in is useless in any other — signing out ends the unlock.
+// An empty session id (no sid at issue time) leaves the token unbound
+// rather than locking an admin out.
+export function issueMfaToken(userId: string, nowMs = Date.now(), sessionId: string | null = null): string {
   const exp = nowMs + MFA_TOKEN_TTL_MS;
-  const payload = `${userId}.${exp}`;
+  const payload = `${userId}.${exp}.${sessionId ?? ""}`;
   const sig = createHmac("sha256", tokenSigningKey()).update(payload).digest("hex");
   return `${payload}.${sig}`;
 }
 
-export function verifyMfaToken(token: string, userId: string, nowMs = Date.now()): boolean {
+export function verifyMfaToken(token: string, userId: string, nowMs = Date.now(), sessionId: string | null = null): boolean {
   const parts = token.split(".");
-  if (parts.length !== 3) return false;
-  const [tokenUserId, expStr, sig] = parts;
+  if (parts.length !== 4) return false;
+  const [tokenUserId, expStr, tokenSessionId, sig] = parts;
   if (tokenUserId !== userId) return false;
+  if (tokenSessionId && tokenSessionId !== sessionId) return false;
   const exp = Number(expStr);
   if (!Number.isFinite(exp) || exp < nowMs) return false;
-  const expected = createHmac("sha256", tokenSigningKey()).update(`${tokenUserId}.${exp}`).digest("hex");
+  const expected = createHmac("sha256", tokenSigningKey()).update(`${tokenUserId}.${expStr}.${tokenSessionId}`).digest("hex");
   const sigBuf = Buffer.from(sig);
   const expectedBuf = Buffer.from(expected);
   return sigBuf.length === expectedBuf.length && timingSafeEqual(sigBuf, expectedBuf);

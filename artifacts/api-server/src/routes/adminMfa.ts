@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, adminMfaTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { and, eq, gte, isNull, lt, or, sql } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
 import { z } from "zod";
 import { requireAuth } from "../lib/auth";
@@ -9,13 +9,14 @@ import { ensureUser } from "../lib/ensureUser";
 import {
   generateTotpSecret,
   totpProvisioningUri,
-  verifyTotpCode,
+  matchTotpStep,
   generateBackupCodes,
   consumeBackupCode,
   issueMfaToken,
   getAdminMfa,
 } from "../lib/adminMfa";
 import { logAdminAction } from "../lib/adminAudit";
+import { notifyOfAdminMfaLockout } from "../lib/adminNotify";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
@@ -67,6 +68,7 @@ router.post("/setup", requireAuth, async (req, res): Promise<void> => {
   } else {
     await db.insert(adminMfaTable).values({ userId: user.id, totpSecret: secret, enabledAt: null, backupCodeHashes: "[]" });
   }
+  logAdminAction(user.id, existing ? "admin_mfa.setup_reissue" : "admin_mfa.setup", { type: "user", id: user.id }, {});
 
   res.json({
     secret,
@@ -75,6 +77,87 @@ router.post("/setup", requireAuth, async (req, res): Promise<void> => {
 });
 
 const verifySchema = z.object({ code: z.string().min(1).max(32) });
+
+// Brute-force lockout, persisted on the admin_mfa row so it holds across
+// autoscaled instances and scale-to-zero restarts (adminMfaVerifyLimiter is
+// only a per-instance backstop). 5 consecutive misses → 15 min lockout,
+// doubling with each further lockout (capped at 24h) until a success.
+const MAX_FAILED_ATTEMPTS = 5;
+const BASE_LOCKOUT_MS = 15 * 60 * 1000;
+const MAX_LOCKOUT_MS = 24 * 60 * 60 * 1000;
+
+function lockedResponse(res: any, lockedUntil: Date): void {
+  const retryAfterSeconds = Math.max(1, Math.ceil((lockedUntil.getTime() - Date.now()) / 1000));
+  res.setHeader("Retry-After", String(retryAfterSeconds));
+  res.status(429).json({
+    error: `Too many incorrect codes. Try again in ${Math.ceil(retryAfterSeconds / 60)} minute(s).`,
+    code: "admin_mfa_locked",
+    retryAfterSeconds,
+  });
+}
+
+// Records one failed verify (atomic increment) and, on the threshold, the
+// lockout. Returns the lockout end when THIS failure triggered one. The
+// lock UPDATE is conditional on the counter still being at threshold, so
+// concurrent failures can't double-apply it.
+async function recordFailure(user: { id: string; email: string }, enrolled: boolean): Promise<Date | null> {
+  const after = await db
+    .update(adminMfaTable)
+    .set({ failedAttempts: sql`${adminMfaTable.failedAttempts} + 1` })
+    .where(eq(adminMfaTable.userId, user.id))
+    .returning({ failedAttempts: adminMfaTable.failedAttempts, lockoutCount: adminMfaTable.lockoutCount })
+    .then((r) => r[0]);
+  logAdminAction(user.id, "admin_mfa.verify_failed", { type: "user", id: user.id }, { enrolled, consecutiveFailures: after?.failedAttempts ?? null });
+  if (!after || after.failedAttempts < MAX_FAILED_ATTEMPTS) return null;
+
+  const lockoutMs = Math.min(BASE_LOCKOUT_MS * 2 ** Math.min(after.lockoutCount, 10), MAX_LOCKOUT_MS);
+  const lockedUntil = new Date(Date.now() + lockoutMs);
+  const locked = await db
+    .update(adminMfaTable)
+    .set({ lockedUntil, failedAttempts: 0, lockoutCount: sql`${adminMfaTable.lockoutCount} + 1` })
+    .where(and(eq(adminMfaTable.userId, user.id), gte(adminMfaTable.failedAttempts, MAX_FAILED_ATTEMPTS)))
+    .returning({ lockoutCount: adminMfaTable.lockoutCount })
+    .then((r) => r[0]);
+  if (!locked) return null;
+  logger.warn({ userId: user.id, lockedUntil, lockoutCount: locked.lockoutCount }, "Admin MFA locked after repeated failed codes");
+  logAdminAction(user.id, "admin_mfa.locked", { type: "user", id: user.id }, { lockedUntil: lockedUntil.toISOString(), lockoutCount: locked.lockoutCount });
+  void notifyOfAdminMfaLockout(user, lockedUntil);
+  return lockedUntil;
+}
+
+// Accepts a TOTP code only if its time-step is newer than the last one
+// accepted — a conditional UPDATE, so a code (even one observed over a
+// shoulder, or raced from two tabs) can be used exactly once. Also clears
+// the failure/lockout counters.
+async function claimTotpStep(userId: string, step: number, extra: Partial<typeof adminMfaTable.$inferInsert> = {}): Promise<boolean> {
+  const claimed = await db
+    .update(adminMfaTable)
+    .set({ ...extra, lastUsedStep: step, failedAttempts: 0, lockoutCount: 0, lockedUntil: null })
+    .where(and(eq(adminMfaTable.userId, userId), or(isNull(adminMfaTable.lastUsedStep), lt(adminMfaTable.lastUsedStep, step))))
+    .returning({ userId: adminMfaTable.userId })
+    .then((r) => r[0]);
+  return !!claimed;
+}
+
+// Consumes a backup code with a compare-and-swap on the stored hash list, so
+// two concurrent requests can't both spend the same code. Retries a couple
+// of times only if a DIFFERENT code changed the list underneath us.
+async function claimBackupCode(userId: string, code: string): Promise<number | null> {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const current = await getAdminMfa(userId);
+    if (!current) return null;
+    const remaining = consumeBackupCode(current.backupCodeHashes, code);
+    if (remaining === null) return null;
+    const swapped = await db
+      .update(adminMfaTable)
+      .set({ backupCodeHashes: JSON.stringify(remaining), failedAttempts: 0, lockoutCount: 0, lockedUntil: null })
+      .where(and(eq(adminMfaTable.userId, userId), eq(adminMfaTable.backupCodeHashes, current.backupCodeHashes)))
+      .returning({ userId: adminMfaTable.userId })
+      .then((r) => r[0]);
+    if (swapped) return remaining.length;
+  }
+  return null;
+}
 
 // POST /api/admin-mfa/verify — confirm a 6-digit authenticator code (or,
 // once enrolled, a one-time backup code). On the FIRST successful
@@ -85,6 +168,7 @@ const verifySchema = z.object({ code: z.string().min(1).max(32) });
 router.post("/verify", requireAuth, adminMfaVerifyLimiter, async (req, res): Promise<void> => {
   const user = await requireAdminRole(req, res);
   if (!user) return;
+  const sessionId = getAuth(req).sessionId ?? null;
 
   const parsed = verifySchema.safeParse(req.body);
   if (!parsed.success) {
@@ -99,20 +183,36 @@ router.post("/verify", requireAuth, adminMfaVerifyLimiter, async (req, res): Pro
     return;
   }
 
+  if (mfa.lockedUntil && mfa.lockedUntil.getTime() > Date.now()) {
+    lockedResponse(res, mfa.lockedUntil);
+    return;
+  }
+
+  const fail = async (): Promise<void> => {
+    const lockedUntil = await recordFailure(user, !!mfa.enabledAt);
+    if (lockedUntil) {
+      lockedResponse(res, lockedUntil);
+      return;
+    }
+    res.status(400).json({ error: "That code didn't match. Check your authenticator app and try again." });
+  };
+
+  const step = matchTotpStep(mfa.totpSecret, code);
+
   if (!mfa.enabledAt) {
     // Enrollment confirmation — must be a real TOTP code (backup codes
     // don't exist yet).
-    if (!verifyTotpCode(mfa.totpSecret, code)) {
-      res.status(400).json({ error: "That code didn't match. Check your authenticator app and try again." });
+    if (step === null) {
+      await fail();
       return;
     }
     const backup = generateBackupCodes();
-    await db
-      .update(adminMfaTable)
-      .set({ enabledAt: new Date(), backupCodeHashes: JSON.stringify(backup.hashes) })
-      .where(eq(adminMfaTable.userId, user.id));
+    if (!(await claimTotpStep(user.id, step, { enabledAt: new Date(), backupCodeHashes: JSON.stringify(backup.hashes) }))) {
+      await fail();
+      return;
+    }
     logAdminAction(user.id, "admin_mfa.enroll", { type: "user", id: user.id }, {});
-    res.json({ token: issueMfaToken(user.id), backupCodes: backup.plaintext });
+    res.json({ token: issueMfaToken(user.id, Date.now(), sessionId), backupCodes: backup.plaintext });
     return;
   }
 
@@ -120,21 +220,26 @@ router.post("/verify", requireAuth, adminMfaVerifyLimiter, async (req, res): Pro
   // Logged (distinct from admin_mfa.enroll above) so "who accessed the
   // admin panel and when" is part of the reviewable footprint, not just
   // what they did once inside.
-  if (verifyTotpCode(mfa.totpSecret, code)) {
-    logAdminAction(user.id, "admin_mfa.unlock", { type: "user", id: user.id }, { method: "totp" });
-    res.json({ token: issueMfaToken(user.id) });
+  if (step !== null) {
+    if (await claimTotpStep(user.id, step)) {
+      logAdminAction(user.id, "admin_mfa.unlock", { type: "user", id: user.id }, { method: "totp" });
+      res.json({ token: issueMfaToken(user.id, Date.now(), sessionId) });
+      return;
+    }
+    // A valid but already-used code (replay) is a failure like any other.
+    logger.warn({ userId: user.id }, "Admin MFA: replayed TOTP code rejected");
+    await fail();
     return;
   }
-  const remaining = consumeBackupCode(mfa.backupCodeHashes, code);
+  const remaining = await claimBackupCode(user.id, code);
   if (remaining !== null) {
-    await db.update(adminMfaTable).set({ backupCodeHashes: JSON.stringify(remaining) }).where(eq(adminMfaTable.userId, user.id));
-    logger.info({ userId: user.id, remaining: remaining.length }, "Admin backup code consumed");
-    logAdminAction(user.id, "admin_mfa.unlock", { type: "user", id: user.id }, { method: "backup_code", backupCodesRemaining: remaining.length });
-    res.json({ token: issueMfaToken(user.id), backupCodesRemaining: remaining.length });
+    logger.info({ userId: user.id, remaining }, "Admin backup code consumed");
+    logAdminAction(user.id, "admin_mfa.unlock", { type: "user", id: user.id }, { method: "backup_code", backupCodesRemaining: remaining });
+    res.json({ token: issueMfaToken(user.id, Date.now(), sessionId), backupCodesRemaining: remaining });
     return;
   }
 
-  res.status(400).json({ error: "That code didn't match. Check your authenticator app and try again." });
+  await fail();
 });
 
 export default router;

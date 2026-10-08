@@ -330,11 +330,11 @@ describe("Admin: repair placeholder profiles", () => {
 
     clerkGetUserMock.mockImplementation(async (clerkId: string) => {
       if (clerkId === "clerk_repair_a")
-        return { twoFactorEnabled: true, emailAddresses: [{ id: "e1", emailAddress: "repaired-a@example.com" }], primaryEmailAddressId: "e1", phoneNumbers: [] } as any;
+        return { twoFactorEnabled: true, emailAddresses: [{ id: "e1", emailAddress: "repaired-a@example.com", verification: { status: "verified" } }], primaryEmailAddressId: "e1", phoneNumbers: [] } as any;
       if (clerkId === "clerk_repair_dupe")
         // Same real email as repair_a — the second row hits the unique
         // constraint and must be counted as a conflict, not clobbered.
-        return { twoFactorEnabled: true, emailAddresses: [{ id: "e1", emailAddress: "repaired-a@example.com" }], primaryEmailAddressId: "e1", phoneNumbers: [] } as any;
+        return { twoFactorEnabled: true, emailAddresses: [{ id: "e1", emailAddress: "repaired-a@example.com", verification: { status: "verified" } }], primaryEmailAddressId: "e1", phoneNumbers: [] } as any;
       // clerk_repair_b (and everyone else): no email in Clerk at all.
       return { twoFactorEnabled: true } as any;
     });

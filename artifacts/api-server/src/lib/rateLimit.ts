@@ -1,4 +1,4 @@
-import rateLimit, { MemoryStore, type Options } from "express-rate-limit";
+import rateLimit, { MemoryStore, ipKeyGenerator, type Options } from "express-rate-limit";
 import { getAuth } from "@clerk/express";
 
 // Every limiter gets an explicit in-memory store (the same MemoryStore
@@ -9,10 +9,20 @@ import { getAuth } from "@clerk/express";
 // getting silent 429s in unrelated later tests.
 const stores: MemoryStore[] = [];
 
+// IPv6 clients are grouped by /56 (a typical single-customer allocation) —
+// keying on the full address would let one household rotate through
+// billions of addresses to dodge any IP-keyed limit. v8's built-in IP
+// keyGenerator already does this; set explicitly so it's visible here.
+const IPV6_SUBNET = 56;
+
 function createLimiter(options: Partial<Options>) {
   const store = new MemoryStore();
   stores.push(store);
-  return rateLimit({ ...options, store });
+  return rateLimit({
+    ...(options.keyGenerator ? {} : { ipv6Subnet: IPV6_SUBNET }),
+    ...options,
+    store,
+  });
 }
 
 export function resetRateLimitsForTests(): void {
@@ -39,7 +49,9 @@ export const publicEndpointLimiter = createLimiter({
 // (shouldn't-happen-here, since requireAuth already ran) case auth didn't
 // resolve.
 function authKeyGenerator(req: any): string {
-  return getAuth(req).userId ?? req.ip ?? "unknown";
+  const userId = getAuth(req).userId;
+  if (userId) return `user:${userId}`;
+  return req.ip ? ipKeyGenerator(req.ip, IPV6_SUBNET) : "unknown";
 }
 
 // Whisp creation triggers a real email/SMS/WhatsApp send and, for

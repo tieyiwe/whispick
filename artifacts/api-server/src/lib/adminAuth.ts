@@ -60,7 +60,7 @@ export async function permissionsFor(user: { id: string; email: string }): Promi
 
 // Deliberately untyped, same reasoning as lib/auth.ts's requireAuth.
 export async function requireAdmin(req: any, res: any, next: any) {
-  const { userId } = getAuth(req);
+  const { userId, sessionId } = getAuth(req);
   if (!userId) {
     res.status(401).json({ error: "Unauthorized" });
     return;
@@ -89,7 +89,7 @@ export async function requireAdmin(req: any, res: any, next: any) {
     return;
   }
   const token = req.headers["x-admin-mfa"];
-  if (typeof token !== "string" || !verifyMfaToken(token, user.id)) {
+  if (typeof token !== "string" || !verifyMfaToken(token, user.id, Date.now(), sessionId ?? null)) {
     res.status(403).json({
       error: "Enter your authenticator code to unlock the admin panel.",
       code: "admin_mfa_code_required",

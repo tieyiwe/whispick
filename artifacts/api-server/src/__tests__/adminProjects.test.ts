@@ -37,7 +37,7 @@ describe("HQ projects & tasks", () => {
     const collabClerkId = `clerk_hq_collab_${randomUUID()}`;
     clerkGetUserMock.mockImplementation(async (id: string) =>
       id === collabClerkId
-        ? ({ twoFactorEnabled: true, emailAddresses: [{ id: "e1", emailAddress: collabEmail }], primaryEmailAddressId: "e1", phoneNumbers: [] } as any)
+        ? ({ twoFactorEnabled: true, emailAddresses: [{ id: "e1", emailAddress: collabEmail, verification: { status: "verified" } }], primaryEmailAddressId: "e1", phoneNumbers: [] } as any)
         : ({ twoFactorEnabled: true } as any),
     );
     const collabProfile = await request(app).get("/api/user/profile").set(asUser(collabClerkId));

@@ -152,7 +152,9 @@ router.post("/to-staff", async (req: any, res): Promise<void> => {
     senderId: adminUser.id,
     recipientUserId: parsed.data.recipientAdminId,
     recipientPhone: recipient.phone,
-    senderAlias: adminUser.fullName || adminUser.email,
+    // Fixed team alias, never the admin's name/email: senderAlias is shown
+    // on the public /tw/:token page, readable by anyone holding that link.
+    senderAlias: "Blind Whisper Team",
     messageText: parsed.data.messageText,
     source: "admin",
   });

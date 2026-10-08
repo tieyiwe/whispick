@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import { randomUUID } from "crypto";
 import request from "supertest";
 import app from "../app";
@@ -24,7 +24,7 @@ async function makeAdmin(clerkId: string, email: string): Promise<string> {
   try {
     clerkGetUserMock.mockResolvedValueOnce({
       twoFactorEnabled: true,
-      emailAddresses: [{ id: "em_1", emailAddress: email }],
+      emailAddresses: [{ id: "em_1", emailAddress: email, verification: { status: "verified" } }],
       primaryEmailAddressId: "em_1",
       phoneNumbers: [],
       firstName: "Admin",
@@ -39,8 +39,15 @@ async function makeAdmin(clerkId: string, email: string): Promise<string> {
 }
 
 describe("admin notifications: new signup", () => {
+  // The signup alert only goes to the owner (+ staff holding "users"), so
+  // these keep the admin as the ADMIN_EMAILS owner through the signup.
+  afterEach(() => {
+    delete process.env.ADMIN_EMAILS;
+  });
+
   it("notifies an admin (with the toggle on) when a new user signs up", async () => {
     const adminId = await makeAdmin(`clerk_signup_admin_${randomUUID()}`, "signup-admin@example.com");
+    process.env.ADMIN_EMAILS = "signup-admin@example.com";
 
     await request(app).get("/api/user/profile").set(asUser(`clerk_signup_newuser_${randomUUID()}`));
     await settle();
@@ -54,6 +61,7 @@ describe("admin notifications: new signup", () => {
   it("does not notify an admin who turned the toggle off", async () => {
     const adminClerkId = `clerk_signup_admin_off_${randomUUID()}`;
     const adminId = await makeAdmin(adminClerkId, "signup-admin-off@example.com");
+    process.env.ADMIN_EMAILS = "signup-admin-off@example.com";
 
     // Toggle off as the admin themselves.
     await request(app).patch("/api/user/profile").set(asUser(adminClerkId)).send({ notifyOnNewSignup: false });

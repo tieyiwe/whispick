@@ -82,6 +82,7 @@ router.post("/projects", async (req: any, res): Promise<void> => {
     description: parsed.data.description ?? null,
     createdByAdminId: adminUser.id,
   });
+  logAdminAction(adminUser.id, "hq_project.create", { type: "hq_project", id }, { name: parsed.data.name });
   const created = await db.select().from(hqProjectsTable).where(eq(hqProjectsTable.id, id)).then((r) => r[0]);
   res.status(201).json({ ...created, openTasks: 0, doneTasks: 0 });
 });
@@ -112,12 +113,14 @@ router.patch("/projects/:id", async (req, res): Promise<void> => {
       ...(parsed.data.status !== undefined ? { status: parsed.data.status } : {}),
     })
     .where(eq(hqProjectsTable.id, project.id));
-  // Only the status transition is logged — a rename/description edit is
-  // routine workspace upkeep, but archiving is the one change worth being
-  // able to answer "who closed this out, and when."
+  // A status transition keeps its own distinct action ("who closed this
+  // out, and when"); any other edit is still logged so the trail is complete.
+  const adminUser = (req as any).adminUser as User;
   if (parsed.data.status !== undefined && parsed.data.status !== project.status) {
-    const adminUser = (req as any).adminUser as User;
     logAdminAction(adminUser.id, "hq_project.status_change", { type: "hq_project", id: project.id }, { name: project.name, from: project.status, to: parsed.data.status });
+  }
+  if (parsed.data.name !== undefined || parsed.data.description !== undefined) {
+    logAdminAction(adminUser.id, "hq_project.update", { type: "hq_project", id: project.id }, { before: { name: project.name }, after: { name: parsed.data.name, descriptionChanged: parsed.data.description !== undefined } });
   }
   const updated = await db.select().from(hqProjectsTable).where(eq(hqProjectsTable.id, project.id)).then((r) => r[0]);
   res.json(updated);
@@ -213,6 +216,7 @@ router.post("/projects/:id/tasks", async (req: any, res): Promise<void> => {
     dueAt: parsed.data.dueAt ? new Date(parsed.data.dueAt) : null,
     createdByAdminId: adminUser.id,
   });
+  logAdminAction(adminUser.id, "hq_task.create", { type: "hq_task", id }, { title: parsed.data.title, projectId: project.id, assigneeAdminId: parsed.data.assigneeAdminId ?? null });
   if (parsed.data.assigneeAdminId) {
     await notifyAssignment(parsed.data.assigneeAdminId, adminUser, parsed.data.title, project.name);
   }
@@ -256,6 +260,7 @@ router.patch("/tasks/:id", async (req: any, res): Promise<void> => {
       ...(parsed.data.dueAt !== undefined ? { dueAt: parsed.data.dueAt ? new Date(parsed.data.dueAt) : null } : {}),
     })
     .where(eq(hqTasksTable.id, task.id));
+  logAdminAction(adminUser.id, "hq_task.update", { type: "hq_task", id: task.id }, { title: task.title, projectId: task.projectId, changed: Object.keys(parsed.data), status: nextStatus, assigneeAdminId: parsed.data.assigneeAdminId });
 
   // A NEW assignee gets told; re-saving the same one stays quiet.
   if (parsed.data.assigneeAdminId && parsed.data.assigneeAdminId !== task.assigneeAdminId) {

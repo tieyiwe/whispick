@@ -2,18 +2,20 @@ import express, { type Express, type ErrorRequestHandler } from "express";
 import cors from "cors";
 import compression from "compression";
 import pinoHttp from "pino-http";
+import helmet from "helmet";
 import { clerkMiddleware } from "@clerk/express";
 import {
   CLERK_PROXY_PATH,
   clerkProxyMiddleware,
 } from "./middlewares/clerkProxyMiddleware";
-import { getPublicAppUrl } from "./lib/publicUrl";
+import { getPublicAppUrl, requestOriginFromHeaders } from "./lib/publicUrl";
 import router from "./routes";
 import { handleStripeWebhook } from "./routes/billing";
 import whisperBoxLinkRouter from "./routes/whisperBoxLink";
 import { publicEndpointLimiter } from "./lib/rateLimit";
 import { logger } from "./lib/logger";
 import { recordBugReport } from "./lib/bugRabbit";
+import { scrubPathTokens } from "./lib/piiScrub";
 
 const app: Express = express();
 
@@ -21,6 +23,7 @@ const app: Express = express();
 // reflect the real client behind Replit's edge proxy rather than the proxy
 // itself.
 app.set("trust proxy", 1);
+app.disable("x-powered-by");
 
 // Gzip/brotli-negotiated compression for every response this server sends —
 // biggest win on the admin analytics/list JSON payloads (large arrays of
@@ -38,7 +41,9 @@ app.use(
         return {
           id: req.id,
           method: req.method,
-          url: req.url?.split("?")[0],
+          // Capability tokens live in paths (/w/<token>, /api/public/w/<token>/
+          // reply, ...) — never write a usable one into the logs.
+          url: req.url ? scrubPathTokens(req.url.split("?")[0]) : req.url,
         };
       },
       res(res) {
@@ -51,6 +56,22 @@ app.use(
 );
 
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
+
+// Standard security headers (HSTS, nosniff, frameguard, referrer policy,
+// COOP, ...). Mounted AFTER the Clerk proxy on purpose so Clerk's Frontend
+// API responses (OAuth redirects, JS bundles) pass through exactly as Clerk
+// sent them. Deliberate relaxations:
+// - CSP off for now: the server-rendered preview/redirect pages (/l, /wb,
+//   /dt) use inline markup + redirects — a real policy is a follow-up.
+// - COEP off and CORP cross-origin: media/thumbnails served here are loaded
+//   by email clients, link-preview crawlers and the frontend's origin.
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  }),
+);
 
 // Reflecting all origins (origin: true) with credentials: true would let any
 // website make credentialed cross-origin requests here — since Clerk auth is
@@ -84,7 +105,10 @@ const explicitAllowedOrigins = new Set(
 // the check shouldn't be the thing relying on that.
 function isSameOrigin(origin: string, req: import("express").Request): boolean {
   try {
-    return new URL(origin).origin === new URL(getPublicAppUrl(req)).origin;
+    const o = new URL(origin).origin;
+    // The request's own host (genuinely same-origin) or the configured app
+    // origin — the CORS check compares, it never builds an outbound link.
+    return o === new URL(requestOriginFromHeaders(req)).origin || o === new URL(getPublicAppUrl(req)).origin;
   } catch {
     return false;
   }
@@ -164,6 +188,25 @@ app.use("/api", (_req, res) => {
 // logger only, since an unhandled exception can carry information (query
 // values, internal state) that wasn't meant to be user-facing.
 const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
+  // body-parser attaches the raw request body to its errors (err.body) —
+  // up to the full JSON limit of possibly-PII user input. Never log it.
+  if (err && typeof err === "object" && "body" in err) delete (err as { body?: unknown }).body;
+
+  // Client errors raised by middleware (malformed JSON → 400, body too
+  // large → 413, a malformed URI, ...) are the CLIENT's fault: answer with
+  // that status, and don't file them in BugRabbit — otherwise any anonymous
+  // caller could mint error-tracker rows (and 500s) at will. Keyed on the
+  // http-errors `expose` flag (what body-parser/Express set), NOT any 4xx
+  // status: an upstream SDK error (Stripe/Anthropic carry status 400/429)
+  // is still OUR failure and must stay a reported 500.
+  const status = typeof err?.status === "number" ? err.status : typeof err?.statusCode === "number" ? err.statusCode : undefined;
+  if (err?.expose === true && status !== undefined && status >= 400 && status < 500) {
+    req.log?.warn({ err: { type: err?.type, message: err?.message, status } }, "Client error");
+    if (res.headersSent) return;
+    res.status(status).json({ error: status === 413 ? "Request body too large" : "Bad request" });
+    return;
+  }
+
   req.log?.error({ err }, "Unhandled error");
   // BugRabbit capture — fire-and-forget (recordBugReport catches its own
   // failures, see lib/bugRabbit.ts), so this never delays or risks the

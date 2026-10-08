@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -29,6 +29,17 @@ export const adminMfaTable = pgTable("admin_mfa", {
   // the ones already consumed. Plaintext codes are shown exactly once, at
   // enrollment — only hashes are stored, same reasoning as any password.
   backupCodeHashes: text("backup_code_hashes").notNull().default("[]"),
+  // Brute-force lockout, persisted here (not in a per-instance memory
+  // limiter) so it holds across autoscaled instances and scale-to-zero
+  // restarts. Consecutive failed verifies since the last success/lockout.
+  failedAttempts: integer("failed_attempts").notNull().default(0),
+  // Verify is refused until this moment (null = not locked).
+  lockedUntil: timestamp("locked_until", { withTimezone: true }),
+  // Lockouts since the last success — each one doubles the next duration.
+  lockoutCount: integer("lockout_count").notNull().default(0),
+  // Last TOTP time-step accepted; a code from this step or earlier is a
+  // replay and is refused.
+  lastUsedStep: integer("last_used_step"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

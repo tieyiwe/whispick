@@ -21,6 +21,48 @@ export const MAX_STORED_OCCURRENCES = 20;
 
 export type BugSource = "frontend" | "backend";
 
+// Global cap on NEW issues per hour (per instance — enough to bound a
+// flood, no shared store needed). The public intake is unauthenticated and
+// every unique message would otherwise be a new bug_issues row; the per-IP
+// limiter alone doesn't stop a botnet or a rotating-IP client. Repeat
+// occurrences of an existing issue still count normally; past the cap new
+// fingerprints are dropped (logged once per window). Backend gets more
+// headroom: its errors aren't client-authored, and a real outage can
+// legitimately surface many distinct ones.
+const NEW_ISSUE_WINDOW_MS = 60 * 60 * 1000;
+const NEW_ISSUE_CAP: Record<BugSource, number> = { frontend: 50, backend: 200 };
+const newIssueWindows: Record<BugSource, { start: number; count: number; warned: boolean }> = {
+  frontend: { start: 0, count: 0, warned: false },
+  backend: { start: 0, count: 0, warned: false },
+};
+
+function allowNewIssue(source: BugSource): boolean {
+  const w = newIssueWindows[source];
+  const now = Date.now();
+  if (now - w.start >= NEW_ISSUE_WINDOW_MS) {
+    w.start = now;
+    w.count = 0;
+    w.warned = false;
+  }
+  if (w.count >= NEW_ISSUE_CAP[source]) {
+    if (!w.warned) {
+      w.warned = true;
+      logger.warn({ source, cap: NEW_ISSUE_CAP[source] }, "BugRabbit new-issue cap reached — dropping new fingerprints until the window resets");
+    }
+    return false;
+  }
+  w.count++;
+  return true;
+}
+
+export function resetBugIssueCapForTests(): void {
+  for (const w of Object.values(newIssueWindows)) {
+    w.start = 0;
+    w.count = 0;
+    w.warned = false;
+  }
+}
+
 // Groups occurrences of the SAME underlying bug together regardless of the
 // exact ids/timestamps embedded in a given instance's message, and
 // regardless of the exact line:column a minified bundle attaches (those
@@ -86,6 +128,7 @@ export async function recordBugReport(input: RecordBugReportInput): Promise<void
     let issue = await incrementExisting();
 
     if (!issue) {
+      if (!allowNewIssue(input.source)) return;
       try {
         issue = await db
           .insert(bugIssuesTable)

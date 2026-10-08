@@ -22,7 +22,7 @@ async function asOwner() {
 async function signInWithEmail(clerkId: string, email: string) {
   clerkGetUserMock.mockImplementation(async (id: string) =>
     id === clerkId
-      ? ({ twoFactorEnabled: true, emailAddresses: [{ id: "e1", emailAddress: email }], primaryEmailAddressId: "e1", phoneNumbers: [] } as any)
+      ? ({ twoFactorEnabled: true, emailAddresses: [{ id: "e1", emailAddress: email, verification: { status: "verified" } }], primaryEmailAddressId: "e1", phoneNumbers: [] } as any)
       : ({ twoFactorEnabled: true } as any),
   );
   const res = await request(app).get("/api/user/profile").set(asUser(clerkId));

@@ -3,6 +3,8 @@ import { logger } from "./logger";
 import { HOOK_LINE, INVITE_HOOK_LINE, debateTopicWhispHookLine } from "./copy";
 import { logDeliveryAttempt, type DeliveryLogContext } from "./deliveryLog";
 import { escapeHtml } from "./escapeHtml";
+import { maskEmail } from "./piiScrub";
+import { configuredPublicAppUrl } from "./publicUrl";
 import { UPLOAD_RETENTION_DAYS } from "./uploads";
 
 // Primary transport: SMTP through the Titan mailbox (sender@blindwhisper.com).
@@ -151,11 +153,22 @@ function emailText(text: string): string {
  * than the anchor, because Outlook drops padding and background from an <a>
  * and would otherwise render this as a bare text link.
  */
+/**
+ * Every URL that lands in an email attribute goes through here: an app path
+ * ("/whisps/abc") becomes absolute against the public app URL (a relative
+ * href is a dead link in a mail client), and the result is HTML-escaped so
+ * a stray quote can never break out of href="..." into markup.
+ */
+function emailHref(url: string): string {
+  const absolute = url.startsWith("/") && !url.startsWith("//") ? `${configuredPublicAppUrl()}${url}` : url;
+  return escapeHtml(absolute);
+}
+
 function emailButton(url: string, label: string): string {
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:28px auto 0;">
     <tr>
       <td align="center" bgcolor="${BUTTON_BG}" style="border-radius:999px;">
-        <a href="${url}" style="display:inline-block;padding:16px 46px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;font-weight:700;line-height:1;color:#EDEDF7;text-decoration:none;border-radius:999px;">${label}</a>
+        <a href="${emailHref(url)}" style="display:inline-block;padding:16px 46px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;font-weight:700;line-height:1;color:#EDEDF7;text-decoration:none;border-radius:999px;">${label}</a>
       </td>
     </tr>
   </table>`;
@@ -164,9 +177,10 @@ function emailButton(url: string, label: string): string {
 /** The raw URL under the button — for clients that mangle buttons, and for
  *  anyone who'd rather see where a link goes before following it. */
 function emailFallbackLink(url: string): string {
+  const href = emailHref(url);
   return `<p style="margin:16px 0 0;text-align:center;font-size:12px;line-height:1.6;color:${TEXT_FAINT};">
     Or open this link:<br />
-    <a href="${url}" style="color:${ACCENT};text-decoration:none;word-break:break-all;">${url}</a>
+    <a href="${href}" style="color:${ACCENT};text-decoration:none;word-break:break-all;">${href}</a>
   </p>`;
 }
 
@@ -270,7 +284,7 @@ export async function sendEmail(to: string, subject: string, html: string, logCt
       await logDeliveryAttempt("email", to, logCtx, { success: true, providerMessageId: info.messageId ?? null });
       return true;
     } catch (err) {
-      logger.error({ to, err }, "Error sending email via SMTP");
+      logger.error({ to: maskEmail(to), err }, "Error sending email via SMTP");
       await logDeliveryAttempt("email", to, logCtx, {
         success: false,
         errorMessage: err instanceof Error ? err.message : String(err),
@@ -280,7 +294,7 @@ export async function sendEmail(to: string, subject: string, html: string, logCt
   }
 
   if (!RESEND_API_KEY) {
-    logger.warn({ to }, "No email transport configured (SMTP_USER/SMTP_PASS or RESEND_API_KEY); skipping email send");
+    logger.warn({ to: maskEmail(to) }, "No email transport configured (SMTP_USER/SMTP_PASS or RESEND_API_KEY); skipping email send");
     await logDeliveryAttempt("email", to, logCtx, { success: false, errorMessage: "No email transport configured" });
     return false;
   }
@@ -297,7 +311,7 @@ export async function sendEmail(to: string, subject: string, html: string, logCt
 
     if (!res.ok) {
       const body = await res.text();
-      logger.error({ to, status: res.status, body }, "Failed to send email");
+      logger.error({ to: maskEmail(to), status: res.status, body }, "Failed to send email");
       await logDeliveryAttempt("email", to, logCtx, {
         success: false,
         providerStatus: String(res.status),
@@ -310,7 +324,7 @@ export async function sendEmail(to: string, subject: string, html: string, logCt
     await logDeliveryAttempt("email", to, logCtx, { success: true, providerMessageId: sent?.id ?? null });
     return true;
   } catch (err) {
-    logger.error({ to, err }, "Error sending email");
+    logger.error({ to: maskEmail(to), err }, "Error sending email");
     await logDeliveryAttempt("email", to, logCtx, {
       success: false,
       errorMessage: err instanceof Error ? err.message : String(err),
@@ -442,6 +456,6 @@ export function adminAnnouncementEmailHtml(title: string, body: string, url: str
 export function subscriptionMatchedEmailFooter(unsubscribeUrl: string): string {
   return `<p style="margin:20px 0 0;text-align:center;font-size:12px;line-height:1.6;color:#5F5F73;">
     You're getting this because you subscribed to anonymous whisps on a topic you chose.<br />
-    <a href="${unsubscribeUrl}" style="color:#5F5F73;text-decoration:underline;">Unsubscribe</a>
+    <a href="${emailHref(unsubscribeUrl)}" style="color:#5F5F73;text-decoration:underline;">Unsubscribe</a>
   </p>`;
 }

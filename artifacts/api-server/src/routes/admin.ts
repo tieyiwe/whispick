@@ -28,6 +28,8 @@ import {
   policyAcceptancesTable,
   featureEventsTable,
   whisperBoxMessagesTable,
+  adminGrantsTable,
+  adminMfaTable,
   type User,
 } from "@workspace/db";
 import { and, asc, count, desc, eq, gte, ilike, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
@@ -42,7 +44,7 @@ import { notifyUser, notifyAllUsers, notifyUserPersisted } from "../lib/push";
 import { fetchClerkProfile, isPlaceholderEmail } from "../lib/ensureUser";
 import { aggregateFeatureUsage, generateUsageInsights } from "../lib/usageInsights";
 import { sendEmail, adminAnnouncementEmailHtml } from "../lib/email";
-import { httpUrlString, isHttpUrlOrAppPath } from "../lib/safeUrl";
+import { httpUrlString, isHttpUrlOrAppPath, normalizeHttpUrlOrAppPath } from "../lib/safeUrl";
 import { complianceFlagsFor, matchesComplianceFilter, type ComplianceFilter } from "../lib/compliance";
 import { isOnline, ONLINE_WINDOW_MS } from "../lib/presence";
 
@@ -447,6 +449,11 @@ router.patch("/users/:id", async (req, res): Promise<void> => {
   }
 
   await db.update(usersTable).set(parsed.data).where(eq(usersTable.id, target.id));
+  // A demotion must also revoke the staff grant — otherwise ensureUser's
+  // maybeApplyAdminGrant re-promotes them on their very next request.
+  if (target.role === "admin" && parsed.data.role === "user") {
+    await revokeStaffGrants(target);
+  }
   const updated = await db.select().from(usersTable).where(eq(usersTable.id, target.id)).then((r) => r[0]);
 
   if (parsed.data.banned !== undefined || parsed.data.role !== undefined || parsed.data.plan !== undefined || parsed.data.boostCredits !== undefined) {
@@ -455,6 +462,14 @@ router.patch("/users/:id", async (req, res): Promise<void> => {
 
   res.json(updated);
 });
+
+// Removes every staff grant tied to this account, by linked id or by its
+// email (an unlinked invite for the same address would re-attach too).
+async function revokeStaffGrants(target: { id: string; email: string }): Promise<void> {
+  await db
+    .delete(adminGrantsTable)
+    .where(or(eq(adminGrantsTable.userId, target.id), eq(adminGrantsTable.email, target.email.toLowerCase())));
+}
 
 // DELETE /api/admin/users/:id — cascades the user's whisps and everything
 // hanging off them. Circles they own are removed too; whisps other members
@@ -499,6 +514,10 @@ router.delete("/users/:id", async (req, res): Promise<void> => {
   await db.delete(pushSubscriptionsTable).where(eq(pushSubscriptionsTable.userId, target.id));
   await db.delete(circleMembersTable).where(eq(circleMembersTable.userId, target.id));
   await db.delete(circlesTable).where(eq(circlesTable.ownerId, target.id));
+  // Same as demotion: a surviving grant (keyed by email) would re-promote
+  // them the moment they sign up again. The MFA enrollment is orphaned too.
+  await revokeStaffGrants(target);
+  await db.delete(adminMfaTable).where(eq(adminMfaTable.userId, target.id));
   await db.delete(usersTable).where(eq(usersTable.id, target.id));
 
   logAdminAction(adminUser.id, "user.delete", { type: "user", id: target.id }, { email: target.email });
@@ -951,7 +970,16 @@ const sendNotificationSchema = z
     body: z.string().trim().min(1).max(2000),
     // In-app path ("/whisps/abc") or absolute http(s) only — this renders as
     // a clickable href in every recipient's NotificationBell.
-    url: z.string().min(1).max(2048).refine(isHttpUrlOrAppPath, { message: "Must be an app path or http(s) URL" }).nullable().optional(),
+    // Stored as the NORMALIZED href (see lib/safeUrl.ts) — never the raw
+    // string, which could carry quote/markup characters into an email href.
+    url: z
+      .string()
+      .min(1)
+      .max(2048)
+      .refine(isHttpUrlOrAppPath, { message: "Must be an app path or http(s) URL" })
+      .transform((v) => normalizeHttpUrlOrAppPath(v)!)
+      .nullable()
+      .optional(),
     audience: z.enum(["all", "users"]),
     userIds: z.array(z.string()).optional(),
     // Also deliver as a branded email to each recipient's inbox — the
@@ -1246,6 +1274,7 @@ router.patch("/policy-versions/:id", async (req, res): Promise<void> => {
     return;
   }
   await db.update(policyVersionsTable).set({ summary: parsed.data.summary }).where(eq(policyVersionsTable.id, version.id));
+  logAdminAction((req as any).adminUser.id, "policy.edit_draft", { type: "policy_version", id: version.id }, { docType: version.docType });
   const updated = await db.select().from(policyVersionsTable).where(eq(policyVersionsTable.id, version.id)).then((r) => r[0]);
   res.json({ ...updated, acceptedCount: 0 });
 });
@@ -1765,6 +1794,7 @@ router.post("/suggestions", async (req, res): Promise<void> => {
   });
 
   void generateSuggestionSummaryAsync(id);
+  logAdminAction(adminUser.id, "suggestion.create", { type: "suggested_video", id }, { videoUrl: parsed.data.videoUrl, featured: parsed.data.featured ?? false });
 
   const created = await db.select().from(suggestedVideosTable).where(eq(suggestedVideosTable.id, id)).then((r) => r[0]);
   res.status(201).json(created);
@@ -1825,7 +1855,8 @@ router.get("/suggestions/agent-status", async (_req, res): Promise<void> => {
 // immediately instead of waiting for the next scheduled run (once a day),
 // so an admin can verify the agent is working (or see exactly why it
 // isn't) right after setting it up.
-router.post("/suggestions/run-agent", async (_req, res): Promise<void> => {
+router.post("/suggestions/run-agent", async (req, res): Promise<void> => {
+  logAdminAction((req as any).adminUser.id, "suggestion_agent.run");
   const result = await runSuggestionDiscoveryAgent();
   const status = await db
     .select()
@@ -1875,6 +1906,7 @@ router.patch("/suggestions/:id", async (req, res): Promise<void> => {
   }
 
   await db.update(suggestedVideosTable).set(updates).where(eq(suggestedVideosTable.id, existing.id));
+  logAdminAction((req as any).adminUser.id, "suggestion.update", { type: "suggested_video", id: existing.id }, { before: { status: existing.status, featured: existing.featured }, after: parsed.data });
   const updated = await db.select().from(suggestedVideosTable).where(eq(suggestedVideosTable.id, existing.id)).then((r) => r[0]);
   res.json(updated);
 });
@@ -1888,6 +1920,7 @@ router.delete("/suggestions/:id", async (req, res): Promise<void> => {
   }
 
   await db.delete(suggestedVideosTable).where(eq(suggestedVideosTable.id, existing.id));
+  logAdminAction((req as any).adminUser.id, "suggestion.delete", { type: "suggested_video", id: existing.id }, { videoUrl: existing.videoUrl, videoTitle: existing.videoTitle });
   res.status(204).send();
 });
 
