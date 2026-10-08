@@ -5,16 +5,17 @@ import { eq, and, desc, lt, gt, count, inArray, isNull } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
 import { randomUUID } from "crypto";
 import { z } from "zod";
+import { ipKeyGenerator } from "express-rate-limit";
 import { requireAuth } from "../lib/auth";
-import { ensureUser } from "../lib/ensureUser";
-import { canPostAnonymousComment, COMMENT_LIMIT_WINDOW_HOURS } from "../lib/plans";
+import { ensureUser, requestIp } from "../lib/ensureUser";
+import { canPostAnonymousComment, anonymousCommentLimit, COMMENT_LIMIT_WINDOW_HOURS } from "../lib/plans";
 import { createDebateTopicLimiter } from "../lib/rateLimit";
 import { moderateDebateTopicAsync, moderateDebateTopicCommentAsync, moderateCommentImageAsync } from "../lib/moderation";
 import { assignOrGetHandle, getHandlesFor, renameHandle, updateHandleAvatar } from "../lib/anonymousHandles";
 import { assignOrGetWhispererIdentity, getOrBackfillWhispererIdentities } from "../lib/whispererHandle";
-import { toggleReaction, reactionCountsFor, viewerReactionsFor } from "../lib/commentReactions";
+import { toggleReactionWithNotifyHint, reactionCountsFor, viewerReactionsFor } from "../lib/commentReactions";
 import { commentImageUpload, storeCommentImage } from "../lib/commentImages";
-import { notifyUserPersisted } from "../lib/push";
+import { scheduleDeferredNotification } from "../lib/replyNotificationScheduler";
 import { notifyAdminsOfNewDebateTopic } from "../lib/adminNotify";
 import { downloadObject } from "../lib/objectStorage";
 
@@ -49,6 +50,47 @@ export function notRetracted() {
 // author-retraction path of its own) never appears in a public thread read.
 export function commentNotRemoved() {
   return isNull(debateTopicCommentsTable.removedByAdminAt);
+}
+
+// The anonymous comment cap counted only the body-supplied visitorId —
+// rotate it and comment without limit, each comment pushing the topic's
+// author. Also capped per client subnet, with headroom (a subnet can be a
+// household or a carrier NAT), mirroring routes/public.ts's Circle cap.
+// IPv6 is collapsed to its /56 so a single customer can't rotate addresses.
+const SUBNET_COMMENT_LIMIT_MULTIPLIER = 3;
+const SUBNET_WINDOW_MS = COMMENT_LIMIT_WINDOW_HOURS * 60 * 60 * 1000;
+const SUBNET_MAX_KEYS = 10_000;
+const anonymousCommentsBySubnet = new Map<string, number[]>();
+
+function clientSubnetKey(req: any): string {
+  const ip = requestIp(req);
+  return ip ? ipKeyGenerator(ip, 56) : "unknown";
+}
+
+function subnetCommentCount(key: string): number {
+  const cutoff = Date.now() - SUBNET_WINDOW_MS;
+  const times = (anonymousCommentsBySubnet.get(key) ?? []).filter((t) => t > cutoff);
+  if (times.length) anonymousCommentsBySubnet.set(key, times);
+  else anonymousCommentsBySubnet.delete(key);
+  return times.length;
+}
+
+// Per-instance and bounded in keys (oldest-touched evicted first) so an
+// attacker rotating addresses can't grow it without limit.
+function recordSubnetComment(key: string): void {
+  const times = anonymousCommentsBySubnet.get(key) ?? [];
+  times.push(Date.now());
+  anonymousCommentsBySubnet.delete(key);
+  anonymousCommentsBySubnet.set(key, times);
+  while (anonymousCommentsBySubnet.size > SUBNET_MAX_KEYS) {
+    const oldest = anonymousCommentsBySubnet.keys().next().value;
+    if (oldest === undefined) break;
+    anonymousCommentsBySubnet.delete(oldest);
+  }
+}
+
+export function resetDebateTopicCountersForTests(): void {
+  anonymousCommentsBySubnet.clear();
 }
 
 // POST /api/debate-topics — a signed-in Whisperer posts a new debate topic.
@@ -429,13 +471,18 @@ router.post("/public/debate-topics/:id/comments", commentImageUpload, async (req
   // The topic's own author commenting on their own topic is exempt, same
   // spirit as the anonymous reply cap's signed-in exemption elsewhere in
   // this app — they're not the audience this limit is aimed at.
+  const subnetKey = clientSubnetKey(req);
   if (!isPoster) {
     const windowStart = new Date(Date.now() - COMMENT_LIMIT_WINDOW_HOURS * 60 * 60 * 1000);
     const [recentRow] = await db
       .select({ count: count() })
       .from(debateTopicCommentsTable)
       .where(and(eq(debateTopicCommentsTable.visitorId, parsed.data.visitorId), gt(debateTopicCommentsTable.createdAt, windowStart)));
-    if (!canPostAnonymousComment(!!clerkId, recentRow?.count ?? 0)) {
+    // visitorId is whatever the client sends, so it's also capped per
+    // client subnet (see anonymousCommentsBySubnet).
+    const limit = anonymousCommentLimit();
+    const subnetOk = !!clerkId || limit === null || subnetCommentCount(subnetKey) < limit * SUBNET_COMMENT_LIMIT_MULTIPLIER;
+    if (!canPostAnonymousComment(!!clerkId, recentRow?.count ?? 0) || !subnetOk) {
       res.status(403).json({
         error: "You've used your free comments for now — sign up to comment anytime, or check back in 24 hours.",
         code: "comment_limit_reached",
@@ -476,6 +523,8 @@ router.post("/public/debate-topics/:id/comments", commentImageUpload, async (req
     imageModerationStatus: imageObjectKey ? null : "ok",
   });
 
+  if (!clerkId) recordSubnetComment(subnetKey);
+
   // A signed-in commenter gets their persistent, followable Whisperer
   // handle instead of a fresh per-thread one — see users.whispererHandle's
   // comment for why. A purely anonymous (never-signed-in) commenter keeps
@@ -496,12 +545,14 @@ router.post("/public/debate-topics/:id/comments", commentImageUpload, async (req
   // separately, the topic's own author that their topic got a new comment —
   // both only reach a REAL account (authorUserId), since a genuinely
   // anonymous never-signed-in commenter has nowhere to be notified. Never
-  // self-notify.
+  // self-notify. Deferred (see scheduleDeferredNotification): an instant
+  // buzz as the commenter hits send would identify the topic's author (or
+  // the replied-to commenter) to anyone sitting next to them.
   if (parentAuthorUserId && parentAuthorUserId !== authorUserId) {
-    void notifyUserPersisted(parentAuthorUserId, "New reply to your comment 💬", "Someone replied to your comment on Debate Now.", topicUrl(topic.id), "debate_comment_reply");
+    await scheduleDeferredNotification(parentAuthorUserId, "New reply to your comment 💬", "Someone replied to your comment on Debate Now.", topicUrl(topic.id), "debate_comment_reply");
   }
   if (topic.authorId !== authorUserId && !isPoster) {
-    void notifyUserPersisted(topic.authorId, "New comment on your Debate Now post 🗣️", "Someone joined the debate on a topic you posted.", topicUrl(topic.id), "debate_topic_comment");
+    await scheduleDeferredNotification(topic.authorId, "New comment on your Debate Now post 🗣️", "Someone joined the debate on a topic you posted.", topicUrl(topic.id), "debate_topic_comment");
   }
 
   const comment = await db
@@ -570,9 +621,23 @@ router.patch("/public/debate-topics/:id/handle", async (req, res): Promise<void>
     return;
   }
 
-  const result = await renameHandle("debate_topic", req.params.id, parsed.data.visitorId, parsed.data.handle);
+  // On top of renameHandle's shared reserved list (isReservedHandle): this
+  // thread badges its author "Topic Author", so a commenter named
+  // "TopicAuthor" would read as the author speaking — the debate-specific
+  // twin of "OriginalPoster" in a Circle thread.
+  const result = parsed.data.handle.trim().toLowerCase().includes("topicauthor")
+    ? ({ ok: false, error: "reserved" } as const)
+    : await renameHandle("debate_topic", req.params.id, parsed.data.visitorId, parsed.data.handle);
+  // `code` lets the client show its own (translated) message per reason —
+  // a reserved name otherwise read as the misleading letters-and-numbers one.
   if (!result.ok) {
-    res.status(400).json({ error: result.error === "taken" ? "That name is already taken in this thread." : "Use letters and numbers only (3-24 characters)." });
+    const message =
+      result.error === "taken"
+        ? "That name is already taken in this thread."
+        : result.error === "reserved"
+          ? "That name is reserved. Pick something else."
+          : "Use letters and numbers only (3-24 characters).";
+    res.status(400).json({ error: message, code: result.error });
     return;
   }
 
@@ -617,14 +682,17 @@ router.post("/public/debate-topics/:id/comments/:commentId/reactions", async (re
     return;
   }
 
-  const result = await toggleReaction("debate_topic_comment", comment.id, parsed.data.visitorId, parsed.data.reaction);
+  const { result, firstLike } = await toggleReactionWithNotifyHint("debate_topic_comment", comment.id, parsed.data.visitorId, parsed.data.reaction);
 
-  if (result.viewerReaction === "like" && comment.authorUserId) {
+  // Only on this visitor's FIRST like of this comment — toggling
+  // like/dislike/like used to push the author on every flip — and deferred
+  // like every other engagement notification here.
+  if (firstLike && comment.authorUserId) {
     // Never self-notify — same rule as the comment-reply notifications above.
     const { userId: reactorClerkId } = getAuth(req);
     const reactor = reactorClerkId ? await ensureUser(reactorClerkId, req) : null;
     if (reactor?.id !== comment.authorUserId) {
-      void notifyUserPersisted(comment.authorUserId, "Someone liked your comment 👍", "Your comment on Debate Now got a reaction.", topicUrl(req.params.id), "debate_comment_reaction");
+      await scheduleDeferredNotification(comment.authorUserId, "Someone liked your comment 👍", "Your comment on Debate Now got a reaction.", topicUrl(req.params.id), "debate_comment_reaction");
     }
   }
 

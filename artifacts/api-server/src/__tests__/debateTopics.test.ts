@@ -1,8 +1,17 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import request from "supertest";
 import app from "../app";
 import { TEST_USER_HEADER } from "./setup";
 import { AVATAR_IDS } from "../lib/avatars";
+import { resetDebateTopicCountersForTests } from "../routes/debateTopics";
+
+// The per-subnet anonymous comment counter lives in memory (every request
+// here comes from the same loopback address), so setup.ts's DB truncate
+// doesn't reset it — without this, this file's anonymous comments add up
+// across tests toward the subnet cap.
+beforeEach(() => {
+  resetDebateTopicCountersForTests();
+});
 
 function asUser(userId: string) {
   return { [TEST_USER_HEADER]: userId };

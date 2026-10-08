@@ -145,7 +145,13 @@ function HandleRenameControl({
           setOpen(false);
         },
         onError: (err: any) => {
-          toast({ title: err?.data?.error ?? t("debateTopicDetail.toast.handleUpdateErrorDefault"), variant: "destructive" });
+          // A reserved name (e.g. one that reads as the topic's author or
+          // staff) gets its own message rather than the server's generic one.
+          const title =
+            err?.data?.code === "reserved"
+              ? t("debateTopicDetail.toast.handleReserved")
+              : (err?.data?.error ?? t("debateTopicDetail.toast.handleUpdateErrorDefault"));
+          toast({ title, variant: "destructive" });
         },
       },
     );

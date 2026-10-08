@@ -84,6 +84,7 @@
     "toast": {
       "handleUpdated": "Your name in this thread was updated",
       "handleUpdateErrorDefault": "Couldn't update your name",
+      "handleReserved": "That name is reserved — pick a different one.",
       "avatarUpdated": "Your avatar in this thread was updated",
       "avatarUpdateError": "Couldn't update your avatar",
       "invalidImageType": "Please attach a JPEG, PNG, WebP, or GIF image",
