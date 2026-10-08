@@ -428,7 +428,24 @@ export function WhispsList() {
                                 <MoreVertical className="w-4 h-4" />
                               </button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="rounded-xl" onCloseAutoFocus={(e) => e.preventDefault()}>
+                            {/* The menu renders in a portal, but React still
+                                bubbles its clicks up the COMPONENT tree — into
+                                the card's <Link>, which navigated to the whisp
+                                on every item: Archive yanked you onto the
+                                archived whisp's page, and Delete unmounted
+                                this list (and its confirm dialog) before the
+                                dialog could open. Cancelling the click here,
+                                after the item's own handler has run, keeps
+                                every item inside the list. */}
+                            <DropdownMenuContent
+                              align="end"
+                              className="rounded-xl"
+                              onCloseAutoFocus={(e) => e.preventDefault()}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                              }}
+                            >
                               <DropdownMenuItem
                                 onClick={(e) => handleTogglePin(e as unknown as React.MouseEvent, whisp.id, whisp.pinned)}
                                 data-testid={`menu-pin-${whisp.id}`}
