@@ -288,19 +288,39 @@ export async function ensureUser(clerkId: string, req: any): Promise<User> {
   const phone = clerkProfile.phone ?? (sessionClaims.phone as string) ?? null;
   const role = isBootstrapAdminEmail(email) ? "admin" : "user";
 
-  await db.insert(usersTable).values({
-    id,
-    clerkId,
-    email,
-    fullName,
-    phone,
-    plan: "free",
-    boostCredits: 0,
-    whisperLinksUsed: 0,
-    role,
-    lastSeenAt: new Date(),
-    twoFactorEnabled: clerkProfile.twoFactorEnabled,
-  });
+  // A brand-new account's first page load fires several authenticated
+  // requests at once (profile, policy status, unread counts…), and every one
+  // of them lands here before any has inserted the row. A plain INSERT made
+  // all but the winner fail the clerk_id/email unique constraint and 500 —
+  // new users' very first dashboard came up with errors. DO NOTHING (no
+  // target, so every unique index arbitrates) lets the losers fall through
+  // to the row the winner just wrote.
+  const inserted = await db
+    .insert(usersTable)
+    .values({
+      id,
+      clerkId,
+      email,
+      fullName,
+      phone,
+      plan: "free",
+      boostCredits: 0,
+      whisperLinksUsed: 0,
+      role,
+      lastSeenAt: new Date(),
+      twoFactorEnabled: clerkProfile.twoFactorEnabled,
+    })
+    .onConflictDoNothing()
+    .returning({ id: usersTable.id });
+  if (inserted.length === 0) {
+    const raced = await db.select().from(usersTable).where(eq(usersTable.clerkId, clerkId)).then(r => r[0]);
+    // No row for this clerkId means the conflict was the email belonging to
+    // a DIFFERENT account — still an error, exactly as before.
+    if (!raced) throw new Error(`Could not create user ${clerkId}: email already belongs to another account`);
+    // The concurrent request that won created the account (and sent the
+    // signup alert) — don't repeat either.
+    return raced;
+  }
 
   const ip = requestIp(req);
   if (ip) {

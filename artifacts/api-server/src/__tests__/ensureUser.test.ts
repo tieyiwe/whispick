@@ -93,3 +93,26 @@ describe("ensureUser placeholder-email self-heal", () => {
     expect(second.body.email).toBe("original@example.com");
   });
 });
+
+// A new account's first page load fires several authenticated requests at
+// once; all of them reach ensureUser's create path before any row exists.
+// Only one may insert — the rest must resolve to that same row, not 500 on
+// the clerk_id/email unique constraint (found by the e2e onboarding flow).
+describe("ensureUser concurrent first requests", () => {
+  it("parallel first requests for a brand-new user all succeed with one account", async () => {
+    const clerkId = `clerk_race_${randomUUID()}`;
+    clerkGetUserMock.mockResolvedValue({
+      twoFactorEnabled: true,
+      emailAddresses: [{ id: "em_1", emailAddress: `${clerkId}@example.com`, verification: { status: "verified" } }],
+      primaryEmailAddressId: "em_1",
+      phoneNumbers: [],
+      firstName: "Racy",
+      lastName: null,
+    } as any);
+    const responses = await Promise.all(
+      Array.from({ length: 6 }, () => request(app).get("/api/user/profile").set(asUser(clerkId))),
+    );
+    expect(responses.map((r) => r.status)).toEqual(Array(6).fill(200));
+    expect(new Set(responses.map((r) => r.body.id)).size).toBe(1);
+  });
+});
