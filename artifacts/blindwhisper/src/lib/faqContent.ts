@@ -7,8 +7,9 @@
 // Content is verbatim per the approved copy — do not rewrite or paraphrase.
 // Exception (2026-10-08, pre-launch): answers were edited ONLY where they had
 // become inaccurate — SMS/WhatsApp delivery is switched off at launch (see
-// lib/usePublicConfig.ts) and Text Whisps are paused with it, and pricing
-// lives under Credits & Plan, not the Subscribe page. Whisper Box and Debate
+// lib/usePublicConfig.ts) and Text Whisps are paused with it, and the app
+// launches free (payments stay off until BILLING_ENABLED — see the API's
+// lib/plans.ts). Whisper Box and Debate
 // Now entries were added. Restore the SMS wording if those channels return.
 export interface FaqItem {
   question: string;
@@ -49,7 +50,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   {
     question: "Is Blind Whisper free?",
     answer:
-      "Blind Whisper has a free tier, plus paid plans with more features for people who send often. Plans and pricing are in the app under Credits & Plan.",
+      "Yes. Blind Whisper is free to use — sending whisps, getting a Whisper Box, replying and joining debates. Optional paid plans with extra features for people who send often may be added later.",
   },
   {
     question: "Can the recipient reply without knowing who I am?",

@@ -409,7 +409,7 @@ export const MARKETING_PAGES: MarketingPageDef[] = [
     navLabel: "FAQ",
     title: "Blind Whisper FAQ — Anonymous Messages, Answered",
     description:
-      "Answers to common questions about Blind Whisper: how anonymity works, whether recipients need an account, replies, revealing yourself, Whisper Box, Debate Now and pricing.",
+      "Answers to common questions about Blind Whisper: how anonymity works, whether recipients need an account, replies, revealing yourself, Whisper Box, Debate Now and whether it's free.",
     eyebrow: "FAQ",
     h1: "Frequently asked questions",
     intro:
