@@ -364,6 +364,22 @@ export function replyNotificationEmailHtml(videoTitle: string | null): string {
   );
 }
 
+// Every "someone replied" email (lib/replyEmail.ts). heading/text are app
+// copy, never user-supplied — the reply itself is never put in an email,
+// since an inbox preview is exactly where an anonymous message shouldn't
+// sit outside the app. The settings line is the one-click way to opt out.
+export function replyEmailHtml(heading: string, text: string, url: string, settingsUrl: string): string {
+  return emailShell(
+    `${emailHeading(heading)}
+     ${emailText(text)}
+     ${emailButton(url, "Read it on Blind Whisper")}
+     ${emailFallbackLink(url)}
+     ${emailNote(
+       `You get these because reply emails are on. <a href="${emailHref(settingsUrl)}" style="color:${ACCENT};">Turn them off in Settings</a> — you'll still see replies in the app.`,
+     )}`,
+  );
+}
+
 export function appreciationNotificationEmailHtml(videoTitle: string | null): string {
   const subject = videoTitle ? `"${escapeHtml(videoTitle)}"` : "your whisp";
   return emailShell(

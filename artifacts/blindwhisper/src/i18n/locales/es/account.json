@@ -52,7 +52,7 @@
     "enable": "Activar",
     "disable": "Desactivar",
     "emailNotifications": "Notificaciones por correo",
-    "emailNotificationsDescription": "Recibe un correo cuando alguien te whisps. De todos modos siempre lo verás en la app — esto solo controla el correo adicional.",
+    "emailNotificationsDescription": "Recibe un correo cuando alguien te envíe un whisp o te responda. De todos modos siempre lo verás en la app — esto solo controla el correo adicional.",
     "showOnlineStatus": "Mostrar cuándo estás en línea",
     "showOnlineStatusDescription": "Permite que las cuentas que te siguen en Debate Now vean cuándo estás en línea. Si lo desactivas, tampoco podrás ver el estado en línea de los demás.",
     "appBadge": "Mostrar insignia con el total de no leídos",

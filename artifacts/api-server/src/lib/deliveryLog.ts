@@ -34,7 +34,10 @@ export type DeliveryPurpose =
   // content type with its own id space (debate_topic_whisps.id, not
   // whisps.id), same reasoning as "text_whisp" above, so these also always
   // carry whispId: null.
-  | "debate_topic_whisp";
+  | "debate_topic_whisp"
+  // "Someone replied to your comment / answered your debate" emails
+  // (lib/replyEmail.ts) — whispId: null, the thread lives elsewhere.
+  | "comment_reply_notification";
 
 export type DeliveryLogContext = {
   // Nullable at the type level for sends that aren't about any one whisp

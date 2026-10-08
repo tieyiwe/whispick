@@ -8,6 +8,7 @@ import { requireAuth } from "../lib/auth";
 import { ensureUser } from "../lib/ensureUser";
 import { findVerifiedRecipient, deliverInApp } from "../lib/deliver";
 import { notifyUserPersisted } from "../lib/push";
+import { emailReplyNotification } from "../lib/replyEmail";
 import { moderateTextWhispAsync } from "../lib/moderation";
 import { createTextWhispLimiter, textWhispRevealLimiter } from "../lib/rateLimit";
 import { normalizePhoneE164 } from "../lib/phone";
@@ -526,7 +527,22 @@ router.post("/:id/replies", requireAuth, async (req, res): Promise<void> => {
     // count toward the Replies tab's unread badge (routes/user.ts's
     // unread-count query filters on kind = "reply") and show up in
     // RepliesInbox.tsx, which previously only knew about video whisps.
-    void notifyUserPersisted(notifyUserId, "New reply on your Text Whisp", textWhispReplyHookLine(), `/text-whisps/${textWhisp.id}`, "reply");
+    const path = `/text-whisps/${textWhisp.id}`;
+    // Email after the in-app row exists: lib/replyEmail.ts throttles on it
+    // (one email per burst of chat, not one per message) and honors the
+    // Settings opt-out.
+    void notifyUserPersisted(notifyUserId, "New reply on your Text Whisp", textWhispReplyHookLine(), path, "reply").then(() =>
+      emailReplyNotification(notifyUserId, {
+        subject: "New anonymous reply 💬",
+        heading: "You got a reply 💬",
+        text: isFromRecipient
+          ? "Someone replied to your Text Whisp."
+          : "There's a new message in one of your anonymous Text Whisp chats.",
+        path,
+        kind: "reply",
+        purpose: "text_whisp_reply",
+      }),
+    );
   }
 
   void moderateTextWhispAsync({ textWhispId: textWhisp.id, senderId: user.id, text: parsed.data.replyText });

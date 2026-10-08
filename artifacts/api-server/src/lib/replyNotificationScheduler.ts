@@ -2,7 +2,9 @@ import { randomUUID } from "crypto";
 import { db } from "@workspace/db";
 import { whispRepliesTable, whispsTable, usersTable, notificationsTable } from "@workspace/db";
 import { eq, and, lte, isNull, isNotNull } from "drizzle-orm";
-import { sendEmail, replyNotificationEmailHtml, appreciationNotificationEmailHtml } from "./email";
+import { sendEmail, appreciationNotificationEmailHtml } from "./email";
+import { escapeHtml } from "./escapeHtml";
+import { emailReplyNotification } from "./replyEmail";
 import { notifyUser, notifyUserPersisted } from "./push";
 import { logger } from "./logger";
 import { reportSystemError } from "./bugRabbit";
@@ -77,6 +79,28 @@ export async function getDueDeferredNotifications() {
     .limit(BATCH_LIMIT);
 }
 
+// Deferred kinds that are someone answering YOU — these also get an email
+// (lib/replyEmail.ts: on by default, off in Settings, throttled per thread).
+// Released here, after the randomized delay, so the email can't be timed
+// back to the replier any more than the push can.
+const COMMENT_REPLY_EMAILS: Record<string, { subject: string; heading: string; text: string }> = {
+  debate_comment_reply: {
+    subject: "Someone replied to your comment",
+    heading: "New reply on Debate Now 💬",
+    text: "Someone replied anonymously to your comment in a debate.",
+  },
+  debate_topic_comment: {
+    subject: "Someone answered your debate",
+    heading: "Your debate got a new answer 🔥",
+    text: "Someone just weighed in anonymously on the debate you started.",
+  },
+  circle_comment_reply: {
+    subject: "Someone replied to your comment",
+    heading: "New reply in Blind Circle 💬",
+    text: "Someone replied anonymously to your comment on a Blind Circle post.",
+  },
+};
+
 /**
  * Releases every due deferred notification: makes it visible (deliverAfter
  * back to null, createdAt reset to now so the bell's "x minutes ago" doesn't
@@ -108,6 +132,16 @@ export async function dispatchDueDeferredNotifications(): Promise<number> {
           purpose: "appreciation_notification",
         });
       }
+    }
+    const replyEmail = n.url ? COMMENT_REPLY_EMAILS[n.kind ?? ""] : undefined;
+    if (replyEmail) {
+      void emailReplyNotification(n.targetUserId, {
+        ...replyEmail,
+        path: n.url!,
+        kind: n.kind!,
+        notificationId: n.id,
+        purpose: "comment_reply_notification",
+      });
     }
     void notifyUser(n.targetUserId, n.title, n.body, n.url ?? "");
   }
@@ -199,13 +233,6 @@ export function startReplyNotificationScheduler(): void {
         // notify about; the claim above already stamped it handled.
         if (!whisp) continue;
 
-        const sender = await db.select().from(usersTable).where(eq(usersTable.id, whisp.senderId)).then((r) => r[0]);
-        if (sender?.email) {
-          void sendEmail(sender.email, "Someone replied to your whisp", replyNotificationEmailHtml(whisp.videoTitle), {
-            whispId: whisp.id,
-            purpose: "reply_notification",
-          });
-        }
         // Persisted, not push-only: a reply is the single most important
         // thing a sender comes back for, and a push they never received (no
         // permission granted, offline at the time) would otherwise leave no
@@ -217,6 +244,19 @@ export function startReplyNotificationScheduler(): void {
           `/whisps/${whisp.id}`,
           "reply",
         );
+        // After the in-app row exists — lib/replyEmail.ts throttles on it,
+        // and skips anyone who turned reply emails off in Settings.
+        // videoTitle can be a scraped third-party og:title: escaped.
+        const about = whisp.videoTitle ? `your whisp "${escapeHtml(whisp.videoTitle)}"` : "your whisp";
+        void emailReplyNotification(whisp.senderId, {
+          subject: "Someone replied to your whisp",
+          heading: "You got a reply 💬",
+          text: reply.videoUrl ? `Someone whisped a video back to ${about}.` : `Someone replied anonymously to ${about}.`,
+          path: `/whisps/${whisp.id}`,
+          kind: "reply",
+          purpose: "reply_notification",
+          whispId: whisp.id,
+        });
       }
 
       logger.info({ count: due.length }, "Dispatched deferred reply notifications");

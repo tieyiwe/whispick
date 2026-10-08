@@ -52,7 +52,7 @@
     "enable": "Enable",
     "disable": "Disable",
     "emailNotifications": "Email notifications",
-    "emailNotificationsDescription": "Get an email when someone whisps you. You'll always see it in the app either way — this only controls the extra email.",
+    "emailNotificationsDescription": "Get an email when someone whisps you or replies to you. You'll always see it in the app either way — this only controls the extra email.",
     "showOnlineStatus": "Show when you're online",
     "showOnlineStatusDescription": "Let accounts that follow you in Debate Now see when you're online. Turning this off also hides everyone else's online status from you.",
     "appBadge": "Badge app icon with unread count",
