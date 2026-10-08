@@ -72,7 +72,7 @@ export const whispsTable = pgTable("whisps", {
   anonymousNote: text("anonymous_note"),
   senderAlias: text("sender_alias"),
   moodTag: text("mood_tag"),
-  status: text("status").notNull().default("pending"), // ... | 'scheduled' (scheduledAt is in the future; a background dispatcher delivers it when due)
+  status: text("status").notNull().default("pending"), // ... | 'scheduled' (scheduledAt is in the future; a background dispatcher delivers it when due) | 'cancelled' (sender deleted it while still scheduled — never delivered)
   publicToken: text("public_token").unique().notNull(),
   scheduledAt: timestamp("scheduled_at", { withTimezone: true }),
   deliveredAt: timestamp("delivered_at", { withTimezone: true }),
@@ -120,6 +120,13 @@ export const whispsTable = pgTable("whisps", {
   // an unauthenticated endpoint pointed at the sender's inbox.
   videoReplyRequestNotifyAt: timestamp("video_reply_request_notify_at", { withTimezone: true }),
   videoReplyRequestNotifiedAt: timestamp("video_reply_request_notified_at", { withTimezone: true }),
+  // When the recipient was last sent an EXTERNAL (email/SMS/WhatsApp)
+  // "new follow-up from the sender" notice (routes/whisps.ts POST
+  // /:id/replies). Throttles those to one per whisp per cooldown window, so a
+  // sender firing off a burst of follow-ups can't turn the platform into a
+  // text/email flood aimed at the recipient. In-app notices aren't throttled.
+  // Internal bookkeeping only — never returned to either party.
+  recipientReplyNotifiedAt: timestamp("recipient_reply_notified_at", { withTimezone: true }),
   // A short, therapist-toned "takeaway" of the video's message, generated for
   // the RECIPIENT (not the sender) once they finish watching, or proactively
   // if they haven't watched after a while so the gist is there whenever they

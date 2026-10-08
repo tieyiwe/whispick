@@ -23,7 +23,7 @@ export interface TextWhisp {
   senderAlias?: string | null;
   /** @maxLength 260 */
   messageText: string;
-  /** 'sent' | 'read' | 'replied' | 'scheduled' */
+  /** 'sent' | 'read' | 'replied' | 'scheduled' | 'cancelled' (deleted by the sender before it was due; only ever visible to the sender's own admin trail). A recipient never sees a 'scheduled' or 'cancelled' Text Whisp. */
   status: string;
   revealRequested: boolean;
   /** @nullable */

@@ -7,5 +7,6 @@
  */
 
 export interface JoinCircleInput {
+  /** @maxLength 64 */
   inviteCode: string;
 }

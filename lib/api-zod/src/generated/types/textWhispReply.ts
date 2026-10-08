@@ -9,7 +9,8 @@
 export interface TextWhispReply {
   id: string;
   textWhispId: string;
-  senderId: string;
+  /** True when the authenticated caller wrote this reply. Caller-relative by design — the author's real account id is never returned, since on every reply the sender writes it would be the sender's stable users.id, letting two recipients link a common anonymous sender. */
+  fromViewer: boolean;
   /** @maxLength 260 */
   replyText: string;
   /**

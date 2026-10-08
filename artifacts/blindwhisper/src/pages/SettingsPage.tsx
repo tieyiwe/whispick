@@ -436,6 +436,7 @@ export function SettingsPage() {
                 placeholder={t("settingsPage.namePlaceholder")}
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
+                maxLength={100}
                 data-testid="input-full-name"
               />
               <p className="text-xs text-muted-foreground" data-testid="text-display-name-handle-hint">

@@ -9,7 +9,7 @@ import {
   usersTable,
   uploadedVideosTable,
 } from "@workspace/db";
-import { eq, and, desc, count, sql, inArray } from "drizzle-orm";
+import { eq, and, or, desc, count, sql, inArray, isNull, lte } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { z } from "zod";
 import { requireAuth } from "../lib/auth";
@@ -331,13 +331,15 @@ const sendSchema = z
     // has zero length) and the falsy 0 would otherwise slip past a
     // `!data.videoEndSeconds` check further down as if unset.
     videoEndSeconds: z.number().int().min(1).max(86400).nullable().optional(),
-    videoPlatform: z.string().nullable().optional(),
+    videoPlatform: z.string().max(50).nullable().optional(),
     uploadedVideoId: z.string().nullable().optional(),
     whisperChannel: z.enum(WHISPER_CHANNELS),
-    anonymousNote: z.string().nullable().optional(),
-    senderAlias: z.string().nullable().optional(),
-    moodTag: z.string().nullable().optional(),
-    scheduledAt: z.string().nullable().optional(),
+    // Same bounds as routes/whisps.ts's POST / — stored and shown to every
+    // member, so never unbounded.
+    anonymousNote: z.string().max(1000).nullable().optional(),
+    senderAlias: z.string().max(200).nullable().optional(),
+    moodTag: z.string().max(50).nullable().optional(),
+    scheduledAt: z.string().max(64).nullable().optional(),
     // Same server-enforced consent gate as POST /whisps — see its own
     // schema comment. A Group Whisper fans out to every member's own phone
     // number, so this matters just as much here.
@@ -469,18 +471,31 @@ router.post("/:id/send", requireAuth, createWhispLimiter, async (req, res): Prom
   const resetDue = !user.whisperLinksResetAt || user.whisperLinksResetAt <= now;
   const usedThisPeriod = resetDue ? 0 : user.whisperLinksUsed;
 
-  if (resetDue) {
-    // First send of a fresh window — the running count is 0, but the limit
-    // still applies to this send's own size.
-    if (limit !== null && deliverable.length > limit) {
-      res.status(402).json({
-        error: `Sending to this group would use ${deliverable.length} Whisper Links, but the ${user.plan} plan allows ${limit} per month. Upgrade to send to larger groups.`,
-      });
-      return;
-    }
-    const nextReset = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-    await db.update(usersTable).set({ whisperLinksUsed: deliverable.length, whisperLinksResetAt: nextReset }).where(eq(usersTable.id, user.id));
-  } else if (limit === null) {
+  // A group bigger than the whole monthly allowance can never fit — say so
+  // up front (and without starting a fresh window for a send that can't go).
+  if (limit !== null && deliverable.length > limit) {
+    res.status(402).json({
+      error: `Sending to this group would use ${deliverable.length} Whisper Links, but the ${user.plan} plan allows ${limit} per month. Upgrade to send to larger groups.`,
+    });
+    return;
+  }
+
+  // Window rollover as its own conditional UPDATE, decided by the database
+  // rather than the possibly-stale `user` row — the old reset branch blindly
+  // wrote whisperLinksUsed = deliverable.length, so concurrent sends at the
+  // boundary each "reset" and each went out. Only one request can win the
+  // rollover; every request then goes through the guarded increment below.
+  await db
+    .update(usersTable)
+    .set({ whisperLinksUsed: 0, whisperLinksResetAt: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) })
+    .where(
+      and(
+        eq(usersTable.id, user.id),
+        or(isNull(usersTable.whisperLinksResetAt), lte(usersTable.whisperLinksResetAt, now)),
+      ),
+    );
+
+  if (limit === null) {
     await db.update(usersTable).set({ whisperLinksUsed: sql`${usersTable.whisperLinksUsed} + ${deliverable.length}` }).where(eq(usersTable.id, user.id));
   } else {
     const incremented = await db
@@ -504,7 +519,10 @@ router.post("/:id/send", requireAuth, createWhispLimiter, async (req, res): Prom
   const appUrl = getPublicAppUrl(req);
 
   const effectiveVideoUrl = uploadedVideo ? `upload:${uploadedVideo.id}` : data.videoUrl!;
-  const effectiveVideoTitle = data.videoTitle ?? uploadedVideo?.originalFilename ?? null;
+  // No fallback to the upload's original filename — it's whatever the file
+  // was called on the sender's device and would be shown to every member as
+  // the title (same rule as routes/whisps.ts).
+  const effectiveVideoTitle = data.videoTitle ?? null;
   // Derived server-side, not taken from the client — see routes/whisps.ts and
   // lib/videoMeta.ts deriveVideoFields for why the thumbnail/embed/platform
   // must never be attacker-controlled.

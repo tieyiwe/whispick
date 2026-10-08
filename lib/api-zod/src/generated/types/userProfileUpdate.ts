@@ -9,9 +9,15 @@ import type { AvatarId } from './avatarId';
 import type { UserProfileUpdatePreferredLanguage } from './userProfileUpdatePreferredLanguage';
 
 export interface UserProfileUpdate {
-  /** @nullable */
+  /**
+     * @maxLength 100
+     * @nullable
+     */
   fullName?: string | null;
-  /** @nullable */
+  /**
+     * @maxLength 2048
+     * @nullable
+     */
   avatarUrl?: string | null;
   /** @nullable */
   gender?: string | null;

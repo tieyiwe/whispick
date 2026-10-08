@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * For the sender's own view, the full whisp minus recipient-side bookkeeping. For a matched recipient's view (viewerRole "recipient"), an explicit allowlist — sender-only fields such as conciergeRequestId and uploadedVideoId are omitted.
+ */
 export interface Whisp {
   id: string;
   /**
@@ -45,6 +48,7 @@ export interface Whisp {
   senderAlias?: string | null;
   /** @nullable */
   moodTag?: string | null;
+  /** ... | 'scheduled' | 'cancelled' (deleted by the sender while still scheduled — never delivered). A matched recipient never sees a 'scheduled' or 'cancelled' whisp. */
   status: string;
   publicToken: string;
   /** @nullable */

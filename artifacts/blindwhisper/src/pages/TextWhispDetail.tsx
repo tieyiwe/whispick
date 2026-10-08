@@ -167,15 +167,15 @@ export function TextWhispDetail() {
   // the person who wrote it.
   const startsClosed = isRecipient && !opened;
 
-  // fromRecipient is derivable purely from senderId, without any dedicated
-  // field on the reply itself: a Text Whisp thread only ever has two
-  // possible authors, and textWhisp.senderId (never anti-enumeration-masked
-  // — only recipientUserId is) already identifies one of them, so "not the
-  // original sender" always means "the recipient" here.
+  // A Text Whisp thread only ever has two authors, and the API tells us
+  // which replies are the caller's own (fromViewer) — never the author's
+  // account id, which would hand the recipient the sender's real users.id.
+  // So a reply is from the recipient exactly when "written by me" matches
+  // "I am the recipient".
   const threadReplies: ThreadReply[] = replies.map((reply) => ({
     id: reply.id,
     replyText: reply.replyText,
-    fromRecipient: reply.senderId !== textWhisp.senderId,
+    fromRecipient: reply.fromViewer === isRecipient,
     parentReplyId: reply.parentReplyId,
     createdAt: reply.createdAt,
     readAt: reply.readAt,

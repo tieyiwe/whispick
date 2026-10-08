@@ -26,12 +26,11 @@ export async function getDueTextWhisps(): Promise<TextWhisp[]> {
       and(
         eq(textWhispsTable.status, "scheduled"),
         lte(textWhispsTable.scheduledAt, new Date()),
-        // A scheduled Text Whisp the sender since soft-deleted should never
-        // actually go out — whisps.ts's own scheduler doesn't check this
-        // (deletedBySenderAt is set without touching status), which is a
-        // real gap in that older implementation. Not fixing whisps.ts here
-        // (out of scope for this feature), but not repeating the gap either.
+        // A scheduled Text Whisp the sender since soft-deleted, or that a
+        // moderator took down, should never actually go out — same filters
+        // lib/scheduler.ts applies to whisps.
         isNull(textWhispsTable.deletedBySenderAt),
+        isNull(textWhispsTable.removedByAdminAt),
       ),
     )
     .limit(BATCH_LIMIT);
@@ -72,7 +71,14 @@ export function startScheduledTextWhispDispatcher(): void {
         const claimed = await db
           .update(textWhispsTable)
           .set({ status: "sent" })
-          .where(and(eq(textWhispsTable.id, textWhisp.id), eq(textWhispsTable.status, "scheduled")))
+          .where(
+            and(
+              eq(textWhispsTable.id, textWhisp.id),
+              eq(textWhispsTable.status, "scheduled"),
+              isNull(textWhispsTable.deletedBySenderAt),
+              isNull(textWhispsTable.removedByAdminAt),
+            ),
+          )
           .returning({ id: textWhispsTable.id });
         if (claimed.length === 0) continue;
 

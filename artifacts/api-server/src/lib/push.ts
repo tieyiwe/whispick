@@ -39,6 +39,43 @@ if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
   }
 }
 
+// Browser push subscriptions are client-supplied URLs that this server then
+// POSTs to (web-push.sendNotification) on every notification — left
+// unchecked, an endpoint is a blind SSRF primitive: any host, any port,
+// including internal services, hit repeatedly by our own notification
+// fan-out. Every real browser's PushManager hands out an https URL on one of
+// these vendor push services, so anything else is refused at registration
+// (routes/user.ts) AND skipped (and deleted) at send time below, which also
+// covers rows stored before this check existed.
+//   Chromium (Chrome/Edge/Opera/Samsung/Brave…) → fcm.googleapis.com
+//   (android.googleapis.com is the legacy GCM host still seen on old rows)
+//   Firefox → updates.push.services.mozilla.com (+ regional *.push.services.mozilla.com)
+//   Legacy Edge / Windows → *.notify.windows.com
+//   Safari (macOS 13+/iOS 16.4+) → web.push.apple.com (+ *.push.apple.com)
+const PUSH_SERVICE_HOSTS = new Set([
+  "fcm.googleapis.com",
+  "android.googleapis.com",
+  "updates.push.services.mozilla.com",
+  "web.push.apple.com",
+]);
+const PUSH_SERVICE_HOST_SUFFIXES = [".push.services.mozilla.com", ".notify.windows.com", ".push.apple.com"];
+
+export function isAllowedPushEndpoint(endpoint: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(endpoint);
+  } catch {
+    return false;
+  }
+  if (url.protocol !== "https:") return false;
+  // WHATWG URL already normalizes an explicit :443 on https to "", so any
+  // non-empty port here is a non-standard one.
+  if (url.port !== "") return false;
+  if (url.username || url.password) return false;
+  const host = url.hostname.toLowerCase();
+  return PUSH_SERVICE_HOSTS.has(host) || PUSH_SERVICE_HOST_SUFFIXES.some((suffix) => host.endsWith(suffix));
+}
+
 export function getVapidPublicKey(): string | null {
   // Only hand the browser a key the server can actually sign pushes with —
   // if setVapidDetails rejected the config above, isConfigured is false and
@@ -118,6 +155,13 @@ async function pushToSubscription(
   url: string,
   logContext: Record<string, unknown>,
 ): Promise<boolean> {
+  // Never POST to a host outside the push-service allowlist — see
+  // isAllowedPushEndpoint. Such a row can only predate the registration-time
+  // check, so drop it rather than skipping it forever.
+  if (!isAllowedPushEndpoint(sub.endpoint)) {
+    await db.delete(pushSubscriptionsTable).where(eq(pushSubscriptionsTable.id, sub.id));
+    return false;
+  }
   try {
     await webpush.sendNotification(
       {

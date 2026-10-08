@@ -8,6 +8,15 @@ const TWILIO_FROM_NUMBER = process.env.TWILIO_FROM_NUMBER;
 const TWILIO_WHATSAPP_FROM = process.env.TWILIO_WHATSAPP_FROM;
 const TWILIO_WHATSAPP_CONTENT_SID = process.env.TWILIO_WHATSAPP_CONTENT_SID;
 
+// Log lines only ever carry the last 4 digits — full recipient numbers in
+// application logs would be PII sprayed into every log sink/retention
+// window. The full number is still recorded in delivery_attempts (admin-only,
+// see lib/deliveryLog.ts), which is where support actually looks.
+export function maskPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  return digits.length > 4 ? `***${digits.slice(-4)}` : "***";
+}
+
 function twilioAuthHeader(): string {
   return `Basic ${Buffer.from(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`).toString("base64")}`;
 }
@@ -18,7 +27,7 @@ async function postToTwilio(
   params: Record<string, string>,
   logCtx: DeliveryLogContext,
 ): Promise<boolean> {
-  const context = { to, channel };
+  const context = { to: maskPhone(to), channel };
   try {
     const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`, {
       method: "POST",
@@ -69,7 +78,7 @@ async function postToTwilio(
 
 export async function sendSms(to: string, body: string, logCtx: DeliveryLogContext): Promise<boolean> {
   if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_FROM_NUMBER) {
-    logger.warn({ to }, "Twilio SMS not configured (TWILIO_ACCOUNT_SID/TWILIO_AUTH_TOKEN/TWILIO_FROM_NUMBER); skipping SMS send");
+    logger.warn({ to: maskPhone(to) }, "Twilio SMS not configured (TWILIO_ACCOUNT_SID/TWILIO_AUTH_TOKEN/TWILIO_FROM_NUMBER); skipping SMS send");
     await logDeliveryAttempt("sms", to, logCtx, { success: false, errorMessage: "Twilio SMS is not configured" });
     return false;
   }
@@ -89,7 +98,7 @@ export async function sendSms(to: string, body: string, logCtx: DeliveryLogConte
 export async function sendWhatsApp(to: string, linkUrl: string, logCtx: DeliveryLogContext): Promise<boolean> {
   if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_WHATSAPP_FROM || !TWILIO_WHATSAPP_CONTENT_SID) {
     logger.warn(
-      { to },
+      { to: maskPhone(to) },
       "Twilio WhatsApp not configured (TWILIO_WHATSAPP_FROM/TWILIO_WHATSAPP_CONTENT_SID); skipping WhatsApp send",
     );
     await logDeliveryAttempt("whatsapp", to, logCtx, { success: false, errorMessage: "Twilio WhatsApp is not configured" });
@@ -144,13 +153,13 @@ export function textWhispGuestSmsBody(publicUrl: string): string {
   return `${SMS_TEXT_WHISP_LEAD}\n${publicUrl}\n${COMPLIANCE_FOOTER}`;
 }
 
-// Debate Now topic whisp (routes/debateTopicWhisps.ts) — same
-// lead/link/compliance-footer shape as the others above, plus the sender's
-// optional note inserted between the lead and the link when present.
-// Deliberately doesn't include the topic text itself (keeps the SMS short —
-// the topic is right there once they open the link, same restraint
-// whisperLinkSmsBody shows toward a whisp's video title).
-export function debateTopicWhispSmsBody(publicUrl: string, note?: string | null): string {
-  const noteLine = note ? `\n"${note}"` : "";
-  return `${SMS_DEBATE_TOPIC_WHISP_LEAD}${noteLine}\n${publicUrl}\n${COMPLIANCE_FOOTER}`;
+// Debate Now topic whisp (routes/debateTopicWhisps.ts) — same fixed
+// lead/link/compliance-footer shape as the others above. Deliberately carries
+// NO sender-written text: the sender's optional note used to be inlined
+// here, which let anyone relay arbitrary free text (a phishing lure, a fake
+// "verify your account" link) to any number from the platform's own
+// registered sender ID. The note still shows in the email and in-app, behind
+// the link. Doesn't include the topic text either (keeps the SMS short).
+export function debateTopicWhispSmsBody(publicUrl: string): string {
+  return `${SMS_DEBATE_TOPIC_WHISP_LEAD}\n${publicUrl}\n${COMPLIANCE_FOOTER}`;
 }

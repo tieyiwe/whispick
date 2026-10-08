@@ -44,7 +44,7 @@ export const ListWhispsResponseItem = zod.object({
   "anonymousNote": zod.string().nullish(),
   "senderAlias": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
-  "status": zod.string(),
+  "status": zod.string().describe('... | \'scheduled\' | \'cancelled\' (deleted by the sender while still scheduled — never delivered). A matched recipient never sees a \'scheduled\' or \'cancelled\' whisp.'),
   "publicToken": zod.string(),
   "scheduledAt": zod.string().nullish(),
   "deliveredAt": zod.string().nullish(),
@@ -63,30 +63,40 @@ export const ListWhispsResponseItem = zod.object({
   "pinned": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is pinned (see POST \/whisps\/{id}\/pin) — never the other party\'s pin state.'),
   "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.'),
   "senderHandle": zod.string().nullish().describe('A stable, anonymous pseudonym for this whisp\'s sender (e.g. \"Falcon482\"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerRole is \"recipient\"; null otherwise.')
-})
+}).describe('For the sender\'s own view, the full whisp minus recipient-side bookkeeping. For a matched recipient\'s view (viewerRole \"recipient\"), an explicit allowlist — sender-only fields such as conciergeRequestId and uploadedVideoId are omitted.')
 export const ListWhispsResponse = zod.array(ListWhispsResponseItem)
 
 
 /**
  * @summary Send a new whisp
  */
+export const createWhispBodyVideoPlatformMax = 50;
+
+export const createWhispBodyAnonymousNoteMax = 1000;
+
+export const createWhispBodySenderAliasMax = 200;
+
+export const createWhispBodyMoodTagMax = 50;
+
+
+
 export const CreateWhispBody = zod.object({
-  "videoUrl": zod.string().nullish(),
+  "videoUrl": zod.string().nullish().describe('For circle_drop and ghost_boost (whose viewers are anonymous to the sender) this must be a link on a recognized video platform (YouTube, TikTok, Instagram, Facebook, Vimeo, X) — use uploadedVideoId otherwise. whisper_link accepts any http(s) URL.'),
   "videoTitle": zod.string().nullish(),
   "videoThumbnail": zod.string().nullish(),
   "videoEmbedUrl": zod.string().nullish(),
   "videoStartSeconds": zod.number().nullish(),
   "videoEndSeconds": zod.number().nullish(),
-  "videoPlatform": zod.string().nullish(),
+  "videoPlatform": zod.string().max(createWhispBodyVideoPlatformMax).nullish(),
   "uploadedVideoId": zod.string().nullish().describe('An id from the sender\'s Media Library — an alternative to videoUrl. One of the two is required.'),
   "deliveryMethod": zod.string(),
   "whisperChannel": zod.string().nullish(),
   "circleId": zod.string().nullish(),
   "recipientEmail": zod.string().nullish(),
   "recipientPhone": zod.string().nullish(),
-  "anonymousNote": zod.string().nullish(),
-  "senderAlias": zod.string().nullish(),
-  "moodTag": zod.string().nullish(),
+  "anonymousNote": zod.string().max(createWhispBodyAnonymousNoteMax).nullish(),
+  "senderAlias": zod.string().max(createWhispBodySenderAliasMax).nullish(),
+  "moodTag": zod.string().max(createWhispBodyMoodTagMax).nullish(),
   "scheduledAt": zod.string().nullish(),
   "conciergeRequestId": zod.string().nullish().describe('The requestId from a prior POST \/whisps\/concierge call, if this send used its video suggestion and\/or note draft'),
   "smsConsentConfirmed": zod.boolean().nullish().describe('Required (must be true) when whisperChannel is \"sms\" — the sender confirming they have this recipient\'s permission to receive a text. Not required for \"email\" or \"whatsapp\".')
@@ -112,7 +122,7 @@ export const CreateWhispResponse = zod.object({
   "anonymousNote": zod.string().nullish(),
   "senderAlias": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
-  "status": zod.string(),
+  "status": zod.string().describe('... | \'scheduled\' | \'cancelled\' (deleted by the sender while still scheduled — never delivered). A matched recipient never sees a \'scheduled\' or \'cancelled\' whisp.'),
   "publicToken": zod.string(),
   "scheduledAt": zod.string().nullish(),
   "deliveredAt": zod.string().nullish(),
@@ -131,7 +141,7 @@ export const CreateWhispResponse = zod.object({
   "pinned": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is pinned (see POST \/whisps\/{id}\/pin) — never the other party\'s pin state.'),
   "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.'),
   "senderHandle": zod.string().nullish().describe('A stable, anonymous pseudonym for this whisp\'s sender (e.g. \"Falcon482\"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerRole is \"recipient\"; null otherwise.')
-})
+}).describe('For the sender\'s own view, the full whisp minus recipient-side bookkeeping. For a matched recipient\'s view (viewerRole \"recipient\"), an explicit allowlist — sender-only fields such as conciergeRequestId and uploadedVideoId are omitted.')
 
 
 /**
@@ -167,7 +177,7 @@ export const GetWhispStatsResponse = zod.object({
   "anonymousNote": zod.string().nullish(),
   "senderAlias": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
-  "status": zod.string(),
+  "status": zod.string().describe('... | \'scheduled\' | \'cancelled\' (deleted by the sender while still scheduled — never delivered). A matched recipient never sees a \'scheduled\' or \'cancelled\' whisp.'),
   "publicToken": zod.string(),
   "scheduledAt": zod.string().nullish(),
   "deliveredAt": zod.string().nullish(),
@@ -186,7 +196,7 @@ export const GetWhispStatsResponse = zod.object({
   "pinned": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is pinned (see POST \/whisps\/{id}\/pin) — never the other party\'s pin state.'),
   "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.'),
   "senderHandle": zod.string().nullish().describe('A stable, anonymous pseudonym for this whisp\'s sender (e.g. \"Falcon482\"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerRole is \"recipient\"; null otherwise.')
-}))
+}).describe('For the sender\'s own view, the full whisp minus recipient-side bookkeeping. For a matched recipient\'s view (viewerRole \"recipient\"), an explicit allowlist — sender-only fields such as conciergeRequestId and uploadedVideoId are omitted.'))
 })
 
 
@@ -227,7 +237,7 @@ export const GetWhispResponse = zod.object({
   "anonymousNote": zod.string().nullish(),
   "senderAlias": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
-  "status": zod.string(),
+  "status": zod.string().describe('... | \'scheduled\' | \'cancelled\' (deleted by the sender while still scheduled — never delivered). A matched recipient never sees a \'scheduled\' or \'cancelled\' whisp.'),
   "publicToken": zod.string(),
   "scheduledAt": zod.string().nullish(),
   "deliveredAt": zod.string().nullish(),
@@ -246,7 +256,7 @@ export const GetWhispResponse = zod.object({
   "pinned": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is pinned (see POST \/whisps\/{id}\/pin) — never the other party\'s pin state.'),
   "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.'),
   "senderHandle": zod.string().nullish().describe('A stable, anonymous pseudonym for this whisp\'s sender (e.g. \"Falcon482\"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerRole is \"recipient\"; null otherwise.')
-}),
+}).describe('For the sender\'s own view, the full whisp minus recipient-side bookkeeping. For a matched recipient\'s view (viewerRole \"recipient\"), an explicit allowlist — sender-only fields such as conciergeRequestId and uploadedVideoId are omitted.'),
   "trackingEvents": zod.array(zod.object({
   "id": zod.string(),
   "whispId": zod.string(),
@@ -445,7 +455,7 @@ export const RequestRevealResponse = zod.object({
   "anonymousNote": zod.string().nullish(),
   "senderAlias": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
-  "status": zod.string(),
+  "status": zod.string().describe('... | \'scheduled\' | \'cancelled\' (deleted by the sender while still scheduled — never delivered). A matched recipient never sees a \'scheduled\' or \'cancelled\' whisp.'),
   "publicToken": zod.string(),
   "scheduledAt": zod.string().nullish(),
   "deliveredAt": zod.string().nullish(),
@@ -464,7 +474,7 @@ export const RequestRevealResponse = zod.object({
   "pinned": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is pinned (see POST \/whisps\/{id}\/pin) — never the other party\'s pin state.'),
   "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.'),
   "senderHandle": zod.string().nullish().describe('A stable, anonymous pseudonym for this whisp\'s sender (e.g. \"Falcon482\"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerRole is \"recipient\"; null otherwise.')
-})
+}).describe('For the sender\'s own view, the full whisp minus recipient-side bookkeeping. For a matched recipient\'s view (viewerRole \"recipient\"), an explicit allowlist — sender-only fields such as conciergeRequestId and uploadedVideoId are omitted.')
 
 
 /**
@@ -496,7 +506,7 @@ export const ListInvitesResponseItem = zod.object({
   "channel": zod.string(),
   "publicToken": zod.string(),
   "status": zod.string(),
-  "signedUpUserId": zod.string().nullish(),
+  "joined": zod.boolean().describe('Whether someone signed up through this invite. The joiner\'s account id is never returned to the inviter.'),
   "signedUpAt": zod.string().nullish(),
   "revealRequested": zod.boolean(),
   "revealAccepted": zod.boolean().nullish(),
@@ -523,7 +533,7 @@ export const CreateInviteResponse = zod.object({
   "channel": zod.string(),
   "publicToken": zod.string(),
   "status": zod.string(),
-  "signedUpUserId": zod.string().nullish(),
+  "joined": zod.boolean().describe('Whether someone signed up through this invite. The joiner\'s account id is never returned to the inviter.'),
   "signedUpAt": zod.string().nullish(),
   "revealRequested": zod.boolean(),
   "revealAccepted": zod.boolean().nullish(),
@@ -542,8 +552,9 @@ export const SendDebateTopicWhispBody = zod.object({
   "recipientEmail": zod.string().nullish(),
   "recipientPhone": zod.string().nullish(),
   "channel": zod.string().describe('\'email\' | \'sms\' | \'whatsapp\''),
-  "note": zod.string().nullish().describe('Optional personal line from the sender, shown alongside the topic teaser. Max 200 characters.'),
-  "senderAlias": zod.string().nullish()
+  "note": zod.string().nullish().describe('Optional personal line from the sender, shown alongside the topic teaser in the email and in-app notice. Never included in an SMS body. Max 200 characters.'),
+  "senderAlias": zod.string().nullish(),
+  "smsConsentConfirmed": zod.boolean().nullish().describe('Required (must be true) when channel is \"sms\" and the sender hasn\'t confirmed this number before — the sender confirming they have this recipient\'s permission to receive a text. Not required for \"email\" or \"whatsapp\".')
 })
 
 export const SendDebateTopicWhispResponse = zod.object({
@@ -590,7 +601,7 @@ export const RequestInviteRevealResponse = zod.object({
   "channel": zod.string(),
   "publicToken": zod.string(),
   "status": zod.string(),
-  "signedUpUserId": zod.string().nullish(),
+  "joined": zod.boolean().describe('Whether someone signed up through this invite. The joiner\'s account id is never returned to the inviter.'),
   "signedUpAt": zod.string().nullish(),
   "revealRequested": zod.boolean(),
   "revealAccepted": zod.boolean().nullish(),
@@ -667,7 +678,7 @@ export const ListTextWhispsResponseItem = zod.object({
   "publicToken": zod.string().describe('Token for the public guest landing page (\/tw\/{publicToken}, see GET \/public\/text-whisps\/{token}). Always set, even for a matched in-app send.'),
   "senderAlias": zod.string().nullish(),
   "messageText": zod.string().max(listTextWhispsResponseMessageTextMax),
-  "status": zod.string().describe('\'sent\' | \'read\' | \'replied\' | \'scheduled\''),
+  "status": zod.string().describe('\'sent\' | \'read\' | \'replied\' | \'scheduled\' | \'cancelled\' (deleted by the sender before it was due; only ever visible to the sender\'s own admin trail). A recipient never sees a \'scheduled\' or \'cancelled\' Text Whisp.'),
   "revealRequested": zod.boolean(),
   "revealAccepted": zod.boolean().nullish(),
   "scheduledAt": zod.string().nullish().describe('Set only for a \"schedule for later\" send — delivery (the in-app notify or guest SMS) is held back until this time. Null for every immediately-sent Text Whisp.'),
@@ -685,12 +696,14 @@ export const ListTextWhispsResponse = zod.array(ListTextWhispsResponseItem)
  */
 export const createTextWhispBodyMessageTextMax = 260;
 
+export const createTextWhispBodySenderAliasMax = 200;
+
 
 
 export const CreateTextWhispBody = zod.object({
   "recipientPhone": zod.string(),
   "messageText": zod.string().max(createTextWhispBodyMessageTextMax),
-  "senderAlias": zod.string().nullish(),
+  "senderAlias": zod.string().max(createTextWhispBodySenderAliasMax).nullish(),
   "scheduledAt": zod.string().nullish().describe('A future ISO timestamp to hold delivery back until — omit or leave null to send immediately.'),
   "smsConsentConfirmed": zod.boolean().nullish().describe('Required (must be true) — the sender confirming they have this recipient\'s permission to receive a text. Required unconditionally, since whether this actually goes out over SMS or lands entirely in-app depends on whether recipientPhone matches an existing account, which isn\'t known until the server looks it up.')
 })
@@ -707,7 +720,7 @@ export const CreateTextWhispResponse = zod.object({
   "publicToken": zod.string().describe('Token for the public guest landing page (\/tw\/{publicToken}, see GET \/public\/text-whisps\/{token}). Always set, even for a matched in-app send.'),
   "senderAlias": zod.string().nullish(),
   "messageText": zod.string().max(createTextWhispResponseMessageTextMax),
-  "status": zod.string().describe('\'sent\' | \'read\' | \'replied\' | \'scheduled\''),
+  "status": zod.string().describe('\'sent\' | \'read\' | \'replied\' | \'scheduled\' | \'cancelled\' (deleted by the sender before it was due; only ever visible to the sender\'s own admin trail). A recipient never sees a \'scheduled\' or \'cancelled\' Text Whisp.'),
   "revealRequested": zod.boolean(),
   "revealAccepted": zod.boolean().nullish(),
   "scheduledAt": zod.string().nullish().describe('Set only for a \"schedule for later\" send — delivery (the in-app notify or guest SMS) is held back until this time. Null for every immediately-sent Text Whisp.'),
@@ -741,7 +754,7 @@ export const GetTextWhispResponse = zod.object({
   "publicToken": zod.string().describe('Token for the public guest landing page (\/tw\/{publicToken}, see GET \/public\/text-whisps\/{token}). Always set, even for a matched in-app send.'),
   "senderAlias": zod.string().nullish(),
   "messageText": zod.string().max(getTextWhispResponseTextWhispMessageTextMax),
-  "status": zod.string().describe('\'sent\' | \'read\' | \'replied\' | \'scheduled\''),
+  "status": zod.string().describe('\'sent\' | \'read\' | \'replied\' | \'scheduled\' | \'cancelled\' (deleted by the sender before it was due; only ever visible to the sender\'s own admin trail). A recipient never sees a \'scheduled\' or \'cancelled\' Text Whisp.'),
   "revealRequested": zod.boolean(),
   "revealAccepted": zod.boolean().nullish(),
   "scheduledAt": zod.string().nullish().describe('Set only for a \"schedule for later\" send — delivery (the in-app notify or guest SMS) is held back until this time. Null for every immediately-sent Text Whisp.'),
@@ -754,7 +767,7 @@ export const GetTextWhispResponse = zod.object({
   "replies": zod.array(zod.object({
   "id": zod.string(),
   "textWhispId": zod.string(),
-  "senderId": zod.string(),
+  "fromViewer": zod.boolean().describe('True when the authenticated caller wrote this reply. Caller-relative by design — the author\'s real account id is never returned, since on every reply the sender writes it would be the sender\'s stable users.id, letting two recipients link a common anonymous sender.'),
   "replyText": zod.string().max(getTextWhispResponseRepliesItemReplyTextMax),
   "parentReplyId": zod.string().nullish().describe('The earlier reply in this same thread this one answers, if any — feeds the quoted-message UI in the shared ReplyThread component.'),
   "readAt": zod.string().nullish().describe('When the OTHER party opened the thread after this reply was sent. Null means sent but not yet seen.'),
@@ -787,7 +800,7 @@ export const listTextWhispRepliesResponseReplyTextMax = 260;
 export const ListTextWhispRepliesResponseItem = zod.object({
   "id": zod.string(),
   "textWhispId": zod.string(),
-  "senderId": zod.string(),
+  "fromViewer": zod.boolean().describe('True when the authenticated caller wrote this reply. Caller-relative by design — the author\'s real account id is never returned, since on every reply the sender writes it would be the sender\'s stable users.id, letting two recipients link a common anonymous sender.'),
   "replyText": zod.string().max(listTextWhispRepliesResponseReplyTextMax),
   "parentReplyId": zod.string().nullish().describe('The earlier reply in this same thread this one answers, if any — feeds the quoted-message UI in the shared ReplyThread component.'),
   "readAt": zod.string().nullish().describe('When the OTHER party opened the thread after this reply was sent. Null means sent but not yet seen.'),
@@ -819,7 +832,7 @@ export const createTextWhispReplyResponseReplyTextMax = 260;
 export const CreateTextWhispReplyResponse = zod.object({
   "id": zod.string(),
   "textWhispId": zod.string(),
-  "senderId": zod.string(),
+  "fromViewer": zod.boolean().describe('True when the authenticated caller wrote this reply. Caller-relative by design — the author\'s real account id is never returned, since on every reply the sender writes it would be the sender\'s stable users.id, letting two recipients link a common anonymous sender.'),
   "replyText": zod.string().max(createTextWhispReplyResponseReplyTextMax),
   "parentReplyId": zod.string().nullish().describe('The earlier reply in this same thread this one answers, if any — feeds the quoted-message UI in the shared ReplyThread component.'),
   "readAt": zod.string().nullish().describe('When the OTHER party opened the thread after this reply was sent. Null means sent but not yet seen.'),
@@ -856,7 +869,7 @@ export const RequestTextWhispRevealResponse = zod.object({
   "publicToken": zod.string().describe('Token for the public guest landing page (\/tw\/{publicToken}, see GET \/public\/text-whisps\/{token}). Always set, even for a matched in-app send.'),
   "senderAlias": zod.string().nullish(),
   "messageText": zod.string().max(requestTextWhispRevealResponseMessageTextMax),
-  "status": zod.string().describe('\'sent\' | \'read\' | \'replied\' | \'scheduled\''),
+  "status": zod.string().describe('\'sent\' | \'read\' | \'replied\' | \'scheduled\' | \'cancelled\' (deleted by the sender before it was due; only ever visible to the sender\'s own admin trail). A recipient never sees a \'scheduled\' or \'cancelled\' Text Whisp.'),
   "revealRequested": zod.boolean(),
   "revealAccepted": zod.boolean().nullish(),
   "scheduledAt": zod.string().nullish().describe('Set only for a \"schedule for later\" send — delivery (the in-app notify or guest SMS) is held back until this time. Null for every immediately-sent Text Whisp.'),
@@ -1221,9 +1234,15 @@ export const GetUserProfileResponse = zod.object({
 /**
  * @summary Update user profile
  */
+export const updateUserProfileBodyFullNameMax = 100;
+
+export const updateUserProfileBodyAvatarUrlMax = 2048;
+
+
+
 export const UpdateUserProfileBody = zod.object({
-  "fullName": zod.string().nullish(),
-  "avatarUrl": zod.string().nullish(),
+  "fullName": zod.string().max(updateUserProfileBodyFullNameMax).nullish(),
+  "avatarUrl": zod.string().max(updateUserProfileBodyAvatarUrlMax).nullish(),
   "gender": zod.string().nullish(),
   "ageRange": zod.string().nullish(),
   "emailNotificationsEnabled": zod.boolean().optional(),
@@ -1304,8 +1323,12 @@ export const GetPushPublicKeyResponse = zod.object({
 /**
  * @summary Register a browser push subscription
  */
+export const createPushSubscriptionBodyEndpointMax = 2048;
+
+
+
 export const CreatePushSubscriptionBody = zod.object({
-  "endpoint": zod.string(),
+  "endpoint": zod.string().max(createPushSubscriptionBodyEndpointMax).describe('A browser PushManager endpoint. Must be https on a recognized browser push service (FCM, Mozilla autopush, Windows WNS, Apple web push) with no custom port; anything else is rejected. At most 10 subscriptions are kept per account (oldest dropped).'),
   "keys": zod.object({
   "p256dh": zod.string(),
   "auth": zod.string()
@@ -1376,7 +1399,7 @@ export const ListCreditTransactionsResponse = zod.array(ListCreditTransactionsRe
 export const ListMyCirclesResponseItem = zod.object({
   "id": zod.string(),
   "name": zod.string(),
-  "ownerId": zod.string(),
+  "isOwner": zod.boolean().describe('Whether the CALLER created this circle. The owner\'s account id is never returned to members.'),
   "inviteCode": zod.string(),
   "createdAt": zod.string()
 })
@@ -1393,7 +1416,7 @@ export const CreateCircleBody = zod.object({
 export const CreateCircleResponse = zod.object({
   "id": zod.string(),
   "name": zod.string(),
-  "ownerId": zod.string(),
+  "isOwner": zod.boolean().describe('Whether the CALLER created this circle. The owner\'s account id is never returned to members.'),
   "inviteCode": zod.string(),
   "createdAt": zod.string()
 })
@@ -1402,14 +1425,18 @@ export const CreateCircleResponse = zod.object({
 /**
  * @summary Join a private circle using its invite code
  */
+export const joinCircleBodyInviteCodeMax = 64;
+
+
+
 export const JoinCircleBody = zod.object({
-  "inviteCode": zod.string()
+  "inviteCode": zod.string().max(joinCircleBodyInviteCodeMax)
 })
 
 export const JoinCircleResponse = zod.object({
   "id": zod.string(),
   "name": zod.string(),
-  "ownerId": zod.string(),
+  "isOwner": zod.boolean().describe('Whether the CALLER created this circle. The owner\'s account id is never returned to members.'),
   "inviteCode": zod.string(),
   "createdAt": zod.string()
 })
@@ -1973,7 +2000,7 @@ export const AdminGetUserResponse = zod.object({
   "anonymousNote": zod.string().nullish(),
   "senderAlias": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
-  "status": zod.string(),
+  "status": zod.string().describe('... | \'scheduled\' | \'cancelled\' (deleted by the sender while still scheduled — never delivered). A matched recipient never sees a \'scheduled\' or \'cancelled\' whisp.'),
   "publicToken": zod.string(),
   "scheduledAt": zod.string().nullish(),
   "deliveredAt": zod.string().nullish(),
@@ -1992,7 +2019,7 @@ export const AdminGetUserResponse = zod.object({
   "pinned": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is pinned (see POST \/whisps\/{id}\/pin) — never the other party\'s pin state.'),
   "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.'),
   "senderHandle": zod.string().nullish().describe('A stable, anonymous pseudonym for this whisp\'s sender (e.g. \"Falcon482\"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerRole is \"recipient\"; null otherwise.')
-})),
+}).describe('For the sender\'s own view, the full whisp minus recipient-side bookkeeping. For a matched recipient\'s view (viewerRole \"recipient\"), an explicit allowlist — sender-only fields such as conciergeRequestId and uploadedVideoId are omitted.')),
   "totalWhisps": zod.number(),
   "creditTransactions": zod.array(zod.object({
   "id": zod.string(),
@@ -2304,7 +2331,7 @@ export const AdminGetWhispResponse = zod.object({
   "anonymousNote": zod.string().nullish(),
   "senderAlias": zod.string().nullish(),
   "moodTag": zod.string().nullish(),
-  "status": zod.string(),
+  "status": zod.string().describe('... | \'scheduled\' | \'cancelled\' (deleted by the sender while still scheduled — never delivered). A matched recipient never sees a \'scheduled\' or \'cancelled\' whisp.'),
   "publicToken": zod.string(),
   "scheduledAt": zod.string().nullish(),
   "deliveredAt": zod.string().nullish(),
@@ -2323,7 +2350,7 @@ export const AdminGetWhispResponse = zod.object({
   "pinned": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is pinned (see POST \/whisps\/{id}\/pin) — never the other party\'s pin state.'),
   "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.'),
   "senderHandle": zod.string().nullish().describe('A stable, anonymous pseudonym for this whisp\'s sender (e.g. \"Falcon482\"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerRole is \"recipient\"; null otherwise.')
-}),
+}).describe('For the sender\'s own view, the full whisp minus recipient-side bookkeeping. For a matched recipient\'s view (viewerRole \"recipient\"), an explicit allowlist — sender-only fields such as conciergeRequestId and uploadedVideoId are omitted.'),
   "senderId": zod.string().nullish(),
   "senderEmail": zod.string().nullish(),
   "senderFullName": zod.string().nullish(),

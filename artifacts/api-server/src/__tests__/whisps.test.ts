@@ -390,11 +390,13 @@ describe("GET /api/whisps", () => {
 });
 
 describe("Reveal flow", () => {
+  // Whisper Link, not circle_drop: reveals are person-to-person and are
+  // rejected on a public Blind Circle post (see securityWhispRoutes.test.ts).
   it("lets the sender request a reveal and the recipient respond", async () => {
     const created = await request(app)
       .post("/api/whisps")
       .set(asUser(USER_A))
-      .send({ videoUrl: "https://youtu.be/a", deliveryMethod: "circle_drop" });
+      .send({ videoUrl: "https://youtu.be/a", deliveryMethod: "whisper_link", whisperChannel: "email", recipientEmail: "recipient@example.com" });
     const whispId = created.body.id;
 
     const revealRequested = await request(app).post(`/api/whisps/${whispId}/reveal`).set(asUser(USER_A));
@@ -410,7 +412,7 @@ describe("Reveal flow", () => {
     const created = await request(app)
       .post("/api/whisps")
       .set(asUser(USER_A))
-      .send({ videoUrl: "https://youtu.be/a", deliveryMethod: "circle_drop" });
+      .send({ videoUrl: "https://youtu.be/a", deliveryMethod: "whisper_link", whisperChannel: "email", recipientEmail: "recipient@example.com" });
 
     const responded = await request(app).patch(`/api/whisps/${created.body.id}/reveal`).send({ accepted: true });
     expect(responded.status).toBe(400);
@@ -447,10 +449,11 @@ describe("DELETE /api/whisps/:id", () => {
   const USER_D = "clerk_user_d";
 
   it("soft-deletes: hides the whisp from the sender without touching the row, its replies, or tracking events", async () => {
+    // Whisper Link: sender follow-ups are rejected on public circle_drop posts.
     const created = await request(app)
       .post("/api/whisps")
       .set(asUser(USER_C))
-      .send({ videoUrl: "https://youtu.be/a", deliveryMethod: "circle_drop" });
+      .send({ videoUrl: "https://youtu.be/a", deliveryMethod: "whisper_link", whisperChannel: "email", recipientEmail: "recipient@example.com" });
     const whispId = created.body.id;
 
     const reply = await request(app)
@@ -491,10 +494,11 @@ describe("GET /api/whisps/:id — reply read receipts", () => {
   const USER_E = "clerk_user_e";
 
   it("marks the recipient's replies read the moment the sender views the thread", async () => {
+    // Whisper Link: sender follow-ups are rejected on public circle_drop posts.
     const created = await request(app)
       .post("/api/whisps")
       .set(asUser(USER_E))
-      .send({ videoUrl: "https://youtu.be/a", deliveryMethod: "circle_drop" });
+      .send({ videoUrl: "https://youtu.be/a", deliveryMethod: "whisper_link", whisperChannel: "email", recipientEmail: "recipient@example.com" });
     const whispId = created.body.id;
 
     // A real recipient-authored row — the only route that can produce

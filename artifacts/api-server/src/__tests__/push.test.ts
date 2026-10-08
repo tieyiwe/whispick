@@ -20,7 +20,7 @@ describe("POST/DELETE /api/user/push-subscription", () => {
   it("rejects unauthenticated requests", async () => {
     const res = await request(app)
       .post("/api/user/push-subscription")
-      .send({ endpoint: "https://push.example.com/abc", keys: { p256dh: "p", auth: "a" } });
+      .send({ endpoint: "https://fcm.googleapis.com/fcm/send/abc", keys: { p256dh: "p", auth: "a" } });
     expect(res.status).toBe(401);
   });
 
@@ -28,13 +28,13 @@ describe("POST/DELETE /api/user/push-subscription", () => {
     const created = await request(app)
       .post("/api/user/push-subscription")
       .set(asUser(USER_A))
-      .send({ endpoint: "https://push.example.com/abc", keys: { p256dh: "p", auth: "a" } });
+      .send({ endpoint: "https://fcm.googleapis.com/fcm/send/abc", keys: { p256dh: "p", auth: "a" } });
     expect(created.status).toBe(201);
 
     const deleted = await request(app)
       .delete("/api/user/push-subscription")
       .set(asUser(USER_A))
-      .send({ endpoint: "https://push.example.com/abc" });
+      .send({ endpoint: "https://fcm.googleapis.com/fcm/send/abc" });
     expect(deleted.status).toBe(204);
   });
 
@@ -42,13 +42,13 @@ describe("POST/DELETE /api/user/push-subscription", () => {
     const first = await request(app)
       .post("/api/user/push-subscription")
       .set(asUser(USER_A))
-      .send({ endpoint: "https://push.example.com/dupe", keys: { p256dh: "p1", auth: "a1" } });
+      .send({ endpoint: "https://fcm.googleapis.com/fcm/send/dupe", keys: { p256dh: "p1", auth: "a1" } });
     expect(first.status).toBe(201);
 
     const second = await request(app)
       .post("/api/user/push-subscription")
       .set(asUser(USER_A))
-      .send({ endpoint: "https://push.example.com/dupe", keys: { p256dh: "p2", auth: "a2" } });
+      .send({ endpoint: "https://fcm.googleapis.com/fcm/send/dupe", keys: { p256dh: "p2", auth: "a2" } });
     expect(second.status).toBe(201);
   });
 });

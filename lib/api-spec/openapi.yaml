@@ -4967,6 +4967,11 @@ components:
 
     Whisp:
       type: object
+      description: >-
+        For the sender's own view, the full whisp minus recipient-side
+        bookkeeping. For a matched recipient's view (viewerRole "recipient"),
+        an explicit allowlist — sender-only fields such as
+        conciergeRequestId and uploadedVideoId are omitted.
       properties:
         id:
           type: string
@@ -5015,6 +5020,7 @@ components:
           type: ["string", "null"]
         status:
           type: string
+          description: "... | 'scheduled' | 'cancelled' (deleted by the sender while still scheduled — never delivered). A matched recipient never sees a 'scheduled' or 'cancelled' whisp."
         publicToken:
           type: string
         scheduledAt:
@@ -5076,6 +5082,7 @@ components:
       properties:
         videoUrl:
           type: ["string", "null"]
+          description: For circle_drop and ghost_boost (whose viewers are anonymous to the sender) this must be a link on a recognized video platform (YouTube, TikTok, Instagram, Facebook, Vimeo, X) — use uploadedVideoId otherwise. whisper_link accepts any http(s) URL.
         videoTitle:
           type: ["string", "null"]
         videoThumbnail:
@@ -5088,6 +5095,7 @@ components:
           type: ["integer", "null"]
         videoPlatform:
           type: ["string", "null"]
+          maxLength: 50
         uploadedVideoId:
           type: ["string", "null"]
           description: An id from the sender's Media Library — an alternative to videoUrl. One of the two is required.
@@ -5103,10 +5111,13 @@ components:
           type: ["string", "null"]
         anonymousNote:
           type: ["string", "null"]
+          maxLength: 1000
         senderAlias:
           type: ["string", "null"]
+          maxLength: 200
         moodTag:
           type: ["string", "null"]
+          maxLength: 50
         scheduledAt:
           type: ["string", "null"]
         conciergeRequestId:
@@ -5395,7 +5406,7 @@ components:
           maxLength: 260
         status:
           type: string
-          description: "'sent' | 'read' | 'replied' | 'scheduled'"
+          description: "'sent' | 'read' | 'replied' | 'scheduled' | 'cancelled' (deleted by the sender before it was due; only ever visible to the sender's own admin trail). A recipient never sees a 'scheduled' or 'cancelled' Text Whisp."
         revealRequested:
           type: boolean
         revealAccepted:
@@ -5440,6 +5451,7 @@ components:
           maxLength: 260
         senderAlias:
           type: ["string", "null"]
+          maxLength: 200
         scheduledAt:
           type: ["string", "null"]
           description: A future ISO timestamp to hold delivery back until — omit or leave null to send immediately.
@@ -5470,8 +5482,9 @@ components:
           type: string
         textWhispId:
           type: string
-        senderId:
-          type: string
+        fromViewer:
+          type: boolean
+          description: True when the authenticated caller wrote this reply. Caller-relative by design — the author's real account id is never returned, since on every reply the sender writes it would be the sender's stable users.id, letting two recipients link a common anonymous sender.
         replyText:
           type: string
           maxLength: 260
@@ -5486,7 +5499,7 @@ components:
       required:
         - id
         - textWhispId
-        - senderId
+        - fromViewer
         - replyText
         - createdAt
 
@@ -5567,8 +5580,9 @@ components:
           type: string
         status:
           type: string
-        signedUpUserId:
-          type: ["string", "null"]
+        joined:
+          type: boolean
+          description: Whether someone signed up through this invite. The joiner's account id is never returned to the inviter.
         signedUpAt:
           type: ["string", "null"]
         revealRequested:
@@ -5583,6 +5597,7 @@ components:
         - channel
         - publicToken
         - status
+        - joined
         - revealRequested
         - createdAt
 
@@ -5649,9 +5664,12 @@ components:
           description: "'email' | 'sms' | 'whatsapp'"
         note:
           type: ["string", "null"]
-          description: Optional personal line from the sender, shown alongside the topic teaser. Max 200 characters.
+          description: Optional personal line from the sender, shown alongside the topic teaser in the email and in-app notice. Never included in an SMS body. Max 200 characters.
         senderAlias:
           type: ["string", "null"]
+        smsConsentConfirmed:
+          type: ["boolean", "null"]
+          description: Required (must be true) when channel is "sms" and the sender hasn't confirmed this number before — the sender confirming they have this recipient's permission to receive a text. Not required for "email" or "whatsapp".
       required:
         - channel
 
@@ -6005,8 +6023,10 @@ components:
       properties:
         fullName:
           type: ["string", "null"]
+          maxLength: 100
         avatarUrl:
           type: ["string", "null"]
+          maxLength: 2048
         gender:
           type: ["string", "null"]
         ageRange:
@@ -6444,8 +6464,9 @@ components:
           type: string
         name:
           type: string
-        ownerId:
-          type: string
+        isOwner:
+          type: boolean
+          description: Whether the CALLER created this circle. The owner's account id is never returned to members.
         inviteCode:
           type: string
         createdAt:
@@ -6453,7 +6474,7 @@ components:
       required:
         - id
         - name
-        - ownerId
+        - isOwner
         - inviteCode
         - createdAt
 
@@ -6470,6 +6491,7 @@ components:
       properties:
         inviteCode:
           type: string
+          maxLength: 64
       required:
         - inviteCode
 
@@ -6497,6 +6519,8 @@ components:
       properties:
         endpoint:
           type: string
+          maxLength: 2048
+          description: A browser PushManager endpoint. Must be https on a recognized browser push service (FCM, Mozilla autopush, Windows WNS, Apple web push) with no custom port; anything else is rejected. At most 10 subscriptions are kept per account (oldest dropped).
         keys:
           $ref: "#/components/schemas/PushSubscriptionKeys"
       required:

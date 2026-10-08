@@ -53,10 +53,17 @@ describe("Guess who sent it", () => {
     const sender = `clerk_guess_sender_${randomUUID()}`;
     const stranger = `clerk_guess_stranger_${randomUUID()}`;
 
+    // Whisper Link: guess reactions are rejected on a public circle_drop
+    // post, whose thread every viewer shares (see securityWhispRoutes.test.ts).
     const created = await request(app)
       .post("/api/whisps")
       .set(asUser(sender))
-      .send({ videoUrl: "https://youtu.be/dQw4w9WgXcQ", deliveryMethod: "circle_drop" });
+      .send({
+        videoUrl: "https://youtu.be/dQw4w9WgXcQ",
+        deliveryMethod: "whisper_link",
+        whisperChannel: "email",
+        recipientEmail: "recipient@example.com",
+      });
     const { id: whispId, publicToken } = created.body;
 
     const guess = await request(app)

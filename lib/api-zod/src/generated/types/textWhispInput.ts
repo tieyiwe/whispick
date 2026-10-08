@@ -10,7 +10,10 @@ export interface TextWhispInput {
   recipientPhone: string;
   /** @maxLength 260 */
   messageText: string;
-  /** @nullable */
+  /**
+     * @maxLength 200
+     * @nullable
+     */
   senderAlias?: string | null;
   /**
      * A future ISO timestamp to hold delivery back until — omit or leave null to send immediately.

@@ -1,6 +1,6 @@
 import { db } from "@workspace/db";
 import { whispsTable, uploadedVideosTable } from "@workspace/db";
-import { eq, and, lte, count } from "drizzle-orm";
+import { eq, and, lte, count, isNull } from "drizzle-orm";
 import { deliverWhisperLink } from "./deliver";
 import { groupHookLine } from "./copy";
 import { computeExpiresAt } from "./expiration";
@@ -39,7 +39,18 @@ export function startScheduledWhispDispatcher(): void {
       const due = await db
         .select()
         .from(whispsTable)
-        .where(and(eq(whispsTable.status, "scheduled"), lte(whispsTable.scheduledAt, new Date())))
+        .where(
+          and(
+            eq(whispsTable.status, "scheduled"),
+            lte(whispsTable.scheduledAt, new Date()),
+            // A sender who deletes a still-scheduled whisp (DELETE /whisps/:id
+            // flips it to 'cancelled', but rows deleted before that existed
+            // may still read 'scheduled') or a moderator takedown must stop
+            // it from ever going out.
+            isNull(whispsTable.deletedBySenderAt),
+            isNull(whispsTable.removedByAdminAt),
+          ),
+        )
         .limit(BATCH_LIMIT);
 
       if (due.length === 0) return;
@@ -62,7 +73,16 @@ export function startScheduledWhispDispatcher(): void {
         const claimed = await db
           .update(whispsTable)
           .set({ status: "delivered", deliveredAt: new Date(), expiresAt: expiresForMethod(whisp.deliveryMethod) })
-          .where(and(eq(whispsTable.id, whisp.id), eq(whispsTable.status, "scheduled")))
+          .where(
+            and(
+              eq(whispsTable.id, whisp.id),
+              eq(whispsTable.status, "scheduled"),
+              // Re-checked at claim time: the sender may have deleted it
+              // between the select above and this row's turn in the loop.
+              isNull(whispsTable.deletedBySenderAt),
+              isNull(whispsTable.removedByAdminAt),
+            ),
+          )
           .returning({ id: whispsTable.id });
         if (claimed.length === 0) continue;
 

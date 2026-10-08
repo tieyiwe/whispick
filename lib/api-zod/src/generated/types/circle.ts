@@ -9,7 +9,8 @@
 export interface Circle {
   id: string;
   name: string;
-  ownerId: string;
+  /** Whether the CALLER created this circle. The owner's account id is never returned to members. */
+  isOwner: boolean;
   inviteCode: string;
   createdAt: string;
 }

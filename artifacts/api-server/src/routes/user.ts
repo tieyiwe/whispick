@@ -21,7 +21,7 @@ import { randomUUID } from "crypto";
 import { z } from "zod";
 import { requireAuth } from "../lib/auth";
 import { ensureUser } from "../lib/ensureUser";
-import { getVapidPublicKey } from "../lib/push";
+import { getVapidPublicKey, isAllowedPushEndpoint } from "../lib/push";
 import { consentedPhones } from "../lib/smsConsent";
 import { GENDER_OPTIONS, AGE_RANGE_OPTIONS } from "../lib/demographics";
 import { SUPPORTED_LANGUAGES } from "../lib/languages";
@@ -106,6 +106,10 @@ router.get("/recap", requireAuth, async (req, res): Promise<void> => {
         and(
           eq(whispsTable.recipientUserId, user.id),
           inArray(whispsTable.deliveryMethod, ["whisper_link", "group_whisper"]),
+          // Not-yet-delivered (scheduled) or never-delivered (cancelled)
+          // whisps aren't "received" — counting them would tell the
+          // recipient one is on its way before it arrives.
+          notInArray(whispsTable.status, ["scheduled", "cancelled"]),
           sinceClause(whispsTable.createdAt),
         ),
       ),
@@ -191,8 +195,10 @@ router.patch("/profile", requireAuth, async (req, res): Promise<void> => {
   const user = await ensureUser(userId!, req);
 
   const schema = z.object({
-    fullName: z.string().nullable().optional(),
-    avatarUrl: z.string().nullable().optional(),
+    // Bounded: fullName is shown to others (revealed sender name, Whisper Box
+    // handle seed) and both are stored and echoed on every profile read.
+    fullName: z.string().max(100).nullable().optional(),
+    avatarUrl: z.string().max(2048).nullable().optional(),
     gender: z.enum(GENDER_OPTIONS).nullable().optional(),
     ageRange: z.enum(AGE_RANGE_OPTIONS).nullable().optional(),
     emailNotificationsEnabled: z.boolean().optional(),
@@ -351,11 +357,22 @@ router.post("/sms-consent/check", requireAuth, async (req, res): Promise<void> =
   res.json({ consented });
 });
 
+// A handful of browsers/devices per person is normal; past this the oldest
+// registrations are dropped so one account can't stockpile endpoints for the
+// notification fan-out to hammer.
+const MAX_PUSH_SUBSCRIPTIONS_PER_USER = 10;
+
 const pushSubscriptionSchema = z.object({
-  endpoint: z.string().min(1),
+  // Only real browser push services — see lib/push.ts's
+  // isAllowedPushEndpoint for why an arbitrary URL here is an SSRF.
+  endpoint: z
+    .string()
+    .min(1)
+    .max(2048)
+    .refine(isAllowedPushEndpoint, { message: "Not a recognized browser push service endpoint" }),
   keys: z.object({
-    p256dh: z.string().min(1),
-    auth: z.string().min(1),
+    p256dh: z.string().min(1).max(256),
+    auth: z.string().min(1).max(256),
   }),
 });
 
@@ -370,19 +387,42 @@ router.post("/push-subscription", requireAuth, async (req, res): Promise<void> =
     return;
   }
 
-  await db
-    .insert(pushSubscriptionsTable)
-    .values({
-      id: randomUUID(),
-      userId: user.id,
-      endpoint: parsed.data.endpoint,
-      p256dh: parsed.data.keys.p256dh,
-      auth: parsed.data.keys.auth,
-    })
-    .onConflictDoUpdate({
-      target: pushSubscriptionsTable.endpoint,
-      set: { userId: user.id, p256dh: parsed.data.keys.p256dh, auth: parsed.data.keys.auth },
-    });
+  await db.transaction(async (tx) => {
+    // The same browser endpoint registered under a DIFFERENT account (a
+    // shared device after an account switch) is removed and re-created for
+    // the caller rather than having its owner column flipped in place — the
+    // old account's row, keys and age never carry over to the new one.
+    await tx
+      .delete(pushSubscriptionsTable)
+      .where(and(eq(pushSubscriptionsTable.endpoint, parsed.data.endpoint), ne(pushSubscriptionsTable.userId, user.id)));
+
+    await tx
+      .insert(pushSubscriptionsTable)
+      .values({
+        id: randomUUID(),
+        userId: user.id,
+        endpoint: parsed.data.endpoint,
+        p256dh: parsed.data.keys.p256dh,
+        auth: parsed.data.keys.auth,
+      })
+      .onConflictDoUpdate({
+        target: pushSubscriptionsTable.endpoint,
+        // Only ever reached for the caller's OWN existing row (any other
+        // account's was deleted above) — a key refresh, not a reassignment.
+        set: { p256dh: parsed.data.keys.p256dh, auth: parsed.data.keys.auth },
+        setWhere: eq(pushSubscriptionsTable.userId, user.id),
+      });
+
+    const overflow = await tx
+      .select({ id: pushSubscriptionsTable.id })
+      .from(pushSubscriptionsTable)
+      .where(eq(pushSubscriptionsTable.userId, user.id))
+      .orderBy(desc(pushSubscriptionsTable.createdAt))
+      .offset(MAX_PUSH_SUBSCRIPTIONS_PER_USER);
+    if (overflow.length > 0) {
+      await tx.delete(pushSubscriptionsTable).where(inArray(pushSubscriptionsTable.id, overflow.map((r) => r.id)));
+    }
+  });
 
   res.status(201).json({ ok: true });
 });
@@ -453,6 +493,9 @@ router.post("/phone/start-verification", requireAuth, phoneVerificationLimiter, 
 
   res.status(200).json({ ok: true });
 });
+
+// See the backfill at the end of POST /phone/confirm-verification.
+const TEXT_WHISP_BACKFILL_DAYS = 30;
 
 const confirmPhoneVerificationSchema = z.object({
   phone: z.string().min(1).max(32),
@@ -535,10 +578,24 @@ router.post("/phone/confirm-verification", requireAuth, confirmPhoneVerification
   // gap, never reassigns an existing match (e.g. after the recycled-number
   // clear above, a prior holder's already-answered Text Whisps stay theirs,
   // not silently handed to whoever verifies the number next).
+  //
+  // Also bounded to the last TEXT_WHISP_BACKFILL_DAYS: phone numbers get
+  // recycled, and an unmatched Text Whisp from months ago was most likely
+  // meant for the number's PREVIOUS holder — attaching it (and its whole
+  // reply thread) to whoever verifies the number today would hand a
+  // stranger someone else's private message.
+  const backfillSince = new Date(Date.now() - TEXT_WHISP_BACKFILL_DAYS * 24 * 60 * 60 * 1000);
   await db
     .update(textWhispsTable)
     .set({ recipientUserId: user.id })
-    .where(and(eq(textWhispsTable.recipientPhone, normalized), isNull(textWhispsTable.recipientUserId), ne(textWhispsTable.senderId, user.id)));
+    .where(
+      and(
+        eq(textWhispsTable.recipientPhone, normalized),
+        isNull(textWhispsTable.recipientUserId),
+        ne(textWhispsTable.senderId, user.id),
+        gte(textWhispsTable.createdAt, backfillSince),
+      ),
+    );
 
   const updated = await db.select().from(usersTable).where(eq(usersTable.id, user.id)).then((r) => r[0]!);
   res.status(200).json({ phone: updated.phone, phoneVerifiedAt: updated.phoneVerifiedAt, countryCode: updated.countryCode });

@@ -14,10 +14,15 @@ export interface DebateTopicWhispInput {
   /** 'email' | 'sms' | 'whatsapp' */
   channel: string;
   /**
-     * Optional personal line from the sender, shown alongside the topic teaser. Max 200 characters.
+     * Optional personal line from the sender, shown alongside the topic teaser in the email and in-app notice. Never included in an SMS body. Max 200 characters.
      * @nullable
      */
   note?: string | null;
   /** @nullable */
   senderAlias?: string | null;
+  /**
+     * Required (must be true) when channel is "sms" and the sender hasn't confirmed this number before — the sender confirming they have this recipient's permission to receive a text. Not required for "email" or "whatsapp".
+     * @nullable
+     */
+  smsConsentConfirmed?: boolean | null;
 }

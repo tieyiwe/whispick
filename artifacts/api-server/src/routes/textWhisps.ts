@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { getAuth } from "@clerk/express";
-import { db, textWhispsTable, textWhispRepliesTable, usersTable, type TextWhisp } from "@workspace/db";
-import { eq, and, or, ne, isNull, asc, desc } from "drizzle-orm";
+import { db, textWhispsTable, textWhispRepliesTable, usersTable, type TextWhisp, type TextWhispReply } from "@workspace/db";
+import { eq, and, or, ne, isNull, asc, desc, notInArray, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { z } from "zod";
 import { requireAuth } from "../lib/auth";
@@ -52,6 +52,15 @@ export function excludeRemoved() {
   return isNull(textWhispsTable.removedByAdminAt);
 }
 
+// What the RECIPIENT may see: never a still-scheduled send (recipientUserId
+// is set at insert time, so without this the recipient could read it — and
+// its publicToken — before it's due) or one the sender cancelled by deleting
+// it before it went out. Sender-side views are unaffected.
+const RECIPIENT_HIDDEN_STATUSES = ["scheduled", "cancelled"];
+function recipientVisible() {
+  return notInArray(textWhispsTable.status, RECIPIENT_HIDDEN_STATUSES);
+}
+
 async function loadTextWhispForUser(id: string, userId: string) {
   const textWhisp = await db
     .select()
@@ -69,6 +78,7 @@ async function loadTextWhispForUser(id: string, userId: string) {
   // A soft-deleted text whisp is invisible to the sender who deleted it, but
   // never to the recipient — mirrors whisps.ts's deletedBySenderAt exactly.
   if (textWhisp.senderId === userId && textWhisp.deletedBySenderAt) return null;
+  if (textWhisp.senderId !== userId && RECIPIENT_HIDDEN_STATUSES.includes(textWhisp.status)) return null;
   return textWhisp;
 }
 
@@ -91,8 +101,26 @@ async function loadTextWhispForUser(id: string, userId: string) {
 // doesn't leave a stale "typing…" showing indefinitely.
 const TYPING_TTL_MS = 8_000;
 
+// Replies are never returned raw: each row's senderId is the author's real
+// users.id, which is the SENDER's stable account id on every reply they
+// write. Handing that to the recipient let two recipients compare notes and
+// link two "different" anonymous senders (defeating the per-pair
+// senderHandle), and combined with any other id-bearing response, identify
+// them. Only the caller-relative fact the thread UI needs is exposed.
+function toReplyResponse(reply: TextWhispReply, viewerId: string) {
+  return {
+    id: reply.id,
+    textWhispId: reply.textWhispId,
+    replyText: reply.replyText,
+    parentReplyId: reply.parentReplyId,
+    readAt: reply.readAt,
+    createdAt: reply.createdAt,
+    fromViewer: reply.senderId === viewerId,
+  };
+}
+
 async function toResponse(textWhisp: TextWhisp, viewerId: string) {
-  const { recipientUserId, typingUserId, typingAt, senderId, ...rest } = textWhisp;
+  const { recipientUserId, typingUserId, typingAt, senderId } = textWhisp;
   // Same shape as viewerIsRecipient: a raw typingUserId would tell a viewer
   // WHO is typing even when it's their own ping echoed back, so this
   // resolves it to the one fact the other party's UI actually needs —
@@ -126,8 +154,23 @@ async function toResponse(textWhisp: TextWhisp, viewerId: string) {
   // for the recipient's own view.
   const senderHandle = viewerIsRecipient ? await safeAssignOrGetSenderHandle(senderId, viewerId) : null;
 
+  // Explicit allowlist, not `...rest`: a column added to text_whisps later
+  // (or moderation/soft-delete bookkeeping like removedByAdminAt and
+  // deletedBySenderAt) stays out of both parties' responses until someone
+  // deliberately decides it belongs here.
   return {
-    ...rest,
+    id: textWhisp.id,
+    recipientPhone: textWhisp.recipientPhone,
+    publicToken: textWhisp.publicToken,
+    senderAlias: textWhisp.senderAlias,
+    messageText: textWhisp.messageText,
+    status: textWhisp.status,
+    revealRequested: textWhisp.revealRequested,
+    revealAccepted: textWhisp.revealAccepted,
+    scheduledAt: textWhisp.scheduledAt,
+    readAt: textWhisp.readAt,
+    createdAt: textWhisp.createdAt,
+    source: textWhisp.source,
     senderId: viewerIsRecipient ? null : senderId,
     viewerIsRecipient,
     otherPartyTyping,
@@ -147,11 +190,15 @@ router.get("/", requireAuth, async (req, res): Promise<void> => {
     .from(textWhispsTable)
     .where(
       and(
-        or(eq(textWhispsTable.senderId, user.id), eq(textWhispsTable.recipientUserId, user.id)),
-        // Only excludes a row the CURRENT user sent and deleted — a text
-        // whisp this user received (sent by someone else) is never hidden
-        // by the sender's own delete, same as whisps.ts.
-        or(eq(textWhispsTable.recipientUserId, user.id), excludeDeleted()),
+        or(
+          // Only excludes a row the CURRENT user sent and deleted — a text
+          // whisp this user received (sent by someone else) is never hidden
+          // by the sender's own delete, same as whisps.ts…
+          and(eq(textWhispsTable.senderId, user.id), excludeDeleted()),
+          // …unless it never actually went out (still scheduled, or
+          // cancelled by that delete before it was due).
+          and(eq(textWhispsTable.recipientUserId, user.id), recipientVisible()),
+        ),
         excludeRemoved(),
       ),
     )
@@ -164,7 +211,7 @@ router.get("/", requireAuth, async (req, res): Promise<void> => {
 const createTextWhispSchema = z.object({
   recipientPhone: z.string().min(1),
   messageText: z.string().min(1).max(MESSAGE_MAX_LENGTH),
-  senderAlias: z.string().nullable().optional(),
+  senderAlias: z.string().max(200).nullable().optional(),
   // "Schedule for later" — same field/semantics as whisps.ts's own
   // scheduledAt (see routes/whisps.ts POST / and lib/scheduler.ts): a future
   // ISO timestamp holds delivery back until lib/textWhispScheduler.ts finds
@@ -323,11 +370,11 @@ router.get("/:id", requireAuth, async (req, res): Promise<void> => {
       .set({ readAt: new Date(), status: textWhisp.status === "replied" ? "replied" : "read" })
       .where(eq(textWhispsTable.id, textWhisp.id));
     const refreshed = await db.select().from(textWhispsTable).where(eq(textWhispsTable.id, textWhisp.id)).then((r) => r[0]!);
-    res.json({ textWhisp: await toResponse(refreshed, user.id), replies });
+    res.json({ textWhisp: await toResponse(refreshed, user.id), replies: replies.map((r) => toReplyResponse(r, user.id)) });
     return;
   }
 
-  res.json({ textWhisp: await toResponse(textWhisp, user.id), replies });
+  res.json({ textWhisp: await toResponse(textWhisp, user.id), replies: replies.map((r) => toReplyResponse(r, user.id)) });
 });
 
 // DELETE /api/text-whisps/:id — soft delete, sender only. Same semantics as
@@ -348,7 +395,17 @@ router.delete("/:id", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  await db.update(textWhispsTable).set({ deletedBySenderAt: new Date() }).where(eq(textWhispsTable.id, textWhisp.id));
+  // A still-scheduled send is cancelled outright (in the same statement, so
+  // it can't race the dispatcher's claim): the recipient's view of a
+  // delivered message is deliberately unaffected by a sender delete, but one
+  // that never went out must never reach them at all.
+  await db
+    .update(textWhispsTable)
+    .set({
+      deletedBySenderAt: new Date(),
+      status: sql`CASE WHEN ${textWhispsTable.status} = 'scheduled' THEN 'cancelled' ELSE ${textWhispsTable.status} END`,
+    })
+    .where(eq(textWhispsTable.id, textWhisp.id));
   res.status(204).send();
 });
 
@@ -369,15 +426,14 @@ router.get("/:id/replies", requireAuth, async (req, res): Promise<void> => {
     .where(eq(textWhispRepliesTable.textWhispId, textWhisp.id))
     .orderBy(asc(textWhispRepliesTable.createdAt));
 
-  res.json(replies);
+  res.json(replies.map((r) => toReplyResponse(r, user.id)));
 });
 
 // POST /api/text-whisps/:id/replies — from either party, 260-char limit,
 // same as the initial message. senderId is always the real, authenticated
-// replier's own id (never client-controlled) — the frontend/other party
-// tells sender from recipient by comparing it against the parent row's
-// senderId/recipientUserId, no separate boolean needed (see
-// text_whisp_replies.ts).
+// replier's own id (never client-controlled), but it's never echoed back —
+// responses carry the caller-relative fromViewer instead (see
+// toReplyResponse).
 const replyTextWhispSchema = z.object({
   replyText: z.string().min(1).max(MESSAGE_MAX_LENGTH),
   // Which earlier message in this thread the reply quotes, if any — same
@@ -394,6 +450,13 @@ router.post("/:id/replies", requireAuth, async (req, res): Promise<void> => {
   const textWhisp = await loadTextWhispForUser(req.params.id, user.id);
   if (!textWhisp) {
     res.status(404).json({ error: "Text Whisp not found" });
+    return;
+  }
+
+  // The reply's in-app notice would reach the recipient before the Text
+  // Whisp itself does (only the sender can load a scheduled one here).
+  if (RECIPIENT_HIDDEN_STATUSES.includes(textWhisp.status)) {
+    res.status(400).json({ error: "This Text Whisp hasn't been delivered yet." });
     return;
   }
 
@@ -437,8 +500,8 @@ router.post("/:id/replies", requireAuth, async (req, res): Promise<void> => {
     await db.update(textWhispsTable).set({ status: "replied" }).where(eq(textWhispsTable.id, textWhisp.id));
   }
 
-  const reply = await db.select().from(textWhispRepliesTable).where(eq(textWhispRepliesTable.id, id)).then((r) => r[0]);
-  res.status(201).json(reply);
+  const reply = await db.select().from(textWhispRepliesTable).where(eq(textWhispRepliesTable.id, id)).then((r) => r[0]!);
+  res.status(201).json(toReplyResponse(reply, user.id));
 
   // Notify whichever party didn't just send this reply. Only ever null when
   // the sender follows up on their own Text Whisp before a guest recipient
@@ -505,6 +568,14 @@ router.post("/:id/reveal", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
+  // Nothing to reveal on a message that hasn't gone out (and the request's
+  // own in-app notice would otherwise reach the recipient before the
+  // message does).
+  if (RECIPIENT_HIDDEN_STATUSES.includes(textWhisp.status)) {
+    res.status(400).json({ error: "This Text Whisp hasn't been delivered yet." });
+    return;
+  }
+
   // Mirrors routes/invites.ts's identical gate: revealing is only
   // meaningful once the recipient is an actual account holder — a guest who
   // only ever saw the public link (routes/publicTextWhisps.ts) has no
@@ -545,7 +616,7 @@ router.post("/:id/reveal/respond", requireAuth, async (req, res): Promise<void> 
   const textWhisp = await db
     .select()
     .from(textWhispsTable)
-    .where(and(eq(textWhispsTable.id, req.params.id), eq(textWhispsTable.recipientUserId, user.id)))
+    .where(and(eq(textWhispsTable.id, req.params.id), eq(textWhispsTable.recipientUserId, user.id), recipientVisible(), excludeRemoved()))
     .then((r) => r[0]);
 
   if (!textWhisp) {

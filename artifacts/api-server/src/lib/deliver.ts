@@ -144,14 +144,21 @@ export async function deliverInApp(
 // (`purpose: "reminder"`) failing doesn't undo a whisp that already reached
 // the recipient once, so it's logged (see logDeliveryAttempt below) without
 // touching status.
+//
+// `options.inAppOnly` skips the real email/SMS/WhatsApp send and only
+// notifies a matched recipient in-app — for callers that throttle external
+// re-notification (see routes/whisps.ts POST /:id/replies) but still want the
+// bell entry. An unmatched recipient gets nothing in that mode.
 export async function deliverWhisperLink(
   whisp: DeliverableWhisp,
   appUrl: string,
   hookLine: string = HOOK_LINE,
   purpose: DeliveryPurpose = "whisper_link",
+  options: { inAppOnly?: boolean } = {},
 ): Promise<boolean> {
   const sharedUrl = `${appUrl}/api/l/${whisp.publicToken}`;
   const logCtx = { whispId: whisp.id, purpose };
+  const externalSend = !options.inAppOnly;
 
   let success: boolean;
   if (whisp.whisperChannel === "email" && whisp.recipientEmail) {
@@ -164,7 +171,7 @@ export async function deliverWhisperLink(
     const inAppOk = matched
       ? await deliverInApp(matched.id, "You have a new whisp", hookLine, `/w/${whisp.publicToken}`, whisp.recipientEmail, logCtx)
       : false;
-    const shouldEmail = !matched || matched.emailNotificationsEnabled;
+    const shouldEmail = externalSend && (!matched || matched.emailNotificationsEnabled);
     const emailOk = shouldEmail
       ? await sendEmail(whisp.recipientEmail, hookLine, whisperLinkEmailHtml(sharedUrl, hookLine), logCtx)
       : true; // opted out, not a failure
@@ -188,8 +195,9 @@ export async function deliverWhisperLink(
     const inAppOk = matched
       ? await deliverInApp(matched.id, "You have a new whisp", hookLine, `/w/${whisp.publicToken}`, whisp.recipientPhone, logCtx)
       : false;
-    const transportOk =
-      channel === "sms"
+    const transportOk = !externalSend
+      ? false
+      : channel === "sms"
         ? await sendSms(whisp.recipientPhone, whisperLinkSmsBody(sharedUrl), logCtx)
         : await sendWhatsApp(whisp.recipientPhone, sharedUrl, logCtx);
     // Same reasoning as the email branch above: while Twilio/WhatsApp

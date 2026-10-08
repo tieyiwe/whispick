@@ -15,6 +15,11 @@ async function createWhisp(overrides: Record<string, unknown> = {}) {
   return res.body as { id: string; publicToken: string };
 }
 
+// Sender follow-ups (POST /api/whisps/:id/replies) are rejected on a public
+// Blind Circle post — its thread is shared by every viewer — so tests that
+// exercise them need a person-to-person Whisper Link instead.
+const WHISPER_LINK = { deliveryMethod: "whisper_link", whisperChannel: "email", recipientEmail: "recipient@example.com" };
+
 
 // Video replies from an anonymous recipient need credit the sender bought
 // (see videoReplyGate.test.ts, which covers that rule directly). Tests below
@@ -52,7 +57,7 @@ describe("GET /api/public/w/:token", () => {
   });
 
   it("includes the reply thread so the recipient can see prior messages, not just send a one-shot reply", async () => {
-    const whisp = await createWhisp();
+    const whisp = await createWhisp(WHISPER_LINK);
 
     await request(app).post(`/api/public/w/${whisp.publicToken}/reply`).send({ replyText: "thank you" });
     await request(app)
@@ -68,7 +73,7 @@ describe("GET /api/public/w/:token", () => {
   });
 
   it("marks the sender's follow-up read the moment the recipient views the thread, but never their own reply", async () => {
-    const whisp = await createWhisp();
+    const whisp = await createWhisp(WHISPER_LINK);
 
     // The recipient's own message — a read receipt on this should only ever
     // come from the sender's side (routes/whisps.ts GET /:id), never from
@@ -323,7 +328,7 @@ describe("POST /api/public/w/:token/reply", () => {
 // cross-thread leak is the same-whisp check.
 describe("threaded replies (parentReplyId)", () => {
   it("keeps the parent reference when it points at a message on the same whisp", async () => {
-    const whisp = await createWhisp();
+    const whisp = await createWhisp(WHISPER_LINK);
     const first = await request(app)
       .post(`/api/whisps/${whisp.id}/replies`)
       .set(TEST_USER_HEADER, USER_A)
@@ -370,7 +375,7 @@ describe("threaded replies (parentReplyId)", () => {
   });
 
   it("applies the same-whisp rule to the sender's own replies", async () => {
-    const mine = await createWhisp();
+    const mine = await createWhisp(WHISPER_LINK);
     const theirs = await createWhisp();
     const foreign = await request(app)
       .post(`/api/public/w/${theirs.publicToken}/reply`)
@@ -432,7 +437,7 @@ describe("anonymous recipient reply cap", () => {
   // The sender's own follow-ups go through the authenticated route and are
   // fromRecipient:false, so they must not consume the recipient's allowance.
   it("doesn't count the sender's follow-ups against the recipient's allowance", async () => {
-    const whisp = await createWhisp();
+    const whisp = await createWhisp(WHISPER_LINK);
 
     for (let i = 0; i < 3; i++) {
       await request(app)

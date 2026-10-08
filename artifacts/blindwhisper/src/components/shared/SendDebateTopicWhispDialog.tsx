@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { isContactPickerSupported, pickContact } from "@/lib/contactPicker";
+import { useNeedsSmsConsent } from "@/lib/useSmsConsent";
 import { Mail, Phone, Contact, Loader2, Send, CheckCircle2, Share2 } from "lucide-react";
 import { SiWhatsapp } from "react-icons/si";
 
@@ -36,6 +37,9 @@ export function SendDebateTopicWhispDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const { t } = useTranslation("debateTopics");
+  // The SMS opt-in copy is shared verbatim with the invite page's — reused
+  // from there rather than duplicated into every locale's debateTopics file.
+  const { t: tAccount } = useTranslation("account");
   const { toast } = useToast();
   const sendWhisp = useSendDebateTopicWhisp();
 
@@ -44,12 +48,20 @@ export function SendDebateTopicWhispDialog({
   const [note, setNote] = useState("");
   const [senderAlias, setSenderAlias] = useState("");
   const [sent, setSent] = useState(false);
+  // Same server-enforced, once-per-recipient SMS consent as every other
+  // send screen (see lib/useSmsConsent.ts) — SMS only; WhatsApp is carved out.
+  const [smsConsentConfirmed, setSmsConsentConfirmed] = useState(false);
+  const needsSmsConsent = useNeedsSmsConsent(
+    channel === "sms" && recipient.trim() ? [recipient.trim()] : [],
+    channel === "sms" && !!recipient.trim(),
+  );
 
   function reset() {
     setChannel("email");
     setRecipient("");
     setNote("");
     setSenderAlias("");
+    setSmsConsentConfirmed(false);
     setSent(false);
   }
 
@@ -69,6 +81,7 @@ export function SendDebateTopicWhispDialog({
           recipientPhone: channel !== "email" ? recipient.trim() : null,
           note: note.trim() || null,
           senderAlias: senderAlias.trim() || null,
+          smsConsentConfirmed: channel === "sms" ? smsConsentConfirmed : null,
         },
       },
       {
@@ -107,7 +120,8 @@ export function SendDebateTopicWhispDialog({
   }
 
   const remaining = NOTE_MAX_LENGTH - note.length;
-  const canSend = recipient.trim().length > 0 && remaining >= 0 && !sendWhisp.isPending;
+  const canSend =
+    recipient.trim().length > 0 && remaining >= 0 && !sendWhisp.isPending && (!needsSmsConsent || smsConsentConfirmed);
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -219,6 +233,28 @@ export function SendDebateTopicWhispDialog({
                 onChange={(e) => setSenderAlias(e.target.value)}
                 data-testid="input-topic-whisp-alias"
               />
+
+              {channel === "sms" && needsSmsConsent && (
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground" data-testid="text-topic-whisp-sms-consent-disclosure">
+                    {tAccount("invitePage.smsDisclosure")}{" "}
+                    <a href="/sms-terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      {tAccount("invitePage.smsTermsLinkText")}
+                    </a>.
+                  </p>
+                  <label className="flex items-start gap-2 text-sm text-foreground cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={smsConsentConfirmed}
+                      onChange={(e) => setSmsConsentConfirmed(e.target.checked)}
+                      className="rounded border-border/50 mt-0.5"
+                      data-testid="checkbox-topic-whisp-sms-consent"
+                    />
+                    {tAccount("invitePage.smsConsentCheckbox")}
+                  </label>
+                  <p className="text-[11px] text-muted-foreground/80">{tAccount("invitePage.smsConsentOneTime")}</p>
+                </div>
+              )}
 
               <p className="text-xs text-muted-foreground bg-muted/30 rounded-lg px-3 py-2 border border-border/40">
                 {t("debateTopicDetail.sendWhispDialog.privacyNote")}

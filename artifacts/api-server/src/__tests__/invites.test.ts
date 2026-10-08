@@ -63,7 +63,8 @@ describe("POST /api/invites", () => {
     expect(res.body.status).toBe("sent");
     expect(res.body.publicToken).toBeTruthy();
     expect(res.body.revealRequested).toBe(false);
-    expect(res.body.signedUpUserId).toBeNull();
+    expect(res.body.joined).toBe(false);
+    expect(res.body).not.toHaveProperty("signedUpUserId");
   });
 });
 
@@ -115,7 +116,9 @@ describe("POST /api/invites/claim", () => {
 
     const listed = await request(app).get("/api/invites").set(asUser(USER_A));
     expect(listed.body[0].status).toBe("joined");
-    expect(listed.body[0].signedUpUserId).toBeTruthy();
+    expect(listed.body[0].joined).toBe(true);
+    // The inviter learns THAT it was joined, never the joiner's account id.
+    expect(listed.body[0]).not.toHaveProperty("signedUpUserId");
     expect(listed.body[0].signedUpAt).toBeTruthy();
   });
 
@@ -131,7 +134,7 @@ describe("POST /api/invites/claim", () => {
     // may otherwise read "sent" or "failed" depending on whether the
     // fire-and-forget, no-RESEND_API_KEY-in-tests dispatch has resolved yet.)
     expect(listed.body[0].status).not.toBe("joined");
-    expect(listed.body[0].signedUpUserId).toBeNull();
+    expect(listed.body[0].joined).toBe(false);
   });
 
   it("returns 404 for an unknown token", async () => {

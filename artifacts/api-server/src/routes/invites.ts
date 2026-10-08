@@ -84,6 +84,16 @@ async function notifyInviteeOfReveal(invite: Invite): Promise<void> {
   }
 }
 
+// Every inviter-facing invite response goes through here: signedUpUserId is
+// the invitee's real users.id, and the inviter only ever needs to know
+// WHETHER their invite was joined — the raw id would hand them a stable
+// account identifier to correlate with that person's otherwise-anonymous
+// activity elsewhere in the app.
+function toInviteResponse(invite: Invite) {
+  const { signedUpUserId, ...rest } = invite;
+  return { ...rest, joined: signedUpUserId !== null };
+}
+
 const createInviteSchema = z
   .object({
     // Validated, not bare strings — these go straight to the mail/SMS
@@ -145,7 +155,7 @@ router.post("/", requireAuth, inviteLimiter, async (req, res): Promise<void> => 
   // Read back and respond before kicking off the fire-and-forget send below
   // — same race-avoidance reasoning as POST /whisps.
   const invite = await db.select().from(invitesTable).where(eq(invitesTable.id, id)).then((r) => r[0]!);
-  res.status(201).json(invite);
+  res.status(201).json(toInviteResponse(invite));
 
   void dispatchInvite(invite, getPublicAppUrl(req));
 });
@@ -161,7 +171,7 @@ router.get("/", requireAuth, async (req, res): Promise<void> => {
     .where(eq(invitesTable.inviterUserId, user.id))
     .orderBy(sql`${invitesTable.createdAt} DESC`);
 
-  res.json(invites);
+  res.json(invites.map(toInviteResponse));
 });
 
 const claimInviteSchema = z.object({ token: z.string().min(1) });
@@ -242,8 +252,8 @@ router.post("/:id/reveal", requireAuth, async (req, res): Promise<void> => {
 
   await db.update(invitesTable).set({ revealRequested: true }).where(eq(invitesTable.id, invite.id));
 
-  const updated = await db.select().from(invitesTable).where(eq(invitesTable.id, invite.id)).then((r) => r[0]);
-  res.json(updated);
+  const updated = await db.select().from(invitesTable).where(eq(invitesTable.id, invite.id)).then((r) => r[0]!);
+  res.json(toInviteResponse(updated));
 
   // Fire and forget, same posture as whisps' own reveal-request notify:
   // whether this notification goes out shouldn't affect the reveal request

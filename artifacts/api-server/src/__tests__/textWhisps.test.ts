@@ -368,7 +368,9 @@ describe("Text Whisp replies", () => {
       .send({ replyText: "hi", senderId: "someone-else" });
 
     const recipient = await getUser(USER_B);
-    expect(res.body.senderId).toBe(recipient.id);
+    // The raw author id is never echoed back — only the caller-relative flag.
+    expect(res.body).not.toHaveProperty("senderId");
+    expect(res.body.fromViewer).toBe(true);
 
     const stored = await db.select().from(textWhispRepliesTable).where(eq(textWhispRepliesTable.id, res.body.id)).then((r) => r[0]);
     expect(stored.senderId).toBe(recipient.id);

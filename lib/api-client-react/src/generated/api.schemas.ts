@@ -14,6 +14,9 @@ export interface ApiError {
   code?: string;
 }
 
+/**
+ * For the sender's own view, the full whisp minus recipient-side bookkeeping. For a matched recipient's view (viewerRole "recipient"), an explicit allowlist — sender-only fields such as conciergeRequestId and uploadedVideoId are omitted.
+ */
 export interface Whisp {
   id: string;
   /**
@@ -53,6 +56,7 @@ export interface Whisp {
   senderAlias?: string | null;
   /** @nullable */
   moodTag?: string | null;
+  /** ... | 'scheduled' | 'cancelled' (deleted by the sender while still scheduled — never delivered). A matched recipient never sees a 'scheduled' or 'cancelled' whisp. */
   status: string;
   publicToken: string;
   /** @nullable */
@@ -99,7 +103,10 @@ export interface Whisp {
 }
 
 export interface WhispInput {
-  /** @nullable */
+  /**
+     * For circle_drop and ghost_boost (whose viewers are anonymous to the sender) this must be a link on a recognized video platform (YouTube, TikTok, Instagram, Facebook, Vimeo, X) — use uploadedVideoId otherwise. whisper_link accepts any http(s) URL.
+     * @nullable
+     */
   videoUrl?: string | null;
   /** @nullable */
   videoTitle?: string | null;
@@ -111,7 +118,10 @@ export interface WhispInput {
   videoStartSeconds?: number | null;
   /** @nullable */
   videoEndSeconds?: number | null;
-  /** @nullable */
+  /**
+     * @maxLength 50
+     * @nullable
+     */
   videoPlatform?: string | null;
   /**
      * An id from the sender's Media Library — an alternative to videoUrl. One of the two is required.
@@ -127,11 +137,20 @@ export interface WhispInput {
   recipientEmail?: string | null;
   /** @nullable */
   recipientPhone?: string | null;
-  /** @nullable */
+  /**
+     * @maxLength 1000
+     * @nullable
+     */
   anonymousNote?: string | null;
-  /** @nullable */
+  /**
+     * @maxLength 200
+     * @nullable
+     */
   senderAlias?: string | null;
-  /** @nullable */
+  /**
+     * @maxLength 50
+     * @nullable
+     */
   moodTag?: string | null;
   /** @nullable */
   scheduledAt?: string | null;
@@ -331,7 +350,7 @@ export interface TextWhisp {
   senderAlias?: string | null;
   /** @maxLength 260 */
   messageText: string;
-  /** 'sent' | 'read' | 'replied' | 'scheduled' */
+  /** 'sent' | 'read' | 'replied' | 'scheduled' | 'cancelled' (deleted by the sender before it was due; only ever visible to the sender's own admin trail). A recipient never sees a 'scheduled' or 'cancelled' Text Whisp. */
   status: string;
   revealRequested: boolean;
   /** @nullable */
@@ -362,7 +381,10 @@ export interface TextWhispInput {
   recipientPhone: string;
   /** @maxLength 260 */
   messageText: string;
-  /** @nullable */
+  /**
+     * @maxLength 200
+     * @nullable
+     */
   senderAlias?: string | null;
   /**
      * A future ISO timestamp to hold delivery back until — omit or leave null to send immediately.
@@ -379,7 +401,8 @@ export interface TextWhispInput {
 export interface TextWhispReply {
   id: string;
   textWhispId: string;
-  senderId: string;
+  /** True when the authenticated caller wrote this reply. Caller-relative by design — the author's real account id is never returned, since on every reply the sender writes it would be the sender's stable users.id, letting two recipients link a common anonymous sender. */
+  fromViewer: boolean;
   /** @maxLength 260 */
   replyText: string;
   /**
@@ -456,8 +479,8 @@ export interface Invite {
   channel: string;
   publicToken: string;
   status: string;
-  /** @nullable */
-  signedUpUserId?: string | null;
+  /** Whether someone signed up through this invite. The joiner's account id is never returned to the inviter. */
+  joined: boolean;
   /** @nullable */
   signedUpAt?: string | null;
   revealRequested: boolean;
@@ -511,12 +534,17 @@ export interface DebateTopicWhispInput {
   /** 'email' | 'sms' | 'whatsapp' */
   channel: string;
   /**
-     * Optional personal line from the sender, shown alongside the topic teaser. Max 200 characters.
+     * Optional personal line from the sender, shown alongside the topic teaser in the email and in-app notice. Never included in an SMS body. Max 200 characters.
      * @nullable
      */
   note?: string | null;
   /** @nullable */
   senderAlias?: string | null;
+  /**
+     * Required (must be true) when channel is "sms" and the sender hasn't confirmed this number before — the sender confirming they have this recipient's permission to receive a text. Not required for "email" or "whatsapp".
+     * @nullable
+     */
+  smsConsentConfirmed?: boolean | null;
 }
 
 export interface ClaimInviteInput {
@@ -766,9 +794,15 @@ export const UserProfileUpdatePreferredLanguage = {
 } as const;
 
 export interface UserProfileUpdate {
-  /** @nullable */
+  /**
+     * @maxLength 100
+     * @nullable
+     */
   fullName?: string | null;
-  /** @nullable */
+  /**
+     * @maxLength 2048
+     * @nullable
+     */
   avatarUrl?: string | null;
   /** @nullable */
   gender?: string | null;
@@ -1036,7 +1070,8 @@ export interface UserRecap {
 export interface Circle {
   id: string;
   name: string;
-  ownerId: string;
+  /** Whether the CALLER created this circle. The owner's account id is never returned to members. */
+  isOwner: boolean;
   inviteCode: string;
   createdAt: string;
 }
@@ -1046,6 +1081,7 @@ export interface CreateCircleInput {
 }
 
 export interface JoinCircleInput {
+  /** @maxLength 64 */
   inviteCode: string;
 }
 
@@ -1059,6 +1095,10 @@ export interface PushSubscriptionKeys {
 }
 
 export interface PushSubscriptionInput {
+  /**
+     * A browser PushManager endpoint. Must be https on a recognized browser push service (FCM, Mozilla autopush, Windows WNS, Apple web push) with no custom port; anything else is rejected. At most 10 subscriptions are kept per account (oldest dropped).
+     * @maxLength 2048
+     */
   endpoint: string;
   keys: PushSubscriptionKeys;
 }

@@ -14,6 +14,7 @@ import { debateTopicWhispHookLine } from "../lib/copy";
 import { sendDebateTopicWhispLimiter } from "../lib/rateLimit";
 import { findVerifiedRecipient, findVerifiedRecipientByEmail, deliverInApp } from "../lib/deliver";
 import { logger } from "../lib/logger";
+import { hasSmsConsent, recordSmsConsent } from "../lib/smsConsent";
 import { notRetracted, topicUrl } from "./debateTopics";
 import { debateTopicShareUrl } from "./debateTopicLink";
 
@@ -63,7 +64,7 @@ async function dispatchDebateTopicWhisp(whisp: DebateTopicWhisp, topicText: stri
       : false;
     const transportOk =
       whisp.channel === "sms"
-        ? await sendSms(whisp.recipientPhone, debateTopicWhispSmsBody(topicPageUrl, whisp.note), logCtx)
+        ? await sendSms(whisp.recipientPhone, debateTopicWhispSmsBody(topicPageUrl), logCtx)
         : await sendWhatsApp(whisp.recipientPhone, topicPageUrl, logCtx);
     success = matched ? inAppOk || transportOk : transportOk;
   } else {
@@ -90,6 +91,11 @@ const sendDebateTopicWhispSchema = z
     channel: z.enum(CHANNELS),
     note: z.string().trim().max(200).nullable().optional(),
     senderAlias: z.string().trim().max(60).nullable().optional(),
+    // Same server-enforced SMS consent gate as POST /whisps, /invites and
+    // /text-whisps (see routes/whisps.ts's schema comment) — this route
+    // texts an arbitrary number too, so it needs the same A2P 10DLC opt-in
+    // evidence. WhatsApp is carved out, same as everywhere else.
+    smsConsentConfirmed: z.boolean().nullable().optional(),
   })
   .refine((data) => (data.channel === "email" ? !!data.recipientEmail : !!data.recipientPhone), {
     message: "Email needs a recipient email; text/WhatsApp needs a recipient phone number",
@@ -127,6 +133,17 @@ router.post("/:id/whisp", requireAuth, sendDebateTopicWhispLimiter, async (req, 
     return;
   }
   const { channel, recipientEmail, recipientPhone, note, senderAlias } = parsed.data;
+
+  // Once-per-recipient consent (see lib/smsConsent.ts): an affirmative
+  // checkbox now, or a stored consent from a prior send to this number.
+  if (channel === "sms" && recipientPhone) {
+    const alreadyConsented = parsed.data.smsConsentConfirmed || (await hasSmsConsent(user.id, recipientPhone));
+    if (!alreadyConsented) {
+      res.status(400).json({ error: "Please confirm you have this person's permission to receive a text from you.", code: "sms_consent_required" });
+      return;
+    }
+    if (parsed.data.smsConsentConfirmed) void recordSmsConsent(user.id, recipientPhone);
+  }
 
   const id = randomUUID();
   await db.insert(debateTopicWhispsTable).values({

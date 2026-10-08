@@ -61,7 +61,7 @@ export const textWhispsTable = pgTable("text_whisps", {
   // routes/textWhisps.ts), not just implied by a DB constraint, so a bad
   // request fails fast with a clear error instead of a generic DB error.
   messageText: text("message_text").notNull(),
-  status: text("status").notNull().default("sent"), // 'sent' | 'read' | 'replied' | 'scheduled'
+  status: text("status").notNull().default("sent"), // 'sent' | 'read' | 'replied' | 'scheduled' | 'cancelled' (sender deleted it while still scheduled — never delivered)
   revealRequested: boolean("reveal_requested").notNull().default(false),
   revealAccepted: boolean("reveal_accepted"),
   readAt: timestamp("read_at", { withTimezone: true }),
