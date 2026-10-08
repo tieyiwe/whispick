@@ -57,14 +57,15 @@ export function PublicTextWhisp() {
 
       {/* Header */}
       <header
-        className="px-5 pb-5 flex items-center justify-between border-b border-border/30 relative z-10"
-        style={{ paddingTop: "calc(env(safe-area-inset-top) + 1.25rem)" }}
+        className="px-5 pb-3 sm:pb-4 pt-[calc(env(safe-area-inset-top)+0.75rem)] sm:pt-[calc(env(safe-area-inset-top)+1rem)] flex items-center justify-between border-b border-border/40 relative z-10"
       >
-        <BlindWhisperLogoMark />
+        <a href="/" className="inline-block hover:opacity-80 transition-opacity">
+          <BlindWhisperLogoMark />
+        </a>
       </header>
 
       {/* Content */}
-      <main className="flex-1 max-w-lg mx-auto w-full px-5 py-10 space-y-7 relative z-10">
+      <main className="flex-1 max-w-lg mx-auto w-full px-5 pt-8 pb-10 sm:pt-10 sm:pb-12 space-y-6 relative z-10">
         {isLoading ? (
           <div className="space-y-4">
             <Skeleton className="h-6 w-48 mx-auto" />
@@ -76,9 +77,9 @@ export function PublicTextWhisp() {
           </div>
         ) : (
           <>
-            <p className="text-center text-xl font-serif text-foreground leading-snug flex items-center justify-center gap-2">
+            <h1 className="text-center text-[22px] sm:text-2xl font-serif text-foreground leading-snug text-balance flex items-center justify-center gap-2">
               <ScrollText className="w-5 h-5 text-primary shrink-0" /> {t("publicTextWhisp.receivedHeading")}
-            </p>
+            </h1>
 
             <div className="rounded-2xl bg-gradient-to-b from-background to-card/60 border border-border/30 py-8 px-4">
               <TextWhispScroll mode="open" messageText={textWhisp.messageText} senderAlias={textWhisp.senderAlias} createdAt={textWhisp.createdAt} />

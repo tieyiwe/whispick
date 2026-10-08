@@ -11,7 +11,10 @@
     "whispToSomeoneElse": "Whisp to someone else",
     "couldntUpdateThat": "Couldn't update that",
     "movedBackToList": "Moved back to your list",
-    "whispDeleted": "Whisp deleted"
+    "whispDeleted": "Whisp deleted",
+    "timeAgo": "{{time}} ago",
+    "justNow": "Just now",
+    "whispAgain": "Whisp again"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -53,6 +56,17 @@
       "heading": "See your Recap",
       "description": "A shareable snapshot of your Blind Whisper activity — sent, received, and everything in between.",
       "cta": "View My Recap"
+    },
+    "welcome": {
+      "subtitle": "Welcome — here's where your whisps will live.",
+      "title": "Send your first whisp",
+      "description": "Pick a video that says what you can't, add a note if you like, and send it anonymously. You'll see here when it's opened, watched and replied to.",
+      "cta": "Send your first whisp",
+      "steps": {
+        "pick": "Pick a video",
+        "note": "Add a note",
+        "send": "Send it anonymously"
+      }
     }
   },
   "sendWhisp": {
@@ -381,7 +395,9 @@
     "videoWhispsHeading": "Video Whisp Replies",
     "textWhispsHeading": "Text Whisp Replies",
     "videoWhispsEmpty": "No replies to your video Whisps yet.",
-    "textWhispsEmpty": "No replies to your Text Whisps yet."
+    "textWhispsEmpty": "No replies to your Text Whisps yet.",
+    "tabVideo": "Video whisps",
+    "tabText": "Text whisps"
   },
   "groupSendDetail": {
     "notFound": "Group send not found.",
@@ -540,7 +556,11 @@
       "sendButton": "Send Reply",
       "guessToggle": "Guess who sent this 🕵️",
       "guessHint": "They'll pick how to react — never an automatic answer.",
-      "guessPlaceholder": "I think it was..."
+      "guessPlaceholder": "I think it was...",
+      "quickRepliesAriaLabel": "Quick replies",
+      "collapseComposerAriaLabel": "Minimize reply box",
+      "removeVideoAriaLabel": "Remove video",
+      "videoChip": "Video back"
     },
     "reveal": {
       "viewerAccepted": "You've let them know it's okay to reveal themselves.",

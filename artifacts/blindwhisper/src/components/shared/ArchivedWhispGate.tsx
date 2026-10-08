@@ -32,11 +32,11 @@ export function ArchivedWhispGate({ videoTitle, onUnarchive, isUnarchiving, onBa
           {videoTitle ? t("archivedWhispGate.descriptionWithTitle", { title: videoTitle }) : t("archivedWhispGate.description")}
         </p>
       </div>
-      <div className="flex flex-col sm:flex-row gap-3 justify-center pt-1">
-        <Button variant="outline" onClick={onBack} className="rounded-full" data-testid="button-archived-gate-back">
+      <div className="flex flex-col-reverse sm:flex-row gap-3 justify-center pt-1">
+        <Button variant="outline" onClick={onBack} className="rounded-full h-11 px-5" data-testid="button-archived-gate-back">
           {t("archivedWhispGate.back")}
         </Button>
-        <Button onClick={onUnarchive} disabled={isUnarchiving} className="rounded-full" data-testid="button-archived-gate-unarchive">
+        <Button onClick={onUnarchive} disabled={isUnarchiving} className="rounded-full h-11 px-5" data-testid="button-archived-gate-unarchive">
           {isUnarchiving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <ArchiveRestore className="w-4 h-4 mr-2" />}
           {t("archivedWhispGate.unarchive")}
         </Button>

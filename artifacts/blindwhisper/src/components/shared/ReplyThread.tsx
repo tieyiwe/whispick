@@ -107,14 +107,41 @@ function isHttpUrl(value: string): boolean {
   }
 }
 
-// Same-day messages only need a time; older ones need a date for the thread
-// to stay readable as a conversation spans days.
-function formatTimestamp(iso: string): string {
-  const date = new Date(iso);
-  const isToday = new Date().toDateString() === date.toDateString();
-  return isToday
-    ? date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
-    : date.toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+// Relative ("5m ago", "2h ago", "3d ago") so a thread reads at a glance the
+// way every other feed in the app does; the exact moment stays one hover /
+// long-press away in the element's title. Localised through Intl (not i18n
+// keys) so every UI language gets its own native phrasing for free.
+const RELATIVE_STEPS: [Intl.RelativeTimeFormatUnit, number][] = [
+  ["second", 60],
+  ["minute", 60],
+  ["hour", 24],
+  ["day", 7],
+  ["week", 4.345],
+  ["month", 12],
+  ["year", Infinity],
+];
+
+function formatRelative(iso: string, locale: string | undefined): string {
+  let value = (new Date(iso).getTime() - Date.now()) / 1000;
+  try {
+    const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto", style: "narrow" });
+    for (const [unit, size] of RELATIVE_STEPS) {
+      if (Math.abs(value) < size) {
+        // Anything under a minute is just "now" — counting seconds would
+        // make a thread look like it's ticking.
+        return unit === "second" ? rtf.format(0, "second") : rtf.format(Math.round(value), unit);
+      }
+      value /= size;
+    }
+  } catch {
+    // Fall through to the absolute form on an engine without
+    // RelativeTimeFormat (or an unknown locale tag).
+  }
+  return formatAbsolute(iso);
+}
+
+function formatAbsolute(iso: string): string {
+  return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
 function MessageBubble({
@@ -145,7 +172,7 @@ function MessageBubble({
     pendingReplyId?: string | null;
   };
 }) {
-  const { t } = useTranslation("sharedB");
+  const { t, i18n } = useTranslation("sharedB");
   return (
     <div
       data-testid={`reply-${reply.id}`}
@@ -154,8 +181,12 @@ function MessageBubble({
       // an unclamped index leaves message #40 invisible for two seconds.
       style={{ ["--message-index" as string]: String(Math.min(index, 10)) }}
     >
-      <span className="flex items-center gap-1 text-[11px] text-muted-foreground px-2 mb-1">
-        {authorLabel} · {formatTimestamp(reply.createdAt)}
+      <span className="flex items-center gap-1 text-xs text-muted-foreground px-2 mb-1">
+        <span>{authorLabel}</span>
+        <span aria-hidden>·</span>
+        <time dateTime={reply.createdAt} title={formatAbsolute(reply.createdAt)} className="tabular-nums">
+          {formatRelative(reply.createdAt, i18n.language)}
+        </time>
         {isOwn && <ReadReceipt read={!!reply.readAt} />}
         {reply.isGuess && (
           // A small badge rather than restyling the whole bubble — the
@@ -171,7 +202,7 @@ function MessageBubble({
       </span>
       <div
         className={[
-          "max-w-[85%] px-4 py-2.5 text-sm leading-relaxed shadow-sm",
+          "max-w-[85%] px-4 py-2.5 text-[15px] leading-relaxed shadow-sm",
           // Asymmetric corner radii give each bubble a "tail" pointing at its
           // own side — the cue that makes a thread readable at a glance,
           // before you've read a single word or label.
@@ -268,9 +299,9 @@ function MessageBubble({
           type="button"
           onClick={() => onReply(reply)}
           data-testid={`reply-to-${reply.id}`}
-          className="mt-1 px-2 inline-flex items-center gap-1 text-[11px] text-muted-foreground opacity-60 group-hover:opacity-100 focus-visible:opacity-100 hover:text-foreground transition-opacity"
+          className="mt-0.5 px-2 py-1.5 inline-flex items-center gap-1 text-xs text-muted-foreground opacity-70 group-hover:opacity-100 focus-visible:opacity-100 hover:text-foreground transition-opacity"
         >
-          <ReplyIcon className="w-3 h-3" />
+          <ReplyIcon className="w-3.5 h-3.5" />
           {t("replyThread.reply")}
         </button>
       )}

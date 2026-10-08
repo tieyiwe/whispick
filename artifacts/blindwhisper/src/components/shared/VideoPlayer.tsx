@@ -243,7 +243,7 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
         controls
         autoPlay
         playsInline
-        className="w-full max-h-64 bg-black"
+        className="w-full aspect-video bg-black"
         onLoadedMetadata={(e) => {
           if (startSeconds) e.currentTarget.currentTime = startSeconds;
         }}
@@ -310,7 +310,7 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
               openExternal(openHref, false);
             }}
             data-testid="link-open-on-platform"
-            className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/60 px-2.5 py-1 text-[11px] text-white/90 backdrop-blur transition-colors hover:bg-black/80 hover:text-white"
+            className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/60 px-3 py-1.5 text-xs text-white/90 backdrop-blur transition-colors hover:bg-black/80 hover:text-white"
           >
             <ExternalLink className="w-3 h-3" />
             {platform ? t("videoPlayer.openOn", { platform: PLATFORM_LABELS[platform] ?? platform }) : t("videoPlayer.openOriginal")}
@@ -359,19 +359,24 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
     }
   }
 
+  // Both poster states hold the same 16:9 frame the embedded player uses, so
+  // pressing play swaps the poster for the player without the card jumping.
   return thumbnail && !thumbnailFailed ? (
-    <div className="relative">
+    <div className="relative aspect-video w-full overflow-hidden bg-black">
       {externalConfirmDialog}
       <img
         src={thumbnail}
         alt={title ?? t("videoPlayer.videoAlt")}
-        className="w-full object-cover max-h-64"
+        className="absolute inset-0 h-full w-full object-cover"
         onError={() => setThumbnailFailed(true)}
       />
-      <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+      {/* A soft vignette rather than a flat grey wash, so the poster still
+          reads as the video while the play control stays legible on it. */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.15),rgba(0,0,0,0.45))] flex items-center justify-center">
         <button
           onClick={handlePlayClick}
-          className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 active:scale-95 transition-all"
+          aria-label={title ? `${t("videoPlayer.watchTheVideo")}: ${title}` : t("videoPlayer.watchTheVideo")}
+          className="w-16 h-16 rounded-full bg-white/20 ring-1 ring-white/30 backdrop-blur-md flex items-center justify-center shadow-[0_8px_24px_rgba(0,0,0,0.35)] hover:bg-white/30 active:scale-95 transition-[background-color,transform] duration-150 ease-out"
           data-testid="button-watch-video"
         >
           <PlayCircle className="w-9 h-9 text-white" />
@@ -383,10 +388,10 @@ export function VideoPlayer({ platform, embedUrl, videoUrl, thumbnail, title, st
       {externalConfirmDialog}
       <button
         onClick={handlePlayClick}
-        className="w-full h-36 bg-muted flex flex-col items-center justify-center gap-2 hover:bg-muted/80 transition-colors"
+        className="w-full aspect-video bg-muted/60 flex flex-col items-center justify-center gap-2 hover:bg-muted/80 transition-colors"
         data-testid="button-watch-video-no-thumb"
       >
-        <PlayCircle className="w-10 h-10 text-primary" />
+        <PlayCircle className="w-12 h-12 text-primary" />
         <span className="text-sm text-muted-foreground">{t("videoPlayer.watchTheVideo")}</span>
       </button>
     </>

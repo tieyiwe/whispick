@@ -95,14 +95,15 @@ export function PublicInvitePage() {
 
       {/* Header */}
       <header
-        className="px-5 pb-5 flex items-center justify-between border-b border-border/30 relative z-10"
-        style={{ paddingTop: "calc(env(safe-area-inset-top) + 1.25rem)" }}
+        className="px-5 pb-3 sm:pb-4 pt-[calc(env(safe-area-inset-top)+0.75rem)] sm:pt-[calc(env(safe-area-inset-top)+1rem)] flex items-center justify-between border-b border-border/40 relative z-10"
       >
-        <BlindWhisperLogoMark />
+        <a href="/" className="inline-block hover:opacity-80 transition-opacity">
+          <BlindWhisperLogoMark />
+        </a>
       </header>
 
       {/* Content */}
-      <main className="flex-1 max-w-lg mx-auto w-full px-5 py-10 space-y-7 relative z-10">
+      <main className="flex-1 max-w-lg mx-auto w-full px-5 pt-8 pb-10 sm:pt-10 sm:pb-12 space-y-6 relative z-10">
         {isLoading ? (
           <div className="space-y-4">
             <Skeleton className="h-6 w-48 mx-auto" />
@@ -117,9 +118,9 @@ export function PublicInvitePage() {
             {/* Lead text — required verbatim framing, keep in sync with
                 api-server's lib/copy.ts INVITE_HOOK_LINE by hand. No name,
                 no hint who sent it, ever. */}
-            <p className="text-center text-xl font-serif text-foreground leading-snug">
+            <h1 className="text-center text-[22px] sm:text-2xl font-serif text-foreground leading-snug text-balance">
               {t("publicInvitePage.leadText")}
-            </p>
+            </h1>
 
             <div className="rounded-2xl overflow-hidden bg-card border border-border/50 glow-card p-6 space-y-4 text-center">
               <div className="w-12 h-12 rounded-full bg-primary/15 flex items-center justify-center mx-auto">

@@ -37,11 +37,11 @@ export function WhisperBoxSearchBar({ className }: { className?: string }) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t("searchBar.placeholder")}
-          className="bg-input/50 border-border/50 rounded-full pl-9"
+          className="bg-input/50 border-border/60 rounded-full pl-9 h-11 text-[15px] placeholder:text-muted-foreground"
           data-testid="input-whisper-box-search"
         />
       </div>
-      <Button type="submit" variant="outline" className="rounded-full shrink-0" disabled={!query.trim()} data-testid="button-whisper-box-search">
+      <Button type="submit" variant="outline" className="rounded-full shrink-0 h-11 px-5" disabled={!query.trim()} data-testid="button-whisper-box-search">
         {t("searchBar.button")}
       </Button>
     </form>

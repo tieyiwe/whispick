@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Mailbox, Send, Loader2, CheckCircle2, Sparkles, UserPlus, Video } from "lucide-react";
+import { Mailbox, Send, Loader2, CheckCircle2, Sparkles, UserPlus, Video, ShieldCheck, Info } from "lucide-react";
 import { LogoLockup } from "@/components/ui/logo";
 import { AvatarCircle } from "@/components/shared/AvatarCircle";
 import { PullToRefresh } from "@/components/shared/PullToRefresh";
@@ -93,19 +93,38 @@ export function PublicWhisperBoxPage() {
 
         {/* Header */}
         <header
-          className="px-5 pb-5 flex items-center justify-between border-b border-border/30 relative z-10"
-          style={{ paddingTop: "calc(env(safe-area-inset-top) + 1.25rem)" }}
+          className="px-5 pb-3 sm:pb-4 pt-[calc(env(safe-area-inset-top)+0.75rem)] sm:pt-[calc(env(safe-area-inset-top)+1rem)] flex items-center justify-between gap-3 border-b border-border/40 relative z-10"
         >
-          <BlindWhisperLogoMark />
+          <a href="/" className="inline-block hover:opacity-80 transition-opacity">
+            <BlindWhisperLogoMark />
+          </a>
+          {/* A stranger landing here from a bio link may never have heard of
+              the product — one quiet way to find out, never a sign-up push
+              competing with the message they came to write. */}
+          <a
+            href="/how-it-works"
+            aria-label={t("publicWhisperBoxPage.whatIsLink")}
+            className="inline-flex items-center justify-center gap-1.5 min-h-11 min-w-11 -mr-2 sm:px-2 rounded-full text-sm text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
+            data-testid="link-what-is-blind-whisper"
+          >
+            {/* Icon-only on a phone, where the full lockup leaves no room
+                for the words; the label is still its accessible name. */}
+            <Info className="w-5 h-5 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">{t("publicWhisperBoxPage.whatIsLink")}</span>
+          </a>
         </header>
 
         {/* Content */}
-        <main className="flex-1 max-w-lg mx-auto w-full px-5 py-10 space-y-7 relative z-10">
+        <main className="flex-1 max-w-lg mx-auto w-full px-5 pt-8 pb-10 sm:pt-10 sm:pb-12 space-y-6 relative z-10">
           {isLoading ? (
-            <div className="space-y-4">
-              <Skeleton className="h-16 w-16 rounded-full mx-auto" />
-              <Skeleton className="h-6 w-56 mx-auto" />
-              <Skeleton className="h-40 rounded-2xl" />
+            // Shaped like the page: avatar, two-line heading, the form card.
+            <div className="space-y-6" aria-hidden>
+              <div className="flex flex-col items-center gap-3">
+                <Skeleton className="h-16 w-16 rounded-full" />
+                <Skeleton className="h-6 w-64" />
+                <Skeleton className="h-4 w-48" />
+              </div>
+              <Skeleton className="h-80 rounded-2xl" />
             </div>
           ) : !box ? (
             <div className="text-center py-20 space-y-3">
@@ -139,16 +158,19 @@ export function PublicWhisperBoxPage() {
             </div>
           ) : (
             <>
-              <div className="text-center space-y-3">
-                <AvatarCircle avatarId={box.avatarId} handle={box.handle} size="lg" className="mx-auto" />
-                <p className="text-xl font-serif text-foreground leading-snug">
-                  {t("publicWhisperBoxPage.heading", { handle: box.handle })}
-                </p>
-                <p className="text-base font-serif italic text-foreground/90">{t("publicWhisperBoxPage.promptLine")}</p>
-                <p className="text-sm text-muted-foreground">{t("publicWhisperBoxPage.subheading")}</p>
+              {/* The API only ever returns the handle (no display name), so
+                  it's shown as what it is — an @handle — rather than passed
+                  off as a person's name. */}
+              <div className="flex flex-col items-center text-center">
+                <AvatarCircle avatarId={box.avatarId} handle={box.handle} size="lg" />
+                <h1 className="mt-4 text-[22px] sm:text-2xl font-serif text-foreground leading-snug text-balance">
+                  {t("publicWhisperBoxPage.heading", { handle: `@${box.handle}` })}
+                </h1>
+                <p className="mt-2 text-base font-serif italic text-foreground/85 text-balance">{t("publicWhisperBoxPage.promptLine")}</p>
+                <p className="mt-3 text-sm text-muted-foreground text-balance">{t("publicWhisperBoxPage.subheading")}</p>
               </div>
 
-              <div className="rounded-2xl bg-card border border-border/50 p-6 space-y-5">
+              <div className="rounded-2xl bg-card border border-border/50 p-5 sm:p-6 space-y-5">
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-foreground" htmlFor="whisper-box-message">
                     {t("publicWhisperBoxPage.messageLabel")}
@@ -156,7 +178,7 @@ export function PublicWhisperBoxPage() {
                   <div className="relative">
                     <Textarea
                       id="whisper-box-message"
-                      className="bg-input/50 border-border/50 rounded-xl min-h-[120px] resize-none"
+                      className="bg-input/50 border-border/60 rounded-xl min-h-[132px] resize-none text-[15px] pb-7 placeholder:text-muted-foreground"
                       placeholder={t("publicWhisperBoxPage.messagePlaceholder")}
                       maxLength={MESSAGE_MAX_LENGTH}
                       value={messageText}
@@ -164,7 +186,7 @@ export function PublicWhisperBoxPage() {
                       autoFocus
                       data-testid="textarea-whisper-box-message"
                     />
-                    <span className={`absolute bottom-2 right-3 text-xs ${remaining < 0 ? "text-destructive" : "text-muted-foreground"}`}>
+                    <span className={`absolute bottom-2 right-3 text-xs tabular-nums ${remaining < 0 ? "text-destructive" : "text-muted-foreground"}`}>
                       {messageText.length}/{MESSAGE_MAX_LENGTH}
                     </span>
                   </div>
@@ -176,7 +198,7 @@ export function PublicWhisperBoxPage() {
                   </label>
                   <Input
                     id="whisper-box-alias"
-                    className="bg-input/50 border-border/50 rounded-xl text-sm"
+                    className="bg-input/50 border-border/60 rounded-xl h-11 text-[15px] placeholder:text-muted-foreground"
                     placeholder={t("publicWhisperBoxPage.aliasPlaceholder")}
                     maxLength={ALIAS_MAX_LENGTH}
                     value={senderAlias}
@@ -185,13 +207,14 @@ export function PublicWhisperBoxPage() {
                   />
                 </div>
 
-                <p className="text-xs text-muted-foreground bg-muted/30 rounded-lg px-3 py-2 border border-border/40">
-                  {t("publicWhisperBoxPage.privacyNote")}
+                <p className="flex items-start gap-2 text-[13px] text-muted-foreground leading-relaxed">
+                  <ShieldCheck className="w-4 h-4 mt-0.5 shrink-0 text-primary" />
+                  <span>{t("publicWhisperBoxPage.privacyNote")}</span>
                 </p>
 
                 <Button
                   size="lg"
-                  className="rounded-full w-full shadow-[0_0_15px_rgba(124,92,252,0.3)]"
+                  className="rounded-full w-full h-12 text-base shadow-[0_0_20px_rgba(124,92,252,0.3)] disabled:opacity-100 disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none transition-[background-color,box-shadow] duration-200"
                   onClick={handleSend}
                   disabled={!canSend}
                   data-testid="button-send-whisper-box-message"
@@ -206,66 +229,66 @@ export function PublicWhisperBoxPage() {
                   for replying to this one person: they can create a free
                   account and Whisp a message or video to someone in their
                   own life, anonymously, same as what they're doing here.
-                  The two-step row below is a real (if tiny) "how it works"
-                  — a traveling dot between the steps rather than static
-                  bullets, so the pitch shows the product doing the thing
-                  it promises instead of just describing it. */}
-              <div className="relative overflow-hidden rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/12 via-card to-card p-6 space-y-5 glow-card">
-                <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full blur-[60px] pointer-events-none bg-primary/25" />
-
-                <div className="relative text-center space-y-1.5">
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-medium">
-                    <Video className="w-3 h-3" />
+                  Deliberately a SECONDARY card — quieter surface, outline
+                  button, no glow — so "Send anonymously" above stays the
+                  page's one primary action. The two steps are a real (if
+                  tiny) "how it works": numbered rows that read top to
+                  bottom on any width instead of two narrow columns whose
+                  labels wrapped to four lines. */}
+              <section className="rounded-2xl border border-border/50 bg-card/60 p-5 sm:p-6 space-y-5">
+                <div className="text-center space-y-2">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-medium">
+                    <Video className="w-3.5 h-3.5" />
                     <span>{t("publicWhisperBoxPage.marketingBadge")}</span>
                   </div>
-                  <p className="font-serif text-lg font-semibold text-foreground pt-1">
+                  <h2 className="font-serif text-xl font-semibold text-foreground text-balance pt-1">
                     {t("publicWhisperBoxPage.marketingHeading")}
-                  </p>
-                  <p className="text-sm text-muted-foreground max-w-xs mx-auto leading-relaxed">
+                  </h2>
+                  <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
                     {t("publicWhisperBoxPage.marketingDescription")}
                   </p>
                 </div>
 
-                <div className="relative flex items-center justify-center gap-2 sm:gap-4 pt-1">
-                  <div className="flex flex-col items-center text-center gap-2 w-24 sm:w-28">
-                    <div className="w-11 h-11 rounded-full bg-primary/15 flex items-center justify-center">
-                      <UserPlus className="w-5 h-5 text-primary" />
-                    </div>
-                    <p className="text-xs font-medium text-foreground leading-snug">{t("publicWhisperBoxPage.howItWorksStep1")}</p>
-                  </div>
-
-                  <div className="relative flex-1 max-w-[56px] h-px bg-border/60 shrink-0">
-                    <div className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-primary whisper-flow-dot" />
-                  </div>
-
-                  <div className="flex flex-col items-center text-center gap-2 w-24 sm:w-28">
-                    <div className="w-11 h-11 rounded-full bg-primary/15 flex items-center justify-center">
-                      <Send className="w-5 h-5 text-primary" />
-                    </div>
-                    <p className="text-xs font-medium text-foreground leading-snug">{t("publicWhisperBoxPage.howItWorksStep2")}</p>
-                  </div>
-                </div>
+                <ol className="relative space-y-3">
+                  {/* The connector between the two step icons. */}
+                  <span aria-hidden className="absolute left-5 top-10 bottom-10 w-px -translate-x-1/2 bg-gradient-to-b from-primary/50 to-primary/10" />
+                  {[
+                    { icon: UserPlus, label: t("publicWhisperBoxPage.howItWorksStep1") },
+                    { icon: Send, label: t("publicWhisperBoxPage.howItWorksStep2") },
+                  ].map(({ icon: Icon, label }, i) => (
+                    <li key={i} className="relative flex items-center gap-3.5">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-primary/25 bg-background text-primary">
+                        <Icon className="w-[18px] h-[18px]" />
+                      </span>
+                      <span className="flex min-w-0 gap-1.5 text-sm text-foreground leading-snug">
+                        <span className="font-medium text-muted-foreground tabular-nums">{i + 1}.</span>
+                        <span>{label}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ol>
 
                 <Button
                   size="lg"
-                  className="relative w-full rounded-full h-12 text-base font-medium shadow-[0_0_20px_rgba(124,92,252,0.3)] hover:shadow-[0_0_30px_rgba(124,92,252,0.5)] transition-all"
+                  variant="outline"
+                  className="w-full rounded-full h-12 text-base font-medium border-primary/40 bg-transparent text-foreground hover:bg-primary/10 hover:border-primary/60"
                   onClick={handleSignUp}
                   data-testid="button-sign-up-to-get-whisper-box"
                 >
-                  <Sparkles className="w-4 h-4 mr-2" />
+                  <Sparkles className="w-4 h-4 mr-2 text-primary" />
                   {t("publicWhisperBoxPage.signUpLinkText")}
                 </Button>
-              </div>
+              </section>
             </>
           )}
         </main>
 
         {/* Footer */}
         <footer
-          className="p-5 text-center border-t border-border/30 relative z-10"
+          className="px-5 pt-5 text-center border-t border-border/40 relative z-10"
           style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1.25rem)" }}
         >
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground max-w-lg mx-auto leading-relaxed">
             {t("publicWhisperBoxPage.poweredByPrefix")}{" "}
             <a href="/" className="text-primary hover:underline">Blind Whisper</a>
             {" "}{t("publicWhisperBoxPage.poweredBySuffix")}
