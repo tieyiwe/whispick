@@ -18,7 +18,14 @@
     "settings": "Settings",
     "admin": "Admin",
     "home": "Home",
-    "more": "More"
+    "more": "More",
+    "debateShort": "Debate",
+    "sections": {
+      "community": "Community",
+      "inbox": "Inbox",
+      "create": "Create",
+      "account": "Account"
+    }
   },
   "account": {
     "settings": "Settings",

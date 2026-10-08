@@ -60,36 +60,76 @@ import { usePublicConfig } from "@/lib/usePublicConfig";
 // src/i18n/locales/*/common.json) — the label itself is looked up at
 // render time via t(), not stored here, so it re-renders in the right
 // language the moment i18next's active language changes.
-const NAV_ITEMS = [
-  { href: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard },
-  { href: "/send", labelKey: "nav.sendWhisp", icon: Send },
-  { href: "/whisps", labelKey: "nav.myWhisps", icon: ListVideo },
-  { href: "/text-whisps", labelKey: "nav.textWhisps", icon: ScrollText },
-  { href: "/suggestions", labelKey: "nav.suggestions", icon: Sparkles },
-  { href: "/circle", labelKey: "nav.blindCircle", icon: Users },
-  { href: "/circles", labelKey: "nav.myBlindCircles", icon: VenetianMask },
-  { href: "/debate-topics", labelKey: "nav.debateTopics", icon: Swords },
-  { href: "/debate-topics/following", labelKey: "nav.following", icon: UserCheck },
-  { href: "/whisper-groups", labelKey: "nav.whisperGroups", icon: UsersRound },
-  { href: "/media-library", labelKey: "nav.mediaLibrary", icon: Clapperboard },
-  { href: "/replies", labelKey: "nav.replies", icon: MessageSquareHeart },
-  { href: "/whisper-box", labelKey: "nav.whisperBox", icon: Mailbox },
-  { href: "/invite", labelKey: "nav.inviteAFriend", icon: UserPlus },
-  { href: "/credits", labelKey: "nav.creditsAndPlan", icon: CreditCard },
-  { href: "/settings", labelKey: "nav.settings", icon: Settings },
+type NavItem = { href: string; labelKey: string; icon: typeof LayoutDashboard };
+type NavSection = { key: string; titleKey: string | null; items: NavItem[] };
+
+// Grouped by what people come here to do, most-used first: the two core
+// actions, then the community spaces (Debate Now is a headline feature, so
+// it leads that group instead of sitting ninth in one flat list), then the
+// personal inbox, creation tools, and account housekeeping last.
+const NAV_SECTIONS: NavSection[] = [
+  {
+    key: "main",
+    titleKey: null,
+    items: [
+      { href: "/dashboard", labelKey: "nav.home", icon: LayoutDashboard },
+      { href: "/send", labelKey: "nav.sendWhisp", icon: Send },
+    ],
+  },
+  {
+    key: "community",
+    titleKey: "nav.sections.community",
+    items: [
+      { href: "/debate-topics", labelKey: "nav.debateTopics", icon: Swords },
+      { href: "/debate-topics/following", labelKey: "nav.following", icon: UserCheck },
+      { href: "/circle", labelKey: "nav.blindCircle", icon: Users },
+      { href: "/circles", labelKey: "nav.myBlindCircles", icon: VenetianMask },
+    ],
+  },
+  {
+    key: "inbox",
+    titleKey: "nav.sections.inbox",
+    items: [
+      { href: "/whisps", labelKey: "nav.myWhisps", icon: ListVideo },
+      { href: "/replies", labelKey: "nav.replies", icon: MessageSquareHeart },
+      { href: "/whisper-box", labelKey: "nav.whisperBox", icon: Mailbox },
+      { href: "/text-whisps", labelKey: "nav.textWhisps", icon: ScrollText },
+    ],
+  },
+  {
+    key: "create",
+    titleKey: "nav.sections.create",
+    items: [
+      { href: "/suggestions", labelKey: "nav.suggestions", icon: Sparkles },
+      { href: "/whisper-groups", labelKey: "nav.whisperGroups", icon: UsersRound },
+      { href: "/media-library", labelKey: "nav.mediaLibrary", icon: Clapperboard },
+    ],
+  },
+  {
+    key: "account",
+    titleKey: "nav.sections.account",
+    items: [
+      { href: "/invite", labelKey: "nav.inviteAFriend", icon: UserPlus },
+      { href: "/credits", labelKey: "nav.creditsAndPlan", icon: CreditCard },
+      { href: "/settings", labelKey: "nav.settings", icon: Settings },
+    ],
+  },
 ];
 
-const MOBILE_TAB_ITEMS_LEFT = [
+// Debate Now gets a permanent tab — it's a headline feature and was only
+// reachable through "More" before. Whisper Box moves into "More" instead;
+// its unread badge follows it there (tile badge + a dot on the More button).
+const MOBILE_TAB_ITEMS_LEFT: NavItem[] = [
   { href: "/dashboard", labelKey: "nav.home", icon: LayoutDashboard },
-  { href: "/whisps", labelKey: "nav.myWhisps", icon: ListVideo },
+  { href: "/debate-topics", labelKey: "nav.debateShort", icon: Swords },
   { href: "/circle", labelKey: "nav.blindCircle", icon: Users },
 ];
 
 // Plus the "More" button rendered after these, so the right side also ends
 // up with 3 — balanced against the 3 on the left around the center Send button.
-const MOBILE_TAB_ITEMS_RIGHT = [
+const MOBILE_TAB_ITEMS_RIGHT: NavItem[] = [
+  { href: "/whisps", labelKey: "nav.myWhisps", icon: ListVideo },
   { href: "/replies", labelKey: "nav.replies", icon: MessageSquareHeart },
-  { href: "/whisper-box", labelKey: "nav.whisperBox", icon: Mailbox },
 ];
 
 function MobileTabLink({
@@ -279,19 +319,36 @@ export function AppLayout({ children }: { children: ReactNode }) {
   // (and while the flag is still loading, so it never flashes in and out).
   // Existing threads stay reachable from notifications and Replies.
   const { smsEnabled } = usePublicConfig();
-  const baseNavItems = smsEnabled ? NAV_ITEMS : NAV_ITEMS.filter((item) => item.href !== "/text-whisps");
-  const navItems = isAdmin
-    ? [...baseNavItems, { href: "/admin_pro", labelKey: "nav.admin", icon: ShieldCheck }]
-    : baseNavItems;
+  const navSections: NavSection[] = NAV_SECTIONS.map((section) => ({
+    ...section,
+    items: section.items.filter((item) => smsEnabled || item.href !== "/text-whisps"),
+  })).map((section) =>
+    section.key === "account" && isAdmin
+      ? { ...section, items: [...section.items, { href: "/admin_pro", labelKey: "nav.admin", icon: ShieldCheck }] }
+      : section,
+  );
 
-  // Everything not already reachable from one of the 4 fixed mobile tabs —
-  // derived from navItems (not the raw NAV_ITEMS constant) so a page added
-  // to the desktop sidebar later, including Admin, automatically shows up
-  // here too instead of silently being mobile-unreachable again.
+  // One place that knows which nav item carries which unread count, shared by
+  // the sidebar, the mobile tabs and the More sheet.
+  function badgeFor(href: string): number {
+    if (href === "/whisps") return receivedWhispUnreadCount;
+    if (href === "/replies") return unreadReplyCount;
+    if (href === "/whisper-box") return whisperBoxUnreadCount;
+    return 0;
+  }
+
+  // Everything not already reachable from one of the fixed mobile tabs —
+  // derived from the same sections as the sidebar so a page added there
+  // later, including Admin, automatically shows up here too instead of
+  // silently being mobile-unreachable again.
   const [moreOpen, setMoreOpen] = useState(false);
   const fixedMobileHrefs = new Set([...MOBILE_TAB_ITEMS_LEFT, ...MOBILE_TAB_ITEMS_RIGHT].map((item) => item.href));
-  const moreNavItems = navItems.filter((item) => !fixedMobileHrefs.has(item.href));
+  const moreSections = navSections
+    .map((section) => ({ ...section, items: section.items.filter((item) => !fixedMobileHrefs.has(item.href)) }))
+    .filter((section) => section.items.length > 0);
+  const moreNavItems = moreSections.flatMap((section) => section.items);
   const isOnMoreItem = moreNavItems.some((item) => item.href === location);
+  const moreHasUnread = moreNavItems.some((item) => badgeFor(item.href) > 0);
 
   return (
     // The shell is exactly one viewport tall and clips; <main> inside it does
@@ -337,50 +394,57 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
-          {navItems.map((item) => {
-            const isActive = location === item.href || location.startsWith(item.href + "/");
-            const Icon = item.icon;
+        <nav className="flex-1 px-4 pb-2 overflow-y-auto">
+          {navSections.map((section) => (
+            <div key={section.key} className={section.titleKey ? "mt-5" : ""}>
+              {section.titleKey && (
+                <p className="px-4 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/60">
+                  {t(section.titleKey)}
+                </p>
+              )}
+              <div className="space-y-1">
+                {section.items.map((item) => {
+                  // Exact match for a parent route that has its own child
+                  // item (/debate-topics vs /debate-topics/following), so only
+                  // one of the two lights up at a time.
+                  const hasChildItem = navSections.some((sec) => sec.items.some((other) => other.href.startsWith(item.href + "/")));
+                  const isActive = location === item.href || (!hasChildItem && location.startsWith(item.href + "/"));
+                  const Icon = item.icon;
+                  const badge = badgeFor(item.href);
 
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                  isActive
-                    ? "bg-primary/10 text-primary font-medium glow-card"
-                    : "text-muted-foreground hover:text-foreground hover:bg-card"
-                }`}
-              >
-                <Icon className="w-5 h-5" />
-                <span className="flex-1">{t(item.labelKey)}</span>
-                {item.href === "/replies" && unreadReplyCount > 0 && (
-                  <span
-                    className="min-w-[20px] h-5 px-1.5 rounded-full bg-secondary text-xs font-semibold text-secondary-foreground flex items-center justify-center"
-                    data-testid="badge-unread-replies"
-                  >
-                    {unreadReplyCount > 9 ? "9+" : unreadReplyCount}
-                  </span>
-                )}
-                {item.href === "/whisps" && receivedWhispUnreadCount > 0 && (
-                  <span
-                    className="min-w-[20px] h-5 px-1.5 rounded-full bg-secondary text-xs font-semibold text-secondary-foreground flex items-center justify-center"
-                    data-testid="badge-unread-whisps"
-                  >
-                    {receivedWhispUnreadCount > 9 ? "9+" : receivedWhispUnreadCount}
-                  </span>
-                )}
-                {item.href === "/whisper-box" && whisperBoxUnreadCount > 0 && (
-                  <span
-                    className="min-w-[20px] h-5 px-1.5 rounded-full bg-secondary text-xs font-semibold text-secondary-foreground flex items-center justify-center"
-                    data-testid="badge-unread-whisper-box"
-                  >
-                    {whisperBoxUnreadCount > 9 ? "9+" : whisperBoxUnreadCount}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      aria-current={isActive ? "page" : undefined}
+                      className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all ${
+                        isActive
+                          ? "bg-primary/10 text-primary font-medium glow-card"
+                          : "text-muted-foreground hover:text-foreground hover:bg-card"
+                      }`}
+                    >
+                      <Icon className="w-5 h-5" />
+                      <span className="flex-1">{t(item.labelKey)}</span>
+                      {badge > 0 && (
+                        <span
+                          className="min-w-[20px] h-5 px-1.5 rounded-full bg-secondary text-xs font-semibold text-secondary-foreground flex items-center justify-center"
+                          data-testid={
+                            item.href === "/replies"
+                              ? "badge-unread-replies"
+                              : item.href === "/whisps"
+                                ? "badge-unread-whisps"
+                                : "badge-unread-whisper-box"
+                          }
+                        >
+                          {badge > 9 ? "9+" : badge}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         <div className="p-4 mt-auto">
@@ -469,8 +533,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
               href={item.href}
               icon={item.icon}
               label={t(item.labelKey)}
-              isActive={location === item.href}
-              badgeCount={item.href === "/whisps" ? receivedWhispUnreadCount : 0}
+              isActive={location === item.href || location.startsWith(item.href + "/")}
+              badgeCount={badgeFor(item.href)}
             />
           ))}
 
@@ -506,8 +570,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
               href={item.href}
               icon={item.icon}
               label={t(item.labelKey)}
-              isActive={location === item.href}
-              badgeCount={item.href === "/replies" ? unreadReplyCount : item.href === "/whisper-box" ? whisperBoxUnreadCount : 0}
+              isActive={location === item.href || location.startsWith(item.href + "/")}
+              badgeCount={badgeFor(item.href)}
             />
           ))}
 
@@ -520,6 +584,13 @@ export function AppLayout({ children }: { children: ReactNode }) {
             }`}
           >
             <Menu className="w-6 h-6" />
+            {moreHasUnread && (
+              <span
+                className="absolute top-1 right-2 h-2.5 w-2.5 rounded-full bg-destructive ring-2 ring-background"
+                aria-hidden
+                data-testid="badge-more-unread"
+              />
+            )}
             <span className="text-[10px] font-medium leading-tight text-center">{t("nav.more")}</span>
           </button>
         </div>
@@ -530,22 +601,41 @@ export function AppLayout({ children }: { children: ReactNode }) {
           <SheetHeader>
             <SheetTitle>{t("nav.more")}</SheetTitle>
           </SheetHeader>
-          <div className="grid grid-cols-3 gap-2 py-4">
-            {moreNavItems.map((item) => (
-              <SheetClose asChild key={item.href}>
-                <Link
-                  href={item.href}
-                  data-testid={`link-more-${item.href.replace(/\//g, "")}`}
-                  className={`flex flex-col items-center justify-center gap-1.5 rounded-xl border p-3 text-center transition-colors ${
-                    location === item.href
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border/50 text-muted-foreground hover:border-border"
-                  }`}
-                >
-                  <item.icon className="w-5 h-5" />
-                  <span className="text-xs font-medium leading-tight">{t(item.labelKey)}</span>
-                </Link>
-              </SheetClose>
+          <div className="space-y-4 py-4">
+            {moreSections.map((section) => (
+              <div key={section.key}>
+                {section.titleKey && (
+                  <p className="pb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/60">
+                    {t(section.titleKey)}
+                  </p>
+                )}
+                <div className="grid grid-cols-3 gap-2">
+                  {section.items.map((item) => {
+                    const badge = badgeFor(item.href);
+                    return (
+                      <SheetClose asChild key={item.href}>
+                        <Link
+                          href={item.href}
+                          data-testid={`link-more-${item.href.replace(/\//g, "")}`}
+                          className={`relative flex flex-col items-center justify-center gap-1.5 rounded-xl border p-3 text-center transition-colors ${
+                            location === item.href
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border/50 text-muted-foreground hover:border-border"
+                          }`}
+                        >
+                          {badge > 0 && (
+                            <span className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-[10px] font-semibold text-destructive-foreground flex items-center justify-center">
+                              {badge > 9 ? "9+" : badge}
+                            </span>
+                          )}
+                          <item.icon className="w-5 h-5" />
+                          <span className="text-xs font-medium leading-tight">{t(item.labelKey)}</span>
+                        </Link>
+                      </SheetClose>
+                    );
+                  })}
+                </div>
+              </div>
             ))}
           </div>
         </SheetContent>
