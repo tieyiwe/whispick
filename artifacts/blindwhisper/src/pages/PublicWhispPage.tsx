@@ -54,7 +54,9 @@ function BlindWhisperLogoMark({ href }: { href: string }) {
     // Clickable like everywhere else the logo appears (AppLayout,
     // LegalLayout) — home for an anonymous visitor, their own dashboard for
     // a signed-in Whisperer (the caller picks which via `href`).
-    <a href={href} className="inline-block hover:opacity-80 transition-opacity">
+    // min-w-0: lets the lockup give way (its strapline truncates first)
+    // instead of pushing the header's sign-up link off a 360px screen.
+    <a href={href} className="block min-w-0 hover:opacity-80 transition-opacity">
       <LogoLockup tagline />
     </a>
   );
@@ -804,7 +806,7 @@ export function PublicWhispPage() {
           than guessed. */}
       <header
         ref={headerRef}
-        className="fixed top-0 inset-x-0 z-20 px-5 pb-3 sm:pb-4 pt-[calc(env(safe-area-inset-top)+0.75rem)] sm:pt-[calc(env(safe-area-inset-top)+1rem)] flex items-center justify-between gap-3 border-b border-border/40 bg-background/90 backdrop-blur-xl"
+        className="fixed top-0 inset-x-0 z-20 px-5 max-[399px]:px-4 pb-3 sm:pb-4 pt-[calc(env(safe-area-inset-top)+0.75rem)] sm:pt-[calc(env(safe-area-inset-top)+1rem)] flex items-center justify-between gap-3 border-b border-border/40 bg-background/90 backdrop-blur-xl"
       >
         <BlindWhisperLogoMark href={isSignedIn ? "/dashboard" : "/"} />
         {isSignedIn ? (
@@ -816,14 +818,14 @@ export function PublicWhispPage() {
             type="button"
             onClick={() => setLocation("/dashboard")}
             data-testid="button-back-to-dashboard"
-            className="inline-flex items-center gap-1 min-h-11 -mr-2 px-2 rounded-full text-[13px] sm:text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="inline-flex shrink-0 items-center gap-1 min-h-11 -mr-2 px-2 rounded-full text-[13px] sm:text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ChevronLeft className="w-4 h-4" /> {t("publicWhisp.backToDashboard")}
           </button>
         ) : (
           <a
             href="/sign-up"
-            className="inline-flex items-center min-h-11 -mr-2 px-2 rounded-full text-[13px] sm:text-sm text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
+            className="inline-flex shrink-0 items-center min-h-11 -mr-2 px-2 rounded-full text-[13px] sm:text-sm text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
           >
             {t("publicWhisp.becomeAWhisperer")}
           </a>

@@ -903,10 +903,12 @@ export function SettingsPage() {
             <p>{t("settingsPage.privacyWhispsText")}</p>
             <p>{t("settingsPage.privacyGhostBoostText")}</p>
             <p>{t("settingsPage.privacyDataRequestText")}</p>
-            <p className="flex items-center gap-3 pt-1">
-              <Link href="/privacy" className="text-primary hover:underline">{t("settingsPage.privacyPolicyLink")}</Link>
+            {/* py-2.5 on the links themselves: a finger-sized target on phones
+                without adding visible space around them. */}
+            <p className="flex flex-wrap items-center gap-x-3 -my-1.5">
+              <Link href="/privacy" className="py-2.5 text-primary hover:underline">{t("settingsPage.privacyPolicyLink")}</Link>
               <span className="text-border">•</span>
-              <Link href="/terms" className="text-primary hover:underline">{t("settingsPage.termsOfServiceLink")}</Link>
+              <Link href="/terms" className="py-2.5 text-primary hover:underline">{t("settingsPage.termsOfServiceLink")}</Link>
             </p>
           </CardContent>
         </Card>

@@ -212,7 +212,9 @@ function MessageBubble({
         ].join(" ")}
       >
         {parent && <QuotedParent parent={parent} authorLabel={parentAuthorLabel ?? ""} isOwn={isOwn} />}
-        {reply.replyText && <p className="whitespace-pre-wrap break-words">{reply.replyText}</p>}
+        {/* dir=auto: a message keeps its own writing direction whatever the
+            UI language (an English reply in the Arabic UI isn't flipped). */}
+        {reply.replyText && <p dir="auto" className="whitespace-pre-wrap break-words">{reply.replyText}</p>}
         {reply.videoUrl && isHttpUrl(reply.videoUrl) && (
           <a
             href={reply.videoUrl}
@@ -277,7 +279,7 @@ function MessageBubble({
                 aria-pressed={selected}
                 data-testid={`guess-reaction-${option.value}-${reply.id}`}
                 className={[
-                  "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors active:scale-95 disabled:opacity-50",
+                  "relative inline-flex items-center gap-1 rounded-full border px-2.5 py-1.5 text-[11px] font-medium transition-colors active:scale-95 disabled:opacity-50 before:absolute before:-inset-y-1 before:inset-x-0 before:content-['']",
                   selected
                     ? "border-gilded/50 bg-gilded/15 text-gilded"
                     : "border-border/50 bg-card text-muted-foreground hover:border-gilded/40 hover:text-foreground",
@@ -294,12 +296,14 @@ function MessageBubble({
         // Always rendered rather than hover-only: half the readers are on a
         // phone, where there is no hover and an affordance that only appears
         // on one is an affordance that doesn't exist. Kept faint until
-        // hover/focus so it doesn't compete with the message itself.
+        // hover/focus so it doesn't compete with the message itself. The
+        // invisible ::before pads its 28px height to a ~44px tap target
+        // without adding space between messages.
         <button
           type="button"
           onClick={() => onReply(reply)}
           data-testid={`reply-to-${reply.id}`}
-          className="mt-0.5 px-2 py-1.5 inline-flex items-center gap-1 text-xs text-muted-foreground opacity-70 group-hover:opacity-100 focus-visible:opacity-100 hover:text-foreground transition-opacity"
+          className="relative mt-0.5 px-2 py-1.5 inline-flex items-center gap-1 text-xs text-muted-foreground before:absolute before:-inset-y-2 before:inset-x-0 before:content-[''] opacity-70 group-hover:opacity-100 focus-visible:opacity-100 hover:text-foreground transition-opacity"
         >
           <ReplyIcon className="w-3.5 h-3.5" />
           {t("replyThread.reply")}
@@ -479,7 +483,7 @@ export function ReplyThread({
             onClick={() => onReplyTo(null)}
             aria-label={t("replyThread.cancelReply")}
             data-testid="thread-replying-to-cancel"
-            className="shrink-0 rounded-full p-1 text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+            className="relative shrink-0 rounded-full p-1 text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors before:absolute before:-inset-2.5 before:content-['']"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -529,6 +533,10 @@ export function ThreadComposer({
               if (canSend) onSend();
             }
           }}
+          // Matches the Enter-sends behavior above: phone keyboards label
+          // their return key "Send" instead of a newline arrow.
+          enterKeyHint="send"
+          dir="auto"
           data-testid={`${testIdPrefix}-composer-input`}
         />
         <div className="flex justify-between items-center px-3 pb-2">
@@ -539,7 +547,7 @@ export function ThreadComposer({
             onClick={onSend}
             disabled={!canSend}
             size="sm"
-            className="rounded-full h-8 px-4 active:scale-95 transition-transform"
+            className="rounded-full h-9 px-4 active:scale-95 transition-transform"
             data-testid={`${testIdPrefix}-composer-send`}
           >
             {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}

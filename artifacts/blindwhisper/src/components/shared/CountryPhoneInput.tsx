@@ -118,6 +118,9 @@ export function CountryPhoneInput({
         placeholder="555 123 4567"
         type="tel"
         inputMode="tel"
+        // The user's own number (phone verification), without the country
+        // code the picker beside it already holds — lets phones offer it.
+        autoComplete="tel-national"
         value={nationalNumber}
         onChange={(e) => handleNationalChange(e.target.value)}
         disabled={disabled}

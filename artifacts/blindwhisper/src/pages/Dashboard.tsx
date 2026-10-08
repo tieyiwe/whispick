@@ -405,8 +405,12 @@ export function Dashboard() {
           )}
 
           {/* On a brand-new account these cards are the whole lower page, so
-              they tile two-up instead of running down a narrow side column. */}
-          <div className={isNewUser ? "grid gap-3 lg:gap-4 grid-cols-1 md:grid-cols-[repeat(auto-fit,minmax(18rem,1fr))]" : "space-y-3 lg:space-y-4 lg:self-start"}>
+              they tile two-up instead of running down a narrow side column.
+              self-start at every width, not just lg: in the one-column
+              mobile grid a stretched column made SideCard's h-full resolve
+              to the whole column's height, so each card ballooned to the
+              height of all of them together (mostly empty space). */}
+          <div className={isNewUser ? "grid gap-3 lg:gap-4 grid-cols-1 md:grid-cols-[repeat(auto-fit,minmax(18rem,1fr))]" : "space-y-3 lg:space-y-4 self-start"}>
             {/* Cold-start growth nudge — self-contained, additive block, same
                 reasoning as the Whisper Box/Recap cards below: Dashboard.tsx
                 is shared with other in-flight work. Renders nothing once the

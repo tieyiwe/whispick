@@ -511,9 +511,44 @@ export const circles = [
   { id: "c_2", name: "Design Team", isOwner: false, inviteCode: "DSGN7", createdAt: ago(20 * DAY) },
 ];
 
+const textWhispBase = {
+  senderId: "usr_preview",
+  viewerIsRecipient: false,
+  senderAlias: null,
+  revealRequested: false,
+  revealAccepted: null,
+  scheduledAt: null,
+  readAt: null,
+  otherPartyTyping: false,
+  revealedSenderName: null,
+  senderHandle: null,
+};
+
 export const textWhisps = [
-  { id: "tw1", senderId: "usr_preview", viewerIsRecipient: false, recipientPhone: "+14155550123", publicToken: "pv_tw1", senderAlias: null, messageText: "Hey — just wanted to say you crushed that presentation today.", status: "replied", revealRequested: false, revealAccepted: null, scheduledAt: null, readAt: ago(2 * HOUR), createdAt: ago(3 * HOUR), otherPartyTyping: false, revealedSenderName: null, senderHandle: null },
+  { ...textWhispBase, id: "tw1", recipientPhone: "+14155550123", publicToken: "pv_tw1", messageText: "Hey — just wanted to say you crushed that presentation today.", status: "replied", readAt: ago(2 * HOUR), createdAt: ago(3 * HOUR), otherPartyTyping: true },
+  { ...textWhispBase, id: "tw2", recipientPhone: "+447700900123", publicToken: "pv_tw2", senderAlias: "Someone who cares", messageText: "Thinking of you this week. Whatever happens on Friday, you've already done the brave part.", status: "read", readAt: ago(1 * DAY), createdAt: ago(1 * DAY + 2 * HOUR) },
+  { ...textWhispBase, id: "tw3", recipientPhone: "+14155550177", publicToken: "pv_tw3", messageText: "Happy birthday!! 🎂", status: "scheduled", scheduledAt: fromNow(2 * DAY), createdAt: ago(20 * MIN) },
+  // Received (the recipient's own view: no senderId, a per-pair handle).
+  { ...textWhispBase, id: "tw_recv1", senderId: null, viewerIsRecipient: true, recipientPhone: "+14155550134", publicToken: "pv_tw_r1", senderHandle: "Falcon482", senderAlias: "a secret admirer", messageText: "Your laugh in the hallway this morning genuinely made my whole day. Don't stop being you.", status: "sent", createdAt: ago(15 * MIN) },
+  { ...textWhispBase, id: "tw_recv2", senderId: null, viewerIsRecipient: true, recipientPhone: "+14155550134", publicToken: "pv_tw_r2", senderHandle: "Harbor77", // No spaces or hyphens: checks unbroken strings wrap instead of overflowing.
+    messageText: "https://example.com/areallylonglinkthatsomeonepastedwithoutanybreakopportunities?ref=abcdefghijklmnop", status: "replied", readAt: ago(3 * DAY), createdAt: ago(3 * DAY) },
 ];
+
+const textWhispReplies = {
+  tw1: [
+    { id: "tr1", textWhispId: "tw1", fromViewer: false, replyText: "Wait, who is this?? Thank you so much 😭", parentReplyId: null, readAt: ago(150 * MIN), createdAt: ago(160 * MIN) },
+    { id: "tr2", textWhispId: "tw1", fromViewer: true, replyText: "Someone who was in the room and was very impressed.", parentReplyId: null, readAt: ago(140 * MIN), createdAt: ago(150 * MIN) },
+    { id: "tr3", textWhispId: "tw1", fromViewer: false, replyText: "Okay that narrows it down to like 40 people. I'll figure it out 👀", parentReplyId: "tr2", readAt: null, createdAt: ago(30 * MIN) },
+  ],
+  tw_recv2: [
+    { id: "tr4", textWhispId: "tw_recv2", fromViewer: true, replyText: "Thanks for this — read the whole thing.", parentReplyId: null, readAt: ago(2 * DAY), createdAt: ago(3 * DAY) },
+  ],
+};
+
+export function textWhispDetail(id) {
+  const textWhisp = textWhisps.find((w) => w.id === id) ?? { ...textWhisps[0], id };
+  return { textWhisp, replies: textWhispReplies[textWhisp.id] ?? [] };
+}
 
 // ---------------------------------------------------------------------------
 // Route table. First match wins — put specific paths before generic ones.
@@ -611,6 +646,23 @@ export const routes = [
   })],
   ["GET", /^\/api\/invites$/, () => []],
   ["GET", /^\/api\/text-whisps$/, () => textWhisps],
+  ["POST", /^\/api\/text-whisps$/, ({ body }) => ({
+    ...textWhispBase,
+    id: "tw_new",
+    publicToken: "pv_tw_new",
+    recipientPhone: body?.recipientPhone ?? "+14155550123",
+    senderAlias: body?.senderAlias ?? null,
+    messageText: body?.messageText ?? "",
+    status: body?.scheduledAt ? "scheduled" : "sent",
+    scheduledAt: body?.scheduledAt ?? null,
+    createdAt: ago(0),
+  })],
+  ["GET", /^\/api\/text-whisps\/([^/]+)$/, ({ params }) => textWhispDetail(params[1])],
+  ["POST", /^\/api\/text-whisps\/[^/]+\/typing$/, () => ({ __status: 204 })],
+  ["GET", /^\/api\/public\/text-whisps\/([^/]+)$/, ({ params }) => {
+    const w = textWhisps.find((x) => x.publicToken === params[1]) ?? textWhisps[1];
+    return { id: w.id, messageText: w.messageText, senderAlias: w.senderAlias, status: w.status, revealRequested: false, createdAt: w.createdAt };
+  }],
   ["GET", /^\/api\/whisper-groups$/, () => []],
   ["GET", /^\/api\/whisper-groups\/sends$/, () => []],
   ["GET", /^\/api\/media$/, () => []],

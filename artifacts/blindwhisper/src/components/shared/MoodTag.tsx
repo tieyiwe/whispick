@@ -114,7 +114,10 @@ export function MoodTag({ mood, className = "" }: { mood: string | null | undefi
       >
         <Icon className="w-3.5 h-3.5" />
       </span>
-      <span className="tracking-wide">{label}</span>
+      {/* Ellipsis rather than a hard clip when a caller lets the chip shrink
+          (Dashboard's row on a 360px phone, where "Gemeinsam Heilen" was
+          cut off mid-letter at the chip's edge). */}
+      <span className="tracking-wide min-w-0 truncate">{label}</span>
     </div>
   );
 }

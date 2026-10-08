@@ -165,7 +165,7 @@ function MobileTabLink({
           </span>
         )}
       </div>
-      <span className={`text-[11px] leading-none whitespace-nowrap ${isActive ? "font-semibold" : "font-medium"}`}>{label}</span>
+      <span className={`text-[11px] max-[389px]:text-[10px] max-[389px]:tracking-tight leading-none whitespace-nowrap ${isActive ? "font-semibold" : "font-medium"}`}>{label}</span>
     </Link>
   );
 }
@@ -548,7 +548,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
       {/* Mobile bottom tab bar with a raised Send action, native-app style.
           Seven equal columns so every label sits on one line under its icon
-          instead of some wrapping to two. */}
+          instead of some wrapping to two. Below 390px a column is ~50px, so
+          the labels drop to 10px/tight there — at 11px the longer translations
+          ("Antworten", "Respuestas") ran edge to edge into their neighbors. */}
       <nav
         className="md:hidden fixed bottom-0 inset-x-0 z-50 border-t border-border/50 bg-background/90 backdrop-blur-xl"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
@@ -622,7 +624,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                 />
               )}
             </span>
-            <span className={`text-[11px] leading-none whitespace-nowrap ${isOnMoreItem ? "font-semibold" : "font-medium"}`}>{t("nav.more")}</span>
+            <span className={`text-[11px] max-[389px]:text-[10px] max-[389px]:tracking-tight leading-none whitespace-nowrap ${isOnMoreItem ? "font-semibold" : "font-medium"}`}>{t("nav.more")}</span>
           </button>
         </div>
       </nav>

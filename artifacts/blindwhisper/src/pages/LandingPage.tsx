@@ -95,7 +95,11 @@ export function LandingPage() {
           <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 rounded-full blur-[120px] pointer-events-none" />
           <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] bg-secondary/10 rounded-full blur-[100px] pointer-events-none" />
 
-          <div className="max-w-3xl relative z-10 flex flex-col items-center">
+          {/* w-full + the CTA's own max-w-full/whitespace-normal: a button
+              never wraps by default, so a long translation (French: "Commencer
+              à envoyer des Whisps") sized this column wider than a 360px
+              phone and the subtitle above got clipped at both edges. */}
+          <div className="w-full max-w-3xl relative z-10 flex flex-col items-center">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-sm font-medium">
               <Sparkles className="w-4 h-4" />
               <span>{t("landingPage.hero.badge")}</span>
@@ -114,7 +118,7 @@ export function LandingPage() {
             </p>
 
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
-              <Button asChild size="lg" className="rounded-full h-14 px-8 text-lg font-medium shadow-[0_0_24px_rgba(124,92,252,0.4)] hover:shadow-[0_0_40px_rgba(124,92,252,0.6)] transition-all">
+              <Button asChild size="lg" className="rounded-full h-auto min-h-14 max-w-full whitespace-normal text-balance py-3 px-6 sm:px-8 text-lg font-medium shadow-[0_0_24px_rgba(124,92,252,0.4)] hover:shadow-[0_0_40px_rgba(124,92,252,0.6)] transition-all">
                 <Link href="/sign-up">
                   <Send className="w-5 h-5 mr-2" /> {t("landingPage.cta.startSendingWhisps")}
                 </Link>
@@ -355,7 +359,7 @@ export function LandingPage() {
             <p className="mt-3 text-muted-foreground text-lg max-w-xl text-pretty">
               {t("landingPage.closingCta.body")}
             </p>
-            <Button asChild size="lg" className="mt-8 rounded-full h-14 px-8 text-lg font-medium shadow-[0_0_24px_rgba(124,92,252,0.4)] hover:shadow-[0_0_40px_rgba(124,92,252,0.6)] transition-all">
+            <Button asChild size="lg" className="mt-8 rounded-full h-auto min-h-14 max-w-full whitespace-normal text-balance py-3 px-6 sm:px-8 text-lg font-medium shadow-[0_0_24px_rgba(124,92,252,0.4)] hover:shadow-[0_0_40px_rgba(124,92,252,0.6)] transition-all">
               <Link href="/sign-up">
                 <Send className="w-5 h-5 mr-2" /> {t("landingPage.cta.startSendingWhisps")}
               </Link>
@@ -388,10 +392,10 @@ export function LandingPage() {
           <Link href="/faq" className="py-1.5 hover:text-foreground transition-colors">{t("landingPage.footer.faq")}</Link>
           <Link href="/about" className="py-1.5 hover:text-foreground transition-colors">{t("landingPage.footer.about")}</Link>
         </nav>
-        <div className="flex flex-wrap justify-center gap-x-5 gap-y-1 text-xs">
-          <Link href="/privacy" className="py-1 hover:text-foreground transition-colors">{t("landingPage.footer.privacyPolicy")}</Link>
-          <Link href="/terms" className="py-1 hover:text-foreground transition-colors">{t("landingPage.footer.termsOfService")}</Link>
-          <Link href="/sms-terms" className="py-1 hover:text-foreground transition-colors">{t("landingPage.footer.smsTerms")}</Link>
+        <div className="flex flex-wrap justify-center gap-x-5 text-xs">
+          <Link href="/privacy" className="py-2 hover:text-foreground transition-colors">{t("landingPage.footer.privacyPolicy")}</Link>
+          <Link href="/terms" className="py-2 hover:text-foreground transition-colors">{t("landingPage.footer.termsOfService")}</Link>
+          <Link href="/sms-terms" className="py-2 hover:text-foreground transition-colors">{t("landingPage.footer.smsTerms")}</Link>
         </div>
         <p className="text-xs text-muted-foreground/70 tabular-nums" data-testid="text-app-version">v{APP_VERSION} · {APP_VERSION_NAME}</p>
       </footer>

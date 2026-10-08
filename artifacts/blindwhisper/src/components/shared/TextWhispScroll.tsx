@@ -234,7 +234,7 @@ export function TextWhispScroll({
               transition: `transform ${ROLL_MS}ms cubic-bezier(0.4,0,0.2,1), height ${ROLL_MS}ms ease, opacity ${ROLL_MS * 0.7}ms ease ${ROLL_MS * 0.3}ms`,
             }}
           >
-            <p className="font-serif text-[hsl(30_35%_20%)] text-sm text-center line-clamp-4">{messageText}</p>
+            <p dir="auto" className="font-serif text-[hsl(30_35%_20%)] text-sm text-center line-clamp-4 break-words">{messageText}</p>
           </div>
 
           <div
@@ -319,8 +319,8 @@ export function TextWhispScroll({
               hold the message. */}
           <div className="absolute inset-x-0 top-0 h-2 bg-[hsl(38_50%_95%)]/70" aria-hidden="true" />
           <div className="absolute inset-x-0 bottom-0 h-2 bg-[hsl(38_30%_76%)]/60" aria-hidden="true" />
-          <p className="relative font-serif text-[hsl(30_35%_20%)] text-base leading-relaxed whitespace-pre-wrap">{messageText}</p>
-          <div className="relative mt-3 pt-3 border-t border-[hsl(35_25%_65%)] flex items-center justify-between text-xs text-[hsl(30_20%_38%)]">
+          <p dir="auto" className="relative font-serif text-[hsl(30_35%_20%)] text-base leading-relaxed whitespace-pre-wrap break-words">{messageText}</p>
+          <div className="relative mt-3 pt-3 border-t border-[hsl(35_25%_65%)] flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-[hsl(30_20%_38%)]">
             <span>
               — {senderHandle || senderAlias?.trim() || t("textWhispScroll.someoneAnonymous")}
               {senderHandle && senderAlias?.trim() && senderAlias.trim() !== senderHandle && ` (${senderAlias.trim()})`}

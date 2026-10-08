@@ -2,8 +2,8 @@
 // DEV-ONLY: screenshot the Blind Whisper app with a mocked backend + mocked
 // Clerk, for UI/UX review. See README.md in this directory.
 //
-//   node scripts/ui-preview/capture.mjs [--out DIR] [--only a,b] [--viewport mobile|desktop]
-//                                       [--base URL] [--dsf N] [--no-server] [--list]
+//   node scripts/ui-preview/capture.mjs [--out DIR] [--only a,b] [--viewport mobile|small|desktop]
+//                                       [--lang de] [--base URL] [--dsf N] [--no-server] [--list]
 //
 // By default it starts the preview Vite server itself (vite.preview.config.ts)
 // if nothing is answering on --base, and stops it again at the end.
@@ -11,7 +11,7 @@ import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { routes as defaultRoutes, scenarios, PUBLIC_WHISP_TOKEN, WHISPER_BOX_HANDLE } from "./fixtures.mjs";
+import { routes as defaultRoutes, scenarios, profile, PUBLIC_WHISP_TOKEN, WHISPER_BOX_HANDLE } from "./fixtures.mjs";
 
 const PLAYWRIGHT = process.env.PLAYWRIGHT_MODULE ?? "/opt/node22/lib/node_modules/playwright/index.mjs";
 const { chromium } = await import(PLAYWRIGHT);
@@ -39,11 +39,22 @@ const VIEWPORT_FILTER = opt("viewport", null);
 const DSF = Number(opt("dsf", 1));
 const NO_SERVER = argv.includes("--no-server");
 const LIST = argv.includes("--list");
+const AUDIT = argv.includes("--audit");
+// UI language: signed-in pages follow the profile's preferredLanguage
+// (AppLayout syncs i18n to it), the landing page follows the browser locale —
+// --lang sets both. Files get a `-<lang>` suffix so runs don't overwrite.
+const LANG = typeof opt("lang", null) === "string" ? opt("lang", null) : null;
 
+const MOBILE_UA = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36";
 const VIEWPORTS = {
-  mobile: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, userAgent: "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36" },
+  mobile: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, userAgent: MOBILE_UA },
+  // The narrowest phones still common (Galaxy S/A-series, iPhone SE/mini
+  // class). Opt-in via --viewport small; screens limited to ["mobile"] run
+  // here too.
+  small: { viewport: { width: 360, height: 740 }, isMobile: true, hasTouch: true, userAgent: MOBILE_UA },
   desktop: { viewport: { width: 1440, height: 900 }, isMobile: false, hasTouch: false },
 };
+const DEFAULT_VIEWPORTS = ["mobile", "desktop"];
 
 // ---------------------------------------------------------------------------
 // Screens. name → file `<name>-<viewport>.png` (plus `-top` for topShot).
@@ -83,6 +94,14 @@ async function sendFlowTo(page, step) {
   }
 }
 
+// Fills /send-text's composer (SendTextWhisp.tsx data-testids) so Send is live.
+async function fillTextWhisp(page) {
+  await page.locator('[data-testid="textarea-text-whisp-message"]').fill("Hey — just wanted to say you crushed that presentation today. Seriously, everyone noticed.");
+  await page.locator('[data-testid="input-text-whisp-recipient-phone"]').fill("+1 415 555 0123");
+  await page.locator('[data-testid="input-text-whisp-recipient-phone"]').blur();
+  await page.waitForTimeout(400);
+}
+
 const screens = [
   // ----- signed-out -----
   { name: "landing", path: "/", signedOut: true, topShot: true },
@@ -120,6 +139,47 @@ const screens = [
   { name: "debate-topics", path: "/debate-topics" },
   { name: "debate-topic", path: "/debate-topics/dt_1" },
   { name: "settings", path: "/settings" },
+
+  // ----- Text Whisps -----
+  { name: "send-text", path: "/send-text" },
+  { name: "send-text-filled", path: "/send-text", action: (page) => fillTextWhisp(page) },
+  {
+    name: "send-text-sent",
+    path: "/send-text",
+    // Phones have the Web Share API, headless desktop Chromium doesn't — fake
+    // it so the confirmation's share button shows the way it does on phones.
+    initScript: () => { if (!navigator.share) navigator.share = async () => {}; },
+    action: async (page) => {
+      await fillTextWhisp(page);
+      await page.locator('[data-testid="button-send-text-whisp"]').click();
+      await page.waitForTimeout(6500); // roll → tie → "Sent!" → link card fades in
+    },
+  },
+  { name: "text-whisps", path: "/text-whisps" },
+  { name: "text-whisp-thread", path: "/text-whisps/tw1" },
+  {
+    name: "text-whisp-thread-recipient",
+    path: "/text-whisps/tw_recv2",
+    action: async (page) => {
+      // Recipients get a closed scroll to tap open first.
+      const scroll = page.locator('[data-testid="text-whisp-open-scroll"] button').first();
+      if (await scroll.count()) { await scroll.click().catch(() => {}); await page.waitForTimeout(1500); }
+    },
+  },
+  { name: "text-whisp-public", path: "/tw/pv_tw2", signedOut: true },
+  // Dialogs: how they sit on a phone (gutters, height, scrolling).
+  ...[
+    ["dialog-delete", "button-delete-text-whisp"],
+    ["dialog-reveal", "button-reveal-yourself-text-whisp-header"],
+  ].map(([name, testid]) => ({
+    name,
+    path: "/text-whisps/tw1",
+    fullPage: false,
+    action: async (page) => {
+      await page.locator(`[data-testid="${testid}"]`).click();
+      await page.waitForTimeout(700);
+    },
+  })),
   { name: "credits", path: "/credits" },
   {
     name: "more-sheet",
@@ -232,7 +292,8 @@ function matchRoute(table, method, pathname) {
 
 async function installRoutes(context, screen) {
   const state = { signedOut: !!screen.signedOut };
-  const tables = [...(screen.scenario ? scenarios[screen.scenario] ?? [] : []), ...defaultRoutes];
+  const langRoutes = LANG ? [["GET", /^\/api\/user\/profile$/, () => ({ ...profile, preferredLanguage: LANG })]] : [];
+  const tables = [...langRoutes, ...(screen.scenario ? scenarios[screen.scenario] ?? [] : []), ...defaultRoutes];
 
   await context.route(/^https?:\/\/[^/]+\/api\//, async (route) => {
     const req = route.request();
@@ -280,6 +341,75 @@ async function installRoutes(context, screen) {
   });
 }
 
+// --audit (mobile viewports): flags what a screenshot can hide — elements that
+// stick out past the viewport's right/left edge (sideways scroll or silently
+// clipped content) and tap targets under 32px. Heuristic: inline text links
+// are skipped (they're sized by the sentence), and content inside a sideways
+// scroller (carousel) doesn't count.
+async function auditMobile(page) {
+  return page.evaluate(() => {
+    const out = [];
+    const vw = window.innerWidth;
+    const label = (el) => {
+      const id = el.getAttribute("data-testid");
+      const txt = (el.getAttribute("aria-label") || el.textContent || "").trim().replace(/\s+/g, " ").slice(0, 40);
+      return `<${el.tagName.toLowerCase()}${id ? ` testid=${id}` : ""}> "${txt}"`;
+    };
+    const visible = (el, r) => r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== "hidden";
+    // Returns "scroller" when a sideways-scrolling ancestor inside the
+    // viewport contains it (a carousel — fine), "clipped" when an
+    // overflow:hidden one cuts it off (text silently cut at the screen edge),
+    // or null when nothing does (the page itself overflows). An ancestor that
+    // also sticks out doesn't count, so keep walking up.
+    const containment = (el) => {
+      for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
+        const ox = getComputedStyle(p).overflowX;
+        if (ox === "visible") continue;
+        const pr = p.getBoundingClientRect();
+        if (pr.right <= vw + 1 && pr.left >= -1) return ox === "auto" || ox === "scroll" ? "scroller" : "clipped";
+      }
+      return null;
+    };
+    // Only content worth reporting when clipped: decorative glows and blobs
+    // are routinely parked half off-screen inside overflow:hidden sections.
+    const hasOwnText = (el) => [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()) || /^(A|BUTTON|INPUT|TEXTAREA|IMG|VIDEO)$/.test(el.tagName);
+    const offenders = new Set();
+    for (const el of document.querySelectorAll("body *")) {
+      const r = el.getBoundingClientRect();
+      if (!visible(el, r) || (r.right <= vw + 1 && r.left >= -1)) continue;
+      if (getComputedStyle(el).position === "fixed" && r.left >= vw) continue; // parked off-canvas
+      const kind = containment(el);
+      if (kind === "scroller" || (kind === "clipped" && !hasOwnText(el))) continue;
+      if (el.parentElement && offenders.has(el.parentElement)) { offenders.add(el); continue; }
+      offenders.add(el);
+      out.push(`${kind === "clipped" ? "clipped" : "overflow"}: ${label(el)} spans ${Math.round(r.left)}…${Math.round(r.right)} (viewport ${vw})`);
+    }
+    if (document.documentElement.scrollWidth > vw + 1) out.push(`overflow: document scrollWidth ${document.documentElement.scrollWidth} > ${vw}`);
+    const small = [];
+    for (const el of document.querySelectorAll('a[href], button, [role="button"], [role="tab"], input[type="checkbox"], input[type="radio"], select')) {
+      const r = el.getBoundingClientRect();
+      if (!visible(el, r) || r.right < 0 || r.left > vw) continue;
+      if (el.tagName === "A" && getComputedStyle(el).display === "inline") continue;
+      if (el.closest('[aria-hidden="true"]')) continue;
+      // An invisible ::before/::after inset outward (FollowButton's compact
+      // form, the Switch) is the app's way of padding a hit area — count it.
+      let w = r.width, h = r.height;
+      for (const pseudo of ["::before", "::after"]) {
+        const ps = getComputedStyle(el, pseudo);
+        if (ps.content === "none" || ps.position !== "absolute") continue;
+        const [t, rt, b, l] = [ps.top, ps.right, ps.bottom, ps.left].map((v) => parseFloat(v));
+        if ([t, rt, b, l].some(Number.isNaN)) continue;
+        w = Math.max(w, r.width - l - rt);
+        h = Math.max(h, r.height - t - b);
+      }
+      if (Math.min(w, h) < 32) small.push(`${label(el)} ${Math.round(r.width)}×${Math.round(r.height)}`);
+    }
+    for (const s of small.slice(0, 12)) out.push(`small tap target: ${s}`);
+    if (small.length > 12) out.push(`small tap target: …and ${small.length - 12} more`);
+    return out.slice(0, 30);
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Capture
 // ---------------------------------------------------------------------------
@@ -289,7 +419,7 @@ async function capture(browser, screen, vpName) {
     ...vp,
     deviceScaleFactor: DSF,
     colorScheme: "dark",
-    locale: "en-US",
+    locale: LANG ?? "en-US",
     timezoneId: "America/Los_Angeles",
     serviceWorkers: "block",
   });
@@ -324,14 +454,16 @@ async function capture(browser, screen, vpName) {
     await page.waitForTimeout(500);
   }
 
+  if (AUDIT && VIEWPORTS[vpName].isMobile) errors.push(...(await auditMobile(page)));
+
   fs.mkdirSync(OUT, { recursive: true });
   const files = [];
   if (screen.topShot) {
-    const f = path.join(OUT, `${screen.name}-top-${vpName}.png`);
+    const f = path.join(OUT, `${screen.name}-top-${vpName}${LANG ? `-${LANG}` : ""}.png`);
     await page.screenshot({ path: f, fullPage: false });
     files.push(f);
   }
-  const f = path.join(OUT, `${screen.name}-${vpName}.png`);
+  const f = path.join(OUT, `${screen.name}-${vpName}${LANG ? `-${LANG}` : ""}.png`);
   let useStitched = false;
   if (screen.fullPage ?? true) {
     // Grow the viewport to the document height instead of Playwright's
@@ -393,8 +525,9 @@ if (!selected.length) console.warn(`[ui-preview] --only ${ONLY} matched no scree
 let failures = 0;
 try {
   for (const screen of selected) {
-    for (const vpName of screen.viewports ?? Object.keys(VIEWPORTS)) {
-      if (VIEWPORT_FILTER && VIEWPORT_FILTER !== vpName) continue;
+    for (const vpName of VIEWPORT_FILTER ? [VIEWPORT_FILTER] : DEFAULT_VIEWPORTS) {
+      if (!VIEWPORTS[vpName]) throw new Error(`Unknown --viewport ${vpName} (mobile|small|desktop)`);
+      if (screen.viewports && !screen.viewports.includes(vpName === "small" ? "mobile" : vpName)) continue;
       try {
         const { files, errors, finalPath } = await capture(browser, screen, vpName);
         const redirected = finalPath !== screen.path.split("?")[0] ? `  (ended at ${finalPath})` : "";

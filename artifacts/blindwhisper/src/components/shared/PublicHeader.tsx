@@ -42,7 +42,7 @@ export function PublicHeader({
       }
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:h-[72px] sm:px-6">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 max-[399px]:gap-2 max-[399px]:px-3 sm:h-[72px] sm:px-6">
         <Link
           href="/"
           className="min-w-0 shrink transition-opacity hover:opacity-80"
@@ -76,11 +76,13 @@ export function PublicHeader({
           <Button
             asChild
             variant="ghost"
-            className="h-11 rounded-full px-2.5 text-sm text-muted-foreground hover:text-foreground sm:h-10 sm:px-4"
+            className="h-11 rounded-full px-2.5 text-sm text-muted-foreground hover:text-foreground max-[399px]:px-2 sm:h-10 sm:px-4"
           >
             <Link href="/sign-in">{t("landingPage.header.signIn")}</Link>
           </Button>
-          <Button asChild className="h-11 rounded-full px-4 text-sm sm:h-10 sm:px-5">
+          {/* Tighter padding below 400px (360px Android phones): at the normal
+              spacing the two buttons squeezed the wordmark to "Blind Whi…". */}
+          <Button asChild className="h-11 rounded-full px-4 text-sm max-[399px]:px-3 sm:h-10 sm:px-5">
             <Link href="/sign-up">{t("landingPage.header.getStarted")}</Link>
           </Button>
         </div>

@@ -9,7 +9,7 @@ app, `vite.config.ts`, `build` or `serve` — it never ships.
 | `vite.preview.config.ts` | Loads the real `vite.config.ts` and aliases `@clerk/react` → `clerkMock.tsx`, sets a dummy `VITE_CLERK_PUBLISHABLE_KEY`, port 5199, separate dep cache. |
 | `clerkMock.tsx` | Fake Clerk: signed-in user "Maya Rivera" (`user_preview`, maya@example.com, no image, `getToken()` → `"preview-token"`). `?signedOut=1` on the first URL flips to a signed-out visitor (sticky for the tab; `?signedOut=0` resets). `<SignIn>`, `<SignUp>`, `<UserProfile>` render labelled placeholder cards. |
 | `fixtures.mjs` | Route table answering every `/api/**` call (shapes from `lib/api-client-react/src/generated/api.schemas.ts`), plus `scenarios` (`empty`, `loading`) that override it per screen. |
-| `capture.mjs` | Playwright script: starts the server if needed, intercepts `/api/**` + external hosts, captures each screen at mobile 390×844 and desktop 1440×900 (dark). |
+| `capture.mjs` | Playwright script: starts the server if needed, intercepts `/api/**` + external hosts, captures each screen at mobile 390×844 and desktop 1440×900 (dark), optionally 360×740 (`--viewport small`). |
 
 ## Run
 
@@ -27,7 +27,16 @@ node scripts/ui-preview/capture.mjs --no-server --out /tmp/ui-preview
 Options:
 
 - `--only a,b` — exact screen names; a trailing `*` is a prefix (`--only 'dashboard*'`).
-- `--viewport mobile|desktop` — one viewport only.
+- `--viewport mobile|small|desktop` — one viewport only. `small` (360×740,
+  the narrowest common Android/iPhone SE class) is opt-in; by default a run
+  covers `mobile` (390×844) and `desktop`.
+- `--lang de` — UI language: signed-in pages via the profile's
+  `preferredLanguage`, the landing page via the browser locale. Files get a
+  `-de` suffix. Use `ar` to check RTL.
+- `--audit` — on mobile viewports, also print elements that overflow the
+  screen edge (or get clipped by an `overflow:hidden` ancestor) and tap
+  targets under 32px (counting invisible `::before`/`::after` hit-area
+  padding). Heuristic, but it catches what a screenshot hides.
 - `--out DIR` — output dir (default `$UI_PREVIEW_OUT` or `/tmp/ui-preview`).
 - `--dsf 2` — device scale factor (default 1 to keep files small).
 - `--base URL` — server URL (default `http://127.0.0.1:$UI_PREVIEW_PORT`, port 5199).

@@ -878,6 +878,13 @@ export function SendWhisp() {
                         <Input
                           className="pl-9 bg-input/50 border-border/50 rounded-xl"
                           placeholder={t("sendWhisp.url.placeholder")}
+                          // URL keyboard ("/" and ".com" keys, no
+                          // auto-capitalized first letter) and a "Go" return key.
+                          type="url"
+                          inputMode="url"
+                          autoCapitalize="none"
+                          autoCorrect="off"
+                          enterKeyHint="go"
                           {...urlForm.register("videoUrl")}
                           onKeyDown={(e) => e.key === "Enter" && urlForm.handleSubmit(handleUrlSubmit)()}
                           data-testid="input-video-url"
@@ -1441,8 +1448,11 @@ export function SendWhisp() {
                       </div>
                       <div className={`w-9 h-5 rounded-full transition-colors relative ${scheduleEnabled ? "bg-primary" : "bg-muted"}`}>
                         <div
-                          className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
-                            scheduleEnabled ? "translate-x-4" : "translate-x-0.5"
+                          // start-0 + mirrored translate: with no inline offset the
+                          // thumb's static position in Arabic (RTL) was the track's right
+                          // edge, so "on" slid it clean out of the track.
+                          className={`absolute top-0.5 start-0 w-4 h-4 rounded-full bg-white transition-transform ${
+                            scheduleEnabled ? "translate-x-4 rtl:-translate-x-4" : "translate-x-0.5 rtl:-translate-x-0.5"
                           }`}
                         />
                       </div>
@@ -1498,6 +1508,11 @@ export function SendWhisp() {
                     // Clicking or arrowing into a different entry has to move
                     // the suggestions with it, not just typing.
                     onSelect={(e) => setRecipientCaret(e.currentTarget.selectionStart ?? 0)}
+                    // Addresses, not prose: phone keyboards otherwise
+                    // capitalize the first letter and "correct" the domain.
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
                     data-testid="input-recipients"
                   />
 

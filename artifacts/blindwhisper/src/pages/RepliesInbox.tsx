@@ -198,24 +198,26 @@ export function RepliesInbox() {
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "video" | "text")}>
             {/* Short labels in a full-width pill bar on phones — the long
                 "… Whisp Replies" labels ran off the right edge. The page title
-                already says these are replies. */}
+                already says these are replies. min-w-0 + a label allowed to wrap
+                cover the longer translations (Swahili "Whisps za Maandishi"),
+                which still pushed the second tab past a 360px screen. */}
             <TabsList className="flex h-auto w-full sm:inline-flex sm:w-auto gap-1 rounded-full border border-border/50 bg-card/60 p-1">
               <TabsTrigger
                 value="video"
                 data-testid="tab-video-whisp-replies"
-                className="flex-1 sm:flex-none min-h-10 gap-1.5 rounded-full px-4 text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+                className="flex-1 sm:flex-none min-w-0 min-h-10 gap-1.5 rounded-full px-4 max-[399px]:px-3 text-sm max-[399px]:text-[13px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
               >
                 <MessageSquareHeart className="w-4 h-4 shrink-0" />
-                {t("repliesInbox.tabVideo")}
+                <span className="whitespace-normal leading-tight text-center">{t("repliesInbox.tabVideo")}</span>
                 {unreadWhispIds.size > 0 && <UnreadDot color="yellow" testId="dot-unread-video-whisp-replies" />}
               </TabsTrigger>
               <TabsTrigger
                 value="text"
                 data-testid="tab-text-whisp-replies"
-                className="flex-1 sm:flex-none min-h-10 gap-1.5 rounded-full px-4 text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+                className="flex-1 sm:flex-none min-w-0 min-h-10 gap-1.5 rounded-full px-4 max-[399px]:px-3 text-sm max-[399px]:text-[13px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
               >
                 <ScrollText className="w-4 h-4 shrink-0" />
-                {t("repliesInbox.tabText")}
+                <span className="whitespace-normal leading-tight text-center">{t("repliesInbox.tabText")}</span>
                 {unreadTextWhispIds.size > 0 && <UnreadDot color="red" testId="dot-unread-text-whisp-replies" />}
               </TabsTrigger>
             </TabsList>

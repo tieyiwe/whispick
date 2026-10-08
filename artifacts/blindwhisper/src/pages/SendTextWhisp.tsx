@@ -135,7 +135,7 @@ export function SendTextWhisp() {
   if (sent) {
     return (
       <AppLayout>
-        <div className="max-w-md mx-auto py-10 space-y-6">
+        <div className="max-w-md mx-auto py-2 sm:py-10 space-y-6">
           <TextWhispScroll
             mode="send"
             messageText={messageText}
@@ -198,7 +198,7 @@ export function SendTextWhisp() {
         </div>
 
         <Card className="bg-card border-border/50">
-          <CardContent className="p-6 space-y-5">
+          <CardContent className="p-5 sm:p-6 space-y-5">
             <div className="space-y-1.5">
               <p className="text-sm font-medium text-foreground">{t("sendTextWhisp.yourMessageLabel")}</p>
               {/* Required privacy reminder — visible right next to the
@@ -209,15 +209,20 @@ export function SendTextWhisp() {
               </p>
               <div className="relative">
                 <Textarea
-                  className="bg-input/50 border-border/50 rounded-xl min-h-[100px] resize-none"
+                  // pb-7 keeps the last line of a long message clear of the
+                  // character counter pinned to the bottom-right corner.
+                  className="bg-input/50 border-border/50 rounded-xl min-h-[100px] pb-7 resize-none"
                   placeholder={t("sendTextWhisp.messagePlaceholder")}
                   maxLength={MESSAGE_MAX_LENGTH}
                   value={messageText}
                   onChange={(e) => setMessageText(e.target.value)}
                   autoFocus
+                  // People type in whatever language they write in, whatever the
+                  // UI language — so English typed into the Arabic UI stays LTR.
+                  dir="auto"
                   data-testid="textarea-text-whisp-message"
                 />
-                <span className={`absolute bottom-2 right-3 text-xs ${remaining < 0 ? "text-destructive" : "text-muted-foreground"}`}>
+                <span className={`absolute bottom-2 end-3 text-xs ${remaining < 0 ? "text-destructive" : "text-muted-foreground"}`}>
                   {messageText.length}/{MESSAGE_MAX_LENGTH}
                 </span>
               </div>
@@ -272,10 +277,12 @@ export function SendTextWhisp() {
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary" />
                 <Input
                   className={`pl-9 h-12 bg-input border-2 border-primary/40 hover:border-primary/60 focus-visible:border-primary rounded-xl text-base placeholder:text-muted-foreground/80 ${
-                    isContactPickerSupported() ? "pr-11" : ""
+                    isContactPickerSupported() ? "pr-12" : ""
                   }`}
                   placeholder={t("sendTextWhisp.phonePlaceholder")}
                   type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   data-testid="input-text-whisp-recipient-phone"
@@ -291,7 +298,7 @@ export function SendTextWhisp() {
                     onClick={handlePickContact}
                     aria-label={t("sendTextWhisp.pickFromContactsLabel")}
                     title={t("sendTextWhisp.pickFromContactsLabel")}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-primary/70 hover:text-primary hover:bg-primary/10 transition-colors"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-lg text-primary/70 hover:text-primary hover:bg-primary/10 transition-colors"
                     data-testid="button-text-whisp-pick-contact"
                   >
                     <Contact className="w-4 h-4" />
@@ -348,8 +355,11 @@ export function SendTextWhisp() {
                 </div>
                 <div className={`w-9 h-5 rounded-full transition-colors relative ${scheduleEnabled ? "bg-primary" : "bg-muted"}`}>
                   <div
-                    className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
-                      scheduleEnabled ? "translate-x-4" : "translate-x-0.5"
+                    // start-0 + mirrored translate: with no inline offset the
+                    // thumb's static position in Arabic (RTL) was the track's right
+                    // edge, so "on" slid it clean out of the track.
+                    className={`absolute top-0.5 start-0 w-4 h-4 rounded-full bg-white transition-transform ${
+                      scheduleEnabled ? "translate-x-4 rtl:-translate-x-4" : "translate-x-0.5 rtl:-translate-x-0.5"
                     }`}
                   />
                 </div>
@@ -425,18 +435,22 @@ function TextWhispShareLink({ token }: { token: string }) {
             <p className="text-xs text-muted-foreground mt-1">{t("sendTextWhisp.shareLink.body")}</p>
           </div>
         </div>
+        {/* The link gets its own full-width row and the actions sit side by
+            side under it: inline with a Copy button ("Nakili kiungo" in
+            Swahili) the field shrank to a useless "http://blindw…" sliver on
+            a phone. */}
+        <Input readOnly value={url} onFocus={(e) => e.currentTarget.select()} className="bg-input/50 border-border/50 rounded-xl text-xs" data-testid="input-text-whisp-share-url" />
         <div className="flex gap-2">
-          <Input readOnly value={url} onFocus={(e) => e.currentTarget.select()} className="bg-input/50 border-border/50 rounded-xl text-xs" data-testid="input-text-whisp-share-url" />
-          <Button variant="outline" className="rounded-xl shrink-0" onClick={copy} data-testid="button-copy-text-whisp-link">
+          <Button variant="outline" className="flex-1 min-w-0 h-auto min-h-10 rounded-full px-3 whitespace-normal leading-tight" onClick={copy} data-testid="button-copy-text-whisp-link">
             {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-            <span className="ml-1.5">{t("sendTextWhisp.shareLink.copy")}</span>
+            {t("sendTextWhisp.shareLink.copy")}
           </Button>
+          {canShare && (
+            <Button className="flex-1 min-w-0 h-auto min-h-10 rounded-full px-3 whitespace-normal leading-tight" onClick={share} data-testid="button-share-text-whisp-link">
+              <Share2 className="w-4 h-4" /> {t("sendTextWhisp.shareLink.share")}
+            </Button>
+          )}
         </div>
-        {canShare && (
-          <Button className="w-full rounded-full" onClick={share} data-testid="button-share-text-whisp-link">
-            <Share2 className="w-4 h-4 mr-2" /> {t("sendTextWhisp.shareLink.share")}
-          </Button>
-        )}
       </CardContent>
     </Card>
   );

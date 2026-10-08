@@ -376,7 +376,7 @@ export function TextWhispDetail() {
 
         {/* A dark "scene" gutter around the parchment card so the warm accent
             reads as an intentional focal moment, not a light-mode patch. */}
-        <div className="rounded-2xl bg-gradient-to-b from-background to-card/60 border border-border/30 py-8 px-4">
+        <div className="rounded-2xl bg-gradient-to-b from-background to-card/60 border border-border/30 py-6 sm:py-8 px-3 sm:px-4">
           <TextWhispScroll
             mode="open"
             messageText={textWhisp.messageText}
@@ -415,7 +415,7 @@ export function TextWhispDetail() {
               aria-expanded={timelineOpen}
               aria-controls="text-whisp-delivery-timeline"
               data-testid="button-toggle-text-whisp-timeline"
-              className="flex w-full items-center gap-2 px-6 py-4 text-left"
+              className="flex w-full items-center gap-2 px-4 sm:px-6 py-4 text-left"
             >
               <CardTitle className="text-base font-serif">{t("textWhispDetail.deliveryTimeline")}</CardTitle>
               {!timelineOpen && textWhispCurrentStage && (
@@ -430,7 +430,7 @@ export function TextWhispDetail() {
               />
             </button>
             {timelineOpen && (
-              <CardContent id="text-whisp-delivery-timeline" className="pt-0">
+              <CardContent id="text-whisp-delivery-timeline" className="pt-0 px-4 sm:px-6">
                 <TimelineTrack steps={textWhispTimelineSteps} />
               </CardContent>
             )}
@@ -444,13 +444,15 @@ export function TextWhispDetail() {
                 threading) WhispDetail's video-Whisp conversation uses, so the
                 two feel like the same product rather than two different
                 reply experiences. */}
+            {/* Slimmer side padding below sm: on a 360px phone the default p-6
+                inside the page's own gutter left the chat bubbles under 300px. */}
             <Card className="bg-card border-border/50">
-              <CardHeader className="pb-2">
+              <CardHeader className="pb-2 px-4 sm:px-6">
                 <CardTitle className="text-base font-serif flex items-center gap-2">
                   <MessageSquare className="w-4 h-4 text-primary" /> {t("textWhispDetail.repliesHeading")}
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-4 sm:px-6">
                 {textWhisp.otherPartyTyping && (
                   <p className="mb-3 flex items-center gap-1.5 text-xs text-muted-foreground" data-testid="text-other-party-typing">
                     <span className="flex gap-0.5">
