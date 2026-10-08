@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Link } from "wouter";
 import { MessageSquareHeart, ChevronRight, ScrollText } from "lucide-react";
-import { formatDistanceToNowStrict } from "date-fns";
+import { formatTimeAgo } from "@/lib/relativeTime";
 import { recipientLabel } from "@/lib/recipients";
 
 // Reply notifications point at the whisp (or Text Whisp) they belong to.
@@ -100,7 +100,7 @@ export function RepliesInbox() {
   function relativeTime(value: string): string {
     const date = new Date(value);
     if (Date.now() - date.getTime() < 60_000) return t("shared.justNow");
-    return t("shared.timeAgo", { time: formatDistanceToNowStrict(date) });
+    return formatTimeAgo(date);
   }
 
   useEffect(() => {

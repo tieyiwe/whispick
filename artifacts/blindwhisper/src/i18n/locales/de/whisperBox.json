@@ -34,7 +34,6 @@
     "subtitle": "Anonyme Nachrichten, die an deinen öffentlichen Whisper-Box-Link gesendet wurden.",
     "anonymous": "Anonym",
     "newBadge": "Neu",
-    "timeAgo": "vor {{time}}",
     "deleteButton": "Löschen",
     "deleteDialog": {
       "title": "Diese Nachricht löschen?",

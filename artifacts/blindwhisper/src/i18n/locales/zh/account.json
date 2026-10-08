@@ -133,7 +133,6 @@
       "twentyfive": "省 43%"
     },
     "freePlanName": "免费版",
-    "timeAgo": "{{time}}前",
     "creditsDelta_one": "{{amount}} 积分",
     "creditsDelta_other": "{{amount}} 积分",
     "txTypes": {

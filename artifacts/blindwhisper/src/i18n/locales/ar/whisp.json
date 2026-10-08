@@ -16,7 +16,6 @@
     "couldntUpdateThat": "تعذّر تحديث ذلك",
     "movedBackToList": "أُعيد إلى قائمتك",
     "whispDeleted": "تم حذف الـ Whisp",
-    "timeAgo": "منذ {{time}}",
     "justNow": "الآن",
     "whispAgain": "أرسل Whisp مجددًا"
   },

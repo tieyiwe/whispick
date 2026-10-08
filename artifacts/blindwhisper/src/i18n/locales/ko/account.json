@@ -133,7 +133,6 @@
       "twentyfive": "43% 절약"
     },
     "freePlanName": "무료",
-    "timeAgo": "{{time}} 전",
     "creditsDelta_one": "크레딧 {{amount}}개",
     "creditsDelta_other": "크레딧 {{amount}}개",
     "txTypes": {

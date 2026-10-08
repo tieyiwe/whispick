@@ -34,7 +34,6 @@
     "subtitle": "Anonymous messages sent to your public Whisper Box link.",
     "anonymous": "Anonymous",
     "newBadge": "New",
-    "timeAgo": "{{time}} ago",
     "deleteButton": "Delete",
     "deleteDialog": {
       "title": "Delete this message?",

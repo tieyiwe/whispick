@@ -18,7 +18,7 @@ import {
   type DebateTopicDetail as DebateTopicDetailResponse,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { formatDistanceToNowStrict } from "date-fns";
+import { formatTimeAgo } from "@/lib/relativeTime";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -323,7 +323,7 @@ function CommentCard({
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">
             <time dateTime={comment.createdAt}>
-              {t("debateTopicDetail.timeAgo", { time: formatDistanceToNowStrict(new Date(comment.createdAt)) })}
+              {formatTimeAgo(new Date(comment.createdAt))}
             </time>
             {parentHandle && (
               <>
@@ -713,7 +713,7 @@ export function DebateTopicDetail() {
                     <p className="text-sm font-semibold text-foreground break-words">{topic.authorHandle}</p>
                     <p className="text-xs text-muted-foreground tabular-nums">
                       <time dateTime={topic.createdAt}>
-                        {t("debateTopicDetail.timeAgo", { time: formatDistanceToNowStrict(new Date(topic.createdAt)) })}
+                        {formatTimeAgo(new Date(topic.createdAt))}
                       </time>
                       {topic.authorFollowerCount > 0 &&
                         ` · ${t("debateTopicDetail.followerCount", { count: topic.authorFollowerCount })}`}

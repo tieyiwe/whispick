@@ -1,6 +1,6 @@
 import { useParams, useLocation, Link } from "wouter";
 import { useTranslation } from "react-i18next";
-import { formatDistanceToNowStrict } from "date-fns";
+import { formatTimeAgo } from "@/lib/relativeTime";
 import {
   useGetWhisp,
   useCreateWhispReply,
@@ -438,7 +438,7 @@ export function WhispDetail() {
               <time dateTime={whisp.createdAt} title={new Date(whisp.createdAt).toLocaleString()} className="tabular-nums">
                 {Date.now() - new Date(whisp.createdAt).getTime() < 60_000
                   ? t("shared.justNow")
-                  : t("shared.timeAgo", { time: formatDistanceToNowStrict(new Date(whisp.createdAt)) })}
+                  : formatTimeAgo(new Date(whisp.createdAt))}
               </time>
             </div>
             {whisp.status === "scheduled" && whisp.scheduledAt && (
@@ -710,7 +710,7 @@ export function WhispDetail() {
                 >
                   <span>{t("whispDetail.anonymousVisitorWantsToTalk")}</span>
                   <time dateTime={conversation.createdAt} title={new Date(conversation.createdAt).toLocaleString()} className="text-xs text-muted-foreground tabular-nums shrink-0">
-                    {t("shared.timeAgo", { time: formatDistanceToNowStrict(new Date(conversation.createdAt)) })}
+                    {formatTimeAgo(new Date(conversation.createdAt))}
                   </time>
                 </Link>
               ))}

@@ -12,7 +12,6 @@
     "couldntUpdateThat": "No se pudo actualizar eso",
     "movedBackToList": "Movido de vuelta a tu lista",
     "whispDeleted": "Whisp eliminado",
-    "timeAgo": "hace {{time}}",
     "justNow": "Justo ahora",
     "whispAgain": "Volver a enviar Whisp"
   },

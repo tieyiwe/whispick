@@ -133,7 +133,6 @@
       "twentyfive": "Économisez 43 %"
     },
     "freePlanName": "Gratuit",
-    "timeAgo": "il y a {{time}}",
     "creditsDelta_one": "{{amount}} crédit",
     "creditsDelta_other": "{{amount}} crédits",
     "txTypes": {

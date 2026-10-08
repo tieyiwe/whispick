@@ -49,7 +49,6 @@
     "unreadCount": "{{count}} 条未读",
     "markAllRead": "全部标为已读",
     "noNotificationsYet": "暂时还没有通知。",
-    "timeAgo": "{{time}}前",
     "justNow": "刚刚"
   },
   "phoneVerificationDialog": {

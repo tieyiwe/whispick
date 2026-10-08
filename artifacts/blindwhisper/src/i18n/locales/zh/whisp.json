@@ -12,7 +12,6 @@
     "couldntUpdateThat": "更新失败",
     "movedBackToList": "已移回你的列表",
     "whispDeleted": "Whisp 已删除",
-    "timeAgo": "{{time}}前",
     "justNow": "刚刚",
     "whispAgain": "再发一次"
   },

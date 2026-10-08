@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { formatDistanceToNowStrict } from "date-fns";
+import { formatTimeAgo } from "@/lib/relativeTime";
 import { MoodTag } from "@/components/shared/MoodTag";
 import { ArrowLeft, PlayCircle, VenetianMask } from "lucide-react";
 import { AnonymousMark } from "@/components/shared/AnonymousMark";
@@ -92,7 +92,7 @@ export function CircleDetail() {
                       <p className="text-[13px] text-muted-foreground min-w-0 break-words">
                         {item.senderAlias ?? t("circleDetail.someone")} ·{" "}
                         <time dateTime={item.createdAt} className="tabular-nums">
-                          {t("circleDetail.timeAgo", { time: formatDistanceToNowStrict(new Date(item.createdAt)) })}
+                          {formatTimeAgo(new Date(item.createdAt))}
                         </time>
                       </p>
                     </div>

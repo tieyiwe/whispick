@@ -34,7 +34,6 @@
     "subtitle": "发送到你公开 Whisper Box 链接的匿名消息。",
     "anonymous": "匿名",
     "newBadge": "新",
-    "timeAgo": "{{time}}前",
     "deleteButton": "删除",
     "deleteDialog": {
       "title": "删除这条消息？",

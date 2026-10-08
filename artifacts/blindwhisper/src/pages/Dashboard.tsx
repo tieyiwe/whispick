@@ -4,7 +4,7 @@ import { useGetWhispStats, useListSuggestions, getListSuggestionsQueryKey, useGe
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card } from "@/components/ui/card";
 import { Send, Eye, PlayCircle, MessageSquareHeart, Ghost, Sparkles, Repeat, Heart, PartyPopper, Mailbox, ChevronRight } from "lucide-react";
-import { formatDistanceToNowStrict } from "date-fns";
+import { formatTimeAgo } from "@/lib/relativeTime";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link, useLocation } from "wouter";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -105,7 +105,7 @@ export function Dashboard() {
   function relativeTime(value: string): string {
     const date = new Date(value);
     if (Date.now() - date.getTime() < 60_000) return t("shared.justNow");
-    return t("shared.timeAgo", { time: formatDistanceToNowStrict(date) });
+    return formatTimeAgo(date);
   }
 
   // First-Dashboard-visit nudge to verify a phone number (see

@@ -12,7 +12,6 @@
     "couldntUpdateThat": "Konnte nicht aktualisiert werden",
     "movedBackToList": "Zurück in deine Liste verschoben",
     "whispDeleted": "Whisp gelöscht",
-    "timeAgo": "vor {{time}}",
     "justNow": "Gerade eben",
     "whispAgain": "Nochmal whispen"
   },
@@ -483,7 +482,7 @@
       "title": "Dieser Whisp ist abgelaufen",
       "description": "Wer ihn gesendet hat, kann dir jederzeit einen neuen schicken."
     },
-    "expiresIn": "Läuft ab in {{time}}",
+    "expiresIn": "Noch {{time}} gültig",
     "appreciation": {
       "yesResponse": "Schön, dass dich das erreicht hat.",
       "noResponse": "Danke, dass du es sie wissen lässt.",
@@ -597,7 +596,7 @@
     },
     "notFound": "Dieser Whisp konnte nicht gefunden werden.",
     "keepForever": {
-      "heading": "Dieser Whisp verschwindet in {{time}}",
+      "heading": "Dieser Whisp ist nur noch {{time}} da",
       "description": "Erstelle ein kostenloses Konto, um ihn für immer zu behalten — speichere ihn, antworte jederzeit und verliere nie die Whisps, die dir wichtig sind.",
       "button": "Mit kostenlosem Konto speichern",
       "disclaimer": "Mit einem Tipp über Google — keine Karte nötig."

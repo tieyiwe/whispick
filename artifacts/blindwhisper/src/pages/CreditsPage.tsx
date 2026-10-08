@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { Check, Ghost, Zap, Flame, CreditCard, ArrowUpRight, ArrowDownLeft, Loader2, Gift, Sparkles, RotateCcw, type LucideIcon } from "lucide-react";
-import { formatDistanceToNowStrict } from "date-fns";
+import { formatTimeAgo } from "@/lib/relativeTime";
 import { GHOST_BOOST_ENABLED } from "@/lib/featureFlags";
 import { usePublicConfig } from "@/lib/usePublicConfig";
 
@@ -314,7 +314,7 @@ export function CreditsPage() {
                             title={created.toLocaleString()}
                             className="text-xs text-muted-foreground"
                           >
-                            {t("creditsPage.timeAgo", { time: formatDistanceToNowStrict(created) })}
+                            {formatTimeAgo(created)}
                           </time>
                         </div>
                       </div>

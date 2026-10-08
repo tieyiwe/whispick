@@ -133,7 +133,6 @@
       "twentyfive": "Okoa 43%"
     },
     "freePlanName": "Bure",
-    "timeAgo": "{{time}} zilizopita",
     "creditsDelta_one": "mkopo {{amount}}",
     "creditsDelta_other": "mikopo {{amount}}",
     "txTypes": {

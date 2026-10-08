@@ -34,7 +34,6 @@
     "subtitle": "당신의 공개 Whisper Box 링크로 전송된 익명 메시지입니다.",
     "anonymous": "익명",
     "newBadge": "새 메시지",
-    "timeAgo": "{{time}} 전",
     "deleteButton": "삭제",
     "deleteDialog": {
       "title": "이 메시지를 삭제할까요?",

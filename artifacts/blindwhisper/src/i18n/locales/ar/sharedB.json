@@ -49,7 +49,6 @@
     "unreadCount": "{{count}} غير مقروءة",
     "markAllRead": "تحديد الكل كمقروء",
     "noNotificationsYet": "لا إشعارات بعد.",
-    "timeAgo": "منذ {{time}}",
     "justNow": "الآن"
   },
   "phoneVerificationDialog": {

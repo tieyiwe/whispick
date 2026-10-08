@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
-import { formatDistanceToNowStrict } from "date-fns";
+import { formatTimeAgo } from "@/lib/relativeTime";
 import {
   useListWhisperBoxMessages,
   useMarkWhisperBoxMessageRead,
@@ -341,7 +341,7 @@ export function WhisperBoxInbox() {
                         title={new Date(message.createdAt).toLocaleString()}
                         className="mt-1.5 block text-xs text-muted-foreground tabular-nums"
                       >
-                        {t("whisperBoxInbox.timeAgo", { time: formatDistanceToNowStrict(new Date(message.createdAt)) })}
+                        {formatTimeAgo(new Date(message.createdAt))}
                       </time>
                     </div>
                     <ChevronDown

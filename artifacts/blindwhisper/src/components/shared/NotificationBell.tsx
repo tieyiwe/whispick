@@ -13,7 +13,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Bell, BellOff } from "lucide-react";
-import { formatDistanceToNowStrict } from "date-fns";
+import { formatTimeAgo } from "@/lib/relativeTime";
 import { isSafeAppPath } from "@/lib/safeHref";
 
 // The persistent, in-app counterpart to push notifications (see
@@ -27,7 +27,7 @@ import { isSafeAppPath } from "@/lib/safeHref";
 function relativeTime(value: string, t: (key: string, opts?: Record<string, unknown>) => string): string {
   const date = new Date(value);
   if (Date.now() - date.getTime() < 60_000) return t("notificationBell.justNow");
-  return t("notificationBell.timeAgo", { time: formatDistanceToNowStrict(date) });
+  return formatTimeAgo(date);
 }
 
 export function NotificationBell({

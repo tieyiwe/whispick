@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { formatDistanceToNowStrict } from "date-fns";
+import { formatTimeAgo } from "@/lib/relativeTime";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
   useListWhisps,
@@ -70,7 +70,7 @@ export function WhispsList() {
   function relativeTime(value: string): string {
     const date = new Date(value);
     if (Date.now() - date.getTime() < 60_000) return t("shared.justNow");
-    return t("shared.timeAgo", { time: formatDistanceToNowStrict(date) });
+    return formatTimeAgo(date);
   }
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 

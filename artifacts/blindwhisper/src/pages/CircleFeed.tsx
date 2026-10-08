@@ -1,7 +1,7 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useTranslation } from "react-i18next";
 import { useListCircleFeed } from "@workspace/api-client-react";
-import { formatDistanceToNowStrict } from "date-fns";
+import { formatTimeAgo } from "@/lib/relativeTime";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import { Link, useLocation } from "wouter";
@@ -138,7 +138,7 @@ export function CircleFeed() {
                     <div className="min-w-0 mr-auto leading-tight">
                       <p className="text-[13px] text-foreground/80 break-words">{item.senderAlias ?? t("circleFeed.someone")}</p>
                       <time dateTime={item.createdAt} className="block text-xs text-muted-foreground tabular-nums mt-0.5">
-                        {t("circleFeed.timeAgo", { time: formatDistanceToNowStrict(new Date(item.createdAt)) })}
+                        {formatTimeAgo(new Date(item.createdAt))}
                       </time>
                     </div>
                     <button

@@ -34,7 +34,6 @@
     "subtitle": "الرسائل المجهولة الهوية المرسَلة إلى رابط Whisper Box العام الخاص بك.",
     "anonymous": "مجهول الهوية",
     "newBadge": "جديد",
-    "timeAgo": "منذ {{time}}",
     "deleteButton": "حذف",
     "deleteDialog": {
       "title": "حذف هذه الرسالة؟",

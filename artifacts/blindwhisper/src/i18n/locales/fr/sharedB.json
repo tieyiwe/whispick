@@ -49,7 +49,6 @@
     "unreadCount": "{{count}} non lues",
     "markAllRead": "Tout marquer comme lu",
     "noNotificationsYet": "Pas encore de notifications.",
-    "timeAgo": "il y a {{time}}",
     "justNow": "À l'instant"
   },
   "phoneVerificationDialog": {

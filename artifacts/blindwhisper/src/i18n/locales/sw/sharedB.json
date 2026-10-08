@@ -49,7 +49,6 @@
     "unreadCount": "{{count}} hazijasomwa",
     "markAllRead": "Weka zote kama zimesomwa",
     "noNotificationsYet": "Bado huna arifa.",
-    "timeAgo": "{{time}} zilizopita",
     "justNow": "Sasa hivi"
   },
   "phoneVerificationDialog": {

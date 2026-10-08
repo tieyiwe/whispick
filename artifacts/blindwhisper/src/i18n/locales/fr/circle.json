@@ -6,8 +6,7 @@
     "videoAlt": "Vidéo",
     "someone": "Quelqu'un",
     "emptyTitle": "Rien ici pour l'instant",
-    "emptyDescription": "Choisis Blind Circle en envoyant un whisp, puis sélectionne ce cercle pour le partager ici.",
-    "timeAgo": "il y a {{time}}"
+    "emptyDescription": "Choisis Blind Circle en envoyant un whisp, puis sélectionne ce cercle pour le partager ici."
   },
   "circleFeed": {
     "title": "Blind Circle",
@@ -17,7 +16,6 @@
     "whispThis": "Envoyer ce Whisp",
     "emptyTitle": "Blind Circle est calme pour le moment",
     "emptyDescription": "Personne n'a encore déposé de vidéo dans le fil de la communauté. Sois le premier — utilise Publier dans Blind Circle ci-dessus.",
-    "timeAgo": "il y a {{time}}",
     "shareAria": "Partager cette publication",
     "shareTitle": "Blind Circle",
     "shareText": "Une publication anonyme sur Blind Circle — jette un œil :",

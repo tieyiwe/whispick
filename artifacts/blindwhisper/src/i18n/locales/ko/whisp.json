@@ -12,7 +12,6 @@
     "couldntUpdateThat": "업데이트하지 못했어요",
     "movedBackToList": "목록으로 다시 이동했어요",
     "whispDeleted": "Whisp가 삭제됐어요",
-    "timeAgo": "{{time}} 전",
     "justNow": "방금 전",
     "whispAgain": "다시 Whisp 보내기"
   },

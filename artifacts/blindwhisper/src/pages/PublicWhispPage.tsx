@@ -24,7 +24,7 @@ import {
   type CircleComment,
 } from "@workspace/api-client-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { formatDistanceToNowStrict } from "date-fns";
+import { formatDurationUntil } from "@/lib/relativeTime";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -750,7 +750,7 @@ export function PublicWhispPage() {
     ? REMINDER_PRESETS.filter((p) => now + p.minutes * 60_000 < expiresAtMs)
     : [];
   const hasCountdown = remainingMs !== null && remainingMs > 0;
-  const expiresInLabel = hasCountdown ? formatDistanceToNowStrict(expiresAtMs!) : "";
+  const expiresInLabel = hasCountdown ? formatDurationUntil(expiresAtMs!) : "";
   // Whether the fixed composer slot is offering a live reply (vs. the
   // expired / out-of-replies notices that render into the same slot).
   const canReply = !!whisp && !isCirclePost && !expired && whisp.recipientRepliesRemaining !== 0;

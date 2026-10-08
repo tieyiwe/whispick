@@ -4,7 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { MessageCircle, Repeat2, Share2, ArrowRight } from "lucide-react";
 import type { DebateTopicFeedItem } from "@workspace/api-client-react";
 import { AvatarCircle } from "@/components/shared/AvatarCircle";
-import { formatDistanceToNowStrict } from "date-fns";
+import { formatTimeAgo } from "@/lib/relativeTime";
 
 // Shared by DebateTopics.tsx (the public feed) and DebateFollowing.tsx (the
 // following feed) — same card, same styling, so a topic reads identically
@@ -23,7 +23,6 @@ export function DebateTopicCard({
 }) {
   const { toast } = useToast();
   const { t } = useTranslation("sharedA");
-  const { t: tTopics } = useTranslation("debateTopics");
 
   // Distinct from "rewhisp" (the retweet-style boost on the detail page) —
   // this just gets the topic's link in front of someone so they can join the
@@ -88,7 +87,7 @@ export function DebateTopicCard({
             ·
           </span>
           <time dateTime={topic.createdAt} className="text-sm text-muted-foreground whitespace-nowrap shrink-0">
-            {tTopics("debateTopicDetail.timeAgo", { time: formatDistanceToNowStrict(new Date(topic.createdAt)) })}
+            {formatTimeAgo(new Date(topic.createdAt))}
           </time>
         </div>
         <p className="relative font-serif text-xl md:text-2xl font-bold text-foreground leading-snug tracking-tight pr-6">

@@ -6,8 +6,7 @@
     "videoAlt": "视频",
     "someone": "某人",
     "emptyTitle": "这里还什么都没有",
-    "emptyDescription": "发送 whisp 时选择 Blind Circle，然后选这个圈子即可分享到这里。",
-    "timeAgo": "{{time}}前"
+    "emptyDescription": "发送 whisp 时选择 Blind Circle，然后选这个圈子即可分享到这里。"
   },
   "circleFeed": {
     "title": "Blind Circle",
@@ -17,7 +16,6 @@
     "whispThis": "转发这个 Whisp",
     "emptyTitle": "Blind Circle 现在有点冷清",
     "emptyDescription": "还没有人在社区动态里发布视频。做第一个吧——点击上方的发布到 Blind Circle。",
-    "timeAgo": "{{time}}前",
     "shareAria": "分享这条帖子",
     "shareTitle": "Blind Circle",
     "shareText": "Blind Circle 上的一条匿名帖子——来看看：",
