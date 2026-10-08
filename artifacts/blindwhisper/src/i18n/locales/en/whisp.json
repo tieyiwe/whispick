@@ -304,7 +304,8 @@
     "outOfReplies": {
       "title": "They've used all their anonymous replies.",
       "description": "They can't reply again unless you add more replies, or they create a free account. You can still send follow-ups.",
-      "comingSoonButton": "Add more replies (coming soon)"
+      "comingSoonButton": "Add more replies (coming soon)",
+      "descriptionFree": "They can keep replying by creating a free account — they'll still be anonymous to you. You can still send follow-ups."
     },
     "oneReplyLeft": "They have 1 anonymous reply left.",
     "recipientLabel": "Recipient",

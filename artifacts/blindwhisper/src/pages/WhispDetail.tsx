@@ -58,12 +58,14 @@ import {
 import { deliveryLabel } from "@/lib/deliveryMethod";
 import { safeExternalHref } from "@/lib/safeHref";
 import { getVisitorId } from "@/lib/anonymousVisitor";
+import { usePublicConfig } from "@/lib/usePublicConfig";
 import { CircleCommentRow } from "@/components/shared/CircleCommentRow";
 import { ArchivedWhispGate } from "@/components/shared/ArchivedWhispGate";
 import { TimelineTrack, type TimelineStepData } from "@/components/shared/DeliveryTimelineTrack";
 
 export function WhispDetail() {
   const { t } = useTranslation("whisp");
+  const { billingEnabled } = usePublicConfig();
   const { id } = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -566,17 +568,20 @@ export function WhispDetail() {
                     {t("whispDetail.outOfReplies.title")}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {t("whispDetail.outOfReplies.description")}
+                    {billingEnabled ? t("whispDetail.outOfReplies.description") : t("whispDetail.outOfReplies.descriptionFree")}
                   </p>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="rounded-full"
-                    disabled
-                    data-testid="button-buy-more-replies"
-                  >
-                    {t("whispDetail.outOfReplies.comingSoonButton")}
-                  </Button>
+                  {/* Buying more replies only exists once billing is on. */}
+                  {billingEnabled && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-full"
+                      disabled
+                      data-testid="button-buy-more-replies"
+                    >
+                      {t("whispDetail.outOfReplies.comingSoonButton")}
+                    </Button>
+                  )}
                 </div>
               )}
               {typeof recipientRepliesRemaining === "number" && recipientRepliesRemaining === 1 && (

@@ -24,7 +24,7 @@ import { watchForUpdates, isUpdateAvailable } from "@/lib/appUpdate";
 import { setAuthTokenGetter, setExtraHeadersGetter, createPushSubscription } from "@workspace/api-client-react";
 import { getAdminMfaToken } from "@/lib/adminMfaGate";
 import { initFeatureUsage } from "@/lib/featureUsage";
-import { SUGGESTIONS_ENABLED } from "@/lib/features";
+import { SUGGESTIONS_ENABLED } from "@/lib/featureFlags";
 import { dark } from '@clerk/themes';
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect, Link } from 'wouter';
 import { Loader2, ArrowLeft } from "lucide-react";

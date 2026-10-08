@@ -8,3 +8,9 @@
 // — viewing a PAST campaign (WhispDetail.tsx's match-stats view) is
 // deliberately left ungated.
 export const GHOST_BOOST_ENABLED = false;
+
+// The curated video Suggestions library (/suggestions, the Dashboard card,
+// the nav item). Hidden at launch; flip to true to bring it back once there
+// are enough users for it to be worth curating. The admin tool for managing
+// suggestions (/admin_pro/suggestions) is unaffected.
+export const SUGGESTIONS_ENABLED = false;

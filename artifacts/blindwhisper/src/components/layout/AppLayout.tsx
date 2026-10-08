@@ -55,7 +55,7 @@ import { InstallAppPrompt } from "@/components/shared/InstallAppPrompt";
 import { PolicyUpdateGate } from "@/components/shared/PolicyUpdateGate";
 import { useMobileSendActionValue } from "@/contexts/MobileSendAction";
 import { usePublicConfig } from "@/lib/usePublicConfig";
-import { SUGGESTIONS_ENABLED } from "@/lib/features";
+import { SUGGESTIONS_ENABLED } from "@/lib/featureFlags";
 
 // labelKey resolves against the "common" namespace's nav.* keys (see
 // src/i18n/locales/*/common.json) — the label itself is looked up at
@@ -336,7 +336,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   // SendTextWhisp.tsx), so the section drops out of the nav while it's off
   // (and while the flag is still loading, so it never flashes in and out).
   // Existing threads stay reachable from notifications and Replies.
-  const { smsEnabled } = usePublicConfig();
+  const { smsEnabled, billingEnabled } = usePublicConfig();
   const navSections: NavSection[] = NAV_SECTIONS.map((section) => ({
     ...section,
     items: section.items.filter(
@@ -344,7 +344,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
         (smsEnabled || item.href !== "/text-whisps") &&
         // Suggestions is parked for now (lib/features.ts) — hidden from the
         // sidebar and the More sheet alike, since both derive from here.
-        (SUGGESTIONS_ENABLED || item.href !== "/suggestions"),
+        (SUGGESTIONS_ENABLED || item.href !== "/suggestions") &&
+        // Nothing to buy while the app is free (billing off) — the page
+        // stays reachable by URL but leaves the nav.
+        (billingEnabled || item.href !== "/credits"),
     ),
   }))
     .filter((section) => section.items.length > 0)
@@ -438,8 +441,19 @@ export function AppLayout({ children }: { children: ReactNode }) {
                   // Exact match for a parent route that has its own child
                   // item (/debate-topics vs /debate-topics/following), so only
                   // one of the two lights up at a time.
-                  const hasChildItem = navSections.some((sec) => sec.items.some((other) => other.href.startsWith(item.href + "/")));
-                  const isActive = location === item.href || (!hasChildItem && location.startsWith(item.href + "/"));
+                  // A parent route lights up for its sub-pages (a topic at
+                  // /debate-topics/<id> → "Debate Now") unless the location
+                  // belongs to one of its own child nav items (/debate-topics/
+                  // following → "Following" only).
+                  const onChildItem = navSections.some((sec) =>
+                    sec.items.some(
+                      (other) =>
+                        other.href !== item.href &&
+                        other.href.startsWith(item.href + "/") &&
+                        (location === other.href || location.startsWith(other.href + "/")),
+                    ),
+                  );
+                  const isActive = location === item.href || (!onChildItem && location.startsWith(item.href + "/"));
                   const Icon = item.icon;
                   const badge = badgeFor(item.href);
 
