@@ -44,19 +44,20 @@ export function DebateTopicCard({
   function handleShareTopic(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    // Routed through /dt/:id (routes/debateTopicLink.ts on the API server),
-    // NOT the SPA's own /debate-topics/:id — in production the frontend is
-    // static files serving the same index.html for every route, so that URL
-    // has no way to unfurl this specific topic's text when pasted into
-    // iMessage/WhatsApp/Twitter/etc. /dt/:id does: a real browser bounces
-    // straight through to /debate-topics/:id, but a link-preview crawler
-    // gets a small server-rendered page with real Open Graph tags for THIS
-    // topic instead of the SPA's generic (or absent) ones.
-    const url = `${window.location.origin}/api/dt/${topic.id}`;
+    // Routed through /dt/:id (routes/debateTopicLink.ts, served by the API
+    // server at a bare top-level prefix), NOT the SPA's own
+    // /debate-topics/:id — in production the frontend is static files
+    // serving the same index.html for every route, so that URL can't unfurl
+    // this topic's text in iMessage/WhatsApp/etc. /dt/:id does: a browser
+    // bounces straight to /debate-topics/:id, a link-preview crawler gets
+    // real Open Graph tags for THIS topic, and it's the topic's canonical,
+    // search-indexable URL too.
+    const url = `${window.location.origin}/dt/${topic.id}`;
     if (navigator.share) {
-      // Left in English in every language — this is a proper-noun share-sheet
-      // title (brand name + feature name), not a translatable sentence.
-      navigator.share({ title: t("debateTopicCard.shareTitle"), url }).catch(() => {});
+      // `text` rides along in share targets that show a message body
+      // (WhatsApp, Messages), so the invite reads right even before the
+      // link preview loads.
+      navigator.share({ title: t("debateTopicCard.shareTitle"), text: t("debateTopicCard.shareText"), url }).catch(() => {});
       return;
     }
     navigator.clipboard

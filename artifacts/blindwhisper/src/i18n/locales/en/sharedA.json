@@ -76,6 +76,7 @@
   },
   "debateTopicCard": {
     "shareTitle": "Blind Whisper — Debate Now",
+    "shareText": "Join this debate and answer 100% anonymously:",
     "linkCopied": "Link copied — send it to bring someone into the debate",
     "copyFailed": "Couldn't copy — please copy it manually",
     "commentCount_one": "{{count}} comment",
