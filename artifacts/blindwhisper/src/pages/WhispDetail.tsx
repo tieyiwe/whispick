@@ -56,11 +56,11 @@ import {
   X,
 } from "lucide-react";
 import { deliveryLabel } from "@/lib/deliveryMethod";
-import { safeExternalHref } from "@/lib/safeHref";
 import { getVisitorId } from "@/lib/anonymousVisitor";
 import { usePublicConfig } from "@/lib/usePublicConfig";
 import { CircleCommentRow } from "@/components/shared/CircleCommentRow";
 import { ArchivedWhispGate } from "@/components/shared/ArchivedWhispGate";
+import { SenderVideoPreview, SenderVideoButton } from "@/components/shared/SenderVideo";
 import { TimelineTrack, type TimelineStepData } from "@/components/shared/DeliveryTimelineTrack";
 
 export function WhispDetail() {
@@ -186,7 +186,12 @@ export function WhispDetail() {
           onUnarchive={handleUnarchive}
           isUnarchiving={archiveWhisp.isPending}
           onBack={() => setLocation("/whisps")}
-        />
+        >
+          {/* Archiving tucks the conversation away, not the sender's own
+              video — they can still watch what they sent without
+              unarchiving first. */}
+          <SenderVideoButton whisp={whisp} />
+        </ArchivedWhispGate>
       </AppLayout>
     );
   }
@@ -393,26 +398,13 @@ export function WhispDetail() {
           <RevealCountdownDialog open={revealCountdownOpen} onOpenChange={setRevealCountdownOpen} onConfirm={handleReveal} />
         )}
 
-        {/* Video preview */}
+        {/* Video preview — always reachable for the sender, whatever the
+            recipient's side looks like (expired, watched, replied): see
+            SenderVideo.tsx. It used to link an upload through the
+            recipient's public stream, which 410s once their link expires,
+            and offered no link at all without a thumbnail. */}
         <Card className="rounded-2xl bg-card/70 border-border/50 overflow-hidden shadow-none">
-          {whisp.videoThumbnail ? (
-            <div className="relative h-48 sm:h-56 overflow-hidden">
-              <img src={whisp.videoThumbnail} alt={t("whispDetail.videoFallback")} className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-black/35 flex items-center justify-center">
-                <a
-                  aria-label={t("whispDetail.videoFallback")}
-                  className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
-                  href={whisp.videoPlatform === "upload" ? `/api/public/w/${whisp.publicToken}/media` : safeExternalHref(whisp.videoUrl)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-md ring-1 ring-white/30 flex items-center justify-center hover:bg-white/30 transition-colors duration-200">
-                    <PlayCircle className="w-8 h-8 text-white" />
-                  </div>
-                </a>
-              </div>
-            </div>
-          ) : null}
+          <SenderVideoPreview whisp={whisp} />
           <CardContent className="p-5 space-y-1">
             {/* Title gets the full width; the status sits with the delivery
                 facts underneath instead of squeezing a two-line title. */}

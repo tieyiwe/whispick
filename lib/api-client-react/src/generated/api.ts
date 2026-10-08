@@ -670,7 +670,7 @@ export const getGetReceivedWhispUnreadCountUrl = () => {
 }
 
 /**
- * Mirrors GET /whisps?box=received's own filters (matched recipient, not archived) but counts rather than fetches full rows. "Unread" means openedAt IS NULL, the same flag the public whisp page's hasOpenedBefore reads — clears the moment the recipient actually opens the whisp.
+ * Uses the same predicate as GET /whisps?box=received (matched recipient, not sent by the caller themselves, delivered, not taken down, not archived) but counts rather than fetches full rows. "Unread" means openedAt IS NULL — the same flag the public whisp page's hasOpenedBefore reads, so it clears the moment the recipient actually opens the whisp — and not yet expired (an expired whisp can no longer be opened, so it could never be cleared). Matches the list's per-whisp `unread` flag.
  * @summary Lightweight unread count for the "My Whisps" nav badge, without fetching the full received list
  */
 export const getReceivedWhispUnreadCount = async ( options?: RequestInit): Promise<UnreadWhispCountResponse> => {

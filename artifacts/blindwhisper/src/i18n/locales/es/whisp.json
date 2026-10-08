@@ -264,6 +264,9 @@
       "descriptionNoReplies": "Esto elimina el whisp de tus whisps. Esto no se puede deshacer de tu lado."
     },
     "videoFallback": "Video",
+    "watchVideo": "Ver video",
+    "videoNoLongerAvailable": "Este video ya no está disponible.",
+    "videoRemovedByModeration": "Este video se eliminó por incumplir nuestras normas de contenido.",
     "matchedToSubscribers_one": "Emparejado con {{count}} suscriptor",
     "matchedToSubscribers_other": "Emparejado con {{count}} suscriptores",
     "noMatchingSubscribers": "No se encontraron suscriptores coincidentes a tiempo",

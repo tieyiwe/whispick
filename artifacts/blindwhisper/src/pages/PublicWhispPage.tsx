@@ -319,7 +319,26 @@ export function PublicWhispPage() {
     if (composerExpanded) replyTextareaRef.current?.focus();
   }, [composerExpanded]);
 
-  const trackEvent = useTrackWhispEvent();
+  // The "opened" reconcile lives on the hook, not on the mutate() call
+  // below: TanStack Query drops a mutate()'s own callbacks once the calling
+  // component has unmounted, and the recipient tapping Back to "My Whisps"
+  // before the track round-trip lands unmounts exactly this page. That left
+  // the Received tab's cached list (60s staleTime) still showing the whisp
+  // as new — badge included — even though the server had already marked it
+  // read. Hook-level callbacks run regardless. Refreshes the whisps list so
+  // the same whisp stops showing as new inside the Received tab, and the nav
+  // badge's count to reconcile the optimistic guess in the effect below.
+  // Only meaningful for a signed-in recipient (these are their queries); a
+  // no-op for an anonymous visitor.
+  const trackEvent = useTrackWhispEvent({
+    mutation: {
+      onSuccess: (_data, variables) => {
+        if (variables.data.eventType !== "opened") return;
+        queryClient.invalidateQueries({ queryKey: getGetReceivedWhispUnreadCountQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getListWhispsQueryKey() });
+      },
+    },
+  });
   const publicReply = usePublicReply();
   const respondReveal = useRespondReveal();
   const scrapeReplyVideo = useScrapeVideoMeta();
@@ -452,29 +471,27 @@ export function PublicWhispPage() {
     // wasn't set before). hasOpenedBefore === false means this is that first
     // open, so drop the "My Whisps" nav badge by one RIGHT NOW —
     // synchronously, before the track round-trip and before navigating back
-    // to AppLayout — instead of waiting on the mutation's onSuccess (which
-    // the navigation away from this page can drop) or AppLayout's 60s poll.
-    // A no-op for an anonymous visitor, who holds no such cached count.
-    if (whisp.hasOpenedBefore === false) {
+    // to AppLayout — instead of waiting on the track round-trip or
+    // AppLayout's 60s poll. Only when that count actually includes this
+    // whisp: the viewer is its matched recipient (senderHandle is only ever
+    // set for them), it isn't archived, and it hasn't expired (an expired one
+    // isn't counted as unread at all — see routes/whisps.ts's
+    // receivedUnread). Otherwise a sender previewing their own link, or
+    // anyone opening someone else's, knocked one off a count it was never
+    // part of. The same whisp's row in the cached Received list is patched
+    // too, so its "New" marker and the tab badge drop right away as well.
+    // A no-op for an anonymous visitor, who holds no such cached data.
+    if (whisp.hasOpenedBefore === false && whisp.senderHandle && !whisp.viewerArchived && !whisp.expired) {
       queryClient.setQueryData(getGetReceivedWhispUnreadCountQueryKey(), (old: any) =>
         old ? { ...old, unreadCount: Math.max(0, (old.unreadCount ?? 0) - 1) } : old,
       );
+      queryClient.setQueriesData({ queryKey: getListWhispsQueryKey() }, (old: unknown) =>
+        Array.isArray(old) ? old.map((w) => (w?.id === whisp.id ? { ...w, unread: false } : w)) : old,
+      );
     }
 
-    trackEventMutate(
-      { token: token!, data: { eventType: "opened" } },
-      {
-        // Reconcile the optimistic guess above once the server confirms, and
-        // refresh the whisps list too so the same whisp stops showing as new
-        // inside the "My Whisps" Received tab (its status/openedAt just
-        // changed). Only meaningful for a signed-in recipient (these are
-        // their queries); a no-op for an anonymous visitor.
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: getGetReceivedWhispUnreadCountQueryKey() });
-          queryClient.invalidateQueries({ queryKey: getListWhispsQueryKey() });
-        },
-      },
-    );
+    // Reconciled by useTrackWhispEvent's hook-level onSuccess above.
+    trackEventMutate({ token: token!, data: { eventType: "opened" } });
   }, [whisp, trackEventMutate, token, queryClient]);
 
   function handleWatchEvent(eventType: "clicked" | "watched_10s" | "watched_50pct" | "watched_complete") {

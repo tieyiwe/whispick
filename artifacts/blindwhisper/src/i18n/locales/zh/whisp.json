@@ -264,6 +264,9 @@
       "descriptionNoReplies": "这会把该 whisp 从你的 whisp 中移除。此操作在你这边无法撤销。"
     },
     "videoFallback": "视频",
+    "watchVideo": "观看视频",
+    "videoNoLongerAvailable": "此视频已无法观看。",
+    "videoRemovedByModeration": "此视频因违反我们的内容规则已被移除。",
     "matchedToSubscribers_one": "已与 {{count}} 位订阅者匹配",
     "matchedToSubscribers_other": "已与 {{count}} 位订阅者匹配",
     "noMatchingSubscribers": "未能及时找到匹配的订阅者",

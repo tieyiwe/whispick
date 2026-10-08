@@ -264,6 +264,9 @@
       "descriptionNoReplies": "Cela retire le whisp de tes whisps. C'est irréversible de ton côté."
     },
     "videoFallback": "Vidéo",
+    "watchVideo": "Voir la vidéo",
+    "videoNoLongerAvailable": "Cette vidéo n'est plus disponible.",
+    "videoRemovedByModeration": "Cette vidéo a été retirée pour non-respect de nos règles de contenu.",
     "matchedToSubscribers_one": "Mis en relation avec {{count}} abonné",
     "matchedToSubscribers_other": "Mis en relation avec {{count}} abonnés",
     "noMatchingSubscribers": "Aucun abonné correspondant trouvé à temps",

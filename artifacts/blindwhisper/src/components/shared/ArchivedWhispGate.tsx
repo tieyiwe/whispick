@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Archive, ArchiveRestore, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,10 @@ interface ArchivedWhispGateProps {
   onUnarchive: () => void;
   isUnarchiving: boolean;
   onBack: () => void;
+  // Optional extra action shown above the buttons — WhispDetail.tsx puts the
+  // sender's "Watch video" here, since archiving shouldn't cost a sender
+  // access to the video they sent.
+  children?: ReactNode;
 }
 
 // Shown in place of a whisp's real content — on both the sender's own
@@ -18,7 +23,7 @@ interface ArchivedWhispGateProps {
 // notification or the link itself, instead of being dropped straight back
 // into content they deliberately tucked away. Unarchiving is one tap, and
 // immediately reveals the real page underneath.
-export function ArchivedWhispGate({ videoTitle, onUnarchive, isUnarchiving, onBack }: ArchivedWhispGateProps) {
+export function ArchivedWhispGate({ videoTitle, onUnarchive, isUnarchiving, onBack, children }: ArchivedWhispGateProps) {
   const { t } = useTranslation("sharedA");
 
   return (
@@ -32,6 +37,7 @@ export function ArchivedWhispGate({ videoTitle, onUnarchive, isUnarchiving, onBa
           {videoTitle ? t("archivedWhispGate.descriptionWithTitle", { title: videoTitle }) : t("archivedWhispGate.description")}
         </p>
       </div>
+      {children}
       <div className="flex flex-col-reverse sm:flex-row gap-3 justify-center pt-1">
         <Button variant="outline" onClick={onBack} className="rounded-full h-11 px-5" data-testid="button-archived-gate-back">
           {t("archivedWhispGate.back")}

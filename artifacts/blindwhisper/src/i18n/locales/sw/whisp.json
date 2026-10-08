@@ -264,6 +264,9 @@
       "descriptionNoReplies": "Hii inaondoa whisp kutoka kwa whisps zako. Hili haliwezi kutenduliwa upande wako."
     },
     "videoFallback": "Video",
+    "watchVideo": "Tazama video",
+    "videoNoLongerAvailable": "Video hii haipatikani tena.",
+    "videoRemovedByModeration": "Video hii iliondolewa kwa kukiuka sheria zetu za maudhui.",
     "matchedToSubscribers_one": "Imeoanishwa na mtu {{count}} aliyejisajili",
     "matchedToSubscribers_other": "Imeoanishwa na watu {{count}} waliojisajili",
     "noMatchingSubscribers": "Hakuna mtu aliyejisajili aliyepatikana kwa wakati",

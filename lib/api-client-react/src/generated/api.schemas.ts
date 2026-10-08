@@ -109,6 +109,10 @@ export interface Whisp {
      * @nullable
      */
   senderHandle?: string | null;
+  /** True only when the caller is this whisp's matched recipient and it is still unread — never opened and not yet expired. The same rule GET /whisps/received-unread-count counts by, so the Received tab's "New" markers and badge always agree with the nav badge. Always false for a sender. */
+  unread?: boolean;
+  /** Sender's view only — true when a moderator took this whisp (or the Circle post a circle_dm was cloned from) down. The whisp stays in the sender's lists, but its video is no longer offered. */
+  contentRemoved?: boolean;
 }
 
 export interface WhispInput {

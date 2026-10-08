@@ -264,6 +264,9 @@
       "descriptionNoReplies": "This removes the whisp from your whisps. This can't be undone from your side."
     },
     "videoFallback": "Video",
+    "watchVideo": "Watch video",
+    "videoNoLongerAvailable": "This video is no longer available.",
+    "videoRemovedByModeration": "This video was removed for breaking our content rules.",
     "matchedToSubscribers_one": "Matched to {{count}} subscriber",
     "matchedToSubscribers_other": "Matched to {{count}} subscribers",
     "noMatchingSubscribers": "No matching subscribers were found in time",

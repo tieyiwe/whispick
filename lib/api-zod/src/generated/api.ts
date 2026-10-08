@@ -73,7 +73,9 @@ export const ListWhispsResponseItem = zod.object({
   "viewerRole": zod.string().nullable().describe('\'sender\' | \'recipient\' | null — which role the caller has on this whisp. Drives pinned\/archived below, and (frontend-side) whether Delete is offered — only a sender may delete.'),
   "pinned": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is pinned (see POST \/whisps\/{id}\/pin) — never the other party\'s pin state.'),
   "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.'),
-  "senderHandle": zod.string().nullish().describe('A stable, anonymous pseudonym for this whisp\'s sender (e.g. \"Falcon482\"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerRole is \"recipient\"; null otherwise.')
+  "senderHandle": zod.string().nullish().describe('A stable, anonymous pseudonym for this whisp\'s sender (e.g. \"Falcon482\"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerRole is \"recipient\"; null otherwise.'),
+  "unread": zod.boolean().optional().describe('True only when the caller is this whisp\'s matched recipient and it is still unread — never opened and not yet expired. The same rule GET \/whisps\/received-unread-count counts by, so the Received tab\'s \"New\" markers and badge always agree with the nav badge. Always false for a sender.'),
+  "contentRemoved": zod.boolean().optional().describe('Sender\'s view only — true when a moderator took this whisp (or the Circle post a circle_dm was cloned from) down. The whisp stays in the sender\'s lists, but its video is no longer offered.')
 }).describe('For the sender\'s own view, the full whisp minus recipient-side bookkeeping. For a matched recipient\'s view (viewerRole \"recipient\"), an explicit allowlist — sender-only fields such as conciergeRequestId and uploadedVideoId are omitted.')
 export const ListWhispsResponse = zod.array(ListWhispsResponseItem)
 
@@ -151,7 +153,9 @@ export const CreateWhispResponse = zod.object({
   "viewerRole": zod.string().nullable().describe('\'sender\' | \'recipient\' | null — which role the caller has on this whisp. Drives pinned\/archived below, and (frontend-side) whether Delete is offered — only a sender may delete.'),
   "pinned": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is pinned (see POST \/whisps\/{id}\/pin) — never the other party\'s pin state.'),
   "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.'),
-  "senderHandle": zod.string().nullish().describe('A stable, anonymous pseudonym for this whisp\'s sender (e.g. \"Falcon482\"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerRole is \"recipient\"; null otherwise.')
+  "senderHandle": zod.string().nullish().describe('A stable, anonymous pseudonym for this whisp\'s sender (e.g. \"Falcon482\"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerRole is \"recipient\"; null otherwise.'),
+  "unread": zod.boolean().optional().describe('True only when the caller is this whisp\'s matched recipient and it is still unread — never opened and not yet expired. The same rule GET \/whisps\/received-unread-count counts by, so the Received tab\'s \"New\" markers and badge always agree with the nav badge. Always false for a sender.'),
+  "contentRemoved": zod.boolean().optional().describe('Sender\'s view only — true when a moderator took this whisp (or the Circle post a circle_dm was cloned from) down. The whisp stays in the sender\'s lists, but its video is no longer offered.')
 }).describe('For the sender\'s own view, the full whisp minus recipient-side bookkeeping. For a matched recipient\'s view (viewerRole \"recipient\"), an explicit allowlist — sender-only fields such as conciergeRequestId and uploadedVideoId are omitted.')
 
 
@@ -206,13 +210,15 @@ export const GetWhispStatsResponse = zod.object({
   "viewerRole": zod.string().nullable().describe('\'sender\' | \'recipient\' | null — which role the caller has on this whisp. Drives pinned\/archived below, and (frontend-side) whether Delete is offered — only a sender may delete.'),
   "pinned": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is pinned (see POST \/whisps\/{id}\/pin) — never the other party\'s pin state.'),
   "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.'),
-  "senderHandle": zod.string().nullish().describe('A stable, anonymous pseudonym for this whisp\'s sender (e.g. \"Falcon482\"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerRole is \"recipient\"; null otherwise.')
+  "senderHandle": zod.string().nullish().describe('A stable, anonymous pseudonym for this whisp\'s sender (e.g. \"Falcon482\"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerRole is \"recipient\"; null otherwise.'),
+  "unread": zod.boolean().optional().describe('True only when the caller is this whisp\'s matched recipient and it is still unread — never opened and not yet expired. The same rule GET \/whisps\/received-unread-count counts by, so the Received tab\'s \"New\" markers and badge always agree with the nav badge. Always false for a sender.'),
+  "contentRemoved": zod.boolean().optional().describe('Sender\'s view only — true when a moderator took this whisp (or the Circle post a circle_dm was cloned from) down. The whisp stays in the sender\'s lists, but its video is no longer offered.')
 }).describe('For the sender\'s own view, the full whisp minus recipient-side bookkeeping. For a matched recipient\'s view (viewerRole \"recipient\"), an explicit allowlist — sender-only fields such as conciergeRequestId and uploadedVideoId are omitted.'))
 })
 
 
 /**
- * Mirrors GET /whisps?box=received's own filters (matched recipient, not archived) but counts rather than fetches full rows. "Unread" means openedAt IS NULL, the same flag the public whisp page's hasOpenedBefore reads — clears the moment the recipient actually opens the whisp.
+ * Uses the same predicate as GET /whisps?box=received (matched recipient, not sent by the caller themselves, delivered, not taken down, not archived) but counts rather than fetches full rows. "Unread" means openedAt IS NULL — the same flag the public whisp page's hasOpenedBefore reads, so it clears the moment the recipient actually opens the whisp — and not yet expired (an expired whisp can no longer be opened, so it could never be cleared). Matches the list's per-whisp `unread` flag.
  * @summary Lightweight unread count for the "My Whisps" nav badge, without fetching the full received list
  */
 export const GetReceivedWhispUnreadCountResponse = zod.object({
@@ -266,7 +272,9 @@ export const GetWhispResponse = zod.object({
   "viewerRole": zod.string().nullable().describe('\'sender\' | \'recipient\' | null — which role the caller has on this whisp. Drives pinned\/archived below, and (frontend-side) whether Delete is offered — only a sender may delete.'),
   "pinned": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is pinned (see POST \/whisps\/{id}\/pin) — never the other party\'s pin state.'),
   "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.'),
-  "senderHandle": zod.string().nullish().describe('A stable, anonymous pseudonym for this whisp\'s sender (e.g. \"Falcon482\"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerRole is \"recipient\"; null otherwise.')
+  "senderHandle": zod.string().nullish().describe('A stable, anonymous pseudonym for this whisp\'s sender (e.g. \"Falcon482\"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerRole is \"recipient\"; null otherwise.'),
+  "unread": zod.boolean().optional().describe('True only when the caller is this whisp\'s matched recipient and it is still unread — never opened and not yet expired. The same rule GET \/whisps\/received-unread-count counts by, so the Received tab\'s \"New\" markers and badge always agree with the nav badge. Always false for a sender.'),
+  "contentRemoved": zod.boolean().optional().describe('Sender\'s view only — true when a moderator took this whisp (or the Circle post a circle_dm was cloned from) down. The whisp stays in the sender\'s lists, but its video is no longer offered.')
 }).describe('For the sender\'s own view, the full whisp minus recipient-side bookkeeping. For a matched recipient\'s view (viewerRole \"recipient\"), an explicit allowlist — sender-only fields such as conciergeRequestId and uploadedVideoId are omitted.'),
   "trackingEvents": zod.array(zod.object({
   "id": zod.string(),
@@ -484,7 +492,9 @@ export const RequestRevealResponse = zod.object({
   "viewerRole": zod.string().nullable().describe('\'sender\' | \'recipient\' | null — which role the caller has on this whisp. Drives pinned\/archived below, and (frontend-side) whether Delete is offered — only a sender may delete.'),
   "pinned": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is pinned (see POST \/whisps\/{id}\/pin) — never the other party\'s pin state.'),
   "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.'),
-  "senderHandle": zod.string().nullish().describe('A stable, anonymous pseudonym for this whisp\'s sender (e.g. \"Falcon482\"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerRole is \"recipient\"; null otherwise.')
+  "senderHandle": zod.string().nullish().describe('A stable, anonymous pseudonym for this whisp\'s sender (e.g. \"Falcon482\"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerRole is \"recipient\"; null otherwise.'),
+  "unread": zod.boolean().optional().describe('True only when the caller is this whisp\'s matched recipient and it is still unread — never opened and not yet expired. The same rule GET \/whisps\/received-unread-count counts by, so the Received tab\'s \"New\" markers and badge always agree with the nav badge. Always false for a sender.'),
+  "contentRemoved": zod.boolean().optional().describe('Sender\'s view only — true when a moderator took this whisp (or the Circle post a circle_dm was cloned from) down. The whisp stays in the sender\'s lists, but its video is no longer offered.')
 }).describe('For the sender\'s own view, the full whisp minus recipient-side bookkeeping. For a matched recipient\'s view (viewerRole \"recipient\"), an explicit allowlist — sender-only fields such as conciergeRequestId and uploadedVideoId are omitted.')
 
 
@@ -2029,7 +2039,9 @@ export const AdminGetUserResponse = zod.object({
   "viewerRole": zod.string().nullable().describe('\'sender\' | \'recipient\' | null — which role the caller has on this whisp. Drives pinned\/archived below, and (frontend-side) whether Delete is offered — only a sender may delete.'),
   "pinned": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is pinned (see POST \/whisps\/{id}\/pin) — never the other party\'s pin state.'),
   "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.'),
-  "senderHandle": zod.string().nullish().describe('A stable, anonymous pseudonym for this whisp\'s sender (e.g. \"Falcon482\"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerRole is \"recipient\"; null otherwise.')
+  "senderHandle": zod.string().nullish().describe('A stable, anonymous pseudonym for this whisp\'s sender (e.g. \"Falcon482\"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerRole is \"recipient\"; null otherwise.'),
+  "unread": zod.boolean().optional().describe('True only when the caller is this whisp\'s matched recipient and it is still unread — never opened and not yet expired. The same rule GET \/whisps\/received-unread-count counts by, so the Received tab\'s \"New\" markers and badge always agree with the nav badge. Always false for a sender.'),
+  "contentRemoved": zod.boolean().optional().describe('Sender\'s view only — true when a moderator took this whisp (or the Circle post a circle_dm was cloned from) down. The whisp stays in the sender\'s lists, but its video is no longer offered.')
 }).describe('For the sender\'s own view, the full whisp minus recipient-side bookkeeping. For a matched recipient\'s view (viewerRole \"recipient\"), an explicit allowlist — sender-only fields such as conciergeRequestId and uploadedVideoId are omitted.')),
   "totalWhisps": zod.number(),
   "creditTransactions": zod.array(zod.object({
@@ -2360,7 +2372,9 @@ export const AdminGetWhispResponse = zod.object({
   "viewerRole": zod.string().nullable().describe('\'sender\' | \'recipient\' | null — which role the caller has on this whisp. Drives pinned\/archived below, and (frontend-side) whether Delete is offered — only a sender may delete.'),
   "pinned": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is pinned (see POST \/whisps\/{id}\/pin) — never the other party\'s pin state.'),
   "archived": zod.boolean().describe('Whether the CALLER\'s own copy of this whisp is archived (see POST \/whisps\/{id}\/archive) — never the other party\'s archive state.'),
-  "senderHandle": zod.string().nullish().describe('A stable, anonymous pseudonym for this whisp\'s sender (e.g. \"Falcon482\"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerRole is \"recipient\"; null otherwise.')
+  "senderHandle": zod.string().nullish().describe('A stable, anonymous pseudonym for this whisp\'s sender (e.g. \"Falcon482\"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerRole is \"recipient\"; null otherwise.'),
+  "unread": zod.boolean().optional().describe('True only when the caller is this whisp\'s matched recipient and it is still unread — never opened and not yet expired. The same rule GET \/whisps\/received-unread-count counts by, so the Received tab\'s \"New\" markers and badge always agree with the nav badge. Always false for a sender.'),
+  "contentRemoved": zod.boolean().optional().describe('Sender\'s view only — true when a moderator took this whisp (or the Circle post a circle_dm was cloned from) down. The whisp stays in the sender\'s lists, but its video is no longer offered.')
 }).describe('For the sender\'s own view, the full whisp minus recipient-side bookkeeping. For a matched recipient\'s view (viewerRole \"recipient\"), an explicit allowlist — sender-only fields such as conciergeRequestId and uploadedVideoId are omitted.'),
   "senderId": zod.string().nullish(),
   "senderEmail": zod.string().nullish(),

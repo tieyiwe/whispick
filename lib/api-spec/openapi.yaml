@@ -139,11 +139,14 @@ paths:
       tags: [whisps]
       summary: Lightweight unread count for the "My Whisps" nav badge, without fetching the full received list
       description: >-
-        Mirrors GET /whisps?box=received's own filters (matched recipient,
-        not archived) but counts rather than fetches full rows. "Unread"
-        means openedAt IS NULL, the same flag the public whisp page's
-        hasOpenedBefore reads — clears the moment the recipient actually
-        opens the whisp.
+        Uses the same predicate as GET /whisps?box=received (matched
+        recipient, not sent by the caller themselves, delivered, not taken
+        down, not archived) but counts rather than fetches full rows.
+        "Unread" means openedAt IS NULL — the same flag the public whisp
+        page's hasOpenedBefore reads, so it clears the moment the recipient
+        actually opens the whisp — and not yet expired (an expired whisp can
+        no longer be opened, so it could never be cleared). Matches the
+        list's per-whisp `unread` flag.
       responses:
         "200":
           description: Unread count
@@ -5097,6 +5100,12 @@ components:
         senderHandle:
           type: ["string", "null"]
           description: A stable, anonymous pseudonym for this whisp's sender (e.g. "Falcon482"), scoped to this one (sender, recipient) pair so different recipients of the same sender never see the same handle. Set only when viewerRole is "recipient"; null otherwise.
+        unread:
+          type: boolean
+          description: True only when the caller is this whisp's matched recipient and it is still unread — never opened and not yet expired. The same rule GET /whisps/received-unread-count counts by, so the Received tab's "New" markers and badge always agree with the nav badge. Always false for a sender.
+        contentRemoved:
+          type: boolean
+          description: Sender's view only — true when a moderator took this whisp (or the Circle post a circle_dm was cloned from) down. The whisp stays in the sender's lists, but its video is no longer offered.
       required:
         - id
         - senderId

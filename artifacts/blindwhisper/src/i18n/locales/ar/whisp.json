@@ -296,6 +296,9 @@
       "descriptionNoReplies": "هذا يزيل الـ Whisp من قائمتك. لا يمكن التراجع عن هذا من جانبك."
     },
     "videoFallback": "فيديو",
+    "watchVideo": "مشاهدة الفيديو",
+    "videoNoLongerAvailable": "هذا الفيديو لم يعد متاحًا.",
+    "videoRemovedByModeration": "أُزيل هذا الفيديو لمخالفته قواعد المحتوى لدينا.",
     "matchedToSubscribers_zero": "لم تتم المطابقة مع أي مشترك",
     "matchedToSubscribers_one": "تمت المطابقة مع مشترك واحد",
     "matchedToSubscribers_two": "تمت المطابقة مع مشتركين اثنين",

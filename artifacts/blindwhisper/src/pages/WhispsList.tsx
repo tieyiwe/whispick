@@ -5,6 +5,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import {
   useListWhisps,
   getListWhispsQueryKey,
+  getGetReceivedWhispUnreadCountQueryKey,
   usePinWhisp,
   useArchiveWhisp,
   useDeleteWhisp,
@@ -53,8 +54,15 @@ import { useToast } from "@/hooks/use-toast";
 import { deliveryLabel } from "@/lib/deliveryMethod";
 import { savePendingForward, type ForwardVideo } from "@/lib/forwardVideo";
 import { useLongPress } from "@/lib/useLongPress";
+import { Thumbnail } from "@/components/shared/Thumbnail";
+import { senderThumbnailSrc } from "@/components/shared/SenderVideo";
 
 type Box = "sent" | "received" | "archived";
+
+// A received whisp is never 'pending' (Ghost Boost never lands in Received)
+// or 'scheduled' (hidden from the recipient until it goes out), so the
+// Received tab doesn't offer either — they could only ever list nothing.
+const SENT_ONLY_STATUSES = ["pending", "scheduled"];
 
 export function WhispsList() {
   const { t } = useTranslation("whisp");
@@ -86,15 +94,15 @@ export function WhispsList() {
   }
 
   // Pin/archive/delete can all move a whisp between boxes (or in/out of the
-  // list entirely), so every mutation below invalidates all three box
-  // queries plus the received-tab badge — simplest way to keep every tab
-  // honest without hand-tracking which specific queries a given toggle
-  // could affect.
+  // list entirely), so every mutation below invalidates every box query
+  // (the bare prefix key matches each box/status combination) plus the
+  // AppLayout nav badge's own count — archiving an unread received whisp
+  // takes it out of that count, and the nav badge used to keep showing it
+  // until its next 60s poll. Simplest way to keep every tab and badge honest
+  // without hand-tracking which specific queries a given toggle could affect.
   function invalidateAllBoxes() {
-    (["sent", "received", "archived"] as const).forEach((b) => {
-      const params = b === "sent" ? {} : { box: b };
-      queryClient.invalidateQueries({ queryKey: getListWhispsQueryKey(params) });
-    });
+    queryClient.invalidateQueries({ queryKey: getListWhispsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetReceivedWhispUnreadCountQueryKey() });
   }
 
   const pinWhisp = usePinWhisp();
@@ -151,9 +159,16 @@ export function WhispsList() {
   // this Whisperer is sitting on the page (any tab) shows up on its own,
   // the same way the notification bell already does, instead of needing a
   // manual refresh to notice it.
+  // The Archived tab hides the status dropdown (the server ignores status
+  // there), so a filter picked on another tab must not carry over into it —
+  // it used to, which made an empty Archived tab say "Try adjusting your
+  // filters" with no filter anywhere on screen to adjust. Same for a
+  // sent-only status (see the dropdown below) carried into Received.
+  const effectiveStatusFilter =
+    box === "archived" || (box === "received" && SENT_ONLY_STATUSES.includes(statusFilter)) ? "all" : statusFilter;
   const listParams = {
     ...(box !== "sent" ? { box } : {}),
-    ...(statusFilter !== "all" ? { status: statusFilter } : {}),
+    ...(effectiveStatusFilter !== "all" ? { status: effectiveStatusFilter } : {}),
   };
   const { data: whisps, isLoading } = useListWhisps(listParams, {
     query: { queryKey: getListWhispsQueryKey(listParams), refetchInterval: 60_000, refetchIntervalInBackground: false },
@@ -163,12 +178,15 @@ export function WhispsList() {
   // but sharing its cache entry once the Received tab is actually opened —
   // same params, same query key) purely to badge the tab itself with how
   // many arrived unopened, so a Whisperer notices new ones without having to
-  // switch tabs first.
+  // switch tabs first. Counts the server's own `unread` flag rather than
+  // `!openedAt`: that's the exact rule /received-unread-count (the nav
+  // badge) uses, so the two badges can't disagree — `!openedAt` alone also
+  // counted an expired whisp, which can never be opened and so never cleared.
   const receivedBadgeParams = { box: "received" as const };
   const { data: receivedForBadge } = useListWhisps(receivedBadgeParams, {
     query: { queryKey: getListWhispsQueryKey(receivedBadgeParams), refetchInterval: 60_000, refetchIntervalInBackground: false },
   });
-  const newReceivedCount = receivedForBadge?.filter((w) => !w.openedAt).length ?? 0;
+  const newReceivedCount = receivedForBadge?.filter((w) => w.unread).length ?? 0;
 
   function handleWhispAgain(e: React.MouseEvent, whisp: ForwardVideo & { videoPlatform?: string | null }) {
     e.preventDefault();
@@ -271,15 +289,15 @@ export function WhispsList() {
             />
           </div>
           {box !== "archived" && (
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={effectiveStatusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="h-11 w-[8.75rem] sm:w-[180px] shrink-0 gap-1 bg-card/60 border-border/50 rounded-full" aria-label={t("whispsList.filter.allStatuses")}>
                 <Filter className="hidden sm:block w-4 h-4 mr-1 shrink-0 text-muted-foreground" />
                 <SelectValue placeholder={t("whispsList.filter.allStatuses")} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("whispsList.filter.allStatuses")}</SelectItem>
-                <SelectItem value="pending">{t("whispsList.filter.pending")}</SelectItem>
-                <SelectItem value="scheduled">{t("whispsList.filter.scheduled")}</SelectItem>
+                {box === "sent" && <SelectItem value="pending">{t("whispsList.filter.pending")}</SelectItem>}
+                {box === "sent" && <SelectItem value="scheduled">{t("whispsList.filter.scheduled")}</SelectItem>}
                 <SelectItem value="delivered">{t("whispsList.filter.delivered")}</SelectItem>
                 <SelectItem value="opened">{t("whispsList.filter.opened")}</SelectItem>
                 <SelectItem value="watched">{t("whispsList.filter.watched")}</SelectItem>
@@ -314,8 +332,10 @@ export function WhispsList() {
               // Archived tab mixes both origins into one list, so each card
               // has to work this out for itself.
               const isReceivedItem = whisp.viewerRole === "recipient";
-              const isNew = box === "received" && !whisp.openedAt;
+              const isNew = box === "received" && !!whisp.unread;
               const canDelete = whisp.viewerRole === "sender";
+              const isOwnUpload = !isReceivedItem && whisp.videoPlatform === "upload";
+              const ownUploadThumbnail = isOwnUpload ? senderThumbnailSrc(whisp) : null;
               return (
               <Link
                 key={whisp.id}
@@ -352,7 +372,15 @@ export function WhispsList() {
                 >
                   <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-3 sm:gap-x-4 sm:gap-y-2.5">
                     <div className="relative w-28 sm:w-44 sm:row-span-2 aspect-video self-start overflow-hidden rounded-[12px] bg-muted">
-                      {whisp.videoThumbnail ? (
+                      {/* A sender's own upload goes through the owner-scoped
+                          thumbnail route (see SenderVideo.tsx) — the stored
+                          public one stops answering when the recipient's
+                          link expires, which blanked Sent/Archived cards. */}
+                      {isOwnUpload ? (
+                        ownUploadThumbnail && (
+                          <Thumbnail src={ownUploadThumbnail} alt={whisp.videoTitle || t("whispsList.videoAlt")} className="h-full w-full object-cover" />
+                        )
+                      ) : whisp.videoThumbnail ? (
                         <img src={whisp.videoThumbnail} alt={whisp.videoTitle || t("whispsList.videoAlt")} className="h-full w-full object-cover" />
                       ) : null}
                       <div className="absolute inset-0 flex items-center justify-center bg-black/25 transition-colors duration-200 group-hover:bg-black/10">
@@ -484,7 +512,7 @@ export function WhispsList() {
                       {whisp.moodTag && (
                         <MoodTag mood={whisp.moodTag} className="min-w-0 shrink whitespace-nowrap py-0.5! pl-0.5! pr-2.5! gap-1.5! text-xs! shadow-none!" />
                       )}
-                      {!isReceivedItem && whisp.videoPlatform !== "upload" && (
+                      {!isReceivedItem && whisp.videoPlatform !== "upload" && !whisp.contentRemoved && (
                         <Button
                           variant="ghost"
                           size="sm"
@@ -512,7 +540,7 @@ export function WhispsList() {
             </span>
             <h3 className="text-xl font-serif font-semibold text-foreground mb-2">{t("whispsList.emptyState.title")}</h3>
             <p className="text-muted-foreground max-w-md mx-auto mb-6 leading-relaxed">
-              {searchQuery || statusFilter !== "all"
+              {searchQuery || effectiveStatusFilter !== "all"
                 ? t("whispsList.emptyState.adjustFilters")
                 : box === "received"
                   ? t("whispsList.emptyState.noneReceived")
@@ -520,7 +548,7 @@ export function WhispsList() {
                     ? t("whispsList.emptyState.noneArchived")
                     : t("whispsList.emptyState.noneSent")}
             </p>
-            {!searchQuery && statusFilter === "all" && box === "sent" && (
+            {!searchQuery && effectiveStatusFilter === "all" && box === "sent" && (
               <Button asChild className="h-11 rounded-full px-6 shadow-[0_0_20px_rgba(124,92,252,0.35)]">
                 <Link href="/send">
                   <Send className="w-4 h-4 mr-2" /> {t("whispsList.emptyState.cta")}

@@ -13,7 +13,7 @@ import {
   circleCommentsTable,
   circlePostLikesTable,
 } from "@workspace/db";
-import { eq, and, sql, isNull, isNotNull, or, lt, lte, gte, count, desc, notInArray } from "drizzle-orm";
+import { eq, ne, and, sql, isNull, isNotNull, or, lt, lte, gt, gte, count, desc, notInArray } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { z } from "zod";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
@@ -25,7 +25,7 @@ import { revealRequestHookLine, newReplyHookLine } from "../lib/copy";
 import { categorizeWhispAsync } from "../lib/categorizeWhisp";
 import { moderateWhispAsync } from "../lib/moderation";
 import { needsDemographics } from "../lib/demographics";
-import { computeExpiresAt, MAX_SCHEDULE_DAYS } from "../lib/expiration";
+import { computeExpiresAt, isExpired, MAX_SCHEDULE_DAYS } from "../lib/expiration";
 import { MAX_SCHEDULE_DAYS_WITH_UPLOAD } from "../lib/uploads";
 import { whisperLinkLimitFor, GHOST_BOOST_COST_USD, GHOST_BOOST_ENABLED, recipientReplyAllowance } from "../lib/plans";
 import { createWhispLimiter, noteSuggestionLimiter, conciergeLimiter, publicEndpointLimiter } from "../lib/rateLimit";
@@ -38,6 +38,7 @@ import { safeAssignOrGetSenderHandle } from "../lib/whispSenderHandle";
 import { hasSmsConsent, recordSmsConsent } from "../lib/smsConsent";
 import { disabledChannelError } from "../lib/messagingChannels";
 import { logger } from "../lib/logger";
+import { downloadObject } from "../lib/objectStorage";
 
 const router = Router();
 
@@ -92,6 +93,31 @@ function recipientVisible() {
   return and(notInArray(whispsTable.status, RECIPIENT_HIDDEN_STATUSES), isNull(whispsTable.removedByAdminAt));
 }
 
+// The one definition of "a whisp this user RECEIVED" — shared by GET
+// /?box=received, the Archived box's recipient half, and
+// /received-unread-count, so the nav badge can never count a row the list
+// doesn't show. Excludes a whisp the caller sent to their OWN email/phone:
+// it already sits in their Sent box, and toWhispResponse resolves it as the
+// sender's (viewerRole "sender"), so in Received it linked to the sender's
+// detail page — which never records an open — and stayed "new" forever.
+function receivedBy(userId: string) {
+  return and(eq(whispsTable.recipientUserId, userId), ne(whispsTable.senderId, userId), recipientVisible());
+}
+
+// "Unread" for a received whisp: never opened AND still openable. An
+// expired whisp can't be opened any more — POST /public/w/:token/track
+// deliberately ignores it, so openedAt never gets set — which left one the
+// recipient didn't reach within the 48h window counting as unread forever,
+// with nothing they could do to clear it. isReceivedUnread is the same rule
+// for one already-loaded row (toWhispResponse's `unread`), kept beside the
+// SQL so the two can't drift.
+function receivedUnread() {
+  return and(isNull(whispsTable.openedAt), or(isNull(whispsTable.expiresAt), gt(whispsTable.expiresAt, new Date())));
+}
+function isReceivedUnread(whisp: { openedAt: Date | null; expiresAt: Date | null }): boolean {
+  return !whisp.openedAt && !isExpired(whisp.expiresAt);
+}
+
 const DELIVERY_METHODS = ["whisper_link", "ghost_boost", "circle_drop"] as const;
 const WHISPER_CHANNELS = ["email", "sms", "whatsapp"] as const;
 
@@ -111,6 +137,22 @@ function excludeMatchDeliveries() {
 // Deliberately not applied anywhere in routes/admin.ts.
 function excludeDeleted() {
   return isNull(whispsTable.deletedBySenderAt);
+}
+
+// A moderation takedown, as routes/public.ts's loadLiveWhisp defines it: the
+// whisp itself, or the Circle post a circle_dm thread was cloned from (the
+// clone carries its own copy of the video reference). Unlike the two
+// filters above, the sender keeps SEEING such a whisp in their own lists —
+// this only decides whether the video itself is still offered to them.
+async function isTakenDown(whisp: { removedByAdminAt: Date | null; originCircleWhispId: string | null }): Promise<boolean> {
+  if (whisp.removedByAdminAt) return true;
+  if (!whisp.originCircleWhispId) return false;
+  const origin = await db
+    .select({ removedByAdminAt: whispsTable.removedByAdminAt })
+    .from(whispsTable)
+    .where(eq(whispsTable.id, whisp.originCircleWhispId))
+    .then((r) => r[0]);
+  return !!origin?.removedByAdminAt;
 }
 
 const noteSuggestionsSchema = z.object({
@@ -255,10 +297,17 @@ async function toWhispResponse(whisp: typeof whispsTable.$inferSelect, viewerId:
     viewerRole,
     pinned: viewerRole === "sender" ? !!senderPinnedAt : viewerRole === "recipient" ? !!recipientPinnedAt : false,
     archived: viewerRole === "sender" ? !!senderArchivedAt : viewerRole === "recipient" ? !!recipientArchivedAt : false,
+    // The Received tab's "New" marker and badge read this instead of
+    // re-deriving it from openedAt client-side, so they always agree with
+    // /received-unread-count (see isReceivedUnread).
+    unread: viewerRole === "recipient" && isReceivedUnread(whisp),
   };
 
   if (viewerRole === "sender") {
-    return { ...senderVisible, senderId, senderHandle: null, ...callerRelative };
+    // contentRemoved: a moderator took this down (see isTakenDown). The
+    // sender's own copy stays listed — it's their history — but the UI
+    // stops offering the video itself. A recipient never sees one at all.
+    return { ...senderVisible, senderId, senderHandle: null, contentRemoved: await isTakenDown(whisp), ...callerRelative };
   }
 
   const recipientView: Record<string, unknown> = {};
@@ -304,18 +353,22 @@ router.get("/", requireAuth, async (req, res): Promise<void> => {
   let orderClause;
   if (box === "received") {
     whereClause = and(
-      eq(whispsTable.recipientUserId, user.id),
+      receivedBy(user.id),
       isNull(whispsTable.recipientArchivedAt),
-      recipientVisible(),
       statusFilter ? eq(whispsTable.status, statusFilter) : undefined,
     );
     orderClause = sql`${whispsTable.recipientPinnedAt} IS NOT NULL DESC, ${whispsTable.createdAt} DESC`;
   } else if (box === "archived") {
     whereClause = or(
       and(eq(whispsTable.senderId, user.id), isNotNull(whispsTable.senderArchivedAt), excludeMatchDeliveries(), excludeDeleted()),
-      and(eq(whispsTable.recipientUserId, user.id), isNotNull(whispsTable.recipientArchivedAt), recipientVisible()),
+      and(receivedBy(user.id), isNotNull(whispsTable.recipientArchivedAt)),
     );
-    orderClause = sql`GREATEST(${whispsTable.senderArchivedAt}, ${whispsTable.recipientArchivedAt}) DESC`;
+    // Sorted by the CALLER's own side only: GREATEST() over both archive
+    // columns let the other party's archive time reorder this user's list,
+    // and it ignored this user's own pins, which the Archived tab offers
+    // the same as the other two.
+    const callerIsSender = sql`${whispsTable.senderId} = ${user.id}`;
+    orderClause = sql`(CASE WHEN ${callerIsSender} THEN ${whispsTable.senderPinnedAt} ELSE ${whispsTable.recipientPinnedAt} END) IS NOT NULL DESC, (CASE WHEN ${callerIsSender} THEN ${whispsTable.senderArchivedAt} ELSE ${whispsTable.recipientArchivedAt} END) DESC`;
   } else {
     whereClause = and(
       eq(whispsTable.senderId, user.id),
@@ -333,12 +386,12 @@ router.get("/", requireAuth, async (req, res): Promise<void> => {
 });
 
 // GET /api/whisps/received-unread-count — a lightweight poll target for the
-// "My Whisps" nav badge, mirroring GET /?box=received's own filters
-// (recipientUserId match, not archived) but counting rather than fetching
-// full rows. "Unread" here means openedAt IS NULL — the same flag
-// routes/public.ts's hasOpenedBefore reads — so the badge clears the moment
+// "My Whisps" nav badge, built from the same receivedBy() predicate as GET
+// /?box=received (plus not archived) but counting rather than fetching full
+// rows. "Unread" is receivedUnread(): openedAt IS NULL — the same flag
+// routes/public.ts's hasOpenedBefore reads, so the badge clears the moment
 // the recipient actually opens the whisp, not when some separate
-// notification gets dismissed.
+// notification gets dismissed — and not yet expired.
 router.get("/received-unread-count", requireAuth, async (req, res): Promise<void> => {
   const { userId } = getAuth(req);
   const user = await ensureUser(userId!, req);
@@ -347,12 +400,7 @@ router.get("/received-unread-count", requireAuth, async (req, res): Promise<void
     .select({ count: count() })
     .from(whispsTable)
     .where(
-      and(
-        eq(whispsTable.recipientUserId, user.id),
-        isNull(whispsTable.recipientArchivedAt),
-        isNull(whispsTable.openedAt),
-        recipientVisible(),
-      ),
+      and(receivedBy(user.id), isNull(whispsTable.recipientArchivedAt), receivedUnread()),
     )
     .then((r) => r[0]);
 
@@ -1001,6 +1049,7 @@ router.get("/:id", requireAuth, async (req, res): Promise<void> => {
       videoEmbedUrl: whisp.videoEmbedUrl ?? embedUrlFor(whisp.videoUrl, whisp.videoPlatform),
       pinned: !!senderPinnedAt,
       archived: !!senderArchivedAt,
+      contentRemoved: await isTakenDown(whisp),
     },
     trackingEvents,
     replies,
@@ -1013,6 +1062,82 @@ router.get("/:id", requireAuth, async (req, res): Promise<void> => {
     comments,
     circleConversations,
   });
+});
+
+// GET /api/whisps/:id/media (+ /thumbnail) — the SENDER's own way back to an
+// uploaded video they sent. The recipient-facing /public/w/:token/media is
+// gated on everything the recipient's link is: it 410s once the whisp's 48h
+// window lapses and 404s while it's still scheduled — so from the Sent tab
+// the sender lost their own clip the moment the recipient's link expired,
+// even though the bytes were still in their Media Library. Scoped by sender
+// ownership instead, and deliberately NOT by whisp expiry, archive or status.
+// Still refused for a moderation takedown (incl. a circle_dm cloned from a
+// removed post, same as loadLiveWhisp), and still 410s once the upload
+// itself was phased out by lib/mediaRetentionScheduler.ts or deleted from
+// the library — that's a storage policy the owner was already notified of,
+// not something this route can undo. Owner-only + requireAuth, so the
+// frontend fetches it with its bearer header (useCredentialedMediaUrl /
+// Thumbnail) rather than a bare <video src>/<img src>.
+async function loadSenderUpload(id: string, userId: string) {
+  const whisp = await db
+    .select()
+    .from(whispsTable)
+    .where(and(eq(whispsTable.id, id), eq(whispsTable.senderId, userId), excludeMatchDeliveries(), excludeDeleted()))
+    .then((r) => r[0]);
+  if (!whisp?.uploadedVideoId || (await isTakenDown(whisp))) return { status: 404 as const };
+
+  const media = await db
+    .select()
+    .from(uploadedVideosTable)
+    .where(eq(uploadedVideosTable.id, whisp.uploadedVideoId))
+    .then((r) => r[0]);
+  if (!media) return { status: 404 as const };
+  if (media.status !== "ready") return { status: 410 as const };
+  return { status: 200 as const, media };
+}
+
+router.get("/:id/media", requireAuth, async (req, res): Promise<void> => {
+  const { userId } = getAuth(req);
+  const user = await ensureUser(userId!, req);
+
+  const result = await loadSenderUpload(req.params.id, user.id);
+  if (result.status !== 200) {
+    res.status(result.status).json({ error: result.status === 410 ? "This video is no longer available" : "Not found" });
+    return;
+  }
+
+  const bytes = await downloadObject(result.media.objectKey);
+  if (!bytes) {
+    res.status(503).json({ error: "Video storage is temporarily unavailable" });
+    return;
+  }
+
+  res.setHeader("Content-Type", result.media.mimeType);
+  res.setHeader("Content-Length", String(bytes.length));
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.send(bytes);
+});
+
+router.get("/:id/media/thumbnail", requireAuth, async (req, res): Promise<void> => {
+  const { userId } = getAuth(req);
+  const user = await ensureUser(userId!, req);
+
+  const result = await loadSenderUpload(req.params.id, user.id);
+  if (result.status !== 200 || !result.media.thumbnailObjectKey) {
+    res.status(result.status === 410 ? 410 : 404).json({ error: "Not found" });
+    return;
+  }
+
+  const bytes = await downloadObject(result.media.thumbnailObjectKey);
+  if (!bytes) {
+    res.status(503).json({ error: "Thumbnail storage is temporarily unavailable" });
+    return;
+  }
+
+  res.setHeader("Content-Type", "image/jpeg");
+  res.setHeader("Content-Length", String(bytes.length));
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.send(bytes);
 });
 
 // GET /api/whisps/:id/matches — aggregate-only Ghost Boost reach stats.

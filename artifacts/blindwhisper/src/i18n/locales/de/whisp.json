@@ -264,6 +264,9 @@
       "descriptionNoReplies": "Damit wird der Whisp aus deinen Whisps entfernt. Das kann von deiner Seite nicht rückgängig gemacht werden."
     },
     "videoFallback": "Video",
+    "watchVideo": "Video ansehen",
+    "videoNoLongerAvailable": "Dieses Video ist nicht mehr verfügbar.",
+    "videoRemovedByModeration": "Dieses Video wurde wegen eines Verstoßes gegen unsere Inhaltsregeln entfernt.",
     "matchedToSubscribers_one": "Mit {{count}} Abonnent zusammengeführt",
     "matchedToSubscribers_other": "Mit {{count}} Abonnenten zusammengeführt",
     "noMatchingSubscribers": "Es wurden rechtzeitig keine passenden Abonnenten gefunden",

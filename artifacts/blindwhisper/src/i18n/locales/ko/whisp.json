@@ -264,6 +264,9 @@
       "descriptionNoReplies": "이 whisp를 목록에서 제거해요. 이 작업은 당신 쪽에서 되돌릴 수 없어요."
     },
     "videoFallback": "영상",
+    "watchVideo": "영상 보기",
+    "videoNoLongerAvailable": "이 영상은 더 이상 볼 수 없어요.",
+    "videoRemovedByModeration": "이 영상은 콘텐츠 규칙 위반으로 삭제되었어요.",
     "matchedToSubscribers_one": "구독자 {{count}}명과 매칭됨",
     "matchedToSubscribers_other": "구독자 {{count}}명과 매칭됨",
     "noMatchingSubscribers": "제시간에 맞는 구독자를 찾지 못했어요",
