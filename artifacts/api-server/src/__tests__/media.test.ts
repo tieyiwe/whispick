@@ -21,8 +21,12 @@ function asUser(userId: string) {
   return { [TEST_USER_HEADER]: userId };
 }
 
+// The smallest well-formed MP4: a complete 16-byte ftyp box followed by an
+// empty moov box. Upload now runs lib/stripVideoMetadata.ts, which rejects a
+// truncated container (the old 12-byte fixture's ftyp claimed 24 bytes) rather
+// than storing bytes it couldn't strip.
 function tinyMp4() {
-  return Buffer.from("00000018667479706d703432", "hex");
+  return Buffer.from("00000010667479706d703432000000000000000" + "86d6f6f76", "hex");
 }
 
 async function uploadVideo(userId = USER_A, overrides: { durationSeconds?: string | null } = {}) {

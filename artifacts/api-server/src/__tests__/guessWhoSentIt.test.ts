@@ -15,7 +15,7 @@ describe("Guess who sent it", () => {
     const created = await request(app)
       .post("/api/whisps")
       .set(asUser(sender))
-      .send({ videoUrl: "https://youtu.be/dQw4w9WgXcQ", deliveryMethod: "circle_drop" });
+      .send({ videoUrl: "https://youtu.be/dQw4w9WgXcQ", deliveryMethod: "whisper_link", whisperChannel: "email", recipientEmail: "recipient@example.com" });
     expect(created.status).toBe(201);
     const { id: whispId, publicToken } = created.body;
 
@@ -40,7 +40,7 @@ describe("Guess who sent it", () => {
     const created = await request(app)
       .post("/api/whisps")
       .set(asUser(sender))
-      .send({ videoUrl: "https://youtu.be/dQw4w9WgXcQ", deliveryMethod: "circle_drop" });
+      .send({ videoUrl: "https://youtu.be/dQw4w9WgXcQ", deliveryMethod: "whisper_link", whisperChannel: "email", recipientEmail: "recipient@example.com" });
     const { publicToken } = created.body;
 
     const guess = await request(app)

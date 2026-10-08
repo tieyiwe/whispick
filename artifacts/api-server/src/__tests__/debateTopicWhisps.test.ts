@@ -91,7 +91,8 @@ describe("POST /api/debate-topics/:id/whisp", () => {
 
     clerkGetUserMock.mockResolvedValueOnce({
       twoFactorEnabled: true,
-      emailAddresses: [{ id: "em_1", emailAddress: recipientEmail }],
+      // Only Clerk-verified addresses are ever stored (lib/ensureUser.ts).
+      emailAddresses: [{ id: "em_1", emailAddress: recipientEmail, verification: { status: "verified" } }],
       primaryEmailAddressId: "em_1",
       phoneNumbers: [],
       firstName: null,

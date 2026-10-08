@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import request from "supertest";
 import { randomUUID } from "crypto";
 import app from "../app";
-import { db, usersTable, whispsTable, whispCategoriesTable, matchSubscribersTable } from "@workspace/db";
+import { db, usersTable, whispsTable, whispCategoriesTable, matchSubscribersTable, notificationsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { TEST_USER_HEADER } from "./setup";
 import { matchGhostBoostWhisp, getGhostBoostMatchStats, MAX_MATCHES_PER_SEND } from "../lib/matching";
@@ -34,7 +34,10 @@ vi.mock("../lib/plans", async (importOriginal) => {
 // without VAPID keys (unset in tests) either way. notifyUser is stubbed too
 // since the real module exports both.
 const notifyUserMock = vi.hoisted(() => vi.fn(async () => {}));
-vi.mock("../lib/push", () => ({
+vi.mock("../lib/push", async (importOriginal) => ({
+  // Keep the module's other exports (e.g. isAllowedPushEndpoint, used by
+  // routes/user.ts) — only the notify functions are stubbed here.
+  ...(await importOriginal<typeof import("../lib/push")>()),
   notifyUser: vi.fn(async () => {}),
   notifyUserPersisted: notifyUserMock,
 }));
@@ -526,6 +529,16 @@ describe("Ghost Boost matched-delivery privacy", () => {
   });
 });
 
+// Recipient actions (open, watch, appreciate…) no longer push to the sender
+// instantly: they're written as notification rows with a randomized
+// deliverAfter (lib/replyNotificationScheduler.ts) so a nearby buzz can't
+// identify the sender. So "was the sender notified" is asserted on those rows,
+// not only on the immediate-push mock.
+async function notificationRowsFor(clerkId: string) {
+  const user = await getUser(clerkId);
+  return db.select().from(notificationsTable).where(eq(notificationsTable.targetUserId, user.id));
+}
+
 describe("Ghost Boost matched-delivery notification suppression", () => {
   it("does not push/email the sender for individual open/watch/reply/appreciation events on a matched fan-out row", async () => {
     notifyUserMock.mockClear();
@@ -550,6 +563,7 @@ describe("Ghost Boost matched-delivery notification suppression", () => {
     await request(app).post(`/api/public/w/${publicToken}/appreciation`).send({ appreciated: true });
 
     expect(notifyUserMock).not.toHaveBeenCalled();
+    expect(await notificationRowsFor(clerkId)).toHaveLength(0);
   });
 
   it("still notifies the sender for a normal whisper_link whisp (control — suppression isn't global)", async () => {
@@ -567,6 +581,10 @@ describe("Ghost Boost matched-delivery notification suppression", () => {
 
     await request(app).post(`/api/public/w/${res.body.publicToken}/track`).send({ eventType: "opened" });
 
-    expect(notifyUserMock).toHaveBeenCalled();
+    const rows = await notificationRowsFor(clerkId);
+    expect(rows.length).toBeGreaterThan(0);
+    // Deferred, not instant — see notificationRowsFor's comment.
+    expect(rows.every((r) => r.deliverAfter !== null)).toBe(true);
+    expect(notifyUserMock).not.toHaveBeenCalled();
   });
 });

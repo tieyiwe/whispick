@@ -13,7 +13,7 @@ async function createWhisp(overrides: Record<string, unknown> = {}) {
   const res = await request(app)
     .post("/api/whisps")
     .set(TEST_USER_HEADER, SENDER)
-    .send({ videoUrl: "https://youtu.be/x", deliveryMethod: "circle_drop", ...overrides });
+    .send({ videoUrl: "https://youtu.be/x", deliveryMethod: "whisper_link", whisperChannel: "email", recipientEmail: "recipient@example.com", ...overrides });
   expect(res.status).toBe(201);
   return res.body as { id: string; publicToken: string };
 }

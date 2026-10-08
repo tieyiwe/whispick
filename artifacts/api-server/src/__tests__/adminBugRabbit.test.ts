@@ -123,8 +123,11 @@ describe("Admin BugRabbit", () => {
     expect(resolve.body.resolvedAt).toBeTruthy();
     expect(resolve.body.resolvedByAdminId).toBeTruthy();
 
-    const auditRows = await db.select().from(adminAuditLogTable).where(eq(adminAuditLogTable.targetId, found.id));
-    expect(auditRows.some((r) => r.action === "bug_issue.resolve")).toBe(true);
+    // logAdminAction is fire-and-forget (lib/adminAudit.ts), so the row can
+    // land a moment after the response — poll instead of reading once.
+    await expect
+      .poll(async () => (await db.select().from(adminAuditLogTable).where(eq(adminAuditLogTable.targetId, found.id))).some((r) => r.action === "bug_issue.resolve"))
+      .toBe(true);
 
     // Resolved by default drops out of the "unresolved" view...
     const afterResolveList = await request(app).get("/api/admin/bug-rabbit/issues").set(owner).query({ status: "unresolved" });
@@ -138,8 +141,9 @@ describe("Admin BugRabbit", () => {
     expect(reopen.body.resolved).toBe(false);
     expect(reopen.body.resolvedAt).toBeNull();
 
-    const auditRowsAfterReopen = await db.select().from(adminAuditLogTable).where(eq(adminAuditLogTable.targetId, found.id));
-    expect(auditRowsAfterReopen.some((r) => r.action === "bug_issue.reopen")).toBe(true);
+    await expect
+      .poll(async () => (await db.select().from(adminAuditLogTable).where(eq(adminAuditLogTable.targetId, found.id))).some((r) => r.action === "bug_issue.reopen"))
+      .toBe(true);
   });
 
   it("frequency sort surfaces the highest-occurrence issue first", async () => {

@@ -115,8 +115,12 @@ describe("Admin MFA enrollment + gate", () => {
     const token = issueMfaToken("user-a");
     expect(verifyMfaToken(token, "user-a")).toBe(true);
     expect(verifyMfaToken(token, "user-b")).toBe(false);
-    // Tampered signature fails.
-    expect(verifyMfaToken(token.slice(0, -2) + "ff", "user-a")).toBe(false);
+    // Tampered signature fails. Flip the last character to a guaranteed-
+    // different one — overwriting with a fixed "ff" was a no-op whenever the
+    // real signature already ended in "ff" (~1 in 256 runs).
+    const last = token.slice(-1);
+    const tampered = token.slice(0, -1) + (last === "0" ? "1" : "0");
+    expect(verifyMfaToken(tampered, "user-a")).toBe(false);
     // Expired fails.
     expect(verifyMfaToken(token, "user-a", Date.now() + 13 * 60 * 60 * 1000)).toBe(false);
   });
