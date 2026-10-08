@@ -889,6 +889,9 @@ export function PublicWhispPage() {
                 visit (see the justWatched effect above) — never just because
                 the server says it was watched before, which used to spring
                 this open on reload after a single tap. */}
+            {/* Not on a Circle post: the server rejects appreciation there (a
+                public post has no single recipient to thank the poster). */}
+            {!isCirclePost && (
             <div className="bg-card border border-border/50 rounded-2xl overflow-hidden">
               <button
                 type="button"
@@ -952,6 +955,7 @@ export function PublicWhispPage() {
                 </div>
               )}
             </div>
+            )}
 
             {/* Blind Circle engagement — likes, a public comment thread, and
                 an entry point into a private 1:1 conversation with the

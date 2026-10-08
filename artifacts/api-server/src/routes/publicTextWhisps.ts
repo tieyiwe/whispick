@@ -25,7 +25,10 @@ router.get("/text-whisps/:token", async (req, res): Promise<void> => {
   // moderator" — an admin takedown must not become an oracle telling a
   // guest which is which (same anti-enumeration posture as every other
   // public lookup in this codebase).
-  if (!textWhisp) {
+  // Scheduled (not sent yet) and cancelled (sender deleted it before it
+  // went out) get the same 404 — the link must not open before delivery,
+  // or ever for a cancelled one.
+  if (!textWhisp || textWhisp.status === "scheduled" || textWhisp.status === "cancelled") {
     res.status(404).json({ error: "Not found" });
     return;
   }

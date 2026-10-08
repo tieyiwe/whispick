@@ -14,7 +14,7 @@ name = "API Server"
 # running Node process can tell a link-preview crawler apart from a real
 # browser and return real per-handle Open Graph tags instead of the static
 # site's generic ones.
-paths = ["/api", "/wb"]
+paths = ["/api", "/wb", "/dt"]
 
 [services.development]
 run = "pnpm --filter @workspace/api-server run dev"

@@ -91,6 +91,11 @@ type WhispRow = typeof whispsTable.$inferSelect;
 async function loadLiveWhisp(token: string): Promise<WhispRow | null> {
   const whisp = await db.select().from(whispsTable).where(eq(whispsTable.publicToken, token)).then((r) => r[0]);
   if (!whisp || whisp.removedByAdminAt) return null;
+  // Not delivered yet (scheduled) or never will be (cancelled by the
+  // sender): the link must not open early, or ever. Recipients can't obtain
+  // these tokens from the app anymore — this is the backstop for a token
+  // that leaked some other way.
+  if (whisp.status === "scheduled" || whisp.status === "cancelled") return null;
   if (whisp.originCircleWhispId) {
     const origin = await db
       .select({ removedByAdminAt: whispsTable.removedByAdminAt })

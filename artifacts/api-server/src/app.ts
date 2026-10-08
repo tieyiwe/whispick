@@ -12,6 +12,7 @@ import { getPublicAppUrl, requestOriginFromHeaders } from "./lib/publicUrl";
 import router from "./routes";
 import { handleStripeWebhook } from "./routes/billing";
 import whisperBoxLinkRouter from "./routes/whisperBoxLink";
+import debateTopicLinkRouter from "./routes/debateTopicLink";
 import { publicEndpointLimiter } from "./lib/rateLimit";
 import { logger } from "./lib/logger";
 import { recordBugReport } from "./lib/bugRabbit";
@@ -169,6 +170,12 @@ app.use(
 // browser and return real per-handle Open Graph tags — see
 // routes/whisperBoxLink.ts's own comment.
 app.use("/wb", publicEndpointLimiter, whisperBoxLinkRouter);
+// Same reasoning for shared debate topics: blindwhisper.com/dt/<id> must
+// reach this server (registered in artifact.toml) — the static frontend
+// can't tell a link-preview crawler from a browser, and has no /dt route at
+// all, so emailed /dt links used to land on a blank app shell. The old
+// /api/dt mount in routes/index.ts stays for links already shared.
+app.use("/dt", publicEndpointLimiter, debateTopicLinkRouter);
 
 app.use("/api", router);
 

@@ -47,7 +47,7 @@ export function notRetracted() {
 
 // Same exclusion for a single comment — an admin-removed comment (no
 // author-retraction path of its own) never appears in a public thread read.
-function commentNotRemoved() {
+export function commentNotRemoved() {
   return isNull(debateTopicCommentsTable.removedByAdminAt);
 }
 

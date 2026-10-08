@@ -610,7 +610,15 @@ router.post("/phone/confirm-verification", requireAuth, confirmPhoneVerification
 // ---------------------------------------------------------------------------
 
 function visibleToUser(userId: string) {
-  return or(isNull(notificationsTable.targetUserId), eq(notificationsTable.targetUserId, userId));
+  return and(
+    or(isNull(notificationsTable.targetUserId), eq(notificationsTable.targetUserId, userId)),
+    // A deferred notification (lib/replyNotificationScheduler.ts's
+    // scheduleDeferredNotification) stays hidden until the scheduler
+    // releases it and clears deliverAfter — otherwise the bell would show
+    // the recipient's action instantly and defeat the randomized delay that
+    // keeps a nearby buzz from identifying the sender.
+    isNull(notificationsTable.deliverAfter),
+  );
 }
 
 // GET /api/user/notifications

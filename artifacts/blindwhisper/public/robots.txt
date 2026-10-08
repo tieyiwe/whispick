@@ -593,3 +593,7 @@ Disallow: /unsubscribe
 Disallow: /debate-topics
 
 Sitemap: https://blindwhisper.com/sitemap.xml
+# Public, anonymous Debate Now topics: canonical, crawler-readable pages live
+# at /dt/<id> (server-rendered). The in-app /debate-topics route above stays
+# disallowed so the two never compete as duplicates.
+Sitemap: https://blindwhisper.com/dt/sitemap.xml
