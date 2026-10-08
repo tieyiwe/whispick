@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import {
   useCreateWhisp,
+  useGetUserProfile,
   useScrapeVideoMeta,
   useListMyCircles,
   getListMyCirclesQueryKey,
@@ -18,6 +19,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { MOOD_CONFIG, MOOD_TAGS } from "@/components/shared/MoodTag";
 import { Thumbnail } from "@/components/shared/Thumbnail";
+import { DemographicsGateDialog } from "@/components/shared/DemographicsGateDialog";
+import { needsDemographics } from "@/lib/demographics";
 import { uploadMedia, UploadValidationError, MAX_UPLOAD_DURATION_SECONDS } from "@/lib/uploadMedia";
 import { Globe, Users, Link2, Upload, Loader2, X, PlayCircle, Plus } from "lucide-react";
 
@@ -72,6 +75,13 @@ export function CirclePostComposer({
   const [moodTag, setMoodTag] = useState<string | null>(null);
   const [circleId, setCircleId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  // Posting is a whisp like any other, so it hits the same one-time
+  // first-whisp demographics gate (POST /whisps answers 428 until it's been
+  // answered). This composer never showed the gate: someone whose FIRST
+  // whisp was a Circle post got the server's raw English error as a toast
+  // and no way past it short of finding the fields in Settings.
+  const [showDemographicsGate, setShowDemographicsGate] = useState(false);
+  const { data: profile } = useGetUserProfile();
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -148,8 +158,15 @@ export function CirclePostComposer({
     }
   }
 
-  function handlePost() {
+  // skipDemographicsCheck: the gate itself resuming the post — the cached
+  // profile is still the pre-answer one at that moment (same reasoning as
+  // SendWhisp.tsx's handleSend), and the server's 428 still backstops it.
+  function handlePost(opts?: { skipDemographicsCheck?: boolean }) {
     if (!canPost) return;
+    if (!opts?.skipDemographicsCheck && needsDemographics(profile)) {
+      setShowDemographicsGate(true);
+      return;
+    }
     createWhisp.mutate(
       {
         data: {
@@ -186,8 +203,13 @@ export function CirclePostComposer({
           queryClient.invalidateQueries({ queryKey: getGetWhispStatsQueryKey() });
           queryClient.invalidateQueries({ queryKey: getListWhispsQueryKey() });
         },
-        onError: (err: any) =>
-          toast({ title: err?.data?.error ?? t("circlePostComposer.postFailedGeneric"), variant: "destructive" }),
+        onError: (err: any) => {
+          if (err?.status === 428) {
+            setShowDemographicsGate(true);
+            return;
+          }
+          toast({ title: err?.data?.error ?? t("circlePostComposer.postFailedGeneric"), variant: "destructive" });
+        },
       },
     );
   }
@@ -415,7 +437,7 @@ export function CirclePostComposer({
 
           <Button
             className="w-full"
-            onClick={handlePost}
+            onClick={() => handlePost()}
             disabled={!canPost || createWhisp.isPending || uploading}
             data-testid="button-circle-post"
           >
@@ -423,6 +445,13 @@ export function CirclePostComposer({
             {t("circlePostComposer.postAnonymously")}
           </Button>
         </div>
+        <DemographicsGateDialog
+          open={showDemographicsGate}
+          onConfirmed={() => {
+            setShowDemographicsGate(false);
+            handlePost({ skipDemographicsCheck: true });
+          }}
+        />
       </DialogContent>
     </Dialog>
   );
