@@ -1,13 +1,18 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { whispsTable } from "@workspace/db";
-import { eq, and, desc, lt, isNull } from "drizzle-orm";
+import { eq, and, desc, lt, isNull, sql } from "drizzle-orm";
 
 const router = Router();
 
 export const CIRCLE_FEED_COLUMNS = {
   id: whispsTable.id,
-  videoUrl: whispsTable.videoUrl,
+  // An upload's stored videoUrl is `upload:<uploadedVideoId>`, and that id is
+  // shared by every whisp the sender built from the same upload — publishing
+  // it here let anyone link a poster's public post to their private whisps.
+  // Viewers only need to know it IS an upload (videoPlatform says so too);
+  // playback goes through /public/w/:token/media.
+  videoUrl: sql<string>`CASE WHEN ${whispsTable.videoUrl} LIKE 'upload:%' THEN 'upload:' ELSE ${whispsTable.videoUrl} END`.as("video_url"),
   videoTitle: whispsTable.videoTitle,
   videoThumbnail: whispsTable.videoThumbnail,
   videoPlatform: whispsTable.videoPlatform,

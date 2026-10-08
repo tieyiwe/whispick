@@ -29,8 +29,20 @@ export const notificationsTable = pgTable("notifications", {
   // so the admin audit log doesn't misrepresent who actually sent it.
   createdByAdminId: text("created_by_admin_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  // Deferred delivery (anti-correlation): set for notifications triggered by
+  // an anonymous party's action (opened/watched/appreciated, a Circle
+  // comment, a Whisper Box message, ...) to a random 3/5/9 minutes out, so the
+  // recipient's phone doesn't buzz the instant someone sitting next to them
+  // acts — which would identify the anonymous party. Non-null means "pending":
+  // the row must be hidden from every user-facing read until
+  // lib/replyNotificationScheduler.ts dispatches it, which pushes it, resets
+  // createdAt to the dispatch time (so the bell's timestamp doesn't reveal
+  // the real action time either) and clears this back to null. Null — every
+  // pre-existing row and every immediate notification — means visible now.
+  deliverAfter: timestamp("deliver_after", { withTimezone: true }),
 }, (table) => [
   index("notifications_target_user_id_idx").on(table.targetUserId),
+  index("notifications_deliver_after_idx").on(table.deliverAfter),
 ]);
 
 export const insertNotificationSchema = createInsertSchema(notificationsTable).omit({ createdAt: true });

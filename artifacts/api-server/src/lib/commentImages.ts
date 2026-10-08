@@ -1,4 +1,5 @@
 import multer from "multer";
+import sharp from "sharp";
 import { randomUUID } from "crypto";
 import { fieldLimitedMemoryStorage } from "./fieldLimitedStorage";
 import { uploadObject } from "./objectStorage";
@@ -25,6 +26,39 @@ export function looksLikeDeclaredImageFormat(buffer: Buffer, mimeType: string): 
   return false;
 }
 
+// Bounds decode memory: a 5MB PNG can still declare a gigapixel canvas.
+// Comfortably above a real photo that fits under the 5MB cap (phones
+// default to 12-50MP).
+const MAX_INPUT_PIXELS = 100_000_000;
+
+/**
+ * Decodes and re-encodes an image in its own format, which drops every
+ * EXIF/XMP/IPTC/ICC block — GPS coordinates, camera make/model/serial,
+ * capture time — since sharp only writes metadata when withMetadata() is
+ * asked for (it deliberately isn't). rotate() bakes the EXIF orientation
+ * into the pixels first so stripping it doesn't leave the photo sideways.
+ * animated: true keeps every frame of a GIF/animated WebP.
+ *
+ * Returns null if the bytes can't be decoded — callers must treat that as a
+ * rejection, never fall back to storing the original.
+ */
+export async function reencodeImage(buffer: Buffer, mimeType: string): Promise<Buffer | null> {
+  try {
+    const pipeline = sharp(buffer, { animated: true, limitInputPixels: MAX_INPUT_PIXELS }).rotate();
+    if (mimeType === "image/jpeg") return await pipeline.jpeg({ quality: 90 }).toBuffer();
+    if (mimeType === "image/png") return await pipeline.png().toBuffer();
+    if (mimeType === "image/webp") return await pipeline.webp({ quality: 90 }).toBuffer();
+    if (mimeType === "image/gif") return await pipeline.gif().toBuffer();
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+// Files already validated and re-encoded by commentImageUpload, so
+// storeCommentImage doesn't decode them a second time.
+const sanitizedFiles = new WeakSet<Express.Multer.File>();
+
 const upload = multer({ storage: fieldLimitedMemoryStorage({ image: MAX_COMMENT_IMAGE_BYTES }), limits: { files: 1 } });
 
 // Deliberately untyped params (req/res/next: any) — matches lib/auth.ts's
@@ -33,9 +67,34 @@ const upload = multer({ storage: fieldLimitedMemoryStorage({ image: MAX_COMMENT_
 // -style params to the generic ParamsDictionary|ParamsArray union for the
 // whole handler chain (surfacing as `string | string[]` at every
 // req.params.<x> use in that handler).
+//
+// Also validates and strips the image's metadata here, in the middleware
+// rather than in storeCommentImage, so EVERY route using it (Circle and
+// Debate comments) rejects an unusable image with a 400 instead of silently
+// posting the comment without it — or worse, storing it with GPS intact.
 export function commentImageUpload(req: any, res: any, next: any) {
-  upload.single("image")(req, res, (err: unknown) => {
+  upload.single("image")(req, res, async (err: unknown) => {
     if (!err) {
+      const file: Express.Multer.File | undefined = req.file;
+      if (!file) {
+        next();
+        return;
+      }
+      if (
+        !ALLOWED_COMMENT_IMAGE_MIME_TYPES.includes(file.mimetype as (typeof ALLOWED_COMMENT_IMAGE_MIME_TYPES)[number]) ||
+        !looksLikeDeclaredImageFormat(file.buffer, file.mimetype)
+      ) {
+        res.status(400).json({ error: "Images must be JPEG, PNG, WebP, or GIF." });
+        return;
+      }
+      const clean = await reencodeImage(file.buffer, file.mimetype);
+      if (!clean) {
+        res.status(400).json({ error: "We couldn't process that image. Try a different one." });
+        return;
+      }
+      file.buffer = clean;
+      file.size = clean.length;
+      sanitizedFiles.add(file);
       next();
       return;
     }
@@ -52,11 +111,16 @@ export function commentImageUpload(req: any, res: any, next: any) {
 // to persist on the comment row (imageObjectKey) — called from both
 // routes/debateTopics.ts and routes/public.ts's comment-post handlers, kept
 // here as one shared helper instead of duplicated per route.
+//
+// Re-encodes (metadata strip) itself if handed a file that didn't come
+// through commentImageUpload, so no path can store original bytes.
 export async function storeCommentImage(file: Express.Multer.File): Promise<string | null> {
   if (!ALLOWED_COMMENT_IMAGE_MIME_TYPES.includes(file.mimetype as (typeof ALLOWED_COMMENT_IMAGE_MIME_TYPES)[number])) return null;
   if (!looksLikeDeclaredImageFormat(file.buffer, file.mimetype)) return null;
+  const bytes = sanitizedFiles.has(file) ? file.buffer : await reencodeImage(file.buffer, file.mimetype);
+  if (!bytes) return null;
   const ext = EXTENSION_BY_MIME[file.mimetype];
   const key = `comment-images/${randomUUID()}.${ext}`;
-  const ok = await uploadObject(key, file.buffer);
+  const ok = await uploadObject(key, bytes);
   return ok ? key : null;
 }

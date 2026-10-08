@@ -25,16 +25,36 @@ export function sessionKeyFor(userId: string | null, visitorId: string | null): 
 // codebase) — a cache miss after a restart or on another instance just
 // costs one more real lookup, not a correctness problem.
 const GEO_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+// Bounded: this is fed by an unauthenticated ping, so without a cap anyone
+// rotating source addresses (trivial over IPv6) could grow it until the
+// process runs out of memory. A Map iterates in insertion order and a hit is
+// re-inserted below, so evicting from the front drops the least recently
+// used entry.
+export const GEO_CACHE_MAX_ENTRIES = 10_000;
 const geoCache = new Map<string, { country: string | null; expiresAt: number }>();
 
 export async function cachedCountryForIp(ip: string | undefined): Promise<string | null> {
   if (!ip) return null;
 
   const cached = geoCache.get(ip);
-  if (cached && cached.expiresAt > Date.now()) return cached.country;
+  if (cached && cached.expiresAt > Date.now()) {
+    geoCache.delete(ip);
+    geoCache.set(ip, cached);
+    return cached.country;
+  }
 
   const location = await lookupGeoIp(ip);
   const country = location?.country ?? null;
+  geoCache.delete(ip);
   geoCache.set(ip, { country, expiresAt: Date.now() + GEO_CACHE_TTL_MS });
+  while (geoCache.size > GEO_CACHE_MAX_ENTRIES) {
+    const oldest = geoCache.keys().next().value;
+    if (oldest === undefined) break;
+    geoCache.delete(oldest);
+  }
   return country;
+}
+
+export function geoCacheSizeForTests(): number {
+  return geoCache.size;
 }

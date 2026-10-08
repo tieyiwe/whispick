@@ -1,8 +1,9 @@
+import { randomUUID } from "crypto";
 import { db } from "@workspace/db";
-import { whispRepliesTable, whispsTable, usersTable } from "@workspace/db";
+import { whispRepliesTable, whispsTable, usersTable, notificationsTable } from "@workspace/db";
 import { eq, and, lte, isNull, isNotNull } from "drizzle-orm";
-import { sendEmail, replyNotificationEmailHtml } from "./email";
-import { notifyUserPersisted } from "./push";
+import { sendEmail, replyNotificationEmailHtml, appreciationNotificationEmailHtml } from "./email";
+import { notifyUser, notifyUserPersisted } from "./push";
 import { logger } from "./logger";
 import { reportSystemError } from "./bugRabbit";
 
@@ -12,6 +13,106 @@ const POLL_INTERVAL_MS = 60_000;
 // shouldn't be allowed to make one sweep run indefinitely. Leftover rows are
 // picked up on the next poll, still only 60s away.
 const BATCH_LIMIT = 100;
+
+// One of 3, 5, or 9 minutes out, chosen at random each time — a discrete
+// choice (not a continuous range) per the anti-correlation design: enough
+// spread that a Sender's phone buzzing can't be tied to a Recipient who just
+// hit send while physically next to them. See notifySenderAt's schema
+// comment. Shared by every deferred notification below.
+const NOTIFY_DELAY_MINUTES_OPTIONS = [3, 5, 9] as const;
+export function randomNotifyDelay(): Date {
+  const minutes = NOTIFY_DELAY_MINUTES_OPTIONS[Math.floor(Math.random() * NOTIFY_DELAY_MINUTES_OPTIONS.length)];
+  return new Date(Date.now() + minutes * 60_000);
+}
+
+/**
+ * The deferred counterpart of notifyUserPersisted, for every notification an
+ * anonymous party's action triggers (opened/watched/appreciated, a Circle
+ * comment or comment reaction, a Whisper Box message, ...). An instant push
+ * there is a side channel: whoever is sitting next to the target sees their
+ * phone buzz the moment they act, and learns who the anonymous poster/sender
+ * is. Same 3/5/9-minute randomized delay replies already get, and durable
+ * (a DB row, not a setTimeout) because Autoscale instances scale to zero.
+ *
+ * Coalesced: while one is still pending for the same (user, kind, url), a
+ * second is dropped — a burst of comments on one post (or someone rotating
+ * visitorIds to spam it) lands as one buzz, not one per action. The check
+ * and insert aren't atomic; a rare duplicate under a race is harmless.
+ */
+export async function scheduleDeferredNotification(userId: string, title: string, body: string, url: string, kind: string): Promise<void> {
+  try {
+    const pending = await db
+      .select({ id: notificationsTable.id })
+      .from(notificationsTable)
+      .where(
+        and(
+          eq(notificationsTable.targetUserId, userId),
+          eq(notificationsTable.kind, kind),
+          eq(notificationsTable.url, url),
+          isNotNull(notificationsTable.deliverAfter),
+        ),
+      )
+      .limit(1);
+    if (pending.length) return;
+    await db.insert(notificationsTable).values({
+      id: randomUUID(),
+      targetUserId: userId,
+      title,
+      body,
+      url: url || null,
+      kind,
+      createdByAdminId: null,
+      deliverAfter: randomNotifyDelay(),
+    });
+  } catch (err) {
+    logger.error({ userId, kind, err }, "Failed to schedule deferred notification");
+  }
+}
+
+export async function getDueDeferredNotifications() {
+  return db
+    .select()
+    .from(notificationsTable)
+    .where(and(isNotNull(notificationsTable.deliverAfter), lte(notificationsTable.deliverAfter, new Date())))
+    .limit(BATCH_LIMIT);
+}
+
+/**
+ * Releases every due deferred notification: makes it visible (deliverAfter
+ * back to null, createdAt reset to now so the bell's "x minutes ago" doesn't
+ * reveal when the action really happened), then sends the live push — and,
+ * for an appreciation, the email that used to go out immediately with it.
+ * Exported so tests can drive one sweep without waiting on the interval.
+ */
+export async function dispatchDueDeferredNotifications(): Promise<number> {
+  const due = await getDueDeferredNotifications();
+  let dispatched = 0;
+  for (const n of due) {
+    // Claim-first, same as the reply sweep: zero rows means another sweep
+    // (or another instance) already released it.
+    const claimed = await db
+      .update(notificationsTable)
+      .set({ deliverAfter: null, createdAt: new Date() })
+      .where(and(eq(notificationsTable.id, n.id), isNotNull(notificationsTable.deliverAfter)))
+      .returning({ id: notificationsTable.id });
+    if (claimed.length === 0 || !n.targetUserId) continue;
+    dispatched++;
+
+    if (n.kind === "appreciation") {
+      const whispId = n.url?.match(/^\/whisps\/([^/?#]+)$/)?.[1];
+      const whisp = whispId ? await db.select().from(whispsTable).where(eq(whispsTable.id, whispId)).then((r) => r[0]) : undefined;
+      const sender = whisp ? await db.select().from(usersTable).where(eq(usersTable.id, whisp.senderId)).then((r) => r[0]) : undefined;
+      if (whisp && sender?.email) {
+        void sendEmail(sender.email, "They needed to hear that 💜", appreciationNotificationEmailHtml(whisp.videoTitle), {
+          whispId: whisp.id,
+          purpose: "appreciation_notification",
+        });
+      }
+    }
+    void notifyUser(n.targetUserId, n.title, n.body, n.url ?? "");
+  }
+  return dispatched;
+}
 
 // Pulled out of startReplyNotificationScheduler so the due-row selection
 // logic (the part that matters for correctness — matching the codebase's
@@ -150,6 +251,15 @@ export function startReplyNotificationScheduler(): void {
     } catch (err) {
       logger.error({ err }, "Deferred video-reply-request dispatch failed");
       reportSystemError(err, "scheduler:replyNotificationScheduler:videoReplyRequest");
+    }
+
+    // Own try block for the same reason as the one above.
+    try {
+      const count = await dispatchDueDeferredNotifications();
+      if (count) logger.info({ count }, "Dispatched deferred notifications");
+    } catch (err) {
+      logger.error({ err }, "Deferred notification dispatch failed");
+      reportSystemError(err, "scheduler:replyNotificationScheduler:deferred");
     }
   }, POLL_INTERVAL_MS);
 }

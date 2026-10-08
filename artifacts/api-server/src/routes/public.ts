@@ -4,28 +4,27 @@ import {
   whispsTable,
   whispRepliesTable,
   trackingEventsTable,
-  usersTable,
   uploadedVideosTable,
   circleCommentsTable,
   circlePostLikesTable,
 } from "@workspace/db";
-import { eq, and, count, isNull, desc, gt } from "drizzle-orm";
+import { eq, and, count, isNull, gt } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
 import { randomUUID } from "crypto";
 import { z } from "zod";
-import { sendEmail, appreciationNotificationEmailHtml } from "../lib/email";
-import { notifyUserPersisted } from "../lib/push";
-import { getPublicAppUrl } from "../lib/publicUrl";
+import { ipKeyGenerator } from "express-rate-limit";
+import { randomNotifyDelay, scheduleDeferredNotification } from "../lib/replyNotificationScheduler";
+import { requestIp } from "../lib/ensureUser";
 import { isExpired, MAX_REMINDERS } from "../lib/expiration";
 import { downloadObject } from "../lib/objectStorage";
 import { generateTakeawayAsync } from "../lib/aiTakeaway";
 import { httpUrlString } from "../lib/safeUrl";
 import { deriveVideoFields, detectPlatform, embedUrlFor } from "../lib/videoMeta";
-import { recipientReplyAllowance, canRecipientWhispVideoBack, canPostAnonymousComment, COMMENT_LIMIT_WINDOW_HOURS } from "../lib/plans";
+import { recipientReplyAllowance, canRecipientWhispVideoBack, canPostAnonymousComment, anonymousCommentLimit, COMMENT_LIMIT_WINDOW_HOURS } from "../lib/plans";
 import { moderateCircleCommentAsync, moderateCommentImageAsync } from "../lib/moderation";
 import { ensureUser } from "../lib/ensureUser";
 import { assignOrGetHandle, getHandlesFor, renameHandle } from "../lib/anonymousHandles";
-import { toggleReaction, reactionCountsFor, viewerReactionsFor } from "../lib/commentReactions";
+import { toggleReactionWithNotifyHint, reactionCountsFor, viewerReactionsFor } from "../lib/commentReactions";
 import { commentImageUpload, storeCommentImage } from "../lib/commentImages";
 import { safeAssignOrGetSenderHandle } from "../lib/whispSenderHandle";
 
@@ -73,15 +72,113 @@ function isMatchedFanout(whisp: { deliveryMethod: string; groupSendId: string | 
   return whisp.deliveryMethod === "ghost_boost" && !!whisp.groupSendId;
 }
 
-// One of 3, 5, or 9 minutes out, chosen at random each time — a discrete
-// choice (not a continuous range) per the anti-correlation design: enough
-// spread that a Sender's phone buzzing can't be tied to a Recipient who just
-// hit send while physically next to them. See notifySenderAt's schema
-// comment and lib/replyNotificationScheduler.ts.
-const NOTIFY_DELAY_MINUTES_OPTIONS = [3, 5, 9] as const;
-function randomNotifyDelay(): Date {
-  const minutes = NOTIFY_DELAY_MINUTES_OPTIONS[Math.floor(Math.random() * NOTIFY_DELAY_MINUTES_OPTIONS.length)];
-  return new Date(Date.now() + minutes * 60_000);
+// Every notification below that an anonymous party's action triggers goes
+// through scheduleDeferredNotification (a random 3/5/9 minutes out, durable)
+// rather than an instant push: if the two people are physically together,
+// a phone buzzing the moment the other one acts identifies them. See
+// lib/replyNotificationScheduler.ts.
+
+type WhispRow = typeof whispsTable.$inferSelect;
+
+/**
+ * The one token → whisp lookup every route here uses, so a moderation
+ * takedown is enforced uniformly instead of route by route. Null (callers
+ * 404) when the token is unknown, the whisp was taken down, or it's a
+ * circle_dm thread cloned from a Circle post that was taken down — the
+ * clone carries its own copy of the video reference, so without the origin
+ * check /w/<dmToken> and its /media kept serving removed content.
+ */
+async function loadLiveWhisp(token: string): Promise<WhispRow | null> {
+  const whisp = await db.select().from(whispsTable).where(eq(whispsTable.publicToken, token)).then((r) => r[0]);
+  if (!whisp || whisp.removedByAdminAt) return null;
+  if (whisp.originCircleWhispId) {
+    const origin = await db
+      .select({ removedByAdminAt: whispsTable.removedByAdminAt })
+      .from(whispsTable)
+      .where(eq(whispsTable.id, whisp.originCircleWhispId))
+      .then((r) => r[0]);
+    if (origin?.removedByAdminAt) return null;
+  }
+  return whisp;
+}
+
+// A Blind Circle post is PUBLIC: everyone holding its token (the whole feed)
+// shares one view of it. The 1:1 recipient machinery — reply thread, guess
+// confirmations, appreciation, reminders, video-back requests — assumes
+// exactly one counterparty; on a public post a stranger could post a
+// "guess", the poster confirm it, and every viewer see the confirmation.
+// Private conversation with a poster goes through circle-dm/start instead.
+function isPublicCirclePost(whisp: { deliveryMethod: string }): boolean {
+  return whisp.deliveryMethod === "circle_drop";
+}
+const CIRCLE_ONE_TO_ONE_ERROR = "This isn't available on Blind Circle posts — message the poster privately instead.";
+
+// An upload's videoUrl is `upload:<uploadedVideoId>`; the id is stable
+// across every whisp built from the same upload, so publishing it let anyone
+// link a sender's private whisps to their public Circle posts. Viewers get
+// only the bare marker (playback goes through /w/:token/media and the
+// frontend keys off videoPlatform === "upload").
+function publicVideoUrl(videoUrl: string): string {
+  return videoUrl.startsWith("upload:") ? "upload:" : videoUrl;
+}
+
+// IPv6 users get a whole /56–/64 from their ISP, so a per-address key is
+// free to rotate; ipKeyGenerator collapses it to the subnet (IPv4 is
+// returned as-is).
+function clientSubnetKey(req: any): string {
+  const ip = requestIp(req);
+  return ip ? ipKeyGenerator(ip, 56) : "unknown";
+}
+
+/**
+ * Minimal in-memory sliding-window counter for limits keyed on something
+ * other than the request alone (the subnet's anonymous comments, DM threads
+ * minted). Per-instance like every limiter in lib/rateLimit.ts; bounded in
+ * keys so an attacker rotating addresses can't grow it without limit.
+ */
+class SlidingWindowCounter {
+  private hits = new Map<string, number[]>();
+  constructor(private windowMs: number, private maxKeys = 10_000) {}
+  count(key: string): number {
+    const cutoff = Date.now() - this.windowMs;
+    const times = (this.hits.get(key) ?? []).filter((t) => t > cutoff);
+    if (times.length) this.hits.set(key, times);
+    else this.hits.delete(key);
+    return times.length;
+  }
+  record(key: string): void {
+    const times = this.hits.get(key) ?? [];
+    times.push(Date.now());
+    this.hits.delete(key);
+    this.hits.set(key, times);
+    while (this.hits.size > this.maxKeys) {
+      const oldest = this.hits.keys().next().value;
+      if (oldest === undefined) break;
+      this.hits.delete(oldest);
+    }
+  }
+  reset(): void {
+    this.hits.clear();
+  }
+}
+
+// The anonymous comment cap was counted only per body-supplied visitorId —
+// rotate it and post without limit, each comment pushing the poster. Also
+// capped per client subnet, with headroom (a subnet can be a household or a
+// carrier NAT with several real people behind it).
+const SUBNET_COMMENT_LIMIT_MULTIPLIER = 3;
+const anonymousCommentsBySubnet = new SlidingWindowCounter(COMMENT_LIMIT_WINDOW_HOURS * 60 * 60 * 1000);
+
+// circle-dm/start mints a new whisp row per call; bounded per subnet and
+// per post so it can't be used to mass-produce rows (or DM threads with the
+// poster).
+const CIRCLE_DM_PER_SUBNET_PER_HOUR = 10;
+const CIRCLE_DM_PER_POST_PER_HOUR = 60;
+const circleDmMintsBySubnet = new SlidingWindowCounter(60 * 60 * 1000);
+
+export function resetPublicRouteCountersForTests(): void {
+  anonymousCommentsBySubnet.reset();
+  circleDmMintsBySubnet.reset();
 }
 
 /**
@@ -110,17 +207,13 @@ async function recordVideoReplyRequest(whispId: string): Promise<void> {
 
 // GET /api/public/w/:token — public recipient page
 router.get("/w/:token", async (req, res): Promise<void> => {
-  const whisp = await db
-    .select()
-    .from(whispsTable)
-    .where(eq(whispsTable.publicToken, req.params.token))
-    .then(r => r[0]);
-
   // removedByAdminAt is a moderation takedown — unlike deletedBySenderAt
   // (which only hides a whisp from the SENDER's own views, keeping the
   // recipient's link working), this is meant to come down entirely, same
-  // observable effect as debate_topics.removedByAdminAt.
-  if (!whisp || whisp.removedByAdminAt) {
+  // observable effect as debate_topics.removedByAdminAt. loadLiveWhisp also
+  // covers a circle_dm thread whose origin post was taken down.
+  const whisp = await loadLiveWhisp(req.params.token);
+  if (!whisp) {
     res.status(404).json({ error: "Not found" });
     return;
   }
@@ -140,26 +233,36 @@ router.get("/w/:token", async (req, res): Promise<void> => {
   // select below so the response the recipient gets back already reflects
   // it, and scoped to fromRecipient=false (the sender authored it) and
   // still-null readAt so a page already fully read is a no-op on every
-  // subsequent poll.
-  await db
-    .update(whispRepliesTable)
-    .set({ readAt: new Date() })
-    .where(
-      and(
-        eq(whispRepliesTable.whispId, whisp.id),
-        eq(whispRepliesTable.fromRecipient, false),
-        isNull(whispRepliesTable.readAt)
-      )
-    );
+  // subsequent poll. Skipped for a public Circle post: there's no single
+  // reader whose "read" it would be (see isPublicCirclePost).
+  const isCirclePost = isPublicCirclePost(whisp);
+  if (!isCirclePost) {
+    await db
+      .update(whispRepliesTable)
+      .set({ readAt: new Date() })
+      .where(
+        and(
+          eq(whispRepliesTable.whispId, whisp.id),
+          eq(whispRepliesTable.fromRecipient, false),
+          isNull(whispRepliesTable.readAt)
+        )
+      );
+  }
 
   // The reply thread. Without it, a recipient could send a reply but never
   // see it (or any sender follow-up) again on a later visit — every reply
   // looked like it vanished into a one-shot box instead of a real thread.
-  const replies = await db
-    .select(RECIPIENT_SAFE_REPLY_COLUMNS)
-    .from(whispRepliesTable)
-    .where(eq(whispRepliesTable.whispId, whisp.id))
-    .orderBy(whispRepliesTable.createdAt);
+  // Always empty for a public Circle post: a 1:1 thread (incl. guesses and
+  // the poster's guess reactions) on a page everyone can open would show
+  // every viewer a stranger's guess being confirmed — i.e. who posted it.
+  // Any rows written before replies were blocked there stay hidden too.
+  const replies = isCirclePost
+    ? []
+    : await db
+        .select(RECIPIENT_SAFE_REPLY_COLUMNS)
+        .from(whispRepliesTable)
+        .where(eq(whispRepliesTable.whispId, whisp.id))
+        .orderBy(whispRepliesTable.createdAt);
 
   // Likes/comments only apply to a Blind Circle post — a Whisper Link (or a
   // circle_dm thread spawned from one, see POST /w/:token/circle-dm/start)
@@ -287,7 +390,7 @@ router.get("/w/:token", async (req, res): Promise<void> => {
     likeCount,
     viewerHasLiked,
     comments,
-    videoUrl: whisp.videoUrl,
+    videoUrl: publicVideoUrl(whisp.videoUrl),
     videoTitle: whisp.videoTitle,
     videoThumbnail: whisp.videoThumbnail,
     // Computed on read when the stored value is null. Embed URLs are a pure
@@ -309,7 +412,9 @@ router.get("/w/:token", async (req, res): Promise<void> => {
     moodTag: whisp.moodTag,
     revealRequested: whisp.revealRequested,
     groupSize,
-    appreciationResponse: whisp.appreciationResponse,
+    // Recipient-only state; meaningless (and one stranger's answer) on a
+    // public Circle post, where /appreciation is refused.
+    appreciationResponse: isCirclePost ? null : whisp.appreciationResponse,
     expiresAt: whisp.expiresAt,
     reminderCount: whisp.reminderCount,
     expired: isExpired(whisp.expiresAt),
@@ -355,10 +460,10 @@ router.post("/w/:token/like", async (req, res): Promise<void> => {
     return;
   }
 
-  const whisp = await db.select().from(whispsTable).where(eq(whispsTable.publicToken, req.params.token)).then((r) => r[0]);
-  // removedByAdminAt: a taken-down post must stop accepting engagement too,
-  // not just disappear from reads — same 404 the page itself returns.
-  if (!whisp || whisp.removedByAdminAt) {
+  // A taken-down post must stop accepting engagement too, not just
+  // disappear from reads — same 404 the page itself returns.
+  const whisp = await loadLiveWhisp(req.params.token);
+  if (!whisp) {
     res.status(404).json({ error: "Not found" });
     return;
   }
@@ -413,10 +518,10 @@ router.post("/w/:token/comments", commentImageUpload, async (req, res): Promise<
     return;
   }
 
-  const whisp = await db.select().from(whispsTable).where(eq(whispsTable.publicToken, req.params.token)).then((r) => r[0]);
-  // removedByAdminAt: a taken-down post must stop accepting engagement too,
-  // not just disappear from reads — same 404 the page itself returns.
-  if (!whisp || whisp.removedByAdminAt) {
+  // A taken-down post must stop accepting engagement too, not just
+  // disappear from reads — same 404 the page itself returns.
+  const whisp = await loadLiveWhisp(req.params.token);
+  if (!whisp) {
     res.status(404).json({ error: "Not found" });
     return;
   }
@@ -437,13 +542,18 @@ router.post("/w/:token/comments", commentImageUpload, async (req, res): Promise<
   // The poster commenting on their own post is exempt, same spirit as the
   // reply cap's signed-in exemption — they're not the audience this limit
   // is aimed at.
+  const subnetKey = clientSubnetKey(req);
   if (!isPoster) {
     const windowStart = new Date(Date.now() - COMMENT_LIMIT_WINDOW_HOURS * 60 * 60 * 1000);
     const [recentRow] = await db
       .select({ count: count() })
       .from(circleCommentsTable)
       .where(and(eq(circleCommentsTable.visitorId, parsed.data.visitorId), gt(circleCommentsTable.createdAt, windowStart)));
-    if (!canPostAnonymousComment(!!clerkId, recentRow?.count ?? 0)) {
+    // visitorId is whatever the client sends, so it's also capped per
+    // client subnet (see anonymousCommentsBySubnet).
+    const limit = anonymousCommentLimit();
+    const subnetOk = !!clerkId || limit === null || anonymousCommentsBySubnet.count(subnetKey) < limit * SUBNET_COMMENT_LIMIT_MULTIPLIER;
+    if (!canPostAnonymousComment(!!clerkId, recentRow?.count ?? 0) || !subnetOk) {
       res.status(403).json({
         error: "You've used your free comments for now — sign up to comment anytime, or check back in 24 hours.",
         code: "comment_limit_reached",
@@ -484,6 +594,8 @@ router.post("/w/:token/comments", commentImageUpload, async (req, res): Promise<
     imageModerationStatus: imageObjectKey ? null : "ok",
   });
 
+  if (!clerkId) anonymousCommentsBySubnet.record(subnetKey);
+
   const { handle } = await assignOrGetHandle("circle_drop", whisp.id, parsed.data.visitorId);
 
   void moderateCircleCommentAsync({
@@ -495,12 +607,15 @@ router.post("/w/:token/comments", commentImageUpload, async (req, res): Promise<
     void moderateCommentImageAsync({ commentType: "circle_comment", commentId: id, senderId: authorUserId, imageObjectKey });
   }
 
+  // Deferred (see scheduleDeferredNotification): an instant buzz on the
+  // poster's phone as a commenter hits send would identify the poster to
+  // anyone next to them.
   const postUrl = `/w/${whisp.publicToken}`;
   if (parentAuthorUserId && parentAuthorUserId !== authorUserId) {
-    void notifyUserPersisted(parentAuthorUserId, "New reply to your comment 💬", "Someone replied to your comment on a Blind Circle post.", postUrl, "circle_comment_reply");
+    await scheduleDeferredNotification(parentAuthorUserId, "New reply to your comment 💬", "Someone replied to your comment on a Blind Circle post.", postUrl, "circle_comment_reply");
   }
   if (whisp.senderId !== authorUserId && !isPoster) {
-    void notifyUserPersisted(whisp.senderId, "New comment on your post 🗣️", "Someone commented on your Blind Circle post.", postUrl, "circle_comment");
+    await scheduleDeferredNotification(whisp.senderId, "New comment on your post 🗣️", "Someone commented on your Blind Circle post.", postUrl, "circle_comment");
   }
 
   const comment = await db
@@ -530,10 +645,18 @@ router.post("/w/:token/comments", commentImageUpload, async (req, res): Promise<
 // attached comment image, same posture as routes/media.ts. Hidden (404)
 // once flagged by moderation or once the comment itself is admin-removed.
 router.get("/w/:token/comments/:commentId/image", async (req, res): Promise<void> => {
+  // Bound to the token's own (live) post: looked up by comment id alone,
+  // this served images from any post — including a taken-down one — to
+  // anyone with any token.
+  const whisp = await loadLiveWhisp(req.params.token);
+  if (!whisp) {
+    res.status(404).end();
+    return;
+  }
   const comment = await db
     .select({ imageObjectKey: circleCommentsTable.imageObjectKey, imageModerationStatus: circleCommentsTable.imageModerationStatus, removedByAdminAt: circleCommentsTable.removedByAdminAt })
     .from(circleCommentsTable)
-    .where(eq(circleCommentsTable.id, req.params.commentId))
+    .where(and(eq(circleCommentsTable.id, req.params.commentId), eq(circleCommentsTable.whispId, whisp.id)))
     .then((r) => r[0]);
 
   if (!comment?.imageObjectKey || comment.imageModerationStatus === "flagged" || comment.removedByAdminAt) {
@@ -564,15 +687,28 @@ router.patch("/w/:token/handle", async (req, res): Promise<void> => {
     return;
   }
 
-  const whisp = await db.select({ id: whispsTable.id }).from(whispsTable).where(eq(whispsTable.publicToken, req.params.token)).then((r) => r[0]);
+  // Handles only exist in a Circle post's comment thread — on any other
+  // token this wrote a "circle_drop" handle row for a thread that doesn't
+  // exist. (Debate threads have their own route in routes/debateTopics.ts.)
+  const whisp = await loadLiveWhisp(req.params.token);
   if (!whisp) {
     res.status(404).json({ error: "Not found" });
+    return;
+  }
+  if (!isPublicCirclePost(whisp)) {
+    res.status(400).json({ error: "Names only apply to Blind Circle comment threads" });
     return;
   }
 
   const result = await renameHandle("circle_drop", whisp.id, parsed.data.visitorId, parsed.data.handle);
   if (!result.ok) {
-    res.status(400).json({ error: result.error === "taken" ? "That name is already taken in this thread." : "Use letters and numbers only (3-24 characters)." });
+    const message =
+      result.error === "taken"
+        ? "That name is already taken in this thread."
+        : result.error === "reserved"
+          ? "That name is reserved. Pick something else."
+          : "Use letters and numbers only (3-24 characters).";
+    res.status(400).json({ error: message });
     return;
   }
 
@@ -588,7 +724,7 @@ router.post("/w/:token/comments/:commentId/reactions", async (req, res): Promise
     return;
   }
 
-  const whisp = await db.select({ id: whispsTable.id }).from(whispsTable).where(eq(whispsTable.publicToken, req.params.token)).then((r) => r[0]);
+  const whisp = await loadLiveWhisp(req.params.token);
   if (!whisp) {
     res.status(404).json({ error: "Not found" });
     return;
@@ -604,14 +740,17 @@ router.post("/w/:token/comments/:commentId/reactions", async (req, res): Promise
     return;
   }
 
-  const result = await toggleReaction("circle_comment", comment.id, parsed.data.visitorId, parsed.data.reaction);
+  const { result, firstLike } = await toggleReactionWithNotifyHint("circle_comment", comment.id, parsed.data.visitorId, parsed.data.reaction);
 
-  if (result.viewerReaction === "like" && comment.authorUserId) {
+  // Only on this visitor's FIRST like of this comment — toggling
+  // like/dislike/like used to push the author on every flip — and deferred
+  // like every other engagement notification here.
+  if (firstLike && comment.authorUserId) {
     // Never self-notify — same rule as the comment notifications.
     const { userId: reactorClerkId } = getAuth(req);
     const reactor = reactorClerkId ? await ensureUser(reactorClerkId, req) : null;
     if (reactor?.id !== comment.authorUserId) {
-      void notifyUserPersisted(comment.authorUserId, "Someone liked your comment 👍", "Your comment on a Blind Circle post got a reaction.", `/w/${req.params.token}`, "circle_comment_reaction");
+      await scheduleDeferredNotification(comment.authorUserId, "Someone liked your comment 👍", "Your comment on a Blind Circle post got a reaction.", `/w/${req.params.token}`, "circle_comment_reaction");
     }
   }
 
@@ -633,10 +772,10 @@ router.post("/w/:token/comments/:commentId/reactions", async (req, res): Promise
 // (localStorage, see lib/circleDm.ts) so a repeat visitor resumes the SAME
 // thread instead of minting a new one every time.
 router.post("/w/:token/circle-dm/start", async (req, res): Promise<void> => {
-  const whisp = await db.select().from(whispsTable).where(eq(whispsTable.publicToken, req.params.token)).then((r) => r[0]);
-  // removedByAdminAt: a taken-down post must stop accepting engagement too,
-  // not just disappear from reads — same 404 the page itself returns.
-  if (!whisp || whisp.removedByAdminAt) {
+  // A taken-down post must stop accepting engagement too, not just
+  // disappear from reads — same 404 the page itself returns.
+  const whisp = await loadLiveWhisp(req.params.token);
+  if (!whisp) {
     res.status(404).json({ error: "Not found" });
     return;
   }
@@ -644,6 +783,20 @@ router.post("/w/:token/circle-dm/start", async (req, res): Promise<void> => {
     res.status(400).json({ error: "Private messages only apply to Blind Circle posts" });
     return;
   }
+
+  // Each call mints a whisp row, so bound it per client subnet and per post.
+  // The frontend already reuses a saved token per post (lib/circleDm.ts), so
+  // a real visitor needs this about once per post.
+  const subnetKey = clientSubnetKey(req);
+  const [postMints] = await db
+    .select({ count: count() })
+    .from(whispsTable)
+    .where(and(eq(whispsTable.originCircleWhispId, whisp.id), gt(whispsTable.createdAt, new Date(Date.now() - 60 * 60 * 1000))));
+  if (circleDmMintsBySubnet.count(subnetKey) >= CIRCLE_DM_PER_SUBNET_PER_HOUR || (postMints?.count ?? 0) >= CIRCLE_DM_PER_POST_PER_HOUR) {
+    res.status(429).json({ error: "Too many conversations started — try again in a little while." });
+    return;
+  }
+  circleDmMintsBySubnet.record(subnetKey);
 
   const id = randomUUID();
   const publicToken = randomUUID().replace(/-/g, "");
@@ -673,13 +826,14 @@ router.post("/w/:token/circle-dm/start", async (req, res): Promise<void> => {
 });
 
 async function loadWhispUpload(token: string) {
-  const whisp = await db.select().from(whispsTable).where(eq(whispsTable.publicToken, token)).then((r) => r[0]);
-  if (!whisp?.uploadedVideoId) return { status: 404 as const };
   // An admin takedown is meant to come down ENTIRELY — GET /w/:token 404s,
   // but without this the raw bytes stayed streamable to anyone holding the
   // token (circle posts publish theirs in the public feed) until the
-  // retention sweep finally deleted them.
-  if (whisp.removedByAdminAt) return { status: 404 as const };
+  // retention sweep finally deleted them. loadLiveWhisp also 404s a
+  // circle_dm clone whose origin post was taken down — it references the
+  // same uploadedVideoId.
+  const whisp = await loadLiveWhisp(token);
+  if (!whisp?.uploadedVideoId) return { status: 404 as const };
   // GET /w/:token already reports `expired` and the frontend stops rendering
   // the video player once it's true, but that's a client-side-only gate —
   // without this check the raw bytes stayed fetchable forever via a direct
@@ -755,34 +909,33 @@ router.get("/w/:token/media/thumbnail", async (req, res): Promise<void> => {
 // different answer per case would turn this into an oracle for which tokens
 // exist.
 router.post("/w/:token/video-reply-request", async (req, res): Promise<void> => {
-  const whisp = await db
-    .select({ id: whispsTable.id, replyCreditsPurchased: whispsTable.replyCreditsPurchased })
-    .from(whispsTable)
-    .where(eq(whispsTable.publicToken, req.params.token))
-    .then((r) => r[0]);
+  const whisp = await loadLiveWhisp(req.params.token);
 
   // Only record a genuine block. If the sender has already unlocked it (or
-  // the caller is signed in), there is nothing to ask them for.
-  if (whisp && !canRecipientWhispVideoBack(!!getAuth(req).userId, whisp.replyCreditsPurchased)) {
+  // the caller is signed in), there is nothing to ask them for. Never on a
+  // public Circle post — there's no reply thread to whisp a video back into.
+  if (whisp && !isPublicCirclePost(whisp) && !canRecipientWhispVideoBack(!!getAuth(req).userId, whisp.replyCreditsPurchased)) {
     await recordVideoReplyRequest(whisp.id);
   }
 
   res.status(204).send();
 });
 
+// Exactly what the recipient page / VideoPlayer emit. Free-form strings were
+// stored verbatim into the sender's timeline (tracking_events), so anyone
+// with a token could write arbitrary text there.
+const TRACK_EVENT_TYPES = ["opened", "clicked", "watched_10s", "watched_50pct", "watched_complete"] as const;
+
 router.post("/w/:token/track", async (req, res): Promise<void> => {
-  const schema = z.object({ eventType: z.string().min(1) });
+  const schema = z.object({ eventType: z.enum(TRACK_EVENT_TYPES) });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid event type" });
     return;
   }
 
-  const whisp = await db
-    .select()
-    .from(whispsTable)
-    .where(eq(whispsTable.publicToken, req.params.token))
-    .then(r => r[0]);
+  // Taken-down whisps get the same silent success as unknown tokens.
+  const whisp = await loadLiveWhisp(req.params.token);
 
   if (!whisp) {
     res.json({ ok: true }); // Silent success even if not found
@@ -826,7 +979,9 @@ router.post("/w/:token/track", async (req, res): Promise<void> => {
     const statusUpdate = whisp.status === "replied" || whisp.status === "watched" ? {} : { status: "opened" };
     await db.update(whispsTable).set({ ...statusUpdate, openedAt: new Date() }).where(eq(whispsTable.id, whisp.id));
     if (!isMatchedFanout(whisp)) {
-      void notifyUserPersisted(whisp.senderId, "Your whisp was opened 👀", "Someone just opened the link you sent.", whispUrl, "opened");
+      // Deferred: the recipient opening the link right next to the sender
+      // would otherwise buzz the sender's phone in that same second.
+      await scheduleDeferredNotification(whisp.senderId, "Your whisp was opened 👀", "Someone opened the link you sent.", whispUrl, "opened");
     }
     // Pressing play — or following the link out to the platform — is what
     // marks a whisp watched, on every platform. Only YouTube, Vimeo and native
@@ -845,12 +1000,12 @@ router.post("/w/:token/track", async (req, res): Promise<void> => {
       .set({ watchedAt: new Date(), ...(whisp.status === "replied" ? {} : { status: "watched" }) })
       .where(eq(whispsTable.id, whisp.id));
     if (!isMatchedFanout(whisp)) {
-      void notifyUserPersisted(
+      await scheduleDeferredNotification(
         whisp.senderId,
         "They watched it 🎬",
         eventType === "watched_complete"
           ? "Your whisp was watched all the way through."
-          : "Someone just played the video you sent.",
+          : "Someone played the video you sent.",
         whispUrl,
         "watched",
       );
@@ -915,14 +1070,17 @@ router.post("/w/:token/reply", async (req, res): Promise<void> => {
     return;
   }
 
-  const whisp = await db
-    .select()
-    .from(whispsTable)
-    .where(eq(whispsTable.publicToken, req.params.token))
-    .then(r => r[0]);
+  const whisp = await loadLiveWhisp(req.params.token);
 
   if (!whisp) {
     res.status(404).json({ error: "Not found" });
+    return;
+  }
+
+  // One shared thread on a public post = every viewer sees every reply,
+  // guess and guess confirmation. See isPublicCirclePost.
+  if (isPublicCirclePost(whisp)) {
+    res.status(400).json({ error: CIRCLE_ONE_TO_ONE_ERROR, code: "circle_post_no_replies" });
     return;
   }
 
@@ -1050,7 +1208,7 @@ router.post("/w/:token/reply", async (req, res): Promise<void> => {
   }
 
   if (justReachedCap && !isMatchedFanout(whisp)) {
-    void notifyUserPersisted(
+    await scheduleDeferredNotification(
       whisp.senderId,
       "They've run out of replies 🔒",
       "The person you whisped can't reply again unless you add more replies, or they sign up.",
@@ -1080,14 +1238,17 @@ router.post("/w/:token/appreciation", async (req, res): Promise<void> => {
     return;
   }
 
-  const whisp = await db
-    .select()
-    .from(whispsTable)
-    .where(eq(whispsTable.publicToken, req.params.token))
-    .then((r) => r[0]);
+  const whisp = await loadLiveWhisp(req.params.token);
 
   if (!whisp) {
     res.status(404).json({ error: "Not found" });
+    return;
+  }
+
+  // appreciationResponse is returned to everyone who opens the page, so on
+  // a public post it'd be one stranger's answer shown to all.
+  if (isPublicCirclePost(whisp)) {
+    res.status(400).json({ error: CIRCLE_ONE_TO_ONE_ERROR });
     return;
   }
 
@@ -1105,14 +1266,10 @@ router.post("/w/:token/appreciation", async (req, res): Promise<void> => {
     .where(eq(whispsTable.id, whisp.id));
 
   if (parsed.data.appreciated && !alreadyAnswered && !isMatchedFanout(whisp)) {
-    const sender = await db.select().from(usersTable).where(eq(usersTable.id, whisp.senderId)).then((r) => r[0]);
-    if (sender?.email) {
-      void sendEmail(sender.email, "They needed to hear that 💜", appreciationNotificationEmailHtml(whisp.videoTitle), {
-        whispId: whisp.id,
-        purpose: "appreciation_notification",
-      });
-    }
-    void notifyUserPersisted(
+    // Deferred push AND email (the scheduler sends the appreciation email on
+    // dispatch for kind "appreciation") — an email landing on the sender's
+    // phone the second the recipient taps is the same tell as a push.
+    await scheduleDeferredNotification(
       whisp.senderId,
       "They appreciated it 💜",
       "The person you sent your whisp to said it was something they needed to hear.",
@@ -1133,14 +1290,15 @@ router.post("/w/:token/remind-me", async (req, res): Promise<void> => {
     return;
   }
 
-  const whisp = await db
-    .select()
-    .from(whispsTable)
-    .where(eq(whispsTable.publicToken, req.params.token))
-    .then((r) => r[0]);
+  const whisp = await loadLiveWhisp(req.params.token);
 
   if (!whisp) {
     res.status(404).json({ error: "Not found" });
+    return;
+  }
+
+  if (isPublicCirclePost(whisp)) {
+    res.status(400).json({ error: CIRCLE_ONE_TO_ONE_ERROR });
     return;
   }
 

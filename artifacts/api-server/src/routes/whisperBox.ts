@@ -13,7 +13,7 @@ import {
   assignWhisperBoxHandle,
   userIdForWhispererHandle,
 } from "../lib/whispererHandle";
-import { notifyUserPersisted } from "../lib/push";
+import { scheduleDeferredNotification } from "../lib/replyNotificationScheduler";
 import { moderateWhisperBoxMessageAsync } from "../lib/moderation";
 import { whisperBoxSendLimiter } from "../lib/rateLimit";
 
@@ -72,8 +72,12 @@ router.get("/public/whisper-box/:handle", async (req, res): Promise<void> => {
     res.status(404).json({ error: "This Whisper Box link isn't active." });
     return;
   }
-  const account = await db.select({ whispererAvatarId: usersTable.whispererAvatarId }).from(usersTable).where(eq(usersTable.id, owner.userId)).then((r) => r[0]);
-  res.json({ handle: req.params.handle, avatarId: account?.whispererAvatarId ?? null });
+  // avatarId is always null: the only avatar an account has is its
+  // whispererAvatarId — the face of its ANONYMOUS Debate Now persona.
+  // Showing it on this real-name page let anyone match that avatar against
+  // Debate threads and tie the persona to the person. Kept in the response
+  // (as null) so the shape is unchanged.
+  res.json({ handle: req.params.handle, avatarId: null });
 });
 
 const sendMessageSchema = z.object({
@@ -120,9 +124,13 @@ router.post("/public/whisper-box/:handle", async (req, res): Promise<void> => {
     senderAlias: parsed.data.senderAlias ?? null,
   });
 
+  // Deferred, not instant: the sender may be sitting next to the box's
+  // owner, and a phone buzzing the second they hit send identifies them.
+  // Awaited (it never throws) so the pending row exists once this returns.
+  await scheduleDeferredNotification(userId, "You got a Whisper Box message 💌", "Someone sent you an anonymous message.", "/whisper-box", "whisper_box");
+
   res.status(201).json({ ok: true });
 
-  void notifyUserPersisted(userId, "You got a Whisper Box message 💌", "Someone sent you an anonymous message.", "/whisper-box", "whisper_box");
   void moderateWhisperBoxMessageAsync({ whisperBoxMessageId: id, text: parsed.data.messageText });
 });
 

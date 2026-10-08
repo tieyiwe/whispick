@@ -239,6 +239,96 @@ export function looksLikeBareWallTitle(platform: string | null, title: string | 
 
 export type ScrapeResult = { status: number; title?: string; thumbnail?: string; authorName?: string };
 
+// Domains a server-side scrape may touch on ANY hop. The allowlist check on
+// the pasted URL alone wasn't enough: fetch() followed redirects to any host,
+// so an allowlisted URL that redirects (an open redirect on a platform, or a
+// platform's own link shim) could still steer our server at an internal
+// address. Suffix-matched on the parsed hostname, like
+// ALLOWED_THUMBNAIL_DOMAINS.
+const ALLOWED_FETCH_DOMAINS = [
+  "youtube.com",
+  "youtu.be",
+  "tiktok.com",
+  "instagram.com",
+  "facebook.com",
+  "fb.watch",
+  "vimeo.com",
+  "twitter.com",
+  "x.com",
+];
+const MAX_REDIRECTS = 5;
+// OG tags live in <head>; oEmbed JSON is tiny. Nothing legitimate needs more,
+// and an unbounded text() let a hostile response exhaust memory.
+export const MAX_SCRAPE_BODY_BYTES = 1024 * 1024;
+
+export function isAllowedFetchUrl(url: URL): boolean {
+  if (url.protocol !== "https:") return false;
+  if (url.username || url.password) return false;
+  if (url.port && url.port !== "443") return false;
+  const host = url.hostname.toLowerCase();
+  // IP literals (v4 dotted or bracketed v6) are never a platform hostname —
+  // reject before any suffix logic could be fooled.
+  if (/^\d+(\.\d+){3}$/.test(host) || host.startsWith("[") || host.includes(":")) return false;
+  return ALLOWED_FETCH_DOMAINS.some((domain) => host === domain || host.endsWith(`.${domain}`));
+}
+
+/**
+ * fetch() with redirects followed by hand (redirect: "manual"), re-checking
+ * every hop against isAllowedFetchUrl, and the body read capped at
+ * MAX_SCRAPE_BODY_BYTES (excess is cut off, not buffered). A plain-http
+ * platform URL is upgraded to https rather than fetched in the clear.
+ * Returns null when any hop is disallowed or there are too many hops.
+ */
+export async function fetchAllowlisted(
+  rawUrl: string,
+  init: { headers?: Record<string, string>; timeoutMs: number },
+): Promise<{ status: number; ok: boolean; body: string } | null> {
+  let url: URL;
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    return null;
+  }
+  if (url.protocol === "http:") url.protocol = "https:";
+  const signal = AbortSignal.timeout(init.timeoutMs);
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    if (!isAllowedFetchUrl(url)) return null;
+    const res = await fetch(url.toString(), { signal, headers: init.headers, redirect: "manual" });
+    if (res.status >= 300 && res.status < 400) {
+      const location = res.headers.get("location");
+      await res.body?.cancel().catch(() => {});
+      if (!location) return { status: res.status, ok: false, body: "" };
+      try {
+        url = new URL(location, url);
+      } catch {
+        return null;
+      }
+      continue;
+    }
+    return { status: res.status, ok: res.ok, body: res.ok ? await readCappedText(res) : "" };
+  }
+  return null;
+}
+
+async function readCappedText(res: Response): Promise<string> {
+  if (!res.body) return "";
+  const reader = res.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const remaining = MAX_SCRAPE_BODY_BYTES - total;
+    chunks.push(value.byteLength > remaining ? value.subarray(0, remaining) : value);
+    total += Math.min(value.byteLength, remaining);
+    if (total >= MAX_SCRAPE_BODY_BYTES) {
+      await reader.cancel().catch(() => {});
+      break;
+    }
+  }
+  return Buffer.concat(chunks).toString("utf8");
+}
+
 export async function scrapeOEmbed(url: string, platform: string | null): Promise<ScrapeResult | null> {
   const endpoints: Record<string, string> = {
     youtube: `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`,
@@ -261,9 +351,10 @@ export async function scrapeOEmbed(url: string, platform: string | null): Promis
   if (!endpoint) return null;
 
   try {
-    const res = await fetch(endpoint, { signal: AbortSignal.timeout(5000) });
+    const res = await fetchAllowlisted(endpoint, { timeoutMs: 5000 });
+    if (!res) return null;
     if (!res.ok) return { status: res.status };
-    const data = (await res.json()) as any;
+    const data = JSON.parse(res.body) as any;
     return {
       status: res.status,
       title: data.title,
@@ -333,12 +424,10 @@ export function decodeHtmlEntities(value: string): string {
 
 export async function scrapeOpenGraph(url: string, platform: string | null = null): Promise<ScrapeResult | null> {
   try {
-    const res = await fetch(url, {
-      signal: AbortSignal.timeout(8000),
-      headers: { "User-Agent": ogScrapeUserAgent(platform) },
-    });
+    const res = await fetchAllowlisted(url, { timeoutMs: 8000, headers: { "User-Agent": ogScrapeUserAgent(platform) } });
+    if (!res) return null;
     if (!res.ok) return { status: res.status };
-    const html = await res.text();
+    const html = res.body;
 
     const ogTitle = html.match(/<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i)?.[1]
       ?? html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:title["']/i)?.[1]

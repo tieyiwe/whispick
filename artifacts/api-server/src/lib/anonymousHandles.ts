@@ -98,9 +98,23 @@ export async function updateHandleAvatar(contentType: AnonymousHandleContentType
   return { ok: true, avatarId: avatarId as AvatarId | null };
 }
 
-export type RenameHandleResult = { ok: true; handle: string } | { ok: false; error: "invalid" | "taken" };
+export type RenameHandleResult = { ok: true; handle: string } | { ok: false; error: "invalid" | "taken" | "reserved" };
 
 const HANDLE_PATTERN = /^[A-Za-z0-9]{3,24}$/;
+
+// Names that would let a visitor pose as the post's author or as the
+// platform itself — "OriginalPoster" replying in a Circle thread reads as
+// the poster speaking, which is both an impersonation vector and a way to
+// bait the real poster into confirming something. Substrings catch the
+// obvious variants (Admin1, BlindWhisperTeam, RealPoster); the short ones
+// are exact-match only so ordinary words containing them still work.
+const RESERVED_HANDLE_SUBSTRINGS = ["poster", "blindwhisper", "admin", "moderator", "official"];
+const RESERVED_HANDLES_EXACT = new Set(["op", "mod", "mods", "staff", "support", "team", "system", "anonymous", "author", "sender", "owner"]);
+
+export function isReservedHandle(handle: string): boolean {
+  const lower = handle.trim().toLowerCase();
+  return RESERVED_HANDLES_EXACT.has(lower) || RESERVED_HANDLE_SUBSTRINGS.some((s) => lower.includes(s));
+}
 
 // A visitor renaming their own handle within one thread. Validated to the
 // same shape the generator produces (alphanumeric only, no spaces/symbols) —
@@ -111,6 +125,7 @@ const HANDLE_PATTERN = /^[A-Za-z0-9]{3,24}$/;
 export async function renameHandle(contentType: AnonymousHandleContentType, rootId: string, visitorId: string, newHandle: string): Promise<RenameHandleResult> {
   const trimmed = newHandle.trim();
   if (!HANDLE_PATTERN.test(trimmed)) return { ok: false, error: "invalid" };
+  if (isReservedHandle(trimmed)) return { ok: false, error: "reserved" };
 
   const taken = await db
     .select({ visitorId: anonymousHandlesTable.visitorId })
